@@ -35,6 +35,7 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jakarta.version>6.0.0</jakarta.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <nexus.core.version>3.9.0</nexus.core.version>
     </properties>
 
     <!-- 依赖声明 -->
@@ -194,6 +195,13 @@
                 <version>${nexus.version}</version>
             </dependency>
 
+            <!-- 核心业务模块-->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-core</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -204,6 +212,7 @@
         <module>nexus-quartz</module>
         <module>nexus-generator</module>
         <module>nexus-common</module>
+        <module>nexus-core</module>
     </modules>
     <packaging>pom</packaging>
 
