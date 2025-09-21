@@ -115,7 +115,6 @@ public class BdClientController extends BaseController
         return toAjax(bdClientService.deleteBdClientByClientIds(clientIds));
     }
 
-    // TODO 前端访问接口，无权限访问
     @ApiOperation("上传客户logo")
     @Log(title = "客户信息", businessType = BusinessType.UPDATE)
     @PreAuthorize("@ss.hasPermi('core:bd:edit')")
@@ -125,7 +124,7 @@ public class BdClientController extends BaseController
         if (!file.isEmpty()) {
             try {
                 // 使用系统工具类上传文件，限制为图片类型
-                String filePath = FileUploadUtils.upload(RuoYiConfig.getProfile() + "client_logo/", file, MimeTypeUtils.IMAGE_EXTENSION, true);
+                String filePath = FileUploadUtils.upload(RuoYiConfig.getProfile() + "/client_logo/", file, MimeTypeUtils.IMAGE_EXTENSION, true);
                 
                 // 更新客户信息中的logo路径字段
                 BdClient client = new BdClient();
