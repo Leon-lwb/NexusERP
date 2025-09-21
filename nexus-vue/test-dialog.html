@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户信息对话框测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .warning {
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+    <h1>客户信息对话框功能测试</h1>
+    
+    <div class="test-section">
+        <h2>问题诊断</h2>
+        <p>根据代码分析，已修复以下问题：</p>
+        <ul>
+            <li class="success">✅ 修复了修改操作中数组ID处理问题</li>
+            <li class="success">✅ 修复了自动生成编码API响应处理问题</li>
+            <li class="success">✅ 添加了全面的错误处理和调试信息</li>
+            <li class="success">✅ 确保在各种异常情况下对话框都能正常打开</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>测试步骤</h2>
+        <ol>
+            <li>打开浏览器开发者工具（F12）</li>
+            <li>导航到客户信息管理页面</li>
+            <li>点击"新增"按钮 - 查看控制台输出</li>
+            <li>选择一条数据后点击"修改"按钮 - 查看控制台输出</li>
+            <li>直接在表格行中点击"修改"按钮 - 查看控制台输出</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>预期结果</h2>
+        <ul>
+            <li>✅ 控制台应显示详细的调试信息</li>
+            <li>✅ 新增/修改对话框应正常弹出</li>
+            <li>✅ 即使API调用失败，对话框也应打开</li>
+            <li>✅ 错误信息应正确显示给用户</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>常见问题排查</h2>
+        <ul>
+            <li>🔍 检查浏览器控制台是否有JavaScript错误</li>
+            <li>🔍 检查网络请求是否正常（F12 → Network）</li>
+            <li>🔍 确认用户权限是否足够</li>
+            <li>🔍 检查Vue devtools中组件状态</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log("测试页面加载完成");
+        console.log("请在客户信息页面测试对话框功能");
+    </script>
+</body>
+</html>

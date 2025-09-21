@@ -1,5 +1,10 @@
-package com.nexus.core.bd.controller;
+package com.nexus.bd.controller;
 
+import com.nexus.bd.domain.BdClient;
+import com.nexus.bd.service.IBdClientService;
+import com.nexus.common.config.RuoYiConfig;
+import com.nexus.common.utils.file.FileUploadUtils;
+import com.nexus.common.utils.file.MimeTypeUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.util.List;
@@ -18,10 +23,9 @@ import com.nexus.common.annotation.Log;
 import com.nexus.common.core.controller.BaseController;
 import com.nexus.common.core.domain.AjaxResult;
 import com.nexus.common.enums.BusinessType;
-import com.nexus.core.bd.domain.BdClient;
-import com.nexus.core.bd.service.IBdClientService;
 import com.nexus.common.utils.poi.ExcelUtil;
 import com.nexus.common.core.page.TableDataInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 客户信息Controller
@@ -109,5 +113,31 @@ public class BdClientController extends BaseController
     public AjaxResult remove(@PathVariable Long[] clientIds)
     {
         return toAjax(bdClientService.deleteBdClientByClientIds(clientIds));
+    }
+
+    // TODO 前端访问接口，无权限访问
+    @ApiOperation("上传客户logo")
+    @Log(title = "客户信息", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('core:bd:edit')")
+    @PostMapping("/uploadLogo")
+    public AjaxResult uploadLogo(MultipartFile file, Long clientId)
+    {
+        if (!file.isEmpty()) {
+            try {
+                // 使用系统工具类上传文件，限制为图片类型
+                String filePath = FileUploadUtils.upload(RuoYiConfig.getProfile() + "client_logo/", file, MimeTypeUtils.IMAGE_EXTENSION, true);
+                
+                // 更新客户信息中的logo路径字段
+                BdClient client = new BdClient();
+                client.setClientId(clientId);
+                client.setClientLogo(filePath);
+                bdClientService.updateBdClient(client);
+                
+                return success("上传成功").put("filePath", filePath);
+            } catch (Exception e) {
+                return error("上传失败: " + e.getMessage());
+            }
+        }
+        return error("上传文件为空");
     }
 }

@@ -1,4 +1,4 @@
-package com.nexus.core.bd.domain;
+package com.nexus.bd.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -18,10 +18,10 @@ import com.nexus.common.core.domain.BaseEntity;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName(resultMap = "com.nexus.core.bd.mapper.BdClientMapper.BdClientResult")
+@TableName("bd_client")
 public class BdClient extends BaseEntity
-        {
-private static final long serialVersionUID = 1L;
+{
+    private static final long serialVersionUID = 1L;
 
     /** 客户ID */
     @TableId(value = "client_id",type = IdType.AUTO)

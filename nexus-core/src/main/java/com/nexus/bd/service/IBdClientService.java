@@ -1,7 +1,8 @@
-package com.nexus.core.bd.service;
+package com.nexus.bd.service;
 
 import java.util.List;
-import com.nexus.core.bd.domain.BdClient;
+
+import com.nexus.bd.domain.BdClient;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

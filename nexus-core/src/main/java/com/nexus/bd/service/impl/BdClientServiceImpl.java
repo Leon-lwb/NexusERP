@@ -1,13 +1,14 @@
-package com.nexus.core.bd.service.impl;
+package com.nexus.bd.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import java.util.List;
+
+import com.nexus.bd.domain.BdClient;
+import com.nexus.bd.mapper.BdClientMapper;
 import com.nexus.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.nexus.core.bd.mapper.BdClientMapper;
-import com.nexus.core.bd.domain.BdClient;
-import com.nexus.core.bd.service.IBdClientService;
+import com.nexus.bd.service.IBdClientService;
 
 /**
  * 客户信息Service业务层处理

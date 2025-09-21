@@ -1,4 +1,4 @@
-package com.nexus.web.core.config;
+package com.nexus.web.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;

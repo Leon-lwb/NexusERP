@@ -94,14 +94,14 @@
     <el-table v-loading="loading" :data="bdList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
               <el-table-column label="序号" type = "index" width="50" align="center" prop="clientId" />
-              <el-table-column label="客户编码" align="center" prop="clientCode" />
-              <el-table-column label="客户名称" align="center" prop="clientName" />
+              <el-table-column label="客户编码" align="center" prop="clientCode" :show-overflow-tooltip="true" />
+              <el-table-column label="客户名称" align="center" prop="clientName" :show-overflow-tooltip="true" />
               <el-table-column label="客户类型" align="center" prop="clientType" width="120">
                 <template #default="scope">
                       <dict-tag :options="bd_client_type" :value="scope.row.clientType"/>
                 </template>
               </el-table-column>
-              <el-table-column label="客户电话" align="center" prop="tel" width="120" />
+              <el-table-column label="客户电话" align="center" prop="tel" :show-overflow-tooltip="true" />
               <el-table-column label="客户LOGO" align="center" prop="clientLogo" width="100">
                 <template #default="scope">
                   <el-image 
@@ -115,7 +115,7 @@
                   <span v-else>-</span>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
+              <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
                 <template #default="scope">
                   <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['core:bd:edit']">修改</el-button>
                   <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['core:bd:remove']">删除</el-button>
@@ -224,33 +224,14 @@
               <el-col :span="12">
                 <el-form-item label="客户LOGO" prop="clientLogo">
                   <div class="logo-upload-container">
-                    <el-input v-model="form.clientLogo" placeholder="请输入客户LOGO或上传图片" />
-                    <div class="logo-preview" v-if="form.clientLogo">
-                      <el-image 
-                        :src="form.clientLogo" 
-                        fit="cover"
-                        class="logo-preview-img"
-                        :preview-src-list="[form.clientLogo]"
-                        preview-teleported
-                      />
-                      <el-button 
-                        type="danger" 
-                        icon="Delete" 
-                        size="small" 
-                        circle 
-                        @click="clearLogo"
-                        class="clear-logo-btn"
-                      />
-                    </div>
                     <el-upload
-                      class="logo-uploader"
+                      class="upload-demo"
+                      drag
                       action="/dev-api/core/bd/uploadLogo"
-                      :show-file-list="false"
-                      :on-success="handleLogoSuccess"
-                      :before-upload="beforeLogoUpload"
-                      :headers="uploadHeaders"
-                    >
-                      <el-button type="primary" size="small">上传图片</el-button>
+                      multiple>
+                      <i class="el-icon-upload"></i>
+                      <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                      <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过500kb</div>
                     </el-upload>
                   </div>
                 </el-form-item>
@@ -370,13 +351,17 @@ const activeTab = ref("basic")
                     contact1Tel: [
                 { required: true, message: "联系人1电话不能为空", trigger: "blur" }
               ],
-    }
-  })
+  }
+})
 
-  const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data)
 
-  /** 查询客户信息列表 */
-  function getList() {
+// 添加图片预览相关数据
+const dialogImageUrl = ref('')
+const dialogVisible = ref(false)
+
+/** 查询客户信息列表 */
+function getList() {
     loading.value = true
     listBd(queryParams.value).then(response => {
             bdList.value = response.rows
@@ -462,6 +447,16 @@ const activeTab = ref("basic")
       open.value = true
       title.value = "修改客户信息"
     })
+  }
+
+  // 添加图片处理方法
+  function handleRemove(file, fileList) {
+    console.log(file, fileList)
+  }
+
+  function handlePictureCardPreview(file) {
+    dialogImageUrl.value = file.url
+    dialogVisible.value = true
   }
 
   /** 提交按钮 */

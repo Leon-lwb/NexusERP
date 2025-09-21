@@ -1,5 +1,5 @@
 
-package com.nexus.core.bd.domain.vo;
+package com.nexus.bd.domain.vo;
 
 import lombok.Data;
 import com.nexus.common.core.plus.dto.BasePageDtoRequest;

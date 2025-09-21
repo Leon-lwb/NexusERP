@@ -1,15 +1,9 @@
-package com.nexus.core.bd.mapper;
+package com.nexus.bd.mapper;
 
 import java.util.List;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nexus.core.bd.domain.BdClient;
+import com.nexus.bd.domain.BdClient;
 
-/**
- * 客户信息Mapper接口
- *
- * @author nexus
- * @date 2025-09-18
- */
 public interface BdClientMapper extends BaseMapper<BdClient> {
     /**
      * 查询客户信息
