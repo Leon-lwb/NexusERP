@@ -1,0 +1,23 @@
+package com.nexus.system.mapper;
+
+
+import com.nexus.system.domain.SysAutoCodeRule;
+
+import java.util.List;
+
+public interface SysAutoCodeRuleMapper {
+
+    public List<SysAutoCodeRule> selectSysAutoCodeResultList(SysAutoCodeRule sysAutoCodeRule);
+
+    public SysAutoCodeRule findById(Long ruleId);
+
+    public int add(SysAutoCodeRule sysAutoCodeRule);
+
+    public int updateSysAutoCodeRule(SysAutoCodeRule sysAutoCodeRule);
+
+    public int deleteById(Long ruleId);
+
+    public SysAutoCodeRule checkRuleCodeUnique(String ruleCode);
+
+    public SysAutoCodeRule checkRuleNameUnique(String ruleName);
+}

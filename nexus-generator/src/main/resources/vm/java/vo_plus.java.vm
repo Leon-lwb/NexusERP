@@ -8,10 +8,7 @@
 package ${packageName}.domain.vo;
 
 import lombok.Data;
-import com.ruoyi.common.core.plus.dto.BasePageDtoRequest;
-#if($hasLocalDateTime)
-import java.time.LocalDateTime;
-#end
+import com.nexus.common.core.plus.dto.BasePageDtoRequest;
 
 /**
  * ${functionName}对象 ${tableName} vo

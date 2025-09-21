@@ -64,8 +64,12 @@ public class UserConstants
     public final static String INNER_LINK = "InnerLink";
 
     /** 校验是否唯一的返回标识 */
-    public final static boolean UNIQUE = true;
-    public final static boolean NOT_UNIQUE = false;
+    public final static String SUNIQUE = "0";
+    public final static String SNOT_UNIQUE = "1";
+
+    /** 校验是否唯一的返回标识 */
+    public final static Boolean UNIQUE = true;
+    public final static Boolean NOT_UNIQUE = false;
 
     /**
      * 用户名长度限制

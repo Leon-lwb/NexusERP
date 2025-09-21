@@ -41,6 +41,9 @@ router.beforeEach((to, from, next) => {
               }
             })
             next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+          }).catch(error => {
+            console.error('路由生成失败:', error)
+            next({ path: '/' })
           })
         }).catch(err => {
           useUserStore().logOut().then(() => {

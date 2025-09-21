@@ -1,99 +1,124 @@
 package ${packageName}.controller;
 
-import jakarta.annotation.Resource;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import java.util.List;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import com.ruoyi.common.core.plus.response.Result;
-import com.ruoyi.common.core.plus.response.ResultUtil;
-import com.ruoyi.common.core.plus.dto.common.CommonDataPageResponse;
-import com.ruoyi.common.core.plus.response.StatusResponse;
-
-import ${packageName}.domain.vo.${ClassName}Vo;
-import ${packageName}.business.${ClassName}Business;
+import com.nexus.common.annotation.Log;
+import com.nexus.common.core.controller.BaseController;
+import com.nexus.common.core.domain.AjaxResult;
+import com.nexus.common.enums.BusinessType;
+import ${packageName}.domain.${ClassName};
+import ${packageName}.service.I${ClassName}Service;
+import com.nexus.common.utils.poi.ExcelUtil;
+#if($table.crud || $table.sub)
+import com.nexus.common.core.page.TableDataInfo;
+#elseif($table.tree)
+#end
 
 /**
- * ${functionName}控制器
- * 
+ * ${functionName}Controller
+ *
  * @author ${author}
  * @date ${datetime}
  */
+@Api(tags = "${functionName}Controller")
 @RestController
 @RequestMapping("/${moduleName}/${businessName}")
-public class ${ClassName}Controller {
-
-    @Resource
-    ${ClassName}Business business;
+public class ${ClassName}Controller extends BaseController
+{
+    @Autowired
+    private I${ClassName}Service ${className}Service;
 
     /**
-     * 分页查询${functionName}列表
+     * 查询${functionName}列表
      */
+    @ApiOperation("查询${functionName}列表")
     @PreAuthorize("@ss.hasPermi('${permissionPrefix}:list')")
-    @PostMapping("/page")
-    public Result page(@RequestBody ${ClassName}Vo vo) {
-        CommonDataPageResponse<${ClassName}Vo> response = business.page(vo);
+    @GetMapping("/list")
+    #if($table.crud || $table.sub)
+    public TableDataInfo list(${ClassName} ${className})
+    {
+        startPage();
+        List<${ClassName}> list = ${className}Service.select${ClassName}List(${className});
+        return getDataTable(list);
+    }
+    #elseif($table.tree)
+        public AjaxResult list(${ClassName} ${className})
+        {
+            List<${ClassName}> list = ${className}Service.select${ClassName}List(${className});
+            return success(list);
+        }
+    #end
 
-        return ResultUtil.success(response);
+    /**
+     * 导出${functionName}列表
+     */
+    @ApiOperation("导出${functionName}列表")
+    @PreAuthorize("@ss.hasPermi('${permissionPrefix}:export')")
+    @Log(title = "${functionName}", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, ${ClassName} ${className})
+    {
+        List<${ClassName}> list = ${className}Service.select${ClassName}List(${className});
+        ExcelUtil<${ClassName}> util = new ExcelUtil<${ClassName}>(${ClassName}.class);
+        util.exportExcel(response, list, "${functionName}数据");
     }
 
     /**
      * 获取${functionName}详细信息
      */
+    @ApiOperation("获取${functionName}列表")
     @PreAuthorize("@ss.hasPermi('${permissionPrefix}:query')")
-    @PostMapping("/info")
-    public Result info(@RequestBody ${ClassName}Vo vo) {
-
-        ${ClassName}Vo info = business.info(vo);
-
-        return ResultUtil.success(info);
+    @GetMapping(value = "/{${pkColumn.javaField}}")
+    public AjaxResult getInfo(@PathVariable("${pkColumn.javaField}") ${pkColumn.javaType} ${pkColumn.javaField})
+    {
+        return success(${className}Service.select${ClassName}By${pkColumn.capJavaField}(${pkColumn.javaField}));
     }
 
     /**
      * 新增${functionName}
      */
+    @ApiOperation("新增${functionName}详细信息")
     @PreAuthorize("@ss.hasPermi('${permissionPrefix}:add')")
-    @PostMapping("/add")
-    public Result add(@RequestBody ${ClassName}Vo vo) {
-
-        StatusResponse response = business.add(vo);
-        if (response.getSuccess() == false) {
-            return ResultUtil.fail(response.getMsg());
-        }
-
-        return ResultUtil.success(response);
+    @Log(title = "${functionName}", businessType = BusinessType.INSERT)
+    @PostMapping
+    public AjaxResult add(@RequestBody ${ClassName} ${className})
+    {
+        return toAjax(${className}Service.insert${ClassName}(${className}));
     }
 
     /**
      * 修改${functionName}
      */
+    @ApiOperation("修改${functionName}详细信息")
     @PreAuthorize("@ss.hasPermi('${permissionPrefix}:edit')")
-    @PostMapping("/update")
-    public Result update(@RequestBody ${ClassName}Vo vo) {
-
-        StatusResponse response = business.update(vo);
-        if (response.getSuccess() == false) {
-            return ResultUtil.fail(response.getMsg());
-        }
-
-        return ResultUtil.success(response);
+    @Log(title = "${functionName}", businessType = BusinessType.UPDATE)
+    @PutMapping
+    public AjaxResult edit(@RequestBody ${ClassName} ${className})
+    {
+        return toAjax(${className}Service.update${ClassName}(${className}));
     }
 
     /**
      * 删除${functionName}
      */
+    @ApiOperation("删除${functionName}信息")
     @PreAuthorize("@ss.hasPermi('${permissionPrefix}:remove')")
-    @PostMapping("/delete")
-    public Result delete(@RequestBody ${ClassName}Vo vo) {
-
-        StatusResponse response = business.delete(vo);
-        if (response.getSuccess() == false) {
-            return ResultUtil.fail(response.getMsg());
-        }
-
-        return ResultUtil.success(response);
+    @Log(title = "${functionName}", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{${pkColumn.javaField}s}")
+    public AjaxResult remove(@PathVariable ${pkColumn.javaType}[] ${pkColumn.javaField}s)
+    {
+        return toAjax(${className}Service.delete${ClassName}By${pkColumn.capJavaField}s(${pkColumn.javaField}s));
     }
-
 }

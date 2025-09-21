@@ -54,6 +54,12 @@
             <artifactId>nexus-generator</artifactId>
         </dependency>
 
+        <!-- erp核心模块-->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-core</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

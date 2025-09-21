@@ -131,6 +131,20 @@ export const dynamicRoutes = [
     ]
   },
   {
+    path: '/system/autocodePart',
+    component: Layout,
+    hidden: true,
+    permissions: ['system:autocode:part:list'],
+    children: [
+      {
+        path: 'index/:ruleId(\\d+)',
+        component: () => import('@/views/system/autocode/part'),
+        name: 'AutoCode',
+        meta: { title: '规则组成', activeMenu: '/system/autocode' }
+      }
+    ]
+  },
+  {
     path: '/monitor/job-log',
     component: Layout,
     hidden: true,

@@ -11,6 +11,17 @@
 
     <artifactId>nexus-core</artifactId>
 
+    <description>
+        erp业务核心模块
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-framework</artifactId>
+        </dependency>
+    </dependencies>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>

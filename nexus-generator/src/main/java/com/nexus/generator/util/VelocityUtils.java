@@ -140,7 +140,6 @@ public class VelocityUtils
         templates.add("vm/java/service_plus.java.vm");
         templates.add("vm/java/serviceImpl_plus.java.vm");
         templates.add("vm/java/controller_plus.java.vm");
-        templates.add("vm/java/business_plus.java.vm");
         templates.add("vm/java/vo_plus.java.vm");
         templates.add("vm/xml/mapper.xml.vm");
         templates.add("vm/sql/sql.vm");
@@ -195,7 +194,7 @@ public class VelocityUtils
         }
         else if (template.contains("service_plus.java.vm"))
         {
-            fileName = StringUtils.format("{}/service/{}Service.java", javaPath, className);
+            fileName = StringUtils.format("{}/service/I{}Service.java", javaPath, className);
         }
         else if (template.contains("serviceImpl_plus.java.vm"))
         {
@@ -204,10 +203,6 @@ public class VelocityUtils
         else if (template.contains("controller_plus.java.vm"))
         {
             fileName = StringUtils.format("{}/controller/{}Controller.java", javaPath, className);
-        }
-        else if (template.contains("business_plus.java.vm"))
-        {
-            fileName = StringUtils.format("{}/business/{}Business.java", javaPath, className);
         }
         else if (template.contains("vo_plus.java.vm"))
         {

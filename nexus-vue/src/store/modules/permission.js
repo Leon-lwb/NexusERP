@@ -49,6 +49,9 @@ const usePermissionStore = defineStore(
             this.setDefaultRoutes(sidebarRoutes)
             this.setTopbarRoutes(defaultRoutes)
             resolve(rewriteRoutes)
+          }).catch(error => {
+            console.error('路由数据获取失败:', error)
+            resolve([])
           })
         })
       }
