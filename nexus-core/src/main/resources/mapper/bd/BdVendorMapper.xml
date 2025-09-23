@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.bd.mapper.BdVendorMapper">
+
+    <resultMap type="BdVendor" id="BdVendorResult">
+            <result property="vendorId"    column="vendor_id"    />
+            <result property="vendorCode"    column="vendor_code"    />
+            <result property="vendorName"    column="vendor_name"    />
+            <result property="taxId"    column="tax_id"    />
+            <result property="address"    column="address"    />
+            <result property="contactPerson"    column="contact_person"    />
+            <result property="phone"    column="phone"    />
+            <result property="bankAccount"    column="bank_account"    />
+            <result property="industry"    column="industry"    />
+            <result property="region"    column="region"    />
+            <result property="category"    column="category"    />
+            <result property="status"    column="status"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectBdVendorVo">
+        select vendor_id, vendor_code, vendor_name, tax_id, address, contact_person, phone, bank_account, industry, region, category, status, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from bd_vendor
+    </sql>
+
+    <select id="selectBdVendorList" parameterType="BdVendor" resultMap="BdVendorResult">
+        <include refid="selectBdVendorVo"/>
+        <where>
+                        <if test="vendorCode != null  and vendorCode != ''"> and vendor_code = #{vendorCode}</if>
+                        <if test="vendorName != null  and vendorName != ''"> and vendor_name like concat('%', #{vendorName}, '%')</if>
+                        <if test="industry != null  and industry != ''"> and industry = #{industry}</if>
+                        <if test="region != null  and region != ''"> and region = #{region}</if>
+                        <if test="status != null  and status != ''"> and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectBdVendorByVendorId" parameterType="Long" resultMap="BdVendorResult">
+            <include refid="selectBdVendorVo"/>
+            where vendor_id = #{vendorId}
+    </select>
+
+    <insert id="insertBdVendor" parameterType="BdVendor" useGeneratedKeys="true" keyProperty="vendorId">
+        insert into bd_vendor
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="vendorCode != null and vendorCode != ''">vendor_code,</if>
+                    <if test="vendorName != null and vendorName != ''">vendor_name,</if>
+                    <if test="taxId != null">tax_id,</if>
+                    <if test="address != null">address,</if>
+                    <if test="contactPerson != null">contact_person,</if>
+                    <if test="phone != null">phone,</if>
+                    <if test="bankAccount != null">bank_account,</if>
+                    <if test="industry != null">industry,</if>
+                    <if test="region != null">region,</if>
+                    <if test="category != null">category,</if>
+                    <if test="status != null">status,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="vendorCode != null and vendorCode != ''">#{vendorCode},</if>
+                    <if test="vendorName != null and vendorName != ''">#{vendorName},</if>
+                    <if test="taxId != null">#{taxId},</if>
+                    <if test="address != null">#{address},</if>
+                    <if test="contactPerson != null">#{contactPerson},</if>
+                    <if test="phone != null">#{phone},</if>
+                    <if test="bankAccount != null">#{bankAccount},</if>
+                    <if test="industry != null">#{industry},</if>
+                    <if test="region != null">#{region},</if>
+                    <if test="category != null">#{category},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateBdVendor" parameterType="BdVendor">
+        update bd_vendor
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="vendorCode != null and vendorCode != ''">vendor_code = #{vendorCode},</if>
+                    <if test="vendorName != null and vendorName != ''">vendor_name = #{vendorName},</if>
+                    <if test="taxId != null">tax_id = #{taxId},</if>
+                    <if test="address != null">address = #{address},</if>
+                    <if test="contactPerson != null">contact_person = #{contactPerson},</if>
+                    <if test="phone != null">phone = #{phone},</if>
+                    <if test="bankAccount != null">bank_account = #{bankAccount},</if>
+                    <if test="industry != null">industry = #{industry},</if>
+                    <if test="region != null">region = #{region},</if>
+                    <if test="category != null">category = #{category},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where vendor_id = #{vendorId}
+    </update>
+
+    <delete id="deleteBdVendorByVendorId" parameterType="Long">
+        delete from bd_vendor where vendor_id = #{vendorId}
+    </delete>
+
+    <delete id="deleteBdVendorByVendorIds" parameterType="String">
+        delete from bd_vendor where vendor_id in
+        <foreach item="vendorId" collection="array" open="(" separator="," close=")">
+            #{vendorId}
+        </foreach>
+    </delete>
+</mapper>

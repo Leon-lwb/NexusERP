@@ -17,7 +17,7 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="客户类型" prop="clientType">
+      <el-form-item label="客户类型" prop="clientType" style="width: 200px;">
         <el-select v-model="queryParams.clientType" placeholder="请选择" clearable>
           <el-option
             v-for="dict in bd_client_type"
@@ -81,6 +81,16 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="info"
+          plain
+          icon="View"
+          :disabled="single"
+          @click="handleView"
+          v-hasPermi="['core:bd:query']"
+        >查看</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="warning"
           plain
           icon="Download"
@@ -117,6 +127,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['core:bd:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['core:bd:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['core:bd:remove']">删除</el-button>
         </template>
@@ -139,38 +150,37 @@
             <el-row>
               <el-col :span="8">
                 <el-form-item label="客户编码" prop="clientCode">
-                  <el-input v-model="form.clientCode" placeholder="请输入客户编码" :disabled="autoGenFlag" />
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <el-input v-model="form.clientCode" placeholder="请输入客户编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                    <el-switch v-model="autoGenFlag"
+                      active-color="#13ce66"
+                      active-text="自动生成"
+                      @change="handleAutoGenChange"
+                      :disabled="isViewMode">
+                    </el-switch>
+                  </div>
                 </el-form-item>
               </el-col>
-              <el-col :span="4">
-                <el-form-item label-width="80">
-                  <el-switch v-model="autoGenFlag"
-                    active-color="#13ce66"
-                    active-text="自动生成"
-                    @change="handleAutoGenChange">
-                  </el-switch>
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
+              <el-col :span="16">
                 <el-form-item label="客户名称" prop="clientName">
-                  <el-input v-model="form.clientName" placeholder="请输入客户名称" />
+                  <el-input v-model="form.clientName" placeholder="请输入客户名称" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row>
               <el-col :span="8">
                 <el-form-item label="客户简称" prop="clientNick">
-                  <el-input v-model="form.clientNick" placeholder="请输入客户简称" />
+                  <el-input v-model="form.clientNick" placeholder="请输入客户简称" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="客户英文名称" prop="clientEn">
-                  <el-input v-model="form.clientEn" placeholder="请输入客户英文名称" />
+                  <el-input v-model="form.clientEn" placeholder="请输入客户英文名称" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="客户类型" prop="clientType">
-                  <el-select v-model="form.clientType" placeholder="请选择客户类型" style="width: 100%">
+                  <el-select v-model="form.clientType" placeholder="请选择客户类型" style="width: 100%" :disabled="isViewMode">
                     <el-option
                       v-for="dict in bd_client_type"
                       :key="dict.value"
@@ -184,19 +194,19 @@
             <el-row>
               <el-col :span="12">
                 <el-form-item label="送货地点" prop="address">
-                  <el-input v-model="form.address" type="textarea" placeholder="请输入内容" />
+                  <el-input v-model="form.address" type="textarea" placeholder="请输入内容" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="社会信用代码" prop="creditCode">
-                  <el-input v-model="form.creditCode" placeholder="请输入统一社会信用代码" />
+                  <el-input v-model="form.creditCode" placeholder="请输入统一社会信用代码" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row>
               <el-col :span="24">
                 <el-form-item label="客户简介" prop="clientDesc">
-                  <el-input v-model="form.clientDesc" type="textarea" placeholder="请输入内容" />
+                  <el-input v-model="form.clientDesc" type="textarea" placeholder="请输入内容" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -206,56 +216,77 @@
             <el-row>
               <el-col :span="12">
                 <el-form-item label="客户官网地址" prop="webSite">
-                  <el-input v-model="form.webSite" placeholder="请输入客户官网地址" />
+                  <el-input v-model="form.webSite" placeholder="请输入客户官网地址" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="客户邮箱地址" prop="email">
-                  <el-input v-model="form.email" placeholder="请输入客户邮箱地址" />
+                  <el-input v-model="form.email" placeholder="请输入客户邮箱地址" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row>
               <el-col :span="12">
                 <el-form-item label="客户电话" prop="tel">
-                  <el-input v-model="form.tel" placeholder="请输入客户电话" />
+                  <el-input v-model="form.tel" placeholder="请输入客户电话" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="客户LOGO" prop="clientLogo">
                   <div class="logo-upload-container">
-                    <el-upload
-                      class="logo-uploader"
-                      :action="uploadUrl"
-                      :http-request="handleLogoUpload"
-                      :before-upload="beforeLogoUpload"
-                      :on-success="handleLogoSuccess"
-                      :on-error="handleLogoError"
-                      :on-remove="handleLogoRemove"
-                      :file-list="logoFileList"
-                      :limit="1"
-                      accept="image/jpeg,image/png"
-                      list-type="picture-card"
-                      v-model:file-list="logoFileList"
-                    >
-                      <i class="el-icon-plus"></i>
-                      <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过5MB</div>
-                    </el-upload>
-                    <div v-if="form.clientLogo && logoFileList.length === 0" class="logo-preview">
+                    <!-- 查看模式下显示静态图片 -->
+                    <div v-if="isViewMode" class="logo-preview-view">
                       <el-image 
+                        v-if="form.clientLogo"
                         :src="getFullImageUrl(form.clientLogo)" 
                         :preview-src-list="[getFullImageUrl(form.clientLogo)]"
                         preview-teleported
                         fit="cover"
                         class="logo-image-preview"
                       />
-                      <el-button 
-                        type="danger" 
-                        icon="Delete" 
-                        size="small" 
-                        @click="removeCurrentLogo"
-                        circle
-                      />
+                      <div v-else class="no-logo">暂无LOGO</div>
+                    </div>
+                    <!-- 编辑模式下显示上传组件 -->
+                    <div v-else class="logo-upload-edit">
+                      <!-- 优化后的单图片上传组件 -->
+                      <div class="single-logo-upload">
+                        <!-- 如果已有图片，显示图片预览 -->
+                        <div v-if="form.clientLogo" class="logo-preview-existing">
+                          <el-image 
+                            :src="getFullImageUrl(form.clientLogo)" 
+                            :preview-src-list="[getFullImageUrl(form.clientLogo)]"
+                            preview-teleported
+                            fit="cover"
+                            class="logo-image-preview"
+                          />
+                          <el-button 
+                            type="danger" 
+                            icon="Delete" 
+                            size="small" 
+                            @click="removeLogo"
+                            circle
+                            class="remove-btn"
+                          />
+                        </div>
+                        <!-- 如果没有图片，显示上传区域 -->
+                        <div v-else class="logo-upload-area">
+                          <el-upload
+                            class="logo-uploader"
+                            :action="uploadUrl"
+                            :http-request="handleLogoUpload"
+                            :before-upload="beforeLogoUpload"
+                            :on-success="handleLogoSuccess"
+                            :on-error="handleLogoError"
+                            :show-file-list="false"
+                            accept="image/jpeg,image/png"
+                            drag
+                          >
+                            <i class="el-icon-upload"></i>
+                            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                            <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过5MB</div>
+                          </el-upload>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </el-form-item>
@@ -264,41 +295,41 @@
             <el-row>
               <el-col :span="8">
                 <el-form-item label="联系人1" prop="contact1">
-                  <el-input v-model="form.contact1" placeholder="请输入联系人1" />
+                  <el-input v-model="form.contact1" placeholder="请输入联系人1" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="联系人1-电话" prop="contact1Tel">
-                  <el-input v-model="form.contact1Tel" placeholder="请输入联系人1-电话" />
+                  <el-input v-model="form.contact1Tel" placeholder="请输入联系人1-电话" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="联系人1-邮箱" prop="contact1Emal">
-                  <el-input v-model="form.contact1Emal" placeholder="请输入联系人1-邮箱" />
+                  <el-input v-model="form.contact1Emal" placeholder="请输入联系人1-邮箱" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row>
               <el-col :span="8">
                 <el-form-item label="联系人2" prop="contact2">
-                  <el-input v-model="form.contact2" placeholder="请输入联系人2" />
+                  <el-input v-model="form.contact2" placeholder="请输入联系人2" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="联系人2-电话" prop="contact2Tel">
-                  <el-input v-model="form.contact2Tel" placeholder="请输入联系人2-电话" />
+                  <el-input v-model="form.contact2Tel" placeholder="请输入联系人2-电话" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="联系人2-邮箱" prop="contact2Emal">
-                  <el-input v-model="form.contact2Emal" placeholder="请输入联系人2-邮箱" />
+                  <el-input v-model="form.contact2Emal" placeholder="请输入联系人2-邮箱" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row>
               <el-col :span="24">
                 <el-form-item label="备注" prop="remark">
-                  <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+                  <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -307,7 +338,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button v-if="!isViewMode" type="primary" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </template>
@@ -335,10 +366,10 @@ const total = ref(0)
 const title = ref("")
 const autoGenFlag = ref(false)
 const activeTab = ref("basic")
+const isViewMode = ref(false) // 标识是否为查看模式
 
 // 添加logo上传相关数据
 const uploadUrl = ref("/core/bd/uploadLogo")
-const logoFileList = ref([])
 
 // 添加 baseURL
 const baseURL = 'http://localhost'
@@ -441,8 +472,8 @@ function reset() {
   }
   proxy.resetForm("bdRef")
   activeTab.value = "basic"
-  // 重置logo文件列表
-  logoFileList.value = []
+  // 重置查看模式标识
+  isViewMode.value = false
 }
 
 /** 搜索按钮操作 */
@@ -467,6 +498,7 @@ function handleSelectionChange(selection) {
 /** 新增按钮操作 */
 function handleAdd() {
   reset()
+  isViewMode.value = false
   open.value = true
   title.value = "添加客户信息"
 }
@@ -474,19 +506,24 @@ function handleAdd() {
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset()
+  isViewMode.value = false
   const _clientId = row.clientId || ids.value
   getBd(_clientId).then(response => {
     form.value = response.data
     open.value = true
     title.value = "修改客户信息"
-    
-    // 如果已有logo，初始化文件列表
-    if (form.value.clientLogo) {
-      logoFileList.value = [{
-        name: 'logo.png',
-        url: getFullImageUrl(form.value.clientLogo)
-      }]
-    }
+  })
+}
+
+/** 查看按钮操作 */
+function handleView(row) {
+  reset()
+  isViewMode.value = true // 设置为查看模式
+  const _clientId = row.clientId || ids.value[0]
+  getBd(_clientId).then(response => {
+    form.value = response.data
+    open.value = true
+    title.value = "查看客户信息"
   })
 }
 
@@ -508,16 +545,6 @@ function getFullImageUrl(url) {
   return baseURL + '/dev-api/' + url
 }
 
-// 添加图片处理方法
-function handleRemove(file, fileList) {
-  console.log(file, fileList)
-}
-
-function handlePictureCardPreview(file) {
-  dialogImageUrl.value = file.url
-  dialogVisible.value = true
-}
-
 // 优化后的logo上传相关方法 - 修改为5MB限制
 function beforeLogoUpload(file) {
   const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
@@ -534,14 +561,12 @@ function beforeLogoUpload(file) {
   return true
 }
 
-// 自定义上传方法 - 修复参数名问题
+// 自定义上传方法
 function handleLogoUpload(option) {
   const formData = new FormData()
-  // 关键：确保参数名与后端接口一致，'file' 和 'clientId'
   formData.append('file', option.file)
-  formData.append('clientId', form.value.clientId || 0) // 传递clientId给后端
+  formData.append('clientId', form.value.clientId || 0)
   
-  // 添加认证token
   const headers = {
     'Authorization': 'Bearer ' + getToken()
   }
@@ -553,9 +578,6 @@ function handleLogoUpload(option) {
     headers: {
       ...headers,
       'Content-Type': 'multipart/form-data'
-    },
-    onUploadProgress: (progressEvent) => {
-      // 可以添加上传进度处理
     }
   }).then(response => {
     option.onSuccess(response)
@@ -564,41 +586,31 @@ function handleLogoUpload(option) {
   })
 }
 
-// 修复后的处理成功回调 - 根据实际后端响应结构调整
-function handleLogoSuccess(response, file, fileList) {
+// 处理上传成功回调
+function handleLogoSuccess(response, file) {
   if (response.code === 200) {
-    // 根据后端实际返回结构调整
     if (response.filePath) {
-      // 如果后端返回的是完整路径，提取相对路径
+      // 处理返回的文件路径
       if (response.filePath.startsWith('http')) {
         const url = new URL(response.filePath);
         form.value.clientLogo = url.pathname;
       } else {
-        // 如果是相对路径，直接使用
         form.value.clientLogo = response.filePath;
       }
     }
     proxy.$modal.msgSuccess("上传成功")
   } else {
     proxy.$modal.msgError(response.msg || "上传失败")
-    logoFileList.value = []
   }
 }
 
-function handleLogoError(error, file, fileList) {
+function handleLogoError(error) {
   proxy.$modal.msgError("上传失败: " + (error.message || "未知错误"))
-  logoFileList.value = []
 }
 
-function handleLogoRemove(file, fileList) {
+// 移除logo
+function removeLogo() {
   form.value.clientLogo = null
-  logoFileList.value = fileList
-}
-
-// 移除当前logo
-function removeCurrentLogo() {
-  form.value.clientLogo = null
-  logoFileList.value = []
 }
 
 /** 提交按钮 */
@@ -664,7 +676,36 @@ getList()
   border-radius: 4px;
 }
 
-.logo-uploader .el-upload {
+/* 优化后的单图片上传样式 */
+.single-logo-upload {
+  width: 100%;
+}
+
+.logo-preview-existing {
+  position: relative;
+  display: inline-block;
+  width: 120px;
+  height: 120px;
+}
+
+.logo-preview-existing .logo-image-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 6px;
+}
+
+.remove-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+}
+
+.logo-upload-area {
+  width: 120px;
+  height: 120px;
+}
+
+.logo-uploader :deep(.el-upload) {
   border: 1px dashed #d9d9d9;
   border-radius: 6px;
   cursor: pointer;
@@ -674,34 +715,58 @@ getList()
   height: 120px;
 }
 
-.logo-uploader .el-upload:hover {
+.logo-uploader :deep(.el-upload:hover) {
   border-color: #409EFF;
 }
 
-.logo-uploader-icon {
+.logo-uploader :deep(.el-upload-dragger) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: #fff;
+}
+
+.logo-uploader :deep(.el-upload-dragger .el-icon-upload) {
   font-size: 28px;
   color: #8c939d;
-  width: 120px;
-  height: 120px;
-  line-height: 120px;
+  margin-bottom: 8px;
+}
+
+.logo-uploader :deep(.el-upload__text) {
+  font-size: 12px;
+  color: #606266;
+}
+
+.logo-uploader :deep(.el-upload__text em) {
+  color: #409EFF;
+  font-style: normal;
+}
+
+.logo-uploader :deep(.el-upload__tip) {
+  font-size: 12px;
+  color: #606266;
+  margin-top: 7px;
   text-align: center;
 }
 
-.logo-image-preview {
-  width: 120px;
-  height: 120px;
-  display: block;
+.logo-preview-view {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dcdfe6;
   border-radius: 6px;
+  background-color: #f5f7fa;
 }
 
-.logo-preview {
+.no-logo {
+  color: #909399;
+  font-size: 14px;
+}
+
+.logo-upload-edit {
   position: relative;
-  display: inline-block;
-}
-
-.logo-preview .el-button {
-  position: absolute;
-  top: -10px;
-  right: -10px;
 }
 </style>

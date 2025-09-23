@@ -1,6 +1,7 @@
-The MIT License (MIT)
+MIT License (MIT)
 
 Copyright (c) 2018 RuoYi
+Copyright (c) 2025 NEXUSERP
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -18,3 +19,8 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+**Usage Notes:**
+- Please replace "2025" with your actual development year
+- If your company or organization has an official name, you can replace "NEXUSERP" with your company/organization name
+- It is recommended to clearly state in your system documentation or about page that it is developed based on the RuoYi framework
