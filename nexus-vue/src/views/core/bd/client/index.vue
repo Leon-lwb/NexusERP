@@ -347,7 +347,7 @@
 </template>
 
 <script setup name="Bd">
-import { listBd, getBd, delBd, addBd, updateBd } from "@/api/core/bd"
+import { listBd, getBd, delBd, addBd, updateBd } from "@/api/core/bd/client"
 import { genCode } from "@/api/system/autocode/rule"
 import request from '@/utils/request'
 import { getToken } from "@/utils/auth"

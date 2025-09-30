@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.nexus.bd.mapper.BdVendorMapper">
+<mapper namespace="com.nexus.core.bd.mapper.BdVendorMapper">
 
     <resultMap type="BdVendor" id="BdVendorResult">
             <result property="vendorId"    column="vendor_id"    />

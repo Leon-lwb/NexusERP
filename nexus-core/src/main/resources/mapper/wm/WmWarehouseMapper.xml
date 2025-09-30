@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.wm.mapper.WmWarehouseMapper">
+
+    <resultMap type="WmWarehouse" id="WmWarehouseResult">
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="warehouseCode"    column="warehouse_code"    />
+        <result property="warehouseName"    column="warehouse_name"    />
+        <result property="location"    column="location"    />
+        <result property="area"    column="area"    />
+        <result property="manager"    column="manager"    />
+        <result property="managerId"    column="manager_id"    />
+        <result property="remark"    column="remark"    />
+        <result property="status"    column="status"    />
+        <result property="attr1"    column="attr1"    />
+        <result property="attr2"    column="attr2"    />
+        <result property="attr3"    column="attr3"    />
+        <result property="attr4"    column="attr4"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectWmWarehouseVo">
+        select warehouse_id, warehouse_code, warehouse_name, location, area, manager, manager_id, remark, status, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from wm_warehouse
+    </sql>
+
+    <select id="selectWmWarehouseList" parameterType="WmWarehouse" resultMap="WmWarehouseResult">
+        <include refid="selectWmWarehouseVo"/>
+        <where>
+            <if test="warehouseCode != null  and warehouseCode != ''"> and warehouse_code = #{warehouseCode}</if>
+            <if test="warehouseName != null  and warehouseName != ''"> and warehouse_name like concat('%', #{warehouseName}, '%')</if>
+            <if test="location != null  and location != ''"> and location = #{location}</if>
+            <if test="area != null "> and area = #{area}</if>
+            <if test="manager != null  and manager != ''"> and manager = #{manager}</if>
+            <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectWmWarehouseByWarehouseId" parameterType="Long" resultMap="WmWarehouseResult">
+        <include refid="selectWmWarehouseVo"/>
+        where warehouse_id = #{warehouseId}
+    </select>
+
+    <insert id="insertWmWarehouse" parameterType="WmWarehouse" useGeneratedKeys="true" keyProperty="warehouseId">
+        insert into wm_warehouse
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="warehouseCode != null and warehouseCode != ''">warehouse_code,</if>
+            <if test="warehouseName != null and warehouseName != ''">warehouse_name,</if>
+            <if test="location != null">location,</if>
+            <if test="area != null">area,</if>
+            <if test="manager != null">manager,</if>
+            <if test="managerId != null">manager_id,</if>
+            <if test="remark != null">remark,</if>
+            <if test="status != null">status,</if>
+            <if test="attr1 != null">attr1,</if>
+            <if test="attr2 != null">attr2,</if>
+            <if test="attr3 != null">attr3,</if>
+            <if test="attr4 != null">attr4,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="warehouseCode != null and warehouseCode != ''">#{warehouseCode},</if>
+            <if test="warehouseName != null and warehouseName != ''">#{warehouseName},</if>
+            <if test="location != null">#{location},</if>
+            <if test="area != null">#{area},</if>
+            <if test="manager != null">#{manager},</if>
+            <if test="managerId != null">#{managerId},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="status != null">#{status},</if>
+            <if test="attr1 != null">#{attr1},</if>
+            <if test="attr2 != null">#{attr2},</if>
+            <if test="attr3 != null">#{attr3},</if>
+            <if test="attr4 != null">#{attr4},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWmWarehouse" parameterType="WmWarehouse">
+        update wm_warehouse
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="warehouseCode != null and warehouseCode != ''">warehouse_code = #{warehouseCode},</if>
+            <if test="warehouseName != null and warehouseName != ''">warehouse_name = #{warehouseName},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="area != null">area = #{area},</if>
+            <if test="manager != null">manager = #{manager},</if>
+            <if test="managerId != null">manager_id = #{managerId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="attr1 != null">attr1 = #{attr1},</if>
+            <if test="attr2 != null">attr2 = #{attr2},</if>
+            <if test="attr3 != null">attr3 = #{attr3},</if>
+            <if test="attr4 != null">attr4 = #{attr4},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where warehouse_id = #{warehouseId}
+    </update>
+
+    <delete id="deleteWmWarehouseByWarehouseId" parameterType="Long">
+        delete from wm_warehouse where warehouse_id = #{warehouseId}
+    </delete>
+
+    <delete id="deleteWmWarehouseByWarehouseIds" parameterType="String">
+        delete from wm_warehouse where warehouse_id in
+        <foreach item="warehouseId" collection="array" open="(" separator="," close=")">
+            #{warehouseId}
+        </foreach>
+    </delete>
+</mapper>

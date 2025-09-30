@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.bd.mapper.BdUnitOfMeasureMapper">
+
+    <resultMap type="BdUnitOfMeasure" id="BdUnitOfMeasureResult">
+            <result property="uomId"    column="uom_id"    />
+            <result property="uomCode"    column="uom_code"    />
+            <result property="uomName"    column="uom_name"    />
+            <result property="uomSymbol"    column="uom_symbol"    />
+            <result property="category"    column="category"    />
+            <result property="isBase"    column="is_base"    />
+            <result property="primaryId"    column="primary_id"    />
+            <result property="primaryName"    column="primary_name"    />
+            <result property="conversionRate"    column="conversion_rate"    />
+            <result property="status"    column="status"    />
+            <result property="sortOrder"    column="sort_order"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectBdUnitOfMeasureVo">
+        select uom_id, uom_code, uom_name, uom_symbol, category, is_base, primary_id, primary_name, conversion_rate, status, sort_order, remark, create_by, create_time, update_by, update_time from bd_unit_of_measure
+    </sql>
+
+    <select id="selectBdUnitOfMeasureList" parameterType="BdUnitOfMeasure" resultMap="BdUnitOfMeasureResult">
+        <include refid="selectBdUnitOfMeasureVo"/>
+        <where>
+                        <if test="uomCode != null  and uomCode != ''"> and uom_code = #{uomCode}</if>
+                        <if test="uomName != null  and uomName != ''"> and uom_name like concat('%', #{uomName}, '%')</if>
+                        <if test="uomSymbol != null  and uomSymbol != ''"> and uom_symbol = #{uomSymbol}</if>
+                        <if test="category != null  and category != ''"> and category = #{category}</if>
+                        <if test="isBase != null "> and is_base = #{isBase}</if>
+                        <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectBdUnitOfMeasureByUomId" parameterType="Long" resultMap="BdUnitOfMeasureResult">
+            <include refid="selectBdUnitOfMeasureVo"/>
+            where uom_id = #{uomId}
+    </select>
+
+    <insert id="insertBdUnitOfMeasure" parameterType="BdUnitOfMeasure" useGeneratedKeys="true" keyProperty="uomId">
+        insert into bd_unit_of_measure
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="uomCode != null and uomCode != ''">uom_code,</if>
+                    <if test="uomName != null and uomName != ''">uom_name,</if>
+                    <if test="uomSymbol != null and uomSymbol != ''">uom_symbol,</if>
+                    <if test="category != null and category != ''">category,</if>
+                    <if test="isBase != null">is_base,</if>
+                    <if test="primaryId != null">primary_id,</if>
+                    <if test="primaryName != null">primary_name,</if>
+                    <if test="conversionRate != null">conversion_rate,</if>
+                    <if test="status != null">status,</if>
+                    <if test="sortOrder != null">sort_order,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="uomCode != null and uomCode != ''">#{uomCode},</if>
+                    <if test="uomName != null and uomName != ''">#{uomName},</if>
+                    <if test="uomSymbol != null and uomSymbol != ''">#{uomSymbol},</if>
+                    <if test="category != null and category != ''">#{category},</if>
+                    <if test="isBase != null">#{isBase},</if>
+                    <if test="primaryId != null">#{primaryId},</if>
+                    <if test="primaryName != null">#{primaryName},</if>
+                    <if test="conversionRate != null">#{conversionRate},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="sortOrder != null">#{sortOrder},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateBdUnitOfMeasure" parameterType="BdUnitOfMeasure">
+        update bd_unit_of_measure
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="uomCode != null and uomCode != ''">uom_code = #{uomCode},</if>
+                    <if test="uomName != null and uomName != ''">uom_name = #{uomName},</if>
+                    <if test="uomSymbol != null and uomSymbol != ''">uom_symbol = #{uomSymbol},</if>
+                    <if test="category != null and category != ''">category = #{category},</if>
+                    <if test="isBase != null">is_base = #{isBase},</if>
+                    <if test="primaryId != null">primary_id = #{primaryId},</if>
+                    <if test="primaryName != null">primary_name = #{primaryName},</if>
+                    <if test="conversionRate != null">conversion_rate = #{conversionRate},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where uom_id = #{uomId}
+    </update>
+
+    <delete id="deleteBdUnitOfMeasureByUomId" parameterType="Long">
+        delete from bd_unit_of_measure where uom_id = #{uomId}
+    </delete>
+
+    <delete id="deleteBdUnitOfMeasureByUomIds" parameterType="String">
+        delete from bd_unit_of_measure where uom_id in
+        <foreach item="uomId" collection="array" open="(" separator="," close=")">
+            #{uomId}
+        </foreach>
+    </delete>
+</mapper>

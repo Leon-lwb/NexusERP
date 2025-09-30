@@ -274,7 +274,7 @@
 </template>
 
 <script setup name="Vendor">
-  import { listVendor, getVendor, delVendor, addVendor, updateVendor } from "@/api/core/vendor"
+  import { listVendor, getVendor, delVendor, addVendor, updateVendor } from "@/api/core/bd/vendor"
   import { genCode } from "@/api/system/autocode/rule"
 
   const { proxy } = getCurrentInstance()
