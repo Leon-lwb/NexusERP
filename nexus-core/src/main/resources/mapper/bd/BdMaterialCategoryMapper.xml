@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.bd.mapper.BdMaterialCategoryMapper">
+
+    <resultMap type="BdMaterialCategory" id="BdMaterialCategoryResult">
+            <result property="categoryId"    column="category_id"    />
+            <result property="parentId"    column="parent_id"    />
+            <result property="categoryCode"    column="category_code"    />
+            <result property="categoryName"    column="category_name"    />
+            <result property="categoryDesc"    column="category_desc"    />
+            <result property="levelNum"    column="level_num"    />
+            <result property="pathIds"    column="path_ids"    />
+            <result property="pathNames"    column="path_names"    />
+            <result property="sortOrder"    column="sort_order"    />
+            <result property="status"    column="status"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectBdMaterialCategoryVo">
+        select category_id, parent_id, category_code, category_name, category_desc, level_num, path_ids, path_names, sort_order, status, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from bd_material_category
+    </sql>
+
+    <select id="selectBdMaterialCategoryList" parameterType="BdMaterialCategory" resultMap="BdMaterialCategoryResult">
+        <include refid="selectBdMaterialCategoryVo"/>
+        <where>
+                        <if test="categoryCode != null  and categoryCode != ''"> and category_code = #{categoryCode}</if>
+                        <if test="categoryName != null  and categoryName != ''"> and category_name like concat('%', #{categoryName}, '%')</if>
+                        <if test="categoryDesc != null  and categoryDesc != ''"> and category_desc = #{categoryDesc}</if>
+                        <if test="pathNames != null  and pathNames != ''"> and path_names = #{pathNames}</if>
+                        <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectBdMaterialCategoryByCategoryId" parameterType="Long" resultMap="BdMaterialCategoryResult">
+            <include refid="selectBdMaterialCategoryVo"/>
+            where category_id = #{categoryId}
+    </select>
+
+    <insert id="insertBdMaterialCategory" parameterType="BdMaterialCategory" useGeneratedKeys="true" keyProperty="categoryId">
+        insert into bd_material_category
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="parentId != null">parent_id,</if>
+                    <if test="categoryCode != null and categoryCode != ''">category_code,</if>
+                    <if test="categoryName != null and categoryName != ''">category_name,</if>
+                    <if test="categoryDesc != null">category_desc,</if>
+                    <if test="levelNum != null">level_num,</if>
+                    <if test="pathIds != null">path_ids,</if>
+                    <if test="pathNames != null">path_names,</if>
+                    <if test="sortOrder != null">sort_order,</if>
+                    <if test="status != null">status,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="parentId != null">#{parentId},</if>
+                    <if test="categoryCode != null and categoryCode != ''">#{categoryCode},</if>
+                    <if test="categoryName != null and categoryName != ''">#{categoryName},</if>
+                    <if test="categoryDesc != null">#{categoryDesc},</if>
+                    <if test="levelNum != null">#{levelNum},</if>
+                    <if test="pathIds != null">#{pathIds},</if>
+                    <if test="pathNames != null">#{pathNames},</if>
+                    <if test="sortOrder != null">#{sortOrder},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateBdMaterialCategory" parameterType="BdMaterialCategory">
+        update bd_material_category
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="parentId != null">parent_id = #{parentId},</if>
+                    <if test="categoryCode != null and categoryCode != ''">category_code = #{categoryCode},</if>
+                    <if test="categoryName != null and categoryName != ''">category_name = #{categoryName},</if>
+                    <if test="categoryDesc != null">category_desc = #{categoryDesc},</if>
+                    <if test="levelNum != null">level_num = #{levelNum},</if>
+                    <if test="pathIds != null">path_ids = #{pathIds},</if>
+                    <if test="pathNames != null">path_names = #{pathNames},</if>
+                    <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where category_id = #{categoryId}
+    </update>
+
+    <delete id="deleteBdMaterialCategoryByCategoryId" parameterType="Long">
+        delete from bd_material_category where category_id = #{categoryId}
+    </delete>
+
+    <delete id="deleteBdMaterialCategoryByCategoryIds" parameterType="String">
+        delete from bd_material_category where category_id in
+        <foreach item="categoryId" collection="array" open="(" separator="," close=")">
+            #{categoryId}
+        </foreach>
+    </delete>
+</mapper>

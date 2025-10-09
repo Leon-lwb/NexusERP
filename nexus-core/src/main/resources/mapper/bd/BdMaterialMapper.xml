@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.bd.mapper.BdMaterialMapper">
+
+    <resultMap type="BdMaterial" id="BdMaterialResult">
+            <result property="materialId"    column="material_id"    />
+            <result property="materialCode"    column="material_code"    />
+            <result property="materialName"    column="material_name"    />
+            <result property="materialSpec"    column="material_spec"    />
+            <result property="materialDesc"    column="material_desc"    />
+            <result property="categoryId"    column="category_id"    />
+            <result property="baseUomId"    column="base_uom_id"    />
+            <result property="purchaseUomId"    column="purchase_uom_id"    />
+            <result property="inventoryUomId"    column="inventory_uom_id"    />
+            <result property="saleUomId"    column="sale_uom_id"    />
+            <result property="materialType"    column="material_type"    />
+            <result property="sourceType"    column="source_type"    />
+            <result property="isBatchManage"    column="is_batch_manage"    />
+            <result property="isSerialManage"    column="is_serial_manage"    />
+            <result property="safetyStock"    column="safety_stock"    />
+            <result property="minStock"    column="min_stock"    />
+            <result property="maxStock"    column="max_stock"    />
+            <result property="standardCost"    column="standard_cost"    />
+            <result property="referencePrice"    column="reference_price"    />
+            <result property="status"    column="status"    />
+            <result property="qualityStatus"    column="quality_status"    />
+            <result property="shelfLife"    column="shelf_life"    />
+            <result property="weight"    column="weight"    />
+            <result property="volume"    column="volume"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectBdMaterialVo">
+        select material_id, material_code, material_name, material_spec, material_desc, category_id, base_uom_id, purchase_uom_id, inventory_uom_id, sale_uom_id, material_type, source_type, is_batch_manage, is_serial_manage, safety_stock, min_stock, max_stock, standard_cost, reference_price, status, quality_status, shelf_life, weight, volume, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from bd_material
+    </sql>
+
+    <select id="selectBdMaterialList" parameterType="BdMaterial" resultMap="BdMaterialResult">
+        <include refid="selectBdMaterialVo"/>
+        <where>
+                        <if test="materialCode != null  and materialCode != ''"> and material_code = #{materialCode}</if>
+                        <if test="materialName != null  and materialName != ''"> and material_name like concat('%', #{materialName}, '%')</if>
+                        <if test="materialSpec != null  and materialSpec != ''"> and material_spec = #{materialSpec}</if>
+                        <if test="materialType != null "> and material_type = #{materialType}</if>
+                        <if test="sourceType != null "> and source_type = #{sourceType}</if>
+                        <if test="isBatchManage != null "> and is_batch_manage = #{isBatchManage}</if>
+                        <if test="isSerialManage != null "> and is_serial_manage = #{isSerialManage}</if>
+                        <if test="status != null "> and status = #{status}</if>
+                        <if test="qualityStatus != null "> and quality_status = #{qualityStatus}</if>
+        </where>
+    </select>
+
+    <select id="selectBdMaterialByMaterialId" parameterType="Long" resultMap="BdMaterialResult">
+            <include refid="selectBdMaterialVo"/>
+            where material_id = #{materialId}
+    </select>
+
+    <insert id="insertBdMaterial" parameterType="BdMaterial" useGeneratedKeys="true" keyProperty="materialId">
+        insert into bd_material
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="materialCode != null and materialCode != ''">material_code,</if>
+                    <if test="materialName != null and materialName != ''">material_name,</if>
+                    <if test="materialSpec != null">material_spec,</if>
+                    <if test="materialDesc != null">material_desc,</if>
+                    <if test="categoryId != null">category_id,</if>
+                    <if test="baseUomId != null">base_uom_id,</if>
+                    <if test="purchaseUomId != null">purchase_uom_id,</if>
+                    <if test="inventoryUomId != null">inventory_uom_id,</if>
+                    <if test="saleUomId != null">sale_uom_id,</if>
+                    <if test="materialType != null">material_type,</if>
+                    <if test="sourceType != null">source_type,</if>
+                    <if test="isBatchManage != null">is_batch_manage,</if>
+                    <if test="isSerialManage != null">is_serial_manage,</if>
+                    <if test="safetyStock != null">safety_stock,</if>
+                    <if test="minStock != null">min_stock,</if>
+                    <if test="maxStock != null">max_stock,</if>
+                    <if test="standardCost != null">standard_cost,</if>
+                    <if test="referencePrice != null">reference_price,</if>
+                    <if test="status != null">status,</if>
+                    <if test="qualityStatus != null">quality_status,</if>
+                    <if test="shelfLife != null">shelf_life,</if>
+                    <if test="weight != null">weight,</if>
+                    <if test="volume != null">volume,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="materialCode != null and materialCode != ''">#{materialCode},</if>
+                    <if test="materialName != null and materialName != ''">#{materialName},</if>
+                    <if test="materialSpec != null">#{materialSpec},</if>
+                    <if test="materialDesc != null">#{materialDesc},</if>
+                    <if test="categoryId != null">#{categoryId},</if>
+                    <if test="baseUomId != null">#{baseUomId},</if>
+                    <if test="purchaseUomId != null">#{purchaseUomId},</if>
+                    <if test="inventoryUomId != null">#{inventoryUomId},</if>
+                    <if test="saleUomId != null">#{saleUomId},</if>
+                    <if test="materialType != null">#{materialType},</if>
+                    <if test="sourceType != null">#{sourceType},</if>
+                    <if test="isBatchManage != null">#{isBatchManage},</if>
+                    <if test="isSerialManage != null">#{isSerialManage},</if>
+                    <if test="safetyStock != null">#{safetyStock},</if>
+                    <if test="minStock != null">#{minStock},</if>
+                    <if test="maxStock != null">#{maxStock},</if>
+                    <if test="standardCost != null">#{standardCost},</if>
+                    <if test="referencePrice != null">#{referencePrice},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="qualityStatus != null">#{qualityStatus},</if>
+                    <if test="shelfLife != null">#{shelfLife},</if>
+                    <if test="weight != null">#{weight},</if>
+                    <if test="volume != null">#{volume},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateBdMaterial" parameterType="BdMaterial">
+        update bd_material
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="materialCode != null and materialCode != ''">material_code = #{materialCode},</if>
+                    <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+                    <if test="materialSpec != null">material_spec = #{materialSpec},</if>
+                    <if test="materialDesc != null">material_desc = #{materialDesc},</if>
+                    <if test="categoryId != null">category_id = #{categoryId},</if>
+                    <if test="baseUomId != null">base_uom_id = #{baseUomId},</if>
+                    <if test="purchaseUomId != null">purchase_uom_id = #{purchaseUomId},</if>
+                    <if test="inventoryUomId != null">inventory_uom_id = #{inventoryUomId},</if>
+                    <if test="saleUomId != null">sale_uom_id = #{saleUomId},</if>
+                    <if test="materialType != null">material_type = #{materialType},</if>
+                    <if test="sourceType != null">source_type = #{sourceType},</if>
+                    <if test="isBatchManage != null">is_batch_manage = #{isBatchManage},</if>
+                    <if test="isSerialManage != null">is_serial_manage = #{isSerialManage},</if>
+                    <if test="safetyStock != null">safety_stock = #{safetyStock},</if>
+                    <if test="minStock != null">min_stock = #{minStock},</if>
+                    <if test="maxStock != null">max_stock = #{maxStock},</if>
+                    <if test="standardCost != null">standard_cost = #{standardCost},</if>
+                    <if test="referencePrice != null">reference_price = #{referencePrice},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="qualityStatus != null">quality_status = #{qualityStatus},</if>
+                    <if test="shelfLife != null">shelf_life = #{shelfLife},</if>
+                    <if test="weight != null">weight = #{weight},</if>
+                    <if test="volume != null">volume = #{volume},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where material_id = #{materialId}
+    </update>
+
+    <delete id="deleteBdMaterialByMaterialId" parameterType="Long">
+        delete from bd_material where material_id = #{materialId}
+    </delete>
+
+    <delete id="deleteBdMaterialByMaterialIds" parameterType="String">
+        delete from bd_material where material_id in
+        <foreach item="materialId" collection="array" open="(" separator="," close=")">
+            #{materialId}
+        </foreach>
+    </delete>
+</mapper>
