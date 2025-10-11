@@ -2,14 +2,29 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="分类编码" prop="categoryCode">
-        <el-input v-model="queryParams.categoryCode" placeholder="请输入分类编码" clearable @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.categoryCode"
+          placeholder="请输入分类编码"
+          clearable
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="分类名称" prop="categoryName">
-        <el-input v-model="queryParams.categoryName" placeholder="请输入分类名称" clearable @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.categoryName"
+          placeholder="请输入分类名称"
+          clearable
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+      <el-form-item label="状态" prop="status" style="width: 160px;">
+        <el-select v-model="queryParams.status" placeholder="请选择" clearable>
+          <el-option
+            v-for="dict in sys_core_status"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -20,46 +35,70 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:category:add']">新增</el-button>
+        <el-button
+          type="primary"
+          plain
+          icon="Plus"
+          @click="handleAdd"
+          v-hasPermi="['bd:category:add']"
+        >新增</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
-          v-hasPermi="['bd:category:edit']">修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
-          v-hasPermi="['bd:category:remove']">删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView"
-          v-hasPermi="['bd:category:query']">查看</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport"
-          v-hasPermi="['bd:category:export']">导出</el-button>
+       <el-col :span="1.5">
+        <el-button
+          plain
+          icon="Sort"
+          @click="toggleExpandAll"
+        >{{ expandAll ? '折叠' : '展开' }}</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="categoryList" row-key="categoryId"
-      :tree-props="{ children: 'children', hasChildren: 'hasChildren' }" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
+    <el-table
+      v-loading="loading"
+      :data="categoryList"
+      row-key="categoryId"
+      :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+      @selection-change="handleSelectionChange"
+      ref="tableRef"
+    >
+      <!-- <el-table-column type="selection" width="55" align="center" /> -->
       <el-table-column label="分类名称" align="left" prop="categoryName" />
       <el-table-column label="分类编码" align="center" prop="categoryCode" />
       <el-table-column label="分类描述" align="center" prop="categoryDesc" />
-      <el-table-column label="显示排序" align="center" prop="sortOrder" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="显示排序" align="center" prop="sortOrder" width="100" />
+      <el-table-column label="状态" align="center" prop="status" width="100">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
         <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-            v-hasPermi="['bd:category:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-            v-hasPermi="['bd:category:remove']">删除</el-button>
+          <span>{{ parseTime(scope.row.createTime) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+        <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            @click="handleView(scope.row)"
+            v-hasPermi="['bd:category:query']"
+          >查看</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['bd:category:edit']"
+          >修改</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['bd:category:remove']"
+          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -70,9 +109,16 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="父分类" prop="parentId">
-              <el-tree-select v-model="form.parentId" :data="categoryOptions" node-key="categoryId"
-                :props="{ label: 'categoryName', children: 'children' }" placeholder="选择父分类" check-strictly clearable
-                style="width: 100%" />
+              <el-tree-select
+                v-model="form.parentId"
+                :data="categoryOptions"
+                node-key="categoryId"
+                :props="{ label: 'categoryName', children: 'children' }"
+                placeholder="选择父分类"
+                check-strictly
+                clearable
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -89,7 +135,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="显示排序" prop="sortOrder">
-              <el-input-number v-model="form.sortOrder" controls-position="right" :min="0" />
+              <el-input-number v-model="form.sortOrder" controls-position="right" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -98,9 +144,11 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio v-for="dict in sys_core_status" :key="dict.value" :label="parseInt(dict.value)">
-              {{ dict.label }}
-            </el-radio>
+            <el-radio
+              v-for="dict in sys_core_status"
+              :key="dict.value"
+              :label="parseInt(dict.value)"
+            >{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
@@ -134,6 +182,10 @@ const total = ref(0)
 const title = ref("")
 const isViewMode = ref(false)
 const categoryOptions = ref([])
+
+// 添加展开/折叠相关变量
+const expandAll = ref(false)
+const tableRef = ref(null)
 
 const data = reactive({
   form: {},
@@ -291,12 +343,12 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _categoryIds = row.categoryId || ids.value
-  proxy.$modal.confirm('是否确认删除物料产品分类编号为"' + _categoryIds + '"的数据项？').then(function () {
+  proxy.$modal.confirm('是否确认删除物料产品分类编号为"' + _categoryIds + '"的数据项？').then(function() {
     return delCategory(_categoryIds)
   }).then(() => {
     getList()
     proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  }).catch(() => {})
 }
 
 /** 导出按钮操作 */
@@ -304,6 +356,26 @@ function handleExport() {
   proxy.download('bd/category/export', {
     ...queryParams.value
   }, `category_${new Date().getTime()}.xlsx`)
+}
+
+/** 展开/折叠操作 */
+function toggleExpandAll() {
+  expandAll.value = !expandAll.value
+  nextTick(() => {
+    toggleRowExpansion(categoryList.value, expandAll.value)
+  })
+}
+
+/** 切换行展开状态 */
+function toggleRowExpansion(rows, expanded) {
+  if (rows && rows.length > 0) {
+    rows.forEach(row => {
+      tableRef.value.toggleRowExpansion(row, expanded)
+      if (row.children && row.children.length > 0) {
+        toggleRowExpansion(row.children, expanded)
+      }
+    })
+  }
 }
 
 getList()

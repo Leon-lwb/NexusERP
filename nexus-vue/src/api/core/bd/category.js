@@ -9,6 +9,14 @@ export function listCategory(query) {
   })
 }
 
+// 查询物料产品分类列表（排除节点）
+export function listDeptExcludeChild(deptId) {
+  return request({
+    url: '/bd/category/list/exclude/' + deptId,
+    method: 'get'
+  })
+}
+
 // 查询物料产品分类详细
 export function getCategory(categoryId) {
   return request({

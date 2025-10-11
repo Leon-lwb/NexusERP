@@ -1,9 +1,11 @@
 package com.nexus.core.bd.controller;
 
+import com.nexus.common.utils.StringUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -109,5 +111,22 @@ public class BdMaterialCategoryController extends BaseController
     public AjaxResult remove(@PathVariable Long[] categoryIds)
     {
         return toAjax(bdMaterialCategoryService.deleteBdMaterialCategoryByCategoryIds(categoryIds));
+    }
+
+    /**
+     * 获取物料产品分类列表（排除指定ID的子部门）
+     */
+    @PreAuthorize("@ss.hasPermi('bd:category:list')")
+    @GetMapping("/list/exclude/{categoryId}")
+    public AjaxResult excludeChild(@PathVariable(value = "categoryId", required = false) Long[] categoryId)
+    {
+        List<BdMaterialCategory> list = bdMaterialCategoryService.selectBdMaterialCategoryList(new BdMaterialCategory());
+        // 移除指定部门及其子部门
+        list.removeIf(c ->
+                ArrayUtils.contains(categoryId, c.getCategoryId()) ||
+                        ArrayUtils.contains(StringUtils.split(c.getPathIds(), ","), String.valueOf(categoryId))
+        );
+
+        return success(list);
     }
 }
