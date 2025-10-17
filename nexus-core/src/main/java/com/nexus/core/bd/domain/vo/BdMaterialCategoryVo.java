@@ -4,6 +4,8 @@ package com.nexus.core.bd.domain.vo;
 import lombok.Data;
 import com.nexus.common.core.plus.dto.BasePageDtoRequest;
 
+import java.util.List;
+
 /**
  * 物料产品分类对象 bd_material_category vo
  *
@@ -18,28 +20,8 @@ public class BdMaterialCategoryVo extends BasePageDtoRequest {
      */
     private Long categoryId;
     /**
-     * 分类编码
+     * 分类ID集合
      */
-    private String categoryCode;
-    /**
-     * 分类名称
-     */
-    private String categoryName;
-    /**
-     * 分类描述
-     */
-    private String categoryDesc;
-    /**
-     * 路径名称
-     */
-    private String pathNames;
-    /**
-     * 显示排序
-     */
-    private Long sortOrder;
-    /**
-     * 状态
-     */
-    private Long status;
+    private List<Long> categoryIds;
 
 }

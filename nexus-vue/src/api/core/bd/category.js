@@ -50,3 +50,10 @@ export function delCategory(categoryId) {
     method: 'delete'
   })
 }
+
+export function getAllChildrenIds(categoryIds){
+  return request({
+    url: '/bd/category/allChildrenIds/' + categoryIds,
+    method: 'get'
+  })
+}

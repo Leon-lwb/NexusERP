@@ -1,8 +1,12 @@
 package com.nexus.core.bd.controller;
 
 import com.nexus.common.utils.StringUtils;
+import com.nexus.core.bd.domain.vo.BdMaterialCategoryVo;
+import com.nexus.core.bd.domain.vo.CategoryWithMaterialsVo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+
+import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.ArrayUtils;
@@ -129,4 +133,30 @@ public class BdMaterialCategoryController extends BaseController
 
         return success(list);
     }
+
+    /**
+     * 获取指定分类及其子分类列表及物料数据
+     */
+    @ApiOperation("获取指定分类及其子分类列表及物料数据")
+    @GetMapping("/allChildrenIds/{categoryIds}")
+    public AjaxResult allChildrenIds(@PathVariable Long[] categoryIds)
+    {
+        if (categoryIds == null || categoryIds.length == 0) {
+            return success(new ArrayList<CategoryWithMaterialsVo>());
+        }
+
+        // 获取分类及其子分类
+        List<BdMaterialCategory> categories = bdMaterialCategoryService.selectAllChildrenIds(categoryIds);
+
+        // TODO: 查询这些分类下的物料数据
+        // List<BdMaterial> materials = bdMaterialService.selectByCategoryIds(categories.stream()
+        //     .map(BdMaterialCategory::getCategoryId).collect(Collectors.toList()));
+
+        CategoryWithMaterialsVo result = new CategoryWithMaterialsVo();
+        result.setCategories(categories);
+        // result.setMaterials(materials);
+
+        return success(result);
+    }
+
 }

@@ -3,6 +3,7 @@ package com.nexus.core.bd.service;
 import java.util.List;
 import com.nexus.core.bd.domain.BdMaterialCategory;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nexus.core.bd.domain.vo.BdMaterialCategoryVo;
 
 /**
  * 物料产品分类Service接口
@@ -58,4 +59,12 @@ public interface IBdMaterialCategoryService extends IService<BdMaterialCategory>
      * @return 结果
      */
     public int deleteBdMaterialCategoryByCategoryId(Long categoryId);
+
+    /**
+     * 支持接收 categoryIds 参数并进行 IN 查询
+     *
+     * @param categoryIds
+     * @return
+     */
+    List<BdMaterialCategory> selectAllChildrenIds(Long[] categoryIds);
 }
