@@ -58,4 +58,12 @@ public interface BdMaterialMapper extends BaseMapper<BdMaterial> {
      * @return 结果
      */
     public int deleteBdMaterialByMaterialIds(Long[] materialIds);
+
+    /**
+     * 根据分类ID查询物料产品
+     *
+     * @param categoryIds 分类ID列表
+     * @return 物料产品列表
+     */
+    List<BdMaterial> selectByCategoryIds(List<Long> categoryIds);
 }

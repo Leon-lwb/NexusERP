@@ -58,4 +58,11 @@ public interface IBdMaterialService extends IService<BdMaterial> {
      * @return 结果
      */
     public int deleteBdMaterialByMaterialId(Long materialId);
+
+    /**
+     * 根据分类ID列表查询物料数据
+     * @param categoryIds 分类ID列表
+     * @return 物料列表
+     */
+    List<BdMaterial> selectByCategoryIds(List<Long> categoryIds);
 }

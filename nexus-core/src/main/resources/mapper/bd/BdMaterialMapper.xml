@@ -64,6 +64,15 @@
             where material_id = #{materialId}
     </select>
 
+    <select id="selectByCategoryIds" parameterType="java.util.List" resultMap="BdMaterialResult">
+        SELECT * FROM bd_material
+        WHERE category_id IN
+        <foreach collection="list" item="categoryId" open="(" separator="," close=")">
+            #{categoryId}
+        </foreach>
+    </select>
+
+
     <insert id="insertBdMaterial" parameterType="BdMaterial" useGeneratedKeys="true" keyProperty="materialId">
         insert into bd_material
         <trim prefix="(" suffix=")" suffixOverrides=",">

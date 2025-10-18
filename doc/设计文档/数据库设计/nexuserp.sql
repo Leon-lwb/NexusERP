@@ -1,0 +1,2648 @@
+/*
+ Navicat Premium Data Transfer
+
+ Source Server         : 本地8.0
+ Source Server Type    : MySQL
+ Source Server Version : 80040 (8.0.40)
+ Source Host           : localhost:3307
+ Source Schema         : nexuserp
+
+ Target Server Type    : MySQL
+ Target Server Version : 80040 (8.0.40)
+ File Encoding         : 65001
+
+ Date: 11/10/2025 08:34:09
+*/
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for bd_bom
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_bom`;
+CREATE TABLE `bd_bom`  (
+  `bom_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'BOM主表ID',
+  `parent_material_id` bigint NOT NULL COMMENT '父项物料ID',
+  `bom_version` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1.0' COMMENT 'BOM版本号',
+  `bom_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'BOM名称',
+  `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
+  `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
+  `is_current` tinyint NULL DEFAULT 1 COMMENT '是否当前版本 0:否 1:是',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`bom_id`) USING BTREE,
+  UNIQUE INDEX `uk_parent_version`(`parent_material_id` ASC, `bom_version` ASC) USING BTREE,
+  INDEX `idx_parent_material`(`parent_material_id` ASC) USING BTREE,
+  INDEX `idx_current`(`is_current` ASC) USING BTREE,
+  CONSTRAINT `fk_bom_parent_material` FOREIGN KEY (`parent_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of bd_bom
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for bd_bom_detail
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_bom_detail`;
+CREATE TABLE `bd_bom_detail`  (
+  `detail_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'BOM明细ID',
+  `bom_id` bigint NOT NULL COMMENT 'BOM主表ID',
+  `child_material_id` bigint NOT NULL COMMENT '子项物料ID',
+  `quantity_per_parent` decimal(18, 6) NOT NULL COMMENT '单位父项用量',
+  `loss_rate` decimal(8, 4) NULL DEFAULT 0.0000 COMMENT '损耗率(%)',
+  `operation_step` int NULL DEFAULT NULL COMMENT '工序步骤',
+  `workstation_id` bigint NULL DEFAULT NULL COMMENT '工作中心ID',
+  `lead_time` int NULL DEFAULT 0 COMMENT '提前期(小时)',
+  `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
+  `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
+  `sort_order` int NULL DEFAULT 0 COMMENT '显示排序',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`detail_id`) USING BTREE,
+  INDEX `idx_bom_id`(`bom_id` ASC) USING BTREE,
+  INDEX `idx_child_material`(`child_material_id` ASC) USING BTREE,
+  INDEX `idx_operation_step`(`operation_step` ASC) USING BTREE,
+  CONSTRAINT `fk_bom_detail_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_bom_detail_child` FOREIGN KEY (`child_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of bd_bom_detail
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for bd_client
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_client`;
+CREATE TABLE `bd_client`  (
+  `client_id` bigint NOT NULL AUTO_INCREMENT COMMENT '客户ID',
+  `client_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户编码',
+  `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户名称',
+  `client_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户简写',
+  `client_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户英文名称',
+  `client_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户简介',
+  `client_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'ENTERPRISE' COMMENT '客户类型: ENTERPRISE企业；PERSON个人',
+  `client_logo` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户LOGO地址',
+  `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户默认送货地点',
+  `web_site` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户官网地址',
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户邮箱',
+  `tel` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户电话',
+  `contact1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人1',
+  `contact1_tel` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人1电话',
+  `contact1_emal` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人1邮箱',
+  `contact2` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人2',
+  `contact2_tel` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人2电话',
+  `contact2_emal` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人2邮箱',
+  `credit_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '统一社会信用代码',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`client_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_client
+-- ----------------------------
+INSERT INTO `bd_client` VALUES (1, 'C00001', '测试', '测试', 'cs', '测试测试', 'ENTERPRISE', '/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png', '123', NULL, '123', '123', '123', '123', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-18 15:45:44', NULL, '2025-09-22 10:21:26');
+
+-- ----------------------------
+-- Table structure for bd_client_credit
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_client_credit`;
+CREATE TABLE `bd_client_credit`  (
+  `credit_id` bigint NOT NULL AUTO_INCREMENT COMMENT '客户信用ID',
+  `client_id` bigint NOT NULL COMMENT '客户ID',
+  `client_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户编码',
+  `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户名称',
+  `client_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户英文名称',
+  `client_credit` int NULL DEFAULT NULL COMMENT '信用额度',
+  `client_time` int NULL DEFAULT NULL COMMENT '账期',
+  `client_level` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'NORMAL' COMMENT '客户等级: A优质客户(80-100);B正常(60-80);C重点关注(50-60);D劣质客户(40-50);E黑名单(0-40)',
+  `client_score` int NOT NULL DEFAULT 60 COMMENT '客户评分',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`credit_id`) USING BTREE,
+  INDEX `idx_client_id`(`client_id` ASC) USING BTREE,
+  INDEX `idx_client_code`(`client_code` ASC) USING BTREE,
+  CONSTRAINT `bd_client_credit_bd_client__fk` FOREIGN KEY (`client_id`) REFERENCES `bd_client` (`client_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户信用表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_client_credit
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for bd_material
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_material`;
+CREATE TABLE `bd_material`  (
+  `material_id` bigint NOT NULL AUTO_INCREMENT COMMENT '物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料编码',
+  `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `material_desc` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料描述',
+  `category_id` bigint NOT NULL COMMENT '物料分类ID',
+  `base_uom_id` bigint NULL DEFAULT NULL COMMENT '基本计量单位ID',
+  `purchase_uom_id` bigint NULL DEFAULT NULL COMMENT '采购单位ID',
+  `inventory_uom_id` bigint NULL DEFAULT NULL COMMENT '库存单位ID',
+  `sale_uom_id` bigint NULL DEFAULT NULL COMMENT '销售单位ID',
+  `material_type` tinyint NOT NULL COMMENT '物料类型 1:原材料 2:半成品 3:成品 4:辅料',
+  `source_type` tinyint NULL DEFAULT 1 COMMENT '来源类型 1:自制 2:外购 3:委外',
+  `is_batch_manage` tinyint NULL DEFAULT 0 COMMENT '是否批次管理 0:否 1:是',
+  `is_serial_manage` tinyint NULL DEFAULT 0 COMMENT '是否序列号管理 0:否 1:是',
+  `safety_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '安全库存',
+  `min_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最低库存',
+  `max_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最高库存',
+  `standard_cost` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '标准成本',
+  `reference_price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '参考价格',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `quality_status` tinyint NULL DEFAULT 1 COMMENT '质量状态 1:合格 2:待检 3:不合格',
+  `shelf_life` int NULL DEFAULT 0 COMMENT '保质期(天)',
+  `weight` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '重量(kg)',
+  `volume` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '体积(m³)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`material_id`) USING BTREE,
+  UNIQUE INDEX `uk_material_code`(`material_code` ASC) USING BTREE,
+  INDEX `idx_category_id`(`category_id` ASC) USING BTREE,
+  INDEX `idx_material_type`(`material_type` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_create_time`(`create_time` ASC) USING BTREE,
+  INDEX `fk_material_base_uom`(`base_uom_id` ASC) USING BTREE,
+  CONSTRAINT `fk_material_base_uom` FOREIGN KEY (`base_uom_id`) REFERENCES `bd_unit_of_measure` (`uom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_material_category` FOREIGN KEY (`category_id`) REFERENCES `bd_material_category` (`category_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of bd_material
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for bd_material_category
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_material_category`;
+CREATE TABLE `bd_material_category`  (
+  `category_id` bigint NOT NULL AUTO_INCREMENT COMMENT '分类ID',
+  `parent_id` bigint NULL DEFAULT 0 COMMENT '父分类ID，0表示顶级分类',
+  `category_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类编码',
+  `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类名称',
+  `category_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类描述',
+  `level_num` int NULL DEFAULT 1 COMMENT '层级深度，1为顶级',
+  `path_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '路径ID串，格式：1,5,23',
+  `path_names` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '路径名称串，格式：原材料,金属材料,钢材',
+  `sort_order` int NULL DEFAULT 0 COMMENT '显示排序',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`category_id`) USING BTREE,
+  UNIQUE INDEX `uk_category_code`(`category_code` ASC) USING BTREE,
+  INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_level_sort`(`level_num` ASC, `sort_order` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of bd_material_category
+-- ----------------------------
+INSERT INTO `bd_material_category` VALUES (1, 0, 'RAW', '原材料', NULL, 1, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 12:46:31', NULL, '2025-10-01 12:46:31');
+INSERT INTO `bd_material_category` VALUES (2, 0, 'SEMI', '半成品', NULL, 1, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 12:46:31', NULL, '2025-10-01 12:46:31');
+INSERT INTO `bd_material_category` VALUES (3, 0, 'FINISH', '成品', NULL, 1, NULL, NULL, 3, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 12:46:31', NULL, '2025-10-01 12:46:31');
+INSERT INTO `bd_material_category` VALUES (4, 0, 'AUX', '辅助材料', NULL, 1, NULL, NULL, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 12:46:31', NULL, '2025-10-01 12:46:31');
+INSERT INTO `bd_material_category` VALUES (5, 1, 'METAL', '金属材料', NULL, 2, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 12:46:31', NULL, '2025-10-01 12:46:31');
+INSERT INTO `bd_material_category` VALUES (6, 1, 'PLASTIC', '塑料材料', NULL, 2, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 12:46:31', NULL, '2025-10-01 12:46:31');
+INSERT INTO `bd_material_category` VALUES (7, 1, 'CHEMICAL', '化工材料', NULL, 2, NULL, NULL, 3, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 12:46:31', NULL, '2025-10-01 12:46:31');
+INSERT INTO `bd_material_category` VALUES (8, 7, 'OIL', '石油', NULL, 1, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-01 13:13:03', NULL, '2025-10-01 13:13:03');
+
+-- ----------------------------
+-- Table structure for bd_material_vendor
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_material_vendor`;
+CREATE TABLE `bd_material_vendor`  (
+  `relation_id` bigint NOT NULL AUTO_INCREMENT COMMENT '关系ID',
+  `material_id` bigint NOT NULL COMMENT '物料ID',
+  `vendor_id` bigint NOT NULL COMMENT '供应商ID',
+  `vendor_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '供应商名称',
+  `lead_time` int NULL DEFAULT 0 COMMENT '供货周期(天)',
+  `min_order_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最小订货量',
+  `price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '单价',
+  `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种',
+  `is_default` tinyint NULL DEFAULT 0 COMMENT '是否默认供应商 0:否 1:是',
+  `priority` int NULL DEFAULT 0 COMMENT '优先级',
+  `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
+  `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`relation_id`) USING BTREE,
+  UNIQUE INDEX `uk_material_supplier`(`material_id` ASC, `vendor_id` ASC) USING BTREE,
+  INDEX `idx_material_id`(`material_id` ASC) USING BTREE,
+  INDEX `idx_supplier_id`(`vendor_id` ASC) USING BTREE,
+  INDEX `idx_default`(`is_default` ASC) USING BTREE,
+  CONSTRAINT `fk_ms_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of bd_material_vendor
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for bd_unit_of_measure
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_unit_of_measure`;
+CREATE TABLE `bd_unit_of_measure`  (
+  `uom_id` bigint NOT NULL AUTO_INCREMENT COMMENT '单位ID',
+  `uom_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '单位编码',
+  `uom_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '单位名称',
+  `uom_symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位符号(kg、m、pcs等)',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位类别(重量、长度、数量等)',
+  `is_base` tinyint NULL DEFAULT 0 COMMENT '是否基本单位 0:否 1:是',
+  `primary_id` bigint NULL DEFAULT NULL COMMENT '基本单位ID',
+  `primary_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '基本单位名称',
+  `conversion_rate` decimal(18, 6) NULL DEFAULT 1.000000 COMMENT '转换率(相对于基本单位)',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `sort_order` int NULL DEFAULT 0 COMMENT '排序',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`uom_id`) USING BTREE,
+  UNIQUE INDEX `uk_uom_code`(`uom_code` ASC) USING BTREE,
+  INDEX `idx_category`(`category` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_unit_of_measure
+-- ----------------------------
+INSERT INTO `bd_unit_of_measure` VALUES (1, 'GRAM', '克', 'g', '重量', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:46');
+INSERT INTO `bd_unit_of_measure` VALUES (2, 'KILOGRAM', '千克', 'kg', '重量', 0, 1, '克', 1000.000000, 1, 2, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:58');
+INSERT INTO `bd_unit_of_measure` VALUES (3, 'TON', '吨', 't', '重量', 0, 1, NULL, 1000000.000000, 1, 3, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06');
+INSERT INTO `bd_unit_of_measure` VALUES (4, 'MILLIGRAM', '毫克', 'mg', '重量', 0, 1, NULL, 0.001000, 1, 4, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06');
+INSERT INTO `bd_unit_of_measure` VALUES (5, 'POUND', '磅', 'lb', '重量', 0, 1, NULL, 453.592000, 1, 5, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06');
+INSERT INTO `bd_unit_of_measure` VALUES (6, 'OUNCE', '盎司', 'oz', '重量', 0, 1, NULL, 28.349500, 1, 6, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06');
+INSERT INTO `bd_unit_of_measure` VALUES (7, 'JIN', '斤', '斤', '重量', 0, 1, NULL, 500.000000, 1, 7, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 16:55:06');
+INSERT INTO `bd_unit_of_measure` VALUES (8, 'MILLIMETER', '毫米', 'mm', '长度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (9, 'CENTIMETER', '厘米', 'cm', '长度', 0, 8, NULL, 10.000000, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (10, 'METER', '米', 'm', '长度', 0, 8, NULL, 1000.000000, 1, 3, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (11, 'KILOMETER', '千米', 'km', '长度', 0, 8, NULL, 1000000.000000, 1, 4, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (12, 'INCH', '英寸', '″', '长度', 0, 8, NULL, 25.400000, 1, 5, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (13, 'FOOT', '英尺', '′', '长度', 0, 8, NULL, 304.800000, 1, 6, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (14, 'YARD', '码', 'yd', '长度', 0, 8, NULL, 914.400000, 1, 7, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (15, 'SQUARE_MILLIMETER', '平方毫米', 'mm²', '面积', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (16, 'SQUARE_CENTIMETER', '平方厘米', 'cm²', '面积', 0, 15, NULL, 100.000000, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (17, 'SQUARE_METER', '平方米', '㎡', '面积', 0, 15, NULL, 1000000.000000, 1, 3, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (18, 'HECTARE', '公顷', 'ha', '面积', 0, 15, NULL, 10000000000.000000, 1, 4, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (19, 'ACRE', '英亩', 'acre', '面积', 0, 15, NULL, 4046860000.000000, 1, 5, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (20, 'CUBIC_MILLIMETER', '立方毫米', 'mm³', '体积', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (21, 'CUBIC_CENTIMETER', '立方厘米', 'cm³', '体积', 0, 20, NULL, 1000.000000, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (22, 'CUBIC_METER', '立方米', 'm³', '体积', 0, 20, NULL, 1000000000.000000, 1, 3, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (23, 'LITER', '升', 'L', '体积', 0, 20, NULL, 1000000.000000, 1, 4, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (24, 'MILLILITER', '毫升', 'ml', '体积', 0, 20, NULL, 1000.000000, 1, 5, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (25, 'GALLON', '加仑', 'gal', '体积', 0, 20, NULL, 3785410.000000, 1, 6, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (26, 'PIECE', '件', 'pcs', '数量', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (27, 'SET', '套', 'set', '数量', 0, 26, NULL, 1.000000, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (28, 'PAIR', '双', 'pair', '数量', 0, 26, NULL, 2.000000, 1, 3, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (29, 'DOZEN', '打', 'doz', '数量', 0, 26, NULL, 12.000000, 1, 4, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (30, 'BOX', '箱', 'box', '数量', 0, 26, NULL, 1.000000, 1, 5, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (31, 'PACKAGE', '包', 'pkg', '数量', 0, 26, NULL, 1.000000, 1, 6, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (32, 'ROLL', '卷', 'roll', '数量', 0, 26, NULL, 1.000000, 1, 7, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (33, 'BAG', '袋', 'bag', '数量', 0, 26, NULL, 1.000000, 1, 8, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (34, 'BOTTLE', '瓶', 'btl', '数量', 0, 26, NULL, 1.000000, 1, 9, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (35, 'HOUR', '小时', 'h', '时间', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (36, 'MINUTE', '分钟', 'min', '时间', 0, 35, NULL, 0.016667, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (37, 'SECOND', '秒', 's', '时间', 0, 35, NULL, 0.000278, 1, 3, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (38, 'DAY', '天', 'day', '时间', 0, 35, NULL, 24.000000, 1, 4, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (39, 'CELSIUS', '摄氏度', '℃', '温度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (40, 'FAHRENHEIT', '华氏度', '℉', '温度', 0, 39, NULL, 1.000000, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (41, 'KELVIN', '开尔文', 'K', '温度', 0, 39, NULL, 1.000000, 1, 3, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (42, 'PA', '帕斯卡', 'Pa', '压力', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (43, 'KPA', '千帕', 'kPa', '压力', 0, 42, NULL, 1000.000000, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (44, 'MPA', '兆帕', 'MPa', '压力', 0, 42, NULL, 1000000.000000, 1, 3, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (45, 'BAR', '巴', 'bar', '压力', 0, 42, NULL, 100000.000000, 1, 4, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (46, 'PSI', '磅力/平方英寸', 'psi', '压力', 0, 42, NULL, 6894.760000, 1, 5, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (47, 'VOLT', '伏特', 'V', '电压', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (48, 'AMPERE', '安培', 'A', '电流', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (49, 'WATT', '瓦特', 'W', '功率', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (50, 'KILOWATT', '千瓦', 'kW', '功率', 0, 49, NULL, 1000.000000, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (51, 'KWH', '千瓦时', 'kWh', '电能', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (52, 'PERCENT', '百分比', '%', '浓度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (53, 'PPM', '百万分比', 'ppm', '浓度', 0, 53, NULL, 0.000100, 1, 2, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+INSERT INTO `bd_unit_of_measure` VALUES (54, 'MOLAR', '摩尔浓度', 'mol/L', '浓度', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, '2025-09-30 16:56:37', NULL, '2025-09-30 16:56:37');
+
+-- ----------------------------
+-- Table structure for bd_vendor
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_vendor`;
+CREATE TABLE `bd_vendor`  (
+  `vendor_id` bigint NOT NULL AUTO_INCREMENT COMMENT '供应商ID',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '供应商名称',
+  `tax_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '税号',
+  `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址',
+  `contact_person` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人',
+  `phone` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '电话',
+  `bank_account` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '银行账户',
+  `industry` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '行业',
+  `region` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地区',
+  `category` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '分类 (原材料/标准件/服务类)',
+  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'ACTIVE' COMMENT '合作状态 ACTIVE/FROZEN',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`vendor_id`) USING BTREE,
+  UNIQUE INDEX `uk_vendor_code`(`vendor_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '供应商表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_vendor
+-- ----------------------------
+INSERT INTO `bd_vendor` VALUES (1, 'V00005', '北京五道口', '123123123312', '北京海定区', '张三', '15388888888', '1231231231233', 'B', '11', '1', 'ACTIVE', '测试', NULL, NULL, NULL, NULL, NULL, '2025-09-22 16:28:36', NULL, NULL);
+
+-- ----------------------------
+-- Table structure for gen_table
+-- ----------------------------
+DROP TABLE IF EXISTS `gen_table`;
+CREATE TABLE `gen_table`  (
+  `table_id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
+  `table_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '表名称',
+  `table_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '表描述',
+  `sub_table_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '关联子表的表名',
+  `sub_table_fk_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '子表关联的外键名',
+  `class_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '实体类名称',
+  `tpl_category` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'crud' COMMENT '使用的模板（crud单表操作 tree树表操作）',
+  `tpl_web_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '前端模板类型（element-ui模版 element-plus模版）',
+  `package_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '生成包路径',
+  `module_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '生成模块名',
+  `business_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '生成业务名',
+  `function_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '生成功能名',
+  `function_author` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '生成功能作者',
+  `gen_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '生成代码方式（0zip压缩包 1自定义路径）',
+  `gen_path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '/' COMMENT '生成路径（不填默认项目路径）',
+  `options` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '其它生成选项',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`table_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of gen_table
+-- ----------------------------
+INSERT INTO `gen_table` VALUES (4, 'bd_client', '客户表', NULL, NULL, 'BdClient', 'crud', 'element-plus', 'com.nexus.core.bd', 'core', 'bd', '客户信息', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19', NULL);
+INSERT INTO `gen_table` VALUES (5, 'bd_client_credit', '客户信用表', NULL, NULL, 'BdClientCredit', 'crud', 'element-plus', 'com.nexus.core', 'core', 'credit', '客户信用', 'nexus', '0', '/', '{}', 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10', NULL);
+INSERT INTO `gen_table` VALUES (6, 'sys_auto_code_part', '编码生成规则组成表', NULL, NULL, 'SysAutoCodePart', 'crud', 'element-plus', 'com.nexus.system', 'system', 'system', '编码规则', 'nexus', '0', '/', '{\"parentMenuId\":1}', 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04', NULL);
+INSERT INTO `gen_table` VALUES (7, 'sys_auto_code_result', '编码生成记录表', NULL, NULL, 'SysAutoCodeResult', 'crud', 'element-plus', 'com.nexus.system', 'system', 'system', '编码生成记录', 'nexus', '0', '/', '{\"parentMenuId\":1}', 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43', NULL);
+INSERT INTO `gen_table` VALUES (8, 'sys_auto_code_rule', '编码生成规则表', NULL, NULL, 'SysAutoCodeRule', 'crud', 'element-plus', 'com.nexus.system', 'system', 'system', '编码生成规则', 'nexus', '0', '/', '{\"parentMenuId\":1}', 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25', NULL);
+INSERT INTO `gen_table` VALUES (9, 'bd_vendor', '供应商表', NULL, NULL, 'BdVendor', 'crud', 'element-plus', 'com.nexus.core.bd', 'bd', 'vendor', '供应商', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13', NULL);
+INSERT INTO `gen_table` VALUES (10, 'wm_warehouse', '仓库表', NULL, NULL, 'WmWarehouse', 'crud', 'element-plus', 'com.nexus.core.wm', 'wm', 'warehouse', '仓库设置', 'nexus', '0', '/', '{\"parentMenuId\":2039}', 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38', NULL);
+INSERT INTO `gen_table` VALUES (11, 'bd_unit_of_measure', '计量单位表', NULL, NULL, 'BdUnitOfMeasure', 'crud', 'element-plus', 'com.nexus.core.bd', 'measure', 'measure', '计量单位', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17', NULL);
+INSERT INTO `gen_table` VALUES (12, 'bd_material_category', '物料产品分类表', NULL, NULL, 'BdMaterialCategory', 'crud', 'element-plus', 'com.nexus.core.bd', 'bd', 'category', '物料产品分类', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42', NULL);
+INSERT INTO `gen_table` VALUES (13, 'bd_material', '物料产品主表', NULL, NULL, 'BdMaterial', 'crud', 'element-plus', 'com.nexus.core.bd', 'bd', 'material', '物料产品主', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04', NULL);
+
+-- ----------------------------
+-- Table structure for gen_table_column
+-- ----------------------------
+DROP TABLE IF EXISTS `gen_table_column`;
+CREATE TABLE `gen_table_column`  (
+  `column_id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
+  `table_id` bigint NULL DEFAULT NULL COMMENT '归属表编号',
+  `column_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列名称',
+  `column_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列描述',
+  `column_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列类型',
+  `java_type` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'JAVA类型',
+  `java_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'JAVA字段名',
+  `is_pk` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否主键（1是）',
+  `is_increment` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否自增（1是）',
+  `is_required` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否必填（1是）',
+  `is_insert` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否为插入字段（1是）',
+  `is_edit` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否编辑字段（1是）',
+  `is_list` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否列表字段（1是）',
+  `is_query` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否查询字段（1是）',
+  `query_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'EQ' COMMENT '查询方式（等于、不等于、大于、小于、范围）',
+  `html_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '显示类型（文本框、文本域、下拉框、复选框、单选框、日期控件）',
+  `dict_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
+  `sort` int NULL DEFAULT NULL COMMENT '排序',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`column_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 274 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of gen_table_column
+-- ----------------------------
+INSERT INTO `gen_table_column` VALUES (66, 4, 'client_id', '客户ID', 'bigint', 'Long', 'clientId', '1', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (67, 4, 'client_code', '客户编码', 'varchar(64)', 'String', 'clientCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (68, 4, 'client_name', '客户名称', 'varchar(255)', 'String', 'clientName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (69, 4, 'client_nick', '客户简写', 'varchar(255)', 'String', 'clientNick', '0', '0', '0', '1', '1', '1', '0', 'EQ', 'input', '', 4, 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (70, 4, 'client_en', '客户英文名称', 'varchar(255)', 'String', 'clientEn', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (71, 4, 'client_desc', '客户简介', 'varchar(500)', 'String', 'clientDesc', '0', '0', '1', '1', '1', '1', '0', 'EQ', 'textarea', '', 6, 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (72, 4, 'client_type', '客户类型', 'varchar(64)', 'String', 'clientType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', 'bd_client_type', 7, 'admin', '2025-09-18 15:01:17', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (73, 4, 'client_logo', '客户LOGO', 'varchar(255)', 'String', 'clientLogo', '0', '0', '0', '1', '1', '1', '0', 'EQ', 'input', '', 8, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (74, 4, 'address', '客户默认送货地点', 'varchar(500)', 'String', 'address', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'textarea', '', 9, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (75, 4, 'web_site', '客户官网地址', 'varchar(255)', 'String', 'webSite', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 10, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (76, 4, 'email', '客户邮箱', 'varchar(255)', 'String', 'email', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'input', '', 11, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (77, 4, 'tel', '客户电话', 'varchar(64)', 'String', 'tel', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (78, 4, 'contact1', '联系人1', 'varchar(64)', 'String', 'contact1', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'input', '', 13, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (79, 4, 'contact1_tel', '联系人1电话', 'varchar(64)', 'String', 'contact1Tel', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'input', '', 14, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (80, 4, 'contact1_emal', '联系人1邮箱', 'varchar(255)', 'String', 'contact1Emal', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 15, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (81, 4, 'contact2', '联系人2', 'varchar(64)', 'String', 'contact2', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 16, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (82, 4, 'contact2_tel', '联系人2电话', 'varchar(64)', 'String', 'contact2Tel', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 17, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (83, 4, 'contact2_emal', '联系人2邮箱', 'varchar(255)', 'String', 'contact2Emal', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 18, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (84, 4, 'credit_code', '统一社会信用代码', 'varchar(64)', 'String', 'creditCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 19, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (85, 4, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 20, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (86, 4, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 21, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (87, 4, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 22, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (88, 4, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 23, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (89, 4, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 24, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (90, 4, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 25, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (91, 4, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 26, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (92, 4, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 27, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (93, 4, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 28, 'admin', '2025-09-18 15:01:18', '', '2025-09-18 15:04:19');
+INSERT INTO `gen_table_column` VALUES (94, 5, 'credit_id', '客户信用ID', 'bigint', 'Long', 'creditId', '1', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (95, 5, 'client_id', '客户ID', 'bigint', 'Long', 'clientId', '0', '0', '1', '1', '0', '0', '0', 'EQ', 'input', '', 2, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (96, 5, 'client_code', '客户编码', 'varchar(64)', 'String', 'clientCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (97, 5, 'client_name', '客户名称', 'varchar(255)', 'String', 'clientName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (98, 5, 'client_en', '客户英文名称', 'varchar(255)', 'String', 'clientEn', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (99, 5, 'client_credit', '信用额度', 'int', 'Long', 'clientCredit', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 6, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (100, 5, 'client_time', '账期', 'int', 'Long', 'clientTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (101, 5, 'client_level', '供应商等级: A优质客户(80-100);B正常(60-80);C重点关注(50-60);D劣质客户(40-50);E黑名单(0-40)', 'varchar(64)', 'String', 'clientLevel', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (102, 5, 'client_score', '客户评分', 'int', 'Long', 'clientScore', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (103, 5, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 10, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (104, 5, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 11, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (105, 5, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 12, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (106, 5, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 13, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (107, 5, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 14, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (108, 5, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (109, 5, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 16, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (110, 5, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 17, 'admin', '2025-09-18 15:01:18', '', '2025-09-22 10:57:10');
+INSERT INTO `gen_table_column` VALUES (111, 6, 'part_id', '分段ID', 'bigint', 'Long', 'partId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (112, 6, 'rule_id', '规则ID', 'bigint', 'Long', 'ruleId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (113, 6, 'part_index', '分段序号', 'int', 'Long', 'partIndex', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (114, 6, 'part_type', '分段类型，INPUTCHAR：输入字符，NOWDATE：当前日期时间，FIXCHAR：固定字符，SERIALNO：流水号', 'varchar(20)', 'String', 'partType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', '', 4, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (115, 6, 'part_code', '分段编号', 'varchar(64)', 'String', 'partCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (116, 6, 'part_name', '分段名称', 'varchar(255)', 'String', 'partName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 6, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (117, 6, 'part_length', '分段长度', 'int', 'Long', 'partLength', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (118, 6, 'date_format', NULL, 'varchar(20)', 'String', 'dateFormat', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (119, 6, 'input_character', '输入字符', 'varchar(64)', 'String', 'inputCharacter', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (120, 6, 'fix_character', '固定字符', 'varchar(64)', 'String', 'fixCharacter', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (121, 6, 'seria_start_no', '流水号起始值', 'int', 'Long', 'seriaStartNo', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 11, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (122, 6, 'seria_step', '流水号步长', 'int', 'Long', 'seriaStep', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (123, 6, 'seria_now_no', '流水号当前值', 'int', 'Long', 'seriaNowNo', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (124, 6, 'cycle_flag', '流水号是否循环', 'char(1)', 'String', 'cycleFlag', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 14, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (125, 6, 'cycle_method', '循环方式，YEAR：按年，MONTH：按月，DAY：按天，HOUR：按小时，MINITE：按分钟，OTHER：按传入字符变', 'varchar(20)', 'String', 'cycleMethod', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 15, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (126, 6, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 16, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (127, 6, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 17, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (128, 6, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 18, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (129, 6, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 19, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (130, 6, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 20, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (131, 6, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 21, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (132, 6, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 22, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (133, 6, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 23, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (134, 6, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 24, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:39:04');
+INSERT INTO `gen_table_column` VALUES (135, 7, 'code_id', '记录ID', 'bigint', 'Long', 'codeId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (136, 7, 'rule_id', '规则ID', 'bigint', 'Long', 'ruleId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (137, 7, 'gen_date', '生成日期时间', 'varchar(20)', 'String', 'genDate', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (138, 7, 'gen_index', '最后产生的序号', 'int', 'Long', 'genIndex', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (139, 7, 'last_result', '最后产生的值', 'varchar(64)', 'String', 'lastResult', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (140, 7, 'last_serial_no', '最后产生的流水号', 'int', 'Long', 'lastSerialNo', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 6, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (141, 7, 'last_input_char', '最后传入的参数', 'varchar(64)', 'String', 'lastInputChar', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (142, 7, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 8, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (143, 7, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (144, 7, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (145, 7, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 11, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (146, 7, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (147, 7, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 13, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (148, 7, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 14, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (149, 7, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 15, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (150, 7, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 16, 'admin', '2025-09-18 16:33:32', '', '2025-09-18 16:49:43');
+INSERT INTO `gen_table_column` VALUES (151, 8, 'rule_id', '规则ID', 'bigint', 'Long', 'ruleId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (152, 8, 'rule_code', '规则编码', 'varchar(64)', 'String', 'ruleCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (153, 8, 'rule_name', '规则名称', 'varchar(255)', 'String', 'ruleName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (154, 8, 'rule_desc', '描述', 'varchar(500)', 'String', 'ruleDesc', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 4, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (155, 8, 'max_length', '最大长度', 'int', 'Long', 'maxLength', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (156, 8, 'is_padded', '是否补齐', 'char(1)', 'String', 'isPadded', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 6, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (157, 8, 'padded_char', '补齐字符', 'varchar(20)', 'String', 'paddedChar', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (158, 8, 'padded_method', '补齐方式', 'char(1)', 'String', 'paddedMethod', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (159, 8, 'enable_flag', '是否启用', 'char(1)', 'String', 'enableFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (160, 8, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 10, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (161, 8, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 11, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (162, 8, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (163, 8, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (164, 8, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 14, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (165, 8, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 15, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (166, 8, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 16, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (167, 8, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 17, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (168, 8, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 18, 'admin', '2025-09-18 16:33:32', '', '2025-09-19 16:39:25');
+INSERT INTO `gen_table_column` VALUES (169, 9, 'vendor_id', '供应商ID', 'bigint', 'Long', 'vendorId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (170, 9, 'vendor_code', '供应商编码', 'varchar(64)', 'String', 'vendorCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (171, 9, 'vendor_name', '供应商名称', 'varchar(255)', 'String', 'vendorName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (172, 9, 'tax_id', '税号', 'varchar(64)', 'String', 'taxId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 4, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (173, 9, 'address', '地址', 'varchar(500)', 'String', 'address', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'textarea', '', 5, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (174, 9, 'contact_person', '联系人', 'varchar(64)', 'String', 'contactPerson', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 6, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (175, 9, 'phone', '电话', 'varchar(64)', 'String', 'phone', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 7, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (176, 9, 'bank_account', '银行账户', 'varchar(255)', 'String', 'bankAccount', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 8, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (177, 9, 'industry', '行业', 'varchar(64)', 'String', 'industry', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'bd_industry', 9, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (178, 9, 'region', '地区', 'varchar(64)', 'String', 'region', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'bd_region', 10, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (179, 9, 'category', '分类 (原材料/标准件/服务类)', 'varchar(64)', 'String', 'category', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'select', 'bd_vendor_category', 11, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (180, 9, 'status', '合作状态 ', 'varchar(64)', 'String', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'bd_vendor_status', 12, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (181, 9, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 13, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (182, 9, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 14, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (183, 9, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 15, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (184, 9, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 16, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (185, 9, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 17, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (186, 9, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 18, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (187, 9, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 19, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (188, 9, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 20, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (189, 9, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 21, 'admin', '2025-09-22 15:14:10', '', '2025-09-22 16:54:13');
+INSERT INTO `gen_table_column` VALUES (190, 10, 'warehouse_id', '仓库ID', 'bigint', 'Long', 'warehouseId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (191, 10, 'warehouse_code', '仓库编码', 'varchar(64)', 'String', 'warehouseCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (192, 10, 'warehouse_name', '仓库名称', 'varchar(255)', 'String', 'warehouseName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (193, 10, 'location', '位置', 'varchar(255)', 'String', 'location', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (194, 10, 'manager', '负责人', 'varchar(64)', 'String', 'manager', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 6, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (195, 10, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 8, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (196, 10, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 10, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (197, 10, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 11, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (198, 10, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 12, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (199, 10, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 13, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (200, 10, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 14, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (201, 10, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (202, 10, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 16, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (203, 10, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 17, 'admin', '2025-09-30 10:31:25', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (204, 10, 'area', '面积', 'double(12,2)', 'BigDecimal', 'area', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, '', '2025-09-30 11:32:00', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (205, 10, 'manager_id', 'user_id', 'bigint', 'Long', 'managerId', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 7, '', '2025-09-30 11:32:00', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (206, 10, 'status', '仓库状态', 'int', 'Long', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'wm_warehouse_status', 9, '', '2025-09-30 11:32:00', '', '2025-09-30 11:36:38');
+INSERT INTO `gen_table_column` VALUES (207, 11, 'uom_id', '单位ID', 'bigint', 'Long', 'uomId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (208, 11, 'uom_code', '单位编码', 'varchar(32)', 'String', 'uomCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (209, 11, 'uom_name', '单位名称', 'varchar(64)', 'String', 'uomName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (210, 11, 'uom_symbol', '单位符号(kg、m、pcs等)', 'varchar(16)', 'String', 'uomSymbol', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (211, 11, 'category', '单位类别(重量、长度、数量等)', 'varchar(32)', 'String', 'category', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (212, 11, 'conversion_rate', '转换率(相对于基本单位)', 'decimal(18,6)', 'BigDecimal', 'conversionRate', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'input', '', 8, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (213, 11, 'is_base', '是否基本单位 0:否 1:是', 'tinyint', 'Long', 'isBase', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', 'sys_true_or_false', 6, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (214, 11, 'status', '状态 0:停用 1:启用', 'tinyint', 'Long', 'status', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', 'sys_core_status', 9, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (215, 11, 'sort_order', '排序', 'int', 'Long', 'sortOrder', '0', '0', '0', '1', '1', '1', '0', 'EQ', 'input', '', 10, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (216, 11, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 11, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (217, 11, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 12, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (218, 11, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 13, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (219, 11, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 14, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (220, 11, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 15, 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (221, 11, 'primary_id', '基本单位ID', 'bigint', 'Long', 'primaryId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 7, '', '2025-09-30 15:34:03', '', '2025-09-30 16:12:17');
+INSERT INTO `gen_table_column` VALUES (222, 12, 'category_id', '分类ID', 'bigint', 'Long', 'categoryId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (223, 12, 'parent_id', '父分类ID', 'bigint', 'Long', 'parentId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 2, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (224, 12, 'category_code', '分类编码', 'varchar(32)', 'String', 'categoryCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (225, 12, 'category_name', '分类名称', 'varchar(100)', 'String', 'categoryName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (226, 12, 'category_desc', '分类描述', 'varchar(500)', 'String', 'categoryDesc', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 5, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (227, 12, 'level_num', '层级深度', 'int', 'Long', 'levelNum', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 6, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (228, 12, 'path_ids', '路径ID串', 'varchar(500)', 'String', 'pathIds', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'textarea', '', 7, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (229, 12, 'path_names', '路径名称', 'varchar(1000)', 'String', 'pathNames', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 8, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (230, 12, 'sort_order', '显示排序', 'int', 'Long', 'sortOrder', '0', '0', '0', '1', '1', '1', '0', 'EQ', 'input', '', 9, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (231, 12, 'status', '状态', 'tinyint', 'Long', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'sys_core_status', 10, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (232, 12, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 11, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (233, 12, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 12, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (234, 12, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 13, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (235, 12, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 14, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (236, 12, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 15, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (237, 12, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 16, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (238, 12, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 17, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (239, 12, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 18, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (240, 12, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 19, 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42');
+INSERT INTO `gen_table_column` VALUES (241, 13, 'material_id', '物料ID', 'bigint', 'Long', 'materialId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (242, 13, 'material_code', '物料编码', 'varchar(64)', 'String', 'materialCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (243, 13, 'material_name', '物料名称', 'varchar(200)', 'String', 'materialName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (244, 13, 'material_spec', '规格型号', 'varchar(500)', 'String', 'materialSpec', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 4, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (245, 13, 'material_desc', '物料描述', 'varchar(1000)', 'String', 'materialDesc', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'textarea', '', 5, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (246, 13, 'category_id', '物料分类ID', 'bigint', 'Long', 'categoryId', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'input', '', 6, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (247, 13, 'base_uom_id', '基本计量单位ID', 'bigint', 'Long', 'baseUomId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 7, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (248, 13, 'purchase_uom_id', '采购单位ID', 'bigint', 'Long', 'purchaseUomId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 8, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (249, 13, 'inventory_uom_id', '库存单位ID', 'bigint', 'Long', 'inventoryUomId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 9, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (250, 13, 'sale_uom_id', '销售单位ID', 'bigint', 'Long', 'saleUomId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 10, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (251, 13, 'material_type', '物料类型', 'tinyint', 'Long', 'materialType', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'select', 'bd_material_type', 11, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (252, 13, 'source_type', '来源类型', 'tinyint', 'Long', 'sourceType', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'bd_source_type', 12, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (253, 13, 'is_batch_manage', '是否批次管理', 'tinyint', 'Long', 'isBatchManage', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 13, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (254, 13, 'is_serial_manage', '是否序列号管理', 'tinyint', 'Long', 'isSerialManage', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 14, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (255, 13, 'safety_stock', '安全库存', 'decimal(18,4)', 'BigDecimal', 'safetyStock', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 15, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (256, 13, 'min_stock', '最低库存', 'decimal(18,4)', 'BigDecimal', 'minStock', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 16, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (257, 13, 'max_stock', '最高库存', 'decimal(18,4)', 'BigDecimal', 'maxStock', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 17, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (258, 13, 'standard_cost', '标准成本', 'decimal(18,4)', 'BigDecimal', 'standardCost', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 18, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (259, 13, 'reference_price', '参考价格', 'decimal(18,4)', 'BigDecimal', 'referencePrice', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 19, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (260, 13, 'status', '状态', 'tinyint', 'Long', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 20, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (261, 13, 'quality_status', '质量状态', 'tinyint', 'Long', 'qualityStatus', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'bd_quality_status', 21, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (262, 13, 'shelf_life', '保质期(天)', 'int', 'Long', 'shelfLife', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 22, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (263, 13, 'weight', '重量(kg)', 'decimal(12,4)', 'BigDecimal', 'weight', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 23, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (264, 13, 'volume', '体积(m³)', 'decimal(12,4)', 'BigDecimal', 'volume', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 24, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (265, 13, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 25, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (266, 13, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 26, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (267, 13, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 27, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (268, 13, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 28, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (269, 13, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 29, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (270, 13, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 30, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (271, 13, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 31, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (272, 13, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 32, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+INSERT INTO `gen_table_column` VALUES (273, 13, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 33, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
+
+-- ----------------------------
+-- Table structure for sys_auto_code_part
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_auto_code_part`;
+CREATE TABLE `sys_auto_code_part`  (
+  `part_id` bigint NOT NULL AUTO_INCREMENT COMMENT '分段ID',
+  `rule_id` bigint NOT NULL COMMENT '规则ID',
+  `part_index` int NOT NULL COMMENT '分段序号',
+  `part_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '分段类型，INPUTCHAR：输入字符，NOWDATE：当前日期时间，FIXCHAR：固定字符，SERIALNO：流水号',
+  `part_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分段编号',
+  `part_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分段名称',
+  `part_length` int NOT NULL COMMENT '分段长度',
+  `date_format` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `input_character` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '输入字符',
+  `fix_character` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '固定字符',
+  `seria_start_no` int NULL DEFAULT NULL COMMENT '流水号起始值',
+  `seria_step` int NULL DEFAULT NULL COMMENT '流水号步长',
+  `seria_now_no` int NULL DEFAULT NULL COMMENT '流水号当前值',
+  `cycle_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '流水号是否循环',
+  `cycle_method` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '循环方式，YEAR：按年，MONTH：按月，DAY：按天，HOUR：按小时，MINITE：按分钟，OTHER：按传入字符变',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`part_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 359 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_auto_code_part
+-- ----------------------------
+INSERT INTO `sys_auto_code_part` VALUES (200, 205, 2, 'SERIALNO', 'P1', '流水号', 8, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-04-26 21:13:17', 'admin', '2022-04-26 22:47:49');
+INSERT INTO `sys_auto_code_part` VALUES (201, 205, 1, 'FIXCHAR', 'P0', '前缀', 4, NULL, NULL, 'ITEM', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-04-26 22:44:03', 'admin', '2022-08-15 15:59:19');
+INSERT INTO `sys_auto_code_part` VALUES (202, 206, 1, 'FIXCHAR', 'P1', '前缀', 10, NULL, NULL, 'ITEM_TYPE_', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-04-26 23:02:12', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (203, 206, 2, 'SERIALNO', 'P2', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-04-26 23:02:42', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (204, 207, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-06 21:21:04', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (205, 207, 2, 'SERIALNO', 'SERIAL', '流水号部分', 5, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-06 21:21:44', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (206, 208, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'V', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-06 22:50:38', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (207, 208, 2, 'SERIALNO', 'SERIAL', '流水号', 5, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-06 22:51:02', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (208, 209, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'WS', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-07 17:49:16', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (209, 209, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-07 17:49:40', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (210, 210, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'WH', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-07 22:00:17', 'admin', '2022-08-16 18:58:36');
+INSERT INTO `sys_auto_code_part` VALUES (211, 210, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-07 22:00:40', 'admin', '2022-07-30 11:26:14');
+INSERT INTO `sys_auto_code_part` VALUES (212, 211, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'L', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 14:50:29', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (213, 211, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 14:52:12', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (214, 212, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 18:38:29', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (215, 212, 2, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 18:38:51', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (216, 213, 1, 'FIXCHAR', 'PREFIX', '前缀', 7, NULL, NULL, 'M_TYPE_', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 19:46:42', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (217, 213, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 19:47:03', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (218, 214, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 21:26:59', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (219, 214, 2, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 21:27:18', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (220, 215, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'MO', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-09 11:40:23', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (222, 215, 2, 'NOWDATE', 'DATEPART', '年月日部分', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-09 11:58:57', 'admin', '2022-05-09 12:46:34');
+INSERT INTO `sys_auto_code_part` VALUES (223, 215, 3, 'SERIALNO', 'SERIAL', '流水号部分', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-09 11:59:31', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (224, 216, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'WS', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-10 21:55:51', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (225, 216, 2, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-10 21:56:19', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (226, 217, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'TT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-11 00:22:02', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (227, 217, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-11 00:22:25', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (228, 218, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'T', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-11 22:07:44', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (229, 218, 2, 'SERIALNO', 'SERIAL', '流水号', 5, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-11 22:08:17', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (230, 219, 1, 'FIXCHAR', 'PREFIX', '前缀', 7, NULL, NULL, 'PROCESS', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-12 00:10:13', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (231, 219, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-12 00:10:33', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (232, 220, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-12 23:07:01', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (233, 220, 2, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1000, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-12 23:07:23', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (234, 221, 1, 'FIXCHAR', 'PREFIX', '固定前缀', 4, NULL, NULL, 'TASK', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-15 18:22:53', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (235, 221, 2, 'NOWDATE', 'YEAR', '年份', 4, 'yyyy', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-15 18:23:39', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (236, 221, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'YEAR', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-15 18:24:03', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (237, 222, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'I', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-17 21:57:46', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (238, 222, 2, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-17 21:58:05', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (239, 223, 1, 'FIXCHAR', 'PREFIX', '前缀', 3, NULL, NULL, 'QCT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-17 22:43:31', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (240, 223, 2, 'NOWDATE', 'YEAR', '年份', 4, 'yyyy', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-17 22:44:04', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (241, 223, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'YEAR', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-17 22:44:25', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (242, 224, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'DF', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-19 11:33:52', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (243, 224, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-19 11:34:11', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (244, 225, 1, 'FIXCHAR', 'PREFIX', '前缀', 3, NULL, NULL, 'IQC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-19 16:29:59', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (245, 225, 2, 'NOWDATE', 'DATE', '年月日', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-19 16:30:28', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (246, 225, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-19 16:31:00', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (247, 226, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-22 20:51:47', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (248, 226, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-05-22 20:52:10', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (249, 226, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-22 20:52:58', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (250, 227, 1, 'FIXCHAR', 'PREFIX', '固定前缀', 1, NULL, NULL, 'T', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-06 19:54:45', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (251, 227, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-06 19:55:06', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (252, 228, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'PLAN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-06 22:08:39', 'admin', '2022-07-31 16:42:59');
+INSERT INTO `sys_auto_code_part` VALUES (253, 228, 2, 'NOWDATE', 'YEAR', '年', 4, 'yyyy', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-06 22:08:59', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (254, 228, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'YEAR', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-06 22:09:24', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (255, 229, 1, 'FIXCHAR', 'PREFIX', '前缀', 3, NULL, NULL, 'RTV', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-13 16:06:14', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (256, 229, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-13 16:06:42', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (257, 229, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-13 16:07:10', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (258, 230, 1, 'FIXCHAR', 'PREFIX', '固定前缀', 3, NULL, NULL, 'SUB', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-16 20:28:22', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (259, 230, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-16 20:28:44', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (260, 231, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'PLAN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-16 21:50:22', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (261, 231, 2, 'NOWDATE', 'YEAR', '年份', 4, 'yyyy', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-06-16 21:50:43', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (262, 231, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'YEAR', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-16 21:51:07', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (263, 232, 1, 'FIXCHAR', '1', '1', 3, NULL, NULL, 'BAT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-07-14 12:02:54', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (265, 233, 1, 'FIXCHAR', 'PREFIX', '前缀', 5, NULL, NULL, 'ISSUE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-07-17 19:32:46', 'admin', '2022-07-17 19:35:44');
+INSERT INTO `sys_auto_code_part` VALUES (266, 233, 2, 'NOWDATE', 'DATE', '年月日', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-07-17 19:33:22', 'admin', '2022-07-17 19:35:57');
+INSERT INTO `sys_auto_code_part` VALUES (267, 233, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-07-17 19:33:45', 'admin', '2022-07-17 19:36:05');
+INSERT INTO `sys_auto_code_part` VALUES (271, 234, 1, 'INPUTCHAR', 'PREFIX', '1', 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-07-30 14:20:49', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (275, 236, 1, 'FIXCHAR', '前缀', '固定字符', 2, NULL, NULL, 'IF', NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-08-19 10:48:20', 'admin', '2022-08-19 14:13:30');
+INSERT INTO `sys_auto_code_part` VALUES (276, 236, 2, 'NOWDATE', '后缀', '固定字段', 8, 'yyyyMMdd', NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-08-19 14:12:19', 'admin', '2022-10-22 20:41:54');
+INSERT INTO `sys_auto_code_part` VALUES (277, 237, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'IPQC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-08-29 22:07:43', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (278, 237, 2, 'NOWDATE', 'DATE', '年月日', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-08-29 22:08:18', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (279, 237, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-08-29 22:08:46', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (280, 238, 1, 'FIXCHAR', 'PREFIX', '前缀', 3, NULL, NULL, 'OQC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-01 20:30:53', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (281, 238, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-01 20:32:11', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (282, 238, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-01 20:32:38', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (283, 239, 1, 'FIXCHAR', '001', '前缀', 5, NULL, NULL, 'PBACK', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-03 23:49:07', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (284, 239, 2, 'NOWDATE', '002', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-03 23:49:31', 'admin', '2022-09-03 23:49:44');
+INSERT INTO `sys_auto_code_part` VALUES (285, 239, 3, 'SERIALNO', '003', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-03 23:50:10', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (286, 240, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'RT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-15 23:19:25', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (287, 240, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-15 23:19:47', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (288, 240, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-15 23:20:09', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (289, 241, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'PR', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-23 10:58:17', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (290, 241, 2, 'NOWDATE', 'DATE', '年月日', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-23 10:58:44', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (291, 241, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-23 10:59:06', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (292, 242, 1, 'FIXCHAR', 'PREFIX', '前缀', 3, NULL, NULL, 'REP', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-28 22:01:19', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (293, 242, 2, 'NOWDATE', 'DATE', '日期', 4, 'yyyy', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-09-28 22:01:39', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (294, 242, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'YEAR', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-28 22:02:00', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (295, 243, 1, 'FIXCHAR', 'PERFIX', '前缀', 2, NULL, NULL, 'PS', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-10-05 19:46:02', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (296, 243, 2, 'NOWDATE', 'DATA', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-10-05 19:46:24', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (297, 243, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-10-05 19:46:48', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (298, 244, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'RS', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-10-06 21:40:42', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (299, 244, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-10-06 21:41:03', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (300, 244, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-10-06 21:41:22', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (301, 245, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'PACK', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-10-11 01:22:38', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (302, 245, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-10-11 01:23:09', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (303, 245, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-10-11 01:23:35', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (304, 236, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-10-22 20:43:08', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (305, 246, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'TR', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-11-30 21:58:57', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (306, 246, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-11-30 21:59:19', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (307, 246, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-11-30 21:59:39', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (308, 247, 1, 'FIXCHAR', 'PREFIX', '前缀', 3, NULL, NULL, 'SN-', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-12-09 11:22:36', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (309, 247, 2, 'INPUTCHAR', 'INPUT', '产品编码', 12, NULL, 'ITEM_CODE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-12-09 11:23:36', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (310, 247, 3, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2022-12-09 11:24:07', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (311, 247, 4, 'SERIALNO', 'SERIAL', '流水号', 6, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2022-12-09 11:25:00', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (312, 248, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'FB', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2023-10-17 11:09:49', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (313, 248, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2023-10-17 11:10:11', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (314, 248, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2023-10-17 11:10:38', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (315, 249, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'OI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 14:24:59', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (316, 249, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 14:25:17', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (317, 249, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 14:25:40', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (318, 250, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'OR', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 20:17:25', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (319, 250, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 20:17:45', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (320, 250, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 20:18:18', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (321, 251, 1, 'FIXCHAR', 'PRFIX', '前缀', 1, NULL, NULL, 'T', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-05-20 11:59:59', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (322, 251, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-05-20 12:00:27', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (323, 252, 1, 'FIXCHAR', 'PRIFIX', '前缀', 1, NULL, NULL, 'P', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-12-03 19:00:18', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (324, 252, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-12-03 19:01:03', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (325, 252, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-03 19:01:33', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (326, 253, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:07:10', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (327, 253, 2, 'SERIALNO', 'SERIAL', '流水号', 10, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:07:40', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (328, 254, 1, 'FIXCHAR', 'PREFIX', '前缀', 7, NULL, NULL, 'PRINTER', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:34:40', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (329, 254, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:35:02', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (330, 255, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'AN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2024-12-09 21:16:21', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (331, 255, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, 'admin', '2024-12-09 21:16:53', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (332, 255, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-09 21:17:16', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (333, 256, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'DEPT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-02-24 11:34:17', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (334, 256, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-02-24 11:34:35', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (335, 232, 2, 'SERIALNO', 'SERIAL', '流水号', 8, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-02-28 17:05:46', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (336, 257, 1, 'FIXCHAR', 'PRIFIX', '前缀', 3, NULL, NULL, 'RQC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-03-06 17:20:40', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (337, 257, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-03-06 17:21:07', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (338, 257, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2025-03-06 17:21:27', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (339, 258, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'SN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-03-14 09:32:54', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (340, 258, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-03-14 09:33:13', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (341, 258, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2025-03-14 09:33:33', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (342, 259, 1, 'FIXCHAR', 'PRIFIX', '前缀', 3, NULL, NULL, 'STP', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-03-31 21:39:08', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (343, 259, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-03-31 21:39:28', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (344, 260, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'ST', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-04-01 22:58:19', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (345, 260, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-04-01 22:58:41', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (346, 260, 3, 'SERIALNO', 'SERIAL', '流水号', 2, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2025-04-01 22:59:00', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (347, 261, 1, 'FIXCHAR', 'PREFIX', '前缀', 6, NULL, NULL, 'CLIENT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-04-03 10:50:44', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (348, 261, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2025-04-03 10:51:17', 'admin', '2025-04-03 10:51:54');
+INSERT INTO `sys_auto_code_part` VALUES (349, 262, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-05-12 12:13:04', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (350, 262, 2, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-05-12 12:13:28', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (351, 263, 1, 'FIXCHAR', 'PREFIX', '前缀', 5, NULL, NULL, 'MISCR', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-05-15 11:07:27', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (352, 263, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-05-15 11:07:48', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (353, 263, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2025-05-15 11:08:22', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (354, 264, 1, 'FIXCHAR', 'PREFIX', '前缀', 5, NULL, NULL, 'MISCI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-05-16 09:50:08', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (355, 264, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-05-16 09:50:26', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (356, 264, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2025-05-16 09:50:48', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (357, 265, 1, 'FIXCHAR', 'PREFIX', '前缀', 1, NULL, NULL, 'B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-06-20 10:08:15', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (358, 265, 2, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-06-20 10:08:37', 'admin', '2025-06-20 10:14:09');
+
+-- ----------------------------
+-- Table structure for sys_auto_code_result
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_auto_code_result`;
+CREATE TABLE `sys_auto_code_result`  (
+  `code_id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `rule_id` bigint NOT NULL COMMENT '规则ID',
+  `gen_date` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '生成日期时间',
+  `gen_index` int NULL DEFAULT NULL COMMENT '最后产生的序号',
+  `last_result` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后产生的值',
+  `last_serial_no` int NULL DEFAULT NULL COMMENT '最后产生的流水号',
+  `last_input_char` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后传入的参数',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`code_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 658 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_auto_code_result
+-- ----------------------------
+INSERT INTO `sys_auto_code_result` VALUES (200, 205, '20220808095803', 76, 'ITEM00000076', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-04-26 22:28:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (201, 206, '20220813231829', 62, 'ITEM_TYPE_0062', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-04-27 10:17:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (202, 207, '20220802144206', 10, 'C00010', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-06 21:22:23', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (203, 208, '20220805160743', 10, 'V00010', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-06 22:52:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (204, 209, '20220805111938', 12, 'WS012', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-07 17:54:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (205, 210, '20220729090506', 2, 'WH002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-07 22:01:31', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (206, 211, '20220729085518', 10, 'L010', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-08 14:52:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (207, 212, '20220810082205', 11, 'A0011', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-08 18:39:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (208, 213, '20220823091541', 24, 'M_TYPE_024', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-08 19:47:31', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (209, 214, '20220819091251', 26, 'M0026', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-08 21:38:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (210, 215, '20220509234547', 21, 'MO202205090021', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-09 12:46:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (212, 216, '20220818103207', 34, 'WS0034', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-10 21:59:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (213, 217, '20220816195823', 25, 'TT025', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-11 00:22:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (214, 218, '20220804162652', 10, 'T00010', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-11 22:35:05', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (215, 219, '20220729122036', 46, 'PROCESS046', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-12 00:10:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (217, 220, '20220809171633', 29, 'R1028', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-12 23:11:24', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (219, 215, '20220514155158', 26, 'MO202205140026', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-14 15:24:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (220, 215, '20220515134342', 5, 'MO202205150005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-15 13:41:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (221, 221, '20221117213919', 107, 'TASK20220107', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-15 18:29:41', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (222, 222, '20220812142031', 13, 'I0013', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-17 21:58:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (223, 223, '20221119144903', 43, 'QCT2022043', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-17 22:44:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (224, 224, '20231120222501', 9, 'DF009', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-19 11:37:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (225, 225, '20220519230422', 21, 'IQC20220519021', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-19 16:49:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (226, 226, '20220522220740', 8, 'R20220522008', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-05-22 20:53:25', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (227, 227, '20220814214249', 25, 'T025', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-06 19:55:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (228, 228, '20220823150049', 121, 'PLAN2022121', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-06 22:09:41', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (229, 229, '20220613162434', 2, 'RTV20220613002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-13 16:19:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (230, 226, '20220613164021', 1, 'R20220613001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-13 16:40:22', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (231, 229, '20220614161107', 3, 'RTV20220614003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-14 11:11:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (232, 226, '20220614122043', 3, 'R20220614003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-14 11:34:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (233, 230, '20220812221323', 4, 'SUB004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-16 20:29:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (234, 231, '20220901230257', 50, 'PLAN2022050', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-06-16 21:51:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (235, 226, '20220717124046', 2, 'R20220717002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-17 12:40:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (236, 233, '20220717194751', 2, 'ISSUE20220717002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-17 19:36:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (237, 233, '20220725150745', 8, 'ISSUE20220725008', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-25 11:16:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (238, 215, '20220727133912', 3, 'MO202207270003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-27 13:39:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (239, 229, '20220727135402', 3, 'RTV20220727003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-27 13:53:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (240, 215, '20220728231952', 1, 'MO202207280001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-28 23:19:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (241, 211, '20220729085519', 1, 'L011', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-29 08:55:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (242, 211, '20220801170339', 6, 'L017', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-29 08:55:20', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (243, 229, '20220729091253', 4, 'RTV20220729004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-29 08:56:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (244, 210, '20220729090520', 3, 'WH005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-29 09:05:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (245, 210, '20220801161858', 52, 'WH060', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-29 09:05:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (246, 215, '20220729111608', 3, 'MO202207290003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-29 09:30:33', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (247, 219, '20220729122132', 3, 'PROCESS049', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-29 12:21:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (248, 215, '20220730170708', 6, 'MO202207300006', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-30 14:41:08', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (249, 226, '20220730164005', 3, 'R20220730003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-30 16:30:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (250, 219, '20220730170439', 3, 'PROCESS052', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-30 17:02:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (251, 215, '20220731161554', 1, 'MO202207310001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-07-31 16:15:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (252, 226, '20220801162854', 33, 'R20220801033', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-01 11:11:28', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (253, 215, '20220801154407', 1, 'MO202208010001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-01 15:44:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (254, 210, '20220801161857', 1, 'WH060', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-01 16:18:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (255, 210, '20220801161857', 1, 'WH060', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-01 16:18:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (256, 210, '20220809140656', 13, 'WH073', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-01 16:26:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (257, 219, '20220801172652', 3, 'PROCESS055', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-01 17:14:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (258, 215, '20220802174313', 13, 'MO202208020013', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-02 09:27:31', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (259, 225, '20220802180956', 2, 'IQC20220802002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-02 17:54:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (260, 229, '20220802180930', 2, 'RTV20220802002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-02 18:01:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (261, 215, '20220803152758', 3, 'MO202208030003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-03 15:19:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (262, 218, '20220810105807', 7, 'T00017', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-04 16:34:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (263, 209, '20220813133944', 14, 'WS026', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-05 11:19:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (264, 226, '20220805131441', 4, 'R20220805004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-05 13:09:41', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (265, 208, '20220808161115', 4, 'V00014', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-05 16:27:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (266, 205, '20220812160022', 12, 'ITEM00000088', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-08 10:01:12', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (267, 229, '20220808105742', 2, 'RTV20220808002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-08 10:44:56', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (268, 207, '20220813112402', 14, 'C00024', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-08 15:52:04', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (269, 208, '20220814231644', 10, 'V00024', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-08 16:11:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (270, 219, '20220809091746', 2, 'PROCESS057', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 09:17:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (271, 219, '20220813232649', 11, 'PROCESS068', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 09:22:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (272, 215, '20220809173457', 7, 'MO202208090007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 12:27:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (273, 210, '20220809140657', 1, 'WH074', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 14:06:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (274, 210, '20220814231315', 5, 'WH079', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 14:06:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (275, 220, '20220813113700', 12, 'R1040', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 17:16:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (276, 226, '20220809174609', 2, 'R20220809002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 17:36:22', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (277, 211, '20220810082146', 5, 'L022', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:21:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (278, 211, '20250312143950', 35, 'L057', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:21:48', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (279, 212, '20220810082207', 2, 'A0013', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:22:06', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (280, 212, '20220810083445', 4, 'A0017', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:22:08', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (281, 218, '20220814194551', 6, 'T00023', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 10:58:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (282, 215, '20220810141929', 7, 'MO202208100007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 12:30:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (283, 215, '20220811155054', 2, 'MO202208110002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-11 15:50:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (284, 215, '20220812163345', 36, 'MO202208120036', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-12 11:40:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (285, 225, '20220812202238', 5, 'IQC20220812005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-12 13:54:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (286, 222, '20241203152531', 30, 'I0043', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-12 14:20:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (287, 205, '20220813012808', 21, 'ITEM00000109', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-12 16:00:23', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (288, 226, '20220812214513', 3, 'R20220812003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-12 16:51:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (289, 205, '20220813133124', 10, 'ITEM00000119', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 01:28:09', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (290, 226, '20220813152657', 5, 'R20220813005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 01:47:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (291, 215, '20220813232357', 10, 'MO202208130010', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 08:50:33', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (292, 207, '20220813134013', 7, 'C00031', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 11:24:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (293, 220, '20220815153054', 12, 'R1052', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 11:37:04', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (294, 209, '20220816172957', 8, 'WS034', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 13:39:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (295, 207, '20220813134017', 6, 'C00037', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 13:40:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (296, 207, '20220815132333', 20, 'C00057', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 13:40:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (297, 225, '20220813225044', 3, 'IQC20220813003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 15:14:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (298, 205, '20220815085111', 12, 'ITEM00000131', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 21:48:41', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (299, 230, '20220815103546', 5, 'SUB009', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 22:00:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (300, 206, '20220815143043', 4, 'ITEM_TYPE_0066', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 23:18:41', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (301, 219, '20220815164921', 9, 'PROCESS077', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-13 23:32:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (302, 215, '20220814231425', 5, 'MO202208140005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-14 10:40:29', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (303, 212, '20220818105233', 4, 'A0021', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-14 11:19:56', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (304, 227, '20220814214249', 1, 'T026', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-14 21:42:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (305, 227, '20220817195511', 33, 'T058', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-14 21:42:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (306, 210, '20220817170523', 21, 'WH100', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-14 23:13:23', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (307, 208, '20220816133617', 7, 'V00031', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-14 23:16:45', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (308, 205, '20220815110633', 5, 'ITEM00000136', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 08:51:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (309, 218, '20231111111200', 37, 'T00060', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 09:53:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (310, 215, '20220815185151', 18, 'MO202208150018', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 10:12:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (311, 226, '20220815143729', 8, 'R20220815008', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 10:44:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (312, 205, '20220815140036', 3, 'ITEM00000139', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 11:06:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (313, 225, '20220815111142', 1, 'IQC20220815001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 11:11:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (314, 207, '20220815132338', 6, 'C00063', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 13:23:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (315, 207, '20220815132340', 4, 'C00067', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 13:23:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (316, 207, '20220822100445', 95, 'C00162', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 13:23:41', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (317, 230, '20220818164931', 21, 'SUB030', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 14:40:05', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (318, 205, '20220817093425', 51, 'ITEM00000190', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 15:43:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (319, 219, '20220818141839', 28, 'PROCESS105', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 16:50:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (320, 229, '20220815172658', 2, 'RTV20220815002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 17:12:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (321, 220, '20220815200538', 2, 'R1054', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-15 19:52:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (322, 220, '20220816155501', 6, 'R1060', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 00:59:25', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (323, 226, '20220816173419', 18, 'R20220816018', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 09:24:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (324, 215, '20220816232550', 38, 'MO202208160038', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 10:18:25', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (325, 225, '20220816201615', 4, 'IQC20220816004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 10:32:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (326, 208, '20220816140813', 5, 'V00036', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 13:36:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (327, 208, '20220823111843', 12, 'V00048', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 14:08:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (328, 229, '20220816195356', 6, 'RTV20220816006', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 17:35:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (329, 220, '20220818105353', 6, 'R1066', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 19:55:41', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (330, 217, '20220819093714', 7, 'TT032', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-16 19:58:24', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (331, 215, '20220817222518', 14, 'MO202208170014', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 08:47:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (332, 209, '20220820094836', 17, 'WS051', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 08:55:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (333, 229, '20220817091138', 2, 'RTV20220817002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 09:11:36', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (334, 205, '20220818115033', 32, 'ITEM00000222', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 09:34:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (335, 206, '20220822091118', 19, 'ITEM_TYPE_0085', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 11:14:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (336, 226, '20220817205507', 22, 'R20220817022', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 14:03:20', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (337, 225, '20220817203604', 5, 'IQC20220817005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 15:57:28', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (338, 210, '20220817170524', 1, 'WH101', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 17:05:24', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (339, 233, '20220817231312', 6, 'ISSUE20220817006', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-17 23:02:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (340, 226, '20220818211659', 12, 'R20220818012', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 09:30:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (341, 210, '20220822145345', 35, 'WH136', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 09:39:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (342, 225, '20220818165508', 12, 'IQC20220818012', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 09:41:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (343, 229, '20220818180526', 7, 'RTV20220818007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 10:10:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (344, 215, '20220818230633', 77, 'MO202208180077', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 10:33:04', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (345, 220, '20220819091351', 17, 'R1083', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 10:53:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (346, 212, '20220820170019', 5, 'A0026', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 11:07:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (347, 216, '20220818164828', 11, 'WS0045', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 11:39:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (348, 227, '20220818160823', 8, 'T066', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 13:40:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (349, 205, '20220818134540', 1, 'ITEM00000223', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 13:45:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (350, 205, '20220818141238', 3, 'ITEM00000226', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 14:04:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (351, 205, '20220819101459', 33, 'ITEM00000259', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 14:13:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (352, 219, '20220818144345', 2, 'PROCESS107', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 14:43:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (353, 227, '20220818175718', 3, 'T069', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 16:08:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (354, 216, '20250522171029', 96, 'WS0141', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 16:48:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (355, 230, '20241226150737', 19, 'SUB049', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 16:56:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (356, 227, '20220820110823', 7, 'T076', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-18 17:57:45', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (357, 219, '20250227115115', 89, 'PROCESS196', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 00:22:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (358, 226, '20220819211451', 22, 'R20220819022', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 08:46:50', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (359, 215, '20220819211957', 44, 'MO202208190044', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 08:47:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (360, 225, '20220819213654', 41, 'IQC20220819041', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 08:49:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (361, 214, '20220821094813', 15, 'M0041', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 09:12:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (362, 220, '20220819173023', 13, 'R1096', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 09:13:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (363, 217, '20220821133355', 15, 'TT047', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 09:37:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (364, 236, '20220819111319', 3, '32323232323232323232323232ITEM_TYPE_', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 11:13:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (365, 236, '20220819142129', 64, 'IF2022081929', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 11:16:04', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (366, 236, '20220819145515', 12, 'IF2022081915', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 14:21:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (367, 236, '20220819205101', 16, 'IF2022081901', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 16:18:20', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (368, 236, '20220823103219', 76, 'IF2022082319', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 20:51:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (369, 229, '20220819205514', 1, 'RTV20220819001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 20:55:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (370, 220, '20250516144213', 28, 'R1124', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-19 21:12:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (371, 209, '20220820160129', 7, 'WS058', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 09:48:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (372, 215, '20220820222241', 39, 'MO202208200039', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 10:00:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (373, 226, '20220820215444', 21, 'R20220820021', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 10:13:38', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (374, 227, '20220820110825', 2, 'T078', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 11:08:24', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (375, 227, '20220820220731', 17, 'T095', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 11:08:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (376, 225, '20220820160353', 3, 'IQC20220820003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 13:27:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (377, 209, '20250205105159', 26, 'WS084', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 16:01:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (378, 227, '20220823083639', 10, 'T105', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 22:07:33', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (379, 215, '20220821192938', 5, 'MO202208210005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 00:51:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (380, 214, '20220821094815', 1, 'M0042', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 09:48:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (381, 212, '20250312144005', 21, 'A0047', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 13:28:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (382, 214, '20250205105545', 16, 'M0058', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 13:31:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (383, 217, '20220823205336', 11, 'TT058', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 13:45:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (384, 226, '20220821225220', 7, 'R20220821007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 15:16:36', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (385, 215, '20220822234830', 19, 'MO202208220019', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 08:38:59', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (386, 226, '20220822192029', 25, 'R20220822025', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 08:48:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (387, 219, '20220822090456', 1, 'PROCESS140', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 09:04:56', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (388, 219, '20220822090503', 1, 'PROCESS152', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 09:05:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (389, 206, '20250312103442', 12, 'ITEM_TYPE_0097', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 09:11:56', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (390, 229, '20220822155824', 7, 'RTV20220822007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 09:13:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (391, 207, '20220822100442', 1, 'C00153', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 10:04:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (392, 207, '20220822102252', 5, 'C00167', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 10:05:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (393, 207, '20250922104624', 41, 'C00002', 2, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 10:22:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (394, 210, '20220823083833', 3, 'WH139', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 14:53:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (395, 225, '20220822154721', 1, 'IQC20220822001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 15:47:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (396, 226, '20220823203609', 20, 'R20220823020', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 00:41:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (397, 215, '20220823200644', 52, 'MO202208230052', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 07:51:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (398, 210, '20250930120311', 26, 'WH003', 3, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 08:38:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (399, 229, '20220823205401', 5, 'RTV20220823005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 08:43:32', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (400, 227, '20220823184025', 12, 'T117', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 08:58:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (401, 225, '20220823192837', 7, 'IQC20220823007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 09:47:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (402, 236, '20220823173612', 17, 'IF2022082312', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 10:41:04', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (403, 208, '20250922162701', 25, 'V00005', 5, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 15:09:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (404, 236, '20220823192141', 10, 'IF2022082341', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 19:08:33', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (405, 236, '20220927102019', 16, 'IF2022092719', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 19:21:45', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (406, 215, '20220828084935', 6, 'MO202208280006', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-28 08:36:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (407, 237, '20220829224554', 4, 'IPQC202208290004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-29 22:09:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (408, 225, '20220831211548', 3, 'IQC20220831003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-31 20:57:09', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (409, 238, '20220901212705', 4, 'OQC20220901004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-01 20:35:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (410, 226, '20220902104056', 4, 'R20220902004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-02 10:36:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (411, 233, '20220902104302', 1, 'ISSUE20220902001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-02 10:43:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (412, 239, '20220904223417', 10, 'PBACK20220904010', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-03 23:50:32', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (413, 237, '20220909211934', 1, 'IPQC202209090001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-09 21:19:38', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (414, 226, '20220910111422', 2, 'R20220910002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-10 10:57:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (415, 226, '20220912232033', 1, 'R20220912001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-12 23:20:33', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (416, 226, '20220913223354', 1, 'R20220913001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-13 22:33:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (417, 233, '20220913225049', 2, 'ISSUE20220913002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-13 22:35:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (418, 240, '20220915232017', 1, 'RT202209150001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-15 23:20:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (419, 226, '20220916212404', 1, 'R20220916001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-16 21:24:06', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (420, 241, '20220923105914', 1, 'PR20220923001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-23 10:59:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (421, 215, '20220926212817', 2, 'MO202209260002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-26 21:27:05', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (422, 215, '20220927112106', 2, 'MO202209270002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-27 10:25:50', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (423, 226, '20220927131833', 2, 'R20220927002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-27 13:15:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (424, 242, '20221030003901', 5, 'REP2022005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-09-28 22:02:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (425, 243, '20221005194837', 3, 'PS20221005003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-05 19:46:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (426, 233, '20221006132703', 1, 'ISSUE20221006001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-06 13:27:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (427, 244, '20221006214134', 1, 'RS20221006001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-06 21:41:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (428, 245, '20221011233528', 7, 'PACK202210110007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-11 01:23:50', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (429, 240, '20221015152217', 1, 'RT202210150001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-15 15:22:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (430, 236, '20221022210843', 7, 'IF20221022007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-22 20:43:20', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (431, 236, '20221025204220', 4, 'IF20221025004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-25 20:38:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (432, 236, '20221026212601', 3, 'IF20221026003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-26 21:15:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (433, 226, '20221026231933', 1, 'R20221026001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-26 23:19:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (434, 229, '20221027210214', 1, 'RTV20221027001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-27 21:02:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (435, 240, '20221027221229', 2, 'RT202210270002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-27 22:11:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (436, 241, '20221027225011', 1, 'PR20221027001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-27 22:50:12', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (437, 243, '20221027231017', 1, 'PS20221027001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-27 23:10:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (438, 245, '20221029234108', 3, 'PACK202210290003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-29 23:10:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (439, 225, '20221030164100', 1, 'IQC20221030001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-10-30 16:41:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (440, 215, '20221103223659', 3, 'MO202211030003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-03 21:39:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (441, 226, '20221105195223', 5, 'R20221105005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-05 19:26:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (442, 229, '20221105193737', 1, 'RTV20221105001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-05 19:37:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (443, 233, '20221105195829', 4, 'ISSUE20221105004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-05 19:42:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (444, 240, '20221105195732', 1, 'RT202211050001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-05 19:57:32', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (445, 241, '20221115212306', 1, 'PR20221115001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-15 21:23:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (446, 226, '20221115214315', 4, 'R20221115004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-15 21:27:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (447, 229, '20221115214430', 1, 'RTV20221115001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-15 21:44:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (448, 233, '20221115232625', 7, 'ISSUE20221115007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-15 21:50:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (449, 240, '20221115233222', 1, 'RT202211150001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-15 23:32:23', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (450, 241, '20221119162353', 4, 'PR20221119004', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-19 10:44:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (451, 226, '20221119141933', 2, 'R20221119002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-19 12:11:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (452, 236, '20221119141004', 1, 'IF20221119001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-19 14:10:05', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (453, 243, '20221119164023', 2, 'PS20221119002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-19 16:39:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (454, 244, '20221119164159', 1, 'RS20221119001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-19 16:42:00', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (455, 246, '20221130220243', 3, 'TR20221130003', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-11-30 21:59:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (456, 246, '20221204142346', 1, 'TR20221204001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-12-04 14:23:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (457, 241, '20221204152859', 1, 'PR20221204001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-12-04 15:28:59', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (458, 233, '20221204152931', 1, 'ISSUE20221204001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-12-04 15:29:31', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (459, 246, '20221206190440', 1, 'TR20221206001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-12-06 19:04:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (460, 246, '20221207185741', 2, 'TR20221207002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-12-07 18:42:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (461, 247, '20221209122247', 1, 'SN-IF202208243920221209000001', 0, 'IF2022082439', '', NULL, NULL, 0, 0, '', '2022-12-09 12:22:48', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (462, 236, '20230304180258', 1, 'IF20230304001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-03-04 19:19:25', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (463, 221, '20231127103652', 24, 'TASK20230024', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-03-04 19:40:36', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (464, 236, '20230305182553', 6, 'IF20230305006', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-03-05 15:47:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (465, 247, '20230306185218', 5, 'SN-IF202208243720230306000005', 0, 'IF2022082437', '', NULL, NULL, 0, 0, '', '2023-03-06 18:52:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (466, 225, '20230310204736', 2, 'IQC20230310002', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-03-10 20:45:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (467, 226, '20230605170607', 4, 'R20230605004', 0, '', '', NULL, NULL, 0, 0, '', '2023-06-05 17:04:05', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (468, 226, '20230608162433', 2, 'R20230608002', 0, '', '', NULL, NULL, 0, 0, '', '2023-06-08 15:30:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (469, 226, '20230613145535', 1, 'R20230613001', 0, '', '', NULL, NULL, 0, 0, '', '2023-06-13 14:55:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (470, 226, '20230615142745', 4, 'R20230615004', 0, '', '', NULL, NULL, 0, 0, '', '2023-06-15 09:12:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (471, 226, '20230825201547', 1, 'R20230825001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-08-25 20:15:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (472, 236, '20230905202141', 4, 'IF20230905004', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-09-05 20:19:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (473, 226, '20230905202609', 1, 'R20230905001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-09-05 20:26:09', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (474, 215, '20230905203008', 4, 'MO202309050004', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-09-05 20:27:20', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (475, 233, '20230905203917', 1, 'ISSUE20230905001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-09-05 20:39:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (476, 241, '20230905205116', 1, 'PR20230905001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-09-05 20:51:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (477, 225, '20230905210044', 1, 'IQC20230905001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-09-05 21:00:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (478, 215, '20230921202108', 1, 'MO202309210001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-09-21 20:21:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (479, 243, '20231010180612', 1, 'PS20231010001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-10 18:06:12', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (480, 248, '20231017111110', 1, 'FB202310170001', 0, '', '', NULL, NULL, 0, 0, '', '2023-10-17 11:11:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (481, 237, '20231017163722', 7, 'IPQC202310170007', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-17 16:05:28', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (482, 223, '20231019142225', 2, 'QCT2023002', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-17 16:28:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (483, 236, '20231017201337', 1, 'IF20231017001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-17 20:13:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (484, 225, '20231017210102', 1, 'IQC20231017001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-17 21:01:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (485, 237, '20231018160141', 4, 'IPQC202310180004', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-18 10:12:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (486, 225, '20231018163758', 1, 'IQC20231018001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-18 16:37:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (487, 226, '20231019141441', 1, 'R20231019001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-19 14:14:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (488, 225, '20231019151010', 5, 'IQC20231019005', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-19 14:18:48', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (489, 215, '20231029225916', 4, 'MO202310290004', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-29 22:53:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (490, 249, '20231030150119', 3, 'OI202310300003', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-30 14:26:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (491, 250, '20231030201833', 1, 'OR202310300001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-30 20:18:33', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (492, 250, '20231031164803', 1, 'OR202310310001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-10-31 16:48:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (493, 247, '20231101224447', 15, 'SN-IF202208240420231101000015', 0, 'IF2022082404', '', NULL, NULL, 0, 0, '', '2023-11-01 22:34:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (494, 237, '20231104212959', 1, 'IPQC202311040001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-11-04 21:29:59', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (495, 225, '20231112204800', 1, 'IQC20231112001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-11-12 20:47:59', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (496, 236, '20231120212133', 1, 'IF20231120001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-11-20 21:21:32', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (497, 215, '20231120220233', 3, 'MO202311200003', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-11-20 21:39:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (498, 248, '20231120222037', 2, 'FB202311200002', 0, '', '', NULL, NULL, 0, 0, '', '2023-11-20 22:15:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (499, 238, '20231120223801', 1, 'OQC20231120001', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-11-20 22:38:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (500, 215, '20231127102842', 7, 'MO202311270007', 0, NULL, '', NULL, NULL, 0, 0, '', '2023-11-27 10:20:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (501, 248, '20231127103822', 1, 'FB202311270001', 0, '', '', NULL, NULL, 0, 0, '', '2023-11-27 10:38:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (502, 226, '20240517164217', 1, 'R20240517001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-05-17 16:42:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (503, 251, '20250401144641', 26, 'T026', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-05-20 12:01:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (504, 226, '20240619153334', 1, 'R20240619001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-06-19 15:33:33', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (505, 215, '20240906111624', 2, 'MO202409060002', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-09-06 11:14:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (506, 236, '20240906153544', 9, 'IF20240906009', 0, '', '', NULL, NULL, 0, 0, '', '2024-09-06 15:05:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (507, 233, '20240908094739', 3, 'ISSUE20240908003', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-09-08 09:39:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (508, 225, '20241113155529', 7, 'IQC20241113007', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-11-13 14:47:05', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (509, 223, '20241113152950', 1, 'QCT2024001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-11-13 15:29:50', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (510, 226, '20241113162830', 1, 'R20241113001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-11-13 16:28:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (511, 236, '20241118165010', 1, 'IF20241118001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-11-18 16:50:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (512, 225, '20241129152535', 1, 'IQC20241129001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-11-29 15:25:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (513, 225, '20241203152847', 1, 'IQC20241203001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-03 15:28:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (514, 252, '20241203235213', 15, 'P20241203015', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-03 19:03:12', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (515, 237, '20241203233044', 2, 'IPQC202412030002', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-03 23:07:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (516, 238, '20241203235152', 2, 'OQC20241203002', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-03 23:50:12', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (517, 253, '20241210203814', 13, 'C0000000013', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-05 14:17:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (518, 254, '20250604144929', 12, 'PRINTER012', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-05 14:36:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (519, 255, '20241209211728', 1, 'AN20241209001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-09 21:17:28', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (520, 225, '20241209222915', 2, 'IQC20241209002', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-09 22:24:04', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (521, 252, '20241209224555', 6, 'P20241209006', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-09 22:29:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (522, 225, '20241210170902', 3, 'IQC20241210003', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-10 16:20:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (523, 252, '20241210233916', 29, 'P20241210029', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-10 16:20:37', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (531, 247, '20241210224911', 10, 'SN-IF202208242820241210000010', 0, 'IF2022082428', '', NULL, NULL, 0, 0, '', '2024-12-10 21:32:25', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (532, 237, '20241210232800', 8, 'IPQC202412100008', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-10 23:21:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (533, 252, '20241211110155', 7, 'P20241211007', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-11 00:35:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (534, 226, '20241220145930', 2, 'R20241220002', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-20 14:09:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (535, 255, '20241220144455', 1, 'AN20241220001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-20 14:44:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (536, 225, '20241220144838', 1, 'IQC20241220001', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-20 14:48:38', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (537, 252, '20241229172817', 5, 'P20241229005', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-29 15:47:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (538, 252, '20241230201553', 2, 'P20241230002', 0, NULL, '', NULL, NULL, 0, 0, '', '2024-12-30 20:13:28', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (539, 241, '20250116121035', 1, 'PR20250116001', 0, '', '', NULL, NULL, 0, 0, '', '2025-01-16 12:10:36', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (540, 240, '20250116173817', 1, 'RT202501160001', 0, '', '', NULL, NULL, 0, 0, '', '2025-01-16 17:38:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (541, 226, '20250207114943', 2, 'R20250207002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-07 11:49:28', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (542, 215, '20250208172237', 10, 'MO202502080010', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-08 15:08:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (543, 225, '20250208180026', 2, 'IQC20250208002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-08 17:59:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (544, 248, '20250211152304', 3, 'FB202502110003', 0, '', '', NULL, NULL, 0, 0, '', '2025-02-11 14:47:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (545, 236, '20250211155749', 1, 'IF20250211001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-11 15:57:48', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (546, 215, '20250221172058', 1, 'MO202502210001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-21 17:20:59', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (547, 256, '20250311211444', 7, 'DEPT007', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-24 11:34:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (548, 255, '20250225103907', 8, 'AN20250225008', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-25 10:13:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (549, 225, '20250225104530', 5, 'IQC20250225005', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-25 10:31:46', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (550, 232, '20250521142706', 30, 'BAT00000030', 0, '', '', NULL, NULL, 0, 0, '', '2025-02-28 17:06:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (551, 236, '20250228175838', 4, 'IF20250228004', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-28 17:48:17', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (552, 226, '20250228182725', 1, 'R20250228001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-02-28 18:27:25', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (553, 226, '20250303143300', 4, 'R20250303004', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-03 13:55:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (554, 229, '20250303225559', 3, 'RTV20250303003', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-03 21:21:15', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (555, 226, '20250304115600', 4, 'R20250304004', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-04 11:53:29', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (556, 229, '20250304145737', 3, 'RTV20250304003', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-04 14:50:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (557, 249, '20250304181555', 10, 'OI202503040010', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-04 16:55:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (558, 240, '20250305185018', 2, 'RT202503050002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-05 18:42:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (559, 237, '20250306102654', 4, 'IPQC202503060004', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-06 09:45:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (560, 257, '20250306214213', 6, 'RQC20250306006', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-06 17:22:25', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (561, 249, '20250306212254', 1, 'OI202503060001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-06 21:22:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (562, 240, '20250306212528', 1, 'RT202503060001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-06 21:25:28', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (563, 257, '20250307120006', 9, 'RQC20250307009', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-07 10:30:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (564, 248, '20250307112704', 1, 'FB202503070001', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-07 11:27:04', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (565, 252, '20250307115414', 2, 'P20250307002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-07 11:49:23', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (566, 240, '20250307142455', 1, 'RT202503070001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-07 14:24:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (567, 249, '20250311211648', 1, 'OI202503110001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-11 21:16:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (568, 236, '20250312113204', 6, 'IF20250312006', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 10:34:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (569, 215, '20250312113849', 10, 'MO202503120010', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 11:09:12', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (570, 221, '20250312142651', 15, 'TASK20250015', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 11:41:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (571, 255, '20250312184744', 5, 'AN20250312005', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 15:28:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (572, 229, '20250312160123', 5, 'RTV20250312005', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 15:33:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (573, 225, '20250312172057', 7, 'IQC20250312007', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 15:53:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (574, 226, '20250312184840', 6, 'R20250312006', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 15:58:23', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (575, 233, '20250312162252', 1, 'ISSUE20250312001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 16:22:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (576, 240, '20250312231053', 3, 'RT202503120003', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 23:08:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (577, 257, '20250312231823', 2, 'RQC20250312002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-12 23:10:05', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (578, 248, '20250312235109', 1, 'FB202503120001', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-12 23:51:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (579, 248, '20250313181600', 10, 'FB202503130010', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-13 10:06:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (580, 237, '20250313181647', 7, 'IPQC202503130007', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-13 14:21:06', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (581, 241, '20250313235157', 2, 'PR20250313002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-13 23:42:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (582, 241, '20250314000158', 2, 'PR20250314002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-14 00:01:26', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (583, 258, '20250314094940', 1, 'SN20250314001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-14 09:49:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (584, 243, '20250314230517', 2, 'PS20250314002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-14 23:04:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (585, 233, '20250315232507', 3, 'ISSUE20250315003', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-15 10:59:09', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (586, 248, '20250315113102', 4, 'FB202503150004', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-15 11:02:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (587, 237, '20250315143054', 3, 'IPQC202503150003', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-15 11:16:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (588, 243, '20250315143356', 1, 'PS20250315001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-15 14:33:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (589, 241, '20250315203358', 2, 'PR20250315002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-15 14:50:22', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (590, 236, '20250315213051', 5, 'IF20250315005', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-15 21:22:21', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (591, 238, '20250315230603', 8, 'OQC20250315008', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-15 22:13:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (592, 244, '20250315232932', 1, 'RS20250315001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-15 23:29:31', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (593, 244, '20250316004503', 2, 'RS20250316002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-16 00:12:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (594, 244, '20250317095058', 2, 'RS20250317002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-17 09:49:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (595, 257, '20250317180053', 2, 'RQC20250317002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-17 17:55:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (596, 233, '20250317183141', 1, 'ISSUE20250317001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-17 18:31:40', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (597, 215, '20250318110305', 15, 'MO202503180015', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-18 09:41:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (598, 248, '20250318142934', 2, 'FB202503180002', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-18 14:28:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (599, 237, '20250318142826', 1, 'IPQC202503180001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-18 14:28:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (600, 246, '20250318183104', 4, 'TR20250318004', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-18 18:20:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (601, 246, '20250319142318', 2, 'TR20250319002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-19 12:03:01', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (602, 236, '20250321174516', 1, 'IF20250321001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-21 17:45:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (603, 226, '20250324145423', 1, 'R20250324001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-24 14:54:23', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (604, 240, '20250325162814', 1, 'RT202503250001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-25 16:28:14', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (605, 255, '20250327102538', 2, 'AN20250327002', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-27 10:22:00', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (606, 226, '20250327125549', 1, 'R20250327001', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-27 12:55:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (607, 226, '20250330135253', 1, 'R20250330001', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-30 13:52:44', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (608, 248, '20250331212351', 1, 'FB202503310001', 0, '', '', NULL, NULL, 0, 0, '', '2025-03-31 21:23:52', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (609, 259, '20250423121112', 2, 'STP002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-03-31 21:56:36', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (610, 260, '20250401230826', 1, 'ST2025040101', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-01 23:08:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (611, 261, '20250430103114', 12, 'CLIENT012', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-03 11:01:20', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (612, 260, '20250407185501', 12, 'ST2025040712', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-07 17:51:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (613, 248, '20250408221447', 5, 'FB202504080005', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-08 00:21:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (614, 226, '20250408101631', 2, 'R20250408002', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-08 10:12:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (615, 225, '20250408105555', 1, 'IQC20250408001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-08 10:55:57', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (616, 255, '20250408171950', 12, 'AN20250408012', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-08 17:18:45', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (617, 248, '20250409154736', 7, 'FB202504090007', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-09 15:19:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (618, 249, '20250412124240', 2, 'OI202504120002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-12 12:40:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (619, 215, '20250412124206', 1, 'MO202504120001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-12 12:42:07', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (620, 250, '20250412173846', 2, 'OR202504120002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-12 17:08:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (621, 240, '20250412194400', 1, 'RT202504120001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-12 19:44:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (622, 248, '20250412200756', 1, 'FB202504120001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-12 20:07:56', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (623, 225, '20250412214457', 7, 'IQC20250412007', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-12 21:33:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (624, 229, '20250414174026', 3, 'RTV20250414003', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-14 10:16:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (625, 233, '20250414104033', 1, 'ISSUE20250414001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-14 10:40:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (626, 226, '20250414140740', 1, 'R20250414001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-14 14:07:42', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (627, 215, '20250415172626', 3, 'MO202504150003', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-15 17:11:36', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (628, 229, '20250415175215', 1, 'RTV20250415001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-15 17:52:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (629, 240, '20250415175817', 1, 'RT202504150001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-15 17:58:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (630, 240, '20250417120420', 1, 'RT202504170001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-17 12:04:20', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (631, 241, '20250417173727', 1, 'PR20250417001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-17 17:37:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (632, 258, '20250418112553', 1, 'SN20250418001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-18 11:25:54', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (633, 243, '20250421162427', 2, 'PS20250421002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-21 14:30:03', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (634, 238, '20250421163138', 1, 'OQC20250421001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-21 16:31:39', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (635, 244, '20250421175348', 1, 'RS20250421001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-21 17:53:50', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (636, 244, '20250422104824', 3, 'RS20250422003', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-22 10:39:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (637, 246, '20250422184735', 4, 'TR20250422004', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-22 14:15:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (638, 246, '20250423105136', 1, 'TR20250423001', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-23 10:51:36', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (639, 260, '20250423172218', 12, 'ST2025042312', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-23 16:30:18', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (640, 240, '20250425154747', 4, 'RT202504250004', 0, '', '', NULL, NULL, 0, 0, '', '2025-04-25 15:19:29', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (641, 250, '20250425164134', 1, 'OR202504250001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-25 16:41:35', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (642, 225, '20250425183607', 1, 'IQC20250425001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-04-25 18:36:09', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (643, 242, '20250506161037', 2, 'REP2025002', 0, '', '', NULL, NULL, 0, 0, '', '2025-05-06 16:09:09', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (644, 262, '20250514180926', 7, 'C007', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-12 16:31:24', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (645, 252, '20250513221420', 1, 'P20250513001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-13 22:14:22', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (646, 263, '20250515172334', 6, 'MISCR20250515006', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-15 11:09:11', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (647, 215, '20250515150016', 1, 'MO202505150001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-15 15:00:16', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (648, 264, '20250516103553', 2, 'MISCI20250516002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-16 09:51:02', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (649, 236, '20250520201658', 1, 'IF20250520001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-20 20:16:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (650, 215, '20250520211030', 1, 'MO202505200001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-20 21:10:30', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (651, 226, '20250521142649', 2, 'R20250521002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-05-21 11:26:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (652, 248, '20250601163609', 1, 'FB202506010001', 0, '', '', NULL, NULL, 0, 0, '', '2025-06-01 16:36:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (653, 237, '20250601165214', 2, 'IPQC202506010002', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-06-01 16:47:43', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (654, 237, '20250612100627', 1, 'IPQC202506120001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-06-12 10:06:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (655, 252, '20250612103840', 6, 'P20250612006', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-06-12 10:06:49', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (656, 265, '20250627185329', 9, 'B0009', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-06-20 10:08:55', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (657, 215, '20250626110929', 1, 'MO202506260001', 0, NULL, '', NULL, NULL, 0, 0, '', '2025-06-26 11:09:30', '', NULL);
+
+-- ----------------------------
+-- Table structure for sys_auto_code_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_auto_code_rule`;
+CREATE TABLE `sys_auto_code_rule`  (
+  `rule_id` bigint NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `rule_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则编码',
+  `rule_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则名称',
+  `rule_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+  `max_length` int NULL DEFAULT NULL COMMENT '最大长度',
+  `is_padded` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '是否补齐',
+  `padded_char` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '补齐字符',
+  `padded_method` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'L' COMMENT '补齐方式',
+  `enable_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Y' COMMENT '是否启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`rule_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 266 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_auto_code_rule
+-- ----------------------------
+INSERT INTO `sys_auto_code_rule` VALUES (206, 'ITEM_TYPE_CODE', '物料分类编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-04-26 23:01:09', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (207, 'CLIENT_CODE', '客户编码规则', NULL, 6, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-06 21:20:29', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (208, 'VENDOR_CODE', '供应商编码规则', NULL, 6, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-06 22:50:13', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (209, 'WORKSHOP_CODE', '车间编码生成规则', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-07 17:48:52', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (210, 'WAREHOUSE_CODE', '仓库编码规则', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-07 21:59:51', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (211, 'LOCATION_CODE', '库区编码生成规则', NULL, 4, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 14:49:56', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (212, 'AREA_CODE', '库位编码规则', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 18:38:08', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (213, 'MACHINERY_TYPE_CODE', '设备类型编码规则', NULL, 10, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 19:46:09', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (214, 'MACHINERY_CODE', '设备编码规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-08 21:26:39', 'admin', '2022-08-23 09:15:17');
+INSERT INTO `sys_auto_code_rule` VALUES (215, 'WORKORDER_CODE', '生产工单编码规则1', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-09 11:39:59', 'admin', '2022-08-20 09:12:40');
+INSERT INTO `sys_auto_code_rule` VALUES (216, 'WORKSTATION_CODE', '工作站编码规则', NULL, 6, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-10 21:55:24', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (217, 'TOOL_TYPE_CODE', '工装夹具类型编码', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-11 00:21:37', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (218, 'TOOL_CODE', '工装夹具编码规则', NULL, 6, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-11 22:07:17', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (219, 'PROCESS_CODE', '工序编码规则', NULL, 10, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-12 00:09:45', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (220, 'ROUTE_CODE', '工艺流程编码规则', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-12 23:06:36', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (221, 'TASK_CODE', '生产任务编码规则', NULL, 12, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-15 18:22:29', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (222, 'QC_INDEX_CODE', '检测项编码规则', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-17 21:57:23', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (223, 'QC_TEMPLATE_CODE', '检测模板编码规则', NULL, 10, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-17 22:43:08', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (224, 'DEFECT_CODE', '常见缺陷编码', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-19 11:33:27', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (225, 'QC_IQC_CODE', '来料检验单编码规则', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-19 16:28:07', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (226, 'ITEMRECPT_CODE', '物料入库单编码规则', NULL, 12, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-05-22 20:51:29', 'admin', '2022-05-22 20:53:12');
+INSERT INTO `sys_auto_code_rule` VALUES (227, 'CAL_TEAM_CODE', '班组编码规则', NULL, 4, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-06 19:54:22', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (228, 'CAL_PLAN_CODE', '排班计划编号', NULL, 11, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-06 22:08:10', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (229, 'WM_RTVENDOR_CODE', '供应商退货单编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-13 15:48:07', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (230, 'SUBJECT_CODE', '设备点检保养项目编码', NULL, 6, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-16 20:27:54', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (231, 'CHECKPLAN_CODE', '点检编码规则', NULL, 11, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-06-16 21:50:00', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (232, 'BATCH_CODE', '批次规则', NULL, 11, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-07-14 12:02:10', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (233, 'ISSUE_CODE', '生产领料单编码', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-07-17 19:32:10', 'admin', '2022-07-17 19:32:57');
+INSERT INTO `sys_auto_code_rule` VALUES (234, '1', '2', NULL, 1, 'Y', '3', 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-07-29 16:34:20', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (236, 'ITEM_CODE', '物料规则', NULL, 13, 'N', '32', 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-08-19 10:44:20', 'admin', '2022-10-22 20:42:33');
+INSERT INTO `sys_auto_code_rule` VALUES (237, 'QC_PQC_CODE', '过程检验单编码', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-08-29 22:07:13', 'admin', '2025-03-13 14:20:26');
+INSERT INTO `sys_auto_code_rule` VALUES (238, 'QC_OQC_CODE', '出货编码规则', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-01 20:30:31', 'admin', '2024-12-10 23:21:34');
+INSERT INTO `sys_auto_code_rule` VALUES (239, 'PBACK_CODE', '生产退料单编码', '生产退料单编码', 16, 'N', '0', 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-03 23:47:11', 'admin', '2022-09-03 23:47:57');
+INSERT INTO `sys_auto_code_rule` VALUES (240, 'RTISSUE_CODE', '生产退库单编号规则', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-15 23:18:40', 'admin', '2022-09-15 23:19:04');
+INSERT INTO `sys_auto_code_rule` VALUES (241, 'PRODUCTRECPT_CODE', '产品入库单编码规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-23 10:57:47', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (242, 'DV_REPAIR_CODE', '维修工单编号规则', NULL, 10, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-09-28 21:59:54', 'admin', '2025-05-06 16:09:03');
+INSERT INTO `sys_auto_code_rule` VALUES (243, 'PRODUCTSALSE_CODE', '销售出库单编号', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-10-05 19:45:35', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (244, 'WM_RTSALSE_CODE', '销售退货单编码规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-10-06 21:40:18', 'admin', '2025-03-16 00:26:20');
+INSERT INTO `sys_auto_code_rule` VALUES (245, 'PACKAGE_CODE', '装箱单编码规则', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-10-11 01:22:08', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (246, 'TRANSFER_CODE', '转移单编码', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-11-30 21:58:37', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (247, 'SN_CODE', 'SN码', NULL, 30, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2022-12-09 11:22:03', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (248, 'FEEDBACK_CODE', '生产报工单编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2023-10-17 11:09:25', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (249, 'WM_OUTSOURCE_ISSUE_CODE', '外协发料单编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 14:24:35', 'admin', '2025-04-25 17:39:15');
+INSERT INTO `sys_auto_code_rule` VALUES (250, 'WM_OUTSOURCE_RECPT_CODE', '外协入库单编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2023-10-30 20:17:00', 'admin', '2025-04-25 17:39:08');
+INSERT INTO `sys_auto_code_rule` VALUES (251, 'PRINT_TEMPLATE_CODE', '打印模板编号生成规则', NULL, 4, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-05-20 11:59:37', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (252, 'QC_RESULT_CODE', '检测样品编号', NULL, 12, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-03 18:59:48', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (253, 'CARD_CODE', '流转卡编码规则', NULL, 11, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:06:40', 'admin', '2024-12-05 14:17:41');
+INSERT INTO `sys_auto_code_rule` VALUES (254, 'PRINTER_CODE', '打印机编号规则', NULL, 10, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:34:15', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (255, 'ARRIVALNOTICE_CODE', '到货通知单编号规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-09 21:15:58', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (256, 'DEPT_CODE', '部门编码规则', NULL, 7, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-02-24 11:33:55', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (257, 'QC_RQC_CODE', '退料检验单编码规则', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-03-06 17:20:14', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (258, 'WM_SALES_NOTICE_CODE', '发货通知单编码规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-03-14 09:30:45', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (259, 'WM_STOCK_TAKING_PLAN_CODE', '盘点方案编码规则', NULL, 6, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-03-31 21:38:48', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (260, 'WM_STOCK_TAKING_CODE', '盘点任务编码规则', NULL, 12, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-04-01 22:58:00', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (261, 'PRINTER_CLIENT_CODE', '打印机客户端编码规则', NULL, 10, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-04-03 10:49:36', 'admin', '2025-04-03 10:49:49');
+INSERT INTO `sys_auto_code_rule` VALUES (262, 'REPORT_CHART_CODE', '统计图表编号', NULL, 4, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-05-12 12:12:36', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (263, 'MISC_RECPT_CODE', '杂项入库单编码规则', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-05-15 11:06:51', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (264, 'MISC_ISSUE_CODE', '杂项出库单编码规则', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-05-16 09:49:26', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (265, 'BOM_CODE', 'BOM编码规则', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-06-20 10:07:51', '', NULL);
+
+-- ----------------------------
+-- Table structure for sys_config
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_config`;
+CREATE TABLE `sys_config`  (
+  `config_id` int NOT NULL AUTO_INCREMENT COMMENT '参数主键',
+  `config_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数名称',
+  `config_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数键名',
+  `config_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数键值',
+  `config_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`config_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_config
+-- ----------------------------
+INSERT INTO `sys_config` VALUES (1, '主框架页-默认皮肤样式名称', 'sys.index.skinName', 'skin-blue', 'Y', 'admin', '2025-08-29 16:28:04', '', NULL, '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow');
+INSERT INTO `sys_config` VALUES (2, '用户管理-账号初始密码', 'sys.user.initPassword', '123456', 'Y', 'admin', '2025-08-29 16:28:04', '', NULL, '初始化密码 123456');
+INSERT INTO `sys_config` VALUES (3, '主框架页-侧边栏主题', 'sys.index.sideTheme', 'theme-dark', 'Y', 'admin', '2025-08-29 16:28:04', '', NULL, '深色主题theme-dark，浅色主题theme-light');
+INSERT INTO `sys_config` VALUES (4, '账号自助-验证码开关', 'sys.account.captchaEnabled', 'true', 'Y', 'admin', '2025-08-29 16:28:04', '', NULL, '是否开启验证码功能（true开启，false关闭）');
+INSERT INTO `sys_config` VALUES (5, '账号自助-是否开启用户注册功能', 'sys.account.registerUser', 'false', 'Y', 'admin', '2025-08-29 16:28:04', 'admin', '2025-09-29 16:17:12', '是否开启注册用户功能（true开启，false关闭）');
+INSERT INTO `sys_config` VALUES (6, '用户登录-黑名单列表', 'sys.login.blackIPList', '', 'Y', 'admin', '2025-08-29 16:28:04', '', NULL, '设置登录IP黑名单限制，多个匹配项以;分隔，支持匹配（*通配、网段）');
+INSERT INTO `sys_config` VALUES (7, '用户管理-初始密码修改策略', 'sys.account.initPasswordModify', '1', 'Y', 'admin', '2025-08-29 16:28:04', '', NULL, '0：初始密码修改策略关闭，没有任何提示，1：提醒用户，如果未修改初始密码，则在登录时就会提醒修改密码对话框');
+INSERT INTO `sys_config` VALUES (8, '用户管理-账号密码更新周期', 'sys.account.passwordValidateDays', '0', 'Y', 'admin', '2025-08-29 16:28:04', '', NULL, '密码更新周期（填写数字，数据初始化值为0不限制，若修改必须为大于0小于365的正整数），如果超过这个周期登录系统时，则在登录时就会提醒修改密码对话框');
+
+-- ----------------------------
+-- Table structure for sys_dept
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_dept`;
+CREATE TABLE `sys_dept`  (
+  `dept_id` bigint NOT NULL AUTO_INCREMENT COMMENT '部门id',
+  `parent_id` bigint NULL DEFAULT 0 COMMENT '父部门id',
+  `ancestors` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '祖级列表',
+  `dept_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '部门名称',
+  `order_num` int NULL DEFAULT 0 COMMENT '显示顺序',
+  `leader` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '负责人',
+  `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系电话',
+  `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '邮箱',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '部门状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`dept_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 110 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_dept
+-- ----------------------------
+INSERT INTO `sys_dept` VALUES (100, 0, '0', 'NEXUS科技', 0, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', 'admin', '2025-09-30 13:01:03');
+INSERT INTO `sys_dept` VALUES (101, 100, '0,100', '深圳总公司', 1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (102, 100, '0,100', '长沙分公司', 2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (103, 101, '0,100,101', '研发部门', 1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (104, 101, '0,100,101', '市场部门', 2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (105, 101, '0,100,101', '测试部门', 3, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (106, 101, '0,100,101', '财务部门', 4, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (107, 101, '0,100,101', '运维部门', 5, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (108, 102, '0,100,102', '市场部门', 1, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+INSERT INTO `sys_dept` VALUES (109, 102, '0,100,102', '财务部门', 2, '若依', '15888888888', 'ry@qq.com', '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL);
+
+-- ----------------------------
+-- Table structure for sys_dict_data
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_dict_data`;
+CREATE TABLE `sys_dict_data`  (
+  `dict_code` bigint NOT NULL AUTO_INCREMENT COMMENT '字典编码',
+  `dict_sort` int NULL DEFAULT 0 COMMENT '字典排序',
+  `dict_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典标签',
+  `dict_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典键值',
+  `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
+  `css_class` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '样式属性（其他样式扩展）',
+  `list_class` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '表格回显样式',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`dict_code`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 167 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_dict_data
+-- ----------------------------
+INSERT INTO `sys_dict_data` VALUES (1, 1, '男', '0', 'sys_user_sex', '', '', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '性别男');
+INSERT INTO `sys_dict_data` VALUES (2, 2, '女', '1', 'sys_user_sex', '', '', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '性别女');
+INSERT INTO `sys_dict_data` VALUES (3, 3, '未知', '2', 'sys_user_sex', '', '', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '性别未知');
+INSERT INTO `sys_dict_data` VALUES (4, 1, '显示', '0', 'sys_show_hide', '', 'primary', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '显示菜单');
+INSERT INTO `sys_dict_data` VALUES (5, 2, '隐藏', '1', 'sys_show_hide', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '隐藏菜单');
+INSERT INTO `sys_dict_data` VALUES (6, 1, '正常', '0', 'sys_normal_disable', '', 'primary', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '正常状态');
+INSERT INTO `sys_dict_data` VALUES (7, 2, '停用', '1', 'sys_normal_disable', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '停用状态');
+INSERT INTO `sys_dict_data` VALUES (8, 1, '正常', '0', 'sys_job_status', '', 'primary', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '正常状态');
+INSERT INTO `sys_dict_data` VALUES (9, 2, '暂停', '1', 'sys_job_status', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '停用状态');
+INSERT INTO `sys_dict_data` VALUES (10, 1, '默认', 'DEFAULT', 'sys_job_group', '', '', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '默认分组');
+INSERT INTO `sys_dict_data` VALUES (11, 2, '系统', 'SYSTEM', 'sys_job_group', '', '', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '系统分组');
+INSERT INTO `sys_dict_data` VALUES (12, 1, '是', 'Y', 'sys_yes_no', '', 'primary', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '系统默认是');
+INSERT INTO `sys_dict_data` VALUES (13, 2, '否', 'N', 'sys_yes_no', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '系统默认否');
+INSERT INTO `sys_dict_data` VALUES (14, 1, '通知', '1', 'sys_notice_type', '', 'warning', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '通知');
+INSERT INTO `sys_dict_data` VALUES (15, 2, '公告', '2', 'sys_notice_type', '', 'success', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '公告');
+INSERT INTO `sys_dict_data` VALUES (16, 1, '正常', '0', 'sys_notice_status', '', 'primary', 'Y', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '正常状态');
+INSERT INTO `sys_dict_data` VALUES (17, 2, '关闭', '1', 'sys_notice_status', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '关闭状态');
+INSERT INTO `sys_dict_data` VALUES (18, 99, '其他', '0', 'sys_oper_type', '', 'info', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '其他操作');
+INSERT INTO `sys_dict_data` VALUES (19, 1, '新增', '1', 'sys_oper_type', '', 'info', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '新增操作');
+INSERT INTO `sys_dict_data` VALUES (20, 2, '修改', '2', 'sys_oper_type', '', 'info', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '修改操作');
+INSERT INTO `sys_dict_data` VALUES (21, 3, '删除', '3', 'sys_oper_type', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '删除操作');
+INSERT INTO `sys_dict_data` VALUES (22, 4, '授权', '4', 'sys_oper_type', '', 'primary', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '授权操作');
+INSERT INTO `sys_dict_data` VALUES (23, 5, '导出', '5', 'sys_oper_type', '', 'warning', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '导出操作');
+INSERT INTO `sys_dict_data` VALUES (24, 6, '导入', '6', 'sys_oper_type', '', 'warning', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '导入操作');
+INSERT INTO `sys_dict_data` VALUES (25, 7, '强退', '7', 'sys_oper_type', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '强退操作');
+INSERT INTO `sys_dict_data` VALUES (26, 8, '生成代码', '8', 'sys_oper_type', '', 'warning', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '生成操作');
+INSERT INTO `sys_dict_data` VALUES (27, 9, '清空数据', '9', 'sys_oper_type', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '清空操作');
+INSERT INTO `sys_dict_data` VALUES (28, 1, '成功', '0', 'sys_common_status', '', 'primary', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '正常状态');
+INSERT INTO `sys_dict_data` VALUES (29, 2, '失败', '1', 'sys_common_status', '', 'danger', 'N', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '停用状态');
+INSERT INTO `sys_dict_data` VALUES (100, 1, '企业', 'ENTERPRISE', 'bd_client_type', NULL, 'primary', 'N', '0', 'admin', '2025-09-17 16:19:28', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (101, 2, '个人', 'PERSON', 'bd_client_type', NULL, 'success', 'N', '0', 'admin', '2025-09-17 16:19:56', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (102, 1, '输入字符', 'INPUTCHAR', 'sys_autocode_parttype', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:41:21', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (103, 2, '当前日期时间', 'NOWDATE', 'sys_autocode_parttype', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:41:38', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (104, 3, '固定字符', 'FIXCHAR', 'sys_autocode_parttype', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:41:52', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (105, 4, '流水号', 'SERIALNO', 'sys_autocode_parttype', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:42:06', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (106, 1, '按年', 'YEAR', 'sys_autocode_cyclemethod', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:42:58', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (107, 2, '按月', 'MONTH', 'sys_autocode_cyclemethod', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:43:10', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (108, 3, '按天', 'DAY', 'sys_autocode_cyclemethod', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:43:29', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (109, 4, '按小时', 'HOUR', 'sys_autocode_cyclemethod', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:46:37', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (110, 4, '按分钟', 'MINUTE', 'sys_autocode_cyclemethod', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:46:54', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (111, 5, '按传入字符', 'OTHER', 'sys_autocode_cyclemethod', NULL, 'default', 'N', '0', 'admin', '2025-09-18 16:47:07', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (112, 1, '优质客户', 'A', 'bd_client_level', NULL, 'primary', 'N', '0', 'admin', '2025-09-22 11:00:57', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (113, 2, '正常客户', 'B', 'bd_client_level', NULL, 'success', 'N', '0', 'admin', '2025-09-22 11:01:29', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (114, 3, '重点关注', 'C', 'bd_client_level', NULL, 'warning', 'N', '0', 'admin', '2025-09-22 11:01:57', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (115, 4, '劣质客户', 'D', 'bd_client_level', NULL, 'danger', 'N', '0', 'admin', '2025-09-22 11:02:26', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (116, 5, '黑名单', 'E', 'bd_client_level', NULL, 'info', 'N', '0', 'admin', '2025-09-22 11:02:50', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (117, 1, '农、林、牧、渔业', 'A', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:19:46', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (118, 2, '采矿业', 'B', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:20:09', 'admin', '2025-09-22 15:20:21', NULL);
+INSERT INTO `sys_dict_data` VALUES (119, 3, '制造业', 'C', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:21:50', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (120, 4, '电力、热力、燃气及水生产和供应业', 'D', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:22:26', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (121, 5, '建筑业', 'E', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:22:46', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (122, 6, '批发和零售业', 'F', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:23:05', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (123, 7, '交通运输、仓储和邮政业', 'G', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:24:21', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (124, 8, '住宿和餐饮业', 'I', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:24:48', 'admin', '2025-09-22 15:24:52', NULL);
+INSERT INTO `sys_dict_data` VALUES (125, 9, '金融业', 'J', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:25:10', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (126, 10, '房地产业', 'K', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:25:32', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (127, 11, '租赁和商务服务业', 'L', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:25:56', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (128, 12, '科学研究和技术服务业', 'M', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:26:39', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (129, 13, '水利、环境和公共设施管理业', 'N', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:32:43', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (130, 14, '居民服务、修理和其他服务业', 'O', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:33:54', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (131, 15, '教育', 'P', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:34:09', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (132, 16, '卫生和社会工作', 'Q', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:34:28', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (133, 17, '文化、体育和娱乐业', 'R', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:34:57', 'admin', '2025-09-22 15:35:01', NULL);
+INSERT INTO `sys_dict_data` VALUES (134, 18, '公共管理、社会保障和社会组织', 'S', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:35:45', 'admin', '2025-09-22 15:35:49', NULL);
+INSERT INTO `sys_dict_data` VALUES (135, 19, '国际组织', 'T', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:36:03', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (136, 1, '北京市', '11', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:33', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (137, 2, '天津市', '12', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:43', 'admin', '2025-09-22 15:38:47', NULL);
+INSERT INTO `sys_dict_data` VALUES (138, 3, '河北省', '13', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:58', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (139, 4, '山西省', '14', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:10', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (140, 5, '内蒙古自治区', '15', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:28', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (141, 6, '辽宁省', '21', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:41', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (142, 7, '吉林省', '22', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:58', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (143, 8, '黑龙江省', '23', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:40:34', 'admin', '2025-09-22 15:40:39', NULL);
+INSERT INTO `sys_dict_data` VALUES (144, 9, '上海市', '31', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:40:54', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (145, 1, '原材料', '1', 'bd_vendor_category', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:42:18', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (146, 2, '标准件', '2', 'bd_vendor_category', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:42:34', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (147, 3, '服务类', '3', 'bd_vendor_category', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:42:45', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (148, 4, '综合型', '4', 'bd_vendor_category', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:42:59', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (149, 1, '合作中', 'ACTIVE', 'bd_vendor_status', NULL, 'success', 'N', '0', 'admin', '2025-09-22 15:44:26', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (150, 2, '已冻结', 'FROZEN', 'bd_vendor_status', NULL, 'warning', 'N', '0', 'admin', '2025-09-22 15:45:47', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (151, 1, '正常', '1', 'wm_warehouse_status', NULL, 'success', 'N', '0', 'admin', '2025-09-30 11:33:50', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (152, 2, '冻结', '0', 'wm_warehouse_status', NULL, 'warning', 'N', '0', 'admin', '2025-09-30 11:34:16', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (153, 1, '启用', '1', 'sys_core_status', NULL, 'success', 'N', '0', 'admin', '2025-09-30 14:47:49', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (154, 2, '停用', '0', 'sys_core_status', NULL, 'warning', 'N', '0', 'admin', '2025-09-30 14:48:03', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (155, 1, '否', '0', 'sys_true_or_false', NULL, 'danger', 'N', '0', 'admin', '2025-09-30 14:58:31', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (156, 1, '是', '1', 'sys_true_or_false', NULL, 'success', 'N', '0', 'admin', '2025-09-30 14:58:48', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (157, 1, '原材料', '1', 'bd_material_type', NULL, 'default', 'N', '0', 'admin', '2025-10-03 23:55:14', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (158, 2, '半成品', '2', 'bd_material_type', NULL, 'default', 'N', '0', 'admin', '2025-10-03 23:55:27', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (159, 3, '成品', '3', 'bd_material_type', NULL, 'default', 'N', '0', 'admin', '2025-10-03 23:58:15', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (160, 4, '辅料', '4', 'bd_material_type', NULL, 'default', 'N', '0', 'admin', '2025-10-03 23:58:25', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (161, 1, '自制', '1', 'bd_source_type', NULL, 'default', 'N', '0', 'admin', '2025-10-04 00:00:24', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (162, 2, '外购', '2', 'bd_source_type', NULL, 'default', 'N', '0', 'admin', '2025-10-04 00:00:36', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (163, 3, '委外', '3', 'bd_source_type', NULL, 'default', 'N', '0', 'admin', '2025-10-04 00:00:47', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (164, 1, '合格', '1', 'bd_quality_status', NULL, 'success', 'N', '0', 'admin', '2025-10-04 00:05:44', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (165, 2, '待检', '2', 'bd_quality_status', NULL, 'info', 'N', '0', 'admin', '2025-10-04 00:06:02', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (166, 3, '不合格', '3', 'bd_quality_status', NULL, 'danger', 'N', '0', 'admin', '2025-10-04 00:06:19', 'admin', '2025-10-04 00:06:24', NULL);
+
+-- ----------------------------
+-- Table structure for sys_dict_type
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_dict_type`;
+CREATE TABLE `sys_dict_type`  (
+  `dict_id` bigint NOT NULL AUTO_INCREMENT COMMENT '字典主键',
+  `dict_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典名称',
+  `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`dict_id`) USING BTREE,
+  UNIQUE INDEX `dict_type`(`dict_type` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 114 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_dict_type
+-- ----------------------------
+INSERT INTO `sys_dict_type` VALUES (1, '用户性别', 'sys_user_sex', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '用户性别列表');
+INSERT INTO `sys_dict_type` VALUES (2, '菜单状态', 'sys_show_hide', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '菜单状态列表');
+INSERT INTO `sys_dict_type` VALUES (3, '系统开关', 'sys_normal_disable', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '系统开关列表');
+INSERT INTO `sys_dict_type` VALUES (4, '任务状态', 'sys_job_status', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '任务状态列表');
+INSERT INTO `sys_dict_type` VALUES (5, '任务分组', 'sys_job_group', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '任务分组列表');
+INSERT INTO `sys_dict_type` VALUES (6, '系统是否', 'sys_yes_no', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '系统是否列表');
+INSERT INTO `sys_dict_type` VALUES (7, '通知类型', 'sys_notice_type', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '通知类型列表');
+INSERT INTO `sys_dict_type` VALUES (8, '通知状态', 'sys_notice_status', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '通知状态列表');
+INSERT INTO `sys_dict_type` VALUES (9, '操作类型', 'sys_oper_type', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '操作类型列表');
+INSERT INTO `sys_dict_type` VALUES (10, '系统状态', 'sys_common_status', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '登录状态列表');
+INSERT INTO `sys_dict_type` VALUES (100, '客户类型', 'bd_client_type', '0', 'admin', '2025-09-17 16:18:21', '', NULL, '客户类型');
+INSERT INTO `sys_dict_type` VALUES (101, '编码生成规则', 'sys_autocode_parttype', '0', 'admin', '2025-09-18 16:40:52', '', NULL, '编码生成规则');
+INSERT INTO `sys_dict_type` VALUES (102, '编码规则组成循环方式', 'sys_autocode_cyclemethod', '0', 'admin', '2025-09-18 16:42:34', '', NULL, '编码规则组成循环方式');
+INSERT INTO `sys_dict_type` VALUES (103, '客户等级', 'bd_client_level', '0', 'admin', '2025-09-22 10:59:46', 'admin', '2025-09-22 10:59:53', '客户等级');
+INSERT INTO `sys_dict_type` VALUES (104, '所属行业', 'bd_industry', '0', 'admin', '2025-09-22 15:17:23', '', NULL, '行业信息');
+INSERT INTO `sys_dict_type` VALUES (105, '地区', 'bd_region', '0', 'admin', '2025-09-22 15:36:46', '', NULL, '地区');
+INSERT INTO `sys_dict_type` VALUES (106, '供应商分类', 'bd_vendor_category', '0', 'admin', '2025-09-22 15:42:00', '', NULL, '供应商分类');
+INSERT INTO `sys_dict_type` VALUES (107, '合作状态', 'bd_vendor_status', '0', 'admin', '2025-09-22 15:43:50', '', NULL, '合作状态');
+INSERT INTO `sys_dict_type` VALUES (108, '仓库状态', 'wm_warehouse_status', '0', 'admin', '2025-09-30 11:33:24', '', NULL, '仓库状态');
+INSERT INTO `sys_dict_type` VALUES (109, '状态', 'sys_core_status', '0', 'admin', '2025-09-30 14:47:12', 'admin', '2025-09-30 14:47:31', '通用状态字典，0:停用 1:启用');
+INSERT INTO `sys_dict_type` VALUES (110, '系统自定义是否', 'sys_true_or_false', '0', 'admin', '2025-09-30 14:58:14', 'admin', '2025-09-30 15:05:30', '系统是否，0否，1是');
+INSERT INTO `sys_dict_type` VALUES (111, '物料类型', 'bd_material_type', '0', 'admin', '2025-10-03 23:54:48', '', NULL, '物料类型');
+INSERT INTO `sys_dict_type` VALUES (112, '物料来源类型', 'bd_source_type', '0', 'admin', '2025-10-03 23:59:55', '', NULL, '物料来源类型');
+INSERT INTO `sys_dict_type` VALUES (113, '质量状态', 'bd_quality_status', '0', 'admin', '2025-10-04 00:05:08', 'admin', '2025-10-04 00:05:15', '质量状态');
+
+-- ----------------------------
+-- Table structure for sys_job
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_job`;
+CREATE TABLE `sys_job`  (
+  `job_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务ID',
+  `job_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '任务名称',
+  `job_group` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'DEFAULT' COMMENT '任务组名',
+  `invoke_target` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调用目标字符串',
+  `cron_expression` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT 'cron执行表达式',
+  `misfire_policy` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '3' COMMENT '计划执行错误策略（1立即执行 2执行一次 3放弃执行）',
+  `concurrent` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '1' COMMENT '是否并发执行（0允许 1禁止）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1暂停）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注信息',
+  PRIMARY KEY (`job_id`, `job_name`, `job_group`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_job
+-- ----------------------------
+INSERT INTO `sys_job` VALUES (1, '系统默认（无参）', 'DEFAULT', 'ryTask.ryNoParams', '0/10 * * * * ?', '3', '1', '1', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_job` VALUES (2, '系统默认（有参）', 'DEFAULT', 'ryTask.ryParams(\'ry\')', '0/15 * * * * ?', '3', '1', '1', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_job` VALUES (3, '系统默认（多参）', 'DEFAULT', 'ryTask.ryMultipleParams(\'ry\', true, 2000L, 316.50D, 100)', '0/20 * * * * ?', '3', '1', '1', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+
+-- ----------------------------
+-- Table structure for sys_job_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_job_log`;
+CREATE TABLE `sys_job_log`  (
+  `job_log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务日志ID',
+  `job_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务名称',
+  `job_group` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务组名',
+  `invoke_target` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调用目标字符串',
+  `job_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '日志信息',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '执行状态（0正常 1失败）',
+  `exception_info` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '异常信息',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`job_log_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度日志表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_job_log
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for sys_logininfor
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_logininfor`;
+CREATE TABLE `sys_logininfor`  (
+  `info_id` bigint NOT NULL AUTO_INCREMENT COMMENT '访问ID',
+  `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '用户账号',
+  `ipaddr` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '登录IP地址',
+  `login_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '登录地点',
+  `browser` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '浏览器类型',
+  `os` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作系统',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
+  `msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '提示消息',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
+  PRIMARY KEY (`info_id`) USING BTREE,
+  INDEX `idx_sys_logininfor_s`(`status` ASC) USING BTREE,
+  INDEX `idx_sys_logininfor_lt`(`login_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 211 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_logininfor
+-- ----------------------------
+INSERT INTO `sys_logininfor` VALUES (100, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-01 15:31:37');
+INSERT INTO `sys_logininfor` VALUES (101, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 10:38:44');
+INSERT INTO `sys_logininfor` VALUES (102, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 14:35:41');
+INSERT INTO `sys_logininfor` VALUES (103, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:09:40');
+INSERT INTO `sys_logininfor` VALUES (104, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:46:15');
+INSERT INTO `sys_logininfor` VALUES (105, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-17 16:47:09');
+INSERT INTO `sys_logininfor` VALUES (106, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:47:14');
+INSERT INTO `sys_logininfor` VALUES (107, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:48:44');
+INSERT INTO `sys_logininfor` VALUES (108, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:48:58');
+INSERT INTO `sys_logininfor` VALUES (109, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-17 16:49:46');
+INSERT INTO `sys_logininfor` VALUES (110, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:49:50');
+INSERT INTO `sys_logininfor` VALUES (111, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:52:30');
+INSERT INTO `sys_logininfor` VALUES (112, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:54:04');
+INSERT INTO `sys_logininfor` VALUES (113, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 16:54:42');
+INSERT INTO `sys_logininfor` VALUES (114, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 17:03:24');
+INSERT INTO `sys_logininfor` VALUES (115, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 17:06:06');
+INSERT INTO `sys_logininfor` VALUES (116, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 17:07:32');
+INSERT INTO `sys_logininfor` VALUES (117, 'admin123', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '用户不存在/密码错误', '2025-09-17 17:08:06');
+INSERT INTO `sys_logininfor` VALUES (118, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 17:08:15');
+INSERT INTO `sys_logininfor` VALUES (119, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2025-09-17 17:10:33');
+INSERT INTO `sys_logininfor` VALUES (120, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-17 17:10:36');
+INSERT INTO `sys_logininfor` VALUES (121, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-18 09:56:44');
+INSERT INTO `sys_logininfor` VALUES (122, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-18 10:57:36');
+INSERT INTO `sys_logininfor` VALUES (123, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-18 11:16:08');
+INSERT INTO `sys_logininfor` VALUES (124, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-18 12:00:04');
+INSERT INTO `sys_logininfor` VALUES (125, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-18 14:45:11');
+INSERT INTO `sys_logininfor` VALUES (126, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-18 15:31:26');
+INSERT INTO `sys_logininfor` VALUES (127, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-18 15:38:24');
+INSERT INTO `sys_logininfor` VALUES (128, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 10:30:11');
+INSERT INTO `sys_logininfor` VALUES (129, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 10:30:26');
+INSERT INTO `sys_logininfor` VALUES (130, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:00:32');
+INSERT INTO `sys_logininfor` VALUES (131, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-19 11:02:23');
+INSERT INTO `sys_logininfor` VALUES (132, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:02:26');
+INSERT INTO `sys_logininfor` VALUES (133, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:04:08');
+INSERT INTO `sys_logininfor` VALUES (134, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:04:39');
+INSERT INTO `sys_logininfor` VALUES (135, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2025-09-19 11:09:22');
+INSERT INTO `sys_logininfor` VALUES (136, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:09:26');
+INSERT INTO `sys_logininfor` VALUES (137, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:21:06');
+INSERT INTO `sys_logininfor` VALUES (138, 'admina', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:23:30');
+INSERT INTO `sys_logininfor` VALUES (139, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:24:15');
+INSERT INTO `sys_logininfor` VALUES (140, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2025-09-19 11:27:44');
+INSERT INTO `sys_logininfor` VALUES (141, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:27:48');
+INSERT INTO `sys_logininfor` VALUES (142, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:38:12');
+INSERT INTO `sys_logininfor` VALUES (143, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:38:25');
+INSERT INTO `sys_logininfor` VALUES (144, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:39:03');
+INSERT INTO `sys_logininfor` VALUES (145, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:39:30');
+INSERT INTO `sys_logininfor` VALUES (146, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:42:55');
+INSERT INTO `sys_logininfor` VALUES (147, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:43:13');
+INSERT INTO `sys_logininfor` VALUES (148, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-19 11:52:59');
+INSERT INTO `sys_logininfor` VALUES (149, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:53:07');
+INSERT INTO `sys_logininfor` VALUES (150, 'ry', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:54:15');
+INSERT INTO `sys_logininfor` VALUES (151, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码已失效', '2025-09-19 11:58:18');
+INSERT INTO `sys_logininfor` VALUES (152, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 11:58:22');
+INSERT INTO `sys_logininfor` VALUES (153, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 12:01:55');
+INSERT INTO `sys_logininfor` VALUES (154, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 12:07:50');
+INSERT INTO `sys_logininfor` VALUES (155, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 12:08:26');
+INSERT INTO `sys_logininfor` VALUES (156, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 12:11:31');
+INSERT INTO `sys_logininfor` VALUES (157, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 14:41:14');
+INSERT INTO `sys_logininfor` VALUES (158, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-19 15:44:06');
+INSERT INTO `sys_logininfor` VALUES (159, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:44:09');
+INSERT INTO `sys_logininfor` VALUES (160, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:44:30');
+INSERT INTO `sys_logininfor` VALUES (161, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:49:26');
+INSERT INTO `sys_logininfor` VALUES (162, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:49:37');
+INSERT INTO `sys_logininfor` VALUES (163, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:52:50');
+INSERT INTO `sys_logininfor` VALUES (164, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:53:03');
+INSERT INTO `sys_logininfor` VALUES (165, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-19 15:53:49');
+INSERT INTO `sys_logininfor` VALUES (166, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:53:57');
+INSERT INTO `sys_logininfor` VALUES (167, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 15:56:47');
+INSERT INTO `sys_logininfor` VALUES (168, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:03:26');
+INSERT INTO `sys_logininfor` VALUES (169, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码已失效', '2025-09-19 16:07:58');
+INSERT INTO `sys_logininfor` VALUES (170, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:08:03');
+INSERT INTO `sys_logininfor` VALUES (171, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:10:22');
+INSERT INTO `sys_logininfor` VALUES (172, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:29:12');
+INSERT INTO `sys_logininfor` VALUES (173, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:31:16');
+INSERT INTO `sys_logininfor` VALUES (174, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:37:41');
+INSERT INTO `sys_logininfor` VALUES (175, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:42:49');
+INSERT INTO `sys_logininfor` VALUES (176, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:44:14');
+INSERT INTO `sys_logininfor` VALUES (177, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:47:16');
+INSERT INTO `sys_logininfor` VALUES (178, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:50:23');
+INSERT INTO `sys_logininfor` VALUES (179, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:53:13');
+INSERT INTO `sys_logininfor` VALUES (180, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 16:56:53');
+INSERT INTO `sys_logininfor` VALUES (181, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-19 17:01:10');
+INSERT INTO `sys_logininfor` VALUES (182, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-22 10:10:09');
+INSERT INTO `sys_logininfor` VALUES (183, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-22 11:30:53');
+INSERT INTO `sys_logininfor` VALUES (184, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-22 15:14:00');
+INSERT INTO `sys_logininfor` VALUES (185, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2025-09-22 17:45:02');
+INSERT INTO `sys_logininfor` VALUES (186, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-22 17:45:09');
+INSERT INTO `sys_logininfor` VALUES (187, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-23 10:54:03');
+INSERT INTO `sys_logininfor` VALUES (188, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-25 15:08:04');
+INSERT INTO `sys_logininfor` VALUES (189, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-26 09:50:33');
+INSERT INTO `sys_logininfor` VALUES (190, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-29 16:12:45');
+INSERT INTO `sys_logininfor` VALUES (191, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2025-09-29 16:14:22');
+INSERT INTO `sys_logininfor` VALUES (192, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-29 16:15:48');
+INSERT INTO `sys_logininfor` VALUES (193, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2025-09-29 16:16:13');
+INSERT INTO `sys_logininfor` VALUES (194, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-29 16:16:20');
+INSERT INTO `sys_logininfor` VALUES (195, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2025-09-29 16:16:44');
+INSERT INTO `sys_logininfor` VALUES (196, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-29 16:16:52');
+INSERT INTO `sys_logininfor` VALUES (197, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-29 17:18:04');
+INSERT INTO `sys_logininfor` VALUES (198, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-29 17:51:50');
+INSERT INTO `sys_logininfor` VALUES (199, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-30 09:24:23');
+INSERT INTO `sys_logininfor` VALUES (200, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-30 09:24:27');
+INSERT INTO `sys_logininfor` VALUES (201, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-30 09:24:35');
+INSERT INTO `sys_logininfor` VALUES (202, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-30 09:24:42');
+INSERT INTO `sys_logininfor` VALUES (203, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-30 10:28:50');
+INSERT INTO `sys_logininfor` VALUES (204, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-09-30 12:38:37');
+INSERT INTO `sys_logininfor` VALUES (205, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-30 12:38:41');
+INSERT INTO `sys_logininfor` VALUES (206, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-30 14:17:39');
+INSERT INTO `sys_logininfor` VALUES (207, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-09-30 15:33:56');
+INSERT INTO `sys_logininfor` VALUES (208, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-10-01 12:23:10');
+INSERT INTO `sys_logininfor` VALUES (209, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-10-03 22:56:26');
+INSERT INTO `sys_logininfor` VALUES (210, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-10-03 23:52:26');
+
+-- ----------------------------
+-- Table structure for sys_menu
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_menu`;
+CREATE TABLE `sys_menu`  (
+  `menu_id` bigint NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
+  `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '菜单名称',
+  `parent_id` bigint NULL DEFAULT 0 COMMENT '父菜单ID',
+  `order_num` int NULL DEFAULT 0 COMMENT '显示顺序',
+  `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '路由地址',
+  `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '组件路径',
+  `query` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '路由参数',
+  `route_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '路由名称',
+  `is_frame` int NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
+  `is_cache` int NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
+  `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
+  `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '菜单状态（0显示 1隐藏）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
+  `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '权限标识',
+  `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#' COMMENT '菜单图标',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
+  PRIMARY KEY (`menu_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2070 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_menu
+-- ----------------------------
+INSERT INTO `sys_menu` VALUES (1, '系统管理', 0, 1, 'system', NULL, '', '', 1, 0, 'M', '0', '0', '', 'system', 'admin', '2025-08-29 16:28:04', '', NULL, '系统管理目录');
+INSERT INTO `sys_menu` VALUES (2, '系统监控', 0, 2, 'monitor', NULL, '', '', 1, 0, 'M', '0', '0', '', 'monitor', 'admin', '2025-08-29 16:28:04', '', NULL, '系统监控目录');
+INSERT INTO `sys_menu` VALUES (3, '系统工具', 0, 3, 'tool', NULL, '', '', 1, 0, 'M', '0', '0', '', 'tool', 'admin', '2025-08-29 16:28:04', '', NULL, '系统工具目录');
+INSERT INTO `sys_menu` VALUES (100, '用户管理', 1, 1, 'user', 'system/user/index', '', '', 1, 0, 'C', '0', '0', 'system:user:list', 'user', 'admin', '2025-08-29 16:28:04', '', NULL, '用户管理菜单');
+INSERT INTO `sys_menu` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', '', 1, 0, 'C', '0', '0', 'system:role:list', 'peoples', 'admin', '2025-08-29 16:28:04', '', NULL, '角色管理菜单');
+INSERT INTO `sys_menu` VALUES (102, '菜单管理', 1, 3, 'menu', 'system/menu/index', '', '', 1, 0, 'C', '0', '0', 'system:menu:list', 'tree-table', 'admin', '2025-08-29 16:28:04', '', NULL, '菜单管理菜单');
+INSERT INTO `sys_menu` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', '', 1, 0, 'C', '0', '0', 'system:dept:list', 'tree', 'admin', '2025-08-29 16:28:04', '', NULL, '部门管理菜单');
+INSERT INTO `sys_menu` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', '', 1, 0, 'C', '0', '0', 'system:post:list', 'post', 'admin', '2025-08-29 16:28:04', '', NULL, '岗位管理菜单');
+INSERT INTO `sys_menu` VALUES (105, '字典管理', 1, 6, 'dict', 'system/dict/index', '', '', 1, 0, 'C', '0', '0', 'system:dict:list', 'dict', 'admin', '2025-08-29 16:28:04', '', NULL, '字典管理菜单');
+INSERT INTO `sys_menu` VALUES (106, '参数设置', 1, 7, 'config', 'system/config/index', '', '', 1, 0, 'C', '0', '0', 'system:config:list', 'edit', 'admin', '2025-08-29 16:28:04', '', NULL, '参数设置菜单');
+INSERT INTO `sys_menu` VALUES (107, '通知公告', 1, 8, 'notice', 'system/notice/index', '', '', 1, 0, 'C', '0', '0', 'system:notice:list', 'message', 'admin', '2025-08-29 16:28:04', '', NULL, '通知公告菜单');
+INSERT INTO `sys_menu` VALUES (108, '日志管理', 1, 9, 'log', '', '', '', 1, 0, 'M', '0', '0', '', 'log', 'admin', '2025-08-29 16:28:04', '', NULL, '日志管理菜单');
+INSERT INTO `sys_menu` VALUES (109, '在线用户', 2, 1, 'online', 'monitor/online/index', '', '', 1, 0, 'C', '0', '0', 'monitor:online:list', 'online', 'admin', '2025-08-29 16:28:04', '', NULL, '在线用户菜单');
+INSERT INTO `sys_menu` VALUES (110, '定时任务', 2, 2, 'job', 'monitor/job/index', '', '', 1, 0, 'C', '0', '0', 'monitor:job:list', 'job', 'admin', '2025-08-29 16:28:04', '', NULL, '定时任务菜单');
+INSERT INTO `sys_menu` VALUES (111, '数据监控', 2, 3, 'druid', 'monitor/druid/index', '', '', 1, 0, 'C', '0', '0', 'monitor:druid:list', 'druid', 'admin', '2025-08-29 16:28:04', '', NULL, '数据监控菜单');
+INSERT INTO `sys_menu` VALUES (112, '服务监控', 2, 4, 'server', 'monitor/server/index', '', '', 1, 0, 'C', '0', '0', 'monitor:server:list', 'server', 'admin', '2025-08-29 16:28:04', '', NULL, '服务监控菜单');
+INSERT INTO `sys_menu` VALUES (113, '缓存监控', 2, 5, 'cache', 'monitor/cache/index', '', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis', 'admin', '2025-08-29 16:28:04', '', NULL, '缓存监控菜单');
+INSERT INTO `sys_menu` VALUES (114, '缓存列表', 2, 6, 'cacheList', 'monitor/cache/list', '', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis-list', 'admin', '2025-08-29 16:28:04', '', NULL, '缓存列表菜单');
+INSERT INTO `sys_menu` VALUES (115, '表单构建', 3, 1, 'build', 'tool/build/index', '', '', 1, 0, 'C', '0', '0', 'tool:build:list', 'build', 'admin', '2025-08-29 16:28:04', '', NULL, '表单构建菜单');
+INSERT INTO `sys_menu` VALUES (116, '代码生成', 3, 2, 'gen', 'tool/gen/index', '', '', 1, 0, 'C', '0', '0', 'tool:gen:list', 'code', 'admin', '2025-08-29 16:28:04', '', NULL, '代码生成菜单');
+INSERT INTO `sys_menu` VALUES (117, '系统接口', 3, 3, 'swagger', 'tool/swagger/index', '', '', 1, 0, 'C', '0', '0', 'tool:swagger:list', 'swagger', 'admin', '2025-08-29 16:28:04', '', NULL, '系统接口菜单');
+INSERT INTO `sys_menu` VALUES (500, '操作日志', 108, 1, 'operlog', 'monitor/operlog/index', '', '', 1, 0, 'C', '0', '0', 'monitor:operlog:list', 'form', 'admin', '2025-08-29 16:28:04', '', NULL, '操作日志菜单');
+INSERT INTO `sys_menu` VALUES (501, '登录日志', 108, 2, 'logininfor', 'monitor/logininfor/index', '', '', 1, 0, 'C', '0', '0', 'monitor:logininfor:list', 'logininfor', 'admin', '2025-08-29 16:28:04', '', NULL, '登录日志菜单');
+INSERT INTO `sys_menu` VALUES (1000, '用户查询', 100, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1001, '用户新增', 100, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1002, '用户修改', 100, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1003, '用户删除', 100, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1004, '用户导出', 100, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1005, '用户导入', 100, 6, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:import', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1006, '重置密码', 100, 7, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:resetPwd', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1007, '角色查询', 101, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:role:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1008, '角色新增', 101, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'system:role:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1009, '角色修改', 101, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'system:role:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1010, '角色删除', 101, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'system:role:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1011, '角色导出', 101, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'system:role:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1012, '菜单查询', 102, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:menu:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1013, '菜单新增', 102, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'system:menu:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1014, '菜单修改', 102, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'system:menu:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1015, '菜单删除', 102, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'system:menu:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1016, '部门查询', 103, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:dept:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1017, '部门新增', 103, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'system:dept:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1018, '部门修改', 103, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'system:dept:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1019, '部门删除', 103, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'system:dept:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1020, '岗位查询', 104, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:post:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1021, '岗位新增', 104, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'system:post:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1022, '岗位修改', 104, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'system:post:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1023, '岗位删除', 104, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'system:post:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1024, '岗位导出', 104, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'system:post:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1025, '字典查询', 105, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:dict:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1026, '字典新增', 105, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:dict:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1027, '字典修改', 105, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:dict:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1028, '字典删除', 105, 4, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:dict:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1029, '字典导出', 105, 5, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:dict:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1030, '参数查询', 106, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:config:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1031, '参数新增', 106, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:config:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1032, '参数修改', 106, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:config:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1033, '参数删除', 106, 4, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:config:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1034, '参数导出', 106, 5, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:config:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1035, '公告查询', 107, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:notice:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1036, '公告新增', 107, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:notice:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1037, '公告修改', 107, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:notice:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1038, '公告删除', 107, 4, '#', '', '', '', 1, 0, 'F', '0', '0', 'system:notice:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1039, '操作查询', 500, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1040, '操作删除', 500, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1041, '日志导出', 500, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1042, '登录查询', 501, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1043, '登录删除', 501, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1044, '日志导出', 501, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1045, '账户解锁', 501, 4, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:unlock', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1046, '在线查询', 109, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:online:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1047, '批量强退', 109, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:online:batchLogout', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1048, '单条强退', 109, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:online:forceLogout', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1049, '任务查询', 110, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:job:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1050, '任务新增', 110, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:job:add', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1051, '任务修改', 110, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:job:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1052, '任务删除', 110, 4, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:job:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1053, '状态修改', 110, 5, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:job:changeStatus', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1054, '任务导出', 110, 6, '#', '', '', '', 1, 0, 'F', '0', '0', 'monitor:job:export', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1055, '生成查询', 116, 1, '#', '', '', '', 1, 0, 'F', '0', '0', 'tool:gen:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1056, '生成修改', 116, 2, '#', '', '', '', 1, 0, 'F', '0', '0', 'tool:gen:edit', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1057, '生成删除', 116, 3, '#', '', '', '', 1, 0, 'F', '0', '0', 'tool:gen:remove', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1058, '导入代码', 116, 4, '#', '', '', '', 1, 0, 'F', '0', '0', 'tool:gen:import', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1059, '预览代码', 116, 5, '#', '', '', '', 1, 0, 'F', '0', '0', 'tool:gen:preview', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (1060, '生成代码', 116, 6, '#', '', '', '', 1, 0, 'F', '0', '0', 'tool:gen:code', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2007, '主数据', 0, 4, 'core.bd', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '基础配置', 'ry', '2025-09-17 17:10:27', 'admin', '2025-09-30 10:29:18', '');
+INSERT INTO `sys_menu` VALUES (2014, '客户信息', 2007, 1, 'bd', 'core/bd/client/index', NULL, '', 1, 0, 'C', '0', '0', 'core:bd:list', 'peoples', 'admin', '2025-09-17 17:34:02', 'admin', '2025-09-22 16:07:19', '客户信息菜单');
+INSERT INTO `sys_menu` VALUES (2015, '客户信息查询', 2014, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:bd:query', '#', 'admin', '2025-09-17 17:34:02', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2016, '客户信息新增', 2014, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:bd:add', '#', 'admin', '2025-09-17 17:34:02', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2017, '客户信息修改', 2014, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:bd:edit', '#', 'admin', '2025-09-17 17:34:02', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2018, '客户信息删除', 2014, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:bd:remove', '#', 'admin', '2025-09-17 17:34:02', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2019, '客户信息导出', 2014, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:bd:export', '#', 'admin', '2025-09-17 17:34:02', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2026, '编码规则', 1, 10, 'autocodeRule', 'system/autocode/index', NULL, '', 1, 0, 'C', '0', '0', 'system:autocode:rule', 'code', 'ry', '2025-09-19 11:08:13', 'admin', '2025-09-19 17:03:56', '');
+INSERT INTO `sys_menu` VALUES (2027, '编码规则查询', 2026, 1, '#', NULL, NULL, '', 1, 0, 'F', '0', '0', 'system:autocode:rule:list', '#', 'admin', '2025-09-17 21:46:05', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2028, '编码规则新增', 2026, 2, '#', NULL, NULL, '', 1, 0, 'F', '0', '0', 'system:autocode:rule:add', '#', 'admin', '2025-09-17 21:46:30', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2029, '编码规则更新', 2026, 3, '#', NULL, NULL, '', 1, 0, 'F', '0', '0', 'system:autocode:rule:edit', '#', 'admin', '2025-09-17 21:46:59', 'admin', '2025-09-19 21:47:42', '');
+INSERT INTO `sys_menu` VALUES (2030, '编码规则删除', 2026, 4, '#', NULL, NULL, '', 1, 0, 'F', '0', '0', 'system:autocode:rule:remove', '#', 'admin', '2025-09-17 21:47:20', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2031, '供应商', 2007, 1, 'vendor', 'core/bd/vendor/index', NULL, '', 1, 0, 'C', '0', '0', 'core:vendor:list', 'people', 'admin', '2025-09-22 15:53:56', 'admin', '2025-09-22 17:02:56', '供应商菜单');
+INSERT INTO `sys_menu` VALUES (2032, '供应商查询', 2031, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:vendor:query', '#', 'admin', '2025-09-22 15:53:56', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2033, '供应商新增', 2031, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:vendor:add', '#', 'admin', '2025-09-22 15:53:56', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2034, '供应商修改', 2031, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:vendor:edit', '#', 'admin', '2025-09-22 15:53:56', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2035, '供应商删除', 2031, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:vendor:remove', '#', 'admin', '2025-09-22 15:53:56', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2036, '供应商导出', 2031, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:vendor:export', '#', 'admin', '2025-09-22 15:53:56', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2037, '销售管理', 0, 5, 'core.so', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '订单', 'admin', '2025-09-29 17:21:31', 'admin', '2025-09-30 09:55:47', '');
+INSERT INTO `sys_menu` VALUES (2038, '生产管理', 0, 6, 'core.pro', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '生产管理', 'admin', '2025-09-29 17:25:44', 'admin', '2025-09-30 10:29:49', '');
+INSERT INTO `sys_menu` VALUES (2039, '库房管理', 0, 7, 'core.wm', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '货物', 'admin', '2025-09-29 17:58:29', 'admin', '2025-09-30 09:25:08', '');
+INSERT INTO `sys_menu` VALUES (2040, '仓库设置', 2039, 1, 'warehouse', 'core/wm/warehouse/index', NULL, '', 1, 0, 'C', '0', '0', 'wm:warehouse:list', '存货', 'admin', '2025-09-30 10:44:27', 'admin', '2025-09-30 14:18:39', '仓库设置菜单');
+INSERT INTO `sys_menu` VALUES (2041, '仓库设置查询', 2040, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:warehouse:query', '#', 'admin', '2025-09-30 10:44:27', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2042, '仓库设置新增', 2040, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:warehouse:add', '#', 'admin', '2025-09-30 10:44:27', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2043, '仓库设置修改', 2040, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:warehouse:edit', '#', 'admin', '2025-09-30 10:44:27', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2044, '仓库设置删除', 2040, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:warehouse:remove', '#', 'admin', '2025-09-30 10:44:27', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2045, '仓库设置导出', 2040, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:warehouse:export', '#', 'admin', '2025-09-30 10:44:27', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2046, '计量单位', 2007, 1, 'measure', 'core/bd/measure/index', NULL, '', 1, 0, 'C', '0', '0', 'bd:measure:list', '长度测距', 'admin', '2025-09-30 16:00:13', 'admin', '2025-09-30 16:18:18', '计量单位菜单');
+INSERT INTO `sys_menu` VALUES (2047, '计量单位查询', 2046, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:measure:query', '#', 'admin', '2025-09-30 16:00:13', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2048, '计量单位新增', 2046, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:measure:add', '#', 'admin', '2025-09-30 16:00:13', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2049, '计量单位修改', 2046, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:measure:edit', '#', 'admin', '2025-09-30 16:00:13', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2050, '计量单位删除', 2046, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:measure:remove', '#', 'admin', '2025-09-30 16:00:13', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2051, '计量单位导出', 2046, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:measure:export', '#', 'admin', '2025-09-30 16:00:13', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2058, '物料产品分类', 2007, 1, 'category', 'core/bd/category/index', NULL, '', 1, 0, 'C', '0', '0', 'bd:category:list', '物料分类', 'admin', '2025-10-01 12:38:08', 'admin', '2025-10-03 23:06:07', '物料产品分类菜单');
+INSERT INTO `sys_menu` VALUES (2059, '物料产品分类查询', 2058, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:category:query', '#', 'admin', '2025-10-01 12:38:08', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2060, '物料产品分类新增', 2058, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:category:add', '#', 'admin', '2025-10-01 12:38:08', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2061, '物料产品分类修改', 2058, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:category:edit', '#', 'admin', '2025-10-01 12:38:08', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2062, '物料产品分类删除', 2058, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:category:remove', '#', 'admin', '2025-10-01 12:38:08', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2063, '物料产品分类导出', 2058, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:category:export', '#', 'admin', '2025-10-01 12:38:08', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2064, '物料产品管理', 2007, 1, 'material', 'core/bd/material/index', NULL, '', 1, 0, 'C', '0', '0', 'bd:material:list', '产品管理', 'admin', '2025-10-04 00:09:09', 'admin', '2025-10-04 00:11:40', '物料产品主菜单');
+INSERT INTO `sys_menu` VALUES (2065, '物料产品主查询', 2064, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:material:query', '#', 'admin', '2025-10-04 00:09:09', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2066, '物料产品主新增', 2064, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:material:add', '#', 'admin', '2025-10-04 00:09:09', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2067, '物料产品主修改', 2064, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:material:edit', '#', 'admin', '2025-10-04 00:09:09', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2068, '物料产品主删除', 2064, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:material:remove', '#', 'admin', '2025-10-04 00:09:09', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2069, '物料产品主导出', 2064, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:material:export', '#', 'admin', '2025-10-04 00:09:09', '', NULL, '');
+
+-- ----------------------------
+-- Table structure for sys_notice
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_notice`;
+CREATE TABLE `sys_notice`  (
+  `notice_id` int NOT NULL AUTO_INCREMENT COMMENT '公告ID',
+  `notice_title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '公告标题',
+  `notice_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '公告类型（1通知 2公告）',
+  `notice_content` longblob NULL COMMENT '公告内容',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`notice_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_notice
+-- ----------------------------
+INSERT INTO `sys_notice` VALUES (1, '温馨提醒：2018-07-01 若依新版本发布啦', '2', 0xE696B0E78988E69CACE58685E5AEB9, '0', 'admin', '2025-08-29 16:28:04', '', NULL, '管理员');
+INSERT INTO `sys_notice` VALUES (2, '维护通知：2018-07-01 若依系统凌晨维护', '1', 0xE7BBB4E68AA4E58685E5AEB9, '0', 'admin', '2025-08-29 16:28:04', '', NULL, '管理员');
+
+-- ----------------------------
+-- Table structure for sys_oper_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_oper_log`;
+CREATE TABLE `sys_oper_log`  (
+  `oper_id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志主键',
+  `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '模块标题',
+  `business_type` int NULL DEFAULT 0 COMMENT '业务类型（0其它 1新增 2修改 3删除）',
+  `method` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '方法名称',
+  `request_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求方式',
+  `operator_type` int NULL DEFAULT 0 COMMENT '操作类别（0其它 1后台用户 2手机端用户）',
+  `oper_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作人员',
+  `dept_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '部门名称',
+  `oper_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求URL',
+  `oper_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '主机地址',
+  `oper_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作地点',
+  `oper_param` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求参数',
+  `json_result` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '返回参数',
+  `status` int NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
+  `error_msg` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '错误消息',
+  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
+  `cost_time` bigint NULL DEFAULT 0 COMMENT '消耗时间',
+  PRIMARY KEY (`oper_id`) USING BTREE,
+  INDEX `idx_sys_oper_log_bt`(`business_type` ASC) USING BTREE,
+  INDEX `idx_sys_oper_log_s`(`status` ASC) USING BTREE,
+  INDEX `idx_sys_oper_log_ot`(`oper_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 364 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_oper_log
+-- ----------------------------
+INSERT INTO `sys_oper_log` VALUES (100, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createBy\":\"admin\",\"icon\":\"build\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":1,\"params\":{},\"parentId\":0,\"path\":\"bd\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 14:41:05', 24);
+INSERT INTO `sys_oper_log` VALUES (101, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/4', '127.0.0.1', '内网IP', '4', '{\"msg\":\"菜单已分配,不允许删除\",\"code\":601}', 0, NULL, '2025-09-17 14:41:38', 8);
+INSERT INTO `sys_oper_log` VALUES (102, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/4', '127.0.0.1', '内网IP', '4', '{\"msg\":\"菜单已分配,不允许删除\",\"code\":601}', 0, NULL, '2025-09-17 14:41:57', 5);
+INSERT INTO `sys_oper_log` VALUES (103, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-08-29 16:28:04\",\"icon\":\"guide\",\"isCache\":\"0\",\"isFrame\":\"0\",\"menuId\":4,\"menuName\":\"若依官网\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"http://ruoyi.vip\",\"perms\":\"\",\"query\":\"\",\"routeName\":\"\",\"status\":\"1\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 14:42:13', 7);
+INSERT INTO `sys_oper_log` VALUES (104, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/4', '127.0.0.1', '内网IP', '4', '{\"msg\":\"菜单已分配,不允许删除\",\"code\":601}', 0, NULL, '2025-09-17 14:42:15', 5);
+INSERT INTO `sys_oper_log` VALUES (105, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-17 14:41:05\",\"icon\":\"build\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2000,\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"bd\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 14:42:25', 7);
+INSERT INTO `sys_oper_log` VALUES (106, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 14:45:31', 96);
+INSERT INTO `sys_oper_log` VALUES (107, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":1,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 14:45:31\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":1,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":2,\"columnName\":\"client_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 14:45:31\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":1,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":3,\"columnName\":\"client_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 14:45:31\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":1,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"CreditLevel\",\"columnComment\":\"客户分级 (战略/普通)\",\"columnId\":4,\"columnName\":\"credit_level\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 14:45:31\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 14:47:18', 59);
+INSERT INTO `sys_oper_log` VALUES (108, '代码生成', 3, 'com.nexus.generator.controller.GenController.remove()', 'DELETE', 1, 'admin', '研发部门', '/tool/gen/1', '127.0.0.1', '内网IP', '[1]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:09:47', 24);
+INSERT INTO `sys_oper_log` VALUES (109, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client_credit,bd_client\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:09:52', 123);
+INSERT INTO `sys_oper_log` VALUES (110, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQu', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:13:25', 51);
+INSERT INTO `sys_oper_log` VALUES (111, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:13:25\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:13:25\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:13:25\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:17:26', 44);
+INSERT INTO `sys_oper_log` VALUES (112, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"客户类型\",\"dictType\":\"bd_client_type\",\"params\":{},\"remark\":\"客户类型\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:18:21', 25);
+INSERT INTO `sys_oper_log` VALUES (113, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"企业\",\"dictSort\":1,\"dictType\":\"bd_client_type\",\"dictValue\":\"ENTERPRISE\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:19:28', 8);
+INSERT INTO `sys_oper_log` VALUES (114, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"个人\",\"dictSort\":2,\"dictType\":\"bd_client_type\",\"dictValue\":\"PERSON\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:19:56', 7);
+INSERT INTO `sys_oper_log` VALUES (115, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:17:26\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:17:26\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:17:26\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 16:20:39', 38);
+INSERT INTO `sys_oper_log` VALUES (116, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', NULL, 0, NULL, '2025-09-17 16:20:42', 87);
+INSERT INTO `sys_oper_log` VALUES (117, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'ry', '测试部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:20:39\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:20:39\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 16:20:39\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:09:02', 89);
+INSERT INTO `sys_oper_log` VALUES (118, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'ry', '测试部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"icon\":\"build\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"新增菜单\'主数据\'失败，菜单名称已存在\",\"code\":500}', 0, NULL, '2025-09-17 17:09:49', 8);
+INSERT INTO `sys_oper_log` VALUES (119, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'ry', '测试部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createBy\":\"ry\",\"icon\":\"build\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:10:27', 7);
+INSERT INTO `sys_oper_log` VALUES (120, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:09:02\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:09:02\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:09:02\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:11:20', 64);
+INSERT INTO `sys_oper_log` VALUES (121, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', NULL, 0, NULL, '2025-09-17 17:11:26', 147);
+INSERT INTO `sys_oper_log` VALUES (122, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"core.bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:11:20\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:11:20\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:11:20\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"inpu', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:19:46', 85);
+INSERT INTO `sys_oper_log` VALUES (123, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:19:46\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:19:46\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:19:46\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:20:21', 64);
+INSERT INTO `sys_oper_log` VALUES (124, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:20:21\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:20:21\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:20:21\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:31:13', 116);
+INSERT INTO `sys_oper_log` VALUES (125, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:31:12\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:31:12\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:31:12\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:31:38', 52);
+INSERT INTO `sys_oper_log` VALUES (126, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:31:38\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:31:38\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:31:38\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:32:10', 49);
+INSERT INTO `sys_oper_log` VALUES (127, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":21,\"columnName\":\"CLIENT_ID\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:32:10\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":22,\"columnName\":\"CLIENT_CODE\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:32:10\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":23,\"columnName\":\"CLIENT_NAME\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":2,\"updateBy\":\"\",\"updateTime\":\"2025-09-17 17:32:10\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":24,\"columnName\":\"CLIENT_NICK\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-17 16:09:52\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"i', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-17 17:33:00', 41);
+INSERT INTO `sys_oper_log` VALUES (128, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', NULL, 0, NULL, '2025-09-17 17:33:04', 46);
+INSERT INTO `sys_oper_log` VALUES (129, '代码生成', 8, 'com.ruoyi.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', NULL, 0, NULL, '2025-09-18 10:58:06', 185);
+INSERT INTO `sys_oper_log` VALUES (130, '代码生成', 3, 'com.nexus.generator.controller.GenController.remove()', 'DELETE', 1, 'admin', '研发部门', '/tool/gen/2', '127.0.0.1', '内网IP', '[2]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 15:01:08', 30);
+INSERT INTO `sys_oper_log` VALUES (131, '代码生成', 3, 'com.nexus.generator.controller.GenController.remove()', 'DELETE', 1, 'admin', '研发部门', '/tool/gen/3', '127.0.0.1', '内网IP', '[3]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 15:01:11', 7);
+INSERT INTO `sys_oper_log` VALUES (132, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client,bd_client_credit\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 15:01:18', 149);
+INSERT INTO `sys_oper_log` VALUES (133, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bd\",\"className\":\"BdClient\",\"columns\":[{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":66,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:17\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":4,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":67,\"columnName\":\"client_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:17\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":4,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":68,\"columnName\":\"client_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:17\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":4,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientNick\",\"columnComment\":\"客户简写\",\"columnId\":69,\"columnName\":\"client_nick\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:17\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQu', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 15:04:19', 68);
+INSERT INTO `sys_oper_log` VALUES (134, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', NULL, 0, NULL, '2025-09-18 15:04:24', 92);
+INSERT INTO `sys_oper_log` VALUES (135, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client_credit\"}', NULL, 0, NULL, '2025-09-18 15:07:24', 166);
+INSERT INTO `sys_oper_log` VALUES (136, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', NULL, 0, NULL, '2025-09-18 15:07:27', 52);
+INSERT INTO `sys_oper_log` VALUES (137, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_client\"}', NULL, 0, NULL, '2025-09-18 15:31:38', 189);
+INSERT INTO `sys_oper_log` VALUES (138, '客户信息', 1, 'com.nexus.core.bd.controller.BdClientController.add()', 'POST', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"clientCode\":\"cs123\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:40:40\",\"email\":\"123\",\"params\":{},\"tel\":\"123\"}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLException: Field \'client_id\' doesn\'t have a default value\r\n### The error may exist in file [E:\\NexusERP\\nexus-core\\target\\classes\\mapper\\bd\\BdClientMapper.xml]\r\n### The error may involve com.nexus.core.bd.mapper.BdClientMapper.insertBdClient-Inline\r\n### The error occurred while setting parameters\r\n### SQL: insert into bd_client          ( client_code,                     client_name,                     client_nick,                     client_en,                     client_desc,                     client_type,                                          address,                                          email,                     tel,                     contact1,                     contact1_tel,                                                                                                                                                                                                                                                            create_time )           values ( ?,                     ?,                     ?,                     ?,                     ?,                     ?,                                          ?,                                          ?,                     ?,                     ?,                     ?,                                                                                                                                                                                                                                                            ? )\r\n### Cause: java.sql.SQLException: Field \'client_id\' doesn\'t have a default value\n; Field \'client_id\' doesn\'t have a default value', '2025-09-18 15:40:41', 140);
+INSERT INTO `sys_oper_log` VALUES (139, '客户信息', 1, 'com.nexus.core.bd.controller.BdClientController.add()', 'POST', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"clientCode\":\"cs123\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:43\",\"email\":\"123\",\"params\":{},\"tel\":\"123\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 15:45:43', 9);
+INSERT INTO `sys_oper_log` VALUES (140, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"sys_auto_code_part,sys_auto_code_result,sys_auto_code_rule\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:33:33', 178);
+INSERT INTO `sys_oper_log` VALUES (141, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"system\",\"className\":\"SysAutoCodePart\",\"columns\":[{\"capJavaField\":\"PartId\",\"columnComment\":\"分段ID\",\"columnId\":111,\"columnName\":\"part_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"partId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":6,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":112,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":6,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"PartIndex\",\"columnComment\":\"分段序号\",\"columnId\":113,\"columnName\":\"part_index\",\"columnType\":\"int\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"partIndex\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":6,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"PartType\",\"columnComment\":\"分段类型，INPUTCHAR：输入字符，NOWDATE：当前日期时间，FIXCHAR：固定字符，SERIALNO：流水号\",\"columnId\":114,\"columnName\":\"part_type\",\"columnType\":\"varchar(20)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"select\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isL', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:39:04', 51);
+INSERT INTO `sys_oper_log` VALUES (142, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"编码生成规则\",\"dictType\":\"sys_autocode_parttype\",\"params\":{},\"remark\":\"编码生成规则\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:40:52', 10);
+INSERT INTO `sys_oper_log` VALUES (143, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"输入字符\",\"dictSort\":1,\"dictType\":\"sys_autocode_parttype\",\"dictValue\":\"INPUTCHAR\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:41:21', 17);
+INSERT INTO `sys_oper_log` VALUES (144, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"当前日期时间\",\"dictSort\":2,\"dictType\":\"sys_autocode_parttype\",\"dictValue\":\"NOWDATE\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:41:38', 7);
+INSERT INTO `sys_oper_log` VALUES (145, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"固定字符\",\"dictSort\":3,\"dictType\":\"sys_autocode_parttype\",\"dictValue\":\"FIXCHAR\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:41:52', 6);
+INSERT INTO `sys_oper_log` VALUES (146, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"流水号\",\"dictSort\":4,\"dictType\":\"sys_autocode_parttype\",\"dictValue\":\"SERIALNO\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:42:06', 16);
+INSERT INTO `sys_oper_log` VALUES (147, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"编码规则组成循环方式\",\"dictType\":\"sys_autocode_cyclemethod\",\"params\":{},\"remark\":\"编码规则组成循环方式\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:42:34', 17);
+INSERT INTO `sys_oper_log` VALUES (148, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"按年\",\"dictSort\":1,\"dictType\":\"sys_autocode_cyclemethod\",\"dictValue\":\"YEAR\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:42:58', 17);
+INSERT INTO `sys_oper_log` VALUES (149, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"按月\",\"dictSort\":2,\"dictType\":\"sys_autocode_cyclemethod\",\"dictValue\":\"MONTH\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:43:10', 10);
+INSERT INTO `sys_oper_log` VALUES (150, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"按天\",\"dictSort\":3,\"dictType\":\"sys_autocode_cyclemethod\",\"dictValue\":\"DAY\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:43:29', 16);
+INSERT INTO `sys_oper_log` VALUES (151, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"按小时\",\"dictSort\":4,\"dictType\":\"sys_autocode_cyclemethod\",\"dictValue\":\"HOUR\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:46:37', 17);
+INSERT INTO `sys_oper_log` VALUES (152, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"按分钟\",\"dictSort\":4,\"dictType\":\"sys_autocode_cyclemethod\",\"dictValue\":\"MINUTE\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:46:54', 15);
+INSERT INTO `sys_oper_log` VALUES (153, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"按传入字符\",\"dictSort\":5,\"dictType\":\"sys_autocode_cyclemethod\",\"dictValue\":\"OTHER\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:47:07', 19);
+INSERT INTO `sys_oper_log` VALUES (154, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"system\",\"className\":\"SysAutoCodeResult\",\"columns\":[{\"capJavaField\":\"CodeId\",\"columnComment\":\"记录ID\",\"columnId\":135,\"columnName\":\"code_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"codeId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":7,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":136,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":7,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"GenDate\",\"columnComment\":\"生成日期时间\",\"columnId\":137,\"columnName\":\"gen_date\",\"columnType\":\"varchar(20)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"genDate\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":7,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"GenIndex\",\"columnComment\":\"最后产生的序号\",\"columnId\":138,\"columnName\":\"gen_index\",\"columnType\":\"int\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"ja', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:48:11', 36);
+INSERT INTO `sys_oper_log` VALUES (155, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"system\",\"className\":\"SysAutoCodeRule\",\"columns\":[{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":151,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":8,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RuleCode\",\"columnComment\":\"规则编码\",\"columnId\":152,\"columnName\":\"rule_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":8,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RuleName\",\"columnComment\":\"规则名称\",\"columnId\":153,\"columnName\":\"rule_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":8,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RuleDesc\",\"columnComment\":\"描述\",\"columnId\":154,\"columnName\":\"rule_desc\",\"columnType\":\"varchar(500)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"textarea\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:49:33', 31);
+INSERT INTO `sys_oper_log` VALUES (156, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"system\",\"className\":\"SysAutoCodeResult\",\"columns\":[{\"capJavaField\":\"CodeId\",\"columnComment\":\"记录ID\",\"columnId\":135,\"columnName\":\"code_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"codeId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":7,\"updateBy\":\"\",\"updateTime\":\"2025-09-18 16:48:11\",\"usableColumn\":false},{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":136,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":7,\"updateBy\":\"\",\"updateTime\":\"2025-09-18 16:48:11\",\"usableColumn\":false},{\"capJavaField\":\"GenDate\",\"columnComment\":\"生成日期时间\",\"columnId\":137,\"columnName\":\"gen_date\",\"columnType\":\"varchar(20)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"genDate\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":7,\"updateBy\":\"\",\"updateTime\":\"2025-09-18 16:48:11\",\"usableColumn\":false},{\"capJavaField\":\"GenIndex\",\"columnComment\":\"最后产生的序号\",\"columnId\":138,\"columnName\":\"gen_index\",\"columnType\":\"int\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-18 16:49:43', 27);
+INSERT INTO `sys_oper_log` VALUES (157, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"sys_auto_code_part\"}', NULL, 0, NULL, '2025-09-18 16:51:20', 89);
+INSERT INTO `sys_oper_log` VALUES (158, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"sys_auto_code_result\"}', NULL, 0, NULL, '2025-09-18 16:54:12', 36);
+INSERT INTO `sys_oper_log` VALUES (159, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"sys_auto_code_rule\"}', NULL, 0, NULL, '2025-09-18 16:54:20', 39);
+INSERT INTO `sys_oper_log` VALUES (160, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00204\"', 0, NULL, '2025-09-19 10:43:13', 106);
+INSERT INTO `sys_oper_log` VALUES (161, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'ry', '测试部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"system/autocode/index\",\"createBy\":\"ry\",\"icon\":\"code\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"编码规则\",\"menuType\":\"C\",\"orderNum\":10,\"params\":{},\"parentId\":1,\"path\":\"autocodeRule\",\"perms\":\"system:autocode:rule\",\"routeName\":\"\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 11:08:13', 22);
+INSERT INTO `sys_oper_log` VALUES (162, '角色管理', 2, 'com.nexus.web.controller.system.SysRoleController.dataScope()', 'PUT', 1, 'ry', '测试部门', '/system/role/dataScope', '127.0.0.1', '内网IP', '{\"admin\":false,\"createTime\":\"2025-08-29 16:28:04\",\"dataScope\":\"1\",\"delFlag\":\"0\",\"deptCheckStrictly\":true,\"deptIds\":[],\"flag\":false,\"menuCheckStrictly\":true,\"params\":{},\"remark\":\"普通角色\",\"roleId\":2,\"roleKey\":\"common\",\"roleName\":\"普通角色\",\"roleSort\":2,\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 11:24:45', 35);
+INSERT INTO `sys_oper_log` VALUES (163, '用户管理', 1, 'com.nexus.web.controller.system.SysUserController.add()', 'POST', 1, 'ry', '测试部门', '/system/user', '127.0.0.1', '内网IP', '{\"admin\":false,\"createBy\":\"ry\",\"deptId\":103,\"nickName\":\"xiaowang\",\"params\":{},\"postIds\":[],\"roleIds\":[2],\"status\":\"0\",\"userId\":100,\"userName\":\"xiaowang\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 11:44:44', 91);
+INSERT INTO `sys_oper_log` VALUES (164, '角色管理', 2, 'com.nexus.web.controller.system.SysRoleController.dataScope()', 'PUT', 1, 'ry', '测试部门', '/system/role/dataScope', '127.0.0.1', '内网IP', '{\"admin\":false,\"createTime\":\"2025-08-29 16:28:04\",\"dataScope\":\"2\",\"delFlag\":\"0\",\"deptCheckStrictly\":true,\"deptIds\":[100,101,103,104,105,106,107,102,108,109],\"flag\":false,\"menuCheckStrictly\":true,\"params\":{},\"remark\":\"普通角色\",\"roleId\":2,\"roleKey\":\"common\",\"roleName\":\"普通角色\",\"roleSort\":2,\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 11:45:23', 10);
+INSERT INTO `sys_oper_log` VALUES (165, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/2021', '127.0.0.1', '内网IP', '2021', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 16:32:32', 25);
+INSERT INTO `sys_oper_log` VALUES (166, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/2022', '127.0.0.1', '内网IP', '2022', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 16:32:35', 7);
+INSERT INTO `sys_oper_log` VALUES (167, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/2023', '127.0.0.1', '内网IP', '2023', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 16:32:36', 16);
+INSERT INTO `sys_oper_log` VALUES (168, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/2024', '127.0.0.1', '内网IP', '2024', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 16:32:38', 15);
+INSERT INTO `sys_oper_log` VALUES (169, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/2025', '127.0.0.1', '内网IP', '2025', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 16:32:40', 6);
+INSERT INTO `sys_oper_log` VALUES (170, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"system\",\"className\":\"SysAutoCodeRule\",\"columns\":[{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":151,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":8,\"updateBy\":\"\",\"updateTime\":\"2025-09-18 16:49:33\",\"usableColumn\":false},{\"capJavaField\":\"RuleCode\",\"columnComment\":\"规则编码\",\"columnId\":152,\"columnName\":\"rule_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":8,\"updateBy\":\"\",\"updateTime\":\"2025-09-18 16:49:33\",\"usableColumn\":false},{\"capJavaField\":\"RuleName\",\"columnComment\":\"规则名称\",\"columnId\":153,\"columnName\":\"rule_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":8,\"updateBy\":\"\",\"updateTime\":\"2025-09-18 16:49:33\",\"usableColumn\":false},{\"capJavaField\":\"RuleDesc\",\"columnComment\":\"描述\",\"columnId\":154,\"columnName\":\"rule_desc\",\"columnType\":\"varchar(500)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 16:33:32\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"textarea\",\"incremen', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 16:39:25', 55);
+INSERT INTO `sys_oper_log` VALUES (171, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"system/autocode/index\",\"createTime\":\"2025-09-19 11:08:13\",\"icon\":\"code\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2026,\"menuName\":\"编码规则\",\"menuType\":\"C\",\"orderNum\":10,\"params\":{},\"parentId\":1,\"path\":\"autocodeRule\",\"perms\":\"system:autocode:rule:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 17:03:34', 32);
+INSERT INTO `sys_oper_log` VALUES (172, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"system/autocode/index\",\"createTime\":\"2025-09-19 11:08:13\",\"icon\":\"code\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2026,\"menuName\":\"编码规则\",\"menuType\":\"C\",\"orderNum\":10,\"params\":{},\"parentId\":1,\"path\":\"autocodeRule\",\"perms\":\"system:autocode:rule\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 17:03:56', 7);
+INSERT INTO `sys_oper_log` VALUES (173, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00205\"', 0, NULL, '2025-09-19 17:28:28', 36);
+INSERT INTO `sys_oper_log` VALUES (174, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00206\"', 0, NULL, '2025-09-19 17:28:29', 13);
+INSERT INTO `sys_oper_log` VALUES (175, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/index\",\"createTime\":\"2025-09-17 17:34:02\",\"icon\":\"peoples\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2014,\"menuName\":\"客户信息\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"bd\",\"perms\":\"core:bd:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 17:30:26', 17);
+INSERT INTO `sys_oper_log` VALUES (176, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"clientCode\":\"cs123\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"email\":\"123\",\"params\":{},\"tel\":\"123\",\"updateTime\":\"2025-09-19 18:00:32\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-19 18:00:32', 14);
+INSERT INTO `sys_oper_log` VALUES (177, '客户信息', 2, 'com.nexus.bd.controller.BdClientController.uploadLogo()', 'POST', 1, 'admin', '研发部门', '/core/bd/uploadLogo', '127.0.0.1', '内网IP', '{\"clientId\":\"1\"}', '{\"msg\":\"上传成功\",\"code\":200,\"filePath\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\"}', 0, NULL, '2025-09-22 10:11:20', 105);
+INSERT INTO `sys_oper_log` VALUES (178, '客户信息', 2, 'com.nexus.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"clientCode\":\"cs123\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"email\":\"123\",\"params\":{},\"tel\":\"123\",\"updateTime\":\"2025-09-22 10:11:21\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 10:11:21', 9);
+INSERT INTO `sys_oper_log` VALUES (179, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00001\"', 0, NULL, '2025-09-22 10:21:23', 49);
+INSERT INTO `sys_oper_log` VALUES (180, '客户信息', 2, 'com.nexus.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"email\":\"123\",\"params\":{},\"tel\":\"123\",\"updateTime\":\"2025-09-22 10:21:26\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 10:21:26', 6);
+INSERT INTO `sys_oper_log` VALUES (181, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00002\"', 0, NULL, '2025-09-22 10:46:24', 20);
+INSERT INTO `sys_oper_log` VALUES (182, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"credit\",\"className\":\"BdClientCredit\",\"columns\":[{\"capJavaField\":\"CreditId\",\"columnComment\":\"客户信用ID\",\"columnId\":94,\"columnName\":\"credit_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:18\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"creditId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":5,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":95,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:18\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"0\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"0\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"1\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":5,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientCode\",\"columnComment\":\"客户编码\",\"columnId\":96,\"columnName\":\"client_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":5,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ClientName\",\"columnComment\":\"客户名称\",\"columnId\":97,\"columnName\":\"client_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-18 15:01:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQue', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 10:57:10', 58);
+INSERT INTO `sys_oper_log` VALUES (183, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"客户等级\",\"dictType\":\"bd_client_level\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 10:59:47', 52);
+INSERT INTO `sys_oper_log` VALUES (184, '字典类型', 2, 'com.nexus.web.controller.system.SysDictTypeController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 10:59:46\",\"dictId\":103,\"dictName\":\"客户等级\",\"dictType\":\"bd_client_level\",\"params\":{},\"remark\":\"客户等级\",\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 10:59:53', 23);
+INSERT INTO `sys_oper_log` VALUES (185, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"优质客户\",\"dictSort\":1,\"dictType\":\"bd_client_level\",\"dictValue\":\"A\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 11:00:57', 8);
+INSERT INTO `sys_oper_log` VALUES (186, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"正常客户\",\"dictSort\":2,\"dictType\":\"bd_client_level\",\"dictValue\":\"B\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 11:01:29', 7);
+INSERT INTO `sys_oper_log` VALUES (187, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"重点关注\",\"dictSort\":3,\"dictType\":\"bd_client_level\",\"dictValue\":\"C\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 11:01:57', 6);
+INSERT INTO `sys_oper_log` VALUES (188, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"劣质客户\",\"dictSort\":4,\"dictType\":\"bd_client_level\",\"dictValue\":\"D\",\"listClass\":\"danger\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 11:02:26', 16);
+INSERT INTO `sys_oper_log` VALUES (189, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"黑名单\",\"dictSort\":5,\"dictType\":\"bd_client_level\",\"dictValue\":\"E\",\"listClass\":\"info\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 11:02:50', 17);
+INSERT INTO `sys_oper_log` VALUES (190, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"bd_vendor\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:14:10', 114);
+INSERT INTO `sys_oper_log` VALUES (191, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"vendor\",\"className\":\"BdVendor\",\"columns\":[{\"capJavaField\":\"VendorId\",\"columnComment\":\"供应商ID\",\"columnId\":169,\"columnName\":\"vendor_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"vendorId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"VendorCode\",\"columnComment\":\"供应商编码\",\"columnId\":170,\"columnName\":\"vendor_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"VendorName\",\"columnComment\":\"供应商名称\",\"columnId\":171,\"columnName\":\"vendor_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"TaxId\",\"columnComment\":\"税号\",\"columnId\":172,\"columnName\":\"tax_id\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:15:24', 31);
+INSERT INTO `sys_oper_log` VALUES (192, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"所属行业\",\"dictType\":\"bd_industry\",\"params\":{},\"remark\":\"行业信息\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:17:23', 16);
+INSERT INTO `sys_oper_log` VALUES (193, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"农、林、牧、渔业\",\"dictSort\":1,\"dictType\":\"bd_industry\",\"dictValue\":\"A\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:19:46', 16);
+INSERT INTO `sys_oper_log` VALUES (194, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"采矿业\",\"dictSort\":2,\"dictType\":\"bd_industry\",\"dictValue\":\"B\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:20:09', 16);
+INSERT INTO `sys_oper_log` VALUES (195, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:20:09\",\"default\":false,\"dictCode\":118,\"dictLabel\":\"采矿业\",\"dictSort\":2,\"dictType\":\"bd_industry\",\"dictValue\":\"B\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:20:15', 6);
+INSERT INTO `sys_oper_log` VALUES (196, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:20:09\",\"default\":false,\"dictCode\":118,\"dictLabel\":\"采矿业\",\"dictSort\":2,\"dictType\":\"bd_industry\",\"dictValue\":\"B\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:20:21', 6);
+INSERT INTO `sys_oper_log` VALUES (197, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"制造业\",\"dictSort\":3,\"dictType\":\"bd_industry\",\"dictValue\":\"C\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:21:50', 6);
+INSERT INTO `sys_oper_log` VALUES (198, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"电力、热力、燃气及水生产和供应业\",\"dictSort\":4,\"dictType\":\"bd_industry\",\"dictValue\":\"D\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:22:26', 16);
+INSERT INTO `sys_oper_log` VALUES (199, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"建筑业\",\"dictSort\":5,\"dictType\":\"bd_industry\",\"dictValue\":\"E\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:22:46', 16);
+INSERT INTO `sys_oper_log` VALUES (200, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"批发和零售业\",\"dictSort\":6,\"dictType\":\"bd_industry\",\"dictValue\":\"F\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:23:05', 16);
+INSERT INTO `sys_oper_log` VALUES (201, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"交通运输、仓储和邮政业\",\"dictSort\":7,\"dictType\":\"bd_industry\",\"dictValue\":\"G\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:24:21', 6);
+INSERT INTO `sys_oper_log` VALUES (202, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"住宿和餐饮业\",\"dictSort\":7,\"dictType\":\"bd_industry\",\"dictValue\":\"I\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:24:48', 6);
+INSERT INTO `sys_oper_log` VALUES (203, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:24:48\",\"default\":false,\"dictCode\":124,\"dictLabel\":\"住宿和餐饮业\",\"dictSort\":8,\"dictType\":\"bd_industry\",\"dictValue\":\"I\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:24:52', 16);
+INSERT INTO `sys_oper_log` VALUES (204, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"金融业\",\"dictSort\":9,\"dictType\":\"bd_industry\",\"dictValue\":\"J\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:25:10', 6);
+INSERT INTO `sys_oper_log` VALUES (205, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"房地产业\",\"dictSort\":10,\"dictType\":\"bd_industry\",\"dictValue\":\"K\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:25:32', 17);
+INSERT INTO `sys_oper_log` VALUES (206, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"租赁和商务服务业\",\"dictSort\":11,\"dictType\":\"bd_industry\",\"dictValue\":\"L\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:25:56', 6);
+INSERT INTO `sys_oper_log` VALUES (207, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"科学研究和技术服务业\",\"dictSort\":12,\"dictType\":\"bd_industry\",\"dictValue\":\"M\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:26:39', 6);
+INSERT INTO `sys_oper_log` VALUES (208, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"水利、环境和公共设施管理业\",\"dictSort\":13,\"dictType\":\"bd_industry\",\"dictValue\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:32:43', 6);
+INSERT INTO `sys_oper_log` VALUES (209, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"居民服务、修理和其他服务业\",\"dictSort\":14,\"dictType\":\"bd_industry\",\"dictValue\":\"O\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:33:54', 6);
+INSERT INTO `sys_oper_log` VALUES (210, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"教育\",\"dictSort\":15,\"dictType\":\"bd_industry\",\"dictValue\":\"P\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:34:09', 16);
+INSERT INTO `sys_oper_log` VALUES (211, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"卫生和社会工作\",\"dictSort\":16,\"dictType\":\"bd_industry\",\"dictValue\":\"Q\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:34:28', 6);
+INSERT INTO `sys_oper_log` VALUES (212, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"文化、体育和娱乐业\",\"dictSort\":16,\"dictType\":\"bd_industry\",\"dictValue\":\"R\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:34:57', 5);
+INSERT INTO `sys_oper_log` VALUES (213, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:34:57\",\"default\":false,\"dictCode\":133,\"dictLabel\":\"文化、体育和娱乐业\",\"dictSort\":17,\"dictType\":\"bd_industry\",\"dictValue\":\"R\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:35:01', 16);
+INSERT INTO `sys_oper_log` VALUES (214, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"公共管理、社会保障和社会组织\",\"dictSort\":17,\"dictType\":\"bd_industry\",\"dictValue\":\"S\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:35:45', 6);
+INSERT INTO `sys_oper_log` VALUES (215, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:35:45\",\"default\":false,\"dictCode\":134,\"dictLabel\":\"公共管理、社会保障和社会组织\",\"dictSort\":18,\"dictType\":\"bd_industry\",\"dictValue\":\"S\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:35:49', 18);
+INSERT INTO `sys_oper_log` VALUES (216, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"国际组织\",\"dictSort\":19,\"dictType\":\"bd_industry\",\"dictValue\":\"T\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:36:03', 16);
+INSERT INTO `sys_oper_log` VALUES (217, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"地区\",\"dictType\":\"bd_region\",\"params\":{},\"remark\":\"地区\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:36:46', 15);
+INSERT INTO `sys_oper_log` VALUES (218, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"北京市\",\"dictSort\":1,\"dictType\":\"bd_region\",\"dictValue\":\"11\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:38:33', 18);
+INSERT INTO `sys_oper_log` VALUES (219, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"天津市\",\"dictSort\":1,\"dictType\":\"bd_region\",\"dictValue\":\"12\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:38:43', 15);
+INSERT INTO `sys_oper_log` VALUES (220, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:38:43\",\"default\":false,\"dictCode\":137,\"dictLabel\":\"天津市\",\"dictSort\":2,\"dictType\":\"bd_region\",\"dictValue\":\"12\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:38:47', 5);
+INSERT INTO `sys_oper_log` VALUES (221, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"河北省\",\"dictSort\":3,\"dictType\":\"bd_region\",\"dictValue\":\"13\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:38:58', 5);
+INSERT INTO `sys_oper_log` VALUES (222, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"山西省\",\"dictSort\":4,\"dictType\":\"bd_region\",\"dictValue\":\"14\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:39:10', 18);
+INSERT INTO `sys_oper_log` VALUES (223, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"内蒙古自治区\",\"dictSort\":5,\"dictType\":\"bd_region\",\"dictValue\":\"15\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:39:28', 16);
+INSERT INTO `sys_oper_log` VALUES (224, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"辽宁省\",\"dictSort\":6,\"dictType\":\"bd_region\",\"dictValue\":\"21\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:39:41', 16);
+INSERT INTO `sys_oper_log` VALUES (225, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"吉林省\",\"dictSort\":7,\"dictType\":\"bd_region\",\"dictValue\":\"22\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:39:58', 16);
+INSERT INTO `sys_oper_log` VALUES (226, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"黑龙江省\",\"dictSort\":9,\"dictType\":\"bd_region\",\"dictValue\":\"23\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:40:34', 5);
+INSERT INTO `sys_oper_log` VALUES (227, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:40:34\",\"default\":false,\"dictCode\":143,\"dictLabel\":\"黑龙江省\",\"dictSort\":8,\"dictType\":\"bd_region\",\"dictValue\":\"23\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:40:39', 4);
+INSERT INTO `sys_oper_log` VALUES (228, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"上海市\",\"dictSort\":9,\"dictType\":\"bd_region\",\"dictValue\":\"31\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:40:54', 16);
+INSERT INTO `sys_oper_log` VALUES (229, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"供应商分类\",\"dictType\":\"bd_vendor_category\",\"params\":{},\"remark\":\"供应商分类\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:42:00', 14);
+INSERT INTO `sys_oper_log` VALUES (230, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"原材料\",\"dictSort\":1,\"dictType\":\"bd_vendor_category\",\"dictValue\":\"1\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:42:18', 15);
+INSERT INTO `sys_oper_log` VALUES (231, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"标准件\",\"dictSort\":2,\"dictType\":\"bd_vendor_category\",\"dictValue\":\"2\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:42:34', 15);
+INSERT INTO `sys_oper_log` VALUES (232, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"服务类\",\"dictSort\":3,\"dictType\":\"bd_vendor_category\",\"dictValue\":\"3\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:42:45', 7);
+INSERT INTO `sys_oper_log` VALUES (233, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"综合型\",\"dictSort\":4,\"dictType\":\"bd_vendor_category\",\"dictValue\":\"4\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:42:59', 16);
+INSERT INTO `sys_oper_log` VALUES (234, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"合作状态\",\"dictType\":\"bd_vendor_status\",\"params\":{},\"remark\":\"合作状态\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:43:50', 5);
+INSERT INTO `sys_oper_log` VALUES (235, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"合作中\",\"dictSort\":1,\"dictType\":\"bd_vendor_status\",\"dictValue\":\"ACTIVE\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:44:26', 5);
+INSERT INTO `sys_oper_log` VALUES (236, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已冻结\",\"dictSort\":2,\"dictType\":\"bd_vendor_status\",\"dictValue\":\"FROZEN\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:45:47', 16);
+INSERT INTO `sys_oper_log` VALUES (237, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"vendor\",\"className\":\"BdVendor\",\"columns\":[{\"capJavaField\":\"VendorId\",\"columnComment\":\"供应商ID\",\"columnId\":169,\"columnName\":\"vendor_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"vendorId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:15:24\",\"usableColumn\":false},{\"capJavaField\":\"VendorCode\",\"columnComment\":\"供应商编码\",\"columnId\":170,\"columnName\":\"vendor_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:15:24\",\"usableColumn\":false},{\"capJavaField\":\"VendorName\",\"columnComment\":\"供应商名称\",\"columnId\":171,\"columnName\":\"vendor_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:15:24\",\"usableColumn\":false},{\"capJavaField\":\"TaxId\",\"columnComment\":\"税号\",\"columnId\":172,\"columnName\":\"tax_id\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"incr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:49:06', 36);
+INSERT INTO `sys_oper_log` VALUES (238, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"vendor\",\"className\":\"BdVendor\",\"columns\":[{\"capJavaField\":\"VendorId\",\"columnComment\":\"供应商ID\",\"columnId\":169,\"columnName\":\"vendor_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"vendorId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:49:06\",\"usableColumn\":false},{\"capJavaField\":\"VendorCode\",\"columnComment\":\"供应商编码\",\"columnId\":170,\"columnName\":\"vendor_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:49:06\",\"usableColumn\":false},{\"capJavaField\":\"VendorName\",\"columnComment\":\"供应商名称\",\"columnId\":171,\"columnName\":\"vendor_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:49:06\",\"usableColumn\":false},{\"capJavaField\":\"TaxId\",\"columnComment\":\"税号\",\"columnId\":172,\"columnName\":\"tax_id\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"incr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 15:49:59', 27);
+INSERT INTO `sys_oper_log` VALUES (239, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_vendor\"}', NULL, 0, NULL, '2025-09-22 15:50:03', 177);
+INSERT INTO `sys_oper_log` VALUES (240, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/client/index\",\"createTime\":\"2025-09-17 17:34:02\",\"icon\":\"peoples\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2014,\"menuName\":\"客户信息\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"bd\",\"perms\":\"core:bd:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 16:07:19', 24);
+INSERT INTO `sys_oper_log` VALUES (241, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/vendor/index\",\"createTime\":\"2025-09-22 15:53:56\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2031,\"menuName\":\"供应商\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"vendor\",\"perms\":\"core:vendor:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 16:07:42', 19);
+INSERT INTO `sys_oper_log` VALUES (242, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"vendor\",\"className\":\"BdVendor\",\"columns\":[{\"capJavaField\":\"VendorId\",\"columnComment\":\"供应商ID\",\"columnId\":169,\"columnName\":\"vendor_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"vendorId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:49:59\",\"usableColumn\":false},{\"capJavaField\":\"VendorCode\",\"columnComment\":\"供应商编码\",\"columnId\":170,\"columnName\":\"vendor_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:49:59\",\"usableColumn\":false},{\"capJavaField\":\"VendorName\",\"columnComment\":\"供应商名称\",\"columnId\":171,\"columnName\":\"vendor_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 15:49:59\",\"usableColumn\":false},{\"capJavaField\":\"TaxId\",\"columnComment\":\"税号\",\"columnId\":172,\"columnName\":\"tax_id\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"incr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 16:09:42', 80);
+INSERT INTO `sys_oper_log` VALUES (243, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_vendor\"}', NULL, 0, NULL, '2025-09-22 16:10:03', 57);
+INSERT INTO `sys_oper_log` VALUES (244, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/VENDOR_CODE', '127.0.0.1', '内网IP', '{}', '\"V00001\"', 0, NULL, '2025-09-22 16:24:25', 42);
+INSERT INTO `sys_oper_log` VALUES (245, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/VENDOR_CODE', '127.0.0.1', '内网IP', '{}', '\"V00002\"', 0, NULL, '2025-09-22 16:24:26', 12);
+INSERT INTO `sys_oper_log` VALUES (246, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/VENDOR_CODE', '127.0.0.1', '内网IP', '{}', '\"V00003\"', 0, NULL, '2025-09-22 16:24:26', 10);
+INSERT INTO `sys_oper_log` VALUES (247, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/VENDOR_CODE', '127.0.0.1', '内网IP', '{}', '\"V00004\"', 0, NULL, '2025-09-22 16:24:31', 12);
+INSERT INTO `sys_oper_log` VALUES (248, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/VENDOR_CODE', '127.0.0.1', '内网IP', '{}', '\"V00005\"', 0, NULL, '2025-09-22 16:27:01', 10);
+INSERT INTO `sys_oper_log` VALUES (249, '供应商', 1, 'com.nexus.bd.controller.BdVendorController.add()', 'POST', 1, 'admin', '研发部门', '/core/vendor', '127.0.0.1', '内网IP', '{\"address\":\"北京海定区\",\"bankAccount\":\"1231231231233\",\"category\":\"1\",\"contactPerson\":\"张三\",\"createTime\":\"2025-09-22 16:28:35\",\"industry\":\"B\",\"params\":{},\"phone\":\"15388888888\",\"region\":\"11\",\"remark\":\"测试\",\"status\":\"ACTIVE\",\"taxId\":\"123123123312\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 16:28:35', 14);
+INSERT INTO `sys_oper_log` VALUES (250, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"vendor\",\"className\":\"BdVendor\",\"columns\":[{\"capJavaField\":\"VendorId\",\"columnComment\":\"供应商ID\",\"columnId\":169,\"columnName\":\"vendor_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"vendorId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 16:09:42\",\"usableColumn\":false},{\"capJavaField\":\"VendorCode\",\"columnComment\":\"供应商编码\",\"columnId\":170,\"columnName\":\"vendor_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 16:09:42\",\"usableColumn\":false},{\"capJavaField\":\"VendorName\",\"columnComment\":\"供应商名称\",\"columnId\":171,\"columnName\":\"vendor_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 16:09:42\",\"usableColumn\":false},{\"capJavaField\":\"TaxId\",\"columnComment\":\"税号\",\"columnId\":172,\"columnName\":\"tax_id\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"incr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 16:52:15', 43);
+INSERT INTO `sys_oper_log` VALUES (251, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"vendor\",\"className\":\"BdVendor\",\"columns\":[{\"capJavaField\":\"VendorId\",\"columnComment\":\"供应商ID\",\"columnId\":169,\"columnName\":\"vendor_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"vendorId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 16:52:15\",\"usableColumn\":false},{\"capJavaField\":\"VendorCode\",\"columnComment\":\"供应商编码\",\"columnId\":170,\"columnName\":\"vendor_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 16:52:15\",\"usableColumn\":false},{\"capJavaField\":\"VendorName\",\"columnComment\":\"供应商名称\",\"columnId\":171,\"columnName\":\"vendor_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"vendorName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":9,\"updateBy\":\"\",\"updateTime\":\"2025-09-22 16:52:15\",\"usableColumn\":false},{\"capJavaField\":\"TaxId\",\"columnComment\":\"税号\",\"columnId\":172,\"columnName\":\"tax_id\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:14:10\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"incr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 16:54:13', 37);
+INSERT INTO `sys_oper_log` VALUES (252, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_vendor\"}', NULL, 0, NULL, '2025-09-22 16:57:56', 196);
+INSERT INTO `sys_oper_log` VALUES (253, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/vendor/index\",\"createTime\":\"2025-09-22 15:53:56\",\"icon\":\"people\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2031,\"menuName\":\"供应商\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"vendor\",\"perms\":\"core:vendor:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 17:02:56', 26);
+INSERT INTO `sys_oper_log` VALUES (254, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/4', '127.0.0.1', '内网IP', '4', '{\"msg\":\"菜单已分配,不允许删除\",\"code\":601}', 0, NULL, '2025-09-22 17:05:43', 24);
+INSERT INTO `sys_oper_log` VALUES (255, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/4', '127.0.0.1', '内网IP', '4', '{\"msg\":\"菜单已分配,不允许删除\",\"code\":601}', 0, NULL, '2025-09-22 17:06:24', 5);
+INSERT INTO `sys_oper_log` VALUES (256, '角色管理', 2, 'com.nexus.web.controller.system.SysRoleController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/role', '127.0.0.1', '内网IP', '{\"admin\":false,\"createTime\":\"2025-08-29 16:28:04\",\"dataScope\":\"2\",\"delFlag\":\"0\",\"deptCheckStrictly\":true,\"flag\":false,\"menuCheckStrictly\":true,\"menuIds\":[1,100,1000,1001,1002,1003,1004,1005,1006,101,1007,1008,1009,1010,1011,102,1012,1013,1014,1015,103,1016,1017,1018,1019,104,1020,1021,1022,1023,1024,105,1025,1026,1027,1028,1029,106,1030,1031,1032,1033,1034,107,1035,1036,1037,1038,108,500,1039,1040,1041,501,1042,1043,1044,1045,2026,2027,2028,2029,2030,2,109,1046,1047,1048,110,1049,1050,1051,1052,1053,1054,111,112,113,114,3,115,116,1055,1056,1057,1058,1059,1060,117,2007,2014,2015,2016,2017,2018,2019,2031,2032,2033,2034,2035,2036],\"params\":{},\"remark\":\"普通角色\",\"roleId\":2,\"roleKey\":\"common\",\"roleName\":\"普通角色\",\"roleSort\":2,\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 17:09:35', 42);
+INSERT INTO `sys_oper_log` VALUES (257, '菜单管理', 3, 'com.nexus.web.controller.system.SysMenuController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/menu/4', '127.0.0.1', '内网IP', '4', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-22 17:09:44', 20);
+INSERT INTO `sys_oper_log` VALUES (258, '参数管理', 2, 'com.nexus.web.controller.system.SysConfigController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/config', '127.0.0.1', '内网IP', '{\"configId\":5,\"configKey\":\"sys.account.registerUser\",\"configName\":\"账号自助-是否开启用户注册功能\",\"configType\":\"Y\",\"configValue\":\"true\",\"createBy\":\"admin\",\"createTime\":\"2025-08-29 16:28:04\",\"params\":{},\"remark\":\"是否开启注册用户功能（true开启，false关闭）\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 16:16:10', 18);
+INSERT INTO `sys_oper_log` VALUES (259, '参数管理', 2, 'com.nexus.web.controller.system.SysConfigController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/config', '127.0.0.1', '内网IP', '{\"configId\":5,\"configKey\":\"sys.account.registerUser\",\"configName\":\"账号自助-是否开启用户注册功能\",\"configType\":\"N\",\"configValue\":\"true\",\"createBy\":\"admin\",\"createTime\":\"2025-08-29 16:28:04\",\"params\":{},\"remark\":\"是否开启注册用户功能（true开启，false关闭）\",\"updateBy\":\"admin\",\"updateTime\":\"2025-09-29 16:16:10\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 16:16:41', 19);
+INSERT INTO `sys_oper_log` VALUES (260, '参数管理', 2, 'com.nexus.web.controller.system.SysConfigController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/config', '127.0.0.1', '内网IP', '{\"configId\":5,\"configKey\":\"sys.account.registerUser\",\"configName\":\"账号自助-是否开启用户注册功能\",\"configType\":\"Y\",\"configValue\":\"false\",\"createBy\":\"admin\",\"createTime\":\"2025-08-29 16:28:04\",\"params\":{},\"remark\":\"是否开启注册用户功能（true开启，false关闭）\",\"updateBy\":\"admin\",\"updateTime\":\"2025-09-29 16:16:41\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 16:17:12', 9);
+INSERT INTO `sys_oper_log` VALUES (261, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createBy\":\"admin\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"销售管理\",\"menuType\":\"C\",\"orderNum\":5,\"params\":{},\"parentId\":0,\"path\":\"sale\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:21:31', 24);
+INSERT INTO `sys_oper_log` VALUES (262, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:21:31\",\"icon\":\"money\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2037,\"menuName\":\"销售管理\",\"menuType\":\"C\",\"orderNum\":5,\"params\":{},\"parentId\":0,\"path\":\"core/sale\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:24:29', 17);
+INSERT INTO `sys_oper_log` VALUES (263, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:21:31\",\"icon\":\"money\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2037,\"menuName\":\"销售管理\",\"menuType\":\"C\",\"orderNum\":5,\"params\":{},\"parentId\":0,\"path\":\"core.sale\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:24:47', 18);
+INSERT INTO `sys_oper_log` VALUES (264, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createBy\":\"admin\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.prd\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:25:44', 17);
+INSERT INTO `sys_oper_log` VALUES (265, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:21:31\",\"icon\":\"money\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2037,\"menuName\":\"销售管理\",\"menuType\":\"C\",\"orderNum\":5,\"params\":{},\"parentId\":0,\"path\":\"core.so\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:26:28', 17);
+INSERT INTO `sys_oper_log` VALUES (266, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:25:44\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2038,\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.pro\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:26:41', 16);
+INSERT INTO `sys_oper_log` VALUES (267, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:21:31\",\"icon\":\"money\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2037,\"menuName\":\"销售管理\",\"menuType\":\"M\",\"orderNum\":5,\"params\":{},\"parentId\":0,\"path\":\"core.so\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:26:49', 16);
+INSERT INTO `sys_oper_log` VALUES (268, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:25:44\",\"icon\":\"slider\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2038,\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.pro\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:28:23', 17);
+INSERT INTO `sys_oper_log` VALUES (269, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:25:44\",\"icon\":\"产能\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2038,\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.pro\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:42:46', 18);
+INSERT INTO `sys_oper_log` VALUES (270, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:25:44\",\"icon\":\"主页\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2038,\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.pro\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:43:43', 17);
+INSERT INTO `sys_oper_log` VALUES (271, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:21:31\",\"icon\":\"项目\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2037,\"menuName\":\"销售管理\",\"menuType\":\"M\",\"orderNum\":5,\"params\":{},\"parentId\":0,\"path\":\"core.so\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:44:55', 6);
+INSERT INTO `sys_oper_log` VALUES (272, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-17 17:10:27\",\"icon\":\"文档中心\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2007,\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:49:00', 6);
+INSERT INTO `sys_oper_log` VALUES (273, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-17 17:10:27\",\"icon\":\"winmail\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2007,\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:49:25', 9);
+INSERT INTO `sys_oper_log` VALUES (274, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-17 17:10:27\",\"icon\":\"策略管理\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2007,\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:53:09', 15);
+INSERT INTO `sys_oper_log` VALUES (275, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-17 17:10:27\",\"icon\":\"项目\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2007,\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:54:57', 6);
+INSERT INTO `sys_oper_log` VALUES (276, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createBy\":\"admin\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"库房管理\",\"menuType\":\"M\",\"orderNum\":7,\"params\":{},\"parentId\":0,\"path\":\"core.wm\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:58:29', 18);
+INSERT INTO `sys_oper_log` VALUES (277, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:58:29\",\"icon\":\"fq_仓储配置\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2039,\"menuName\":\"库房管理\",\"menuType\":\"M\",\"orderNum\":7,\"params\":{},\"parentId\":0,\"path\":\"core.wm\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-29 17:58:47', 17);
+INSERT INTO `sys_oper_log` VALUES (278, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:58:29\",\"icon\":\"货物\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2039,\"menuName\":\"库房管理\",\"menuType\":\"M\",\"orderNum\":7,\"params\":{},\"parentId\":0,\"path\":\"core.wm\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 09:25:08', 22);
+INSERT INTO `sys_oper_log` VALUES (279, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-17 17:10:27\",\"icon\":\"基础配置\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2007,\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 09:54:48', 20);
+INSERT INTO `sys_oper_log` VALUES (280, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:21:31\",\"icon\":\"订单\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2037,\"menuName\":\"销售管理\",\"menuType\":\"M\",\"orderNum\":5,\"params\":{},\"parentId\":0,\"path\":\"core.so\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 09:55:47', 18);
+INSERT INTO `sys_oper_log` VALUES (281, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:25:44\",\"icon\":\"生产\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2038,\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.pro\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 09:57:15', 7);
+INSERT INTO `sys_oper_log` VALUES (282, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:25:44\",\"icon\":\"生产 (1)\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2038,\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.pro\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 09:58:28', 7);
+INSERT INTO `sys_oper_log` VALUES (283, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-17 17:10:27\",\"icon\":\"基础配置\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2007,\"menuName\":\"主数据\",\"menuType\":\"M\",\"orderNum\":4,\"params\":{},\"parentId\":0,\"path\":\"core.bd\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 10:29:18', 18);
+INSERT INTO `sys_oper_log` VALUES (284, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:25:44\",\"icon\":\"生产管理\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2038,\"menuName\":\"生产管理\",\"menuType\":\"M\",\"orderNum\":6,\"params\":{},\"parentId\":0,\"path\":\"core.pro\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 10:29:49', 17);
+INSERT INTO `sys_oper_log` VALUES (285, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"wm_warehouse\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 10:31:25', 64);
+INSERT INTO `sys_oper_log` VALUES (286, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"warehouse\",\"className\":\"WmWarehouse\",\"columns\":[{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":190,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"warehouseId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseCode\",\"columnComment\":\"仓库编码\",\"columnId\":191,\"columnName\":\"warehouse_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseName\",\"columnComment\":\"仓库名称\",\"columnId\":192,\"columnName\":\"warehouse_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"Location\",\"columnComment\":\"位置\",\"columnId\":193,\"columnName\":\"location\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInser', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 10:32:18', 48);
+INSERT INTO `sys_oper_log` VALUES (287, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"warehouse\",\"className\":\"WmWarehouse\",\"columns\":[{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":190,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"warehouseId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 10:32:17\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseCode\",\"columnComment\":\"仓库编码\",\"columnId\":191,\"columnName\":\"warehouse_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 10:32:17\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseName\",\"columnComment\":\"仓库名称\",\"columnId\":192,\"columnName\":\"warehouse_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 10:32:17\",\"usableColumn\":false},{\"capJavaField\":\"Location\",\"columnComment\":\"位置\",\"columnId\":193,\"columnName\":\"location\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 10:43:03', 26);
+INSERT INTO `sys_oper_log` VALUES (288, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"wm_warehouse\"}', NULL, 0, NULL, '2025-09-30 10:43:56', 51);
+INSERT INTO `sys_oper_log` VALUES (289, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/wm/warehouse/index\",\"createTime\":\"2025-09-30 10:44:27\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2040,\"menuName\":\"仓库设置\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2039,\"path\":\"warehouse\",\"perms\":\"wm:warehouse:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 11:15:41', 32);
+INSERT INTO `sys_oper_log` VALUES (290, '代码生成', 2, 'com.nexus.generator.controller.GenController.synchDb()', 'GET', 1, 'admin', '研发部门', '/tool/gen/synchDb/wm_warehouse', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 11:32:00', 61);
+INSERT INTO `sys_oper_log` VALUES (291, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"仓库状态\",\"dictType\":\"wm_warehouse_status\",\"params\":{},\"remark\":\"仓库状态\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 11:33:24', 13);
+INSERT INTO `sys_oper_log` VALUES (292, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"正常\",\"dictSort\":1,\"dictType\":\"wm_warehouse_status\",\"dictValue\":\"1\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 11:33:50', 19);
+INSERT INTO `sys_oper_log` VALUES (293, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"冻结\",\"dictSort\":2,\"dictType\":\"wm_warehouse_status\",\"dictValue\":\"0\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 11:34:16', 17);
+INSERT INTO `sys_oper_log` VALUES (294, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"warehouse\",\"className\":\"WmWarehouse\",\"columns\":[{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":190,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"warehouseId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 11:32:00\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseCode\",\"columnComment\":\"仓库编码\",\"columnId\":191,\"columnName\":\"warehouse_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 11:32:00\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseName\",\"columnComment\":\"仓库名称\",\"columnId\":192,\"columnName\":\"warehouse_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 11:32:00\",\"usableColumn\":false},{\"capJavaField\":\"Location\",\"columnComment\":\"位置\",\"columnId\":193,\"columnName\":\"location\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 11:36:09', 42);
+INSERT INTO `sys_oper_log` VALUES (295, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"warehouse\",\"className\":\"WmWarehouse\",\"columns\":[{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":190,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"warehouseId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 11:36:09\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseCode\",\"columnComment\":\"仓库编码\",\"columnId\":191,\"columnName\":\"warehouse_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 11:36:09\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseName\",\"columnComment\":\"仓库名称\",\"columnId\":192,\"columnName\":\"warehouse_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"warehouseName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":10,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 11:36:09\",\"usableColumn\":false},{\"capJavaField\":\"Location\",\"columnComment\":\"位置\",\"columnId\":193,\"columnName\":\"location\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 10:31:25\",\"dictType\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 11:36:38', 31);
+INSERT INTO `sys_oper_log` VALUES (296, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WAREHOUSE_CODE', '127.0.0.1', '内网IP', '{}', '\"WH001\"', 0, NULL, '2025-09-30 12:02:13', 49);
+INSERT INTO `sys_oper_log` VALUES (297, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WAREHOUSE_CODE', '127.0.0.1', '内网IP', '{}', '\"WH002\"', 0, NULL, '2025-09-30 12:02:23', 24);
+INSERT INTO `sys_oper_log` VALUES (298, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WAREHOUSE_CODE', '127.0.0.1', '内网IP', '{}', '\"WH003\"', 0, NULL, '2025-09-30 12:03:11', 13);
+INSERT INTO `sys_oper_log` VALUES (299, '仓库设置', 1, 'com.nexus.core.wm.controller.WmWarehouseController.add()', 'POST', 1, 'admin', '研发部门', '/wm/warehouse', '127.0.0.1', '内网IP', '{\"area\":400,\"createTime\":\"2025-09-30 12:04:15\",\"location\":\"内江市东兴区红牌坊\",\"params\":{},\"warehouseCode\":\"WH003\",\"warehouseId\":1,\"warehouseName\":\"内江东兴区仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 12:04:15', 14);
+INSERT INTO `sys_oper_log` VALUES (300, '仓库设置', 2, 'com.nexus.core.wm.controller.WmWarehouseController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/warehouse', '127.0.0.1', '内网IP', '{\"area\":400.3,\"createTime\":\"2025-09-30 12:04:16\",\"location\":\"内江市东兴区红牌坊\",\"params\":{},\"updateTime\":\"2025-09-30 12:40:15\",\"warehouseCode\":\"WH003\",\"warehouseId\":1,\"warehouseName\":\"内江东兴区仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 12:40:15', 26);
+INSERT INTO `sys_oper_log` VALUES (301, '部门管理', 2, 'com.nexus.web.controller.system.SysDeptController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dept', '127.0.0.1', '内网IP', '{\"ancestors\":\"0\",\"children\":[],\"deptId\":100,\"deptName\":\"NEXUS科技\",\"email\":\"ry@qq.com\",\"leader\":\"若依\",\"orderNum\":0,\"params\":{},\"parentId\":0,\"phone\":\"15888888888\",\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 13:01:03', 15);
+INSERT INTO `sys_oper_log` VALUES (302, '岗位管理', 1, 'com.nexus.web.controller.system.SysPostController.add()', 'POST', 1, 'admin', '研发部门', '/system/post', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"flag\":false,\"params\":{},\"postCode\":\"technology\",\"postId\":5,\"postName\":\"技术人员\",\"postSort\":5,\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 13:03:01', 13);
+INSERT INTO `sys_oper_log` VALUES (303, '仓库设置', 2, 'com.nexus.core.wm.controller.WmWarehouseController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/warehouse', '127.0.0.1', '内网IP', '{\"area\":400.3,\"createTime\":\"2025-09-30 12:04:16\",\"location\":\"内江市东兴区红牌坊\",\"manager\":\"ry\",\"managerId\":2,\"params\":{},\"status\":1,\"updateTime\":\"2025-09-30 13:12:36\",\"warehouseCode\":\"WH003\",\"warehouseId\":1,\"warehouseName\":\"内江东兴区仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 13:12:36', 15);
+INSERT INTO `sys_oper_log` VALUES (304, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/wm/warehouse/index\",\"createTime\":\"2025-09-30 10:44:27\",\"icon\":\"存货\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2040,\"menuName\":\"仓库设置\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2039,\"path\":\"warehouse\",\"perms\":\"wm:warehouse:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:18:39', 16);
+INSERT INTO `sys_oper_log` VALUES (305, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"状态\",\"dictType\":\"sys_status\",\"params\":{},\"remark\":\"通用状态字典，0:停用 1:启用\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:47:12', 9);
+INSERT INTO `sys_oper_log` VALUES (306, '字典类型', 2, 'com.nexus.web.controller.system.SysDictTypeController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:47:12\",\"dictId\":109,\"dictName\":\"状态\",\"dictType\":\"sys_core_status\",\"params\":{},\"remark\":\"通用状态字典，0:停用 1:启用\",\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:47:31', 50);
+INSERT INTO `sys_oper_log` VALUES (307, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"启用\",\"dictSort\":1,\"dictType\":\"sys_core_status\",\"dictValue\":\"1\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:47:49', 6);
+INSERT INTO `sys_oper_log` VALUES (308, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"停用\",\"dictSort\":2,\"dictType\":\"sys_core_status\",\"dictValue\":\"0\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:48:03', 17);
+INSERT INTO `sys_oper_log` VALUES (309, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"bd_unit_of_measure\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:48:20', 44);
+INSERT INTO `sys_oper_log` VALUES (310, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuer', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:49:54', 48);
+INSERT INTO `sys_oper_log` VALUES (311, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"系统是否\",\"dictType\":\"sys_true_or_false\",\"params\":{},\"remark\":\"系统是否，0否，1是\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:58:14', 6);
+INSERT INTO `sys_oper_log` VALUES (312, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"否\",\"dictSort\":1,\"dictType\":\"sys_true_or_false\",\"dictValue\":\"0\",\"listClass\":\"danger\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:58:31', 17);
+INSERT INTO `sys_oper_log` VALUES (313, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"是\",\"dictSort\":1,\"dictType\":\"sys_true_or_false\",\"dictValue\":\"1\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 14:58:48', 15);
+INSERT INTO `sys_oper_log` VALUES (314, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 14:49:54\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 14:49:54\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 14:49:54\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 15:05:15', 31);
+INSERT INTO `sys_oper_log` VALUES (315, '字典类型', 2, 'com.nexus.web.controller.system.SysDictTypeController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:58:14\",\"dictId\":110,\"dictName\":\"系统自定义是否\",\"dictType\":\"sys_true_or_false\",\"params\":{},\"remark\":\"系统是否，0否，1是\",\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 15:05:31', 19);
+INSERT INTO `sys_oper_log` VALUES (316, '代码生成', 2, 'com.nexus.generator.controller.GenController.synchDb()', 'GET', 1, 'admin', '研发部门', '/tool/gen/synchDb/bd_unit_of_measure', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 15:34:03', 39);
+INSERT INTO `sys_oper_log` VALUES (317, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:34:03\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:34:03\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:34:03\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 15:52:53', 34);
+INSERT INTO `sys_oper_log` VALUES (318, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:52:52\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:52:52\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:52:52\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 15:54:10', 33);
+INSERT INTO `sys_oper_log` VALUES (319, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_unit_of_measure\"}', NULL, 0, NULL, '2025-09-30 15:54:12', 52);
+INSERT INTO `sys_oper_log` VALUES (320, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:54:10\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:54:10\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:54:10\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 15:57:27', 87);
+INSERT INTO `sys_oper_log` VALUES (321, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_unit_of_measure\"}', NULL, 0, NULL, '2025-09-30 15:57:30', 161);
+INSERT INTO `sys_oper_log` VALUES (322, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:57:27\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:57:27\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 15:57:27\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 16:04:31', 45);
+INSERT INTO `sys_oper_log` VALUES (323, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_unit_of_measure\"}', NULL, 0, NULL, '2025-09-30 16:04:33', 41);
+INSERT INTO `sys_oper_log` VALUES (324, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:04:31\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:04:31\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:04:31\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 16:05:40', 39);
+INSERT INTO `sys_oper_log` VALUES (325, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_unit_of_measure\"}', NULL, 0, NULL, '2025-09-30 16:05:42', 35);
+INSERT INTO `sys_oper_log` VALUES (326, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:05:40\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:05:40\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:05:40\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 16:06:21', 37);
+INSERT INTO `sys_oper_log` VALUES (327, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_unit_of_measure\"}', NULL, 0, NULL, '2025-09-30 16:06:24', 31);
+INSERT INTO `sys_oper_log` VALUES (328, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"measure\",\"className\":\"BdUnitOfMeasure\",\"columns\":[{\"capJavaField\":\"UomId\",\"columnComment\":\"单位ID\",\"columnId\":207,\"columnName\":\"uom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"uomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:06:21\",\"usableColumn\":false},{\"capJavaField\":\"UomCode\",\"columnComment\":\"单位编码\",\"columnId\":208,\"columnName\":\"uom_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:06:21\",\"usableColumn\":false},{\"capJavaField\":\"UomName\",\"columnComment\":\"单位名称\",\"columnId\":209,\"columnName\":\"uom_name\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"uomName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":11,\"updateBy\":\"\",\"updateTime\":\"2025-09-30 16:06:21\",\"usableColumn\":false},{\"capJavaField\":\"UomSymbol\",\"columnComment\":\"单位符号(kg、m、pcs等)\",\"columnId\":210,\"columnName\":\"uom_symbol\",\"columnType\":\"varchar(16)\",\"createBy\":\"admin\",\"createTime\":\"2025-09-30 14:48:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 16:12:17', 39);
+INSERT INTO `sys_oper_log` VALUES (329, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/measure/index\",\"createTime\":\"2025-09-30 16:00:13\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2046,\"menuName\":\"计量单位\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"measure\",\"perms\":\"bd:measure:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 16:15:10', 32);
+INSERT INTO `sys_oper_log` VALUES (330, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/measure/index\",\"createTime\":\"2025-09-30 16:00:13\",\"icon\":\"长度测距\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2046,\"menuName\":\"计量单位\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"measure\",\"perms\":\"bd:measure:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 16:18:18', 18);
+INSERT INTO `sys_oper_log` VALUES (331, '计量单位', 2, 'com.nexus.core.bd.controller.BdUnitOfMeasureController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/measure', '127.0.0.1', '内网IP', '{\"category\":\"重量\",\"conversionRate\":1,\"createTime\":\"2025-09-30 16:55:06\",\"isBase\":1,\"params\":{},\"sortOrder\":1,\"status\":1,\"uomCode\":\"GRAM\",\"uomId\":1,\"uomName\":\"克\",\"uomSymbol\":\"g\",\"updateTime\":\"2025-09-30 17:13:46\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 17:13:46', 21);
+INSERT INTO `sys_oper_log` VALUES (332, '计量单位', 2, 'com.nexus.core.bd.controller.BdUnitOfMeasureController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/measure', '127.0.0.1', '内网IP', '{\"category\":\"重量\",\"conversionRate\":1000,\"createTime\":\"2025-09-30 16:55:06\",\"isBase\":0,\"params\":{},\"primaryId\":1,\"primaryName\":\"克\",\"sortOrder\":2,\"status\":1,\"uomCode\":\"KILOGRAM\",\"uomId\":2,\"uomName\":\"千克\",\"uomSymbol\":\"kg\",\"updateTime\":\"2025-09-30 17:13:58\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-09-30 17:13:58', 15);
+INSERT INTO `sys_oper_log` VALUES (333, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"bd_material_category\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-01 12:23:55', 62);
+INSERT INTO `sys_oper_log` VALUES (334, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"category\",\"className\":\"BdMaterialCategory\",\"columns\":[{\"capJavaField\":\"CategoryId\",\"columnComment\":\"分类ID\",\"columnId\":222,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ParentId\",\"columnComment\":\"父分类ID\",\"columnId\":223,\"columnName\":\"parent_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"0\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"0\",\"javaField\":\"parentId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":true,\"tableId\":12,\"updateBy\":\"\",\"usableColumn\":true},{\"capJavaField\":\"CategoryCode\",\"columnComment\":\"分类编码\",\"columnId\":224,\"columnName\":\"category_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"categoryCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"CategoryName\",\"columnComment\":\"分类名称\",\"columnId\":225,\"columnName\":\"category_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isLi', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-01 12:26:16', 37);
+INSERT INTO `sys_oper_log` VALUES (335, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"category\",\"className\":\"BdMaterialCategory\",\"columns\":[{\"capJavaField\":\"CategoryId\",\"columnComment\":\"分类ID\",\"columnId\":222,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:26:16\",\"usableColumn\":false},{\"capJavaField\":\"ParentId\",\"columnComment\":\"父分类ID\",\"columnId\":223,\"columnName\":\"parent_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"0\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"0\",\"javaField\":\"parentId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":true,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:26:16\",\"usableColumn\":true},{\"capJavaField\":\"CategoryCode\",\"columnComment\":\"分类编码\",\"columnId\":224,\"columnName\":\"category_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"categoryCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:26:16\",\"usableColumn\":false},{\"capJavaField\":\"CategoryName\",\"columnComment\":\"分类名称\",\"columnId\":225,\"columnName\":\"category_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":tr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-01 12:28:22', 23);
+INSERT INTO `sys_oper_log` VALUES (336, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"category\",\"className\":\"BdMaterialCategory\",\"columns\":[{\"capJavaField\":\"CategoryId\",\"columnComment\":\"分类ID\",\"columnId\":222,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:28:22\",\"usableColumn\":false},{\"capJavaField\":\"ParentId\",\"columnComment\":\"父分类ID\",\"columnId\":223,\"columnName\":\"parent_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"0\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"0\",\"javaField\":\"parentId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":true,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:28:22\",\"usableColumn\":true},{\"capJavaField\":\"CategoryCode\",\"columnComment\":\"分类编码\",\"columnId\":224,\"columnName\":\"category_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"categoryCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:28:22\",\"usableColumn\":false},{\"capJavaField\":\"CategoryName\",\"columnComment\":\"分类名称\",\"columnId\":225,\"columnName\":\"category_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":tr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-01 12:28:50', 22);
+INSERT INTO `sys_oper_log` VALUES (337, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"category\",\"className\":\"BdMaterialCategory\",\"columns\":[{\"capJavaField\":\"CategoryId\",\"columnComment\":\"分类ID\",\"columnId\":222,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:28:50\",\"usableColumn\":false},{\"capJavaField\":\"ParentId\",\"columnComment\":\"父分类ID\",\"columnId\":223,\"columnName\":\"parent_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"0\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"0\",\"javaField\":\"parentId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":true,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:28:50\",\"usableColumn\":true},{\"capJavaField\":\"CategoryCode\",\"columnComment\":\"分类编码\",\"columnId\":224,\"columnName\":\"category_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"categoryCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:28:50\",\"usableColumn\":false},{\"capJavaField\":\"CategoryName\",\"columnComment\":\"分类名称\",\"columnId\":225,\"columnName\":\"category_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":tr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-01 12:32:01', 21);
+INSERT INTO `sys_oper_log` VALUES (338, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_material_category\"}', NULL, 0, NULL, '2025-10-01 12:32:10', 104);
+INSERT INTO `sys_oper_log` VALUES (339, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"category\",\"className\":\"BdMaterialCategory\",\"columns\":[{\"capJavaField\":\"CategoryId\",\"columnComment\":\"分类ID\",\"columnId\":222,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:32:00\",\"usableColumn\":false},{\"capJavaField\":\"ParentId\",\"columnComment\":\"父分类ID\",\"columnId\":223,\"columnName\":\"parent_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"0\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"0\",\"javaField\":\"parentId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":true,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:32:00\",\"usableColumn\":true},{\"capJavaField\":\"CategoryCode\",\"columnComment\":\"分类编码\",\"columnId\":224,\"columnName\":\"category_code\",\"columnType\":\"varchar(32)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"categoryCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":12,\"updateBy\":\"\",\"updateTime\":\"2025-10-01 12:32:00\",\"usableColumn\":false},{\"capJavaField\":\"CategoryName\",\"columnComment\":\"分类名称\",\"columnId\":225,\"columnName\":\"category_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-01 12:23:55\",\"dictType\":\"\",\"edit\":tr', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-01 12:36:42', 22);
+INSERT INTO `sys_oper_log` VALUES (340, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_material_category\"}', NULL, 0, NULL, '2025-10-01 12:36:44', 29);
+INSERT INTO `sys_oper_log` VALUES (341, '物料产品分类', 1, 'com.nexus.core.bd.controller.BdMaterialCategoryController.add()', 'POST', 1, 'admin', '研发部门', '/bd/category', '127.0.0.1', '内网IP', '{\"categoryCode\":\"OIL\",\"categoryId\":8,\"categoryName\":\"石油\",\"createTime\":\"2025-10-01 13:13:03\",\"params\":{},\"parentId\":7,\"sortOrder\":1,\"status\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-01 13:13:03', 78);
+INSERT INTO `sys_oper_log` VALUES (342, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/category/index\",\"createTime\":\"2025-10-01 12:38:08\",\"icon\":\"物料分类\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2058,\"menuName\":\"物料产品分类\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"category\",\"perms\":\"bd:category:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:06:07', 13);
+INSERT INTO `sys_oper_log` VALUES (343, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"bd_material\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:09:16', 74);
+INSERT INTO `sys_oper_log` VALUES (344, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"material\",\"className\":\"BdMaterial\",\"columns\":[{\"capJavaField\":\"MaterialId\",\"columnComment\":\"物料ID\",\"columnId\":241,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"物料编码\",\"columnId\":242,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"MaterialName\",\"columnComment\":\"物料名称\",\"columnId\":243,\"columnName\":\"material_name\",\"columnType\":\"varchar(200)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"MaterialSpec\",\"columnComment\":\"规格型号\",\"columnId\":244,\"columnName\":\"material_spec\",\"columnType\":\"varchar(500)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"textarea\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isIn', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:53:51', 46);
+INSERT INTO `sys_oper_log` VALUES (345, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"物料类型\",\"dictType\":\"bd_material_type\",\"params\":{},\"remark\":\"物料类型\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:54:48', 6);
+INSERT INTO `sys_oper_log` VALUES (346, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"原材料\",\"dictSort\":1,\"dictType\":\"bd_material_type\",\"dictValue\":\"1\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:55:14', 6);
+INSERT INTO `sys_oper_log` VALUES (347, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"半成品\",\"dictSort\":2,\"dictType\":\"bd_material_type\",\"dictValue\":\"2\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:55:27', 5);
+INSERT INTO `sys_oper_log` VALUES (348, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"成品\",\"dictSort\":3,\"dictType\":\"bd_material_type\",\"dictValue\":\"3\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:58:15', 6);
+INSERT INTO `sys_oper_log` VALUES (349, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"辅料\",\"dictSort\":4,\"dictType\":\"bd_material_type\",\"dictValue\":\"4\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:58:25', 5);
+INSERT INTO `sys_oper_log` VALUES (350, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"物料来源类型\",\"dictType\":\"bd_source_type\",\"params\":{},\"remark\":\"物料来源类型\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-03 23:59:55', 4);
+INSERT INTO `sys_oper_log` VALUES (351, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"自制\",\"dictSort\":1,\"dictType\":\"bd_source_type\",\"dictValue\":\"1\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:00:24', 5);
+INSERT INTO `sys_oper_log` VALUES (352, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"外购\",\"dictSort\":2,\"dictType\":\"bd_source_type\",\"dictValue\":\"2\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:00:36', 5);
+INSERT INTO `sys_oper_log` VALUES (353, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"委外\",\"dictSort\":3,\"dictType\":\"bd_source_type\",\"dictValue\":\"3\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:00:47', 4);
+INSERT INTO `sys_oper_log` VALUES (354, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"material\",\"className\":\"BdMaterial\",\"columns\":[{\"capJavaField\":\"MaterialId\",\"columnComment\":\"物料ID\",\"columnId\":241,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"updateTime\":\"2025-10-03 23:53:51\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"物料编码\",\"columnId\":242,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"updateTime\":\"2025-10-03 23:53:51\",\"usableColumn\":false},{\"capJavaField\":\"MaterialName\",\"columnComment\":\"物料名称\",\"columnId\":243,\"columnName\":\"material_name\",\"columnType\":\"varchar(200)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"updateTime\":\"2025-10-03 23:53:51\",\"usableColumn\":false},{\"capJavaField\":\"MaterialSpec\",\"columnComment\":\"规格型号\",\"columnId\":244,\"columnName\":\"material_spec\",\"columnType\":\"varchar(500)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:04:17', 34);
+INSERT INTO `sys_oper_log` VALUES (355, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"质量状态\",\"dictType\":\"bd_quality_status\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:05:08', 5);
+INSERT INTO `sys_oper_log` VALUES (356, '字典类型', 2, 'com.nexus.web.controller.system.SysDictTypeController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-04 00:05:08\",\"dictId\":113,\"dictName\":\"质量状态\",\"dictType\":\"bd_quality_status\",\"params\":{},\"remark\":\"质量状态\",\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:05:15', 7);
+INSERT INTO `sys_oper_log` VALUES (357, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"合格\",\"dictSort\":1,\"dictType\":\"bd_quality_status\",\"dictValue\":\"1\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:05:44', 5);
+INSERT INTO `sys_oper_log` VALUES (358, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"待检\",\"dictSort\":2,\"dictType\":\"bd_quality_status\",\"dictValue\":\"2\",\"listClass\":\"info\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:06:02', 5);
+INSERT INTO `sys_oper_log` VALUES (359, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"不合格\",\"dictSort\":3,\"dictType\":\"bd_quality_status\",\"dictValue\":\"3\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:06:19', 6);
+INSERT INTO `sys_oper_log` VALUES (360, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-04 00:06:19\",\"default\":false,\"dictCode\":166,\"dictLabel\":\"不合格\",\"dictSort\":3,\"dictType\":\"bd_quality_status\",\"dictValue\":\"3\",\"isDefault\":\"N\",\"listClass\":\"danger\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:06:24', 4);
+INSERT INTO `sys_oper_log` VALUES (361, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"material\",\"className\":\"BdMaterial\",\"columns\":[{\"capJavaField\":\"MaterialId\",\"columnComment\":\"物料ID\",\"columnId\":241,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"updateTime\":\"2025-10-04 00:04:17\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"物料编码\",\"columnId\":242,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"updateTime\":\"2025-10-04 00:04:17\",\"usableColumn\":false},{\"capJavaField\":\"MaterialName\",\"columnComment\":\"物料名称\",\"columnId\":243,\"columnName\":\"material_name\",\"columnType\":\"varchar(200)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":13,\"updateBy\":\"\",\"updateTime\":\"2025-10-04 00:04:17\",\"usableColumn\":false},{\"capJavaField\":\"MaterialSpec\",\"columnComment\":\"规格型号\",\"columnId\":244,\"columnName\":\"material_spec\",\"columnType\":\"varchar(500)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-03 23:09:16\",\"dictType\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:08:04', 31);
+INSERT INTO `sys_oper_log` VALUES (362, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"bd_material\"}', NULL, 0, NULL, '2025-10-04 00:08:09', 111);
+INSERT INTO `sys_oper_log` VALUES (363, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/material/index\",\"createTime\":\"2025-10-04 00:09:09\",\"icon\":\"产品管理\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2064,\"menuName\":\"物料产品管理\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"material\",\"perms\":\"bd:material:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-04 00:11:40', 17);
+
+-- ----------------------------
+-- Table structure for sys_post
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_post`;
+CREATE TABLE `sys_post`  (
+  `post_id` bigint NOT NULL AUTO_INCREMENT COMMENT '岗位ID',
+  `post_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位编码',
+  `post_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位名称',
+  `post_sort` int NOT NULL COMMENT '显示顺序',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '状态（0正常 1停用）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`post_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_post
+-- ----------------------------
+INSERT INTO `sys_post` VALUES (1, 'ceo', '董事长', 1, '0', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_post` VALUES (2, 'se', '项目经理', 2, '0', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_post` VALUES (3, 'hr', '人力资源', 3, '0', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_post` VALUES (4, 'user', '普通员工', 4, '0', 'admin', '2025-08-29 16:28:04', '', NULL, '');
+INSERT INTO `sys_post` VALUES (5, 'technology', '技术人员', 5, '0', 'admin', '2025-09-30 13:03:01', '', NULL, NULL);
+
+-- ----------------------------
+-- Table structure for sys_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role`;
+CREATE TABLE `sys_role`  (
+  `role_id` bigint NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+  `role_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色名称',
+  `role_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色权限字符串',
+  `role_sort` int NOT NULL COMMENT '显示顺序',
+  `data_scope` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '1' COMMENT '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）',
+  `menu_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
+  `dept_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '部门树选择项是否关联显示',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`role_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_role
+-- ----------------------------
+INSERT INTO `sys_role` VALUES (1, '超级管理员', 'admin', 1, '1', 1, 1, '0', '0', 'admin', '2025-08-29 16:28:04', '', NULL, '超级管理员');
+INSERT INTO `sys_role` VALUES (2, '普通角色', 'common', 2, '2', 1, 1, '0', '0', 'admin', '2025-08-29 16:28:04', 'admin', '2025-09-22 17:09:34', '普通角色');
+
+-- ----------------------------
+-- Table structure for sys_role_dept
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role_dept`;
+CREATE TABLE `sys_role_dept`  (
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `dept_id` bigint NOT NULL COMMENT '部门ID',
+  PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_role_dept
+-- ----------------------------
+INSERT INTO `sys_role_dept` VALUES (2, 100);
+INSERT INTO `sys_role_dept` VALUES (2, 101);
+INSERT INTO `sys_role_dept` VALUES (2, 102);
+INSERT INTO `sys_role_dept` VALUES (2, 103);
+INSERT INTO `sys_role_dept` VALUES (2, 104);
+INSERT INTO `sys_role_dept` VALUES (2, 105);
+INSERT INTO `sys_role_dept` VALUES (2, 106);
+INSERT INTO `sys_role_dept` VALUES (2, 107);
+INSERT INTO `sys_role_dept` VALUES (2, 108);
+INSERT INTO `sys_role_dept` VALUES (2, 109);
+
+-- ----------------------------
+-- Table structure for sys_role_menu
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role_menu`;
+CREATE TABLE `sys_role_menu`  (
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `menu_id` bigint NOT NULL COMMENT '菜单ID',
+  PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_role_menu
+-- ----------------------------
+INSERT INTO `sys_role_menu` VALUES (2, 1);
+INSERT INTO `sys_role_menu` VALUES (2, 2);
+INSERT INTO `sys_role_menu` VALUES (2, 3);
+INSERT INTO `sys_role_menu` VALUES (2, 100);
+INSERT INTO `sys_role_menu` VALUES (2, 101);
+INSERT INTO `sys_role_menu` VALUES (2, 102);
+INSERT INTO `sys_role_menu` VALUES (2, 103);
+INSERT INTO `sys_role_menu` VALUES (2, 104);
+INSERT INTO `sys_role_menu` VALUES (2, 105);
+INSERT INTO `sys_role_menu` VALUES (2, 106);
+INSERT INTO `sys_role_menu` VALUES (2, 107);
+INSERT INTO `sys_role_menu` VALUES (2, 108);
+INSERT INTO `sys_role_menu` VALUES (2, 109);
+INSERT INTO `sys_role_menu` VALUES (2, 110);
+INSERT INTO `sys_role_menu` VALUES (2, 111);
+INSERT INTO `sys_role_menu` VALUES (2, 112);
+INSERT INTO `sys_role_menu` VALUES (2, 113);
+INSERT INTO `sys_role_menu` VALUES (2, 114);
+INSERT INTO `sys_role_menu` VALUES (2, 115);
+INSERT INTO `sys_role_menu` VALUES (2, 116);
+INSERT INTO `sys_role_menu` VALUES (2, 117);
+INSERT INTO `sys_role_menu` VALUES (2, 500);
+INSERT INTO `sys_role_menu` VALUES (2, 501);
+INSERT INTO `sys_role_menu` VALUES (2, 1000);
+INSERT INTO `sys_role_menu` VALUES (2, 1001);
+INSERT INTO `sys_role_menu` VALUES (2, 1002);
+INSERT INTO `sys_role_menu` VALUES (2, 1003);
+INSERT INTO `sys_role_menu` VALUES (2, 1004);
+INSERT INTO `sys_role_menu` VALUES (2, 1005);
+INSERT INTO `sys_role_menu` VALUES (2, 1006);
+INSERT INTO `sys_role_menu` VALUES (2, 1007);
+INSERT INTO `sys_role_menu` VALUES (2, 1008);
+INSERT INTO `sys_role_menu` VALUES (2, 1009);
+INSERT INTO `sys_role_menu` VALUES (2, 1010);
+INSERT INTO `sys_role_menu` VALUES (2, 1011);
+INSERT INTO `sys_role_menu` VALUES (2, 1012);
+INSERT INTO `sys_role_menu` VALUES (2, 1013);
+INSERT INTO `sys_role_menu` VALUES (2, 1014);
+INSERT INTO `sys_role_menu` VALUES (2, 1015);
+INSERT INTO `sys_role_menu` VALUES (2, 1016);
+INSERT INTO `sys_role_menu` VALUES (2, 1017);
+INSERT INTO `sys_role_menu` VALUES (2, 1018);
+INSERT INTO `sys_role_menu` VALUES (2, 1019);
+INSERT INTO `sys_role_menu` VALUES (2, 1020);
+INSERT INTO `sys_role_menu` VALUES (2, 1021);
+INSERT INTO `sys_role_menu` VALUES (2, 1022);
+INSERT INTO `sys_role_menu` VALUES (2, 1023);
+INSERT INTO `sys_role_menu` VALUES (2, 1024);
+INSERT INTO `sys_role_menu` VALUES (2, 1025);
+INSERT INTO `sys_role_menu` VALUES (2, 1026);
+INSERT INTO `sys_role_menu` VALUES (2, 1027);
+INSERT INTO `sys_role_menu` VALUES (2, 1028);
+INSERT INTO `sys_role_menu` VALUES (2, 1029);
+INSERT INTO `sys_role_menu` VALUES (2, 1030);
+INSERT INTO `sys_role_menu` VALUES (2, 1031);
+INSERT INTO `sys_role_menu` VALUES (2, 1032);
+INSERT INTO `sys_role_menu` VALUES (2, 1033);
+INSERT INTO `sys_role_menu` VALUES (2, 1034);
+INSERT INTO `sys_role_menu` VALUES (2, 1035);
+INSERT INTO `sys_role_menu` VALUES (2, 1036);
+INSERT INTO `sys_role_menu` VALUES (2, 1037);
+INSERT INTO `sys_role_menu` VALUES (2, 1038);
+INSERT INTO `sys_role_menu` VALUES (2, 1039);
+INSERT INTO `sys_role_menu` VALUES (2, 1040);
+INSERT INTO `sys_role_menu` VALUES (2, 1041);
+INSERT INTO `sys_role_menu` VALUES (2, 1042);
+INSERT INTO `sys_role_menu` VALUES (2, 1043);
+INSERT INTO `sys_role_menu` VALUES (2, 1044);
+INSERT INTO `sys_role_menu` VALUES (2, 1045);
+INSERT INTO `sys_role_menu` VALUES (2, 1046);
+INSERT INTO `sys_role_menu` VALUES (2, 1047);
+INSERT INTO `sys_role_menu` VALUES (2, 1048);
+INSERT INTO `sys_role_menu` VALUES (2, 1049);
+INSERT INTO `sys_role_menu` VALUES (2, 1050);
+INSERT INTO `sys_role_menu` VALUES (2, 1051);
+INSERT INTO `sys_role_menu` VALUES (2, 1052);
+INSERT INTO `sys_role_menu` VALUES (2, 1053);
+INSERT INTO `sys_role_menu` VALUES (2, 1054);
+INSERT INTO `sys_role_menu` VALUES (2, 1055);
+INSERT INTO `sys_role_menu` VALUES (2, 1056);
+INSERT INTO `sys_role_menu` VALUES (2, 1057);
+INSERT INTO `sys_role_menu` VALUES (2, 1058);
+INSERT INTO `sys_role_menu` VALUES (2, 1059);
+INSERT INTO `sys_role_menu` VALUES (2, 1060);
+INSERT INTO `sys_role_menu` VALUES (2, 2007);
+INSERT INTO `sys_role_menu` VALUES (2, 2014);
+INSERT INTO `sys_role_menu` VALUES (2, 2015);
+INSERT INTO `sys_role_menu` VALUES (2, 2016);
+INSERT INTO `sys_role_menu` VALUES (2, 2017);
+INSERT INTO `sys_role_menu` VALUES (2, 2018);
+INSERT INTO `sys_role_menu` VALUES (2, 2019);
+INSERT INTO `sys_role_menu` VALUES (2, 2026);
+INSERT INTO `sys_role_menu` VALUES (2, 2027);
+INSERT INTO `sys_role_menu` VALUES (2, 2028);
+INSERT INTO `sys_role_menu` VALUES (2, 2029);
+INSERT INTO `sys_role_menu` VALUES (2, 2030);
+INSERT INTO `sys_role_menu` VALUES (2, 2031);
+INSERT INTO `sys_role_menu` VALUES (2, 2032);
+INSERT INTO `sys_role_menu` VALUES (2, 2033);
+INSERT INTO `sys_role_menu` VALUES (2, 2034);
+INSERT INTO `sys_role_menu` VALUES (2, 2035);
+INSERT INTO `sys_role_menu` VALUES (2, 2036);
+
+-- ----------------------------
+-- Table structure for sys_user
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user`;
+CREATE TABLE `sys_user`  (
+  `user_id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+  `dept_id` bigint NULL DEFAULT NULL COMMENT '部门ID',
+  `user_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户账号',
+  `nick_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户昵称',
+  `user_type` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '00' COMMENT '用户类型（00系统用户）',
+  `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '用户邮箱',
+  `phonenumber` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '手机号码',
+  `sex` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '用户性别（0男 1女 2未知）',
+  `avatar` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '头像地址',
+  `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '密码',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `login_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '最后登录IP',
+  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `pwd_update_date` datetime NULL DEFAULT NULL COMMENT '密码最后更新时间',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`user_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_user
+-- ----------------------------
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-10-03 23:52:26', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-10-03 23:52:26', '管理员');
+INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-09-19 11:54:15', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-09-19 11:54:15', '测试员');
+INSERT INTO `sys_user` VALUES (100, 103, 'xiaowang', 'xiaowang', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', '', NULL, NULL);
+
+-- ----------------------------
+-- Table structure for sys_user_post
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user_post`;
+CREATE TABLE `sys_user_post`  (
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `post_id` bigint NOT NULL COMMENT '岗位ID',
+  PRIMARY KEY (`user_id`, `post_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_user_post
+-- ----------------------------
+INSERT INTO `sys_user_post` VALUES (1, 1);
+INSERT INTO `sys_user_post` VALUES (2, 2);
+
+-- ----------------------------
+-- Table structure for sys_user_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user_role`;
+CREATE TABLE `sys_user_role`  (
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  PRIMARY KEY (`user_id`, `role_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_user_role
+-- ----------------------------
+INSERT INTO `sys_user_role` VALUES (1, 1);
+INSERT INTO `sys_user_role` VALUES (2, 2);
+INSERT INTO `sys_user_role` VALUES (100, 2);
+
+-- ----------------------------
+-- Table structure for wm_warehouse
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_warehouse`;
+CREATE TABLE `wm_warehouse`  (
+  `warehouse_id` bigint NOT NULL AUTO_INCREMENT COMMENT '仓库ID',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '仓库名称',
+  `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '位置',
+  `area` double(12, 2) NULL DEFAULT NULL COMMENT '面积',
+  `manager` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '负责人',
+  `manager_id` bigint NULL DEFAULT NULL COMMENT 'user_id',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `status` int NULL DEFAULT NULL COMMENT '仓库状态',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`warehouse_id`) USING BTREE,
+  UNIQUE INDEX `uk_warehouse_code`(`warehouse_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_warehouse
+-- ----------------------------
+INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '内江东兴区仓库', '内江市东兴区红牌坊', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-30 12:04:16', NULL, '2025-09-30 13:12:37');
+
+SET FOREIGN_KEY_CHECKS = 1;

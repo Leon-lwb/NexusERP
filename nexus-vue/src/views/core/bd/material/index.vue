@@ -524,9 +524,21 @@ const { queryParams, form, rules, categoryForm, categoryRules } = toRefs(data)
 function getList() {
   loading.value = true
   listMaterial(queryParams.value).then(response => {
-    materialList.value = response.rows
-    total.value = response.total
+    // 检查响应格式并相应处理
+    if (response.data && response.data.materials) {
+      // 新的响应格式，直接包含物料数据
+      materialList.value = response.data.materials
+      total.value = response.data.materials.length
+    } else {
+      // 原有的响应格式
+      materialList.value = response.rows
+      total.value = response.total
+    }
     loading.value = false
+  }).catch(error => {
+    loading.value = false
+    proxy.$modal.msgError("获取物料数据失败")
+    console.error(error)
   })
 }
 /** 查询物料分类树 */
@@ -628,18 +640,41 @@ function handleSelectionChange(selection) {
 function handleNodeClick(data) {
   // 传递 data.categoryId 而不是整个 data 对象
   getAllChildrenIds(data.categoryId).then(response => {
-    // 获取当前分类及其所有子分类的ID
-    const categoryIds = [data.categoryId];
-    // 将返回的子分类ID添加到数组中
-    if (response.data && Array.isArray(response.data)) {
-      categoryIds.push(...response.data);
+    if (response.code === 200) {
+      // 从响应中提取分类ID列表和物料数据
+      if (response.data && response.data.categories) {
+        // 提取所有分类的ID
+        const categoryIds = response.data.categories.map(category => category.categoryId);
+        
+        // 设置查询参数，支持多个分类ID查询
+        queryParams.value.categoryIds = categoryIds;
+        // 清除单个分类ID参数，避免冲突
+        queryParams.value.categoryId = null;                                                              
+        // 如果返回了物料数据，直接使用
+        if (response.data.materials) {
+          materialList.value = response.data.materials;
+          total.value = response.data.materials.length;
+        } else {
+          // 如果没有返回物料数据，则调用getList获取数据
+          handleQuery();
+        }
+      } else {
+        // 保持原有逻辑作为备选方案
+        const categoryIds = [data.categoryId];
+        if (response.data && Array.isArray(response.data)) {
+          categoryIds.push(...response.data);
+        }
+        
+        queryParams.value.categoryIds = categoryIds;
+        queryParams.value.categoryId = null;
+        handleQuery();
+      }
+    } else {
+      proxy.$modal.msgError("获取分类信息失败");
     }
-    
-    // 设置查询参数，支持多个分类ID查询
-    queryParams.value.categoryIds = categoryIds;
-    // 清除单个分类ID参数，避免冲突
-    queryParams.value.categoryId = null;
-    handleQuery();
+  }).catch(error => {
+    proxy.$modal.msgError("请求出现异常");
+    console.error(error);
   });
 }
 

@@ -1,6 +1,8 @@
 package com.nexus.core.bd.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import java.util.ArrayList;
 import java.util.List;
 import com.nexus.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,5 +89,19 @@ public class BdMaterialServiceImpl extends ServiceImpl<BdMaterialMapper, BdMater
     @Override
     public int deleteBdMaterialByMaterialId(Long materialId) {
         return bdMaterialMapper.deleteBdMaterialByMaterialId(materialId);
+    }
+
+    /**
+     * 根据分类ID查询物料
+     *
+     * @param categoryIds 分类ID
+     * @return 物料
+     */
+    @Override
+    public List<BdMaterial> selectByCategoryIds(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return bdMaterialMapper.selectByCategoryIds(categoryIds);
     }
 }

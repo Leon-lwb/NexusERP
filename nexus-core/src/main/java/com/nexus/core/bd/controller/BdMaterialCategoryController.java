@@ -1,13 +1,17 @@
 package com.nexus.core.bd.controller;
 
 import com.nexus.common.utils.StringUtils;
+import com.nexus.core.bd.domain.BdMaterial;
 import com.nexus.core.bd.domain.vo.BdMaterialCategoryVo;
 import com.nexus.core.bd.domain.vo.CategoryWithMaterialsVo;
+import com.nexus.core.bd.service.IBdMaterialService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,6 +46,10 @@ public class BdMaterialCategoryController extends BaseController
 {
     @Autowired
     private IBdMaterialCategoryService bdMaterialCategoryService;
+
+    @Autowired
+    private IBdMaterialService bdMaterialService;
+
 
     /**
      * 查询物料产品分类列表
@@ -142,21 +150,24 @@ public class BdMaterialCategoryController extends BaseController
     public AjaxResult allChildrenIds(@PathVariable Long[] categoryIds)
     {
         if (categoryIds == null || categoryIds.length == 0) {
-            return success(new ArrayList<CategoryWithMaterialsVo>());
+            return success(new CategoryWithMaterialsVo());
         }
 
         // 获取分类及其子分类
         List<BdMaterialCategory> categories = bdMaterialCategoryService.selectAllChildrenIds(categoryIds);
 
-        // TODO: 查询这些分类下的物料数据
-        // List<BdMaterial> materials = bdMaterialService.selectByCategoryIds(categories.stream()
-        //     .map(BdMaterialCategory::getCategoryId).collect(Collectors.toList()));
+        // 查询这些分类下的物料数据
+        List<Long> categoryIdsList = categories.stream()
+                .map(BdMaterialCategory::getCategoryId)
+                .collect(Collectors.toList());
+        List<BdMaterial> materials = bdMaterialService.selectByCategoryIds(categoryIdsList);
 
         CategoryWithMaterialsVo result = new CategoryWithMaterialsVo();
         result.setCategories(categories);
-        // result.setMaterials(materials);
+        result.setMaterials(materials);
 
         return success(result);
     }
+
 
 }
