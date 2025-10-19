@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.bd.mapper.BdBomMapper">
+
+    <resultMap type="BdBom" id="BdBomResult">
+            <result property="bomId"    column="bom_id"    />
+            <result property="parentMaterialId"    column="parent_material_id"    />
+            <result property="bomVersion"    column="bom_version"    />
+            <result property="bomName"    column="bom_name"    />
+            <result property="effectiveDate"    column="effective_date"    />
+            <result property="expiryDate"    column="expiry_date"    />
+            <result property="isCurrent"    column="is_current"    />
+            <result property="status"    column="status"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectBdBomVo">
+        select bom_id, parent_material_id, bom_version, bom_name, effective_date, expiry_date, is_current, status, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from bd_bom
+    </sql>
+
+    <select id="selectBdBomList" parameterType="BdBom" resultMap="BdBomResult">
+        <include refid="selectBdBomVo"/>
+        <where>
+                        <if test="bomName != null  and bomName != ''"> and bom_name like concat('%', #{bomName}, '%')</if>
+                        <if test="effectiveDate != null "> and effective_date = #{effectiveDate}</if>
+                        <if test="expiryDate != null "> and expiry_date = #{expiryDate}</if>
+                        <if test="isCurrent != null "> and is_current = #{isCurrent}</if>
+                        <if test="status != null "> and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectBdBomByBomId" parameterType="Long" resultMap="BdBomResult">
+            <include refid="selectBdBomVo"/>
+            where bom_id = #{bomId}
+    </select>
+
+    <insert id="insertBdBom" parameterType="BdBom" useGeneratedKeys="true" keyProperty="bomId">
+        insert into bd_bom
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="parentMaterialId != null">parent_material_id,</if>
+                    <if test="bomVersion != null and bomVersion != ''">bom_version,</if>
+                    <if test="bomName != null and bomName != ''">bom_name,</if>
+                    <if test="effectiveDate != null">effective_date,</if>
+                    <if test="expiryDate != null">expiry_date,</if>
+                    <if test="isCurrent != null">is_current,</if>
+                    <if test="status != null">status,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="parentMaterialId != null">#{parentMaterialId},</if>
+                    <if test="bomVersion != null and bomVersion != ''">#{bomVersion},</if>
+                    <if test="bomName != null and bomName != ''">#{bomName},</if>
+                    <if test="effectiveDate != null">#{effectiveDate},</if>
+                    <if test="expiryDate != null">#{expiryDate},</if>
+                    <if test="isCurrent != null">#{isCurrent},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateBdBom" parameterType="BdBom">
+        update bd_bom
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="parentMaterialId != null">parent_material_id = #{parentMaterialId},</if>
+                    <if test="bomVersion != null and bomVersion != ''">bom_version = #{bomVersion},</if>
+                    <if test="bomName != null and bomName != ''">bom_name = #{bomName},</if>
+                    <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+                    <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+                    <if test="isCurrent != null">is_current = #{isCurrent},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where bom_id = #{bomId}
+    </update>
+
+    <delete id="deleteBdBomByBomId" parameterType="Long">
+        delete from bd_bom where bom_id = #{bomId}
+    </delete>
+
+    <delete id="deleteBdBomByBomIds" parameterType="String">
+        delete from bd_bom where bom_id in
+        <foreach item="bomId" collection="array" open="(" separator="," close=")">
+            #{bomId}
+        </foreach>
+    </delete>
+    
+    <insert id="insertBomDetail" parameterType="com.nexus.core.bd.domain.dto.BomDetailDTO">
+        insert into bd_bom_detail (
+            bom_id,
+            child_material_id,
+            quantity_per_parent,
+            loss_rate,
+            operation_step,
+            workstation_id,
+            lead_time,
+            effective_date,
+            expiry_date,
+            sort_order,
+            status,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{bomId},
+            #{childMaterialId},
+            #{quantityPerParent},
+            #{lossRate},
+            #{operationStep},
+            #{workstationId},
+            #{leadTime},
+            #{effectiveDate},
+            #{expiryDate},
+            #{sortOrder},
+            #{status},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+</mapper>
