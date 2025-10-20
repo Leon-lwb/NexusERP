@@ -248,65 +248,99 @@
     </el-dialog>
     
     <!-- 物料选择对话框 -->
-    <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1000px" append-to-body>
-      <el-form :model="materialQueryParams" ref="materialQueryRef" :inline="true" label-width="68px">
-        <el-form-item label="物料编码" prop="materialCode">
-          <el-input
-            v-model="materialQueryParams.materialCode"
-            placeholder="请输入物料编码"
-            clearable
-            @keyup.enter="handleMaterialQuery"
+    <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1200px" append-to-body>
+      <el-row :gutter="20">
+        <!-- 左侧物料分类树 -->
+        <el-col :span="6">
+          <div class="category-tree-container">
+            <!-- 增加分类树搜索框 -->
+            <el-input
+              v-model="categoryFilterText"
+              placeholder="请输入分类名称"
+              clearable
+              prefix-icon="Search"
+              class="category-search-input"
+              aria-label="分类搜索"
+              @input="debouncedHandleCategoryFilter"
+            />
+            <el-tree
+              ref="categoryTreeRef"
+              class="category-tree"
+              :data="categoryTree"
+              :props="categoryTreeProps"
+              :expand-on-click-node="false"
+              :highlight-current="true"
+              node-key="id"
+              default-expand-all
+              :filter-node-method="filterCategoryNode"
+              @node-click="handleCategoryNodeClick"
+            />
+          </div>
+        </el-col>
+        
+        <!-- 右侧物料列表 -->
+        <el-col :span="18">
+          <el-form :model="materialQueryParams" ref="materialQueryRef" :inline="true" label-width="68px">
+            <el-form-item label="物料编码" prop="materialCode">
+              <el-input
+                v-model="materialQueryParams.materialCode"
+                placeholder="请输入物料编码"
+                clearable
+                @keyup.enter="handleMaterialQuery"
+              />
+            </el-form-item>
+            <el-form-item label="物料名称" prop="materialName">
+              <el-input
+                v-model="materialQueryParams.materialName"
+                placeholder="请输入物料名称"
+                clearable
+                @keyup.enter="handleMaterialQuery"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button>
+            </el-form-item>
+          </el-form>
+          
+          <el-table 
+            v-loading="materialLoading" 
+            :data="materialList" 
+            @row-dblclick="selectMaterial"
+            highlight-current-row
+            style="width: 100%"
+            height="400"
+          >
+            <el-table-column type="index" width="50" align="center" />
+            <el-table-column label="物料编码" align="center" prop="materialCode" />
+            <el-table-column label="物料名称" align="center" prop="materialName" />
+            <el-table-column label="规格型号" align="center" prop="materialSpec" />
+            <el-table-column label="物料类型" align="center" prop="materialType">
+              <template #default="scope">
+                <dict-tag :options="bd_material_type" :value="scope.row.materialType"/>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" align="center" prop="status">
+              <template #default="scope">
+                <dict-tag :options="sys_true_or_false" :value="scope.row.status"/>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" align="center" width="100">
+              <template #default="scope">
+                <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          
+          <pagination
+            v-show="materialTotal > 0"
+            :total="materialTotal"
+            v-model:page="materialQueryParams.pageNum"
+            v-model:limit="materialQueryParams.pageSize"
+            @pagination="getMaterialList"
           />
-        </el-form-item>
-        <el-form-item label="物料名称" prop="materialName">
-          <el-input
-            v-model="materialQueryParams.materialName"
-            placeholder="请输入物料名称"
-            clearable
-            @keyup.enter="handleMaterialQuery"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button>
-        </el-form-item>
-      </el-form>
-      
-      <el-table 
-        v-loading="materialLoading" 
-        :data="materialList" 
-        @row-dblclick="selectMaterial"
-        highlight-current-row
-        style="width: 100%"
-      >
-        <el-table-column type="index" width="50" align="center" />
-        <el-table-column label="物料编码" align="center" prop="materialCode" />
-        <el-table-column label="物料名称" align="center" prop="materialName" />
-        <el-table-column label="规格型号" align="center" prop="materialSpec" />
-        <el-table-column label="物料类型" align="center" prop="materialType">
-          <template #default="scope">
-            <dict-tag :options="bd_material_type" :value="scope.row.materialType"/>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" align="center" prop="status">
-          <template #default="scope">
-            <dict-tag :options="sys_true_or_false" :value="scope.row.status"/>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" width="100">
-          <template #default="scope">
-            <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      
-      <pagination
-        v-show="materialTotal > 0"
-        :total="materialTotal"
-        v-model:page="materialQueryParams.pageNum"
-        v-model:limit="materialQueryParams.pageSize"
-        @pagination="getMaterialList"
-      />
+        </el-col>
+      </el-row>
       
       <template #footer>
         <div class="dialog-footer">
@@ -317,10 +351,15 @@
   </div>
 </template>
 
+我明白了！问题在于你需要使用 `getAllChildrenIds` 接口返回的物料数据，而不是调用 `listMaterial` 接口。让我修复这个问题：
+
+```vue
 <script setup name="Bom">
-  import { listBom, getBom, delBom, addBom, updateBom } from "@/api/core/bd/bom"
-  import { listMaterial, getMaterial } from "@/api/core/bd/material"
+import { listBom, getBom, delBom, addBom, updateBom } from "@/api/core/bd/bom"
+import { listMaterial, getMaterial } from "@/api/core/bd/material"
+import { listCategory,getAllChildrenIds } from "@/api/core/bd/category"
 import { useRouter } from 'vue-router'
+import { debounce } from 'lodash'
 
   const router = useRouter();
   const { proxy } = getCurrentInstance()
@@ -343,6 +382,21 @@ import { useRouter } from 'vue-router'
   const materialLoading = ref(false)
   const materialTotal = ref(0)
   const materialDialogTitle = ref("选择物料")
+
+  // 物料分类相关
+  const categoryTree = ref([])
+  const categoryTreeProps = { 
+    children: 'children', 
+    label: 'categoryName',
+    value: 'categoryId'
+  }
+  const categoryTreeRef = ref(null)
+  const categoryFilterText = ref('')
+  
+  // 创建防抖函数
+  const debouncedHandleCategoryFilter = debounce(function(val) {
+    handleCategoryFilter(val)
+  }, 300)
   
   const data = reactive({
     form: {},
@@ -370,8 +424,10 @@ import { useRouter } from 'vue-router'
     materialQueryParams: {
       pageNum: 1,
       pageSize: 10,
-      materialCode: undefined,
-      materialName: undefined
+      materialCode: null,
+      materialName: null,
+      categoryId: null,
+      categoryIds: []  // 初始化为空数组
     }
   })
 
@@ -387,15 +443,29 @@ import { useRouter } from 'vue-router'
     })
   }
   
-  /** 查询物料列表 */
+  /** 查询物料列表 - 用于初始化和搜索 */
   function getMaterialList() {
     materialLoading.value = true
-    listMaterial(materialQueryParams.value).then(response => {
+    
+    // 构造查询参数
+    const params = {}
+    
+    // 添加基础参数
+    if (materialQueryParams.value.pageNum) params.pageNum = materialQueryParams.value.pageNum
+    if (materialQueryParams.value.pageSize) params.pageSize = materialQueryParams.value.pageSize
+    if (materialQueryParams.value.materialCode) params.materialCode = materialQueryParams.value.materialCode
+    if (materialQueryParams.value.materialName) params.materialName = materialQueryParams.value.materialName
+    
+    console.log('发送物料查询参数:', params) // 调试用
+    
+    listMaterial(params).then(response => {
       materialList.value = response.rows
       materialTotal.value = response.total
       materialLoading.value = false
-    }).catch(() => {
+    }).catch((error) => {
+      console.error('获取物料列表失败:', error)
       materialLoading.value = false
+      proxy.$modal.msgError("获取物料列表失败")
     })
   }
   
@@ -408,6 +478,10 @@ import { useRouter } from 'vue-router'
   /** 重置物料查询 */
   function resetMaterialQuery() {
     proxy.resetForm("materialQueryRef")
+    materialQueryParams.value.materialCode = null
+    materialQueryParams.value.materialName = null
+    materialQueryParams.value.categoryId = null
+    materialQueryParams.value.categoryIds = []  // 重置为数组
     handleMaterialQuery()
   }
   
@@ -428,8 +502,8 @@ import { useRouter } from 'vue-router'
   
   /** 清除已选择的物料 */
   function clearMaterial() {
-    form.value.parentMaterialId = undefined
-    form.value.parentMaterialName = undefined
+    form.value.parentMaterialId = null
+    form.value.parentMaterialName = null
   }
   
   // 取消按钮
@@ -547,5 +621,113 @@ import { useRouter } from 'vue-router'
     }, `bom_${new Date().getTime()}.xlsx`)
   }
 
-  getList()
+  // 获取物料分类树
+  function getCategoryTree() {
+    listCategory().then(response => {
+      // 处理分类树数据，确保数据结构符合 el-tree 要求
+      const treeData = proxy.handleTree(response.rows, "categoryId", "parentId");
+      categoryTree.value = treeData;
+    }).catch(error => {
+      console.error('获取物料分类失败:', error)
+      proxy.$modal.msgError("获取物料分类失败")
+    })
+  }
+
+  // 处理物料分类节点点击 - 使用getAllChildrenIds接口返回的物料数据
+  function handleCategoryNodeClick(data) {
+    console.log('点击的分类数据:', data) // 调试用
+    
+    // 确保传给getAllChildrenIds的是数字类型的ID
+    const categoryId = Number(data.id || data.categoryId)
+    
+    if (isNaN(categoryId) || categoryId <= 0) {
+      console.error('无效的分类ID:', categoryId)
+      proxy.$modal.msgError("无效的分类ID")
+      return
+    }
+    
+    console.log('传递给getAllChildrenIds的参数:', categoryId) // 调试用
+    
+    // 使用getAllChildrenIds方法获取分类信息和物料数据
+    materialLoading.value = true
+    getAllChildrenIds(categoryId).then(response => {
+      console.log('getAllChildrenIds响应:', response) // 调试用
+      
+      if (response.code === 200) {
+        // 检查响应中是否包含物料数据
+        if (response.data && response.data.materials && Array.isArray(response.data.materials)) {
+          // 直接使用接口返回的物料数据
+          materialList.value = response.data.materials
+          materialTotal.value = response.data.materials.length
+          materialLoading.value = false
+        } else {
+          // 如果没有返回物料数据，则构造categoryIds数组并调用listMaterial
+          const categoryIds = []
+          categoryIds.push(categoryId)
+          
+          // 添加所有子分类ID
+          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(id => {
+              const childId = Number(id)
+              if (!isNaN(childId) && childId > 0 && !categoryIds.includes(childId)) {
+                categoryIds.push(childId)
+              }
+            })
+          }
+          
+          console.log('构造的categoryIds数组:', categoryIds) // 调试用
+          
+          // 调用物料列表接口
+          const params = {
+            pageNum: 1,
+            pageSize: 9999, // 获取所有数据
+            categoryIds: categoryIds
+          }
+          
+          listMaterial(params).then(materialResponse => {
+            materialList.value = materialResponse.rows
+            materialTotal.value = materialResponse.total
+            materialLoading.value = false
+          }).catch(error => {
+            console.error('获取物料列表失败:', error)
+            materialLoading.value = false
+            proxy.$modal.msgError("获取物料列表失败")
+          })
+        }
+      } else {
+        proxy.$modal.msgError("获取分类信息失败: " + response.msg)
+        materialLoading.value = false
+      }
+    }).catch(error => {
+      console.error('获取分类信息异常:', error)
+      proxy.$modal.msgError("请求出现异常: " + error.message)
+      materialLoading.value = false
+    })
+  }
+
+  // 添加分类树过滤方法
+  function filterCategoryNode(value, data) {
+    if (!value) return true
+    return data.categoryName && data.categoryName.includes(value)
+  }
+
+  // 添加处理分类过滤输入
+  function handleCategoryFilter(val) {
+    if (categoryTreeRef.value) {
+      categoryTreeRef.value.filter(val)
+    }
+  }
+
+  onMounted(() => {
+    getList()
+    getCategoryTree()  // 确保调用获取分类树的方法
+  })
+
+  // 添加组件销毁时的清理逻辑
+  onUnmounted(() => {
+    // 取消防抖函数的执行
+    if (debouncedHandleCategoryFilter && typeof debouncedHandleCategoryFilter.cancel === 'function') {
+      debouncedHandleCategoryFilter.cancel()
+    }
+  })
 </script>

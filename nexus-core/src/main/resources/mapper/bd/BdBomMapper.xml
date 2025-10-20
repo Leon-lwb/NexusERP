@@ -151,4 +151,88 @@
             sysdate()
         )
     </insert>
+    
+    <select id="selectBomDetailByDetailId" parameterType="Long" resultType="String">
+        SELECT CONCAT(
+            '明细ID: ', detail_id,
+            ', BOM ID: ', bom_id,
+            ', 子项物料ID: ', child_material_id,
+            ', 用量: ', quantity_per_parent,
+            ', 损耗率: ', IFNULL(loss_rate, 0),
+            ', 工序步骤: ', IFNULL(operation_step, '无'),
+            ', 工作中心ID: ', IFNULL(workstation_id, '无'),
+            ', 提前期: ', IFNULL(lead_time, 0),
+            ', 状态: ', IFNULL(status, 1)
+        ) AS detail_info
+        FROM bd_bom_detail
+        WHERE detail_id = #{detailId}
+    </select>
+    
+    <resultMap type="com.nexus.core.bd.domain.vo.BomDetailVO" id="BomDetailResult">
+        <result property="detailId"    column="detail_id"    />
+        <result property="bomId"    column="bom_id"    />
+        <result property="parentMaterialId"    column="parent_material_id"    />
+        <result property="parentMaterialCode"    column="parent_material_code"    />
+        <result property="parentMaterialName"    column="parent_material_name"    />
+        <result property="childMaterialId"    column="child_material_id"    />
+        <result property="childMaterialCode"    column="child_material_code"    />
+        <result property="childMaterialName"    column="child_material_name"    />
+        <result property="childMaterialSpec"    column="child_material_spec"    />
+        <result property="baseUomId"    column="base_uom_id"    />
+        <result property="baseUomName"    column="base_uom_name"    />
+        <result property="quantityPerParent"    column="quantity_per_parent"    />
+        <result property="lossRate"    column="loss_rate"    />
+        <result property="totalQuantity"    column="total_quantity"    />
+        <result property="operationStep"    column="operation_step"    />
+        <result property="workstationId"    column="workstation_id"    />
+        <result property="workstationName"    column="workstation_name"    />
+        <result property="leadTime"    column="lead_time"    />
+        <result property="effectiveDate"    column="effective_date"    />
+        <result property="expiryDate"    column="expiry_date"    />
+        <result property="sortOrder"    column="sort_order"    />
+        <result property="status"    column="status"    />
+        <result property="statusDesc"    column="status_desc"    />
+        <result property="remark"    column="remark"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+    
+    <select id="selectBomDetailList" parameterType="Long" resultMap="BomDetailResult">
+        SELECT 
+            d.detail_id,
+            d.bom_id,
+            d.child_material_id,
+            m.material_code AS child_material_code,
+            m.material_name AS child_material_name,
+            m.material_spec AS child_material_spec,
+            m.base_uom_id,
+            u.uom_name AS base_uom_name,
+            d.quantity_per_parent,
+            d.loss_rate,
+            (d.quantity_per_parent * (1 + IFNULL(d.loss_rate, 0) / 100)) AS total_quantity,
+            d.operation_step,
+            d.workstation_id,
+            d.lead_time,
+            d.effective_date,
+            d.expiry_date,
+            d.sort_order,
+            d.status,
+            CASE 
+                WHEN d.status = 1 THEN '启用'
+                WHEN d.status = 0 THEN '停用'
+                ELSE '未知'
+            END AS status_desc,
+            d.remark,
+            d.create_by,
+            d.create_time,
+            d.update_by,
+            d.update_time
+        FROM bd_bom_detail d
+        LEFT JOIN bd_material m ON d.child_material_id = m.material_id
+        LEFT JOIN bd_unit_of_measure u ON m.base_uom_id = u.uom_id
+        WHERE d.bom_id = #{bomId}
+        ORDER BY d.sort_order
+    </select>
 </mapper>

@@ -79,6 +79,11 @@ public interface IBdBomService extends IService<BdBom> {
 
     int deleteBomDetails(Long[] detailIds);
 
+    /**
+     * 查询BOM明细列表
+     * @param bomId
+     * @return
+     */
     List<BomDetailVO> selectBomDetailList(Long bomId);
 
     String selectBomDetailByDetailId(Long detailId);

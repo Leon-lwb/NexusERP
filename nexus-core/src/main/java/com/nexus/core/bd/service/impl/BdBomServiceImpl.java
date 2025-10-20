@@ -145,12 +145,24 @@ public class BdBomServiceImpl extends ServiceImpl<BdBomMapper, BdBom> implements
 
     @Override
     public List<BomDetailVO> selectBomDetailList(Long bomId) {
-        return null;
+        if (bomId == null) {
+            throw new IllegalArgumentException("BOM ID不能为空");
+        }
+        return getBaseMapper().selectBomDetailList(bomId);
     }
 
+    /**
+     * 根据明细ID查询BOM明细
+     *
+     * @param detailId 明细ID
+     * @return BOM明细
+     */
     @Override
     public String selectBomDetailByDetailId(Long detailId) {
-        return null;
+        if (detailId == null) {
+            throw new IllegalArgumentException("明细ID不能为空");
+        }
+        return getBaseMapper().selectBomDetailByDetailId(detailId);
     }
 
     @Override

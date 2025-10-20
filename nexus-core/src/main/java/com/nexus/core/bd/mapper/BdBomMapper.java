@@ -4,6 +4,7 @@ import java.util.List;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nexus.core.bd.domain.BdBom;
 import com.nexus.core.bd.domain.dto.BomDetailDTO;
+import com.nexus.core.bd.domain.vo.BomDetailVO;
 
 /**
  * 产品BOMMapper接口
@@ -67,4 +68,21 @@ public interface BdBomMapper extends BaseMapper<BdBom> {
      * @return 创建结果
      */
     int insertBomDetail(BomDetailDTO bomDetailDTO);
+    
+    /**
+     * 根据明细ID查询BOM明细
+     *
+     * @param detailId 明细ID
+     * @return BOM明细
+     */
+    String selectBomDetailByDetailId(Long detailId);
+    
+    /**
+     * 根据BOM ID查询BOM明细列表
+     *
+     * @param bomId BOM ID
+     * @return BOM明细列表
+     */
+    List<BomDetailVO> selectBomDetailList(Long bomId);
+
 }
