@@ -5,6 +5,7 @@ import java.util.List;
 import java.math.BigDecimal;
 import com.nexus.common.utils.DateUtils;
 import com.nexus.core.bd.domain.dto.BomDetailDTO;
+import com.nexus.core.bd.domain.vo.BomDetailVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.nexus.core.bd.mapper.BdBomMapper;
@@ -130,5 +131,45 @@ public class BdBomServiceImpl extends ServiceImpl<BdBomMapper, BdBom> implements
         }
 
         return getBaseMapper().insertBomDetail(bomDetailDTO);
+    }
+
+    @Override
+    public int updateBomDetail(BomDetailDTO bomDetailDTO) {
+        return 0;
+    }
+
+    @Override
+    public int deleteBomDetails(Long[] detailIds) {
+        return 0;
+    }
+
+    @Override
+    public List<BomDetailVO> selectBomDetailList(Long bomId) {
+        return null;
+    }
+
+    @Override
+    public String selectBomDetailByDetailId(Long detailId) {
+        return null;
+    }
+
+    @Override
+    public int saveBomDetailsBatch(List<BomDetailDTO> detailList) {
+        return 0;
+    }
+
+    @Override
+    public String getBomStructure(Long parentId) {
+        return null;
+    }
+
+    @Override
+    public int copyBom(Long sourceBomId, Long targetParentId) {
+        return 0;
+    }
+
+    @Override
+    public String getCurrentBom(Long parentId) {
+        return null;
     }
 }

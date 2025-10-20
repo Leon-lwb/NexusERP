@@ -1,254 +1,313 @@
 <template>
   <div class="app-container">
-    <el-page-header @back="goBack" title="返回" content="BOM信息" />
-    <el-form ref="formRef" :model="formData" :rules="rules" size="default" label-width="100px">
-      <el-row gutter="15">
-        <el-col :span="8">
-          <el-form-item label="父项物料" prop="field103">
-            <el-input v-model="formData.field103" type="text" placeholder="请输入父项物料" readonly clearable
-              :style="{width: '100%'}"></el-input>
-          </el-form-item>
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
+      <!-- 操作按钮区域 - 放在最上方 -->
+      <el-row :gutter="20" class="mb20">
+        <el-col :span="24">
+          <el-button type="primary" @click="handleSave">保存</el-button>
+          <el-button @click="handleClose">关闭</el-button>
         </el-col>
-        <el-col :span="8">
-          <el-form-item label="BOM版本号" prop="field104">
-            <el-input v-model="formData.field104" type="text" placeholder="请输入BOM版本号" clearable
-              :style="{width: '100%'}"></el-input>
-          </el-form-item>
-        </el-col>
-        <el-col :span="8">
-          <el-form-item label="BOM名称" prop="field105">
-            <el-input v-model="formData.field105" type="text" placeholder="请输入BOM名称" clearable
-              :style="{width: '100%'}"></el-input>
+      </el-row>
+      
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <el-form-item label="父项物料信息" prop="parentMaterialName">
+            <el-input v-model="form.parentMaterialName" placeholder="父项物料信息" readonly />
+            <el-input v-model="form.parentMaterialId" style="display: none" />
           </el-form-item>
         </el-col>
       </el-row>
-      <el-row gutter="15">
-        <el-col :span="6">
-          <el-form-item label="生效日期" prop="field107">
-            <el-date-picker v-model="formData.field107" format="YYYY-MM-DD" value-format="YYYY-MM-DD"
-              :style="{width: '100%'}" placeholder="请选择生效日期" clearable></el-date-picker>
+      
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item label="BOM版本号" prop="bomVersion">
+            <el-input v-model="form.bomVersion" placeholder="请输入BOM版本号" />
           </el-form-item>
         </el-col>
-        <el-col :span="6">
-          <el-form-item label="失效日期" prop="field108">
-            <el-time-picker v-model="formData.field108" format="HH:mm:ss" value-format="HH:mm:ss"
-              :style="{width: '100%'}" placeholder="请选择失效日期" clearable></el-time-picker>
+        <el-col :span="12">
+          <el-form-item label="BOM名称信息" prop="bomName">
+            <el-input v-model="form.bomName" placeholder="请输入BOM名称信息" />
           </el-form-item>
         </el-col>
-        <el-col :span="6">
-          <el-form-item label="当前版本" prop="field110">
-            <el-radio-group v-model="formData.field110" size="default">
-              <el-radio v-for="(item, index) in field110Options" :key="index" :value="item.value"
-                :disabled="item.disabled">{{item.label}}</el-radio>
+      </el-row>
+      
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item label="生效日期" prop="effectiveDate">
+            <el-date-picker clearable
+                            v-model="form.effectiveDate"
+                            type="date"
+                            value-format="YYYY-MM-DD"
+                            placeholder="请选择生效日期"
+                            style="width: 100%">
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="失效日期" prop="expiryDate">
+            <el-date-picker clearable
+                            v-model="form.expiryDate"
+                            type="date"
+                            value-format="YYYY-MM-DD"
+                            placeholder="请选择失效日期"
+                            style="width: 100%">
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item label="是否当前版本" prop="isCurrent">
+            <el-radio-group v-model="form.isCurrent">
+              <el-radio
+                  v-for="dict in sys_true_or_false"
+                  :key="dict.value"
+                  :label="parseInt(dict.value)"
+              >{{dict.label}}</el-radio>
             </el-radio-group>
           </el-form-item>
         </el-col>
-        <el-col :span="6">
-          <el-form-item label="状态信息" prop="field111">
-            <el-radio-group v-model="formData.field111" size="default">
-              <el-radio v-for="(item, index) in field111Options" :key="index" :value="item.value"
-                :disabled="item.disabled">{{item.label}}</el-radio>
+        <el-col :span="12">
+          <el-form-item label="状态信息" prop="status">
+            <el-radio-group v-model="form.status">
+              <el-radio
+                  v-for="dict in sys_core_status"
+                  :key="dict.value"
+                  :label="parseInt(dict.value)"
+              >{{dict.label}}</el-radio>
             </el-radio-group>
           </el-form-item>
         </el-col>
       </el-row>
-      <el-row gutter="15">
-        <el-form-item label="备注信息" prop="field113">
-          <el-input v-model="formData.field113" type="textarea" placeholder="请输入备注信息"
-            :autosize="{minRows: 4, maxRows: 4}" :style="{width: '100%'}"></el-input>
-        </el-form-item>
+      
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <el-form-item label="备注信息" prop="remark">
+            <el-input v-model="form.remark" type="textarea" placeholder="请输入备注信息" />
+          </el-form-item>
+        </el-col>
       </el-row>
-      <el-row gutter="15">
-        <el-form-item label="新增物料" prop="field117">
-          <el-button type="primary" icon="Search" size="default"> 主要按钮 </el-button>
-        </el-form-item>
-      </el-row>
-      <el-row gutter="15">
-      </el-row>
-      <el-form-item>
-        <el-button type="primary" @click="submitForm">提交</el-button>
-        <el-button @click="resetForm">重置</el-button>
-      </el-form-item>
     </el-form>
+    
+    <!-- 物料选择对话框 -->
+    <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1000px" append-to-body>
+      <el-form :model="materialQueryParams" ref="materialQueryRef" :inline="true" label-width="68px">
+        <el-form-item label="物料编码" prop="materialCode">
+          <el-input
+            v-model="materialQueryParams.materialCode"
+            placeholder="请输入物料编码"
+            clearable
+            @keyup.enter="handleMaterialQuery"
+          />
+        </el-form-item>
+        <el-form-item label="物料名称" prop="materialName">
+          <el-input
+            v-model="materialQueryParams.materialName"
+            placeholder="请输入物料名称"
+            clearable
+            @keyup.enter="handleMaterialQuery"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button>
+          <el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      
+      <el-table 
+        v-loading="materialLoading" 
+        :data="materialList" 
+        @row-dblclick="selectMaterial"
+        highlight-current-row
+        style="width: 100%"
+      >
+        <el-table-column type="index" width="50" align="center" />
+        <el-table-column label="物料编码" align="center" prop="materialCode" />
+        <el-table-column label="物料名称" align="center" prop="materialName" />
+        <el-table-column label="规格型号" align="center" prop="materialSpec" />
+        <el-table-column label="物料类型" align="center" prop="materialType">
+          <template #default="scope">
+            <dict-tag :options="bd_material_type" :value="scope.row.materialType"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" align="center" prop="status">
+          <template #default="scope">
+            <dict-tag :options="sys_true_or_false" :value="scope.row.status"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      
+      <pagination
+        v-show="materialTotal > 0"
+        :total="materialTotal"
+        v-model:page="materialQueryParams.pageNum"
+        v-model:limit="materialQueryParams.pageSize"
+        @pagination="getMaterialList"
+      />
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="materialSelectOpen = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
-<script setup>
-import { ref, reactive, toRefs, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { getBom, addBom, updateBom } from "@/api/core/bd/bom"
-const {
-  proxy
-} = getCurrentInstance()
-const formRef = ref()
-const route = useRoute();
-const router = useRouter();
 
-const data = reactive({
-  action: '', // 'view', 'edit', or 'add'
-  formData: {
-    field103: undefined,
-    field104: undefined,
-    field105: undefined,
-    field107: null,
-    field108: null,
-    field110: 1,
-    field111: 1,
-    field113: undefined,
-    field117: undefined,
-  },
-  rules: {
-    field103: [{
-      required: true,
-      message: '请输入父项物料',
-      trigger: 'blur'
-    }],
-    field104: [{
-      required: true,
-      message: '请输入BOM版本号',
-      trigger: 'blur'
-    }],
-    field105: [{
-      required: true,
-      message: '请输入BOM名称',
-      trigger: 'blur'
-    }],
-    field107: [{
-      required: true,
-      message: '请选择生效日期',
-      trigger: 'change'
-    }],
-    field108: [{
-      required: true,
-      message: '请选择失效日期',
-      trigger: 'change'
-    }],
-    field110: [{
-      required: true,
-      message: '当前版本不能为空',
-      trigger: 'change'
-    }],
-    field111: [{
-      required: true,
-      message: '状态信息不能为空',
-      trigger: 'change'
-    }],
-    field113: [{
-      required: true,
-      message: '请输入备注信息',
-      trigger: 'blur'
-    }],
+<script setup name="BomForm">
+import { getBom, addBom, updateBom } from "@/api/core/bd/bom"
+import { listMaterial, getMaterial } from "@/api/core/bd/material"
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
+const { proxy } = getCurrentInstance()
+const { sys_true_or_false, sys_core_status, bd_material_type } = proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type')
+
+// 表单相关
+const formRef = ref(null)
+const form = ref({
+  bomId: null,
+  parentMaterialId: null,
+  parentMaterialName: null,
+  bomVersion: "1.0",
+  bomName: null,
+  effectiveDate: null,
+  expiryDate: null,
+  isCurrent: null,
+  status: null,
+  remark: null
+})
+
+const rules = ref({
+  parentMaterialName: [
+    { required: true, message: "父项物料不能为空", trigger: "change" }
+  ],
+  bomVersion: [
+    { required: true, message: "BOM版本号不能为空", trigger: "blur" }
+  ],
+  bomName: [
+    { required: true, message: "BOM名称不能为空", trigger: "blur" }
+  ]
+})
+
+// 物料选择相关
+const materialSelectOpen = ref(false)
+const materialList = ref([])
+const materialLoading = ref(false)
+const materialTotal = ref(0)
+const materialDialogTitle = ref("选择物料")
+
+const materialQueryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  materialCode: undefined,
+  materialName: undefined
+})
+
+// 页面加载时初始化数据
+onMounted(() => {
+  const id = route.query.id
+  const action = route.query.action
+  
+  if (id) {
+    getBomDetails(id)
   }
 })
-const {
-  formData,
-  rules
-} = toRefs(data)
-const field110Options = ref([{
-  "label": "是",
-  "value": 1
-}, {
-  "label": "否",
-  "value": 0
-}])
-const field111Options = ref([{
-  "label": "启用",
-  "value": 1
-}, {
-  "label": "停用",
-  "value": 0
-}])
-/**
- * @name: 返回上一页
- * @description: 返回上一页方法
- * @return {*}
- */
-function goBack() {
-  router.back();
-}
 
-/**
- * @name: 表单提交
- * @description: 表单提交方法
- * @return {*}
- */
-function submitForm() {
-  formRef.value.validate((valid) => {
-    if (!valid) return
-    // 根据action执行新增或修改操作
-    if (route.query.id) {
-      // 修改操作
-      updateBom(formData.value).then(response => {
-        proxy.$modal.msgSuccess("修改成功");
-        goBack();
-      }).catch(() => {});
-    } else {
-      // 新增操作
-      addBom(formData.value).then(response => {
-        proxy.$modal.msgSuccess("新增成功");
-        goBack();
-      }).catch(() => {});
+// 获取BOM详情
+function getBomDetails(id) {
+  getBom(id).then(response => {
+    console.log('BOM详情数据:', response.data);
+    form.value = response.data;
+    
+    // 如果有 parentMaterialId 但没有 parentMaterialName，则查询物料信息
+    if (form.value.parentMaterialId) {
+      getMaterialNameById(form.value.parentMaterialId);
     }
   })
 }
 
-/**
- * @name: 表单重置
- * @description: 表单重置方法
- * @return {*}
- */
-function resetForm() {
-  formRef.value.resetFields()
+// 新增方法：通过ID获取物料名称
+function getMaterialNameById(materialId) {
+  getMaterial(materialId).then(response => {
+    form.value.parentMaterialName = response.data.materialName;
+  }).catch(() => {
+    console.warn('获取物料名称失败');
+  })
 }
 
-// 初始化页面
-function initFormData() {
-  const id = route.query.id;
-  const action = route.query.action || 'view';
-  
-  data.action = action;
-  
-  if (id) {
-    // 编辑或查看模式，获取BOM详情
-    getBom(id).then(response => {
-      const bomData = response.data;
-      data.formData = {
-        field103: bomData.parentMaterialId ? ('物料ID: ' + bomData.parentMaterialId) : '',
-        field104: bomData.bomVersion || '',
-        field105: bomData.bomName || '',
-        field107: bomData.effectiveDate || null,
-        field108: bomData.expiryDate || null,
-        field110: bomData.isCurrent !== undefined ? parseInt(bomData.isCurrent) : 1,
-        field111: bomData.status !== undefined ? parseInt(bomData.status) : 1,
-        field113: bomData.remark || '',
-        field117: undefined,
-      };
-      
-      // 如果是查看模式，禁用表单
-      if (action === 'view') {
-        document.querySelectorAll('input, select, textarea, button').forEach(el => {
-          el.disabled = true;
-        });
-        // 启用返回按钮
-        const backBtn = document.querySelector('.el-page-header__left');
-        if (backBtn) backBtn.style.pointerEvents = 'auto';
+// 查询物料列表
+function getMaterialList() {
+  materialLoading.value = true
+  listMaterial(materialQueryParams.value).then(response => {
+    materialList.value = response.rows
+    materialTotal.value = response.total
+    materialLoading.value = false
+  }).catch(() => {
+    materialLoading.value = false
+  })
+}
+
+// 搜索物料
+function handleMaterialQuery() {
+  materialQueryParams.value.pageNum = 1
+  getMaterialList()
+}
+
+// 重置物料查询
+function resetMaterialQuery() {
+  proxy.resetForm("materialQueryRef")
+  handleMaterialQuery()
+}
+
+// 打开物料选择对话框
+function openMaterialSelect() {
+  materialSelectOpen.value = true
+  materialDialogTitle.value = "选择物料"
+  getMaterialList()
+}
+
+// 选择物料
+function selectMaterial(row) {
+  form.value.parentMaterialId = row.materialId
+  form.value.parentMaterialName = row.materialName
+  materialSelectOpen.value = false
+}
+
+// 保存按钮
+function handleSave() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      if (form.value.bomId) {
+        updateBom(form.value).then(response => {
+          proxy.$modal.msgSuccess("修改成功")
+          handleClose()
+        })
+      } else {
+        addBom(form.value).then(response => {
+          proxy.$modal.msgSuccess("新增成功")
+          handleClose()
+        })
       }
-    }).catch(error => {
-      proxy.$modal.msgError('获取BOM详情失败');
-      goBack();
-    });
-  } else {
-    // 新增模式，默认值
-    data.formData.field104 = "1.0";
-    data.formData.field110 = 1;
-    data.formData.field111 = 1;
-  }
+    }
+  })
 }
 
-// 页面加载时初始化
-onMounted(() => {
-  initFormData();
-});
-
+// 关闭按钮
+function handleClose() {
+  router.push('/core/bd/bom')
+}
 </script>
-<style>
+
+<style scoped>
+.mb20 {
+  margin-bottom: 20px;
+}
 </style>

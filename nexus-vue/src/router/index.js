@@ -171,7 +171,21 @@ export const dynamicRoutes = [
         meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
       }
     ]
-  }
+  },
+  {
+  path: '/core/bd/bom/form',
+  component: Layout,
+  hidden: true,
+  permissions: ['bd:bom:edit'],
+  children: [
+    {
+      path: '',
+      component: () => import('@/views/core/bd/bom/form'),
+      name: 'BomForm',
+      meta: { title: 'BOM表单', activeMenu: '/core/bd/bom' }
+    }
+  ]
+}
 ]
 
 const router = createRouter({

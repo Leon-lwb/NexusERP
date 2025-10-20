@@ -4,6 +4,7 @@ import java.util.List;
 import com.nexus.core.bd.domain.BdBom;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nexus.core.bd.domain.dto.BomDetailDTO;
+import com.nexus.core.bd.domain.vo.BomDetailVO;
 
 /**
  * 产品BOMService接口
@@ -67,4 +68,26 @@ public interface IBdBomService extends IService<BdBom> {
      * @return 创建结果
      */
     int insertBomDetail(BomDetailDTO bomDetailDTO);
+
+    /**
+     * 修改BOM明细
+     *
+     * @param bomDetailDTO BOM明细DTO
+     * @return 修改结果
+     */
+    int updateBomDetail(BomDetailDTO bomDetailDTO);
+
+    int deleteBomDetails(Long[] detailIds);
+
+    List<BomDetailVO> selectBomDetailList(Long bomId);
+
+    String selectBomDetailByDetailId(Long detailId);
+
+    int saveBomDetailsBatch(List<BomDetailDTO> detailList);
+
+    String getBomStructure(Long parentId);
+
+    int copyBom(Long sourceBomId, Long targetParentId);
+
+    String getCurrentBom(Long parentId);
 }
