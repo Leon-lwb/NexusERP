@@ -1,5 +1,6 @@
 package com.nexus.core.bd.domain.dto;
 
+import com.nexus.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import jakarta.validation.constraints.DecimalMax;
@@ -20,7 +21,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @ApiModel(description = "BOM明细DTO")
-public class BomDetailDTO {
+public class BomDetailDTO extends BaseEntity {
     
     @ApiModelProperty(value = "明细ID，新增时为空，修改时必填")
     private Long detailId;
@@ -51,6 +52,7 @@ public class BomDetailDTO {
     private BigDecimal lossRate = BigDecimal.ZERO;
     
     @ApiModelProperty(value = "工序步骤")
+    @NotNull(message = "工序步骤不能为空")
     private Integer operationStep;
     
     @ApiModelProperty(value = "工作中心ID")
@@ -78,4 +80,16 @@ public class BomDetailDTO {
     
     @ApiModelProperty(value = "备注")
     private String remark;
+    
+    @ApiModelProperty(value = "预留字段1")
+    private String attr1;
+    
+    @ApiModelProperty(value = "预留字段2")
+    private String attr2;
+    
+    @ApiModelProperty(value = "预留字段3")
+    private Integer attr3;
+    
+    @ApiModelProperty(value = "预留字段4")
+    private Integer attr4;
 }

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.so.mapper.SoCustomerOrderMapper">
+
+    <resultMap type="SoCustomerOrder" id="SoCustomerOrderResult">
+            <result property="coId"    column="co_id"    />
+            <result property="coNo"    column="co_no"    />
+            <result property="clientId"    column="client_id"    />
+            <result property="contactName"    column="contact_name"    />
+            <result property="contactPhone"    column="contact_phone"    />
+            <result property="orderDate"    column="order_date"    />
+            <result property="requestedDate"    column="requested_date"    />
+            <result property="currency"    column="currency"    />
+            <result property="totalAmount"    column="total_amount"    />
+            <result property="status"    column="status"    />
+            <result property="priority"    column="priority"    />
+            <result property="customerPoNo"    column="customer_po_no"    />
+            <result property="sourceChannel"    column="source_channel"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSoCustomerOrderVo">
+        select co_id, co_no, client_id, contact_name, contact_phone, order_date, requested_date, currency, total_amount, status, priority, customer_po_no, source_channel, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from so_customer_order
+    </sql>
+
+    <select id="selectSoCustomerOrderList" parameterType="SoCustomerOrder" resultMap="SoCustomerOrderResult">
+        <include refid="selectSoCustomerOrderVo"/>
+        <where>
+                        <if test="coNo != null  and coNo != ''"> and co_no = #{coNo}</if>
+                        <if test="clientId != null "> and client_id = #{clientId}</if>
+                        <if test="orderDate != null "> and order_date = #{orderDate}</if>
+                        <if test="status != null  and status != ''"> and status = #{status}</if>
+                        <if test="priority != null "> and priority = #{priority}</if>
+                        <if test="customerPoNo != null  and customerPoNo != ''"> and customer_po_no = #{customerPoNo}</if>
+                        <if test="sourceChannel != null  and sourceChannel != ''"> and source_channel = #{sourceChannel}</if>
+        </where>
+    </select>
+
+    <select id="selectSoCustomerOrderByCoId" parameterType="Long" resultMap="SoCustomerOrderResult">
+            <include refid="selectSoCustomerOrderVo"/>
+            where co_id = #{coId}
+    </select>
+
+    <insert id="insertSoCustomerOrder" parameterType="SoCustomerOrder" useGeneratedKeys="true" keyProperty="coId">
+        insert into so_customer_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="coNo != null and coNo != ''">co_no,</if>
+                    <if test="clientId != null">client_id,</if>
+                    <if test="contactName != null">contact_name,</if>
+                    <if test="contactPhone != null">contact_phone,</if>
+                    <if test="orderDate != null">order_date,</if>
+                    <if test="requestedDate != null">requested_date,</if>
+                    <if test="currency != null and currency != ''">currency,</if>
+                    <if test="totalAmount != null">total_amount,</if>
+                    <if test="status != null">status,</if>
+                    <if test="priority != null">priority,</if>
+                    <if test="customerPoNo != null">customer_po_no,</if>
+                    <if test="sourceChannel != null">source_channel,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="coNo != null and coNo != ''">#{coNo},</if>
+                    <if test="clientId != null">#{clientId},</if>
+                    <if test="contactName != null">#{contactName},</if>
+                    <if test="contactPhone != null">#{contactPhone},</if>
+                    <if test="orderDate != null">#{orderDate},</if>
+                    <if test="requestedDate != null">#{requestedDate},</if>
+                    <if test="currency != null and currency != ''">#{currency},</if>
+                    <if test="totalAmount != null">#{totalAmount},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="priority != null">#{priority},</if>
+                    <if test="customerPoNo != null">#{customerPoNo},</if>
+                    <if test="sourceChannel != null">#{sourceChannel},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSoCustomerOrder" parameterType="SoCustomerOrder">
+        update so_customer_order
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="coNo != null and coNo != ''">co_no = #{coNo},</if>
+                    <if test="clientId != null">client_id = #{clientId},</if>
+                    <if test="contactName != null">contact_name = #{contactName},</if>
+                    <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+                    <if test="orderDate != null">order_date = #{orderDate},</if>
+                    <if test="requestedDate != null">requested_date = #{requestedDate},</if>
+                    <if test="currency != null and currency != ''">currency = #{currency},</if>
+                    <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="priority != null">priority = #{priority},</if>
+                    <if test="customerPoNo != null">customer_po_no = #{customerPoNo},</if>
+                    <if test="sourceChannel != null">source_channel = #{sourceChannel},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where co_id = #{coId}
+    </update>
+
+    <delete id="deleteSoCustomerOrderByCoId" parameterType="Long">
+        delete from so_customer_order where co_id = #{coId}
+    </delete>
+
+    <delete id="deleteSoCustomerOrderByCoIds" parameterType="String">
+        delete from so_customer_order where co_id in
+        <foreach item="coId" collection="array" open="(" separator="," close=")">
+            #{coId}
+        </foreach>
+    </delete>
+</mapper>

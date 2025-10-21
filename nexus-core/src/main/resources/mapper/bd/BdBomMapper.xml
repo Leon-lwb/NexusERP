@@ -152,6 +152,27 @@
         )
     </insert>
     
+    <update id="updateBomDetail" parameterType="com.nexus.core.bd.domain.dto.BomDetailDTO">
+        update bd_bom_detail
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="bomId != null">bom_id = #{bomId},</if>
+            <if test="childMaterialId != null">child_material_id = #{childMaterialId},</if>
+            <if test="quantityPerParent != null">quantity_per_parent = #{quantityPerParent},</if>
+            <if test="lossRate != null">loss_rate = #{lossRate},</if>
+            <if test="operationStep != null">operation_step = #{operationStep},</if>
+            <if test="workstationId != null">workstation_id = #{workstationId},</if>
+            <if test="leadTime != null">lead_time = #{leadTime},</if>
+            <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+            <if test="expiryDate != null">expiry_date = #{expiryDate},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate(),
+        </trim>
+        where detail_id = #{detailId}
+    </update>
+    
     <select id="selectBomDetailByDetailId" parameterType="Long" resultType="String">
         SELECT CONCAT(
             '明细ID: ', detail_id,

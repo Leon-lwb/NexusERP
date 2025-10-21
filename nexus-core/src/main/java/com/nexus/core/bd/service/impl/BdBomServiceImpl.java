@@ -130,12 +130,58 @@ public class BdBomServiceImpl extends ServiceImpl<BdBomMapper, BdBom> implements
             throw new IllegalArgumentException("损耗率必须在0-100之间");
         }
 
+        if (bomDetailDTO.getOperationStep() == null) {
+            throw new IllegalArgumentException("工序步骤不能为空");
+        }
+
         return getBaseMapper().insertBomDetail(bomDetailDTO);
     }
 
+    /**
+     * 修改BOM明细
+     * @param bomDetailDTO BOM明细DTO
+     * @return 修改结果影响行数
+     */
     @Override
     public int updateBomDetail(BomDetailDTO bomDetailDTO) {
-        return 0;
+        if (bomDetailDTO == null) {
+            throw new IllegalArgumentException("BOM明细数据不能为空");
+        }
+        
+        if (bomDetailDTO.getDetailId() == null) {
+            throw new IllegalArgumentException("BOM明细ID不能为空");
+        }
+
+        // 检查必填字段
+        if (bomDetailDTO.getBomId() == null) {
+            throw new IllegalArgumentException("BOM主表ID不能为空");
+        }
+        
+        if (bomDetailDTO.getChildMaterialId() == null) {
+            throw new IllegalArgumentException("子项物料ID不能为空");
+        }
+        
+        if (bomDetailDTO.getQuantityPerParent() == null) {
+            throw new IllegalArgumentException("单位父项用量不能为空");
+        }
+        
+        // 检查数量必须大于0
+        if (bomDetailDTO.getQuantityPerParent().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("单位父项用量必须大于0");
+        }
+        
+        // 检查损耗率范围
+        if (bomDetailDTO.getLossRate() != null && 
+            (bomDetailDTO.getLossRate().compareTo(BigDecimal.ZERO) < 0 || 
+             bomDetailDTO.getLossRate().compareTo(new BigDecimal("100")) > 0)) {
+            throw new IllegalArgumentException("损耗率必须在0-100之间");
+        }
+
+        if (bomDetailDTO.getOperationStep() == null) {
+            throw new IllegalArgumentException("工序步骤不能为空");
+        }
+        
+        return getBaseMapper().updateBomDetail(bomDetailDTO);
     }
 
     @Override

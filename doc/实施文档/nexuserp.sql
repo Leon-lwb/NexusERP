@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : 本地8.0
+ Source Server         : mysql8
  Source Server Type    : MySQL
- Source Server Version : 80040 (8.0.40)
+ Source Server Version : 80039
  Source Host           : localhost:3307
  Source Schema         : nexuserp
 
  Target Server Type    : MySQL
- Target Server Version : 80040 (8.0.40)
+ Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 20/10/2025 00:29:27
+ Date: 21/10/2025 18:02:04
 */
 
 SET NAMES utf8mb4;
@@ -22,35 +22,35 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_bom`;
 CREATE TABLE `bd_bom`  (
-  `bom_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'BOM主表ID',
-  `parent_material_id` bigint NOT NULL COMMENT '父项物料ID',
+  `bom_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT 'BOM主表ID',
+  `parent_material_id` bigint(0) NOT NULL COMMENT '父项物料ID',
   `bom_version` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1.0' COMMENT 'BOM版本号',
   `bom_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'BOM名称',
   `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
   `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
-  `is_current` tinyint NULL DEFAULT 1 COMMENT '是否当前版本 0:否 1:是',
-  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `is_current` tinyint(0) NULL DEFAULT 1 COMMENT '是否当前版本 0:否 1:是',
+  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`bom_id`) USING BTREE,
-  UNIQUE INDEX `uk_parent_version`(`parent_material_id` ASC, `bom_version` ASC) USING BTREE,
-  INDEX `idx_parent_material`(`parent_material_id` ASC) USING BTREE,
-  INDEX `idx_current`(`is_current` ASC) USING BTREE,
+  UNIQUE INDEX `uk_parent_version`(`parent_material_id`, `bom_version`) USING BTREE,
+  INDEX `idx_parent_material`(`parent_material_id`) USING BTREE,
+  INDEX `idx_current`(`is_current`) USING BTREE,
   CONSTRAINT `fk_bom_parent_material` FOREIGN KEY (`parent_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom
 -- ----------------------------
-INSERT INTO `bd_bom` VALUES (1, 2, '1.0', '减速机JZQ-350标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-19 13:59:15');
-INSERT INTO `bd_bom` VALUES (2, 2, '1.1', '减速机JZQ-350改进版BOM', '2024-06-01', NULL, 0, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-18 23:22:23');
+INSERT INTO `bd_bom` VALUES (1, 2, '1.0', '减速机JZQ-350标准版BOM', '2024-01-01', '2025-12-31', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-21 10:58:37');
+INSERT INTO `bd_bom` VALUES (2, 2, '1.1', '减速机JZQ-350改进版BOM', '2024-06-01', '2025-10-20', 0, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-21 11:09:24');
 INSERT INTO `bd_bom` VALUES (3, 3, '1.0', '电机Y132M-4标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-18 23:22:23');
 INSERT INTO `bd_bom` VALUES (4, 4, '1.0', '齿轮组标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-18 23:22:23');
 
@@ -59,34 +59,34 @@ INSERT INTO `bd_bom` VALUES (4, 4, '1.0', '齿轮组标准版BOM', '2024-01-01',
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_bom_detail`;
 CREATE TABLE `bd_bom_detail`  (
-  `detail_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'BOM明细ID',
-  `bom_id` bigint NOT NULL COMMENT 'BOM主表ID',
-  `child_material_id` bigint NOT NULL COMMENT '子项物料ID',
+  `detail_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT 'BOM明细ID',
+  `bom_id` bigint(0) NOT NULL COMMENT 'BOM主表ID',
+  `child_material_id` bigint(0) NOT NULL COMMENT '子项物料ID',
   `quantity_per_parent` decimal(18, 6) NOT NULL COMMENT '单位父项用量',
   `loss_rate` decimal(8, 4) NULL DEFAULT 0.0000 COMMENT '损耗率(%)',
-  `operation_step` int NULL DEFAULT NULL COMMENT '工序步骤',
-  `workstation_id` bigint NULL DEFAULT NULL COMMENT '工作中心ID',
-  `lead_time` int NULL DEFAULT 0 COMMENT '提前期(小时)',
+  `operation_step` int(0) NULL DEFAULT NULL COMMENT '工序步骤',
+  `workstation_id` bigint(0) NULL DEFAULT NULL COMMENT '工作中心ID',
+  `lead_time` int(0) NULL DEFAULT 0 COMMENT '提前期(小时)',
   `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
   `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
-  `sort_order` int NULL DEFAULT 0 COMMENT '显示排序',
-  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `sort_order` int(0) NULL DEFAULT 0 COMMENT '显示排序',
+  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`detail_id`) USING BTREE,
-  INDEX `idx_bom_id`(`bom_id` ASC) USING BTREE,
-  INDEX `idx_child_material`(`child_material_id` ASC) USING BTREE,
-  INDEX `idx_operation_step`(`operation_step` ASC) USING BTREE,
+  INDEX `idx_bom_id`(`bom_id`) USING BTREE,
+  INDEX `idx_child_material`(`child_material_id`) USING BTREE,
+  INDEX `idx_operation_step`(`operation_step`) USING BTREE,
   CONSTRAINT `fk_bom_detail_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_bom_detail_child` FOREIGN KEY (`child_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom_detail
@@ -113,13 +113,18 @@ INSERT INTO `bd_bom_detail` VALUES (19, 3, 15, 4.000000, 1.0000, 30, NULL, 0, NU
 INSERT INTO `bd_bom_detail` VALUES (20, 4, 16, 3.000000, 2.0000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:29:00', NULL, '2025-10-18 23:29:00');
 INSERT INTO `bd_bom_detail` VALUES (21, 4, 17, 2.000000, 2.0000, 10, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:29:00', NULL, '2025-10-18 23:29:00');
 INSERT INTO `bd_bom_detail` VALUES (22, 4, 18, 5.000000, 1.0000, 20, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:29:00', NULL, '2025-10-18 23:29:00');
+INSERT INTO `bd_bom_detail` VALUES (23, 1, 16, 1.000000, 0.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 10:53:59', NULL, '2025-10-21 10:53:59');
+INSERT INTO `bd_bom_detail` VALUES (24, 1, 16, 1.000000, 0.0000, 10, NULL, 0, NULL, NULL, 0, 0, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 10:55:17', NULL, '2025-10-21 10:55:17');
+INSERT INTO `bd_bom_detail` VALUES (25, 1, 2, 1.000000, 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 10:58:37', NULL, '2025-10-21 10:58:37');
+INSERT INTO `bd_bom_detail` VALUES (26, 2, 3, 1.000000, 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 11:02:31', NULL, '2025-10-21 11:02:31');
+INSERT INTO `bd_bom_detail` VALUES (27, 2, 3, 1.000000, 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 11:03:42', NULL, '2025-10-21 11:03:42');
 
 -- ----------------------------
 -- Table structure for bd_client
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_client`;
 CREATE TABLE `bd_client`  (
-  `client_id` bigint NOT NULL AUTO_INCREMENT COMMENT '客户ID',
+  `client_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '客户ID',
   `client_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户编码',
   `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户名称',
   `client_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户简写',
@@ -141,105 +146,110 @@ CREATE TABLE `bd_client`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`client_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_client
 -- ----------------------------
 INSERT INTO `bd_client` VALUES (1, 'C00001', '测试', '测试', 'cs', '测试测试', 'ENTERPRISE', '/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png', '123', NULL, '123', '123', '123', '123', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-18 15:45:44', NULL, '2025-09-22 10:21:26');
+INSERT INTO `bd_client` VALUES (2, 'C00003', '小明科技有限公司', '小明科技', 'Xiaoming Tech Co., Ltd', '测试', 'ENTERPRISE', NULL, '深圳市南山区科技园南区W1-A栋', NULL, 'contact@xiaomingtech.com', '0755-88888888', '李明', '13800138001', 'liming@xiaomingtech.com', NULL, NULL, NULL, '91440300MA5FXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, 'system', '2024-01-15 10:30:00', NULL, '2025-10-21 17:46:34');
+INSERT INTO `bd_client` VALUES (3, 'C00004', '王芳贸易公司', '王芳贸易', 'Wangfang Trading Co., Ltd', '测试', 'ENTERPRISE', NULL, '广州市天河区珠江新城商务区', NULL, 'info@wangfang.com', '020-66666666', '王芳', '13900139002', 'wangfang@wangfang.com', NULL, NULL, NULL, '91440100MA5GXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, 'system', '2024-02-20 14:15:00', NULL, '2025-10-21 17:46:42');
+INSERT INTO `bd_client` VALUES (4, 'C00005', '张伟实业集团', '张伟集团', 'Zhangwei Industries Group', '测试', 'ENTERPRISE', NULL, '上海市浦东新区陆家嘴金融中心', NULL, 'group@zhangwei.com', '021-77777777', '张伟', '13700137003', 'zhangwei@zhangwei.com', NULL, NULL, NULL, '91310000MA5HXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, 'system', '2024-03-10 09:45:00', NULL, '2025-10-21 17:46:49');
+INSERT INTO `bd_client` VALUES (5, 'C00006', '陈氏机械制造有限公司', '陈氏机械', 'Chen Machinery Co., Ltd', '测试', 'ENTERPRISE', NULL, '北京市朝阳区经济技术开发区', NULL, 'sales@chenmachinery.com', '010-55555555', '陈总', '13600136004', 'chen@chenmachinery.com', NULL, NULL, NULL, '91110000MA5JXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, 'sales_rep_001', '2024-04-05 11:20:00', NULL, '2025-10-21 17:46:58');
+INSERT INTO `bd_client` VALUES (6, 'C00007', '刘氏电子科技有限公司', '刘氏电子', 'Liu Electronics Co., Ltd', '测试', 'ENTERPRISE', NULL, '杭州市滨江区物联网小镇', NULL, 'info@liuelectronics.com', '0571-33333333', '刘经理', '13500135005', 'liu@liuelectronics.com', NULL, NULL, NULL, '91330000MA5KXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, 'sales_rep_002', '2024-05-12 13:40:00', NULL, '2025-10-21 17:47:06');
+INSERT INTO `bd_client` VALUES (7, 'C00008', '赵氏工程公司', '赵氏工程', 'Zhao Engineering Co., Ltd', '测试', 'ENTERPRISE', NULL, '成都市高新区天府软件园', NULL, 'contact@zhaoengineering.com', '028-22222222', '赵主任', '13400134006', 'zhao@zhaoengineering.com', NULL, NULL, NULL, '91510000MA5LXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, 'sales_rep_003', '2024-06-18 15:30:00', NULL, '2025-10-21 17:47:12');
+INSERT INTO `bd_client` VALUES (8, 'C00009', '沃尔玛（中国）投资有限公司', '沃尔玛', 'Walmart (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '深圳市罗湖区深南东路5016号', NULL, 'procurement@walmart.cn', '0755-11111111', '采购部', '0755-11111112', 'purchase@walmart.cn', NULL, NULL, NULL, '914403007152XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, 'edi_system', '2024-07-01 08:00:00', NULL, '2025-10-21 17:47:19');
+INSERT INTO `bd_client` VALUES (9, 'C00010', '好市多（中国）投资有限公司', '好市多', 'Costco (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '上海市闵行区吴中路1599号', NULL, 'buying@costco.cn', '021-44444444', '采购经理', '021-44444445', 'buying@costco.cn', NULL, NULL, NULL, '913100008888XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, 'edi_system', '2024-08-15 09:15:00', NULL, '2025-10-21 17:47:25');
+INSERT INTO `bd_client` VALUES (10, 'C00011', '家乐福（中国）投资有限公司', '家乐福', 'Carrefour (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '北京市朝阳区霄云路甲26号', NULL, 'procurement@carrefour.cn', '010-99999999', '供应链经理', '010-99999998', 'supplychain@carrefour.cn', NULL, NULL, NULL, '911100009999XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, 'edi_system', '2024-09-20 10:30:00', NULL, '2025-10-21 17:47:33');
 
 -- ----------------------------
 -- Table structure for bd_client_credit
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_client_credit`;
 CREATE TABLE `bd_client_credit`  (
-  `credit_id` bigint NOT NULL AUTO_INCREMENT COMMENT '客户信用ID',
-  `client_id` bigint NOT NULL COMMENT '客户ID',
+  `credit_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '客户信用ID',
+  `client_id` bigint(0) NOT NULL COMMENT '客户ID',
   `client_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户编码',
   `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户名称',
   `client_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户英文名称',
-  `client_credit` int NULL DEFAULT NULL COMMENT '信用额度',
-  `client_time` int NULL DEFAULT NULL COMMENT '账期',
+  `client_credit` int(0) NULL DEFAULT NULL COMMENT '信用额度',
+  `client_time` int(0) NULL DEFAULT NULL COMMENT '账期',
   `client_level` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'NORMAL' COMMENT '客户等级: A优质客户(80-100);B正常(60-80);C重点关注(50-60);D劣质客户(40-50);E黑名单(0-40)',
-  `client_score` int NOT NULL DEFAULT 60 COMMENT '客户评分',
+  `client_score` int(0) NOT NULL DEFAULT 60 COMMENT '客户评分',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`credit_id`) USING BTREE,
-  INDEX `idx_client_id`(`client_id` ASC) USING BTREE,
-  INDEX `idx_client_code`(`client_code` ASC) USING BTREE,
+  INDEX `idx_client_id`(`client_id`) USING BTREE,
+  INDEX `idx_client_code`(`client_code`) USING BTREE,
   CONSTRAINT `bd_client_credit_bd_client__fk` FOREIGN KEY (`client_id`) REFERENCES `bd_client` (`client_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户信用表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of bd_client_credit
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户信用表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for bd_material
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material`;
 CREATE TABLE `bd_material`  (
-  `material_id` bigint NOT NULL AUTO_INCREMENT COMMENT '物料ID',
+  `material_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料编码',
   `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料名称',
   `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
   `material_desc` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料描述',
-  `category_id` bigint NOT NULL COMMENT '物料分类ID',
-  `base_uom_id` bigint NULL DEFAULT NULL COMMENT '基本计量单位ID',
-  `purchase_uom_id` bigint NULL DEFAULT NULL COMMENT '采购单位ID',
-  `inventory_uom_id` bigint NULL DEFAULT NULL COMMENT '库存单位ID',
-  `sale_uom_id` bigint NULL DEFAULT NULL COMMENT '销售单位ID',
-  `material_type` tinyint NOT NULL COMMENT '物料类型 1:原材料 2:半成品 3:成品 4:辅料',
-  `source_type` tinyint NULL DEFAULT 1 COMMENT '来源类型 1:自制 2:外购 3:委外',
-  `is_batch_manage` tinyint NULL DEFAULT 0 COMMENT '是否批次管理 0:否 1:是',
-  `is_serial_manage` tinyint NULL DEFAULT 0 COMMENT '是否序列号管理 0:否 1:是',
+  `category_id` bigint(0) NOT NULL COMMENT '物料分类ID',
+  `base_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '基本计量单位ID',
+  `purchase_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '采购单位ID',
+  `inventory_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '库存单位ID',
+  `sale_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '销售单位ID',
+  `material_type` tinyint(0) NOT NULL COMMENT '物料类型 1:原材料 2:半成品 3:成品 4:辅料',
+  `source_type` tinyint(0) NULL DEFAULT 1 COMMENT '来源类型 1:自制 2:外购 3:委外',
+  `is_batch_manage` tinyint(0) NULL DEFAULT 0 COMMENT '是否批次管理 0:否 1:是',
+  `is_serial_manage` tinyint(0) NULL DEFAULT 0 COMMENT '是否序列号管理 0:否 1:是',
   `safety_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '安全库存',
   `min_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最低库存',
   `max_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最高库存',
   `standard_cost` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '标准成本',
   `reference_price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '参考价格',
-  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
-  `quality_status` tinyint NULL DEFAULT 1 COMMENT '质量状态 1:合格 2:待检 3:不合格',
-  `shelf_life` int NULL DEFAULT 0 COMMENT '保质期(天)',
+  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `quality_status` tinyint(0) NULL DEFAULT 1 COMMENT '质量状态 1:合格 2:待检 3:不合格',
+  `shelf_life` int(0) NULL DEFAULT 0 COMMENT '保质期(天)',
   `weight` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '重量(kg)',
   `volume` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '体积(m³)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`material_id`) USING BTREE,
-  UNIQUE INDEX `uk_material_code`(`material_code` ASC) USING BTREE,
-  INDEX `idx_category_id`(`category_id` ASC) USING BTREE,
-  INDEX `idx_material_type`(`material_type` ASC) USING BTREE,
-  INDEX `idx_status`(`status` ASC) USING BTREE,
-  INDEX `idx_create_time`(`create_time` ASC) USING BTREE,
-  INDEX `fk_material_base_uom`(`base_uom_id` ASC) USING BTREE,
+  UNIQUE INDEX `uk_material_code`(`material_code`) USING BTREE,
+  INDEX `idx_category_id`(`category_id`) USING BTREE,
+  INDEX `idx_material_type`(`material_type`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE,
+  INDEX `fk_material_base_uom`(`base_uom_id`) USING BTREE,
   CONSTRAINT `fk_material_base_uom` FOREIGN KEY (`base_uom_id`) REFERENCES `bd_unit_of_measure` (`uom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_material_category` FOREIGN KEY (`category_id`) REFERENCES `bd_material_category` (`category_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 10025 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 10025 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_material
 -- ----------------------------
-INSERT INTO `bd_material` VALUES (1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '长方形钢板', 5, 2, 3, 3, 2, 1, 2, 1, 0, 10.0000, 15.0000, 45.0000, 1000.0000, 1000.0000, 1, 1, 0, 100.0000, 0.0100, '采购钢板', NULL, NULL, NULL, NULL, NULL, '2025-10-16 17:20:58', NULL, '2025-10-16 17:20:58');
+INSERT INTO `bd_material` VALUES (1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '长方形钢板', 5, 2, 3, 3, 2, 1, 2, 1, 0, 10.0000, 15.0000, 45.0000, 1000.0000, 1000.0000, 0, 1, 0, 100.0000, 0.0100, '采购钢板', NULL, NULL, NULL, NULL, NULL, '2025-10-16 17:20:58', NULL, '2025-10-21 09:42:18');
 INSERT INTO `bd_material` VALUES (2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', NULL, 3, 2, NULL, NULL, NULL, 3, 2, 1, 0, 2.0000, 3.0000, 9.0000, 0.0000, 0.0000, 1, 1, 365, 2.0000, 3.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:14:02', NULL, '2025-10-18 23:14:13');
 INSERT INTO `bd_material` VALUES (3, 'JZQ350', '减速机JZQ-350', '标准型号', NULL, 3, 1, NULL, NULL, NULL, 3, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:15:40', NULL, '2025-10-18 23:16:02');
 INSERT INTO `bd_material` VALUES (4, 'Y132M4', '电机Y132M-4 7.5KW', '7.5KW 380V', NULL, 3, 1, NULL, NULL, NULL, 3, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:15:40', NULL, '2025-10-18 23:16:12');
@@ -263,31 +273,31 @@ INSERT INTO `bd_material` VALUES (18, 'KEY_2', '键', '普通平键', NULL, 10, 
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material_category`;
 CREATE TABLE `bd_material_category`  (
-  `category_id` bigint NOT NULL AUTO_INCREMENT COMMENT '分类ID',
-  `parent_id` bigint NULL DEFAULT 0 COMMENT '父分类ID，0表示顶级分类',
+  `category_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '分类ID',
+  `parent_id` bigint(0) NULL DEFAULT 0 COMMENT '父分类ID，0表示顶级分类',
   `category_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类编码',
   `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类名称',
   `category_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类描述',
-  `level_num` int NULL DEFAULT 1 COMMENT '层级深度，1为顶级',
+  `level_num` int(0) NULL DEFAULT 1 COMMENT '层级深度，1为顶级',
   `path_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '路径ID串，格式：1,5,23',
   `path_names` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '路径名称串，格式：原材料,金属材料,钢材',
-  `sort_order` int NULL DEFAULT 0 COMMENT '显示排序',
-  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `sort_order` int(0) NULL DEFAULT 0 COMMENT '显示排序',
+  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`category_id`) USING BTREE,
-  UNIQUE INDEX `uk_category_code`(`category_code` ASC) USING BTREE,
-  INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE,
-  INDEX `idx_status`(`status` ASC) USING BTREE,
-  INDEX `idx_level_sort`(`level_num` ASC, `sort_order` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = DYNAMIC;
+  UNIQUE INDEX `uk_category_code`(`category_code`) USING BTREE,
+  INDEX `idx_parent_id`(`parent_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_level_sort`(`level_num`, `sort_order`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_material_category
@@ -309,67 +319,63 @@ INSERT INTO `bd_material_category` VALUES (12, 1, 'ELECTRIC', '电气材料', NU
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material_vendor`;
 CREATE TABLE `bd_material_vendor`  (
-  `relation_id` bigint NOT NULL AUTO_INCREMENT COMMENT '关系ID',
-  `material_id` bigint NOT NULL COMMENT '物料ID',
-  `vendor_id` bigint NOT NULL COMMENT '供应商ID',
+  `relation_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '关系ID',
+  `material_id` bigint(0) NOT NULL COMMENT '物料ID',
+  `vendor_id` bigint(0) NOT NULL COMMENT '供应商ID',
   `vendor_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '供应商编码',
   `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '供应商名称',
-  `lead_time` int NULL DEFAULT 0 COMMENT '供货周期(天)',
+  `lead_time` int(0) NULL DEFAULT 0 COMMENT '供货周期(天)',
   `min_order_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最小订货量',
   `price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '单价',
   `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种',
-  `is_default` tinyint NULL DEFAULT 0 COMMENT '是否默认供应商 0:否 1:是',
-  `priority` int NULL DEFAULT 0 COMMENT '优先级',
+  `is_default` tinyint(0) NULL DEFAULT 0 COMMENT '是否默认供应商 0:否 1:是',
+  `priority` int(0) NULL DEFAULT 0 COMMENT '优先级',
   `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
   `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
-  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`relation_id`) USING BTREE,
-  UNIQUE INDEX `uk_material_supplier`(`material_id` ASC, `vendor_id` ASC) USING BTREE,
-  INDEX `idx_material_id`(`material_id` ASC) USING BTREE,
-  INDEX `idx_supplier_id`(`vendor_id` ASC) USING BTREE,
-  INDEX `idx_default`(`is_default` ASC) USING BTREE,
+  UNIQUE INDEX `uk_material_supplier`(`material_id`, `vendor_id`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
+  INDEX `idx_supplier_id`(`vendor_id`) USING BTREE,
+  INDEX `idx_default`(`is_default`) USING BTREE,
   CONSTRAINT `fk_ms_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of bd_material_vendor
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for bd_unit_of_measure
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_unit_of_measure`;
 CREATE TABLE `bd_unit_of_measure`  (
-  `uom_id` bigint NOT NULL AUTO_INCREMENT COMMENT '单位ID',
+  `uom_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '单位ID',
   `uom_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '单位编码',
   `uom_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '单位名称',
   `uom_symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位符号(kg、m、pcs等)',
   `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位类别(重量、长度、数量等)',
-  `is_base` tinyint NULL DEFAULT 0 COMMENT '是否基本单位 0:否 1:是',
-  `primary_id` bigint NULL DEFAULT NULL COMMENT '基本单位ID',
+  `is_base` tinyint(0) NULL DEFAULT 0 COMMENT '是否基本单位 0:否 1:是',
+  `primary_id` bigint(0) NULL DEFAULT NULL COMMENT '基本单位ID',
   `primary_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '基本单位名称',
   `conversion_rate` decimal(18, 6) NULL DEFAULT 1.000000 COMMENT '转换率(相对于基本单位)',
-  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
-  `sort_order` int NULL DEFAULT 0 COMMENT '排序',
+  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `sort_order` int(0) NULL DEFAULT 0 COMMENT '排序',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`uom_id`) USING BTREE,
-  UNIQUE INDEX `uk_uom_code`(`uom_code` ASC) USING BTREE,
-  INDEX `idx_category`(`category` ASC) USING BTREE,
-  INDEX `idx_status`(`status` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = DYNAMIC;
+  UNIQUE INDEX `uk_uom_code`(`uom_code`) USING BTREE,
+  INDEX `idx_category`(`category`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_unit_of_measure
@@ -434,7 +440,7 @@ INSERT INTO `bd_unit_of_measure` VALUES (54, 'MOLAR', '摩尔浓度', 'mol/L', '
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_vendor`;
 CREATE TABLE `bd_vendor`  (
-  `vendor_id` bigint NOT NULL AUTO_INCREMENT COMMENT '供应商ID',
+  `vendor_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '供应商ID',
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '供应商编码',
   `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '供应商名称',
   `tax_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '税号',
@@ -449,15 +455,15 @@ CREATE TABLE `bd_vendor`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`vendor_id`) USING BTREE,
-  UNIQUE INDEX `uk_vendor_code`(`vendor_code` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '供应商表' ROW_FORMAT = DYNAMIC;
+  UNIQUE INDEX `uk_vendor_code`(`vendor_code`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '供应商表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_vendor
@@ -469,7 +475,7 @@ INSERT INTO `bd_vendor` VALUES (1, 'V00005', '北京五道口', '123123123312', 
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table`;
 CREATE TABLE `gen_table`  (
-  `table_id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
+  `table_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '编号',
   `table_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '表名称',
   `table_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '表描述',
   `sub_table_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '关联子表的表名',
@@ -486,12 +492,12 @@ CREATE TABLE `gen_table`  (
   `gen_path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '/' COMMENT '生成路径（不填默认项目路径）',
   `options` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '其它生成选项',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table
@@ -506,16 +512,19 @@ INSERT INTO `gen_table` VALUES (10, 'wm_warehouse', '仓库表', NULL, NULL, 'Wm
 INSERT INTO `gen_table` VALUES (11, 'bd_unit_of_measure', '计量单位表', NULL, NULL, 'BdUnitOfMeasure', 'crud', 'element-plus', 'com.nexus.core.bd', 'measure', 'measure', '计量单位', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-09-30 14:48:20', '', '2025-09-30 16:12:17', NULL);
 INSERT INTO `gen_table` VALUES (12, 'bd_material_category', '物料产品分类表', NULL, NULL, 'BdMaterialCategory', 'crud', 'element-plus', 'com.nexus.core.bd', 'bd', 'category', '物料产品分类', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-10-01 12:23:55', '', '2025-10-01 12:36:42', NULL);
 INSERT INTO `gen_table` VALUES (13, 'bd_material', '物料产品主表', NULL, NULL, 'BdMaterial', 'crud', 'element-plus', 'com.nexus.core.bd', 'bd', 'material', '物料产品主', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04', NULL);
-INSERT INTO `gen_table` VALUES (14, 'bd_bom', 'BOM主表', NULL, NULL, 'BdBom', 'crud', 'element-plus', 'com.nexus.core.bd', 'bd', 'bom', '产品BOM', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57', NULL);
+INSERT INTO `gen_table` VALUES (14, 'bd_bom', 'BOM主表', 'bd_bom_detail', 'bom_id', 'BdBom', 'sub', 'element-plus', 'com.nexus.core.bd', 'bd', 'bom', '产品BOM', 'nexus', '0', '/', '{\"parentMenuId\":2007}', 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11', NULL);
 INSERT INTO `gen_table` VALUES (15, 'bd_bom_detail', 'BOM明细表', NULL, NULL, 'BdBomDetail', 'crud', '', 'com.nexus.core', 'core', 'detail', 'BOM明细', 'nexus', '0', '/', NULL, 'admin', '2025-10-18 20:57:05', '', NULL, NULL);
+INSERT INTO `gen_table` VALUES (16, 'so_customer_order', '客户订单（外部原始需求）', NULL, NULL, 'SoCustomerOrder', 'crud', 'element-plus', 'com.nexus.core.so', 'so', 'customerOrder', '客户订单', 'nexus', '0', '/', '{\"parentMenuId\":2037}', 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18', NULL);
+INSERT INTO `gen_table` VALUES (17, 'so_sales_order_header', '销售订单头表（内部执行单）', 'so_sales_order_line', 'so_id', 'SoSalesOrderHeader', 'sub', 'element-plus', 'com.nexus.core.so', 'so', 'orderheader', '销售订单', 'nexus', '0', '/', '{\"parentMenuId\":2037}', 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31', NULL);
+INSERT INTO `gen_table` VALUES (18, 'so_sales_order_line', '销售订单行表（支持分批履约）', NULL, NULL, 'SoSalesOrderLine', 'crud', 'element-plus', 'com.nexus.core.so', 'so', 'orderline', '销售订单行', 'nexus', '0', '/', '{\"parentMenuId\":2037}', 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04', NULL);
 
 -- ----------------------------
 -- Table structure for gen_table_column
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table_column`;
 CREATE TABLE `gen_table_column`  (
-  `column_id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
-  `table_id` bigint NULL DEFAULT NULL COMMENT '归属表编号',
+  `column_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '编号',
+  `table_id` bigint(0) NULL DEFAULT NULL COMMENT '归属表编号',
   `column_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列名称',
   `column_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列描述',
   `column_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列类型',
@@ -531,13 +540,13 @@ CREATE TABLE `gen_table_column`  (
   `query_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'EQ' COMMENT '查询方式（等于、不等于、大于、小于、范围）',
   `html_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '显示类型（文本框、文本域、下拉框、复选框、单选框、日期控件）',
   `dict_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
-  `sort` int NULL DEFAULT NULL COMMENT '排序',
+  `sort` int(0) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 312 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 312 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -750,23 +759,23 @@ INSERT INTO `gen_table_column` VALUES (270, 13, 'create_by', '创建人', 'varch
 INSERT INTO `gen_table_column` VALUES (271, 13, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 31, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
 INSERT INTO `gen_table_column` VALUES (272, 13, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 32, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
 INSERT INTO `gen_table_column` VALUES (273, 13, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 33, 'admin', '2025-10-03 23:09:16', '', '2025-10-04 00:08:04');
-INSERT INTO `gen_table_column` VALUES (274, 14, 'bom_id', 'BOM主表ID', 'bigint', 'Long', 'bomId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (275, 14, 'parent_material_id', '父项物料ID', 'bigint', 'Long', 'parentMaterialId', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'input', '', 2, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (276, 14, 'bom_version', 'BOM版本号', 'varchar(20)', 'String', 'bomVersion', '0', '0', '1', '1', '1', '1', '0', 'EQ', 'input', '', 3, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (277, 14, 'bom_name', 'BOM名称', 'varchar(200)', 'String', 'bomName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (278, 14, 'effective_date', '生效日期', 'date', 'Date', 'effectiveDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 5, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (279, 14, 'expiry_date', '失效日期', 'date', 'Date', 'expiryDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 6, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (280, 14, 'is_current', '是否当前版本', 'tinyint', 'Long', 'isCurrent', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 7, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (281, 14, 'status', '状态', 'tinyint', 'Long', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_core_status', 8, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (282, 14, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 9, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (283, 14, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 10, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (284, 14, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 11, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (285, 14, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 12, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (286, 14, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 13, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (287, 14, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 14, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (288, 14, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (289, 14, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 16, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
-INSERT INTO `gen_table_column` VALUES (290, 14, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 17, 'admin', '2025-10-18 20:57:04', '', '2025-10-18 22:33:57');
+INSERT INTO `gen_table_column` VALUES (274, 14, 'bom_id', 'BOM主表ID', 'bigint', 'Long', 'bomId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (275, 14, 'parent_material_id', '父项物料ID', 'bigint', 'Long', 'parentMaterialId', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'input', '', 2, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (276, 14, 'bom_version', 'BOM版本号', 'varchar(20)', 'String', 'bomVersion', '0', '0', '1', '1', '1', '1', '0', 'EQ', 'input', '', 3, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (277, 14, 'bom_name', 'BOM名称', 'varchar(200)', 'String', 'bomName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (278, 14, 'effective_date', '生效日期', 'date', 'Date', 'effectiveDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 5, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (279, 14, 'expiry_date', '失效日期', 'date', 'Date', 'expiryDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 6, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (280, 14, 'is_current', '是否当前版本', 'tinyint', 'Long', 'isCurrent', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 7, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (281, 14, 'status', '状态', 'tinyint', 'Long', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_core_status', 8, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (282, 14, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 9, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (283, 14, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 10, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (284, 14, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 11, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (285, 14, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 12, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (286, 14, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 13, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (287, 14, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 14, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (288, 14, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (289, 14, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 16, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
+INSERT INTO `gen_table_column` VALUES (290, 14, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 17, 'admin', '2025-10-18 20:57:04', '', '2025-10-21 11:24:11');
 INSERT INTO `gen_table_column` VALUES (291, 15, 'detail_id', 'BOM明细ID', 'bigint', 'Long', 'detailId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-18 20:57:05', '', NULL);
 INSERT INTO `gen_table_column` VALUES (292, 15, 'bom_id', 'BOM主表ID', 'bigint', 'Long', 'bomId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-10-18 20:57:05', '', NULL);
 INSERT INTO `gen_table_column` VALUES (293, 15, 'child_material_id', '子项物料ID', 'bigint', 'Long', 'childMaterialId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-10-18 20:57:05', '', NULL);
@@ -788,38 +797,308 @@ INSERT INTO `gen_table_column` VALUES (308, 15, 'create_by', '创建人', 'varch
 INSERT INTO `gen_table_column` VALUES (309, 15, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 19, 'admin', '2025-10-18 20:57:05', '', NULL);
 INSERT INTO `gen_table_column` VALUES (310, 15, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 20, 'admin', '2025-10-18 20:57:05', '', NULL);
 INSERT INTO `gen_table_column` VALUES (311, 15, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 21, 'admin', '2025-10-18 20:57:05', '', NULL);
+INSERT INTO `gen_table_column` VALUES (312, 16, 'co_id', '客户订单ID', 'bigint', 'Long', 'coId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (313, 16, 'co_no', '客户订单号', 'varchar(50)', 'String', 'coNo', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (315, 16, 'contact_name', '联系人', 'varchar(100)', 'String', 'contactName', '0', '0', '0', '1', '1', '0', '0', 'LIKE', 'input', '', 4, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (316, 16, 'contact_phone', '联系人电话', 'varchar(20)', 'String', 'contactPhone', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 5, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (317, 16, 'order_date', '客户下单日期', 'date', 'Date', 'orderDate', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 6, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (318, 16, 'requested_date', '客户要求交货日', 'date', 'Date', 'requestedDate', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'datetime', '', 7, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (319, 16, 'currency', '货币', 'varchar(10)', 'String', 'currency', '0', '0', '1', '1', '1', '0', '0', 'EQ', 'select', 'so_currency_type', 8, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (320, 16, 'total_amount', '订单总金额（未税）', 'decimal(18,2)', 'BigDecimal', 'totalAmount', '0', '0', '0', '1', '1', '1', '0', 'EQ', 'input', '', 9, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (321, 16, 'status', '订单状态', 'varchar(20)', 'String', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'so_customer_order_status', 10, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (322, 16, 'source_channel', '订单来源', 'varchar(50)', 'String', 'sourceChannel', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'so_source_channel', 13, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (323, 16, 'remark', '备注', 'text', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 14, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (327, 17, 'so_id', '销售订单ID', 'bigint', 'Long', 'soId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (328, 17, 'so_no', '销售订单编号', 'varchar(50)', 'String', 'soNo', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (329, 17, 'co_id', '来源客户订单', 'bigint', 'Long', 'coId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (331, 17, 'sales_rep_id', '销售代表', 'bigint', 'Long', 'salesRepId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (332, 17, 'order_date', '订单生成日期', 'date', 'Date', 'orderDate', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 6, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (333, 17, 'promise_date', '承诺交货日', 'date', 'Date', 'promiseDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 7, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (334, 17, 'delivery_address_id', '发货地址', 'bigint', 'Long', 'deliveryAddressId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (335, 17, 'invoice_address_id', '开票地址ID', 'bigint', 'Long', 'invoiceAddressId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (336, 17, 'payment_terms', '付款条款', 'varchar(50)', 'String', 'paymentTerms', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (337, 17, 'currency', '货币', 'varchar(10)', 'String', 'currency', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 14, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (338, 17, 'exchange_rate', '汇率', 'decimal(10,6)', 'BigDecimal', 'exchangeRate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 15, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (339, 17, 'total_amount', '含税总金额', 'decimal(18,2)', 'BigDecimal', 'totalAmount', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 16, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (340, 17, 'tax_amount', '税款', 'decimal(18,2)', 'BigDecimal', 'taxAmount', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 17, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (341, 17, 'discount_amount', '整单折扣', 'decimal(18,2)', 'BigDecimal', 'discountAmount', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 18, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (342, 17, 'credit_status', '信用状态', 'varchar(20)', 'String', 'creditStatus', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', '', 20, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (343, 17, 'credit_check_time', '信用检查时间', 'datetime', 'Date', 'creditCheckTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 21, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (344, 17, 'credit_blocked_by', '信用拦截人', 'bigint', 'Long', 'creditBlockedBy', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 22, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (345, 17, 'order_status', '订单状态', 'varchar(20)', 'String', 'orderStatus', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', '', 23, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (346, 17, 'project_id', '项目ID', 'bigint', 'Long', 'projectId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 24, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (347, 17, 'is_pa_enabled', '是否启用项目配套发料', 'tinyint(1)', 'Integer', 'isPaEnabled', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 25, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (350, 17, 'confirmed_time', '确认时间', 'datetime', 'Date', 'confirmedTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 26, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (351, 17, 'closed_time', '结束时间', 'datetime', 'Date', 'closedTime', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'datetime', '', 28, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (352, 17, 'cancelled_time', '取消时间', 'datetime', 'Date', 'cancelledTime', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'datetime', '', 29, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (353, 17, 'cancelled_reason', '取消原因', 'varchar(200)', 'String', 'cancelledReason', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 30, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (354, 17, 'remark', '备注', 'text', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 34, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (355, 18, 'line_id', '销售订单行表id', 'bigint', 'Long', 'lineId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (356, 18, 'so_id', '销售订单ID', 'bigint', 'Long', 'soId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (357, 18, 'material_id', '物料ID', 'bigint', 'Long', 'materialId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (358, 18, 'material_code', '物料编码（冗余，提高查询性能）', 'varchar(50)', 'String', 'materialCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (359, 18, 'material_name', '物料名称（冗余）', 'varchar(200)', 'String', 'materialName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 6, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (360, 18, 'ordered_qty', '订单数量', 'decimal(18,4)', 'BigDecimal', 'orderedQty', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (361, 18, 'unit', '单位', 'varchar(20)', 'String', 'unit', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (362, 18, 'unit_price', '单价', 'decimal(18,6)', 'BigDecimal', 'unitPrice', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 11, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (363, 18, 'line_amount', '行金额 = qty * price', 'decimal(18,2)', 'BigDecimal', 'lineAmount', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (364, 18, 'tax_rate', '税率', 'decimal(5,2)', 'BigDecimal', 'taxRate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (365, 18, 'discount_percent', '行折扣率', 'decimal(5,2)', 'BigDecimal', 'discountPercent', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 15, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (366, 18, 'requested_date', '行要求交期', 'date', 'Date', 'requestedDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 17, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (367, 18, 'promise_date', '行承诺交期', 'date', 'Date', 'promiseDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 18, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (368, 18, 'fulfilled_qty', '已履行数量（已发货）', 'decimal(18,4)', 'BigDecimal', 'fulfilledQty', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 19, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (369, 18, 'production_qty', '已投产数量', 'decimal(18,4)', 'BigDecimal', 'productionQty', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 20, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (370, 18, 'purchase_qty', '已采购数量', 'decimal(18,4)', 'BigDecimal', 'purchaseQty', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 21, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (371, 18, 'reserved_qty', '已预留库存数量', 'decimal(18,4)', 'BigDecimal', 'reservedQty', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 22, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (372, 18, 'line_status', 'PENDING-待处理,SCHEDULED-已排产/已采购,PARTIALLY_FULFILLED-部分履行,FULFILLED-已履行,CANCELLED-已取消', 'varchar(20)', 'String', 'lineStatus', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', '', 23, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (373, 18, 'linked_mo_id', '关联生产工单ID', 'bigint', 'Long', 'linkedMoId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 24, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (374, 18, 'linked_po_id', '关联采购订单ID', 'bigint', 'Long', 'linkedPoId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 25, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (375, 18, 'reserved_batch_no', '预留批次号', 'varchar(50)', 'String', 'reservedBatchNo', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 26, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (376, 18, 'reserved_serials', '预留序列号列表（JSON）', 'text', 'String', 'reservedSerials', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 27, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (377, 18, 'pa_group_id', 'PA配套组ID（用于项目型订单配套发料）', 'bigint', 'Long', 'paGroupId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 28, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (378, 18, 'sort_order', '', 'int', 'Long', 'sortOrder', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 32, 'admin', '2025-10-21 11:41:35', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (381, 18, 'line_no', '行号（0010,0020）', 'varchar(20)', 'String', 'lineNo', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (382, 18, 'material_spec', '物料规格（冗余）', 'varchar(500)', 'String', 'materialSpec', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 7, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (383, 18, 'delivered_qty', '已发货数量', 'decimal(18,4)', 'BigDecimal', 'deliveredQty', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (384, 18, 'tax_amount', '行税额', 'decimal(18,2)', 'BigDecimal', 'taxAmount', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 14, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (385, 18, 'discount_amount', '行折扣额', 'decimal(18,2)', 'BigDecimal', 'discountAmount', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 16, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (386, 18, 'warehouse_id', '默认仓库ID', 'bigint', 'Long', 'warehouseId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 29, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (387, 18, 'delivery_priority', '交付优先级', 'tinyint', 'Long', 'deliveryPriority', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 30, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (388, 18, 'customer_line_ref', '客户行参考号', 'varchar(50)', 'String', 'customerLineRef', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 31, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (389, 18, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 33, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (390, 18, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 34, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (391, 18, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 35, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (392, 18, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 36, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (393, 18, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 37, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (394, 18, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 38, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (395, 18, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '1', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 39, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (396, 18, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 40, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (397, 18, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '1', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 41, '', '2025-10-21 15:00:56', '', '2025-10-21 17:28:04');
+INSERT INTO `gen_table_column` VALUES (398, 16, 'client_id', '客户ID', 'bigint', 'Long', 'clientId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (399, 16, 'priority', '订单优先级', 'tinyint', 'Long', 'priority', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'so_order_priority', 11, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (400, 16, 'customer_po_no', '客户采购订单号', 'varchar(100)', 'String', 'customerPoNo', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (401, 16, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 15, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (402, 16, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 16, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (403, 16, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 17, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (404, 16, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 18, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (405, 16, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 19, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (406, 16, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 20, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (407, 16, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 21, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (408, 16, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 22, '', '2025-10-21 15:01:00', '', '2025-10-21 15:38:18');
+INSERT INTO `gen_table_column` VALUES (409, 17, 'client_id', '来源客户ID', 'bigint', 'Long', 'clientId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, '', '2025-10-21 15:01:02', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (410, 17, 'requested_date', '客户要求交货日', 'date', 'Date', 'requestedDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 8, '', '2025-10-21 15:01:02', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (411, 17, 'delivery_address', '发货地址详情', 'text', 'String', 'deliveryAddress', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 11, '', '2025-10-21 15:01:02', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (412, 17, 'invoice_address', '开票地址详情', 'text', 'String', 'invoiceAddress', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 12, '', '2025-10-21 15:01:02', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (413, 17, 'discount_rate', '整单折扣率', 'decimal(5,2)', 'BigDecimal', 'discountRate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 19, '', '2025-10-21 15:01:02', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (414, 17, 'fulfilled_time', '完全履行时间', 'datetime', 'Date', 'fulfilledTime', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'datetime', '', 27, '', '2025-10-21 15:01:02', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (415, 17, 'sales_org_id', '销售组织ID', 'bigint', 'Long', 'salesOrgId', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 31, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (416, 17, 'distribution_channel', '分销渠道', 'varchar(20)', 'String', 'distributionChannel', '0', '0', '0', '1', '1', '0', '0', 'EQ', 'input', '', 32, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (417, 17, 'customer_ref_no', '客户参考号', 'varchar(100)', 'String', 'customerRefNo', '0', '0', '0', '1', '1', '0', '1', 'EQ', 'input', '', 33, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (418, 17, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 35, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (419, 17, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 36, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (420, 17, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 37, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (421, 17, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 38, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (422, 17, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 39, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (423, 17, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 40, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (424, 17, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 41, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+INSERT INTO `gen_table_column` VALUES (425, 17, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 42, '', '2025-10-21 15:01:03', '', '2025-10-21 18:01:31');
+
+-- ----------------------------
+-- Table structure for so_customer_order
+-- ----------------------------
+DROP TABLE IF EXISTS `so_customer_order`;
+CREATE TABLE `so_customer_order`  (
+  `co_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '客户订单ID',
+  `co_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '客户订单号（客户系统编号）',
+  `client_id` bigint(0) NOT NULL COMMENT '客户ID',
+  `contact_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人',
+  `contact_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人电话',
+  `order_date` date NOT NULL COMMENT '客户下单日期',
+  `requested_date` date NULL DEFAULT NULL COMMENT '客户要求交货日',
+  `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '货币',
+  `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '订单总金额（未税）',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT-草稿,CONFIRMED-已确认,CANCELLED-已取消',
+  `priority` tinyint(0) NULL DEFAULT 0 COMMENT '订单优先级 0-普通 1-紧急 2-特急',
+  `customer_po_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户采购订单号',
+  `source_channel` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '订单来源：PORTAL/SALES/EDI',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`co_id`) USING BTREE,
+  UNIQUE INDEX `uk_co_no`(`co_no`) USING BTREE,
+  INDEX `idx_client_id`(`client_id`) USING BTREE,
+  INDEX `idx_order_date`(`order_date`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_requested_date`(`requested_date`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单（外部原始需求）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of so_customer_order
+-- ----------------------------
+INSERT INTO `so_customer_order` VALUES (1, 'WEB20241201001', 2, '李明', '13800138001', '2024-12-01', '2024-12-15', 'CNY', 25000.00, 'CONFIRMED', 0, NULL, 'PORTAL', '客户在线下单', NULL, NULL, NULL, NULL, 'system', '2024-12-01 09:30:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (2, 'WEB20241201002', 3, '王芳', '13900139002', '2024-12-01', '2024-12-20', 'CNY', 15000.00, 'DRAFT', 0, NULL, 'PORTAL', '购物车订单', NULL, NULL, NULL, NULL, 'system', '2024-12-01 14:20:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (3, 'WEB20241202001', 4, '张伟', '13700137003', '2024-12-02', '2024-12-18', 'CNY', 8000.00, 'CONFIRMED', 0, NULL, 'PORTAL', '会员客户订单', NULL, NULL, NULL, NULL, 'system', '2024-12-02 11:15:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (4, 'CO20241201001', 5, '陈总', '13600136004', '2024-12-01', '2024-12-25', 'CNY', 150000.00, 'CONFIRMED', 0, 'PO-2024-12-001', 'SALES', '大客户年度订单', NULL, NULL, NULL, NULL, 'sales_rep_001', '2024-12-01 10:45:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (5, 'CO20241202002', 6, '刘经理', '13500135005', '2024-12-02', '2024-12-30', 'CNY', 85000.00, 'PENDING_REVIEW', 0, 'ABC-PO-20241202', 'SALES', '紧急项目订单', NULL, NULL, NULL, NULL, 'sales_rep_002', '2024-12-02 15:30:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (6, 'CO20241203001', 7, '赵主任', '13400134006', '2024-12-03', '2024-12-28', 'CNY', 220000.00, 'DRAFT', 0, 'XYZ-2024-PO-0123', 'SALES', '框架协议补充订单', NULL, NULL, NULL, NULL, 'sales_rep_003', '2024-12-03 09:15:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (7, 'EDI20241201001', 8, NULL, NULL, '2024-12-01', '2024-12-20', 'CNY', 500000.00, 'CONFIRMED', 0, 'WM-PO-20241201-56789', 'EDI', '沃尔玛自动补货订单', NULL, NULL, NULL, NULL, 'edi_system', '2024-12-01 03:20:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (8, 'EDI20241202001', 9, NULL, NULL, '2024-12-02', '2024-12-22', 'CNY', 320000.00, 'CONFIRMED', 0, 'COSTCO-PO-20241202', 'EDI', '好市多定期采购', NULL, NULL, NULL, NULL, 'edi_system', '2024-12-02 04:10:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (9, 'EDI20241203001', 10, NULL, NULL, '2024-12-03', '2024-12-25', 'CNY', 180000.00, 'PENDING_REVIEW', 0, 'CARREFOUR-PO-20241203', 'EDI', '家乐福库存补充', NULL, NULL, NULL, NULL, 'edi_system', '2024-12-03 02:45:00', NULL, '2025-10-21 17:48:31');
+INSERT INTO `so_customer_order` VALUES (10, 'CO20241130001', 5, '陈总', '13600136004', '2024-11-30', '2024-12-15', 'CNY', 75000.00, 'CANCELLED', 0, 'PO-2024-11-005', 'SALES', '客户项目变更取消', NULL, NULL, NULL, NULL, 'sales_rep_001', '2024-11-30 14:20:00', NULL, '2025-10-21 17:48:31');
+
+-- ----------------------------
+-- Table structure for so_sales_order_header
+-- ----------------------------
+DROP TABLE IF EXISTS `so_sales_order_header`;
+CREATE TABLE `so_sales_order_header`  (
+  `so_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '销售订单ID',
+  `so_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '销售订单编号（SO202509150001）',
+  `co_id` bigint(0) NULL DEFAULT NULL COMMENT '来源客户订单ID',
+  `client_id` bigint(0) NOT NULL COMMENT '来源客户ID',
+  `sales_rep_id` bigint(0) NULL DEFAULT NULL COMMENT '销售代表',
+  `order_date` date NOT NULL COMMENT '订单生成日期',
+  `promise_date` date NULL DEFAULT NULL COMMENT '承诺交货日（经ATP/MPS评审后）',
+  `requested_date` date NULL DEFAULT NULL COMMENT '客户要求交货日（从CO复制）',
+  `delivery_address_id` bigint(0) NULL DEFAULT NULL COMMENT '发货地址ID（客户档案中维护）',
+  `invoice_address_id` bigint(0) NULL DEFAULT NULL COMMENT '开票地址ID',
+  `delivery_address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '发货地址详情（冗余，便于查询）',
+  `invoice_address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '开票地址详情（冗余）',
+  `payment_terms` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '付款条款（如 Net 30）',
+  `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'CNY' COMMENT '货币',
+  `exchange_rate` decimal(10, 6) NOT NULL DEFAULT 1.000000 COMMENT '汇率',
+  `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '含税总金额',
+  `tax_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '税款',
+  `discount_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '整单折扣',
+  `discount_rate` decimal(5, 2) NULL DEFAULT NULL COMMENT '整单折扣率',
+  `credit_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NOT_CHECKED' COMMENT '信用状态：NOT_CHECKED/CHECKED_OK/CHECKED_BLOCKED',
+  `credit_check_time` datetime(0) NULL DEFAULT NULL COMMENT '信用检查时间',
+  `credit_blocked_by` bigint(0) NULL DEFAULT NULL COMMENT '信用拦截人',
+  `order_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT-草稿,PENDING_REVIEW-待评审,CONFIRMED-已确认,PARTIALLY_FULFILLED-部分履行,FULFILLED-已履行,CLOSED-已关闭,CANCELLED-已取消',
+  `project_id` bigint(0) NULL DEFAULT NULL COMMENT '项目ID（用于PA清单）',
+  `is_pa_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否启用项目配套发料 0-否 1-是',
+  `confirmed_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
+  `fulfilled_time` datetime(0) NULL DEFAULT NULL COMMENT '完全履行时间',
+  `closed_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `cancelled_time` datetime(0) NULL DEFAULT NULL COMMENT '取消时间',
+  `cancelled_reason` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '取消原因',
+  `sales_org_id` bigint(0) NULL DEFAULT NULL COMMENT '销售组织ID',
+  `distribution_channel` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分销渠道',
+  `customer_ref_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户参考号',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`so_id`) USING BTREE,
+  UNIQUE INDEX `uk_so_no`(`so_no`) USING BTREE,
+  INDEX `idx_client_id`(`client_id`) USING BTREE,
+  INDEX `idx_order_date`(`order_date`) USING BTREE,
+  INDEX `idx_promise_date`(`promise_date`) USING BTREE,
+  INDEX `idx_order_status`(`order_status`) USING BTREE,
+  INDEX `idx_project_id`(`project_id`) USING BTREE,
+  INDEX `idx_co_id`(`co_id`) USING BTREE,
+  INDEX `idx_sales_rep_id`(`sales_rep_id`) USING BTREE,
+  CONSTRAINT `fk_so_header_co` FOREIGN KEY (`co_id`) REFERENCES `so_customer_order` (`co_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for so_sales_order_line
+-- ----------------------------
+DROP TABLE IF EXISTS `so_sales_order_line`;
+CREATE TABLE `so_sales_order_line`  (
+  `line_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '销售订单行表id',
+  `so_id` bigint(0) NOT NULL COMMENT '销售订单ID',
+  `line_no` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '行号（0010,0020）',
+  `material_id` bigint(0) NOT NULL COMMENT '物料ID',
+  `material_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料编码（冗余，提高查询性能）',
+  `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料名称（冗余）',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料规格（冗余）',
+  `ordered_qty` decimal(18, 4) NOT NULL COMMENT '订单数量',
+  `delivered_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已发货数量',
+  `unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '单位',
+  `unit_price` decimal(18, 6) NOT NULL COMMENT '单价',
+  `line_amount` decimal(18, 2) NOT NULL COMMENT '行金额 = qty * price',
+  `tax_rate` decimal(5, 2) NULL DEFAULT NULL COMMENT '税率',
+  `tax_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '行税额',
+  `discount_percent` decimal(5, 2) NULL DEFAULT NULL COMMENT '行折扣率',
+  `discount_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '行折扣额',
+  `requested_date` date NULL DEFAULT NULL COMMENT '行要求交期',
+  `promise_date` date NULL DEFAULT NULL COMMENT '行承诺交期',
+  `fulfilled_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已履行数量（已发货）',
+  `production_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已投产数量',
+  `purchase_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已采购数量',
+  `reserved_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已预留库存数量',
+  `line_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING-待处理,SCHEDULED-已排产/已采购,PARTIALLY_FULFILLED-部分履行,FULFILLED-已履行,CANCELLED-已取消',
+  `linked_mo_id` bigint(0) NULL DEFAULT NULL COMMENT '关联生产工单ID',
+  `linked_po_id` bigint(0) NULL DEFAULT NULL COMMENT '关联采购订单ID',
+  `reserved_batch_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留批次号',
+  `reserved_serials` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '预留序列号列表（JSON）',
+  `pa_group_id` bigint(0) NULL DEFAULT NULL COMMENT 'PA配套组ID（用于项目型订单配套发料）',
+  `warehouse_id` bigint(0) NULL DEFAULT NULL COMMENT '默认仓库ID',
+  `delivery_priority` tinyint(0) NULL DEFAULT 0 COMMENT '交付优先级',
+  `customer_line_ref` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户行参考号',
+  `sort_order` int(0) NOT NULL DEFAULT 0,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  UNIQUE INDEX `uk_so_line_no`(`so_id`, `line_no`) USING BTREE,
+  INDEX `idx_so_id`(`so_id`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
+  INDEX `idx_line_status`(`line_status`) USING BTREE,
+  INDEX `idx_linked_mo_id`(`linked_mo_id`) USING BTREE,
+  INDEX `idx_linked_po_id`(`linked_po_id`) USING BTREE,
+  INDEX `idx_pa_group_id`(`pa_group_id`) USING BTREE,
+  CONSTRAINT `fk_so_line_header` FOREIGN KEY (`so_id`) REFERENCES `so_sales_order_header` (`so_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sys_auto_code_part
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_auto_code_part`;
 CREATE TABLE `sys_auto_code_part`  (
-  `part_id` bigint NOT NULL AUTO_INCREMENT COMMENT '分段ID',
-  `rule_id` bigint NOT NULL COMMENT '规则ID',
-  `part_index` int NOT NULL COMMENT '分段序号',
+  `part_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '分段ID',
+  `rule_id` bigint(0) NOT NULL COMMENT '规则ID',
+  `part_index` int(0) NOT NULL COMMENT '分段序号',
   `part_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '分段类型，INPUTCHAR：输入字符，NOWDATE：当前日期时间，FIXCHAR：固定字符，SERIALNO：流水号',
   `part_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分段编号',
   `part_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分段名称',
-  `part_length` int NOT NULL COMMENT '分段长度',
+  `part_length` int(0) NOT NULL COMMENT '分段长度',
   `date_format` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `input_character` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '输入字符',
   `fix_character` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '固定字符',
-  `seria_start_no` int NULL DEFAULT NULL COMMENT '流水号起始值',
-  `seria_step` int NULL DEFAULT NULL COMMENT '流水号步长',
-  `seria_now_no` int NULL DEFAULT NULL COMMENT '流水号当前值',
+  `seria_start_no` int(0) NULL DEFAULT NULL COMMENT '流水号起始值',
+  `seria_step` int(0) NULL DEFAULT NULL COMMENT '流水号步长',
+  `seria_now_no` int(0) NULL DEFAULT NULL COMMENT '流水号当前值',
   `cycle_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '流水号是否循环',
   `cycle_method` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '循环方式，YEAR：按年，MONTH：按月，DAY：按天，HOUR：按小时，MINITE：按分钟，OTHER：按传入字符变',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`part_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 359 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 358 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -981,24 +1260,24 @@ INSERT INTO `sys_auto_code_part` VALUES (358, 265, 2, 'SERIALNO', 'SERIAL', '流
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_auto_code_result`;
 CREATE TABLE `sys_auto_code_result`  (
-  `code_id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
-  `rule_id` bigint NOT NULL COMMENT '规则ID',
+  `code_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `rule_id` bigint(0) NOT NULL COMMENT '规则ID',
   `gen_date` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '生成日期时间',
-  `gen_index` int NULL DEFAULT NULL COMMENT '最后产生的序号',
+  `gen_index` int(0) NULL DEFAULT NULL COMMENT '最后产生的序号',
   `last_result` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后产生的值',
-  `last_serial_no` int NULL DEFAULT NULL COMMENT '最后产生的流水号',
+  `last_serial_no` int(0) NULL DEFAULT NULL COMMENT '最后产生的流水号',
   `last_input_char` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后传入的参数',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`code_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 660 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 659 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -1193,7 +1472,7 @@ INSERT INTO `sys_auto_code_result` VALUES (389, 206, '20250312103442', 12, 'ITEM
 INSERT INTO `sys_auto_code_result` VALUES (390, 229, '20220822155824', 7, 'RTV20220822007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 09:13:49', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (391, 207, '20220822100442', 1, 'C00153', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 10:04:42', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (392, 207, '20220822102252', 5, 'C00167', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 10:05:02', '', NULL);
-INSERT INTO `sys_auto_code_result` VALUES (393, 207, '20250922104624', 41, 'C00002', 2, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 10:22:53', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (393, 207, '20251021174727', 50, 'C00011', 11, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 10:22:53', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (394, 210, '20220823083833', 3, 'WH139', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 14:53:46', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (395, 225, '20220822154721', 1, 'IQC20220822001', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-22 15:47:21', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (396, 226, '20220823203609', 20, 'R20220823020', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-23 00:41:07', '', NULL);
@@ -1459,11 +1738,11 @@ INSERT INTO `sys_auto_code_result` VALUES (659, 236, '20251018231133', 1, 'IF202
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_auto_code_rule`;
 CREATE TABLE `sys_auto_code_rule`  (
-  `rule_id` bigint NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `rule_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '规则ID',
   `rule_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则编码',
   `rule_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则名称',
   `rule_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
-  `max_length` int NULL DEFAULT NULL COMMENT '最大长度',
+  `max_length` int(0) NULL DEFAULT NULL COMMENT '最大长度',
   `is_padded` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '是否补齐',
   `padded_char` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '补齐字符',
   `padded_method` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'L' COMMENT '补齐方式',
@@ -1471,14 +1750,14 @@ CREATE TABLE `sys_auto_code_rule`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`rule_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 266 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 265 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -1548,18 +1827,18 @@ INSERT INTO `sys_auto_code_rule` VALUES (265, 'BOM_CODE', 'BOM编码规则', NUL
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_config`;
 CREATE TABLE `sys_config`  (
-  `config_id` int NOT NULL AUTO_INCREMENT COMMENT '参数主键',
+  `config_id` int(0) NOT NULL AUTO_INCREMENT COMMENT '参数主键',
   `config_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数名称',
   `config_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数键名',
   `config_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数键值',
   `config_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_config
@@ -1578,22 +1857,22 @@ INSERT INTO `sys_config` VALUES (8, '用户管理-账号密码更新周期', 'sy
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dept`;
 CREATE TABLE `sys_dept`  (
-  `dept_id` bigint NOT NULL AUTO_INCREMENT COMMENT '部门id',
-  `parent_id` bigint NULL DEFAULT 0 COMMENT '父部门id',
+  `dept_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '部门id',
+  `parent_id` bigint(0) NULL DEFAULT 0 COMMENT '父部门id',
   `ancestors` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '祖级列表',
   `dept_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '部门名称',
-  `order_num` int NULL DEFAULT 0 COMMENT '显示顺序',
+  `order_num` int(0) NULL DEFAULT 0 COMMENT '显示顺序',
   `leader` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '负责人',
   `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系电话',
   `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '邮箱',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '部门状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 110 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 110 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -1614,8 +1893,8 @@ INSERT INTO `sys_dept` VALUES (109, 102, '0,100,102', '财务部门', 2, '若依
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dict_data`;
 CREATE TABLE `sys_dict_data`  (
-  `dict_code` bigint NOT NULL AUTO_INCREMENT COMMENT '字典编码',
-  `dict_sort` int NULL DEFAULT 0 COMMENT '字典排序',
+  `dict_code` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '字典编码',
+  `dict_sort` int(0) NULL DEFAULT 0 COMMENT '字典排序',
   `dict_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典标签',
   `dict_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典键值',
   `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
@@ -1624,12 +1903,12 @@ CREATE TABLE `sys_dict_data`  (
   `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 167 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 167 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -1730,24 +2009,45 @@ INSERT INTO `sys_dict_data` VALUES (163, 3, '委外', '3', 'bd_source_type', NUL
 INSERT INTO `sys_dict_data` VALUES (164, 1, '合格', '1', 'bd_quality_status', NULL, 'success', 'N', '0', 'admin', '2025-10-04 00:05:44', '', NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (165, 2, '待检', '2', 'bd_quality_status', NULL, 'info', 'N', '0', 'admin', '2025-10-04 00:06:02', '', NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (166, 3, '不合格', '3', 'bd_quality_status', NULL, 'danger', 'N', '0', 'admin', '2025-10-04 00:06:19', 'admin', '2025-10-04 00:06:24', NULL);
+INSERT INTO `sys_dict_data` VALUES (167, 1, '美元', 'USD', 'so_currency_type', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:09:34', 'admin', '2025-10-21 15:09:44', NULL);
+INSERT INTO `sys_dict_data` VALUES (168, 2, '欧元', 'EUR', 'so_currency_type', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:10:01', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (169, 3, '英镑', 'GBP', 'so_currency_type', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:10:21', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (170, 4, '人民币', 'CNY', 'so_currency_type', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:10:36', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (171, 5, '日元', 'JPY', 'so_currency_type', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:10:55', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (172, 1, '草稿', 'DRAFT', 'so_customer_order_status', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:18:13', 'admin', '2025-10-21 15:18:45', NULL);
+INSERT INTO `sys_dict_data` VALUES (173, 3, '已确认', 'CONFIRMED', 'so_customer_order_status', NULL, 'success', 'N', '0', 'admin', '2025-10-21 15:18:40', 'admin', '2025-10-21 17:53:17', NULL);
+INSERT INTO `sys_dict_data` VALUES (174, 7, '已取消', 'CANCELLED', 'so_customer_order_status', NULL, 'warning', 'N', '0', 'admin', '2025-10-21 15:19:02', 'admin', '2025-10-21 18:01:01', NULL);
+INSERT INTO `sys_dict_data` VALUES (175, 1, '普通', '0', 'so_order_priority', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:20:30', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (176, 2, '紧急', '1', 'so_order_priority', NULL, 'warning', 'N', '0', 'admin', '2025-10-21 15:20:51', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (177, 3, '特急', '2', 'so_order_priority', NULL, 'danger', 'N', '0', 'admin', '2025-10-21 15:21:12', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (178, 1, '企业门户', 'PORTAL', 'so_source_channel', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:29:50', 'admin', '2025-10-21 15:31:22', NULL);
+INSERT INTO `sys_dict_data` VALUES (179, 2, '销售', 'SALES', 'so_source_channel', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:30:13', 'admin', '2025-10-21 15:30:51', NULL);
+INSERT INTO `sys_dict_data` VALUES (180, 3, 'EDI系统', 'EDI', 'so_source_channel', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 15:30:36', 'admin', '2025-10-21 15:30:46', NULL);
+INSERT INTO `sys_dict_data` VALUES (181, 2, '待审核', 'PENDING_REVIEW', 'so_customer_order_status', NULL, 'info', 'N', '0', 'admin', '2025-10-21 17:53:13', 'admin', '2025-10-21 17:53:28', NULL);
+INSERT INTO `sys_dict_data` VALUES (182, 1, '待检查', 'NOT_CHECKED', 'so_credit_status', NULL, 'primary', 'N', '0', 'admin', '2025-10-21 17:56:09', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (183, 2, '已检查', 'CHECKED_OK', 'so_credit_status', NULL, 'success', 'N', '0', 'admin', '2025-10-21 17:56:27', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (184, 3, '已锁定', 'CHECKED_BLOCKED', 'so_credit_status', NULL, 'danger', 'N', '0', 'admin', '2025-10-21 17:56:43', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (185, 4, '部分履行', 'PARTIALLY_FULFILLED', 'so_customer_order_status', NULL, 'success', 'N', '0', 'admin', '2025-10-21 17:59:46', 'admin', '2025-10-21 18:00:05', NULL);
+INSERT INTO `sys_dict_data` VALUES (186, 5, '已履行', 'FULFILLED', 'so_customer_order_status', NULL, 'success', 'N', '0', 'admin', '2025-10-21 18:00:28', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (187, 6, '已关闭', 'CLOSED', 'so_customer_order_status', NULL, 'success', 'N', '0', 'admin', '2025-10-21 18:00:51', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_dict_type
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dict_type`;
 CREATE TABLE `sys_dict_type`  (
-  `dict_id` bigint NOT NULL AUTO_INCREMENT COMMENT '字典主键',
+  `dict_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '字典主键',
   `dict_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典名称',
   `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
-  UNIQUE INDEX `dict_type`(`dict_type` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 114 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
+  UNIQUE INDEX `dict_type`(`dict_type`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 114 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -1776,13 +2076,19 @@ INSERT INTO `sys_dict_type` VALUES (110, '系统自定义是否', 'sys_true_or_f
 INSERT INTO `sys_dict_type` VALUES (111, '物料类型', 'bd_material_type', '0', 'admin', '2025-10-03 23:54:48', '', NULL, '物料类型');
 INSERT INTO `sys_dict_type` VALUES (112, '物料来源类型', 'bd_source_type', '0', 'admin', '2025-10-03 23:59:55', '', NULL, '物料来源类型');
 INSERT INTO `sys_dict_type` VALUES (113, '质量状态', 'bd_quality_status', '0', 'admin', '2025-10-04 00:05:08', 'admin', '2025-10-04 00:05:15', '质量状态');
+INSERT INTO `sys_dict_type` VALUES (114, '币种', 'so_currency_type', '0', 'admin', '2025-10-21 15:08:10', '', NULL, '国际币种');
+INSERT INTO `sys_dict_type` VALUES (115, '客户订单状态', 'so_customer_order_status', '0', 'admin', '2025-10-21 15:17:44', 'admin', '2025-10-21 17:39:17', '客户订单状态');
+INSERT INTO `sys_dict_type` VALUES (116, '订单优先级', 'so_order_priority', '0', 'admin', '2025-10-21 15:20:04', '', NULL, '订单优先级');
+INSERT INTO `sys_dict_type` VALUES (117, '订单来源', 'so_source_channel', '0', 'admin', '2025-10-21 15:22:37', '', NULL, '订单来源');
+INSERT INTO `sys_dict_type` VALUES (118, '信用状态', 'so_credit_status', '0', 'admin', '2025-10-21 17:55:40', '', NULL, '信用状态');
+INSERT INTO `sys_dict_type` VALUES (119, '订单状态', 'so_order_status', '0', 'admin', '2025-10-21 17:57:36', '', NULL, '订单状态');
 
 -- ----------------------------
 -- Table structure for sys_job
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_job`;
 CREATE TABLE `sys_job`  (
-  `job_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务ID',
+  `job_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '任务ID',
   `job_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '任务名称',
   `job_group` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'DEFAULT' COMMENT '任务组名',
   `invoke_target` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调用目标字符串',
@@ -1791,12 +2097,12 @@ CREATE TABLE `sys_job`  (
   `concurrent` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '1' COMMENT '是否并发执行（0允许 1禁止）',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1暂停）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注信息',
   PRIMARY KEY (`job_id`, `job_name`, `job_group`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_job
@@ -1810,27 +2116,23 @@ INSERT INTO `sys_job` VALUES (3, '系统默认（多参）', 'DEFAULT', 'ryTask.
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_job_log`;
 CREATE TABLE `sys_job_log`  (
-  `job_log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务日志ID',
+  `job_log_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '任务日志ID',
   `job_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务名称',
   `job_group` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务组名',
   `invoke_target` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调用目标字符串',
   `job_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '日志信息',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '执行状态（0正常 1失败）',
   `exception_info` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '异常信息',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`job_log_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度日志表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sys_job_log
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sys_logininfor
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_logininfor`;
 CREATE TABLE `sys_logininfor`  (
-  `info_id` bigint NOT NULL AUTO_INCREMENT COMMENT '访问ID',
+  `info_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '访问ID',
   `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '用户账号',
   `ipaddr` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '登录IP地址',
   `login_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '登录地点',
@@ -1838,11 +2140,11 @@ CREATE TABLE `sys_logininfor`  (
   `os` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作系统',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
   `msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '提示消息',
-  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
+  `login_time` datetime(0) NULL DEFAULT NULL COMMENT '访问时间',
   PRIMARY KEY (`info_id`) USING BTREE,
-  INDEX `idx_sys_logininfor_s`(`status` ASC) USING BTREE,
-  INDEX `idx_sys_logininfor_lt`(`login_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 246 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
+  INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
+  INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 250 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -1993,34 +2295,40 @@ INSERT INTO `sys_logininfor` VALUES (242, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (243, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-10-20 00:13:45');
 INSERT INTO `sys_logininfor` VALUES (244, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '退出成功', '2025-10-20 00:23:40');
 INSERT INTO `sys_logininfor` VALUES (245, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-10-20 00:23:46');
+INSERT INTO `sys_logininfor` VALUES (246, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-20 09:39:43');
+INSERT INTO `sys_logininfor` VALUES (247, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-20 16:18:06');
+INSERT INTO `sys_logininfor` VALUES (248, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-20 17:45:38');
+INSERT INTO `sys_logininfor` VALUES (249, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-21 09:32:54');
+INSERT INTO `sys_logininfor` VALUES (250, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-21 15:00:47');
+INSERT INTO `sys_logininfor` VALUES (251, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-21 17:26:33');
 
 -- ----------------------------
 -- Table structure for sys_menu
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_menu`;
 CREATE TABLE `sys_menu`  (
-  `menu_id` bigint NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
+  `menu_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
   `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '菜单名称',
-  `parent_id` bigint NULL DEFAULT 0 COMMENT '父菜单ID',
-  `order_num` int NULL DEFAULT 0 COMMENT '显示顺序',
+  `parent_id` bigint(0) NULL DEFAULT 0 COMMENT '父菜单ID',
+  `order_num` int(0) NULL DEFAULT 0 COMMENT '显示顺序',
   `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '路由地址',
   `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '组件路径',
   `query` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '路由参数',
   `route_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '路由名称',
-  `is_frame` int NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
-  `is_cache` int NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
+  `is_frame` int(0) NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
+  `is_cache` int(0) NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
   `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
   `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '菜单状态（0显示 1隐藏）',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
   `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '权限标识',
   `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2076 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2076 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -2160,24 +2468,30 @@ INSERT INTO `sys_menu` VALUES (2072, '产品BOM新增', 2070, 2, '#', '', NULL, 
 INSERT INTO `sys_menu` VALUES (2073, '产品BOM修改', 2070, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:bom:edit', '#', 'admin', '2025-10-18 22:35:46', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2074, '产品BOM删除', 2070, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:bom:remove', '#', 'admin', '2025-10-18 22:35:46', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2075, '产品BOM导出', 2070, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'bd:bom:export', '#', 'admin', '2025-10-18 22:35:46', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2076, '客户订单', 2037, 1, 'customerOrder', 'core/so/customerOrder/index', NULL, '', 1, 0, 'C', '0', '0', 'so:customerOrder:list', '#', 'admin', '2025-10-21 15:39:11', '', NULL, '客户订单菜单');
+INSERT INTO `sys_menu` VALUES (2077, '客户订单查询', 2076, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:customerOrder:query', '#', 'admin', '2025-10-21 15:39:11', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2078, '客户订单新增', 2076, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:customerOrder:add', '#', 'admin', '2025-10-21 15:39:11', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2079, '客户订单修改', 2076, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:customerOrder:edit', '#', 'admin', '2025-10-21 15:39:11', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2080, '客户订单删除', 2076, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:customerOrder:remove', '#', 'admin', '2025-10-21 15:39:11', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2081, '客户订单导出', 2076, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:customerOrder:export', '#', 'admin', '2025-10-21 15:39:11', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_notice
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_notice`;
 CREATE TABLE `sys_notice`  (
-  `notice_id` int NOT NULL AUTO_INCREMENT COMMENT '公告ID',
+  `notice_id` int(0) NOT NULL AUTO_INCREMENT COMMENT '公告ID',
   `notice_title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '公告标题',
   `notice_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '公告类型（1通知 2公告）',
   `notice_content` longblob NULL COMMENT '公告内容',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -2190,12 +2504,12 @@ INSERT INTO `sys_notice` VALUES (2, '维护通知：2018-07-01 若依系统凌�
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_oper_log`;
 CREATE TABLE `sys_oper_log`  (
-  `oper_id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志主键',
+  `oper_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '日志主键',
   `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '模块标题',
-  `business_type` int NULL DEFAULT 0 COMMENT '业务类型（0其它 1新增 2修改 3删除）',
+  `business_type` int(0) NULL DEFAULT 0 COMMENT '业务类型（0其它 1新增 2修改 3删除）',
   `method` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '方法名称',
   `request_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求方式',
-  `operator_type` int NULL DEFAULT 0 COMMENT '操作类别（0其它 1后台用户 2手机端用户）',
+  `operator_type` int(0) NULL DEFAULT 0 COMMENT '操作类别（0其它 1后台用户 2手机端用户）',
   `oper_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作人员',
   `dept_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '部门名称',
   `oper_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求URL',
@@ -2203,15 +2517,15 @@ CREATE TABLE `sys_oper_log`  (
   `oper_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作地点',
   `oper_param` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求参数',
   `json_result` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '返回参数',
-  `status` int NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
+  `status` int(0) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
   `error_msg` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '错误消息',
-  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
-  `cost_time` bigint NULL DEFAULT 0 COMMENT '消耗时间',
+  `oper_time` datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
+  `cost_time` bigint(0) NULL DEFAULT 0 COMMENT '消耗时间',
   PRIMARY KEY (`oper_id`) USING BTREE,
-  INDEX `idx_sys_oper_log_bt`(`business_type` ASC) USING BTREE,
-  INDEX `idx_sys_oper_log_s`(`status` ASC) USING BTREE,
-  INDEX `idx_sys_oper_log_ot`(`oper_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 425 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
+  INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
+  INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
+  INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 450 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -2541,24 +2855,121 @@ INSERT INTO `sys_oper_log` VALUES (421, '菜单管理', 2, 'com.nexus.web.contro
 INSERT INTO `sys_oper_log` VALUES (422, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/measure/index\",\"createTime\":\"2025-09-30 16:00:13\",\"icon\":\"长度测距\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2046,\"menuName\":\"计量单位\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"bd/measure\",\"perms\":\"bd:measure:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-20 00:28:17', 7);
 INSERT INTO `sys_oper_log` VALUES (423, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/material/index\",\"createTime\":\"2025-10-04 00:09:09\",\"icon\":\"产品管理\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2064,\"menuName\":\"物料产品管理\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"bd/material\",\"perms\":\"bd:material:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-20 00:28:24', 4);
 INSERT INTO `sys_oper_log` VALUES (424, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/bd/category/index\",\"createTime\":\"2025-10-01 12:38:08\",\"icon\":\"物料分类\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2058,\"menuName\":\"物料产品分类\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2007,\"path\":\"bd/category\",\"perms\":\"bd:category:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-20 00:28:54', 4);
+INSERT INTO `sys_oper_log` VALUES (425, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":2,\"categoryId\":5,\"createTime\":\"2025-10-16 17:20:58\",\"inventoryUomId\":3,\"isBatchManage\":1,\"isSerialManage\":0,\"materialCode\":\"IF20251016004\",\"materialDesc\":\"长方形钢板\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"materialType\":1,\"maxStock\":45,\"minStock\":15,\"params\":{},\"purchaseUomId\":3,\"qualityStatus\":1,\"referencePrice\":1000,\"remark\":\"采购钢板\",\"safetyStock\":10,\"saleUomId\":2,\"shelfLife\":0,\"sourceType\":2,\"standardCost\":1000,\"status\":0,\"updateTime\":\"2025-10-21 09:42:17\",\"volume\":0.01,\"weight\":100}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 09:42:18', 26);
+INSERT INTO `sys_oper_log` VALUES (426, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":1,\"bomName\":\"减速机JZQ-350标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-01-01\",\"expiryDate\":\"2025-12-31\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:14:15\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:14:15', 19);
+INSERT INTO `sys_oper_log` VALUES (427, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":2,\"bomName\":\"减速机JZQ-350改进版BOM\",\"bomVersion\":\"1.1\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-06-01\",\"isCurrent\":0,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:22:58\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:22:58', 15);
+INSERT INTO `sys_oper_log` VALUES (428, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":2,\"bomName\":\"减速机JZQ-350改进版BOM\",\"bomVersion\":\"1.1\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-06-01\",\"isCurrent\":0,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:24:08\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:24:08', 14);
+INSERT INTO `sys_oper_log` VALUES (429, '产品BOM明细', 3, 'com.nexus.core.bd.controller.BdBomController.removeDetails()', 'DELETE', 1, 'admin', '研发部门', '/bd/bom/detail/1', '127.0.0.1', '内网IP', '[1]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-10-21 10:49:16', 2);
+INSERT INTO `sys_oper_log` VALUES (430, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":1,\"bomName\":\"减速机JZQ-350标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-01-01\",\"expiryDate\":\"2025-12-31\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:49:16\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:49:16', 32);
+INSERT INTO `sys_oper_log` VALUES (431, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":1,\"childMaterialId\":16,\"childMaterialName\":\"大齿轮\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":10,\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', NULL, 1, '\r\n### Error updating database.  Cause: org.apache.ibatis.reflection.ReflectionException: There is no getter for property named \'createBy\' in \'class com.nexus.core.bd.domain.dto.BomDetailDTO\'\r\n### The error may exist in file [E:\\nexus-erp\\nexus-core\\target\\classes\\mapper\\bd\\BdBomMapper.xml]\r\n### The error may involve com.nexus.core.bd.mapper.BdBomMapper.insertBomDetail-Inline\r\n### The error occurred while setting parameters\r\n### SQL: insert into bd_bom_detail (             bom_id,             child_material_id,             quantity_per_parent,             loss_rate,             operation_step,             workstation_id,             lead_time,             effective_date,             expiry_date,             sort_order,             status,             remark,             create_by,             create_time         ) values (             ?,             ?,             ?,             ?,             ?,             ?,             ?,             ?,             ?,             ?,             ?,             ?,             ?,             sysdate()         )\r\n### Cause: org.apache.ibatis.reflection.ReflectionException: There is no getter for property named \'createBy\' in \'class com.nexus.core.bd.domain.dto.BomDetailDTO\'', '2025-10-21 10:49:16', 92);
+INSERT INTO `sys_oper_log` VALUES (432, '产品BOM明细', 3, 'com.nexus.core.bd.controller.BdBomController.removeDetails()', 'DELETE', 1, 'admin', '研发部门', '/bd/bom/detail/1', '127.0.0.1', '内网IP', '[1]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-10-21 10:53:59', 1);
+INSERT INTO `sys_oper_log` VALUES (433, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":1,\"bomName\":\"减速机JZQ-350标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-01-01\",\"expiryDate\":\"2025-12-31\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:53:59\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:53:59', 42);
+INSERT INTO `sys_oper_log` VALUES (434, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":1,\"childMaterialId\":16,\"childMaterialName\":\"大齿轮\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":10,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:53:59', 61);
+INSERT INTO `sys_oper_log` VALUES (435, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":1,\"bomName\":\"减速机JZQ-350标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-01-01\",\"expiryDate\":\"2025-12-31\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:55:17\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:55:17', 16);
+INSERT INTO `sys_oper_log` VALUES (436, '产品BOM明细', 3, 'com.nexus.core.bd.controller.BdBomController.removeDetails()', 'DELETE', 1, 'admin', '研发部门', '/bd/bom/detail/1', '127.0.0.1', '内网IP', '[1]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-10-21 10:55:17', 1);
+INSERT INTO `sys_oper_log` VALUES (437, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":1,\"childMaterialId\":16,\"childMaterialName\":\"大齿轮\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":10,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:55:17', 6);
+INSERT INTO `sys_oper_log` VALUES (438, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":1,\"bomName\":\"减速机JZQ-350标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-01-01\",\"expiryDate\":\"2025-12-31\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:58:05\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:58:05', 6);
+INSERT INTO `sys_oper_log` VALUES (439, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":1,\"bomName\":\"减速机JZQ-350标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-01-01\",\"expiryDate\":\"2025-12-31\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 10:58:36\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:58:36', 16);
+INSERT INTO `sys_oper_log` VALUES (440, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":1,\"childMaterialId\":2,\"childMaterialName\":\"电机Y132M-4 7.5KW\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":1,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 10:58:37', 5);
+INSERT INTO `sys_oper_log` VALUES (441, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":2,\"bomName\":\"减速机JZQ-350改进版BOM\",\"bomVersion\":\"1.1\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-06-01\",\"isCurrent\":0,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 11:02:17\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:02:17', 4);
+INSERT INTO `sys_oper_log` VALUES (442, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":2,\"childMaterialId\":3,\"childMaterialName\":\"减速机JZQ-350\",\"leadTime\":0,\"lossRate\":0,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', NULL, 1, '工序步骤不能为空', '2025-10-21 11:02:17', 3);
+INSERT INTO `sys_oper_log` VALUES (443, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":2,\"bomName\":\"减速机JZQ-350改进版BOM\",\"bomVersion\":\"1.1\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-06-01\",\"isCurrent\":0,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 11:02:31\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:02:31', 11);
+INSERT INTO `sys_oper_log` VALUES (444, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":2,\"childMaterialId\":3,\"childMaterialName\":\"减速机JZQ-350\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":1,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:02:31', 5);
+INSERT INTO `sys_oper_log` VALUES (445, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":2,\"bomName\":\"减速机JZQ-350改进版BOM\",\"bomVersion\":\"1.1\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-06-01\",\"expiryDate\":\"2025-10-20\",\"isCurrent\":0,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 11:03:42\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:03:42', 4);
+INSERT INTO `sys_oper_log` VALUES (446, '产品BOM明细', 3, 'com.nexus.core.bd.controller.BdBomController.removeDetails()', 'DELETE', 1, 'admin', '研发部门', '/bd/bom/detail/26', '127.0.0.1', '内网IP', '[26]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-10-21 11:03:42', 1);
+INSERT INTO `sys_oper_log` VALUES (447, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":2,\"childMaterialId\":3,\"childMaterialName\":\"减速机JZQ-350\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":1,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:03:42', 5);
+INSERT INTO `sys_oper_log` VALUES (448, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":2,\"bomName\":\"减速机JZQ-350改进版BOM\",\"bomVersion\":\"1.1\",\"createTime\":\"2025-10-18 23:22:23\",\"effectiveDate\":\"2024-06-01\",\"expiryDate\":\"2025-10-20\",\"isCurrent\":0,\"params\":{},\"parentMaterialId\":2,\"status\":1,\"updateTime\":\"2025-10-21 11:09:23\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:09:23', 34);
+INSERT INTO `sys_oper_log` VALUES (449, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"bom\",\"className\":\"BdBom\",\"columns\":[{\"capJavaField\":\"BomId\",\"columnComment\":\"BOM主表ID\",\"columnId\":274,\"columnName\":\"bom_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-18 20:57:04\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"bomId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":14,\"updateBy\":\"\",\"updateTime\":\"2025-10-18 22:33:57\",\"usableColumn\":false},{\"capJavaField\":\"ParentMaterialId\",\"columnComment\":\"父项物料ID\",\"columnId\":275,\"columnName\":\"parent_material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-18 20:57:04\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"0\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"1\",\"javaField\":\"parentMaterialId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":14,\"updateBy\":\"\",\"updateTime\":\"2025-10-18 22:33:57\",\"usableColumn\":false},{\"capJavaField\":\"BomVersion\",\"columnComment\":\"BOM版本号\",\"columnId\":276,\"columnName\":\"bom_version\",\"columnType\":\"varchar(20)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-18 20:57:04\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"0\",\"isRequired\":\"1\",\"javaField\":\"bomVersion\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":false,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":14,\"updateBy\":\"\",\"updateTime\":\"2025-10-18 22:33:57\",\"usableColumn\":false},{\"capJavaField\":\"BomName\",\"columnComment\":\"BOM名称\",\"columnId\":277,\"columnName\":\"bom_name\",\"columnType\":\"varchar(200)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-18 20:57:04\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:24:11', 52);
+INSERT INTO `sys_oper_log` VALUES (450, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"so_customer_order,so_sales_order_header,so_sales_order_line\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:41:35', 134);
+INSERT INTO `sys_oper_log` VALUES (451, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"salesOrder\",\"className\":\"SoSalesOrderHeader\",\"columns\":[{\"capJavaField\":\"SoId\",\"columnComment\":\"销售订单ID\",\"columnId\":327,\"columnName\":\"so_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"soId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"SoNo\",\"columnComment\":\"销售订单编号（SO202509150001）\",\"columnId\":328,\"columnName\":\"so_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"soNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"CoId\",\"columnComment\":\"来源客户订单ID\",\"columnId\":329,\"columnName\":\"co_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"coId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"CustomerId\",\"columnId\":330,\"columnName\":\"customer_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 11:43:36', 40);
+INSERT INTO `sys_oper_log` VALUES (452, '代码生成', 2, 'com.nexus.generator.controller.GenController.synchDb()', 'GET', 1, 'admin', '研发部门', '/tool/gen/synchDb/so_sales_order_line', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:00:56', 71);
+INSERT INTO `sys_oper_log` VALUES (453, '代码生成', 2, 'com.nexus.generator.controller.GenController.synchDb()', 'GET', 1, 'admin', '研发部门', '/tool/gen/synchDb/so_customer_order', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:01:00', 38);
+INSERT INTO `sys_oper_log` VALUES (454, '代码生成', 2, 'com.nexus.generator.controller.GenController.synchDb()', 'GET', 1, 'admin', '研发部门', '/tool/gen/synchDb/so_sales_order_header', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:01:03', 65);
+INSERT INTO `sys_oper_log` VALUES (455, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"customerOrder\",\"className\":\"SoCustomerOrder\",\"columns\":[{\"capJavaField\":\"CoId\",\"columnComment\":\"客户订单ID\",\"columnId\":312,\"columnName\":\"co_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"coId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:01:00\",\"usableColumn\":false},{\"capJavaField\":\"CoNo\",\"columnComment\":\"客户订单号\",\"columnId\":313,\"columnName\":\"co_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"coNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:01:00\",\"usableColumn\":false},{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":398,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"\",\"createTime\":\"2025-10-21 15:01:00\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ContactName\",\"columnComment\":\"联系人\",\"columnId\":315,\"columnName\":\"contact_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:06:47', 38);
+INSERT INTO `sys_oper_log` VALUES (456, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"币种\",\"dictType\":\"so_currency_type\",\"params\":{},\"remark\":\"国际币种\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:08:10', 8);
+INSERT INTO `sys_oper_log` VALUES (457, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"美元\",\"dictSort\":1,\"dictType\":\"so_currency_type\",\"dictValue\":\"USD\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:09:34', 17);
+INSERT INTO `sys_oper_log` VALUES (458, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:09:34\",\"default\":false,\"dictCode\":167,\"dictLabel\":\"美元\",\"dictSort\":1,\"dictType\":\"so_currency_type\",\"dictValue\":\"USD\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:09:40', 5);
+INSERT INTO `sys_oper_log` VALUES (459, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:09:34\",\"default\":false,\"dictCode\":167,\"dictLabel\":\"美元\",\"dictSort\":1,\"dictType\":\"so_currency_type\",\"dictValue\":\"USD\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:09:44', 15);
+INSERT INTO `sys_oper_log` VALUES (460, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"欧元\",\"dictSort\":2,\"dictType\":\"so_currency_type\",\"dictValue\":\"EUR\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:10:01', 6);
+INSERT INTO `sys_oper_log` VALUES (461, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"英镑\",\"dictSort\":3,\"dictType\":\"so_currency_type\",\"dictValue\":\"GBP\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:10:21', 5);
+INSERT INTO `sys_oper_log` VALUES (462, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"人民币\",\"dictSort\":4,\"dictType\":\"so_currency_type\",\"dictValue\":\"CNY\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:10:36', 14);
+INSERT INTO `sys_oper_log` VALUES (463, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"日元\",\"dictSort\":5,\"dictType\":\"so_currency_type\",\"dictValue\":\"JPY\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:10:55', 6);
+INSERT INTO `sys_oper_log` VALUES (464, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"客户订单\",\"dictType\":\"so_customer_order_status\",\"params\":{},\"remark\":\"客户订单\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:17:44', 16);
+INSERT INTO `sys_oper_log` VALUES (465, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"草稿\",\"dictSort\":1,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"DRAFT\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:18:13', 5);
+INSERT INTO `sys_oper_log` VALUES (466, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:18:13\",\"default\":false,\"dictCode\":172,\"dictLabel\":\"草稿\",\"dictSort\":1,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"DRAFT\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:18:18', 16);
+INSERT INTO `sys_oper_log` VALUES (467, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已确认\",\"dictSort\":2,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"CONFIRMED\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:18:40', 16);
+INSERT INTO `sys_oper_log` VALUES (468, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:18:13\",\"default\":false,\"dictCode\":172,\"dictLabel\":\"草稿\",\"dictSort\":1,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"DRAFT\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:18:45', 15);
+INSERT INTO `sys_oper_log` VALUES (469, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已取消\",\"dictSort\":3,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"CANCELLED\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:19:03', 17);
+INSERT INTO `sys_oper_log` VALUES (470, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"订单优先级\",\"dictType\":\"so_order_priority\",\"params\":{},\"remark\":\"订单优先级\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:20:04', 16);
+INSERT INTO `sys_oper_log` VALUES (471, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"普通\",\"dictSort\":1,\"dictType\":\"so_order_priority\",\"dictValue\":\"0\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:20:30', 6);
+INSERT INTO `sys_oper_log` VALUES (472, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"紧急\",\"dictSort\":2,\"dictType\":\"so_order_priority\",\"dictValue\":\"1\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:20:51', 15);
+INSERT INTO `sys_oper_log` VALUES (473, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"特急\",\"dictSort\":3,\"dictType\":\"so_order_priority\",\"dictValue\":\"2\",\"listClass\":\"danger\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:21:12', 17);
+INSERT INTO `sys_oper_log` VALUES (474, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"订单来源\",\"dictType\":\"so_source_channel\",\"params\":{},\"remark\":\"订单来源\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:22:37', 6);
+INSERT INTO `sys_oper_log` VALUES (475, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"门户\",\"dictSort\":1,\"dictType\":\"so_source_channel\",\"dictValue\":\"PORTAL\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:29:50', 17);
+INSERT INTO `sys_oper_log` VALUES (476, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"销售\",\"dictSort\":2,\"dictType\":\"so_source_channel\",\"dictValue\":\"SALES\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:30:13', 15);
+INSERT INTO `sys_oper_log` VALUES (477, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:30:13\",\"default\":false,\"dictCode\":179,\"dictLabel\":\"销售\",\"dictSort\":2,\"dictType\":\"so_source_channel\",\"dictValue\":\"SALES\",\"isDefault\":\"N\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:30:19', 15);
+INSERT INTO `sys_oper_log` VALUES (478, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"EDI系统\",\"dictSort\":3,\"dictType\":\"so_source_channel\",\"dictValue\":\"EDI\",\"listClass\":\"info\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:30:36', 14);
+INSERT INTO `sys_oper_log` VALUES (479, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:30:36\",\"default\":false,\"dictCode\":180,\"dictLabel\":\"EDI系统\",\"dictSort\":3,\"dictType\":\"so_source_channel\",\"dictValue\":\"EDI\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:30:46', 16);
+INSERT INTO `sys_oper_log` VALUES (480, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:30:13\",\"default\":false,\"dictCode\":179,\"dictLabel\":\"销售\",\"dictSort\":2,\"dictType\":\"so_source_channel\",\"dictValue\":\"SALES\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:30:51', 15);
+INSERT INTO `sys_oper_log` VALUES (481, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:29:50\",\"default\":false,\"dictCode\":178,\"dictLabel\":\"门户网站\",\"dictSort\":1,\"dictType\":\"so_source_channel\",\"dictValue\":\"PORTAL\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:31:01', 5);
+INSERT INTO `sys_oper_log` VALUES (482, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:29:50\",\"default\":false,\"dictCode\":178,\"dictLabel\":\"企业门户\",\"dictSort\":1,\"dictType\":\"so_source_channel\",\"dictValue\":\"PORTAL\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:31:22', 14);
+INSERT INTO `sys_oper_log` VALUES (483, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"customerOrder\",\"className\":\"SoCustomerOrder\",\"columns\":[{\"capJavaField\":\"CoId\",\"columnComment\":\"客户订单ID\",\"columnId\":312,\"columnName\":\"co_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"coId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:06:47\",\"usableColumn\":false},{\"capJavaField\":\"CoNo\",\"columnComment\":\"客户订单号\",\"columnId\":313,\"columnName\":\"co_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"coNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:06:47\",\"usableColumn\":false},{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":398,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"\",\"createTime\":\"2025-10-21 15:01:00\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:06:47\",\"usableColumn\":false},{\"capJavaField\":\"ContactName\",\"columnComment\":\"联系人\",\"columnId\":315,\"columnName\":\"contact_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:33:38', 40);
+INSERT INTO `sys_oper_log` VALUES (484, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"customerOrder\",\"className\":\"SoCustomerOrder\",\"columns\":[{\"capJavaField\":\"CoId\",\"columnComment\":\"客户订单ID\",\"columnId\":312,\"columnName\":\"co_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"coId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:33:38\",\"usableColumn\":false},{\"capJavaField\":\"CoNo\",\"columnComment\":\"客户订单号\",\"columnId\":313,\"columnName\":\"co_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"coNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:33:38\",\"usableColumn\":false},{\"capJavaField\":\"ClientId\",\"columnComment\":\"客户ID\",\"columnId\":398,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"\",\"createTime\":\"2025-10-21 15:01:00\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"clientId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":16,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:33:38\",\"usableColumn\":false},{\"capJavaField\":\"ContactName\",\"columnComment\":\"联系人\",\"columnId\":315,\"columnName\":\"contact_name\",\"columnType\":\"varchar(100)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 15:38:18', 26);
+INSERT INTO `sys_oper_log` VALUES (485, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"so_customer_order\"}', NULL, 0, NULL, '2025-10-21 15:38:25', 99);
+INSERT INTO `sys_oper_log` VALUES (486, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"orderline\",\"className\":\"SoSalesOrderLine\",\"columns\":[{\"capJavaField\":\"LineId\",\"columnComment\":\"销售订单行表id\",\"columnId\":355,\"columnName\":\"line_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"lineId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":18,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:00:56\",\"usableColumn\":false},{\"capJavaField\":\"SoId\",\"columnComment\":\"销售订单ID\",\"columnId\":356,\"columnName\":\"so_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"soId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":18,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:00:56\",\"usableColumn\":false},{\"capJavaField\":\"LineNo\",\"columnComment\":\"行号（0010,0020）\",\"columnId\":381,\"columnName\":\"line_no\",\"columnType\":\"varchar(20)\",\"createBy\":\"\",\"createTime\":\"2025-10-21 15:00:56\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"lineNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":18,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"MaterialId\",\"columnComment\":\"物料ID\",\"columnId\":357,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\"', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:28:04', 112);
+INSERT INTO `sys_oper_log` VALUES (487, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"orderheader\",\"className\":\"SoSalesOrderHeader\",\"columns\":[{\"capJavaField\":\"SoId\",\"columnComment\":\"销售订单ID\",\"columnId\":327,\"columnName\":\"so_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"soId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:01:02\",\"usableColumn\":false},{\"capJavaField\":\"SoNo\",\"columnComment\":\"销售订单编号\",\"columnId\":328,\"columnName\":\"so_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"soNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:01:02\",\"usableColumn\":false},{\"capJavaField\":\"CoId\",\"columnComment\":\"来源客户订单\",\"columnId\":329,\"columnName\":\"co_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"coId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 15:01:02\",\"usableColumn\":false},{\"capJavaField\":\"ClientId\",\"columnComment\":\"来源客户ID\",\"columnId\":409,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"\",\"createTime\":\"2025-10-21 15:01:02\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:34:18', 60);
+INSERT INTO `sys_oper_log` VALUES (488, '字典类型', 2, 'com.nexus.web.controller.system.SysDictTypeController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:17:44\",\"dictId\":115,\"dictName\":\"客户订单状态\",\"dictType\":\"so_customer_order_status\",\"params\":{},\"remark\":\"客户订单状态\",\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:39:17', 16);
+INSERT INTO `sys_oper_log` VALUES (489, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00003\"', 0, NULL, '2025-10-21 17:46:20', 53);
+INSERT INTO `sys_oper_log` VALUES (490, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"深圳市南山区科技园南区W1-A栋\",\"clientCode\":\"C00003\",\"clientDesc\":\"测试\",\"clientEn\":\"Xiaoming Tech Co., Ltd\",\"clientId\":2,\"clientName\":\"小明科技有限公司\",\"clientNick\":\"小明科技\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"李明\",\"contact1Emal\":\"liming@xiaomingtech.com\",\"contact1Tel\":\"13800138001\",\"createBy\":\"system\",\"createTime\":\"2024-01-15 10:30:00\",\"creditCode\":\"91440300MA5FXXXXXX\",\"email\":\"contact@xiaomingtech.com\",\"params\":{},\"remark\":\"门户网站客户\",\"tel\":\"0755-88888888\",\"updateTime\":\"2025-10-21 17:46:34\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:46:34', 10);
+INSERT INTO `sys_oper_log` VALUES (491, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00004\"', 0, NULL, '2025-10-21 17:46:38', 10);
+INSERT INTO `sys_oper_log` VALUES (492, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"广州市天河区珠江新城商务区\",\"clientCode\":\"C00004\",\"clientDesc\":\"测试\",\"clientEn\":\"Wangfang Trading Co., Ltd\",\"clientId\":3,\"clientName\":\"王芳贸易公司\",\"clientNick\":\"王芳贸易\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"王芳\",\"contact1Emal\":\"wangfang@wangfang.com\",\"contact1Tel\":\"13900139002\",\"createBy\":\"system\",\"createTime\":\"2024-02-20 14:15:00\",\"creditCode\":\"91440100MA5GXXXXXX\",\"email\":\"info@wangfang.com\",\"params\":{},\"remark\":\"门户网站客户\",\"tel\":\"020-66666666\",\"updateTime\":\"2025-10-21 17:46:42\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:46:42', 13);
+INSERT INTO `sys_oper_log` VALUES (493, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00005\"', 0, NULL, '2025-10-21 17:46:46', 11);
+INSERT INTO `sys_oper_log` VALUES (494, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"上海市浦东新区陆家嘴金融中心\",\"clientCode\":\"C00005\",\"clientDesc\":\"测试\",\"clientEn\":\"Zhangwei Industries Group\",\"clientId\":4,\"clientName\":\"张伟实业集团\",\"clientNick\":\"张伟集团\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"张伟\",\"contact1Emal\":\"zhangwei@zhangwei.com\",\"contact1Tel\":\"13700137003\",\"createBy\":\"system\",\"createTime\":\"2024-03-10 09:45:00\",\"creditCode\":\"91310000MA5HXXXXXX\",\"email\":\"group@zhangwei.com\",\"params\":{},\"remark\":\"门户网站客户\",\"tel\":\"021-77777777\",\"updateTime\":\"2025-10-21 17:46:48\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:46:48', 16);
+INSERT INTO `sys_oper_log` VALUES (495, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00006\"', 0, NULL, '2025-10-21 17:46:56', 12);
+INSERT INTO `sys_oper_log` VALUES (496, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"北京市朝阳区经济技术开发区\",\"clientCode\":\"C00006\",\"clientDesc\":\"测试\",\"clientEn\":\"Chen Machinery Co., Ltd\",\"clientId\":5,\"clientName\":\"陈氏机械制造有限公司\",\"clientNick\":\"陈氏机械\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"陈总\",\"contact1Emal\":\"chen@chenmachinery.com\",\"contact1Tel\":\"13600136004\",\"createBy\":\"sales_rep_001\",\"createTime\":\"2024-04-05 11:20:00\",\"creditCode\":\"91110000MA5JXXXXXX\",\"email\":\"sales@chenmachinery.com\",\"params\":{},\"remark\":\"销售代表客户\",\"tel\":\"010-55555555\",\"updateTime\":\"2025-10-21 17:46:58\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:46:58', 15);
+INSERT INTO `sys_oper_log` VALUES (497, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00007\"', 0, NULL, '2025-10-21 17:47:03', 21);
+INSERT INTO `sys_oper_log` VALUES (498, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"杭州市滨江区物联网小镇\",\"clientCode\":\"C00007\",\"clientDesc\":\"测试\",\"clientEn\":\"Liu Electronics Co., Ltd\",\"clientId\":6,\"clientName\":\"刘氏电子科技有限公司\",\"clientNick\":\"刘氏电子\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"刘经理\",\"contact1Emal\":\"liu@liuelectronics.com\",\"contact1Tel\":\"13500135005\",\"createBy\":\"sales_rep_002\",\"createTime\":\"2024-05-12 13:40:00\",\"creditCode\":\"91330000MA5KXXXXXX\",\"email\":\"info@liuelectronics.com\",\"params\":{},\"remark\":\"销售代表客户\",\"tel\":\"0571-33333333\",\"updateTime\":\"2025-10-21 17:47:05\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:47:05', 15);
+INSERT INTO `sys_oper_log` VALUES (499, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00008\"', 0, NULL, '2025-10-21 17:47:10', 13);
+INSERT INTO `sys_oper_log` VALUES (500, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"成都市高新区天府软件园\",\"clientCode\":\"C00008\",\"clientDesc\":\"测试\",\"clientEn\":\"Zhao Engineering Co., Ltd\",\"clientId\":7,\"clientName\":\"赵氏工程公司\",\"clientNick\":\"赵氏工程\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"赵主任\",\"contact1Emal\":\"zhao@zhaoengineering.com\",\"contact1Tel\":\"13400134006\",\"createBy\":\"sales_rep_003\",\"createTime\":\"2024-06-18 15:30:00\",\"creditCode\":\"91510000MA5LXXXXXX\",\"email\":\"contact@zhaoengineering.com\",\"params\":{},\"remark\":\"销售代表客户\",\"tel\":\"028-22222222\",\"updateTime\":\"2025-10-21 17:47:11\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:47:11', 5);
+INSERT INTO `sys_oper_log` VALUES (501, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00009\"', 0, NULL, '2025-10-21 17:47:16', 11);
+INSERT INTO `sys_oper_log` VALUES (502, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"深圳市罗湖区深南东路5016号\",\"clientCode\":\"C00009\",\"clientDesc\":\"测试\",\"clientEn\":\"Walmart (China) Investment Co., Ltd\",\"clientId\":8,\"clientName\":\"沃尔玛（中国）投资有限公司\",\"clientNick\":\"沃尔玛\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"采购部\",\"contact1Emal\":\"purchase@walmart.cn\",\"contact1Tel\":\"0755-11111112\",\"createBy\":\"edi_system\",\"createTime\":\"2024-07-01 08:00:00\",\"creditCode\":\"914403007152XXXXXX\",\"email\":\"procurement@walmart.cn\",\"params\":{},\"remark\":\"EDI客户\",\"tel\":\"0755-11111111\",\"updateTime\":\"2025-10-21 17:47:19\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:47:19', 5);
+INSERT INTO `sys_oper_log` VALUES (503, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00010\"', 0, NULL, '2025-10-21 17:47:23', 11);
+INSERT INTO `sys_oper_log` VALUES (504, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"上海市闵行区吴中路1599号\",\"clientCode\":\"C00010\",\"clientDesc\":\"测试\",\"clientEn\":\"Costco (China) Investment Co., Ltd\",\"clientId\":9,\"clientName\":\"好市多（中国）投资有限公司\",\"clientNick\":\"好市多\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"采购经理\",\"contact1Emal\":\"buying@costco.cn\",\"contact1Tel\":\"021-44444445\",\"createBy\":\"edi_system\",\"createTime\":\"2024-08-15 09:15:00\",\"creditCode\":\"913100008888XXXXXX\",\"email\":\"buying@costco.cn\",\"params\":{},\"remark\":\"EDI客户\",\"tel\":\"021-44444444\",\"updateTime\":\"2025-10-21 17:47:25\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:47:25', 5);
+INSERT INTO `sys_oper_log` VALUES (505, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/CLIENT_CODE', '127.0.0.1', '内网IP', '{}', '\"C00011\"', 0, NULL, '2025-10-21 17:47:27', 21);
+INSERT INTO `sys_oper_log` VALUES (506, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"北京市朝阳区霄云路甲26号\",\"clientCode\":\"C00011\",\"clientDesc\":\"测试\",\"clientEn\":\"Carrefour (China) Investment Co., Ltd\",\"clientId\":10,\"clientName\":\"家乐福（中国）投资有限公司\",\"clientNick\":\"家乐福\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"供应链经理\",\"contact1Emal\":\"supplychain@carrefour.cn\",\"contact1Tel\":\"010-99999998\",\"createBy\":\"edi_system\",\"createTime\":\"2024-09-20 10:30:00\",\"creditCode\":\"911100009999XXXXXX\",\"email\":\"procurement@carrefour.cn\",\"params\":{},\"remark\":\"EDI客户\",\"tel\":\"010-99999999\",\"updateTime\":\"2025-10-21 17:47:33\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:47:33', 4);
+INSERT INTO `sys_oper_log` VALUES (507, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"待审核\",\"dictSort\":2,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"PENDING_REVIEW\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:53:13', 17);
+INSERT INTO `sys_oper_log` VALUES (508, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:18:40\",\"default\":false,\"dictCode\":173,\"dictLabel\":\"已确认\",\"dictSort\":3,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"CONFIRMED\",\"isDefault\":\"N\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:53:17', 17);
+INSERT INTO `sys_oper_log` VALUES (509, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:19:02\",\"default\":false,\"dictCode\":174,\"dictLabel\":\"已取消\",\"dictSort\":4,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"CANCELLED\",\"isDefault\":\"N\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:53:20', 16);
+INSERT INTO `sys_oper_log` VALUES (510, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 17:53:13\",\"default\":false,\"dictCode\":181,\"dictLabel\":\"待审核\",\"dictSort\":2,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"PENDING_REVIEW\",\"isDefault\":\"N\",\"listClass\":\"info\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:53:28', 18);
+INSERT INTO `sys_oper_log` VALUES (511, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"信用状态\",\"dictType\":\"so_credit_status\",\"params\":{},\"remark\":\"信用状态\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:55:40', 5);
+INSERT INTO `sys_oper_log` VALUES (512, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"待检查\",\"dictSort\":1,\"dictType\":\"so_credit_status\",\"dictValue\":\"NOT_CHECKED\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:56:09', 17);
+INSERT INTO `sys_oper_log` VALUES (513, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已检查\",\"dictSort\":2,\"dictType\":\"so_credit_status\",\"dictValue\":\"CHECKED_OK\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:56:27', 6);
+INSERT INTO `sys_oper_log` VALUES (514, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已锁定\",\"dictSort\":3,\"dictType\":\"so_credit_status\",\"dictValue\":\"CHECKED_BLOCKED\",\"listClass\":\"danger\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:56:43', 16);
+INSERT INTO `sys_oper_log` VALUES (515, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"订单状态\",\"dictType\":\"so_order_status\",\"params\":{},\"remark\":\"订单状态\",\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:57:36', 5);
+INSERT INTO `sys_oper_log` VALUES (516, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"部分履行\",\"dictSort\":0,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"PARTIALLY_FULFILLED\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 17:59:46', 6);
+INSERT INTO `sys_oper_log` VALUES (517, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 17:59:46\",\"default\":false,\"dictCode\":185,\"dictLabel\":\"部分履行\",\"dictSort\":4,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"PARTIALLY_FULFILLED\",\"isDefault\":\"N\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 18:00:05', 5);
+INSERT INTO `sys_oper_log` VALUES (518, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已履行\",\"dictSort\":5,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"FULFILLED\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 18:00:28', 6);
+INSERT INTO `sys_oper_log` VALUES (519, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已关闭\",\"dictSort\":6,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"CLOSED\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 18:00:51', 16);
+INSERT INTO `sys_oper_log` VALUES (520, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-10-21 15:19:02\",\"default\":false,\"dictCode\":174,\"dictLabel\":\"已取消\",\"dictSort\":7,\"dictType\":\"so_customer_order_status\",\"dictValue\":\"CANCELLED\",\"isDefault\":\"N\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 18:01:01', 5);
+INSERT INTO `sys_oper_log` VALUES (521, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"orderheader\",\"className\":\"SoSalesOrderHeader\",\"columns\":[{\"capJavaField\":\"SoId\",\"columnComment\":\"销售订单ID\",\"columnId\":327,\"columnName\":\"so_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"soId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 17:34:18\",\"usableColumn\":false},{\"capJavaField\":\"SoNo\",\"columnComment\":\"销售订单编号\",\"columnId\":328,\"columnName\":\"so_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"soNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 17:34:18\",\"usableColumn\":false},{\"capJavaField\":\"CoId\",\"columnComment\":\"来源客户订单\",\"columnId\":329,\"columnName\":\"co_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-10-21 11:41:35\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"coId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":17,\"updateBy\":\"\",\"updateTime\":\"2025-10-21 17:34:18\",\"usableColumn\":false},{\"capJavaField\":\"ClientId\",\"columnComment\":\"来源客户ID\",\"columnId\":409,\"columnName\":\"client_id\",\"columnType\":\"bigint\",\"createBy\":\"\",\"createTime\":\"2025-10-21 15:01:02\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-21 18:01:31', 49);
 
 -- ----------------------------
 -- Table structure for sys_post
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_post`;
 CREATE TABLE `sys_post`  (
-  `post_id` bigint NOT NULL AUTO_INCREMENT COMMENT '岗位ID',
+  `post_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '岗位ID',
   `post_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位编码',
   `post_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位名称',
-  `post_sort` int NOT NULL COMMENT '显示顺序',
+  `post_sort` int(0) NOT NULL COMMENT '显示顺序',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '状态（0正常 1停用）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_post
@@ -2574,22 +2985,22 @@ INSERT INTO `sys_post` VALUES (5, 'technology', '技术人员', 5, '0', 'admin',
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role`;
 CREATE TABLE `sys_role`  (
-  `role_id` bigint NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+  `role_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '角色ID',
   `role_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色名称',
   `role_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色权限字符串',
-  `role_sort` int NOT NULL COMMENT '显示顺序',
+  `role_sort` int(0) NOT NULL COMMENT '显示顺序',
   `data_scope` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '1' COMMENT '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）',
   `menu_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
   `dept_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '部门树选择项是否关联显示',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role
@@ -2602,10 +3013,10 @@ INSERT INTO `sys_role` VALUES (2, '普通角色', 'common', 2, '2', 1, 1, '0', '
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_dept`;
 CREATE TABLE `sys_role_dept`  (
-  `role_id` bigint NOT NULL COMMENT '角色ID',
-  `dept_id` bigint NOT NULL COMMENT '部门ID',
+  `role_id` bigint(0) NOT NULL COMMENT '角色ID',
+  `dept_id` bigint(0) NOT NULL COMMENT '部门ID',
   PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role_dept
@@ -2626,10 +3037,10 @@ INSERT INTO `sys_role_dept` VALUES (2, 109);
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_menu`;
 CREATE TABLE `sys_role_menu`  (
-  `role_id` bigint NOT NULL COMMENT '角色ID',
-  `menu_id` bigint NOT NULL COMMENT '菜单ID',
+  `role_id` bigint(0) NOT NULL COMMENT '角色ID',
+  `menu_id` bigint(0) NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -2742,8 +3153,8 @@ INSERT INTO `sys_role_menu` VALUES (2, 2036);
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE `sys_user`  (
-  `user_id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
-  `dept_id` bigint NULL DEFAULT NULL COMMENT '部门ID',
+  `user_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+  `dept_id` bigint(0) NULL DEFAULT NULL COMMENT '部门ID',
   `user_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户账号',
   `nick_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户昵称',
   `user_type` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '00' COMMENT '用户类型（00系统用户）',
@@ -2755,20 +3166,20 @@ CREATE TABLE `sys_user`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `login_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
-  `pwd_update_date` datetime NULL DEFAULT NULL COMMENT '密码最后更新时间',
+  `login_date` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
+  `pwd_update_date` datetime(0) NULL DEFAULT NULL COMMENT '密码最后更新时间',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 101 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-10-20 00:23:47', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-10-20 00:23:46', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-10-21 17:26:33', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-10-21 17:26:33', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-09-19 11:54:15', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-09-19 11:54:15', '测试员');
 INSERT INTO `sys_user` VALUES (100, 103, 'xiaowang', 'xiaowang', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', '', NULL, NULL);
 
@@ -2777,10 +3188,10 @@ INSERT INTO `sys_user` VALUES (100, 103, 'xiaowang', 'xiaowang', '00', '', '', '
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_post`;
 CREATE TABLE `sys_user_post`  (
-  `user_id` bigint NOT NULL COMMENT '用户ID',
-  `post_id` bigint NOT NULL COMMENT '岗位ID',
+  `user_id` bigint(0) NOT NULL COMMENT '用户ID',
+  `post_id` bigint(0) NOT NULL COMMENT '岗位ID',
   PRIMARY KEY (`user_id`, `post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_post
@@ -2793,10 +3204,10 @@ INSERT INTO `sys_user_post` VALUES (2, 2);
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_role`;
 CREATE TABLE `sys_user_role`  (
-  `user_id` bigint NOT NULL COMMENT '用户ID',
-  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `user_id` bigint(0) NOT NULL COMMENT '用户ID',
+  `role_id` bigint(0) NOT NULL COMMENT '角色ID',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -2810,26 +3221,26 @@ INSERT INTO `sys_user_role` VALUES (100, 2);
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_warehouse`;
 CREATE TABLE `wm_warehouse`  (
-  `warehouse_id` bigint NOT NULL AUTO_INCREMENT COMMENT '仓库ID',
+  `warehouse_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '仓库ID',
   `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '仓库编码',
   `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '仓库名称',
   `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '位置',
   `area` double(12, 2) NULL DEFAULT NULL COMMENT '面积',
   `manager` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '负责人',
-  `manager_id` bigint NULL DEFAULT NULL COMMENT 'user_id',
+  `manager_id` bigint(0) NULL DEFAULT NULL COMMENT 'user_id',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
-  `status` int NULL DEFAULT NULL COMMENT '仓库状态',
+  `status` int(0) NULL DEFAULT NULL COMMENT '仓库状态',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`warehouse_id`) USING BTREE,
-  UNIQUE INDEX `uk_warehouse_code`(`warehouse_code` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = DYNAMIC;
+  UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_warehouse

@@ -311,7 +311,7 @@
 </template>
 
 <script setup name="BomForm">
-import { getBom, addBom, updateBom, listBomDetails } from "@/api/core/bd/bom"
+import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail } from "@/api/core/bd/bom"
 import { listMaterial, getMaterial } from "@/api/core/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/core/bd/category"
 import { useRouter, useRoute } from 'vue-router'
@@ -488,7 +488,6 @@ function getMaterialNameById(materialId) {
 function getMaterialList() {
   materialLoading.value = true
   
-  // 构造查询参数，完全控制参数的传递
   const params = {}
   
   // 添加基础参数
@@ -498,11 +497,13 @@ function getMaterialList() {
   if (materialQueryParams.value.materialName) params.materialName = materialQueryParams.value.materialName
   if (materialQueryParams.value.categoryId) params.categoryId = materialQueryParams.value.categoryId
   
-  // 特别处理categoryIds参数
+  // 只显示启用状态的物料 (status = 1)
+  params.status = 1
+
+  // 处理 categoryIds 参数
   if (materialQueryParams.value.categoryIds && 
       Array.isArray(materialQueryParams.value.categoryIds) && 
       materialQueryParams.value.categoryIds.length > 0) {
-    // 确保所有ID都是数字类型
     const validCategoryIds = materialQueryParams.value.categoryIds
       .map(id => Number(id))
       .filter(id => !isNaN(id) && id > 0)
@@ -512,11 +513,15 @@ function getMaterialList() {
     }
   }
   
-  console.log('发送物料查询参数:', params) // 调试用
+  console.log('发送物料查询参数:', params)
   
   listMaterial(params).then(response => {
-    materialList.value = response.rows
-    materialTotal.value = response.total
+    // 更宽松的状态过滤，处理字符串和数字类型
+    const enabledMaterials = response.rows.filter(material => {
+      return String(material.status) === '1' || material.status === 1;
+    });
+    materialList.value = enabledMaterials
+    materialTotal.value = enabledMaterials.length
     materialLoading.value = false
   }).catch((error) => {
     console.error('获取物料列表失败:', error)
@@ -596,31 +601,149 @@ function handleSave() {
   formRef.value.validate(valid => {
     if (valid) {
       if (form.value.bomId) {
-        updateBom(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          handleClose()
-        })
+        // 更新BOM主表和子表
+        updateBomAndDetails();
       } else {
-        addBom(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          handleClose()
-        })
+        // 新增BOM主表和子表
+        addBomAndDetails();
       }
     }
   })
 }
 
+// 新增BOM主表和子表数据
+function addBomAndDetails() {
+  // 先保存主表
+  addBom(form.value).then(response => {
+    const bomId = response.data.bomId; // 获取新创建的BOM ID
+    proxy.$modal.msgSuccess("主表新增成功");
+    
+    // 保存子表数据
+    saveBomDetails(bomId).then(() => {
+      proxy.$modal.msgSuccess("子表保存成功");
+      handleClose();
+    }).catch(error => {
+      console.error("保存子表失败:", error);
+      proxy.$modal.msgError("子表保存失败");
+    });
+  }).catch(error => {
+    console.error("新增主表失败:", error);
+    proxy.$modal.msgError("主表新增失败");
+  });
+}
+
+// 更新BOM主表和子表数据
+function updateBomAndDetails() {
+  // 先更新主表
+  updateBom(form.value).then(response => {
+    proxy.$modal.msgSuccess("主表修改成功");
+    
+    // 保存子表数据
+    saveBomDetails(form.value.bomId).then(() => {
+      proxy.$modal.msgSuccess("子表保存成功");
+      handleClose();
+    }).catch(error => {
+      console.error("保存子表失败:", error);
+      proxy.$modal.msgError("子表保存失败");
+    });
+  }).catch(error => {
+    console.error("更新主表失败:", error);
+    proxy.$modal.msgError("主表更新失败");
+  });
+}
+
+// 保存BOM明细数据的通用方法
+function saveBomDetails(bomId) {
+  // 过滤掉空行数据
+  const validMaterialItems = materialItems.value.filter(item => 
+    item.childMaterialId && item.childMaterialName
+  );
+  
+  if (form.value.bomId) {
+    // 更新操作：获取现有明细，决定是更新还是新增
+    return listBomDetails(bomId).then(response => {
+      const existingDetails = response.rows || [];
+      
+      // 需要新增的明细
+      const newDetails = validMaterialItems.filter(item => !item.detailId);
+      
+      // 需要更新的明细
+      const updateDetails = validMaterialItems.filter(item => item.detailId);
+      
+      // 需要删除的明细（在现有明细中但不在当前列表中的）
+      const currentDetailIds = validMaterialItems
+        .filter(item => item.detailId)
+        .map(item => item.detailId);
+      const deleteDetailIds = existingDetails
+        .filter(detail => !currentDetailIds.includes(detail.detailId))
+        .map(detail => detail.detailId);
+      
+      // 创建所有操作的Promise
+      const promises = [];
+      
+      // 删除不需要的明细
+      deleteDetailIds.forEach(detailId => {
+        if (detailId) {
+          promises.push(delBomDetail(detailId));
+        }
+      });
+      
+      // 更新现有明细
+      updateDetails.forEach(item => {
+        const detailData = {
+          ...item,
+          bomId: bomId
+        };
+        // 确保传入正确的参数格式
+        if (item.detailId) {
+          promises.push(updateBomDetail(detailData));
+        }
+      });
+      
+      // 新增新的明细
+      newDetails.forEach(item => {
+        const detailData = {
+          ...item,
+          bomId: bomId
+        };
+        // 删除 detailId 字段，因为是新增操作
+        delete detailData.detailId;
+        promises.push(addBomDetail(detailData));
+      });
+      
+      return Promise.all(promises);
+    });
+  } else {
+    // 新增操作：直接添加明细数据
+    const addPromises = validMaterialItems.map(item => {
+      const detailData = {
+        ...item,
+        bomId: bomId
+      };
+      // 删除 detailId 字段，因为是新增操作
+      delete detailData.detailId;
+      return addBomDetail(detailData);
+    });
+    return Promise.all(addPromises);
+  }
+}
+
 // 关闭按钮
 function handleClose() {
-  router.push('/core/bd/bom')
+  //router.push('/core/bd/bom')
+  const obj = { path: '/core/bd/bom' }
+  proxy.$tab.closeOpenPage(obj)
 }
 
 // 获取物料分类树
 function getCategoryTree() {
-  listCategory().then(response => {
+  // 确保分类树也只获取启用状态的分类
+  listCategory({ status: 1 }).then(response => {
     // 处理分类树数据，确保数据结构符合 el-tree 要求
     const treeData = proxy.handleTree(response.rows, "categoryId", "parentId");
     categoryTree.value = treeData;
+    
+    console.log('分类树数据:', treeData);
   }).catch(error => {
     console.error('获取物料分类失败:', error)
     proxy.$modal.msgError("获取物料分类失败")
@@ -629,9 +752,8 @@ function getCategoryTree() {
 
 // 处理物料分类节点点击 - 使用getAllChildrenIds接口返回的物料数据
 function handleCategoryNodeClick(data) {
-  console.log('点击的分类数据:', data) // 调试用
+  console.log('点击的分类数据:', data)
   
-  // 确保传给getAllChildrenIds的是数字类型的ID
   const categoryId = Number(data.id || data.categoryId)
   
   if (isNaN(categoryId) || categoryId <= 0) {
@@ -640,54 +762,33 @@ function handleCategoryNodeClick(data) {
     return
   }
   
-  console.log('传递给getAllChildrenIds的参数:', categoryId) // 调试用
-  
-  // 使用getAllChildrenIds方法获取分类信息和物料数据
   materialLoading.value = true
   getAllChildrenIds(categoryId).then(response => {
-    console.log('getAllChildrenIds响应:', response) // 调试用
+    console.log('getAllChildrenIds响应:', response)
     
     if (response.code === 200) {
-      // 检查响应中是否包含物料数据
-      if (response.data && response.data.materials && Array.isArray(response.data.materials)) {
-        // 直接使用接口返回的物料数据
-        materialList.value = response.data.materials
-        materialTotal.value = response.data.materials.length
-        materialLoading.value = false
-      } else {
-        // 如果没有返回物料数据，则构造categoryIds数组并调用listMaterial
-        const categoryIds = []
-        categoryIds.push(categoryId)
-        
-        // 添加所有子分类ID
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-          response.data.forEach(id => {
-            const childId = Number(id)
-            if (!isNaN(childId) && childId > 0 && !categoryIds.includes(childId)) {
-              categoryIds.push(childId)
-            }
-          })
-        }
-        
-        console.log('构造的categoryIds数组:', categoryIds) // 调试用
-        
-        // 调用物料列表接口
-        const params = {
-          pageNum: 1,
-          pageSize: 9999, // 获取所有数据
-          categoryIds: categoryIds
-        }
-        
-        listMaterial(params).then(materialResponse => {
-          materialList.value = materialResponse.rows
-          materialTotal.value = materialResponse.total
-          materialLoading.value = false
-        }).catch(error => {
-          console.error('获取物料列表失败:', error)
-          materialLoading.value = false
-          proxy.$modal.msgError("获取物料列表失败")
-        })
+      let allMaterials = [];
+      
+      // 处理不同可能的数据结构
+      if (response.data && Array.isArray(response.data)) {
+        // 直接是物料数组
+        allMaterials = response.data;
+      } else if (response.data && response.data.materials && Array.isArray(response.data.materials)) {
+        // 包含在materials字段中
+        allMaterials = response.data.materials;
       }
+      
+      // 过滤启用状态的物料（更宽松的比较）
+      const enabledMaterials = allMaterials.filter(material => {
+        return String(material.status) === '1' || material.status === 1;
+      });
+      
+      console.log('过滤前物料数量:', allMaterials.length);
+      console.log('过滤后物料数量:', enabledMaterials.length);
+      
+      materialList.value = enabledMaterials
+      materialTotal.value = enabledMaterials.length
+      materialLoading.value = false
     } else {
       proxy.$modal.msgError("获取分类信息失败: " + response.msg)
       materialLoading.value = false
@@ -698,6 +799,7 @@ function handleCategoryNodeClick(data) {
     materialLoading.value = false
   })
 }
+
 
 // 添加分类树过滤方法
 function filterCategoryNode(value, data) {

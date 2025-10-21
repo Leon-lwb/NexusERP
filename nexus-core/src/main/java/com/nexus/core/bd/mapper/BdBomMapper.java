@@ -70,6 +70,14 @@ public interface BdBomMapper extends BaseMapper<BdBom> {
     int insertBomDetail(BomDetailDTO bomDetailDTO);
     
     /**
+     * 修改BOM明细
+     *
+     * @param bomDetailDTO BOM明细DTO
+     * @return 修改结果
+     */
+    int updateBomDetail(BomDetailDTO bomDetailDTO);
+    
+    /**
      * 根据明细ID查询BOM明细
      *
      * @param detailId 明细ID

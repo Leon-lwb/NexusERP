@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px">
                   <el-form-item label="BOM名称" prop="bomName">
                     <el-input
                         v-model="queryParams.bomName"
@@ -456,6 +456,9 @@ import { debounce } from 'lodash'
     if (materialQueryParams.value.materialCode) params.materialCode = materialQueryParams.value.materialCode
     if (materialQueryParams.value.materialName) params.materialName = materialQueryParams.value.materialName
     
+    // 只显示启用状态的物料 (status = 1)
+    params.status = 1
+
     console.log('发送物料查询参数:', params) // 调试用
     
     listMaterial(params).then(response => {
@@ -623,15 +626,16 @@ import { debounce } from 'lodash'
 
   // 获取物料分类树
   function getCategoryTree() {
-    listCategory().then(response => {
-      // 处理分类树数据，确保数据结构符合 el-tree 要求
-      const treeData = proxy.handleTree(response.rows, "categoryId", "parentId");
-      categoryTree.value = treeData;
-    }).catch(error => {
-      console.error('获取物料分类失败:', error)
-      proxy.$modal.msgError("获取物料分类失败")
-    })
-  }
+  // 只获取启用状态的分类 (status = 1)
+  listCategory({ status: 1 }).then(response => {
+    // 处理分类树数据，确保数据结构符合 el-tree 要求
+    const treeData = proxy.handleTree(response.rows, "categoryId", "parentId");
+    categoryTree.value = treeData;
+  }).catch(error => {
+    console.error('获取物料分类失败:', error)
+    proxy.$modal.msgError("获取物料分类失败")
+  })
+}
 
   // 处理物料分类节点点击 - 使用getAllChildrenIds接口返回的物料数据
   function handleCategoryNodeClick(data) {
@@ -650,60 +654,62 @@ import { debounce } from 'lodash'
     
     // 使用getAllChildrenIds方法获取分类信息和物料数据
     materialLoading.value = true
-    getAllChildrenIds(categoryId).then(response => {
-      console.log('getAllChildrenIds响应:', response) // 调试用
-      
-      if (response.code === 200) {
-        // 检查响应中是否包含物料数据
-        if (response.data && response.data.materials && Array.isArray(response.data.materials)) {
-          // 直接使用接口返回的物料数据
-          materialList.value = response.data.materials
-          materialTotal.value = response.data.materials.length
-          materialLoading.value = false
-        } else {
-          // 如果没有返回物料数据，则构造categoryIds数组并调用listMaterial
-          const categoryIds = []
-          categoryIds.push(categoryId)
-          
-          // 添加所有子分类ID
-          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-            response.data.forEach(id => {
-              const childId = Number(id)
-              if (!isNaN(childId) && childId > 0 && !categoryIds.includes(childId)) {
-                categoryIds.push(childId)
-              }
-            })
-          }
-          
-          console.log('构造的categoryIds数组:', categoryIds) // 调试用
-          
-          // 调用物料列表接口
-          const params = {
-            pageNum: 1,
-            pageSize: 9999, // 获取所有数据
-            categoryIds: categoryIds
-          }
-          
-          listMaterial(params).then(materialResponse => {
-            materialList.value = materialResponse.rows
-            materialTotal.value = materialResponse.total
-            materialLoading.value = false
-          }).catch(error => {
-            console.error('获取物料列表失败:', error)
-            materialLoading.value = false
-            proxy.$modal.msgError("获取物料列表失败")
+  getAllChildrenIds(categoryId).then(response => {
+    console.log('getAllChildrenIds响应:', response) // 调试用
+    
+    if (response.code === 200) {
+      // 检查响应中是否包含物料数据
+      if (response.data && response.data.materials && Array.isArray(response.data.materials)) {
+        // 只显示启用状态的物料 (status = 1)
+        const enabledMaterials = response.data.materials.filter(material => material.status === 1);
+        materialList.value = enabledMaterials
+        materialTotal.value = enabledMaterials.length
+        materialLoading.value = false
+      } else {
+        // 如果没有返回物料数据，则构造categoryIds数组并调用listMaterial
+        const categoryIds = []
+        categoryIds.push(categoryId)
+        
+        // 添加所有子分类ID
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          response.data.forEach(id => {
+            const childId = Number(id)
+            if (!isNaN(childId) && childId > 0 && !categoryIds.includes(childId)) {
+              categoryIds.push(childId)
+            }
           })
         }
-      } else {
-        proxy.$modal.msgError("获取分类信息失败: " + response.msg)
-        materialLoading.value = false
+        
+        console.log('构造的categoryIds数组:', categoryIds) // 调试用
+        
+        // 调用物料列表接口，只获取启用状态的物料
+        const params = {
+          pageNum: 1,
+          pageSize: 9999, // 获取所有数据
+          categoryIds: categoryIds,
+          status: 1 // 只显示启用状态的物料
+        }
+        
+        listMaterial(params).then(materialResponse => {
+          materialList.value = materialResponse.rows
+          materialTotal.value = materialResponse.total
+          materialLoading.value = false
+        }).catch(error => {
+          console.error('获取物料列表失败:', error)
+          materialLoading.value = false
+          proxy.$modal.msgError("获取物料列表失败")
+        })
       }
-    }).catch(error => {
-      console.error('获取分类信息异常:', error)
-      proxy.$modal.msgError("请求出现异常: " + error.message)
+    } else {
+      proxy.$modal.msgError("获取分类信息失败: " + response.msg)
       materialLoading.value = false
-    })
-  }
+    }
+  }).catch(error => {
+    console.error('获取分类信息异常:', error)
+    proxy.$modal.msgError("请求出现异常: " + error.message)
+    materialLoading.value = false
+  })
+}
 
   // 添加分类树过滤方法
   function filterCategoryNode(value, data) {
