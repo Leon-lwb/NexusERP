@@ -63,7 +63,7 @@ private static final long serialVersionUID = 1L;
     @Excel(name = "订单来源")
     private String sourceChannel;
     /** 预留字段1 */
-    private String attr1;
+    private String clientCode;
     /** 预留字段2 */
     private String attr2;
     /** 预留字段3 */

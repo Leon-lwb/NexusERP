@@ -150,12 +150,12 @@ public class VelocityUtils
         }
         else if (GenConstants.TPL_TREE.equals(tplCategory))
         {
-            templates.add(useWebType + "/index-tree.vue.vm");
+            templates.add(useWebType + "/index-tree_plus.vue.vm");
         }
         else if (GenConstants.TPL_SUB.equals(tplCategory))
         {
-            templates.add(useWebType + "/index.vue.vm");
-            templates.add("vm/java/sub-domain.java.vm");
+            templates.add(useWebType + "/index_plus.vue.vm");
+            templates.add("vm/java/sub-domain_plus.java.vm");
         }
         return templates;
     }
@@ -184,7 +184,7 @@ public class VelocityUtils
         {
             fileName = StringUtils.format("{}/domain/{}.java", javaPath, className);
         }
-        if (template.contains("sub-domain.java.vm") && StringUtils.equals(GenConstants.TPL_SUB, genTable.getTplCategory()))
+        if (template.contains("sub-domain_plus.java.vm") && StringUtils.equals(GenConstants.TPL_SUB, genTable.getTplCategory()))
         {
             fileName = StringUtils.format("{}/domain/{}.java", javaPath, genTable.getSubTable().getClassName());
         }

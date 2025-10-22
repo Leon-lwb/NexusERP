@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.so.mapper.SoSalesOrderHeaderMapper">
+
+    <resultMap type="SoSalesOrderHeader" id="SoSalesOrderHeaderResult">
+            <result property="soId"    column="so_id"    />
+            <result property="soNo"    column="so_no"    />
+            <result property="coId"    column="co_id"    />
+            <result property="clientId"    column="client_id"    />
+            <result property="salesRepId"    column="sales_rep_id"    />
+            <result property="orderDate"    column="order_date"    />
+            <result property="promiseDate"    column="promise_date"    />
+            <result property="requestedDate"    column="requested_date"    />
+            <result property="deliveryAddressId"    column="delivery_address_id"    />
+            <result property="invoiceAddressId"    column="invoice_address_id"    />
+            <result property="deliveryAddress"    column="delivery_address"    />
+            <result property="invoiceAddress"    column="invoice_address"    />
+            <result property="paymentTerms"    column="payment_terms"    />
+            <result property="currency"    column="currency"    />
+            <result property="exchangeRate"    column="exchange_rate"    />
+            <result property="totalAmount"    column="total_amount"    />
+            <result property="taxAmount"    column="tax_amount"    />
+            <result property="discountAmount"    column="discount_amount"    />
+            <result property="discountRate"    column="discount_rate"    />
+            <result property="creditStatus"    column="credit_status"    />
+            <result property="creditCheckTime"    column="credit_check_time"    />
+            <result property="creditBlockedBy"    column="credit_blocked_by"    />
+            <result property="orderStatus"    column="order_status"    />
+            <result property="projectId"    column="project_id"    />
+            <result property="isPaEnabled"    column="is_pa_enabled"    />
+            <result property="confirmedTime"    column="confirmed_time"    />
+            <result property="fulfilledTime"    column="fulfilled_time"    />
+            <result property="closedTime"    column="closed_time"    />
+            <result property="cancelledTime"    column="cancelled_time"    />
+            <result property="cancelledReason"    column="cancelled_reason"    />
+            <result property="salesOrgId"    column="sales_org_id"    />
+            <result property="distributionChannel"    column="distribution_channel"    />
+            <result property="customerRefNo"    column="customer_ref_no"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+        <resultMap id="SoSalesOrderHeaderSoSalesOrderLineResult" type="SoSalesOrderHeader" extends="SoSalesOrderHeaderResult">
+            <collection property="soSalesOrderLineList" ofType="SoSalesOrderLine" column="so_id" select="selectSoSalesOrderLineList" />
+        </resultMap>
+
+        <resultMap type="SoSalesOrderLine" id="SoSalesOrderLineResult">
+                <result property="lineId"    column="line_id"    />
+                <result property="soId"    column="so_id"    />
+                <result property="lineNo"    column="line_no"    />
+                <result property="materialId"    column="material_id"    />
+                <result property="materialCode"    column="material_code"    />
+                <result property="materialName"    column="material_name"    />
+                <result property="materialSpec"    column="material_spec"    />
+                <result property="orderedQty"    column="ordered_qty"    />
+                <result property="deliveredQty"    column="delivered_qty"    />
+                <result property="unit"    column="unit"    />
+                <result property="unitPrice"    column="unit_price"    />
+                <result property="lineAmount"    column="line_amount"    />
+                <result property="taxRate"    column="tax_rate"    />
+                <result property="taxAmount"    column="tax_amount"    />
+                <result property="discountPercent"    column="discount_percent"    />
+                <result property="discountAmount"    column="discount_amount"    />
+                <result property="requestedDate"    column="requested_date"    />
+                <result property="promiseDate"    column="promise_date"    />
+                <result property="fulfilledQty"    column="fulfilled_qty"    />
+                <result property="productionQty"    column="production_qty"    />
+                <result property="purchaseQty"    column="purchase_qty"    />
+                <result property="reservedQty"    column="reserved_qty"    />
+                <result property="lineStatus"    column="line_status"    />
+                <result property="linkedMoId"    column="linked_mo_id"    />
+                <result property="linkedPoId"    column="linked_po_id"    />
+                <result property="reservedBatchNo"    column="reserved_batch_no"    />
+                <result property="reservedSerials"    column="reserved_serials"    />
+                <result property="paGroupId"    column="pa_group_id"    />
+                <result property="warehouseId"    column="warehouse_id"    />
+                <result property="deliveryPriority"    column="delivery_priority"    />
+                <result property="customerLineRef"    column="customer_line_ref"    />
+                <result property="sortOrder"    column="sort_order"    />
+                <result property="remark"    column="remark"    />
+                <result property="attr1"    column="attr1"    />
+                <result property="attr2"    column="attr2"    />
+                <result property="attr3"    column="attr3"    />
+                <result property="attr4"    column="attr4"    />
+                <result property="createBy"    column="create_by"    />
+                <result property="createTime"    column="create_time"    />
+                <result property="updateBy"    column="update_by"    />
+                <result property="updateTime"    column="update_time"    />
+        </resultMap>
+
+    <sql id="selectSoSalesOrderHeaderVo">
+        select so_id, so_no, co_id, client_id, sales_rep_id, order_date, promise_date, requested_date, delivery_address_id, invoice_address_id, delivery_address, invoice_address, payment_terms, currency, exchange_rate, total_amount, tax_amount, discount_amount, discount_rate, credit_status, credit_check_time, credit_blocked_by, order_status, project_id, is_pa_enabled, confirmed_time, fulfilled_time, closed_time, cancelled_time, cancelled_reason, sales_org_id, distribution_channel, customer_ref_no, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from so_sales_order_header
+    </sql>
+
+    <select id="selectSoSalesOrderHeaderList" parameterType="SoSalesOrderHeader" resultMap="SoSalesOrderHeaderResult">
+        <include refid="selectSoSalesOrderHeaderVo"/>
+        <where>
+                        <if test="soNo != null  and soNo != ''"> and so_no = #{soNo}</if>
+                        <if test="coId != null "> and co_id = #{coId}</if>
+                        <if test="clientId != null "> and client_id = #{clientId}</if>
+                        <if test="salesRepId != null "> and sales_rep_id = #{salesRepId}</if>
+                        <if test="orderDate != null "> and order_date = #{orderDate}</if>
+                        <if test="promiseDate != null "> and promise_date = #{promiseDate}</if>
+                        <if test="requestedDate != null "> and requested_date = #{requestedDate}</if>
+                        <if test="creditStatus != null  and creditStatus != ''"> and credit_status = #{creditStatus}</if>
+                        <if test="creditBlockedBy != null "> and credit_blocked_by = #{creditBlockedBy}</if>
+                        <if test="orderStatus != null  and orderStatus != ''"> and order_status = #{orderStatus}</if>
+                        <if test="projectId != null "> and project_id = #{projectId}</if>
+        </where>
+    </select>
+
+    <select id="selectSoSalesOrderHeaderBySoId" parameterType="Long" resultMap="SoSalesOrderHeaderSoSalesOrderLineResult">
+            select so_id, so_no, co_id, client_id, sales_rep_id, order_date, promise_date, requested_date, delivery_address_id, invoice_address_id, delivery_address, invoice_address, payment_terms, currency, exchange_rate, total_amount, tax_amount, discount_amount, discount_rate, credit_status, credit_check_time, credit_blocked_by, order_status, project_id, is_pa_enabled, confirmed_time, fulfilled_time, closed_time, cancelled_time, cancelled_reason, sales_org_id, distribution_channel, customer_ref_no, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time
+            from so_sales_order_header
+            where so_id = #{soId}
+    </select>
+
+        <select id="selectSoSalesOrderLineList" resultMap="SoSalesOrderLineResult">
+            select line_id, so_id, line_no, material_id, material_code, material_name, material_spec, ordered_qty, delivered_qty, unit, unit_price, line_amount, tax_rate, tax_amount, discount_percent, discount_amount, requested_date, promise_date, fulfilled_qty, production_qty, purchase_qty, reserved_qty, line_status, linked_mo_id, linked_po_id, reserved_batch_no, reserved_serials, pa_group_id, warehouse_id, delivery_priority, customer_line_ref, sort_order, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time
+            from so_sales_order_line
+            where so_id = #{so_id}
+        </select>
+
+    <insert id="insertSoSalesOrderHeader" parameterType="SoSalesOrderHeader" useGeneratedKeys="true" keyProperty="soId">
+        insert into so_sales_order_header
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="soNo != null and soNo != ''">so_no,</if>
+                    <if test="coId != null">co_id,</if>
+                    <if test="clientId != null">client_id,</if>
+                    <if test="salesRepId != null">sales_rep_id,</if>
+                    <if test="orderDate != null">order_date,</if>
+                    <if test="promiseDate != null">promise_date,</if>
+                    <if test="requestedDate != null">requested_date,</if>
+                    <if test="deliveryAddressId != null">delivery_address_id,</if>
+                    <if test="invoiceAddressId != null">invoice_address_id,</if>
+                    <if test="deliveryAddress != null">delivery_address,</if>
+                    <if test="invoiceAddress != null">invoice_address,</if>
+                    <if test="paymentTerms != null">payment_terms,</if>
+                    <if test="currency != null">currency,</if>
+                    <if test="exchangeRate != null">exchange_rate,</if>
+                    <if test="totalAmount != null">total_amount,</if>
+                    <if test="taxAmount != null">tax_amount,</if>
+                    <if test="discountAmount != null">discount_amount,</if>
+                    <if test="discountRate != null">discount_rate,</if>
+                    <if test="creditStatus != null">credit_status,</if>
+                    <if test="creditCheckTime != null">credit_check_time,</if>
+                    <if test="creditBlockedBy != null">credit_blocked_by,</if>
+                    <if test="orderStatus != null">order_status,</if>
+                    <if test="projectId != null">project_id,</if>
+                    <if test="isPaEnabled != null">is_pa_enabled,</if>
+                    <if test="confirmedTime != null">confirmed_time,</if>
+                    <if test="fulfilledTime != null">fulfilled_time,</if>
+                    <if test="closedTime != null">closed_time,</if>
+                    <if test="cancelledTime != null">cancelled_time,</if>
+                    <if test="cancelledReason != null">cancelled_reason,</if>
+                    <if test="salesOrgId != null">sales_org_id,</if>
+                    <if test="distributionChannel != null">distribution_channel,</if>
+                    <if test="customerRefNo != null">customer_ref_no,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="soNo != null and soNo != ''">#{soNo},</if>
+                    <if test="coId != null">#{coId},</if>
+                    <if test="clientId != null">#{clientId},</if>
+                    <if test="salesRepId != null">#{salesRepId},</if>
+                    <if test="orderDate != null">#{orderDate},</if>
+                    <if test="promiseDate != null">#{promiseDate},</if>
+                    <if test="requestedDate != null">#{requestedDate},</if>
+                    <if test="deliveryAddressId != null">#{deliveryAddressId},</if>
+                    <if test="invoiceAddressId != null">#{invoiceAddressId},</if>
+                    <if test="deliveryAddress != null">#{deliveryAddress},</if>
+                    <if test="invoiceAddress != null">#{invoiceAddress},</if>
+                    <if test="paymentTerms != null">#{paymentTerms},</if>
+                    <if test="currency != null">#{currency},</if>
+                    <if test="exchangeRate != null">#{exchangeRate},</if>
+                    <if test="totalAmount != null">#{totalAmount},</if>
+                    <if test="taxAmount != null">#{taxAmount},</if>
+                    <if test="discountAmount != null">#{discountAmount},</if>
+                    <if test="discountRate != null">#{discountRate},</if>
+                    <if test="creditStatus != null">#{creditStatus},</if>
+                    <if test="creditCheckTime != null">#{creditCheckTime},</if>
+                    <if test="creditBlockedBy != null">#{creditBlockedBy},</if>
+                    <if test="orderStatus != null">#{orderStatus},</if>
+                    <if test="projectId != null">#{projectId},</if>
+                    <if test="isPaEnabled != null">#{isPaEnabled},</if>
+                    <if test="confirmedTime != null">#{confirmedTime},</if>
+                    <if test="fulfilledTime != null">#{fulfilledTime},</if>
+                    <if test="closedTime != null">#{closedTime},</if>
+                    <if test="cancelledTime != null">#{cancelledTime},</if>
+                    <if test="cancelledReason != null">#{cancelledReason},</if>
+                    <if test="salesOrgId != null">#{salesOrgId},</if>
+                    <if test="distributionChannel != null">#{distributionChannel},</if>
+                    <if test="customerRefNo != null">#{customerRefNo},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSoSalesOrderHeader" parameterType="SoSalesOrderHeader">
+        update so_sales_order_header
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="soNo != null and soNo != ''">so_no = #{soNo},</if>
+                    <if test="coId != null">co_id = #{coId},</if>
+                    <if test="clientId != null">client_id = #{clientId},</if>
+                    <if test="salesRepId != null">sales_rep_id = #{salesRepId},</if>
+                    <if test="orderDate != null">order_date = #{orderDate},</if>
+                    <if test="promiseDate != null">promise_date = #{promiseDate},</if>
+                    <if test="requestedDate != null">requested_date = #{requestedDate},</if>
+                    <if test="deliveryAddressId != null">delivery_address_id = #{deliveryAddressId},</if>
+                    <if test="invoiceAddressId != null">invoice_address_id = #{invoiceAddressId},</if>
+                    <if test="deliveryAddress != null">delivery_address = #{deliveryAddress},</if>
+                    <if test="invoiceAddress != null">invoice_address = #{invoiceAddress},</if>
+                    <if test="paymentTerms != null">payment_terms = #{paymentTerms},</if>
+                    <if test="currency != null">currency = #{currency},</if>
+                    <if test="exchangeRate != null">exchange_rate = #{exchangeRate},</if>
+                    <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+                    <if test="taxAmount != null">tax_amount = #{taxAmount},</if>
+                    <if test="discountAmount != null">discount_amount = #{discountAmount},</if>
+                    <if test="discountRate != null">discount_rate = #{discountRate},</if>
+                    <if test="creditStatus != null">credit_status = #{creditStatus},</if>
+                    <if test="creditCheckTime != null">credit_check_time = #{creditCheckTime},</if>
+                    <if test="creditBlockedBy != null">credit_blocked_by = #{creditBlockedBy},</if>
+                    <if test="orderStatus != null">order_status = #{orderStatus},</if>
+                    <if test="projectId != null">project_id = #{projectId},</if>
+                    <if test="isPaEnabled != null">is_pa_enabled = #{isPaEnabled},</if>
+                    <if test="confirmedTime != null">confirmed_time = #{confirmedTime},</if>
+                    <if test="fulfilledTime != null">fulfilled_time = #{fulfilledTime},</if>
+                    <if test="closedTime != null">closed_time = #{closedTime},</if>
+                    <if test="cancelledTime != null">cancelled_time = #{cancelledTime},</if>
+                    <if test="cancelledReason != null">cancelled_reason = #{cancelledReason},</if>
+                    <if test="salesOrgId != null">sales_org_id = #{salesOrgId},</if>
+                    <if test="distributionChannel != null">distribution_channel = #{distributionChannel},</if>
+                    <if test="customerRefNo != null">customer_ref_no = #{customerRefNo},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where so_id = #{soId}
+    </update>
+
+    <delete id="deleteSoSalesOrderHeaderBySoId" parameterType="Long">
+        delete from so_sales_order_header where so_id = #{soId}
+    </delete>
+
+    <delete id="deleteSoSalesOrderHeaderBySoIds" parameterType="String">
+        delete from so_sales_order_header where so_id in
+        <foreach item="soId" collection="array" open="(" separator="," close=")">
+            #{soId}
+        </foreach>
+    </delete>
+
+        <delete id="deleteSoSalesOrderLineBySoIds" parameterType="String">
+            delete from so_sales_order_line where so_id in
+            <foreach item="soId" collection="array" open="(" separator="," close=")">
+                #{soId}
+            </foreach>
+        </delete>
+
+        <delete id="deleteSoSalesOrderLineBySoId" parameterType="Long">
+            delete from so_sales_order_line where so_id = #{soId}
+        </delete>
+
+        <insert id="batchSoSalesOrderLine">
+            insert into so_sales_order_line( line_id, so_id, line_no, material_id, material_code, material_name, material_spec, ordered_qty, delivered_qty, unit, unit_price, line_amount, tax_rate, tax_amount, discount_percent, discount_amount, requested_date, promise_date, fulfilled_qty, production_qty, purchase_qty, reserved_qty, line_status, linked_mo_id, linked_po_id, reserved_batch_no, reserved_serials, pa_group_id, warehouse_id, delivery_priority, customer_line_ref, sort_order, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time) values
+            <foreach item="item" index="index" collection="list" separator=",">
+                ( #{item.lineId}, #{item.soId}, #{item.lineNo}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, #{item.orderedQty}, #{item.deliveredQty}, #{item.unit}, #{item.unitPrice}, #{item.lineAmount}, #{item.taxRate}, #{item.taxAmount}, #{item.discountPercent}, #{item.discountAmount}, #{item.requestedDate}, #{item.promiseDate}, #{item.fulfilledQty}, #{item.productionQty}, #{item.purchaseQty}, #{item.reservedQty}, #{item.lineStatus}, #{item.linkedMoId}, #{item.linkedPoId}, #{item.reservedBatchNo}, #{item.reservedSerials}, #{item.paGroupId}, #{item.warehouseId}, #{item.deliveryPriority}, #{item.customerLineRef}, #{item.sortOrder}, #{item.remark}, #{item.attr1}, #{item.attr2}, #{item.attr3}, #{item.attr4}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
+            </foreach>
+        </insert>
+</mapper>

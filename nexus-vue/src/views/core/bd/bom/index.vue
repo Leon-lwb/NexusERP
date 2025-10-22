@@ -351,9 +351,6 @@
   </div>
 </template>
 
-我明白了！问题在于你需要使用 `getAllChildrenIds` 接口返回的物料数据，而不是调用 `listMaterial` 接口。让我修复这个问题：
-
-```vue
 <script setup name="Bom">
 import { listBom, getBom, delBom, addBom, updateBom } from "@/api/core/bd/bom"
 import { listMaterial, getMaterial } from "@/api/core/bd/material"
