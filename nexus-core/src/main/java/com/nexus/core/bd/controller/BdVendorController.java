@@ -85,7 +85,7 @@ public class BdVendorController extends BaseController
      * 修改供应商
      */
     @ApiOperation("修改供应商详细信息")
-    @PreAuthorize("@ss.hasPermi('core:vendor:edit')")
+    @PreAuthorize("@ss.hasPermi('core:vendor:edit') and @ss.hasRole('manager')")
     @Log(title = "供应商", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody BdVendor bdVendor)

@@ -67,6 +67,13 @@ public class SysLoginService
         validateCaptcha(username, code, uuid);
         // 登录前置校验
         loginPreCheck(username, password);
+        // 先检查用户是否存在
+        SysUser user = userService.selectUserByUserName(username);
+        if (user == null)
+        {
+            AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, MessageUtils.message("user.not.exists")));
+            throw new UserNotExistsException();
+        }
         // 用户验证
         Authentication authentication = null;
         try

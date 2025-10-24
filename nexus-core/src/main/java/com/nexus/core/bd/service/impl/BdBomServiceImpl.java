@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
  * @date 2025-10-18
  */
 @Service
-@Transactional
 public class BdBomServiceImpl extends ServiceImpl<BdBomMapper, BdBom> implements IBdBomService {
 
     /**
@@ -98,6 +97,7 @@ public class BdBomServiceImpl extends ServiceImpl<BdBomMapper, BdBom> implements
      * @return 插入结果影响行数
      */
     @Override
+    @Transactional
     public int insertBomDetail(BomDetailDTO bomDetailDTO) {
         // 在同一个事务中处理主表和明细表
         // 要么都成功，要么都失败

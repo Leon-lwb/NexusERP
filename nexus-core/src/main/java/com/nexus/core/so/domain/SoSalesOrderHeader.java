@@ -140,4 +140,7 @@ private static final long serialVersionUID = 1L;
     private Long attr3;
     /** 预留字段4 */
     private Long attr4;
+    
+    /** 销售订单行列表 */
+    private List<SoSalesOrderLine> soSalesOrderLineList;
 }
