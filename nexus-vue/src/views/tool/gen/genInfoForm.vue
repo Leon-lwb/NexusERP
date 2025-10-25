@@ -8,6 +8,9 @@
             <el-option label="单表（增删改查）" value="crud" />
             <el-option label="树表（增删改查）" value="tree" />
             <el-option label="主子表（增删改查）" value="sub" />
+            <el-option label="弹窗转页面（单表）" value="np_crud" />
+            <el-option label="弹窗转页面（树表）" value="np_tree" />
+            <el-option label="弹窗转页面（主子表）" value="np_sub" />
           </el-select>
         </el-form-item>
       </el-col>
@@ -129,7 +132,7 @@
       </el-col>
     </el-row>
     
-    <template v-if="info.tplCategory == 'tree'">
+    <template v-if="info.tplCategory == 'tree' || info.tplCategory == 'np_tree'">
       <h4 class="form-header">其他信息</h4>
       <el-row v-show="info.tplCategory == 'tree'">
         <el-col :span="12">
@@ -189,7 +192,7 @@
       </el-row>
     </template>
 
-    <template v-if="info.tplCategory == 'sub'">
+    <template v-if="info.tplCategory == 'sub' || info.tplCategory == 'np_sub'">
       <h4 class="form-header">关联信息</h4>
       <el-row>
         <el-col :span="12">
@@ -266,7 +269,7 @@ function subSelectChange(value) {
 }
 
 function tplSelectChange(value) {
-  if (value !== "sub") {
+  if (value !== "sub" && value !== "np_sub") {
     props.info.subTableName = ""
     props.info.subTableFkName = ""
   }

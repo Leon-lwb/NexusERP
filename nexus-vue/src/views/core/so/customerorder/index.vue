@@ -410,62 +410,22 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  reset()
-  isViewMode.value = false // 设置为编辑模式
-  open.value = true
-  title.value = "添加客户订单"
+  // 改为页面跳转
+  proxy.$router.push({ name: "CustomerOrderForm", params: { coId: 0 } });
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false // 设置为编辑模式
-  const _coId = row.coId || ids.value
-  getCustomerOrder(_coId).then(response => {
-    form.value = response.data
-    // 根据客户ID获取客户名称
-    if (form.value.clientId) {
-      // 使用精确匹配方式查询客户信息
-      listBd({ clientId: form.value.clientId, pageSize: 1000 }).then(clientResponse => {
-        if (clientResponse.rows && clientResponse.rows.length > 0) {
-          // 精确查找匹配的客户
-          const client = clientResponse.rows.find(item => item.clientId == form.value.clientId);
-          if (client) {
-            form.value.clientName = client.clientName
-            form.value.clientCode = client.clientCode
-          }
-        }
-      })
-    }
-    open.value = true
-    title.value = "修改客户订单"
-  })
+  // 改为页面跳转
+  const _coId = row.coId || ids.value[0];
+  proxy.$router.push({ name: "CustomerOrderForm", params: { coId: _coId } });
 }
 
 /** 查看按钮操作 */
 function handleView(row) {
-  reset()
-  isViewMode.value = true // 设置为查看模式
-  const _coId = row.coId || ids.value
-  getCustomerOrder(_coId).then(response => {
-    form.value = response.data
-    // 根据客户ID获取客户名称
-    if (form.value.clientId) {
-      // 使用精确匹配方式查询客户信息
-      listBd({ clientId: form.value.clientId, pageSize: 1000 }).then(clientResponse => {
-        if (clientResponse.rows && clientResponse.rows.length > 0) {
-          // 精确查找匹配的客户
-          const client = clientResponse.rows.find(item => item.clientId == form.value.clientId);
-          if (client) {
-            form.value.clientName = client.clientName
-            form.value.clientCode = client.clientCode
-          }
-        }
-      })
-    }
-    open.value = true
-    title.value = "查看客户订单"
-  })
+  // 改为页面跳转
+  const _coId = row.coId || ids.value[0];
+  proxy.$router.push({ name: "CustomerOrderForm", params: { coId: _coId } });
 }
 
 /** 提交按钮 */

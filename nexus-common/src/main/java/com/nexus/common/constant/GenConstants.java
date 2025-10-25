@@ -16,6 +16,12 @@ public class GenConstants
     /** 主子表（增删改查） */
     public static final String TPL_SUB = "sub";
 
+    /** 跳转新页面 */
+    public static final String TPL_NEW_CRUD = "np_crud";
+    public static final String TPL_NEW_TREE = "np_tree";
+    public static final String TPL_NEW_SUB = "np_sub";
+
+
     /** 树编码字段 */
     public static final String TREE_CODE = "treeCode";
 

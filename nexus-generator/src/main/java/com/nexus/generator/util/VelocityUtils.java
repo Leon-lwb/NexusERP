@@ -66,7 +66,7 @@ public class VelocityUtils
         {
             setTreeVelocityContext(velocityContext, genTable);
         }
-        if (GenConstants.TPL_SUB.equals(tplCategory))
+        if (GenConstants.TPL_SUB.equals(tplCategory) || GenConstants.TPL_NEW_SUB.equals(tplCategory))
         {
             setSubVelocityContext(velocityContext, genTable);
         }
@@ -123,8 +123,9 @@ public class VelocityUtils
 
     /**
      * 获取模板信息
-     * @param tplCategory 生成的模板
-     * @param tplWebType 前端类型
+     *
+     * @param tplCategory 生成的模板类型（crud/tree/sub）
+     * @param tplWebType 前端类型（如element-ui、element-plus等）
      * @return 模板列表
      */
     public static List<String> getTemplateList(String tplCategory, String tplWebType)
@@ -135,6 +136,7 @@ public class VelocityUtils
             useWebType = "vm/vue/v3";
         }
         List<String> templates = new ArrayList<String>();
+        // 添加后端Java相关模板
         templates.add("vm/java/domain_plus.java.vm");
         templates.add("vm/java/mapper_plus.java.vm");
         templates.add("vm/java/service_plus.java.vm");
@@ -144,6 +146,7 @@ public class VelocityUtils
         templates.add("vm/xml/mapper.xml.vm");
         templates.add("vm/sql/sql.vm");
         templates.add("vm/js/api_plus.js.vm");
+        // 根据不同模板类型添加前端模板
         if (GenConstants.TPL_CRUD.equals(tplCategory))
         {
             templates.add(useWebType + "/index_plus.vue.vm");
@@ -155,6 +158,16 @@ public class VelocityUtils
         else if (GenConstants.TPL_SUB.equals(tplCategory))
         {
             templates.add(useWebType + "/index_plus.vue.vm");
+            templates.add("vm/java/sub-domain_plus.java.vm");
+        } else if (GenConstants.TPL_NEW_CRUD.equals(tplCategory)) {
+            templates.add("vm/vue/newpage/idnex.vue.vm");
+            templates.add("vm/vue/newpage/form.vue.vm");
+//        } else if (GenConstants.TPL_NEW_TREE.equals(tplCategory)){
+//            templates.add("vm/vue/newpage/idnex.vue.vm");
+//            templates.add("vm/vue/newpage/form.vue.vm");
+        }else if (GenConstants.TPL_NEW_SUB.equals(tplCategory)) {
+            templates.add("vm/vue/newpage/idnex.vue.vm");
+            templates.add("vm/vue/newpage/form.vue.vm");
             templates.add("vm/java/sub-domain_plus.java.vm");
         }
         return templates;

@@ -173,19 +173,33 @@ export const dynamicRoutes = [
     ]
   },
   {
-  path: '/core/bd/bom/form',
-  component: Layout,
-  hidden: true,
-  permissions: ['bd:bom:edit'],
-  children: [
-    {
-      path: '',
-      component: () => import('@/views/core/bd/bom/form'),
-      name: 'BomForm',
-      meta: { title: 'BOM表单', activeMenu: '/core/bd/bom' }
-    }
-  ]
-}
+    path: '/core/bd/bom/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['bd:bom:edit'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/core/bd/bom/form'),
+        name: 'BomForm',
+        meta: { title: 'BOM表单', activeMenu: '/core/bd/bom' }
+      }
+    ]
+  },
+  {
+    path: '/core/so/orderheader/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['so:orderheader:edit'],
+    children: [
+      {
+        path: ':soId(\\d+)',  // 添加参数定义
+        component: () => import('@/views/core/so/orderheader/form'),
+        name: 'OrderForm',
+        meta: { title: '销售表单', activeMenu: '/core/so/orderheader' }
+      }
+    ]
+  }
 ]
 
 const router = createRouter({
