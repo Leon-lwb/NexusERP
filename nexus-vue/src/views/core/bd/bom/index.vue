@@ -566,6 +566,26 @@ import { debounce } from 'lodash'
 
   /** 修改按钮操作 */
   function handleUpdate(row) {
+    if (row && row.type && row instanceof Event) {
+      // 这是一个事件对象，表示没有传入数据参数
+      row = null;
+    }
+    
+    // 如果没有传入row参数，则从选中的数据中获取
+    if (!row) {
+      if (ids.value.length !== 1) {
+        proxy.$modal.msgWarning("请选择一条数据进行修改");
+        return;
+      }
+      // 从列表中找到选中的记录
+      const selectedRow = bomList.value.find(item => item.bomId == ids.value[0]);
+      if (!selectedRow) {
+        proxy.$modal.msgWarning("未找到选中的数据");
+        return;
+      }
+      row = selectedRow;
+    }
+
     const bomId = row.bomId;
     router.push({
       path: '/core/bd/bom/form',
@@ -575,6 +595,26 @@ import { debounce } from 'lodash'
 
   /** 查看按钮操作 */
   function handleView(row) {
+    if (row && row.type && row instanceof Event) {
+      // 这是一个事件对象，表示没有传入数据参数
+      row = null;
+    }
+    
+    // 如果没有传入row参数，则从选中的数据中获取
+    if (!row) {
+      if (ids.value.length !== 1) {
+        proxy.$modal.msgWarning("请选择一条数据进行查看");
+        return;
+      }
+      // 从列表中找到选中的记录
+      const selectedRow = bomList.value.find(item => item.bomId == ids.value[0]);
+      if (!selectedRow) {
+        proxy.$modal.msgWarning("未找到选中的数据");
+        return;
+      }
+      row = selectedRow;
+    }
+
     const bomId = row.bomId;
     router.push({
       path: '/core/bd/bom/form',

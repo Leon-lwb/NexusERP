@@ -193,7 +193,7 @@ export const dynamicRoutes = [
     permissions: ['so:orderheader:edit'],
     children: [
       {
-        path: ':soId(\\d+)',  // 添加参数定义
+        path: '',  // 添加参数定义
         component: () => import('@/views/core/so/orderheader/form'),
         name: 'OrderForm',
         meta: { title: '销售表单', activeMenu: '/core/so/orderheader' }

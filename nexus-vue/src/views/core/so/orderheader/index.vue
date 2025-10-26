@@ -316,24 +316,78 @@ import { useRouter } from 'vue-router'
     multiple.value = !selection.length
   }
 
-  /** 新增按钮操作 */
-  function handleAdd() {
-    // 改为页面跳转
-    proxy.$router.push({ name: "OrderForm", params: { soId: 0 } });
-  }
-
   /** 修改按钮操作 */
   function handleUpdate(row) {
-    // 改为页面跳转
-    const _soId = row.soId || ids.value[0];
-    proxy.$router.push({ name: "OrderForm", params: { soId: _soId } });
+    // 检查传入的是否是事件对象而不是数据对象
+    if (row && row.type && row instanceof Event) {
+      // 这是一个事件对象，表示没有传入数据参数
+      row = null;
+    }
+    
+    // 如果没有传入row参数，则从选中的数据中获取
+    if (!row) {
+      if (ids.value.length !== 1) {
+        proxy.$modal.msgWarning("请选择一条数据进行修改");
+        return;
+      }
+      // 从列表中找到选中的记录
+      const selectedRow = orderheaderList.value.find(item => item.soId == ids.value[0]);
+      if (!selectedRow) {
+        proxy.$modal.msgWarning("未找到选中的数据");
+        return;
+      }
+      row = selectedRow;
+    }
+    
+    // 检查row对象是否有soId属性
+    const soId = row.soId;
+    if (soId === undefined) {
+      proxy.$modal.msgError("数据格式错误，缺少soId字段");
+      return;
+    }
+    
+    router.push({
+      path: '/core/so/orderheader/form',
+      query: { id: soId, action: 'edit' }
+    });
+  }
+
+  /** 新增按钮操作 */
+  function handleAdd() {
+    router.push({
+      path: '/core/so/orderheader/form',
+      query: {action: 'add' }
+    });
   }
 
   /** 查看按钮操作 */
   function handleView(row) {
-    // 改为页面跳转
-    const _soId = row.soId || ids.value[0];
-    proxy.$router.push({ name: "OrderForm", params: { soId: _soId ,action: 'view'} });
+    // 检查传入的是否是事件对象而不是数据对象
+    if (row && row.type && row instanceof Event) {
+      // 这是一个事件对象，表示没有传入数据参数
+      row = null;
+    }
+    
+    // 如果没有传入row参数，则从选中的数据中获取
+    if (!row) {
+      if (ids.value.length !== 1) {
+        proxy.$modal.msgWarning("请选择一条数据进行查看");
+        return;
+      }
+      // 从列表中找到选中的记录
+      const selectedRow = orderheaderList.value.find(item => item.soId == ids.value[0]);
+      if (!selectedRow) {
+        proxy.$modal.msgWarning("未找到选中的数据");
+        return;
+      }
+      row = selectedRow;
+    }
+
+    const soId = row.soId;
+    router.push({
+      path: '/core/so/orderheader/form',
+      query: { id: soId, action: 'view' }
+    });
   }
 
   /** 删除按钮操作 */

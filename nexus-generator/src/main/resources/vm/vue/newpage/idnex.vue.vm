@@ -264,30 +264,71 @@ import { useRouter } from 'vue-router'
     multiple.value = !selection.length
   }
 
-  /** 添加按钮操作 - 跳转到修改页面 */
-  function handleAdd() {
-    proxy.#[[$router]]#.push({
-      path: '/${moduleName}/${businessName}/add'
-    })
-  }
+    /** 修改按钮操作 */
+    function handleUpdate(row) {
+      if (row && row.type && row instanceof Event) {
+        // 这是一个事件对象，表示没有传入数据参数
+        row = null;
+      }
 
-  /** 修改按钮操作 - 跳转到修改页面 */
-  function handleUpdate(row) {
-    const ${pkColumn.javaField} = row.${pkColumn.javaField}
-    router.push({
-      path: '/core/${moduleName}/${businessName}/form',
-      query: { id: ${pkColumn.javaField}, action: 'edit' }
-    })
-  }
+      // 如果没有传入row参数，则从选中的数据中获取
+      if (!row) {
+        if (ids.value.length !== 1) {
+          proxy.$modal.msgWarning("请选择一条数据进行修改");
+          return;
+        }
+        // 从列表中找到选中的记录
+        const selectedRow = ${businessName}List.value.find(item => item.bomId == ids.value[0]);
+        if (!selectedRow) {
+          proxy.$modal.msgWarning("未找到选中的数据");
+          return;
+        }
+        row = selectedRow;
+      }
 
-  /** 查看按钮操作 - 跳转到查看页面 */
-  function handleView(row) {
-    const ${pkColumn.javaField} = row.${pkColumn.javaField}
-    router.push({
-      path: '/core/${moduleName}/${businessName}/form',
-      query: { id: ${pkColumn.javaField}, action: 'view' }
-    })
-  }
+      const ${pkColumn.javaField} = row.${pkColumn.javaField};
+      router.push({
+        path: '/core/${moduleName}/${businessName}/form',
+        query: { id: ${pkColumn.javaField}, action: 'edit' }
+      });
+    }
+
+    /** 新增按钮操作 */
+    function handleAdd() {
+      router.push({
+        path: '/core/${moduleName}/${businessName}/form',
+        query: {action: 'add' }
+      });
+    }
+
+    /** 查看按钮操作 */
+    function handleView(row) {
+      if (row && row.type && row instanceof Event) {
+        // 这是一个事件对象，表示没有传入数据参数
+        row = null;
+      }
+
+      // 如果没有传入row参数，则从选中的数据中获取
+      if (!row) {
+        if (ids.value.length !== 1) {
+          proxy.$modal.msgWarning("请选择一条数据进行查看");
+          return;
+        }
+        // 从列表中找到选中的记录
+        const selectedRow = ${businessName}List.value.find(item => item.bomId == ids.value[0]);
+        if (!selectedRow) {
+          proxy.$modal.msgWarning("未找到选中的数据");
+          return;
+        }
+        row = selectedRow;
+      }
+
+      const ${pkColumn.javaField} = row.${pkColumn.javaField};
+      router.push({
+        path: '/core/${moduleName}/${businessName}/form',
+        query: { id: ${pkColumn.javaField}, action: 'view' }
+      });
+    }
 
   /** 删除按钮操作 */
   function handleDelete(row) {

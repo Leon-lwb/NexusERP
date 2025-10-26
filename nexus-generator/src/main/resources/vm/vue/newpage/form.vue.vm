@@ -191,63 +191,47 @@
   </div>
 </template>
 
-<script setup name="${BusinessName}Edit">
+<script setup name="${BusinessName}Form">
   import { get${BusinessName}, add${BusinessName}, update${BusinessName} } from "@/api/core/${moduleName}/${businessName}"
 
   const { proxy } = getCurrentInstance()
-      #if(${dicts} != '')
-          #set($dictsNoSymbol=$dicts.replace("'", ""))
-      const { ${dictsNoSymbol} } = proxy.useDict(${dicts})
-      #end
-
   const route = useRoute()
   const router = useRouter()
 
   const form = ref({})
-      const ${subclassName}List = ref([])
-      const checked${subClassName} = ref([])
   const isViewMode = ref(false)
   const title = ref("")
 
-  const rules = {
-      #foreach ($column in $columns)
-          #if($column.required)
-              #set($parentheseIndex=$column.columnComment.indexOf("（"))
-              #if($parentheseIndex != -1)
-                  #set($comment=$column.columnComment.substring(0, $parentheseIndex))
-              #else
-                  #set($comment=$column.columnComment)
-              #end
-                  $column.javaField: [
-              { required: true, message: "$comment不能为空", trigger: #if($column.htmlType == "select" || $column.htmlType == "radio")"change"#else"blur"#end }
-            ]#if($foreach.count != $columns.size()),#end
-          #end
-      #end
-  }
-
   onMounted(() => {
-    initPage()
+    const id = route.query.id
+    const action = route.query.action
+    // 设置查看模式
+    isViewMode.value = action === 'view'
+    console.log('id:', id);
+
+    if (id) {
+      initPage(id)
+    }
   })
 
-  function initPage() {
-    const path = route.path
-    const id = route.params.id
+  function initPage(id) {
+    const action = route.query.action
 
-    if (path.includes('/view/')) {
+    if (action === 'view') {
       // 查看模式
       isViewMode.value = true
       title.value = "查看${functionName}"
       if (id) {
         getInfo(id)
       }
-    } else if (path.includes('/edit/')) {
+    } else if (action === 'edit') {
       // 编辑模式
       isViewMode.value = false
       title.value = "修改${functionName}"
       if (id) {
         getInfo(id)
       }
-    } else if (path.includes('/add')) {
+    } else if (action === 'add') {
       // 新增模式
       isViewMode.value = false
       title.value = "新增${functionName}"
