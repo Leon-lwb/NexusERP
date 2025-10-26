@@ -60,7 +60,7 @@ public class SoTask {
                 salesOrderHeader.setRemark("从客户订单同步");
                 
                 // 设置默认值
-                salesOrderHeader.setOrderStatus("CREATED"); // 默认订单状态
+                salesOrderHeader.setOrderStatus("DRAFT"); // 默认订单状态
                 
                 // 插入到销售订单表
                 soSalesOrderHeaderService.insertSoSalesOrderHeader(salesOrderHeader);

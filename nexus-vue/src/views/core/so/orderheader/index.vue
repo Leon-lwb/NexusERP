@@ -49,7 +49,7 @@
                                     placeholder="请选择承诺交货日">
                     </el-date-picker>
                   </el-form-item>
-                  <el-form-item label="客户要求交货日" prop="requestedDate">
+                  <el-form-item label="要求交货日" prop="requestedDate">
                     <el-date-picker clearable
                                     v-model="queryParams.requestedDate"
                                     type="date"
@@ -58,7 +58,7 @@
                     </el-date-picker>
                   </el-form-item>
                   <el-form-item label="信用状态" prop="creditStatus">
-                    <el-select v-model="queryParams.creditStatus" placeholder="请选择信用状态" clearable>
+                    <el-select v-model="queryParams.creditStatus" placeholder="请选择信用状态" clearable style="width: 120px;">
                       <el-option
                           v-for="dict in so_credit_status"
                           :key="dict.value"
@@ -76,9 +76,9 @@
                     />
                   </el-form-item>
                   <el-form-item label="订单状态" prop="orderStatus">
-                    <el-select v-model="queryParams.orderStatus" placeholder="请选择订单状态" clearable>
+                    <el-select v-model="queryParams.orderStatus" placeholder="请选择订单状态" clearable style="width: 120px;">
                       <el-option
-                          v-for="dict in so_order_status"
+                          v-for="dict in so_customer_order_status"
                           :key="dict.value"
                           :label="dict.label"
                           :value="dict.value"
@@ -153,7 +153,7 @@
 
     <el-table v-loading="loading" :data="orderheaderList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-              <el-table-column label="销售订单ID" align="center" prop="soId" />
+              <el-table-column label="序号" type="index" width="50" align="center" prop="soId" />
               <el-table-column label="销售订单编号" align="center" prop="soNo" />
               <el-table-column label="来源客户订单" align="center" prop="coId" />
               <el-table-column label="来源客户ID" align="center" prop="clientId" />
@@ -174,7 +174,7 @@
                 </template>
               </el-table-column>
               <el-table-column label="发货地址" align="center" prop="deliveryAddressId" />
-              <el-table-column label="开票地址ID" align="center" prop="invoiceAddressId" />
+              <el-table-column label="开票地址" align="center" prop="invoiceAddressId" />
               <el-table-column label="付款条款" align="center" prop="paymentTerms" />
               <el-table-column label="货币" align="center" prop="currency">
                 <template #default="scope">
@@ -199,7 +199,7 @@
               <el-table-column label="信用拦截人" align="center" prop="creditBlockedBy" />
               <el-table-column label="订单状态" align="center" prop="orderStatus">
                 <template #default="scope">
-                      <dict-tag :options="so_order_status" :value="scope.row.orderStatus"/>
+                      <dict-tag :options="so_customer_order_status" :value="scope.row.orderStatus"/>
                 </template>
               </el-table-column>
               <el-table-column label="项目ID" align="center" prop="projectId" />
@@ -257,7 +257,7 @@ import { useRouter } from 'vue-router'
 
   const router = useRouter();
   const { proxy } = getCurrentInstance()
-      const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type } = proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type')
+      const { so_credit_status, so_customer_order_status, sys_true_or_false, so_currency_type } = proxy.useDict('so_credit_status', 'so_customer_order_status', 'sys_true_or_false', 'so_currency_type')
 
   const orderheaderList = ref([])
   const loading = ref(true)

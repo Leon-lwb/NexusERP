@@ -213,7 +213,7 @@
           </el-col>
         </el-row>
 
-        <!-- 第七行：订单来源+备注 -->
+        <!-- 第七行：订单来源+销售代表 -->
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="订单来源" prop="sourceChannel">
@@ -224,12 +224,26 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="销售代表" prop="salesRepId">
+              <el-input v-model="form.salesRepName" placeholder="请选择负责人" readonly>
+                <template #append>
+                  <el-button icon="User" @click="openUserSelect" :disabled="isViewMode"></el-button>
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 第8行：备注 -->
+        <el-row :gutter="20">
+          <el-col :span="24">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容"
                 :autosize="{ minRows: 2, maxRows: 4 }" />
             </el-form-item>
           </el-col>
         </el-row>
+
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -275,6 +289,44 @@
       <pagination v-show="clientTotal > 0" :total="clientTotal" v-model:page="clientQueryParams.pageNum"
         v-model:limit="clientQueryParams.pageSize" @pagination="handleClientPagination" />
     </el-dialog>
+
+    <!-- 用户选择对话框 -->
+    <el-dialog title="选择负责人" v-model="userVisible" width="800px" append-to-body>
+      <el-form :model="userQueryParams" ref="userQueryRef" :inline="true">
+        <el-form-item label="用户名称" prop="userName">
+          <el-input v-model="userQueryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="getUserList" />
+        </el-form-item>
+        <el-form-item label="手机号码" prop="phonenumber">
+          <el-input v-model="userQueryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="getUserList" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="getUserList">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table v-loading="userLoading" :data="userList" @row-dblclick="selectUser">
+        <el-table-column label="用户编号" align="center" prop="userId" />
+        <el-table-column label="用户名称" align="center" prop="userName" />
+        <el-table-column label="用户昵称" align="center" prop="nickName" />
+        <el-table-column label="手机号码" align="center" prop="phonenumber" />
+        <el-table-column label="部门" align="center" prop="dept.deptName" />
+        <el-table-column label="操作" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectUser(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <pagination v-show="userList.length > 0" :total="userTotal" v-model:page="userQueryParams.pageNum"
+        v-model:limit="userQueryParams.pageSize" @pagination="getUserList" />
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="userVisible = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -282,6 +334,7 @@
 import { listCustomerOrder, getCustomerOrder, delCustomerOrder, addCustomerOrder, updateCustomerOrder } from "@/api/core/so/customerOrder"
 import { listBd } from "@/api/core/bd/client"
 import { genCode } from "@/api/system/autocode/rule"
+import { listUser } from "@/api/system/user"
 
 const { proxy } = getCurrentInstance()
 const { so_customer_order_status, so_currency_type, so_order_priority, so_source_channel, bd_client_type } = proxy.useDict('so_customer_order_status', 'so_currency_type', 'so_order_priority', 'so_source_channel', 'bd_client_type')
@@ -309,6 +362,18 @@ const total = ref(0)
 const title = ref("")
 const isViewMode = ref(false) // 新增：标识是否为查看模式
 
+// 添加用户列表相关变量
+const userList = ref([])
+const userLoading = ref(false)
+const userVisible = ref(false)
+const userTotal = ref(0)  // 添加这行
+const userQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  userName: undefined,
+  phonenumber: undefined
+})
+
 const data = reactive({
   form: {},
   queryParams: {
@@ -316,6 +381,7 @@ const data = reactive({
     pageSize: 10,
     coNo: null,
     clientId: null,
+    selectUser: null,
     orderDate: null,
     status: null,
     priority: null,
@@ -376,9 +442,10 @@ function reset() {
     customerPoNo: null,
     sourceChannel: null,
     remark: null,
-    attr1: null,
+    clientCode: null,
     attr2: null,
-    attr3: null,
+    salesRepId: null,
+    salesRepName: null,
     attr4: null,
     createBy: null,
     createTime: null,
@@ -410,22 +477,88 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  // 改为页面跳转
-  proxy.$router.push({ name: "CustomerOrderForm", params: { coId: 0 } });
+  reset()
+  isViewMode.value = false // 设置为编辑模式
+  open.value = true
+  title.value = "添加客户订单"
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
-  // 改为页面跳转
-  const _coId = row.coId || ids.value[0];
-  proxy.$router.push({ name: "CustomerOrderForm", params: { coId: _coId } });
+  reset()
+  isViewMode.value = false // 设置为编辑模式
+  const _coId = row.coId || ids.value
+  getCustomerOrder(_coId).then(response => {
+    form.value = response.data
+    // 根据客户ID获取客户名称
+    if (form.value.clientId) {
+      // 使用精确匹配方式查询客户信息
+      listBd({ clientId: form.value.clientId, pageSize: 1000 }).then(clientResponse => {
+        if (clientResponse.rows && clientResponse.rows.length > 0) {
+          // 精确查找匹配的客户
+          const client = clientResponse.rows.find(item => item.clientId == form.value.clientId);
+          if (client) {
+            form.value.clientName = client.clientName
+            form.value.clientCode = client.clientCode
+          }
+        }
+      })
+    }
+    
+    // 如果有销售代表ID但没有销售代表名称，则获取销售代表名称
+    if (form.value.salesRepId && !form.value.salesRepName) {
+      listUser({ userId: form.value.salesRepId, pageSize: 1 }).then(userResponse => {
+        if (userResponse.rows && userResponse.rows.length > 0) {
+          const user = userResponse.rows[0];
+          form.value.salesRepName = user.userName;
+        }
+      }).catch(() => {
+        console.warn('获取销售代表名称失败');
+      });
+    }
+    
+    open.value = true
+    title.value = "修改客户订单"
+  })
 }
 
 /** 查看按钮操作 */
 function handleView(row) {
-  // 改为页面跳转
-  const _coId = row.coId || ids.value[0];
-  proxy.$router.push({ name: "CustomerOrderForm", params: { coId: _coId } });
+  reset()
+  isViewMode.value = true // 设置为查看模式
+  const _coId = row.coId || ids.value
+  getCustomerOrder(_coId).then(response => {
+    form.value = response.data
+    // 根据客户ID获取客户名称
+    if (form.value.clientId) {
+      // 使用精确匹配方式查询客户信息
+      listBd({ clientId: form.value.clientId, pageSize: 1000 }).then(clientResponse => {
+        if (clientResponse.rows && clientResponse.rows.length > 0) {
+          // 精确查找匹配的客户
+          const client = clientResponse.rows.find(item => item.clientId == form.value.clientId);
+          if (client) {
+            form.value.clientName = client.clientName
+            form.value.clientCode = client.clientCode
+          }
+        }
+      })
+    }
+    
+    // 如果有销售代表ID但没有销售代表名称，则获取销售代表名称
+    if (form.value.salesRepId && !form.value.salesRepName) {
+      listUser({ userId: form.value.salesRepId, pageSize: 1 }).then(userResponse => {
+        if (userResponse.rows && userResponse.rows.length > 0) {
+          const user = userResponse.rows[0];
+          form.value.salesRepName = user.userName;
+        }
+      }).catch(() => {
+        console.warn('获取销售代表名称失败');
+      });
+    }
+    
+    open.value = true
+    title.value = "查看客户订单"
+  })
 }
 
 /** 提交按钮 */
@@ -537,6 +670,45 @@ function handleClientPagination(pagination) {
   clientQueryParams.value.pageNum = pagination.page
   clientQueryParams.value.pageSize = pagination.limit
   getClientList()
+}
+
+// 添加获取用户列表的方法
+function getUserList() {
+  userLoading.value = true
+  // 确保查询参数包含deptId
+  const params = { ...userQueryParams }
+  if (params.deptId === undefined && form.value.salesRepId) {
+    // 如果没有设置deptId但已有销售代表，则不加限制
+    delete params.deptId
+  }
+  listUser(params).then(response => {
+    userList.value = response.rows
+    userTotal.value = response.total
+    userLoading.value = false
+  })
+}
+
+// 打开用户选择对话框
+function openUserSelect() {
+  userVisible.value = true
+  // 设置查询参数，只查询dept_id=115的用户
+  userQueryParams.deptId = 115
+  getUserList()
+}
+
+// 选择用户
+function selectUser(row) {
+  form.value.salesRepId = row.userId
+  form.value.salesRepName = row.userName
+  userVisible.value = false
+}
+
+// 重置用户查询
+function resetUserQuery() {
+  userQueryParams.userName = undefined
+  userQueryParams.phonenumber = undefined
+  userQueryParams.deptId = 115  // 保持部门筛选条件
+  getUserList()
 }
 
 getList()

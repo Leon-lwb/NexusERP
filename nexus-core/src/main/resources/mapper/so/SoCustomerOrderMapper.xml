@@ -21,7 +21,7 @@
             <result property="remark"    column="remark"    />
             <result property="clientCode"    column="client_code"    />
             <result property="attr2"    column="attr2"    />
-            <result property="attr3"    column="attr3"    />
+            <result property="salesRepId"    column="sales_rep_id"    />
             <result property="attr4"    column="attr4"    />
             <result property="createBy"    column="create_by"    />
             <result property="createTime"    column="create_time"    />
@@ -30,7 +30,7 @@
     </resultMap>
 
     <sql id="selectSoCustomerOrderVo">
-        select co_id, co_no, client_id, contact_name, contact_phone, order_date, requested_date, currency, total_amount, status, priority, customer_po_no, source_channel, remark, client_code, attr2, attr3, attr4, create_by, create_time, update_by, update_time from so_customer_order
+        select co_id, co_no, client_id, contact_name, contact_phone, order_date, requested_date, currency, total_amount, status, priority, customer_po_no, source_channel, remark, client_code, attr2, sales_rep_id, attr4, create_by, create_time, update_by, update_time from so_customer_order
     </sql>
 
     <select id="selectSoCustomerOrderList" parameterType="SoCustomerOrder" resultMap="SoCustomerOrderResult">
@@ -69,7 +69,7 @@
                     <if test="remark != null">remark,</if>
                     <if test="clientCode != null">client_code,</if>
                     <if test="attr2 != null">attr2,</if>
-                    <if test="attr3 != null">attr3,</if>
+                    <if test="salesRepId != null">sales_rep_id,</if>
                     <if test="attr4 != null">attr4,</if>
                     <if test="createBy != null">create_by,</if>
                     <if test="createTime != null">create_time,</if>
@@ -92,7 +92,7 @@
                     <if test="remark != null">#{remark},</if>
                     <if test="clientCode != null">#{clientCode},</if>
                     <if test="attr2 != null">#{attr2},</if>
-                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="salesRepId != null">#{salesRepId},</if>
                     <if test="attr4 != null">#{attr4},</if>
                     <if test="createBy != null">#{createBy},</if>
                     <if test="createTime != null">#{createTime},</if>
@@ -119,7 +119,7 @@
                     <if test="remark != null">remark = #{remark},</if>
                     <if test="clientCode != null">client_code = #{clientCode},</if>
                     <if test="attr2 != null">attr2 = #{attr2},</if>
-                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="salesRepId != null">sales_rep_id = #{salesRepId},</if>
                     <if test="attr4 != null">attr4 = #{attr4},</if>
                     <if test="createBy != null">create_by = #{createBy},</if>
                     <if test="createTime != null">create_time = #{createTime},</if>

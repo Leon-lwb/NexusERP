@@ -66,8 +66,8 @@ private static final long serialVersionUID = 1L;
     private String clientCode;
     /** 预留字段2 */
     private String attr2;
-    /** 预留字段3 */
-    private Long attr3;
+    /** 销售代表 */
+    private Long salesRepId;
     /** 预留字段4 */
     private Long attr4;
 }
