@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.system.mapper.SysDicAreaMapper">
+
+    <resultMap type="SysDicArea" id="SysDicAreaResult">
+        <result property="pkid" column="pkid"/>
+        <result property="areaId" column="area_id"/>
+        <result property="parentAreaId" column="parent_area_id"/>
+        <result property="areaName" column="area_name"/>
+        <result property="lat" column="lat"/>
+        <result property="lng" column="lng"/>
+        <result property="layered" column="layered"/>
+        <result property="sort" column="sort"/>
+        <result property="address" column="address"/>
+    </resultMap>
+
+    <sql id="selectSysDicAreaVo">
+        select pkid,
+               area_id,
+               parent_area_id,
+               area_name,
+               lat,
+               lng,
+               layered,
+               sort,
+               address
+        from sys_dic_area
+    </sql>
+
+    <select id="selectSysDicAreaList" parameterType="SysDicArea" resultMap="SysDicAreaResult">
+        <include refid="selectSysDicAreaVo"/>
+        <where>
+            <if test="areaId != null ">and area_id = #{areaId}</if>
+            <if test="parentAreaId != null ">and parent_area_id = #{parentAreaId}</if>
+            <if test="areaName != null  and areaName != ''">and area_name like concat('%', #{areaName}, '%')</if>
+            <if test="layered != null ">and layered = #{layered}</if>
+        </where>
+        order by sort asc
+    </select>
+
+    <select id="selectSysDicAreaByPkid" parameterType="Long" resultMap="SysDicAreaResult">
+        <include refid="selectSysDicAreaVo"/>
+        where pkid = #{pkid}
+    </select>
+
+    <insert id="insertSysDicArea" parameterType="SysDicArea" useGeneratedKeys="true" keyProperty="pkid">
+        insert into sys_dic_area
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="areaId != null">area_id,</if>
+            <if test="parentAreaId != null">parent_area_id,</if>
+            <if test="areaName != null">area_name,</if>
+            <if test="lat != null">lat,</if>
+            <if test="lng != null">lng,</if>
+            <if test="layered != null">layered,</if>
+            <if test="sort != null">sort,</if>
+            <if test="address != null">address,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="areaId != null">#{areaId},</if>
+            <if test="parentAreaId != null">#{parentAreaId},</if>
+            <if test="areaName != null">#{areaName},</if>
+            <if test="lat != null">#{lat},</if>
+            <if test="lng != null">#{lng},</if>
+            <if test="layered != null">#{layered},</if>
+            <if test="sort != null">#{sort},</if>
+            <if test="address != null">#{address},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSysDicArea" parameterType="SysDicArea">
+        update sys_dic_area
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="areaId != null">area_id = #{areaId},</if>
+            <if test="parentAreaId != null">parent_area_id = #{parentAreaId},</if>
+            <if test="areaName != null">area_name = #{areaName},</if>
+            <if test="lat != null">lat = #{lat},</if>
+            <if test="lng != null">lng = #{lng},</if>
+            <if test="layered != null">layered = #{layered},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="address != null">address = #{address},</if>
+        </trim>
+        where pkid = #{pkid}
+    </update>
+
+    <delete id="deleteSysDicAreaByPkid" parameterType="Long">
+        delete
+        from sys_dic_area
+        where pkid = #{pkid}
+    </delete>
+
+    <delete id="deleteSysDicAreaByPkids" parameterType="String">
+        delete from sys_dic_area where pkid in
+        <foreach item="pkid" collection="array" open="(" separator="," close=")">
+            #{pkid}
+        </foreach>
+    </delete>
+</mapper>

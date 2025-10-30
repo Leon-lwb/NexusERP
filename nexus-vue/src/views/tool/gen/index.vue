@@ -104,6 +104,9 @@
           <el-tooltip content="预览" placement="top">
             <el-button link type="primary" icon="View" @click="handlePreview(scope.row)" v-hasPermi="['tool:gen:preview']"></el-button>
           </el-tooltip>
+          <el-tooltip content="生成数据" placement="top">
+            <el-button link type="primary" icon="DocumentAdd" @click="handleGenValue(scope.row)" v-hasPermi="['tool:gen:code']"></el-button>
+          </el-tooltip>
           <el-tooltip content="编辑" placement="top">
             <el-button link type="primary" icon="Edit" @click="handleEditTable(scope.row)" v-hasPermi="['tool:gen:edit']"></el-button>
           </el-tooltip>
@@ -302,6 +305,14 @@ function handleDelete(row) {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => {})
+}
+
+ /** 生成数据 */
+function handleGenValue(row) {
+  const tableId = row.tableId
+  const tableName = row.tableName || tableNames.value[0]
+  const params = { pageNum: queryParams.value.pageNum }
+  proxy.$tab.openPage('生成[' + tableName + ']数据', '/tool/gen-add-value/index/' + tableId, params)
 }
 
 getList()
