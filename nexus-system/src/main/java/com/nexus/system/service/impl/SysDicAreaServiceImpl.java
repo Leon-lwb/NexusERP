@@ -3,6 +3,8 @@ package com.nexus.system.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.nexus.system.mapper.SysDicAreaMapper;
@@ -52,6 +54,12 @@ public class SysDicAreaServiceImpl extends ServiceImpl<SysDicAreaMapper, SysDicA
     @Override
     public List<SysDicArea> selectSysDicAreaTreeList(SysDicArea sysDicArea) {
         List<SysDicArea> areas = sysDicAreaMapper.selectSysDicAreaList(sysDicArea);
+        
+        // 如果设置了parentAreaId参数，则直接返回列表，不构建树结构
+        if (sysDicArea.getParentAreaId() != null) {
+            return areas;
+        }
+        
         return buildTree(areas);
     }
 
@@ -151,5 +159,17 @@ public class SysDicAreaServiceImpl extends ServiceImpl<SysDicAreaMapper, SysDicA
     @Override
     public int deleteSysDicAreaByPkid(Long pkid) {
         return sysDicAreaMapper.deleteSysDicAreaByPkid(pkid);
+    }
+
+    /**
+     * 获取子级树形列表
+     * @param sysDicArea 行政区划
+     * @return
+     */
+    @Override
+    public List<SysDicArea> selectChildrenTreeList(SysDicArea sysDicArea) {
+        List<SysDicArea> areas = sysDicAreaMapper.selectSysDicAreaList(sysDicArea);
+
+        return buildTree(areas);
     }
 }

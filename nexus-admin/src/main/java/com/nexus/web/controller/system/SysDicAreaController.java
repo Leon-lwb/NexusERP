@@ -38,8 +38,19 @@ public class SysDicAreaController extends BaseController {
     @PreAuthorize("@ss.hasPermi('system:area:list')")
     @GetMapping("/list")
     public AjaxResult list(SysDicArea sysDicArea) {
+        List<SysDicArea> list = sysDicAreaService.selectSysDicAreaTreeList(sysDicArea);
+        return success(list);
+    }
+
+    /**
+     * 查询行政区划子节点
+     */
+    @ApiOperation("查询行政区划列表")
+    @PreAuthorize("@ss.hasPermi('system:area:list')")
+    @GetMapping("/listChildren")
+    public AjaxResult listChildren(SysDicArea sysDicArea) {
         // 传入空的SysDicArea对象以获取所有数据
-        List<SysDicArea> list = sysDicAreaService.selectSysDicAreaTreeList(new SysDicArea());
+        List<SysDicArea> list = sysDicAreaService.selectChildrenTreeList(sysDicArea);
         return success(list);
     }
 

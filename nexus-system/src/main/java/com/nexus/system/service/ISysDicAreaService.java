@@ -66,4 +66,12 @@ public interface ISysDicAreaService extends IService<SysDicArea> {
      * @return 结果
      */
     public int deleteSysDicAreaByPkid(Long pkid);
+
+    /**
+     * 查询子级行政区划树形列表
+     *
+     * @param sysDicArea 行政区划
+     * @return 树形列表
+     */
+    List<SysDicArea> selectChildrenTreeList(SysDicArea sysDicArea);
 }

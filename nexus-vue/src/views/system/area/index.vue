@@ -1,42 +1,5 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="行政区划名称" prop="areaName">
-        <el-input
-          v-model="queryParams.areaName"
-          placeholder="请输入行政区划名称"
-          clearable
-          style="width: 200px"
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:area:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="info"
-          plain
-          icon="Sort"
-          @click="toggleExpandAll"
-        >展开/折叠</el-button>
-      </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
     <el-table
       v-loading="loading"
       :data="areaList"
@@ -61,6 +24,7 @@
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:area:edit']">修改</el-button>
           <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:area:add']">新增</el-button>
+          <el-button link type="primary" icon="View" @click="handleExpand(scope.row)" v-hasPermi="['system:area:list']">查询</el-button>
           <el-button v-if="scope.row.parentAreaId != 0" link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:area:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -154,7 +118,8 @@ const expandedRowKeys = ref([])
 const data = reactive({
   form: {},
   queryParams: {
-    areaName: undefined
+    areaName: undefined,
+    layered: 1  // 默认只查询根节点(layered=1)的数据
   },
   rules: {
     parentAreaId: [{ required: true, message: "上级地区不能为空", trigger: "blur" }],
@@ -263,17 +228,66 @@ function handleAdd(row) {
   title.value = "添加行政区划"
 }
 
-/** 展开/折叠操作 */
-function toggleExpandAll() {
-  isExpandAll.value = !isExpandAll.value
-  // 使用递归展开或折叠所有节点
-  if (isExpandAll.value) {
-    // 展开所有节点
-    expandAllRows(areaList.value)
-  } else {
-    // 折叠所有节点
-    expandedRowKeys.value = []
+/** 展开按钮操作 */
+function handleExpand(row) {
+  const query = {
+    parentAreaId: row.areaId,
+    layered: row.layered + 1
   }
+  
+  listArea(query).then(response => {
+    if (!response.data || response.data.length === 0) {
+      proxy.$modal.msgWarning("该行政区划下无子节点！")
+    } else {
+      // 处理返回的数据，设置hasChildren属性
+      const childrenData = response.data.map(item => {
+        // 移除children属性如果是null，设置hasChildren
+        if (item.children === null) {
+          const { children, ...rest } = item;
+          return {
+            ...rest,
+            hasChildren: item.layered < 4 // 根据层级判断是否还能继续展开
+          };
+        }
+        return {
+          ...item,
+          hasChildren: item.layered < 4 // 根据层级判断是否还能继续展开
+        };
+      });
+      
+      // 找到当前行在areaList中的位置并添加子节点
+      const updateAreaList = (list) => {
+        return list.map(item => {
+          if (item.areaId === row.areaId) {
+            // 找到匹配的父节点，添加子节点
+            return {
+              ...item,
+              children: childrenData,
+              hasChildren: childrenData.length > 0 // 如果有子节点则设置为true
+            };
+          }
+          // 递归处理子节点
+          if (item.children && item.children.length > 0) {
+            return {
+              ...item,
+              children: updateAreaList(item.children)
+            };
+          }
+          return item;
+        });
+      };
+      
+      areaList.value = updateAreaList(areaList.value);
+      
+      // 展开当前行
+      if (!expandedRowKeys.value.includes(row.areaId)) {
+        expandedRowKeys.value = [...expandedRowKeys.value, row.areaId];
+      }
+    }
+  }).catch(error => {
+    console.error('Error expanding area data:', error);
+    proxy.$modal.msgError('展开失败');
+  });
 }
 
 /** 递归展开所有行 */
@@ -315,6 +329,10 @@ function handleUpdate(row) {
   })
   getArea(row.pkid).then(response => {
     form.value = response.data
+    // 确保层级字段的值是数字类型，以便正确匹配字典选项
+    if (form.value.layered !== undefined && form.value.layered !== null) {
+      form.value.layered = parseInt(form.value.layered)
+    }
     open.value = true
     title.value = "修改行政区划"
   })

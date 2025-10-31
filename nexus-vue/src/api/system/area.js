@@ -50,3 +50,12 @@ export function delArea(pkid) {
     method: 'delete'
   })
 }
+
+// 查询行政区划子节点列表
+export function listChildren(query) {
+  return request({
+    url: '/system/area/listChildren',
+    method: 'get',
+    params: query
+  })
+}
