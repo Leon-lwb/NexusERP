@@ -45,6 +45,16 @@
         where pkid = #{pkid}
     </select>
 
+    <select id="selectProvinces" parameterType="Long" resultMap="SysDicAreaResult">
+        <include refid="selectSysDicAreaVo"/>
+        where layered = "1" order by sort asc
+    </select>
+
+    <select id="selectNextLevel" parameterType="Long" resultMap="SysDicAreaResult">
+        <include refid="selectSysDicAreaVo"/>
+        where parent_area_id = #{parentAreaId} order by sort asc
+    </select>
+
     <insert id="insertSysDicArea" parameterType="SysDicArea" useGeneratedKeys="true" keyProperty="pkid">
         insert into sys_dic_area
         <trim prefix="(" suffix=")" suffixOverrides=",">

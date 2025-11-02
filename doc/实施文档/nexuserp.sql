@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : mysql8
+ Source Server         : 本地8.0
  Source Server Type    : MySQL
- Source Server Version : 80039
+ Source Server Version : 80040 (8.0.40)
  Source Host           : localhost:3307
  Source Schema         : nexuserp
 
  Target Server Type    : MySQL
- Target Server Version : 80039
+ Target Server Version : 80040 (8.0.40)
  File Encoding         : 65001
 
- Date: 31/10/2025 17:08:46
+ Date: 02/11/2025 23:17:23
 */
 
 SET NAMES utf8mb4;
@@ -22,29 +22,29 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_bom`;
 CREATE TABLE `bd_bom`  (
-  `bom_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT 'BOM主表ID',
-  `parent_material_id` bigint(0) NOT NULL COMMENT '父项物料ID',
+  `bom_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'BOM主表ID',
+  `parent_material_id` bigint NOT NULL COMMENT '父项物料ID',
   `bom_version` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1.0' COMMENT 'BOM版本号',
   `bom_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'BOM名称',
   `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
   `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
-  `is_current` tinyint(0) NULL DEFAULT 1 COMMENT '是否当前版本 0:否 1:是',
-  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `is_current` tinyint NULL DEFAULT 1 COMMENT '是否当前版本 0:否 1:是',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`bom_id`) USING BTREE,
-  UNIQUE INDEX `uk_parent_version`(`parent_material_id`, `bom_version`) USING BTREE,
-  INDEX `idx_parent_material`(`parent_material_id`) USING BTREE,
-  INDEX `idx_current`(`is_current`) USING BTREE,
+  UNIQUE INDEX `uk_parent_version`(`parent_material_id` ASC, `bom_version` ASC) USING BTREE,
+  INDEX `idx_parent_material`(`parent_material_id` ASC) USING BTREE,
+  INDEX `idx_current`(`is_current` ASC) USING BTREE,
   CONSTRAINT `fk_bom_parent_material` FOREIGN KEY (`parent_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_bom
@@ -62,34 +62,34 @@ INSERT INTO `bd_bom` VALUES (7, 2003, '1.0', '车把标准版BOM', '2024-01-01',
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_bom_detail`;
 CREATE TABLE `bd_bom_detail`  (
-  `detail_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT 'BOM明细ID',
-  `bom_id` bigint(0) NOT NULL COMMENT 'BOM主表ID',
-  `child_material_id` bigint(0) NOT NULL COMMENT '子项物料ID',
+  `detail_id` bigint NOT NULL AUTO_INCREMENT COMMENT 'BOM明细ID',
+  `bom_id` bigint NOT NULL COMMENT 'BOM主表ID',
+  `child_material_id` bigint NOT NULL COMMENT '子项物料ID',
   `quantity_per_parent` decimal(18, 6) NOT NULL COMMENT '单位父项用量',
   `loss_rate` decimal(8, 4) NULL DEFAULT 0.0000 COMMENT '损耗率(%)',
-  `operation_step` int(0) NULL DEFAULT NULL COMMENT '工序步骤',
-  `workstation_id` bigint(0) NULL DEFAULT NULL COMMENT '工作中心ID',
-  `lead_time` int(0) NULL DEFAULT 0 COMMENT '提前期(小时)',
+  `operation_step` int NULL DEFAULT NULL COMMENT '工序步骤',
+  `workstation_id` bigint NULL DEFAULT NULL COMMENT '工作中心ID',
+  `lead_time` int NULL DEFAULT 0 COMMENT '提前期(小时)',
   `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
   `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
-  `sort_order` int(0) NULL DEFAULT 0 COMMENT '显示排序',
-  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `sort_order` int NULL DEFAULT 0 COMMENT '显示排序',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`detail_id`) USING BTREE,
-  INDEX `idx_bom_id`(`bom_id`) USING BTREE,
-  INDEX `idx_child_material`(`child_material_id`) USING BTREE,
-  INDEX `idx_operation_step`(`operation_step`) USING BTREE,
+  INDEX `idx_bom_id`(`bom_id` ASC) USING BTREE,
+  INDEX `idx_child_material`(`child_material_id` ASC) USING BTREE,
+  INDEX `idx_operation_step`(`operation_step` ASC) USING BTREE,
   CONSTRAINT `fk_bom_detail_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_bom_detail_child` FOREIGN KEY (`child_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 35 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_bom_detail
@@ -135,7 +135,7 @@ INSERT INTO `bd_bom_detail` VALUES (35, 7, 3005, 2.000000, 0.0000, 10, NULL, 0, 
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_client`;
 CREATE TABLE `bd_client`  (
-  `client_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '客户ID',
+  `client_id` bigint NOT NULL AUTO_INCREMENT COMMENT '客户ID',
   `client_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户编码',
   `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户名称',
   `client_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户简写',
@@ -157,28 +157,28 @@ CREATE TABLE `bd_client`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
-  `province_area_id` bigint(0) NULL DEFAULT NULL COMMENT '省份行政区划ID',
-  `city_area_id` bigint(0) NULL DEFAULT NULL COMMENT '城市行政区划ID',
-  `district_area_id` bigint(0) NULL DEFAULT NULL COMMENT '区县行政区划ID',
-  `detail_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '详细地址(街道、门牌号等)',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `province_area_id` bigint NULL DEFAULT NULL COMMENT '省份行政区划ID',
+  `city_area_id` bigint NULL DEFAULT NULL COMMENT '城市行政区划ID',
+  `district_area_id` bigint NULL DEFAULT NULL COMMENT '区县行政区划ID',
+  `street_id` bigint NULL DEFAULT NULL COMMENT '街道行政区划ID',
   `address_lat` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址纬度',
   `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址经度',
   PRIMARY KEY (`client_id`) USING BTREE,
-  INDEX `idx_province_area`(`province_area_id`) USING BTREE,
-  INDEX `idx_city_area`(`city_area_id`) USING BTREE,
-  INDEX `idx_district_area`(`district_area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户表' ROW_FORMAT = Dynamic;
+  INDEX `idx_province_area`(`province_area_id` ASC) USING BTREE,
+  INDEX `idx_city_area`(`city_area_id` ASC) USING BTREE,
+  INDEX `idx_district_area`(`district_area_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_client
 -- ----------------------------
-INSERT INTO `bd_client` VALUES (1, 'C00001', '测试', '测试', 'cs', '测试测试', 'ENTERPRISE', '/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png', '123', NULL, '123', '123', '123', '123', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-18 15:45:44', NULL, '2025-09-22 10:21:26', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (1, 'C00001', '测试', '测试', 'cs', '测试测试', 'ENTERPRISE', '/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png', '浙江省杭州市上城区彭埠街道', NULL, '123', '123', '123', '123', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-09-18 15:45:44', NULL, '2025-11-02 16:14:00', 330000, 330100, 330102, 330102015, NULL, NULL);
 INSERT INTO `bd_client` VALUES (2, 'C00003', '小明科技有限公司', '小明科技', 'Xiaoming Tech Co., Ltd', '测试', 'ENTERPRISE', NULL, '深圳市南山区科技园南区W1-A栋', NULL, 'contact@xiaomingtech.com', '0755-88888888', '李明', '13800138001', 'liming@xiaomingtech.com', NULL, NULL, NULL, '91440300MA5FXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, 'system', '2024-01-15 10:30:00', NULL, '2025-10-21 17:46:34', NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `bd_client` VALUES (3, 'C00004', '王芳贸易公司', '王芳贸易', 'Wangfang Trading Co., Ltd', '测试', 'ENTERPRISE', NULL, '广州市天河区珠江新城商务区', NULL, 'info@wangfang.com', '020-66666666', '王芳', '13900139002', 'wangfang@wangfang.com', NULL, NULL, NULL, '91440100MA5GXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, 'system', '2024-02-20 14:15:00', NULL, '2025-10-21 17:46:42', NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `bd_client` VALUES (4, 'C00005', '张伟实业集团', '张伟集团', 'Zhangwei Industries Group', '测试', 'ENTERPRISE', NULL, '上海市浦东新区陆家嘴金融中心', NULL, 'group@zhangwei.com', '021-77777777', '张伟', '13700137003', 'zhangwei@zhangwei.com', NULL, NULL, NULL, '91310000MA5HXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, 'system', '2024-03-10 09:45:00', NULL, '2025-10-21 17:46:49', NULL, NULL, NULL, NULL, NULL, NULL);
@@ -194,77 +194,81 @@ INSERT INTO `bd_client` VALUES (10, 'C00011', '家乐福（中国）投资有限
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_client_credit`;
 CREATE TABLE `bd_client_credit`  (
-  `credit_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '客户信用ID',
-  `client_id` bigint(0) NOT NULL COMMENT '客户ID',
+  `credit_id` bigint NOT NULL AUTO_INCREMENT COMMENT '客户信用ID',
+  `client_id` bigint NOT NULL COMMENT '客户ID',
   `client_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户编码',
   `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '客户名称',
   `client_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户英文名称',
-  `client_credit` int(0) NULL DEFAULT NULL COMMENT '信用额度',
-  `client_time` int(0) NULL DEFAULT NULL COMMENT '账期',
+  `client_credit` int NULL DEFAULT NULL COMMENT '信用额度',
+  `client_time` int NULL DEFAULT NULL COMMENT '账期',
   `client_level` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'NORMAL' COMMENT '客户等级: A优质客户(80-100);B正常(60-80);C重点关注(50-60);D劣质客户(40-50);E黑名单(0-40)',
-  `client_score` int(0) NOT NULL DEFAULT 60 COMMENT '客户评分',
+  `client_score` int NOT NULL DEFAULT 60 COMMENT '客户评分',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`credit_id`) USING BTREE,
-  INDEX `idx_client_id`(`client_id`) USING BTREE,
-  INDEX `idx_client_code`(`client_code`) USING BTREE,
+  INDEX `idx_client_id`(`client_id` ASC) USING BTREE,
+  INDEX `idx_client_code`(`client_code` ASC) USING BTREE,
   CONSTRAINT `bd_client_credit_bd_client__fk` FOREIGN KEY (`client_id`) REFERENCES `bd_client` (`client_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户信用表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户信用表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_client_credit
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for bd_material
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material`;
 CREATE TABLE `bd_material`  (
-  `material_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '物料ID',
+  `material_id` bigint NOT NULL AUTO_INCREMENT COMMENT '物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料编码',
   `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料名称',
   `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
   `material_desc` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料描述',
-  `category_id` bigint(0) NOT NULL COMMENT '物料分类ID',
-  `base_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '基本计量单位ID',
-  `purchase_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '采购单位ID',
-  `inventory_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '库存单位ID',
-  `sale_uom_id` bigint(0) NULL DEFAULT NULL COMMENT '销售单位ID',
-  `material_type` tinyint(0) NOT NULL COMMENT '物料类型 1:原材料 2:半成品 3:成品 4:辅料',
-  `source_type` tinyint(0) NULL DEFAULT 1 COMMENT '来源类型 1:自制 2:外购 3:委外',
-  `is_batch_manage` tinyint(0) NULL DEFAULT 0 COMMENT '是否批次管理 0:否 1:是',
-  `is_serial_manage` tinyint(0) NULL DEFAULT 0 COMMENT '是否序列号管理 0:否 1:是',
+  `category_id` bigint NOT NULL COMMENT '物料分类ID',
+  `base_uom_id` bigint NULL DEFAULT NULL COMMENT '基本计量单位ID',
+  `purchase_uom_id` bigint NULL DEFAULT NULL COMMENT '采购单位ID',
+  `inventory_uom_id` bigint NULL DEFAULT NULL COMMENT '库存单位ID',
+  `sale_uom_id` bigint NULL DEFAULT NULL COMMENT '销售单位ID',
+  `material_type` tinyint NOT NULL COMMENT '物料类型 1:原材料 2:半成品 3:成品 4:辅料',
+  `source_type` tinyint NULL DEFAULT 1 COMMENT '来源类型 1:自制 2:外购 3:委外',
+  `is_batch_manage` tinyint NULL DEFAULT 0 COMMENT '是否批次管理 0:否 1:是',
+  `is_serial_manage` tinyint NULL DEFAULT 0 COMMENT '是否序列号管理 0:否 1:是',
   `safety_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '安全库存',
   `min_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最低库存',
   `max_stock` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最高库存',
   `standard_cost` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '标准成本',
   `reference_price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '参考价格',
-  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
-  `quality_status` tinyint(0) NULL DEFAULT 1 COMMENT '质量状态 1:合格 2:待检 3:不合格',
-  `shelf_life` int(0) NULL DEFAULT 0 COMMENT '保质期(天)',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `quality_status` tinyint NULL DEFAULT 1 COMMENT '质量状态 1:合格 2:待检 3:不合格',
+  `shelf_life` int NULL DEFAULT 0 COMMENT '保质期(天)',
   `weight` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '重量(kg)',
   `volume` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '体积(m³)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`material_id`) USING BTREE,
-  UNIQUE INDEX `uk_material_code`(`material_code`) USING BTREE,
-  INDEX `idx_category_id`(`category_id`) USING BTREE,
-  INDEX `idx_material_type`(`material_type`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE,
-  INDEX `idx_create_time`(`create_time`) USING BTREE,
-  INDEX `fk_material_base_uom`(`base_uom_id`) USING BTREE,
+  UNIQUE INDEX `uk_material_code`(`material_code` ASC) USING BTREE,
+  INDEX `idx_category_id`(`category_id` ASC) USING BTREE,
+  INDEX `idx_material_type`(`material_type` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_create_time`(`create_time` ASC) USING BTREE,
+  INDEX `fk_material_base_uom`(`base_uom_id` ASC) USING BTREE,
   CONSTRAINT `fk_material_base_uom` FOREIGN KEY (`base_uom_id`) REFERENCES `bd_unit_of_measure` (`uom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_material_category` FOREIGN KEY (`category_id`) REFERENCES `bd_material_category` (`category_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 3005 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3006 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_material
@@ -302,31 +306,31 @@ INSERT INTO `bd_material` VALUES (3005, 'GRIP', '把套', NULL, NULL, 1, 1, NULL
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material_category`;
 CREATE TABLE `bd_material_category`  (
-  `category_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '分类ID',
-  `parent_id` bigint(0) NULL DEFAULT 0 COMMENT '父分类ID，0表示顶级分类',
+  `category_id` bigint NOT NULL AUTO_INCREMENT COMMENT '分类ID',
+  `parent_id` bigint NULL DEFAULT 0 COMMENT '父分类ID，0表示顶级分类',
   `category_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类编码',
   `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类名称',
   `category_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类描述',
-  `level_num` int(0) NULL DEFAULT 1 COMMENT '层级深度，1为顶级',
+  `level_num` int NULL DEFAULT 1 COMMENT '层级深度，1为顶级',
   `path_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '路径ID串，格式：1,5,23',
   `path_names` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '路径名称串，格式：原材料,金属材料,钢材',
-  `sort_order` int(0) NULL DEFAULT 0 COMMENT '显示排序',
-  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `sort_order` int NULL DEFAULT 0 COMMENT '显示排序',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`category_id`) USING BTREE,
-  UNIQUE INDEX `uk_category_code`(`category_code`) USING BTREE,
-  INDEX `idx_parent_id`(`parent_id`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE,
-  INDEX `idx_level_sort`(`level_num`, `sort_order`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `uk_category_code`(`category_code` ASC) USING BTREE,
+  INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_level_sort`(`level_num` ASC, `sort_order` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_material_category
@@ -348,63 +352,67 @@ INSERT INTO `bd_material_category` VALUES (12, 1, 'ELECTRIC', '电气材料', NU
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material_vendor`;
 CREATE TABLE `bd_material_vendor`  (
-  `relation_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '关系ID',
-  `material_id` bigint(0) NOT NULL COMMENT '物料ID',
-  `vendor_id` bigint(0) NOT NULL COMMENT '供应商ID',
+  `relation_id` bigint NOT NULL AUTO_INCREMENT COMMENT '关系ID',
+  `material_id` bigint NOT NULL COMMENT '物料ID',
+  `vendor_id` bigint NOT NULL COMMENT '供应商ID',
   `vendor_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '供应商编码',
   `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '供应商名称',
-  `lead_time` int(0) NULL DEFAULT 0 COMMENT '供货周期(天)',
+  `lead_time` int NULL DEFAULT 0 COMMENT '供货周期(天)',
   `min_order_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '最小订货量',
   `price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '单价',
   `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种',
-  `is_default` tinyint(0) NULL DEFAULT 0 COMMENT '是否默认供应商 0:否 1:是',
-  `priority` int(0) NULL DEFAULT 0 COMMENT '优先级',
+  `is_default` tinyint NULL DEFAULT 0 COMMENT '是否默认供应商 0:否 1:是',
+  `priority` int NULL DEFAULT 0 COMMENT '优先级',
   `effective_date` date NULL DEFAULT NULL COMMENT '生效日期',
   `expiry_date` date NULL DEFAULT NULL COMMENT '失效日期',
-  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`relation_id`) USING BTREE,
-  UNIQUE INDEX `uk_material_supplier`(`material_id`, `vendor_id`) USING BTREE,
-  INDEX `idx_material_id`(`material_id`) USING BTREE,
-  INDEX `idx_supplier_id`(`vendor_id`) USING BTREE,
-  INDEX `idx_default`(`is_default`) USING BTREE,
+  UNIQUE INDEX `uk_material_supplier`(`material_id` ASC, `vendor_id` ASC) USING BTREE,
+  INDEX `idx_material_id`(`material_id` ASC) USING BTREE,
+  INDEX `idx_supplier_id`(`vendor_id` ASC) USING BTREE,
+  INDEX `idx_default`(`is_default` ASC) USING BTREE,
   CONSTRAINT `fk_ms_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_material_vendor
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for bd_unit_of_measure
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_unit_of_measure`;
 CREATE TABLE `bd_unit_of_measure`  (
-  `uom_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '单位ID',
+  `uom_id` bigint NOT NULL AUTO_INCREMENT COMMENT '单位ID',
   `uom_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '单位编码',
   `uom_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '单位名称',
   `uom_symbol` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位符号(kg、m、pcs等)',
   `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位类别(重量、长度、数量等)',
-  `is_base` tinyint(0) NULL DEFAULT 0 COMMENT '是否基本单位 0:否 1:是',
-  `primary_id` bigint(0) NULL DEFAULT NULL COMMENT '基本单位ID',
+  `is_base` tinyint NULL DEFAULT 0 COMMENT '是否基本单位 0:否 1:是',
+  `primary_id` bigint NULL DEFAULT NULL COMMENT '基本单位ID',
   `primary_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '基本单位名称',
   `conversion_rate` decimal(18, 6) NULL DEFAULT 1.000000 COMMENT '转换率(相对于基本单位)',
-  `status` tinyint(0) NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
-  `sort_order` int(0) NULL DEFAULT 0 COMMENT '排序',
+  `status` tinyint NULL DEFAULT 1 COMMENT '状态 0:停用 1:启用',
+  `sort_order` int NULL DEFAULT 0 COMMENT '排序',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`uom_id`) USING BTREE,
-  UNIQUE INDEX `uk_uom_code`(`uom_code`) USING BTREE,
-  INDEX `idx_category`(`category`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `uk_uom_code`(`uom_code` ASC) USING BTREE,
+  INDEX `idx_category`(`category` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_unit_of_measure
@@ -469,11 +477,11 @@ INSERT INTO `bd_unit_of_measure` VALUES (54, 'MOLAR', '摩尔浓度', 'mol/L', '
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_vendor`;
 CREATE TABLE `bd_vendor`  (
-  `vendor_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '供应商ID',
+  `vendor_id` bigint NOT NULL AUTO_INCREMENT COMMENT '供应商ID',
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '供应商编码',
   `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '供应商名称',
   `tax_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '税号',
-  `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址',
+  `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '详细地址',
   `contact_person` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系人',
   `phone` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '电话',
   `bank_account` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '银行账户',
@@ -484,27 +492,33 @@ CREATE TABLE `bd_vendor`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `province_area_id` bigint NULL DEFAULT NULL COMMENT '省份行政区划ID',
+  `city_area_id` bigint NULL DEFAULT NULL COMMENT '城市行政区划ID',
+  `district_area_id` bigint NULL DEFAULT NULL COMMENT '区县行政区划ID',
+  `street_id` bigint NULL DEFAULT NULL COMMENT '街道行政区划ID',
+  `address_lat` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址纬度',
+  `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址经度',
   PRIMARY KEY (`vendor_id`) USING BTREE,
-  UNIQUE INDEX `uk_vendor_code`(`vendor_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '供应商表' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `uk_vendor_code`(`vendor_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '供应商表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_vendor
 -- ----------------------------
-INSERT INTO `bd_vendor` VALUES (1, 'V00005', '北京五道口', '123123123312', '北京海定区111号', '张三', '15388888888', '1231231231233', 'B', '11', '1', 'ACTIVE', '测试', NULL, NULL, NULL, NULL, NULL, '2025-09-22 16:28:36', NULL, '2025-10-23 19:34:01');
+INSERT INTO `bd_vendor` VALUES (1, 'V00005', '北京五道口', '123123123312', '浙江省杭州市上城区湖滨街道', '张三', '15388888888', '1231231231233', 'B', '1', '1', 'ACTIVE', '测试', NULL, NULL, NULL, NULL, NULL, '2025-09-22 16:28:36', NULL, '2025-11-02 18:20:16', 330000, 330100, 330102, 330102003, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for gen_table
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table`;
 CREATE TABLE `gen_table`  (
-  `table_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '编号',
+  `table_id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
   `table_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '表名称',
   `table_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '表描述',
   `sub_table_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '关联子表的表名',
@@ -521,12 +535,12 @@ CREATE TABLE `gen_table`  (
   `gen_path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '/' COMMENT '生成路径（不填默认项目路径）',
   `options` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '其它生成选项',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table
@@ -553,8 +567,8 @@ INSERT INTO `gen_table` VALUES (19, 'sys_dic_area', '行政区划表', '', '', '
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table_column`;
 CREATE TABLE `gen_table_column`  (
-  `column_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '编号',
-  `table_id` bigint(0) NULL DEFAULT NULL COMMENT '归属表编号',
+  `column_id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
+  `table_id` bigint NULL DEFAULT NULL COMMENT '归属表编号',
   `column_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列名称',
   `column_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列描述',
   `column_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '列类型',
@@ -570,13 +584,13 @@ CREATE TABLE `gen_table_column`  (
   `query_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'EQ' COMMENT '查询方式（等于、不等于、大于、小于、范围）',
   `html_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '显示类型（文本框、文本域、下拉框、复选框、单选框、日期控件）',
   `dict_type` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
-  `sort` int(0) NULL DEFAULT NULL COMMENT '排序',
+  `sort` int NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 434 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 435 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -953,7 +967,11 @@ CREATE TABLE `qrtz_blob_triggers`  (
   `blob_data` blob NULL COMMENT '存放持久化Trigger对象',
   PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE,
   CONSTRAINT `qrtz_blob_triggers_ibfk_1` FOREIGN KEY (`sched_name`, `trigger_name`, `trigger_group`) REFERENCES `qrtz_triggers` (`sched_name`, `trigger_name`, `trigger_group`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'Blob类型的触发器表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'Blob类型的触发器表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_blob_triggers
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_calendars
@@ -964,7 +982,11 @@ CREATE TABLE `qrtz_calendars`  (
   `calendar_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '日历名称',
   `calendar` blob NOT NULL COMMENT '存放持久化calendar对象',
   PRIMARY KEY (`sched_name`, `calendar_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '日历信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '日历信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_calendars
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_cron_triggers
@@ -978,7 +1000,11 @@ CREATE TABLE `qrtz_cron_triggers`  (
   `time_zone_id` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '时区',
   PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE,
   CONSTRAINT `qrtz_cron_triggers_ibfk_1` FOREIGN KEY (`sched_name`, `trigger_name`, `trigger_group`) REFERENCES `qrtz_triggers` (`sched_name`, `trigger_name`, `trigger_group`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'Cron类型的触发器表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'Cron类型的触发器表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_cron_triggers
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_fired_triggers
@@ -990,16 +1016,20 @@ CREATE TABLE `qrtz_fired_triggers`  (
   `trigger_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'qrtz_triggers表trigger_name的外键',
   `trigger_group` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'qrtz_triggers表trigger_group的外键',
   `instance_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调度器实例名',
-  `fired_time` bigint(0) NOT NULL COMMENT '触发的时间',
-  `sched_time` bigint(0) NOT NULL COMMENT '定时器制定的时间',
-  `priority` int(0) NOT NULL COMMENT '优先级',
+  `fired_time` bigint NOT NULL COMMENT '触发的时间',
+  `sched_time` bigint NOT NULL COMMENT '定时器制定的时间',
+  `priority` int NOT NULL COMMENT '优先级',
   `state` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '状态',
   `job_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '任务名称',
   `job_group` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '任务组名',
   `is_nonconcurrent` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否并发',
   `requests_recovery` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '是否接受恢复执行',
   PRIMARY KEY (`sched_name`, `entry_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '已触发的触发器表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '已触发的触发器表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_fired_triggers
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_job_details
@@ -1017,7 +1047,11 @@ CREATE TABLE `qrtz_job_details`  (
   `requests_recovery` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '是否接受恢复执行',
   `job_data` blob NULL COMMENT '存放持久化job对象',
   PRIMARY KEY (`sched_name`, `job_name`, `job_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务详细信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '任务详细信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_job_details
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_locks
@@ -1027,7 +1061,11 @@ CREATE TABLE `qrtz_locks`  (
   `sched_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调度名称',
   `lock_name` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '悲观锁名称',
   PRIMARY KEY (`sched_name`, `lock_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '存储的悲观锁信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '存储的悲观锁信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_locks
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_paused_trigger_grps
@@ -1037,7 +1075,11 @@ CREATE TABLE `qrtz_paused_trigger_grps`  (
   `sched_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调度名称',
   `trigger_group` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'qrtz_triggers表trigger_group的外键',
   PRIMARY KEY (`sched_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '暂停的触发器表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '暂停的触发器表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_paused_trigger_grps
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_scheduler_state
@@ -1046,10 +1088,14 @@ DROP TABLE IF EXISTS `qrtz_scheduler_state`;
 CREATE TABLE `qrtz_scheduler_state`  (
   `sched_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调度名称',
   `instance_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '实例名称',
-  `last_checkin_time` bigint(0) NOT NULL COMMENT '上次检查时间',
-  `checkin_interval` bigint(0) NOT NULL COMMENT '检查间隔时间',
+  `last_checkin_time` bigint NOT NULL COMMENT '上次检查时间',
+  `checkin_interval` bigint NOT NULL COMMENT '检查间隔时间',
   PRIMARY KEY (`sched_name`, `instance_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调度器状态表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调度器状态表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_scheduler_state
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_simple_triggers
@@ -1059,12 +1105,16 @@ CREATE TABLE `qrtz_simple_triggers`  (
   `sched_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调度名称',
   `trigger_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'qrtz_triggers表trigger_name的外键',
   `trigger_group` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'qrtz_triggers表trigger_group的外键',
-  `repeat_count` bigint(0) NOT NULL COMMENT '重复的次数统计',
-  `repeat_interval` bigint(0) NOT NULL COMMENT '重复的间隔时间',
-  `times_triggered` bigint(0) NOT NULL COMMENT '已经触发的次数',
+  `repeat_count` bigint NOT NULL COMMENT '重复的次数统计',
+  `repeat_interval` bigint NOT NULL COMMENT '重复的间隔时间',
+  `times_triggered` bigint NOT NULL COMMENT '已经触发的次数',
   PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE,
   CONSTRAINT `qrtz_simple_triggers_ibfk_1` FOREIGN KEY (`sched_name`, `trigger_name`, `trigger_group`) REFERENCES `qrtz_triggers` (`sched_name`, `trigger_name`, `trigger_group`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '简单触发器的信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '简单触发器的信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_simple_triggers
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_simprop_triggers
@@ -1077,17 +1127,21 @@ CREATE TABLE `qrtz_simprop_triggers`  (
   `str_prop_1` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'String类型的trigger的第一个参数',
   `str_prop_2` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'String类型的trigger的第二个参数',
   `str_prop_3` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'String类型的trigger的第三个参数',
-  `int_prop_1` int(0) NULL DEFAULT NULL COMMENT 'int类型的trigger的第一个参数',
-  `int_prop_2` int(0) NULL DEFAULT NULL COMMENT 'int类型的trigger的第二个参数',
-  `long_prop_1` bigint(0) NULL DEFAULT NULL COMMENT 'long类型的trigger的第一个参数',
-  `long_prop_2` bigint(0) NULL DEFAULT NULL COMMENT 'long类型的trigger的第二个参数',
+  `int_prop_1` int NULL DEFAULT NULL COMMENT 'int类型的trigger的第一个参数',
+  `int_prop_2` int NULL DEFAULT NULL COMMENT 'int类型的trigger的第二个参数',
+  `long_prop_1` bigint NULL DEFAULT NULL COMMENT 'long类型的trigger的第一个参数',
+  `long_prop_2` bigint NULL DEFAULT NULL COMMENT 'long类型的trigger的第二个参数',
   `dec_prop_1` decimal(13, 4) NULL DEFAULT NULL COMMENT 'decimal类型的trigger的第一个参数',
   `dec_prop_2` decimal(13, 4) NULL DEFAULT NULL COMMENT 'decimal类型的trigger的第二个参数',
   `bool_prop_1` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'Boolean类型的trigger的第一个参数',
   `bool_prop_2` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'Boolean类型的trigger的第二个参数',
   PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE,
   CONSTRAINT `qrtz_simprop_triggers_ibfk_1` FOREIGN KEY (`sched_name`, `trigger_name`, `trigger_group`) REFERENCES `qrtz_triggers` (`sched_name`, `trigger_name`, `trigger_group`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '同步机制的行锁表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '同步机制的行锁表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_simprop_triggers
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for qrtz_triggers
@@ -1100,29 +1154,33 @@ CREATE TABLE `qrtz_triggers`  (
   `job_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'qrtz_job_details表job_name的外键',
   `job_group` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'qrtz_job_details表job_group的外键',
   `description` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '相关介绍',
-  `next_fire_time` bigint(0) NULL DEFAULT NULL COMMENT '上一次触发时间（毫秒）',
-  `prev_fire_time` bigint(0) NULL DEFAULT NULL COMMENT '下一次触发时间（默认为-1表示不触发）',
-  `priority` int(0) NULL DEFAULT NULL COMMENT '优先级',
+  `next_fire_time` bigint NULL DEFAULT NULL COMMENT '上一次触发时间（毫秒）',
+  `prev_fire_time` bigint NULL DEFAULT NULL COMMENT '下一次触发时间（默认为-1表示不触发）',
+  `priority` int NULL DEFAULT NULL COMMENT '优先级',
   `trigger_state` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '触发器状态',
   `trigger_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '触发器的类型',
-  `start_time` bigint(0) NOT NULL COMMENT '开始时间',
-  `end_time` bigint(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `start_time` bigint NOT NULL COMMENT '开始时间',
+  `end_time` bigint NULL DEFAULT NULL COMMENT '结束时间',
   `calendar_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '日程表名称',
-  `misfire_instr` smallint(0) NULL DEFAULT NULL COMMENT '补偿执行的策略',
+  `misfire_instr` smallint NULL DEFAULT NULL COMMENT '补偿执行的策略',
   `job_data` blob NULL COMMENT '存放持久化job对象',
   PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE,
-  INDEX `sched_name`(`sched_name`, `job_name`, `job_group`) USING BTREE,
+  INDEX `sched_name`(`sched_name` ASC, `job_name` ASC, `job_group` ASC) USING BTREE,
   CONSTRAINT `qrtz_triggers_ibfk_1` FOREIGN KEY (`sched_name`, `job_name`, `job_group`) REFERENCES `qrtz_job_details` (`sched_name`, `job_name`, `job_group`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '触发器详细信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '触发器详细信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qrtz_triggers
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_customer_order
 -- ----------------------------
 DROP TABLE IF EXISTS `so_customer_order`;
 CREATE TABLE `so_customer_order`  (
-  `co_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '客户订单ID',
+  `co_id` bigint NOT NULL AUTO_INCREMENT COMMENT '客户订单ID',
   `co_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '客户订单号（客户系统编号）',
-  `client_id` bigint(0) NOT NULL COMMENT '客户ID',
+  `client_id` bigint NOT NULL COMMENT '客户ID',
   `contact_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人',
   `contact_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人电话',
   `order_date` date NOT NULL COMMENT '客户下单日期',
@@ -1130,25 +1188,25 @@ CREATE TABLE `so_customer_order`  (
   `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '货币',
   `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '订单总金额（未税）',
   `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT-草稿,CONFIRMED-已确认,CANCELLED-已取消',
-  `priority` tinyint(0) NULL DEFAULT 0 COMMENT '订单优先级 0-普通 1-紧急 2-特急',
+  `priority` tinyint NULL DEFAULT 0 COMMENT '订单优先级 0-普通 1-紧急 2-特急',
   `customer_po_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户采购订单号',
   `source_channel` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '订单来源：PORTAL/SALES/EDI',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `client_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户编码',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `sales_rep_id` bigint(0) NULL DEFAULT NULL COMMENT '销售代表',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `sales_rep_id` bigint NULL DEFAULT NULL COMMENT '销售代表',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`co_id`) USING BTREE,
-  UNIQUE INDEX `uk_co_no`(`co_no`) USING BTREE,
-  INDEX `idx_client_id`(`client_id`) USING BTREE,
-  INDEX `idx_order_date`(`order_date`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE,
-  INDEX `idx_requested_date`(`requested_date`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单（外部原始需求）' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `uk_co_no`(`co_no` ASC) USING BTREE,
+  INDEX `idx_client_id`(`client_id` ASC) USING BTREE,
+  INDEX `idx_order_date`(`order_date` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_requested_date`(`requested_date` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单（外部原始需求）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_customer_order
@@ -1169,16 +1227,16 @@ INSERT INTO `so_customer_order` VALUES (10, 'CO20241130001', 5, '陈总', '13600
 -- ----------------------------
 DROP TABLE IF EXISTS `so_sales_order_header`;
 CREATE TABLE `so_sales_order_header`  (
-  `so_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '销售订单ID',
+  `so_id` bigint NOT NULL AUTO_INCREMENT COMMENT '销售订单ID',
   `so_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '销售订单编号（SO202509150001）',
-  `co_id` bigint(0) NULL DEFAULT NULL COMMENT '来源客户订单ID',
-  `client_id` bigint(0) NOT NULL COMMENT '来源客户ID',
-  `sales_rep_id` bigint(0) NULL DEFAULT NULL COMMENT '销售代表',
+  `co_id` bigint NULL DEFAULT NULL COMMENT '来源客户订单ID',
+  `client_id` bigint NOT NULL COMMENT '来源客户ID',
+  `sales_rep_id` bigint NULL DEFAULT NULL COMMENT '销售代表',
   `order_date` date NOT NULL COMMENT '订单生成日期',
   `promise_date` date NULL DEFAULT NULL COMMENT '承诺交货日（经ATP/MPS评审后）',
   `requested_date` date NULL DEFAULT NULL COMMENT '客户要求交货日（从CO复制）',
-  `delivery_address_id` bigint(0) NULL DEFAULT NULL COMMENT '发货地址ID（客户档案中维护）',
-  `invoice_address_id` bigint(0) NULL DEFAULT NULL COMMENT '开票地址ID',
+  `delivery_address_id` bigint NULL DEFAULT NULL COMMENT '发货地址ID（客户档案中维护）',
+  `invoice_address_id` bigint NULL DEFAULT NULL COMMENT '开票地址ID',
   `delivery_address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '发货地址详情（冗余，便于查询）',
   `invoice_address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '开票地址详情（冗余）',
   `payment_terms` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '付款条款（如 Net 30）',
@@ -1189,39 +1247,39 @@ CREATE TABLE `so_sales_order_header`  (
   `discount_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '整单折扣',
   `discount_rate` decimal(5, 2) NULL DEFAULT NULL COMMENT '整单折扣率',
   `credit_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NOT_CHECKED' COMMENT '信用状态：NOT_CHECKED/CHECKED_OK/CHECKED_BLOCKED',
-  `credit_check_time` datetime(0) NULL DEFAULT NULL COMMENT '信用检查时间',
-  `credit_blocked_by` bigint(0) NULL DEFAULT NULL COMMENT '信用拦截人',
+  `credit_check_time` datetime NULL DEFAULT NULL COMMENT '信用检查时间',
+  `credit_blocked_by` bigint NULL DEFAULT NULL COMMENT '信用拦截人',
   `order_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT-草稿,PENDING_REVIEW-待评审,CONFIRMED-已确认,PARTIALLY_FULFILLED-部分履行,FULFILLED-已履行,CLOSED-已关闭,CANCELLED-已取消',
-  `project_id` bigint(0) NULL DEFAULT NULL COMMENT '项目ID（用于PA清单）',
+  `project_id` bigint NULL DEFAULT NULL COMMENT '项目ID（用于PA清单）',
   `is_pa_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否启用项目配套发料 0-否 1-是',
-  `confirmed_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
-  `fulfilled_time` datetime(0) NULL DEFAULT NULL COMMENT '完全履行时间',
-  `closed_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
-  `cancelled_time` datetime(0) NULL DEFAULT NULL COMMENT '取消时间',
+  `confirmed_time` datetime NULL DEFAULT NULL COMMENT '确认时间',
+  `fulfilled_time` datetime NULL DEFAULT NULL COMMENT '完全履行时间',
+  `closed_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
+  `cancelled_time` datetime NULL DEFAULT NULL COMMENT '取消时间',
   `cancelled_reason` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '取消原因',
-  `sales_org_id` bigint(0) NULL DEFAULT NULL COMMENT '销售组织ID',
+  `sales_org_id` bigint NULL DEFAULT NULL COMMENT '销售组织ID',
   `distribution_channel` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分销渠道',
   `customer_ref_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户参考号',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`so_id`) USING BTREE,
-  UNIQUE INDEX `uk_so_no`(`so_no`) USING BTREE,
-  INDEX `idx_client_id`(`client_id`) USING BTREE,
-  INDEX `idx_order_date`(`order_date`) USING BTREE,
-  INDEX `idx_promise_date`(`promise_date`) USING BTREE,
-  INDEX `idx_order_status`(`order_status`) USING BTREE,
-  INDEX `idx_project_id`(`project_id`) USING BTREE,
-  INDEX `idx_co_id`(`co_id`) USING BTREE,
-  INDEX `idx_sales_rep_id`(`sales_rep_id`) USING BTREE,
+  UNIQUE INDEX `uk_so_no`(`so_no` ASC) USING BTREE,
+  INDEX `idx_client_id`(`client_id` ASC) USING BTREE,
+  INDEX `idx_order_date`(`order_date` ASC) USING BTREE,
+  INDEX `idx_promise_date`(`promise_date` ASC) USING BTREE,
+  INDEX `idx_order_status`(`order_status` ASC) USING BTREE,
+  INDEX `idx_project_id`(`project_id` ASC) USING BTREE,
+  INDEX `idx_co_id`(`co_id` ASC) USING BTREE,
+  INDEX `idx_sales_rep_id`(`sales_rep_id` ASC) USING BTREE,
   CONSTRAINT `fk_so_header_co` FOREIGN KEY (`co_id`) REFERENCES `so_customer_order` (`co_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_sales_order_header
@@ -1237,10 +1295,10 @@ INSERT INTO `so_sales_order_header` VALUES (7, '1761323171431', 8, 9, NULL, '202
 -- ----------------------------
 DROP TABLE IF EXISTS `so_sales_order_line`;
 CREATE TABLE `so_sales_order_line`  (
-  `line_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '销售订单行表id',
-  `so_id` bigint(0) NOT NULL COMMENT '销售订单ID',
+  `line_id` bigint NOT NULL AUTO_INCREMENT COMMENT '销售订单行表id',
+  `so_id` bigint NOT NULL COMMENT '销售订单ID',
   `line_no` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '行号（0010,0020）',
-  `material_id` bigint(0) NOT NULL COMMENT '物料ID',
+  `material_id` bigint NOT NULL COMMENT '物料ID',
   `material_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料编码（冗余，提高查询性能）',
   `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '物料名称（冗余）',
   `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料规格（冗余）',
@@ -1260,66 +1318,70 @@ CREATE TABLE `so_sales_order_line`  (
   `purchase_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已采购数量',
   `reserved_qty` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已预留库存数量',
   `line_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING-待处理,SCHEDULED-已排产/已采购,PARTIALLY_FULFILLED-部分履行,FULFILLED-已履行,CANCELLED-已取消',
-  `linked_mo_id` bigint(0) NULL DEFAULT NULL COMMENT '关联生产工单ID',
-  `linked_po_id` bigint(0) NULL DEFAULT NULL COMMENT '关联采购订单ID',
+  `linked_mo_id` bigint NULL DEFAULT NULL COMMENT '关联生产工单ID',
+  `linked_po_id` bigint NULL DEFAULT NULL COMMENT '关联采购订单ID',
   `reserved_batch_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留批次号',
   `reserved_serials` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '预留序列号列表（JSON）',
-  `pa_group_id` bigint(0) NULL DEFAULT NULL COMMENT 'PA配套组ID（用于项目型订单配套发料）',
-  `warehouse_id` bigint(0) NULL DEFAULT NULL COMMENT '默认仓库ID',
-  `delivery_priority` tinyint(0) NULL DEFAULT 0 COMMENT '交付优先级',
+  `pa_group_id` bigint NULL DEFAULT NULL COMMENT 'PA配套组ID（用于项目型订单配套发料）',
+  `warehouse_id` bigint NULL DEFAULT NULL COMMENT '默认仓库ID',
+  `delivery_priority` tinyint NULL DEFAULT 0 COMMENT '交付优先级',
   `customer_line_ref` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户行参考号',
-  `sort_order` int(0) NOT NULL DEFAULT 0,
+  `sort_order` int NOT NULL DEFAULT 0,
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
-  UNIQUE INDEX `uk_so_line_no`(`so_id`, `line_no`) USING BTREE,
-  INDEX `idx_so_id`(`so_id`) USING BTREE,
-  INDEX `idx_material_id`(`material_id`) USING BTREE,
-  INDEX `idx_line_status`(`line_status`) USING BTREE,
-  INDEX `idx_linked_mo_id`(`linked_mo_id`) USING BTREE,
-  INDEX `idx_linked_po_id`(`linked_po_id`) USING BTREE,
-  INDEX `idx_pa_group_id`(`pa_group_id`) USING BTREE,
+  UNIQUE INDEX `uk_so_line_no`(`so_id` ASC, `line_no` ASC) USING BTREE,
+  INDEX `idx_so_id`(`so_id` ASC) USING BTREE,
+  INDEX `idx_material_id`(`material_id` ASC) USING BTREE,
+  INDEX `idx_line_status`(`line_status` ASC) USING BTREE,
+  INDEX `idx_linked_mo_id`(`linked_mo_id` ASC) USING BTREE,
+  INDEX `idx_linked_po_id`(`linked_po_id` ASC) USING BTREE,
+  INDEX `idx_pa_group_id`(`pa_group_id` ASC) USING BTREE,
   CONSTRAINT `fk_so_line_header` FOREIGN KEY (`so_id`) REFERENCES `so_sales_order_header` (`so_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of so_sales_order_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_auto_code_part
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_auto_code_part`;
 CREATE TABLE `sys_auto_code_part`  (
-  `part_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '分段ID',
-  `rule_id` bigint(0) NOT NULL COMMENT '规则ID',
-  `part_index` int(0) NOT NULL COMMENT '分段序号',
+  `part_id` bigint NOT NULL AUTO_INCREMENT COMMENT '分段ID',
+  `rule_id` bigint NOT NULL COMMENT '规则ID',
+  `part_index` int NOT NULL COMMENT '分段序号',
   `part_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '分段类型，INPUTCHAR：输入字符，NOWDATE：当前日期时间，FIXCHAR：固定字符，SERIALNO：流水号',
   `part_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分段编号',
   `part_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分段名称',
-  `part_length` int(0) NOT NULL COMMENT '分段长度',
+  `part_length` int NOT NULL COMMENT '分段长度',
   `date_format` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `input_character` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '输入字符',
   `fix_character` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '固定字符',
-  `seria_start_no` int(0) NULL DEFAULT NULL COMMENT '流水号起始值',
-  `seria_step` int(0) NULL DEFAULT NULL COMMENT '流水号步长',
-  `seria_now_no` int(0) NULL DEFAULT NULL COMMENT '流水号当前值',
+  `seria_start_no` int NULL DEFAULT NULL COMMENT '流水号起始值',
+  `seria_step` int NULL DEFAULT NULL COMMENT '流水号步长',
+  `seria_now_no` int NULL DEFAULT NULL COMMENT '流水号当前值',
   `cycle_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '流水号是否循环',
   `cycle_method` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '循环方式，YEAR：按年，MONTH：按月，DAY：按天，HOUR：按小时，MINITE：按分钟，OTHER：按传入字符变',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`part_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 361 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 362 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -1484,24 +1546,24 @@ INSERT INTO `sys_auto_code_part` VALUES (361, 266, 3, 'SERIALNO', 'SERIAL', '流
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_auto_code_result`;
 CREATE TABLE `sys_auto_code_result`  (
-  `code_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '记录ID',
-  `rule_id` bigint(0) NOT NULL COMMENT '规则ID',
+  `code_id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `rule_id` bigint NOT NULL COMMENT '规则ID',
   `gen_date` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '生成日期时间',
-  `gen_index` int(0) NULL DEFAULT NULL COMMENT '最后产生的序号',
+  `gen_index` int NULL DEFAULT NULL COMMENT '最后产生的序号',
   `last_result` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后产生的值',
-  `last_serial_no` int(0) NULL DEFAULT NULL COMMENT '最后产生的流水号',
+  `last_serial_no` int NULL DEFAULT NULL COMMENT '最后产生的流水号',
   `last_input_char` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后传入的参数',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`code_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 662 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 663 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -1965,11 +2027,11 @@ INSERT INTO `sys_auto_code_result` VALUES (662, 266, '20251029160502', 1, 'CO202
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_auto_code_rule`;
 CREATE TABLE `sys_auto_code_rule`  (
-  `rule_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `rule_id` bigint NOT NULL AUTO_INCREMENT COMMENT '规则ID',
   `rule_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则编码',
   `rule_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则名称',
   `rule_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
-  `max_length` int(0) NULL DEFAULT NULL COMMENT '最大长度',
+  `max_length` int NULL DEFAULT NULL COMMENT '最大长度',
   `is_padded` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '是否补齐',
   `padded_char` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '补齐字符',
   `padded_method` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'L' COMMENT '补齐方式',
@@ -1977,14 +2039,14 @@ CREATE TABLE `sys_auto_code_rule`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`rule_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 267 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 267 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -2055,18 +2117,18 @@ INSERT INTO `sys_auto_code_rule` VALUES (266, 'SO_CO_NO', '客户订单号', '�
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_config`;
 CREATE TABLE `sys_config`  (
-  `config_id` int(0) NOT NULL AUTO_INCREMENT COMMENT '参数主键',
+  `config_id` int NOT NULL AUTO_INCREMENT COMMENT '参数主键',
   `config_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数名称',
   `config_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数键名',
   `config_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '参数键值',
   `config_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_config
@@ -2085,22 +2147,22 @@ INSERT INTO `sys_config` VALUES (8, '用户管理-账号密码更新周期', 'sy
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dept`;
 CREATE TABLE `sys_dept`  (
-  `dept_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '部门id',
-  `parent_id` bigint(0) NULL DEFAULT 0 COMMENT '父部门id',
+  `dept_id` bigint NOT NULL AUTO_INCREMENT COMMENT '部门id',
+  `parent_id` bigint NULL DEFAULT 0 COMMENT '父部门id',
   `ancestors` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '祖级列表',
   `dept_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '部门名称',
-  `order_num` int(0) NULL DEFAULT 0 COMMENT '显示顺序',
+  `order_num` int NULL DEFAULT 0 COMMENT '显示顺序',
   `leader` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '负责人',
   `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系电话',
   `email` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '邮箱',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '部门状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 117 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 117 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -2128,19 +2190,19 @@ INSERT INTO `sys_dept` VALUES (116, 101, '0,100,101', '人力资源部门', 7, N
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dic_area`;
 CREATE TABLE `sys_dic_area`  (
-  `pkid` bigint(0) NOT NULL AUTO_INCREMENT,
-  `area_id` bigint(0) NOT NULL COMMENT '行政区划代码',
-  `parent_area_id` bigint(0) NOT NULL COMMENT '父级行政区划代码',
+  `pkid` bigint NOT NULL AUTO_INCREMENT,
+  `area_id` bigint NOT NULL COMMENT '行政区划代码',
+  `parent_area_id` bigint NOT NULL COMMENT '父级行政区划代码',
   `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '行政区划名称',
   `lat` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '纬度',
   `lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '经度',
-  `layered` int(0) NULL DEFAULT NULL COMMENT '区划层级',
-  `sort` int(0) NULL DEFAULT NULL COMMENT '序号',
+  `layered` int NULL DEFAULT NULL COMMENT '区划层级',
+  `sort` int NULL DEFAULT NULL COMMENT '序号',
   `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '地址',
   PRIMARY KEY (`pkid`) USING BTREE,
-  INDEX `layered`(`layered`) USING BTREE,
-  INDEX `area_id`(`area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '行政区划表' ROW_FORMAT = Compact;
+  INDEX `layered`(`layered` ASC) USING BTREE,
+  INDEX `area_id`(`area_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '行政区划表' ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of sys_dic_area
@@ -2633,7 +2695,6 @@ INSERT INTO `sys_dic_area` VALUES (488, 330155, 330100, '钱塘新区', '', '', 
 INSERT INTO `sys_dic_area` VALUES (489, 330183, 330100, '富阳区', '', '', 3, NULL, NULL);
 INSERT INTO `sys_dic_area` VALUES (490, 102, 330100, '经济技术开发区', '', '', 3, NULL, NULL);
 INSERT INTO `sys_dic_area` VALUES (491, 330293, 330200, '宁波梅山物流产业集聚区', '', '', 3, NULL, NULL);
-INSERT INTO `sys_dic_area` VALUES (492, 330254, 330200, '高新技术产业开发区', '', '', 3, NULL, NULL);
 INSERT INTO `sys_dic_area` VALUES (493, 330299, 330200, '东钱湖区', '', '', 3, NULL, NULL);
 INSERT INTO `sys_dic_area` VALUES (494, 330383, 330300, '龙港市', '', '', 3, 16, NULL);
 INSERT INTO `sys_dic_area` VALUES (495, 330554, 330500, '省际承接产业转移示范区 ', '', '', 3, NULL, NULL);
@@ -3059,19 +3120,13 @@ INSERT INTO `sys_dic_area` VALUES (918, 330602104, 330602, '皋埠镇', '30.0069
 INSERT INTO `sys_dic_area` VALUES (919, 330602105, 330602, '马山镇', '30.07423', '120.66058', 4, 13, '马山镇');
 INSERT INTO `sys_dic_area` VALUES (920, 330602106, 330602, '斗门镇', '30.087288', '120.60304', 4, 6, '斗门镇');
 INSERT INTO `sys_dic_area` VALUES (921, 330621001, 330621, '柯桥街道', '30.069601', '120.49189', 4, 7, '柯桥街道');
-INSERT INTO `sys_dic_area` VALUES (922, 330621002, 330603, '柯岩街道', '30.052855', '120.49029', 4, 16, '柯岩街道');
-INSERT INTO `sys_dic_area` VALUES (923, 330621003, 330603, '华舍街道', '30.110176', '120.48771', 4, 17, '华舍街道');
-INSERT INTO `sys_dic_area` VALUES (924, 330621004, 330603, '湖塘街道', '29.997116', '120.582115', 4, 18, '湖塘街道');
 INSERT INTO `sys_dic_area` VALUES (925, 330621100, 330621, '齐贤镇', '30.12014', '120.53829', 4, 14, '齐贤镇');
 INSERT INTO `sys_dic_area` VALUES (926, 330621101, 330621, '钱清镇', '30.126944', '120.39731', 4, 13, '钱清镇');
 INSERT INTO `sys_dic_area` VALUES (927, 330621102, 330621, '孙端镇', '30.067177', '120.70025', 4, 15, '孙端镇');
 INSERT INTO `sys_dic_area` VALUES (928, 330621103, 330621, '福全镇', '29.99147', '120.531204', 4, 2, '福全镇');
 INSERT INTO `sys_dic_area` VALUES (929, 330621104, 330621, '马鞍镇', '30.14573', '120.589455', 4, 11, '马鞍镇');
-INSERT INTO `sys_dic_area` VALUES (930, 330621105, 330603, '平水镇', '29.89496', '120.63074', 4, 19, '平水镇');
 INSERT INTO `sys_dic_area` VALUES (931, 330621106, 330621, '安昌镇', '30.13652', '120.4976', 4, 1, '安昌镇');
-INSERT INTO `sys_dic_area` VALUES (932, 330621107, 330603, '王坛镇', '29.782103', '120.67755', 4, 20, '王坛镇');
 INSERT INTO `sys_dic_area` VALUES (933, 330621108, 330621, '兰亭镇', '29.956549', '120.52395', 4, 9, '兰亭镇');
-INSERT INTO `sys_dic_area` VALUES (934, 330621109, 330603, '稽东镇', '29.771795', '120.58026', 4, 21, '稽东镇');
 INSERT INTO `sys_dic_area` VALUES (935, 330621110, 330621, '杨汛桥镇', '30.146551', '120.36905', 4, 19, '杨汛桥镇');
 INSERT INTO `sys_dic_area` VALUES (936, 330621111, 330621, '漓渚镇', '29.955767', '120.47189', 4, 10, '漓渚镇');
 INSERT INTO `sys_dic_area` VALUES (937, 330621112, 330621, '富盛镇', '29.952026', '120.726135', 4, 3, '富盛镇');
@@ -3624,8 +3679,6 @@ INSERT INTO `sys_dic_area` VALUES (1487, 331082112, 331082, '杜桥镇', '28.761
 INSERT INTO `sys_dic_area` VALUES (1488, 331082113, 331082, '上盘镇', '28.749651', '121.59138', 4, 11, '上盘镇');
 INSERT INTO `sys_dic_area` VALUES (1489, 331082114, 331082, '桃渚镇', '28.821762', '121.58699', 4, 13, '桃渚镇');
 INSERT INTO `sys_dic_area` VALUES (1490, 330400, 330000, '嘉兴市', NULL, NULL, 2, 4, '浙江省 嘉兴市');
-INSERT INTO `sys_dic_area` VALUES (1492, 330800, 330800, '衢州市', NULL, NULL, 3, 8, '浙江省 衢州市');
-INSERT INTO `sys_dic_area` VALUES (1500, 330900, 330900, '舟山市', NULL, NULL, 3, 9, '浙江省 舟山市');
 INSERT INTO `sys_dic_area` VALUES (1502, 330604001, 330604, '百官街道', '', '', 4, 3, '百官街道');
 INSERT INTO `sys_dic_area` VALUES (1503, 330604002, 330604, '曹娥街道', NULL, NULL, 4, 3, '曹娥街道');
 INSERT INTO `sys_dic_area` VALUES (1504, 330604003, 330604, '东关街道', NULL, NULL, 4, 3, '东关街道');
@@ -3682,1232 +3735,11 @@ INSERT INTO `sys_dic_area` VALUES (1554, 830000, 156, '台湾省', NULL, NULL, 1
 INSERT INTO `sys_dic_area` VALUES (1555, 330302031, 330302, '南郊街道', NULL, NULL, 4, NULL, '南郊街道');
 INSERT INTO `sys_dic_area` VALUES (1556, 330801, 330800, '市辖区', '28.93', '118.871333', 3, 1, '浙江省 衢州市 市辖区');
 INSERT INTO `sys_dic_area` VALUES (1557, 330401, 330400, '市辖区', '30.75', '120.749954', 3, 1, '市辖区');
-INSERT INTO `sys_dic_area` VALUES (1558, 330102001, 330101, '清波街道', '30.238201785331500', '120.161330011424610', 4, 1, '浙江省 杭州市 上城区 清波街道');
-INSERT INTO `sys_dic_area` VALUES (1559, 330102003, 330101, '湖滨街道', '30.252085116114693', '120.166035876841780', 4, 2, '浙江省 杭州市 上城区 湖滨街道');
-INSERT INTO `sys_dic_area` VALUES (1560, 330102004, 330101, '小营街道', '30.248723587566660', '120.179156496678750', 4, 3, '浙江省 杭州市 上城区 小营街道');
-INSERT INTO `sys_dic_area` VALUES (1561, 330102008, 330101, '南星街道', '30.209443621414218', '120.159384923594800', 4, 4, '浙江省 杭州市 上城区 南星街道');
-INSERT INTO `sys_dic_area` VALUES (1562, 330102009, 330101, '紫阳街道', '30.224860941562345', '120.181727707246900', 4, 5, '浙江省 杭州市 上城区 紫阳街道');
-INSERT INTO `sys_dic_area` VALUES (1563, 330102010, 330101, '望江街道', '30.233861880881773', '120.196321595202040', 4, 6, '浙江省 杭州市 上城区 望江街道');
-INSERT INTO `sys_dic_area` VALUES (1564, 330105014, 330101, '长庆街道', '30.266496661072865', '120.175233275501910', 4, 13, '浙江省 杭州市 下城区 长庆街道');
-INSERT INTO `sys_dic_area` VALUES (1565, 330105013, 330101, '武林街道', '30.263174627439424', '120.162963988039300', 4, 12, '浙江省 杭州市 下城区 武林街道');
-INSERT INTO `sys_dic_area` VALUES (1566, 330105012, 330101, '天水街道', '30.269544295612687', '120.165177708455630', 4, 11, '浙江省 杭州市 下城区 天水街道');
-INSERT INTO `sys_dic_area` VALUES (1567, 330105015, 330101, '潮鸣街道', '30.267760940465626', '120.183677203922890', 4, 14, '浙江省 杭州市 下城区 潮鸣街道');
-INSERT INTO `sys_dic_area` VALUES (1568, 330105016, 330101, '朝晖街道', '30.284461340624007', '120.164849751375530', 4, 15, '浙江省 杭州市 下城区 朝晖街道');
-INSERT INTO `sys_dic_area` VALUES (1569, 330105017, 330101, '文晖街道', '30.292036203786894', '120.180212352419680', 4, 16, '浙江省 杭州市 下城区 文晖街道');
-INSERT INTO `sys_dic_area` VALUES (1570, 330105018, 330101, '东新街道', '30.312148200926130', '120.173696333581680', 4, 17, '浙江省 杭州市 下城区 东新街道');
-INSERT INTO `sys_dic_area` VALUES (1571, 330105019, 330101, '石桥街道', '30.332524769465290', '120.193254575704600', 4, 18, '浙江省 杭州市 下城区 石桥街道');
-INSERT INTO `sys_dic_area` VALUES (1572, 330102011, 330101, '凯旋街道', '30.267718239046415', '120.197745145434920', 4, 7, '浙江省 杭州市 江干区 凯旋街道');
-INSERT INTO `sys_dic_area` VALUES (1573, 330102012, 330101, '采荷街道', '30.250394047562076', '120.196528349044370', 4, 8, '浙江省 杭州市 江干区 采荷街道');
-INSERT INTO `sys_dic_area` VALUES (1574, 330102013, 330101, '闸弄口街道', '30.257399350197379', '120.205000193405800', 4, 9, '浙江省 杭州市 江干区 闸弄口街道');
-INSERT INTO `sys_dic_area` VALUES (1575, 330102014, 330101, '四季青街道', '30.255128699418813', '120.217759049301070', 4, 10, '浙江省 杭州市 江干区 四季青街道');
-INSERT INTO `sys_dic_area` VALUES (1576, 330102015, 330101, '彭埠街道', '30.288015486179057', '120.238017963382630', 4, 11, '浙江省 杭州市 江干区 彭埠街道');
-INSERT INTO `sys_dic_area` VALUES (1577, 330102016, 330101, '笕桥街道', '30.316122685183353', '120.220935971290290', 4, 12, '浙江省 杭州市 江干区 笕桥街道');
-INSERT INTO `sys_dic_area` VALUES (1578, 330102017, 330101, '丁兰街道', '30.362603386343130', '120.225453487586930', 4, 13, '浙江省 杭州市 江干区 丁兰街道');
-INSERT INTO `sys_dic_area` VALUES (1579, 330102018, 330101, '九堡街道', '30.311372205930966', '120.270979672695820', 4, 14, '浙江省 杭州市 江干区 九堡街道');
-INSERT INTO `sys_dic_area` VALUES (1580, 330105001, 330101, '米市巷街道', '30.287731154259306', '120.153639612369330', 4, 1, '浙江省 杭州市 拱墅区 米市巷街道');
-INSERT INTO `sys_dic_area` VALUES (1581, 330105002, 330101, '湖墅街道', '30.297317537825628', '120.149504991034040', 4, 2, '浙江省 杭州市 拱墅区 湖墅街道');
-INSERT INTO `sys_dic_area` VALUES (1582, 330105003, 330101, '小河街道', '30.302850472558370', '120.137461494139350', 4, 3, '浙江省 杭州市 拱墅区 小河街道');
-INSERT INTO `sys_dic_area` VALUES (1583, 330105004, 330101, '和睦街道', '30.311971366429629', '120.123564827343830', 4, 4, '浙江省 杭州市 拱墅区 和睦街道');
-INSERT INTO `sys_dic_area` VALUES (1584, 330105005, 330101, '拱宸桥街道', '30.318194218233768', '120.139363566771920', 4, 5, '浙江省 杭州市 拱墅区 拱宸桥街道');
-INSERT INTO `sys_dic_area` VALUES (1585, 330105007, 330101, '大关街道', '30.302037114291687', '120.157980179797080', 4, 6, '浙江省 杭州市 拱墅区 大关街道');
-INSERT INTO `sys_dic_area` VALUES (1586, 330105008, 330101, '上塘街道', '30.334647435437799', '120.148310011245630', 4, 7, '浙江省 杭州市 拱墅区 上塘街道');
-INSERT INTO `sys_dic_area` VALUES (1587, 330105009, 330101, '祥符街道', '30.319746269646374', '120.114729819970080', 4, 8, '浙江省 杭州市 拱墅区 祥符街道');
-INSERT INTO `sys_dic_area` VALUES (1588, 330105010, 330101, '康桥街道', '30.361739180247196', '120.145180005312540', 4, 9, '浙江省 杭州市 拱墅区 康桥街道');
-INSERT INTO `sys_dic_area` VALUES (1589, 330105011, 330101, '半山街道', '30.366026535417317', '120.188509318662850', 4, 10, '浙江省 杭州市 拱墅区 半山街道');
-INSERT INTO `sys_dic_area` VALUES (1590, 330106002, 330101, '北山街道', '30.249085288661705', '120.145321314407830', 4, 1, '浙江省 杭州市 西湖区 北山街道');
-INSERT INTO `sys_dic_area` VALUES (1591, 330106004, 330101, '西溪街道', '30.280974896336283', '120.142799340514180', 4, 2, '浙江省 杭州市 西湖区 西溪街道');
-INSERT INTO `sys_dic_area` VALUES (1592, 330106005, 330101, '翠苑街道', '30.282597994495516', '120.127416364328640', 4, 3, '浙江省 杭州市 西湖区 翠苑街道');
-INSERT INTO `sys_dic_area` VALUES (1593, 330106007, 330101, '古荡街道', '30.275718849743979', '120.110505290608730', 4, 4, '浙江省 杭州市 西湖区 古荡街道');
-INSERT INTO `sys_dic_area` VALUES (1594, 330106008, 330101, '西湖街道', '30.212845622529046', '120.111074408248660', 4, 5, '浙江省 杭州市 西湖区 西湖街道');
-INSERT INTO `sys_dic_area` VALUES (1595, 330106009, 330101, '留下街道', '30.231324223108488', '120.057858916740970', 4, 6, '浙江省 杭州市 西湖区 留下街道');
-INSERT INTO `sys_dic_area` VALUES (1596, 330106010, 330101, '转塘街道', '30.165115355516610', '120.064482947893800', 4, 7, '浙江省 杭州市 西湖区 转塘街道');
-INSERT INTO `sys_dic_area` VALUES (1597, 330106011, 330101, '蒋村街道', '30.277521629103190', '120.070831846134270', 4, 8, '浙江省 杭州市 西湖区 蒋村街道');
-INSERT INTO `sys_dic_area` VALUES (1598, 330106012, 330101, '灵隐街道', '30.257470082112879', '120.123577933740780', 4, 9, '浙江省 杭州市 西湖区 灵隐街道');
-INSERT INTO `sys_dic_area` VALUES (1599, 330106013, 330101, '文新街道', '30.284058274295160', '120.098469969940470', 4, 10, '浙江省 杭州市 西湖区 文新街道');
-INSERT INTO `sys_dic_area` VALUES (1600, 330106109, 330101, '三墩镇', '30.322665533275474', '120.060322042561110', 4, 11, '浙江省 杭州市 西湖区 三墩镇');
-INSERT INTO `sys_dic_area` VALUES (1601, 330106110, 330101, '双浦镇', '30.113835327201238', '120.092348299267250', 4, 12, '浙江省 杭州市 西湖区 双浦镇');
-INSERT INTO `sys_dic_area` VALUES (1602, 330108001, 330101, '西兴街道', '30.189052135806610', '120.226543019896310', 4, 1, '浙江省 杭州市 滨江区 西兴街道');
-INSERT INTO `sys_dic_area` VALUES (1603, 330108002, 330101, '长河街道', '30.179088464820150', '120.195636444943700', 4, 2, '浙江省 杭州市 滨江区 长河街道');
-INSERT INTO `sys_dic_area` VALUES (1604, 330108003, 330101, '浦沿街道', '30.169196600395240', '120.151110339266240', 4, 3, '浙江省 杭州市 滨江区 浦沿街道');
-INSERT INTO `sys_dic_area` VALUES (1605, 330109001, 330101, '城厢街道', '30.162362683148530', '120.243634130134610', 4, 1, '浙江省 杭州市 萧山区 城厢街道');
-INSERT INTO `sys_dic_area` VALUES (1606, 330109002, 330101, '北干街道', '30.188867592460537', '120.260555165145020', 4, 2, '浙江省 杭州市 萧山区 北干街道');
-INSERT INTO `sys_dic_area` VALUES (1607, 330109003, 330101, '蜀山街道', '30.120855948087394', '120.244697574722980', 4, 3, '浙江省 杭州市 萧山区 蜀山街道');
-INSERT INTO `sys_dic_area` VALUES (1608, 330109004, 330101, '新塘街道', '30.154914200840480', '120.310641132758860', 4, 4, '浙江省 杭州市 萧山区 新塘街道');
-INSERT INTO `sys_dic_area` VALUES (1609, 330109005, 330101, '靖江街道', '30.234715915888594', '120.476597039150500', 4, 5, '浙江省 杭州市 萧山区 靖江街道');
-INSERT INTO `sys_dic_area` VALUES (1610, 330109006, 330101, '南阳街道', '30.263452535518117', '120.424099675615720', 4, 6, '浙江省 杭州市 萧山区 南阳街道');
-INSERT INTO `sys_dic_area` VALUES (1611, 330109012, 330101, '闻堰街道', '30.127231100497043', '120.187296743639440', 4, 12, '浙江省 杭州市 萧山区 闻堰街道');
-INSERT INTO `sys_dic_area` VALUES (1612, 330109013, 330101, '宁围街道', '30.241920176877696', '120.285760686589070', 4, 13, '浙江省 杭州市 萧山区 宁围街道');
-INSERT INTO `sys_dic_area` VALUES (1613, 330109014, 330101, '新街街道', '30.211339564466355', '120.352674453260180', 4, 14, '浙江省 杭州市 萧山区 新街街道');
-INSERT INTO `sys_dic_area` VALUES (1614, 330109100, 330101, '楼塔镇', '29.893628972771937', '120.117024854058930', 4, 15, '浙江省 杭州市 萧山区 楼塔镇');
-INSERT INTO `sys_dic_area` VALUES (1615, 330109101, 330101, '河上镇', '29.949803789842700', '120.172730874888420', 4, 16, '浙江省 杭州市 萧山区 河上镇');
-INSERT INTO `sys_dic_area` VALUES (1616, 330109102, 330101, '戴村镇', '29.999319112249500', '120.163733655902350', 4, 17, '浙江省 杭州市 萧山区 戴村镇');
-INSERT INTO `sys_dic_area` VALUES (1617, 330109103, 330101, '浦阳镇', '29.963659493884010', '120.254273449489200', 4, 18, '浙江省 杭州市 萧山区 浦阳镇');
-INSERT INTO `sys_dic_area` VALUES (1618, 330109104, 330101, '进化镇', '29.996226204118690', '120.310298968005220', 4, 19, '浙江省 杭州市 萧山区 进化镇');
-INSERT INTO `sys_dic_area` VALUES (1619, 330109105, 330101, '临浦镇', '30.045405746308103', '120.245758300235110', 4, 20, '浙江省 杭州市 萧山区 临浦镇');
-INSERT INTO `sys_dic_area` VALUES (1620, 330109106, 330101, '义桥镇', '30.064969478266364', '120.177134302046430', 4, 21, '浙江省 杭州市 萧山区 义桥镇');
-INSERT INTO `sys_dic_area` VALUES (1621, 330109107, 330101, '所前镇', '30.084181046474339', '120.297693502362850', 4, 22, '浙江省 杭州市 萧山区 所前镇');
-INSERT INTO `sys_dic_area` VALUES (1622, 330109108, 330101, '衙前镇', '30.157154266962800', '120.390664607131530', 4, 23, '浙江省 杭州市 萧山区 衙前镇');
-INSERT INTO `sys_dic_area` VALUES (1623, 330109113, 330101, '瓜沥镇', '30.190107295087860', '120.459816548810780', 4, 24, '浙江省 杭州市 萧山区 瓜沥镇');
-INSERT INTO `sys_dic_area` VALUES (1624, 330109115, 330101, '益农镇', '30.276474486427973', '120.638989780678400', 4, 25, '浙江省 杭州市 萧山区 益农镇');
-INSERT INTO `sys_dic_area` VALUES (1625, 330109120, 330101, '党湾镇', '30.228618517306676', '120.542527059823830', 4, 26, '浙江省 杭州市 萧山区 党湾镇');
-INSERT INTO `sys_dic_area` VALUES (1626, 330109401, 330101, '萧山经济技术开发区', '30.181399587741460', '120.264000229686760', 4, 27, '浙江省 杭州市 萧山区 萧山经济技术开发区');
-INSERT INTO `sys_dic_area` VALUES (1627, 330109403, 330101, '萧山商业城', '30.165296091842970', '120.290775900313240', 4, 28, '浙江省 杭州市 萧山区 萧山商业城');
-INSERT INTO `sys_dic_area` VALUES (1628, 330109501, 330101, '围垦区', '30.336932315589890', '120.637156769834600', 4, 29, '浙江省 杭州市 萧山区 围垦区');
-INSERT INTO `sys_dic_area` VALUES (1629, 330109503, 330101, '红山农场', '30.237442387734096', '120.384487481091170', 4, 30, '浙江省 杭州市 萧山区 红山农场');
-INSERT INTO `sys_dic_area` VALUES (1630, 330109505, 330101, '萧山钱江世纪城', '30.237349612855718', '120.252800288739300', 4, 31, '浙江省 杭州市 萧山区 萧山钱江世纪城');
-INSERT INTO `sys_dic_area` VALUES (1631, 330113001, 330101, '临平街道', '30.435377057294614', '120.263728264802750', 4, 1, '浙江省 杭州市 余杭区 临平街道');
-INSERT INTO `sys_dic_area` VALUES (1632, 330113002, 330101, '南苑街道', '30.389518228438396', '120.310411479801160', 4, 2, '浙江省 杭州市 余杭区 南苑街道');
-INSERT INTO `sys_dic_area` VALUES (1633, 330113003, 330101, '东湖街道', '30.445198873872770', '120.318181013168660', 4, 3, '浙江省 杭州市 余杭区 东湖街道');
-INSERT INTO `sys_dic_area` VALUES (1634, 330113004, 330101, '星桥街道', '30.330717845980606', '120.110392722964730', 4, 4, '浙江省 杭州市 余杭区 星桥街道');
-INSERT INTO `sys_dic_area` VALUES (1635, 330110005, 330101, '五常街道', '30.268186644690670', '120.035290387280430', 4, 5, '浙江省 杭州市 余杭区 五常街道');
-INSERT INTO `sys_dic_area` VALUES (1636, 330113005, 330101, '乔司街道', '30.354442705869710', '120.275479874491060', 4, 6, '浙江省 杭州市 余杭区 乔司街道');
-INSERT INTO `sys_dic_area` VALUES (1637, 330113006, 330101, '运河街道', '30.486512349500978', '120.294913613457090', 4, 7, '浙江省 杭州市 余杭区 运河街道');
-INSERT INTO `sys_dic_area` VALUES (1638, 330113007, 330101, '崇贤街道', '30.402179632971030', '120.164408624478220', 4, 8, '浙江省 杭州市 余杭区 崇贤街道');
-INSERT INTO `sys_dic_area` VALUES (1639, 330110009, 330101, '仁和街道', '30.443754571410439', '120.101379805094700', 4, 9, '浙江省 杭州市 余杭区 仁和街道');
-INSERT INTO `sys_dic_area` VALUES (1640, 330110013, 330101, '良渚街道', '30.381034190644024', '120.047251120606600', 4, 10, '浙江省 杭州市 余杭区 良渚街道');
-INSERT INTO `sys_dic_area` VALUES (1641, 330110010, 330101, '闲林街道', '30.214947967926034', '119.983419277696840', 4, 11, '浙江省 杭州市 余杭区 闲林街道');
-INSERT INTO `sys_dic_area` VALUES (1642, 330110014, 330101, '仓前街道', '30.302106712620433', '119.982542045411930', 4, 12, '浙江省 杭州市 余杭区 仓前街道');
-INSERT INTO `sys_dic_area` VALUES (1643, 330110012, 330101, '余杭街道', '30.288670702289310', '119.912709315622110', 4, 13, '浙江省 杭州市 余杭区 余杭街道');
-INSERT INTO `sys_dic_area` VALUES (1644, 330110011, 330101, '中泰街道', '30.219862266086527', '119.898192778876920', 4, 14, '浙江省 杭州市 余杭区 中泰街道');
-INSERT INTO `sys_dic_area` VALUES (1645, 330113100, 330101, '塘栖镇', '30.461086735526874', '120.203264761876500', 4, 9, '浙江省 杭州市 余杭区 塘栖镇');
-INSERT INTO `sys_dic_area` VALUES (1646, 330110109, 330101, '径山镇', '30.371956283884445', '119.835276738760430', 4, 16, '浙江省 杭州市 余杭区 径山镇');
-INSERT INTO `sys_dic_area` VALUES (1647, 330110110, 330101, '瓶窑镇', '30.404392114659600', '119.933895721326400', 4, 17, '浙江省 杭州市 余杭区 瓶窑镇');
-INSERT INTO `sys_dic_area` VALUES (1648, 330110111, 330101, '鸬鸟镇', '30.438554388604820', '119.736992351333840', 4, 18, '浙江省 杭州市 余杭区 鸬鸟镇');
-INSERT INTO `sys_dic_area` VALUES (1649, 330110112, 330101, '百丈镇', '30.517334870741690', '119.744681904802880', 4, 19, '浙江省 杭州市 余杭区 百丈镇');
-INSERT INTO `sys_dic_area` VALUES (1650, 330110113, 330101, '黄湖镇', '30.468059840311555', '119.824329508001980', 4, 20, '浙江省 杭州市 余杭区 黄湖镇');
-INSERT INTO `sys_dic_area` VALUES (1651, 330111001, 330101, '富春街道', '30.049966067768954', '119.889411613137700', 4, 1, '浙江省 杭州市 富阳区 富春街道');
-INSERT INTO `sys_dic_area` VALUES (1652, 330111002, 330101, '春江街道', '30.001752483660533', '119.963829695653160', 4, 2, '浙江省 杭州市 富阳区 春江街道');
-INSERT INTO `sys_dic_area` VALUES (1653, 330111004, 330101, '鹿山街道', '29.991527612089916', '119.879981048806800', 4, 3, '浙江省 杭州市 富阳区 鹿山街道');
-INSERT INTO `sys_dic_area` VALUES (1654, 330111005, 330101, '东洲街道', '30.073033686719520', '120.030055752467820', 4, 4, '浙江省 杭州市 富阳区 东洲街道');
-INSERT INTO `sys_dic_area` VALUES (1655, 330111006, 330101, '银湖街道', '30.096876147546550', '119.940964165774500', 4, 5, '浙江省 杭州市 富阳区 银湖街道');
-INSERT INTO `sys_dic_area` VALUES (1656, 330111100, 330101, '万市镇', '30.118627131213974', '119.534822333470290', 4, 6, '浙江省 杭州市 富阳区 万市镇');
-INSERT INTO `sys_dic_area` VALUES (1657, 330111101, 330101, '洞桥镇', '30.049779438919975', '119.596265681782840', 4, 7, '浙江省 杭州市 富阳区 洞桥镇');
-INSERT INTO `sys_dic_area` VALUES (1658, 330111103, 330101, '渌渚镇', '29.906641972796040', '119.745070204589300', 4, 8, '浙江省 杭州市 富阳区 渌渚镇');
-INSERT INTO `sys_dic_area` VALUES (1659, 330111105, 330101, '永昌镇', '30.056441727182059', '119.755877199689000', 4, 9, '浙江省 杭州市 富阳区 永昌镇');
-INSERT INTO `sys_dic_area` VALUES (1660, 330111108, 330101, '里山镇', '30.022205844107533', '120.080320431528170', 4, 10, '浙江省 杭州市 富阳区 里山镇');
-INSERT INTO `sys_dic_area` VALUES (1661, 330111109, 330101, '常绿镇', '29.851318107959680', '120.062328130899490', 4, 11, '浙江省 杭州市 富阳区 常绿镇');
-INSERT INTO `sys_dic_area` VALUES (1662, 330111110, 330101, '场口镇', '29.900640560438327', '119.867392588150990', 4, 12, '浙江省 杭州市 富阳区 场口镇');
-INSERT INTO `sys_dic_area` VALUES (1663, 330111111, 330101, '常安镇', '29.857885428792554', '119.912416798705300', 4, 13, '浙江省 杭州市 富阳区 常安镇');
-INSERT INTO `sys_dic_area` VALUES (1664, 330111112, 330101, '龙门镇', '29.891469228172779', '119.955594782879100', 4, 14, '浙江省 杭州市 富阳区 龙门镇');
-INSERT INTO `sys_dic_area` VALUES (1665, 330111115, 330101, '新登镇', '30.001218353053550', '119.727038929744300', 4, 15, '浙江省 杭州市 富阳区 新登镇');
-INSERT INTO `sys_dic_area` VALUES (1666, 330111116, 330101, '胥口镇', '29.980420170368760', '119.645015179988010', 4, 16, '浙江省 杭州市 富阳区 胥口镇');
-INSERT INTO `sys_dic_area` VALUES (1667, 330111117, 330101, '大源镇', '29.941100375712276', '120.028009121947450', 4, 17, '浙江省 杭州市 富阳区 大源镇');
-INSERT INTO `sys_dic_area` VALUES (1668, 330111118, 330101, '灵桥镇', '29.991885708925719', '120.054855858276140', 4, 18, '浙江省 杭州市 富阳区 灵桥镇');
-INSERT INTO `sys_dic_area` VALUES (1669, 330111200, 330101, '新桐乡', '29.928291410919145', '119.832711784780290', 4, 19, '浙江省 杭州市 富阳区 新桐乡');
-INSERT INTO `sys_dic_area` VALUES (1670, 330111201, 330101, '上官乡', '29.884117945575775', '120.001382469806520', 4, 20, '浙江省 杭州市 富阳区 上官乡');
-INSERT INTO `sys_dic_area` VALUES (1671, 330111204, 330101, '环山乡', '29.941554301112764', '119.937728274583170', 4, 21, '浙江省 杭州市 富阳区 环山乡');
-INSERT INTO `sys_dic_area` VALUES (1672, 330111205, 330101, '湖源乡', '29.798810915420459', '119.960893931232890', 4, 22, '浙江省 杭州市 富阳区 湖源乡');
-INSERT INTO `sys_dic_area` VALUES (1673, 330111206, 330101, '春建乡', '30.082465138240207', '119.823500230158360', 4, 23, '浙江省 杭州市 富阳区 春建乡');
-INSERT INTO `sys_dic_area` VALUES (1674, 330111207, 330101, '渔山乡', '30.035478703329358', '120.113221607067500', 4, 24, '浙江省 杭州市 富阳区 渔山乡');
-INSERT INTO `sys_dic_area` VALUES (1675, 330112002, 330101, '玲珑街道', '30.233899804390608', '119.725000155249260', 4, 1, '浙江省 杭州市 临安区 玲珑街道');
-INSERT INTO `sys_dic_area` VALUES (1676, 330112005, 330101, '锦南街道', '30.233899804390608', '119.725000155249260', 4, 2, '浙江省 杭州市 临安区 锦南街道');
-INSERT INTO `sys_dic_area` VALUES (1677, 330112006, 330101, '锦城街道', '30.234626935991310', '119.718298632957590', 4, 3, '浙江省 杭州市 临安区 锦城街道');
-INSERT INTO `sys_dic_area` VALUES (1678, 330112007, 330101, '锦北街道', '30.249851043919464', '119.722596265809810', 4, 4, '浙江省 杭州市 临安区 锦北街道');
-INSERT INTO `sys_dic_area` VALUES (1679, 330112008, 330101, '青山湖街道', '30.250227941182060', '119.823637598799990', 4, 5, '浙江省 杭州市 临安区 青山湖街道');
-INSERT INTO `sys_dic_area` VALUES (1680, 330112102, 330101, '高虹镇', '30.353222116044333', '119.673276341580070', 4, 6, '浙江省 杭州市 临安区 高虹镇');
-INSERT INTO `sys_dic_area` VALUES (1681, 330112103, 330101, '太湖源镇', '30.327309363057304', '119.567641653576570', 4, 7, '浙江省 杭州市 临安区 太湖源镇');
-INSERT INTO `sys_dic_area` VALUES (1682, 330112104, 330101, '於潜镇', '30.223552949166945', '119.386132397600620', 4, 8, '浙江省 杭州市 临安区 於潜镇');
-INSERT INTO `sys_dic_area` VALUES (1683, 330112106, 330101, '太阳镇', '30.237908464583297', '119.302386981786130', 4, 9, '浙江省 杭州市 临安区 太阳镇');
-INSERT INTO `sys_dic_area` VALUES (1684, 330112107, 330101, '潜川镇', '30.054152249504285', '119.369815569743250', 4, 10, '浙江省 杭州市 临安区 潜川镇');
-INSERT INTO `sys_dic_area` VALUES (1685, 330112108, 330101, '昌化镇', '30.218150511307518', '119.194932767162400', 4, 11, '浙江省 杭州市 临安区 昌化镇');
-INSERT INTO `sys_dic_area` VALUES (1686, 330112109, 330101, '河桥镇', '30.093795318821006', '119.176328619685270', 4, 12, '浙江省 杭州市 临安区 河桥镇');
-INSERT INTO `sys_dic_area` VALUES (1687, 330112111, 330101, '湍口镇', '30.018493071600740', '119.163388128133320', 4, 13, '浙江省 杭州市 临安区 湍口镇');
-INSERT INTO `sys_dic_area` VALUES (1688, 330112112, 330101, '清凉峰镇', '30.109604714481514', '118.963528858998560', 4, 14, '浙江省 杭州市 临安区 清凉峰镇');
-INSERT INTO `sys_dic_area` VALUES (1689, 330112113, 330101, '岛石镇', '30.285415375151083', '118.943221870647590', 4, 15, '浙江省 杭州市 临安区 岛石镇');
-INSERT INTO `sys_dic_area` VALUES (1690, 330112115, 330101, '板桥镇', '30.145361350589940', '119.769830147853930', 4, 16, '浙江省 杭州市 临安区 板桥镇');
-INSERT INTO `sys_dic_area` VALUES (1691, 330112116, 330101, '天目山镇', '30.347795808232399', '119.429970087525880', 4, 17, '浙江省 杭州市 临安区 天目山镇');
-INSERT INTO `sys_dic_area` VALUES (1692, 330112117, 330101, '龙岗镇', '30.225088026655059', '119.055023225214270', 4, 18, '浙江省 杭州市 临安区 龙岗镇');
-INSERT INTO `sys_dic_area` VALUES (1693, 330122002, 330101, '旧县街道', '29.782565567986589', '119.611792406402860', 4, 1, '浙江省 杭州市 桐庐县 旧县街道');
-INSERT INTO `sys_dic_area` VALUES (1694, 330122003, 330101, '桐君街道', '29.833091966168200', '119.685816387957690', 4, 2, '浙江省 杭州市 桐庐县 桐君街道');
-INSERT INTO `sys_dic_area` VALUES (1695, 330122004, 330101, '城南街道', '29.765092944124550', '119.708038349766950', 4, 3, '浙江省 杭州市 桐庐县 城南街道');
-INSERT INTO `sys_dic_area` VALUES (1696, 330122005, 330101, '凤川街道', '29.747690500947205', '119.804045196479520', 4, 4, '浙江省 杭州市 桐庐县 凤川街道');
-INSERT INTO `sys_dic_area` VALUES (1697, 330122101, 330101, '富春江镇', '29.681995122091956', '119.688803026043560', 4, 5, '浙江省 杭州市 桐庐县 富春江镇');
-INSERT INTO `sys_dic_area` VALUES (1698, 330122102, 330101, '横村镇', '29.861737083566408', '119.607978164838710', 4, 6, '浙江省 杭州市 桐庐县 横村镇');
-INSERT INTO `sys_dic_area` VALUES (1699, 330122109, 330101, '分水镇', '29.961751112635839', '119.419273575561020', 4, 7, '浙江省 杭州市 桐庐县 分水镇');
-INSERT INTO `sys_dic_area` VALUES (1700, 330122110, 330101, '瑶琳镇', '29.902554476250669', '119.526679796942730', 4, 8, '浙江省 杭州市 桐庐县 瑶琳镇');
-INSERT INTO `sys_dic_area` VALUES (1701, 330122112, 330101, '百江镇', '29.819348578611789', '119.324347740201050', 4, 9, '浙江省 杭州市 桐庐县 百江镇');
-INSERT INTO `sys_dic_area` VALUES (1702, 330122113, 330101, '江南镇', '29.835416937621305', '119.817873552306900', 4, 10, '浙江省 杭州市 桐庐县 江南镇');
-INSERT INTO `sys_dic_area` VALUES (1703, 330122201, 330101, '莪山畲族乡', '29.796078841695230', '119.555950791058540', 4, 11, '浙江省 杭州市 桐庐县 莪山畲族乡');
-INSERT INTO `sys_dic_area` VALUES (1704, 330122202, 330101, '钟山乡', '29.770428712015910', '119.476370283271150', 4, 12, '浙江省 杭州市 桐庐县 钟山乡');
-INSERT INTO `sys_dic_area` VALUES (1705, 330122204, 330101, '新合乡', '29.698236636816433', '119.895295760006080', 4, 13, '浙江省 杭州市 桐庐县 新合乡');
-INSERT INTO `sys_dic_area` VALUES (1706, 330122210, 330101, '合村乡', '29.924899005750186', '119.268722070055930', 4, 14, '浙江省 杭州市 桐庐县 合村乡');
-INSERT INTO `sys_dic_area` VALUES (1707, 330127100, 330101, '千岛湖镇', '29.606425869447098', '119.095118918467980', 4, 1, '浙江省 杭州市 淳安县 千岛湖镇');
-INSERT INTO `sys_dic_area` VALUES (1708, 330127101, 330101, '文昌镇', '29.750508490280919', '119.194718195166550', 4, 2, '浙江省 杭州市 淳安县 文昌镇');
-INSERT INTO `sys_dic_area` VALUES (1709, 330127102, 330101, '石林镇', '29.469424260237145', '119.104459604145240', 4, 3, '浙江省 杭州市 淳安县 石林镇');
-INSERT INTO `sys_dic_area` VALUES (1710, 330127103, 330101, '临岐镇', '29.875180268663360', '119.141146435103720', 4, 4, '浙江省 杭州市 淳安县 临岐镇');
-INSERT INTO `sys_dic_area` VALUES (1711, 330127104, 330101, '威坪镇', '29.791243798596498', '118.822617663238890', 4, 5, '浙江省 杭州市 淳安县 威坪镇');
-INSERT INTO `sys_dic_area` VALUES (1712, 330127106, 330101, '姜家镇', '29.531597449304360', '118.656795150865120', 4, 6, '浙江省 杭州市 淳安县 姜家镇');
-INSERT INTO `sys_dic_area` VALUES (1713, 330127107, 330101, '梓桐镇', '29.611680771892770', '118.751385731671590', 4, 7, '浙江省 杭州市 淳安县 梓桐镇');
-INSERT INTO `sys_dic_area` VALUES (1714, 330127108, 330101, '汾口镇', '29.418916182154438', '118.570448763740660', 4, 8, '浙江省 杭州市 淳安县 汾口镇');
-INSERT INTO `sys_dic_area` VALUES (1715, 330127109, 330101, '中洲镇', '29.452961962086979', '118.440338561516050', 4, 9, '浙江省 杭州市 淳安县 中洲镇');
-INSERT INTO `sys_dic_area` VALUES (1716, 330127110, 330101, '大墅镇', '29.374027221029153', '118.779340397271970', 4, 10, '浙江省 杭州市 淳安县 大墅镇');
-INSERT INTO `sys_dic_area` VALUES (1717, 330127111, 330101, '枫树岭镇', '29.292330113788237', '118.684420309252230', 4, 11, '浙江省 杭州市 淳安县 枫树岭镇');
-INSERT INTO `sys_dic_area` VALUES (1718, 330127200, 330101, '里商乡', '29.459225678954180', '118.976834276234060', 4, 12, '浙江省 杭州市 淳安县 里商乡');
-INSERT INTO `sys_dic_area` VALUES (1719, 330127201, 330101, '金峰乡', '29.646219503469370', '118.938989159645660', 4, 13, '浙江省 杭州市 淳安县 金峰乡');
-INSERT INTO `sys_dic_area` VALUES (1720, 330127202, 330101, '富文乡', '29.662289773309636', '119.249011251967860', 4, 14, '浙江省 杭州市 淳安县 富文乡');
-INSERT INTO `sys_dic_area` VALUES (1721, 330127203, 330101, '左口乡', '29.766785214613360', '119.045805026605860', 4, 15, '浙江省 杭州市 淳安县 左口乡');
-INSERT INTO `sys_dic_area` VALUES (1722, 330127205, 330101, '屏门乡', '29.917926262534718', '118.993026842800520', 4, 16, '浙江省 杭州市 淳安县 屏门乡');
-INSERT INTO `sys_dic_area` VALUES (1723, 330127206, 330101, '瑶山乡', '29.968441031512339', '119.057647462925160', 4, 17, '浙江省 杭州市 淳安县 瑶山乡');
-INSERT INTO `sys_dic_area` VALUES (1724, 330127208, 330101, '王阜乡', '29.874304407855020', '118.922095152796900', 4, 18, '浙江省 杭州市 淳安县 王阜乡');
-INSERT INTO `sys_dic_area` VALUES (1725, 330127210, 330101, '宋村乡', '29.722617970738810', '118.905357067830540', 4, 19, '浙江省 杭州市 淳安县 宋村乡');
-INSERT INTO `sys_dic_area` VALUES (1726, 330127211, 330101, '鸠坑乡', '29.670950510137190', '118.740343271014170', 4, 20, '浙江省 杭州市 淳安县 鸠坑乡');
-INSERT INTO `sys_dic_area` VALUES (1727, 330127212, 330101, '浪川乡', '29.520618947450204', '118.568482145499230', 4, 21, '浙江省 杭州市 淳安县 浪川乡');
-INSERT INTO `sys_dic_area` VALUES (1728, 330127214, 330101, '界首乡', '29.546353883288560', '118.839608142992200', 4, 22, '浙江省 杭州市 淳安县 界首乡');
-INSERT INTO `sys_dic_area` VALUES (1729, 330127216, 330101, '安阳乡', '29.400634443478759', '118.857276426604870', 4, 23, '浙江省 杭州市 淳安县 安阳乡');
-INSERT INTO `sys_dic_area` VALUES (1730, 330182001, 330101, '新安江街道', '29.470269701312906', '119.258545920486880', 4, 1, '浙江省 杭州市 建德市 新安江街道');
-INSERT INTO `sys_dic_area` VALUES (1731, 330182002, 330101, '洋溪街道', '29.517557191329820', '119.308483670650320', 4, 2, '浙江省 杭州市 建德市 洋溪街道');
-INSERT INTO `sys_dic_area` VALUES (1732, 330182003, 330101, '更楼街道', '29.418840217840765', '119.281209371919260', 4, 3, '浙江省 杭州市 建德市 更楼街道');
-INSERT INTO `sys_dic_area` VALUES (1733, 330182101, 330101, '莲花镇', '29.598272590084720', '119.298459051395400', 4, 4, '浙江省 杭州市 建德市 莲花镇');
-INSERT INTO `sys_dic_area` VALUES (1734, 330182102, 330101, '乾潭镇', '29.645329401878475', '119.554813014201870', 4, 5, '浙江省 杭州市 建德市 乾潭镇');
-INSERT INTO `sys_dic_area` VALUES (1735, 330182104, 330101, '梅城镇', '29.508272934857820', '119.531428582296520', 4, 6, '浙江省 杭州市 建德市 梅城镇');
-INSERT INTO `sys_dic_area` VALUES (1736, 330182105, 330101, '杨村桥镇', '29.606641586772417', '119.428715563974960', 4, 7, '浙江省 杭州市 建德市 杨村桥镇');
-INSERT INTO `sys_dic_area` VALUES (1737, 330182106, 330101, '下涯镇', '29.571102034055270', '119.374171552206150', 4, 8, '浙江省 杭州市 建德市 下涯镇');
-INSERT INTO `sys_dic_area` VALUES (1738, 330182107, 330101, '大洋镇', '29.418299449539459', '119.506849458620440', 4, 9, '浙江省 杭州市 建德市 大洋镇');
-INSERT INTO `sys_dic_area` VALUES (1739, 330182108, 330101, '三都镇', '29.510524601216880', '119.637925731551950', 4, 10, '浙江省 杭州市 建德市 三都镇');
-INSERT INTO `sys_dic_area` VALUES (1740, 330182109, 330101, '寿昌镇', '29.376876083944400', '119.206320475827260', 4, 11, '浙江省 杭州市 建德市 寿昌镇');
-INSERT INTO `sys_dic_area` VALUES (1741, 330182110, 330101, '航头镇', '29.318877312929960', '119.143955983831600', 4, 12, '浙江省 杭州市 建德市 航头镇');
-INSERT INTO `sys_dic_area` VALUES (1742, 330182111, 330101, '大慈岩镇', '29.315672166541856', '119.295106752253400', 4, 13, '浙江省 杭州市 建德市 大慈岩镇');
-INSERT INTO `sys_dic_area` VALUES (1743, 330182112, 330101, '大同镇', '29.283094469100570', '119.072198730488330', 4, 14, '浙江省 杭州市 建德市 大同镇');
-INSERT INTO `sys_dic_area` VALUES (1744, 330182113, 330101, '李家镇', '29.323826447806803', '118.987698742361020', 4, 15, '浙江省 杭州市 建德市 李家镇');
-INSERT INTO `sys_dic_area` VALUES (1745, 330182202, 330101, '钦堂乡', '29.709632895997270', '119.549118188182240', 4, 16, '浙江省 杭州市 建德市 钦堂乡');
-INSERT INTO `sys_dic_area` VALUES (1746, 330114002, 330101, '白杨街道', '30.846181199450795', '122.687821910647930', 4, 1, '浙江省 杭州市 钱塘区 白杨街道');
-INSERT INTO `sys_dic_area` VALUES (1747, 330114001, 330101, '下沙街道', '30.846181199450795', '122.687821910647930', 4, 2, '浙江省 杭州市 钱塘区 下沙街道');
-INSERT INTO `sys_dic_area` VALUES (1748, 330114004, 330101, '义蓬街道', '30.846181199450795', '122.687821910647930', 4, 3, '浙江省 杭州市 钱塘区 义蓬街道');
-INSERT INTO `sys_dic_area` VALUES (1749, 330114003, 330101, '河庄街道', '30.332446590973558', '120.462056301334900', 4, 4, '浙江省 杭州市 钱塘区 河庄街道');
-INSERT INTO `sys_dic_area` VALUES (1750, 330114005, 330101, '新湾街道', '30.846181199450795', '122.687821910647930', 4, 5, '浙江省 杭州市 钱塘区 新湾街道');
-INSERT INTO `sys_dic_area` VALUES (1751, 330114006, 330101, '临江街道', '30.846181199450795', '122.687821910647930', 4, 6, '浙江省 杭州市 钱塘区 临江街道');
-INSERT INTO `sys_dic_area` VALUES (1752, 330114007, 330101, '前进街道', '30.846181199450795', '122.687821910647930', 4, 7, '浙江省 杭州市 钱塘区 前进街道');
-INSERT INTO `sys_dic_area` VALUES (1753, 330802005, 330801, '新新街道', '28.94032', '118.89545', 4, 1, '浙江省 衢州市 柯城区新新街道');
-INSERT INTO `sys_dic_area` VALUES (1754, 330802006, 330801, '府山街道', '28.96223', '118.87117', 4, 2, '浙江省 衢州市 柯城区府山街道');
-INSERT INTO `sys_dic_area` VALUES (1755, 330802007, 330801, '荷花街道', '28.93802', '118.86764', 4, 3, '浙江省 衢州市 柯城区荷花街道');
-INSERT INTO `sys_dic_area` VALUES (1756, 330802008, 330801, '信安街道', '28.96573', '118.87532', 4, 4, '浙江省 衢州市 柯城区信安街道');
-INSERT INTO `sys_dic_area` VALUES (1757, 330802009, 330801, '白云街道', '28.96913', '118.85014', 4, 5, '浙江省 衢州市 柯城区白云街道');
-INSERT INTO `sys_dic_area` VALUES (1758, 330802010, 330801, '双港街道', '28.93946', '118.85947', 4, 6, '浙江省 衢州市 柯城区双港街道');
-INSERT INTO `sys_dic_area` VALUES (1759, 330802012, 330801, '衢化街道', '28.901978', '118.908011', 4, 7, '浙江省 衢州市 柯城区衢化街道');
-INSERT INTO `sys_dic_area` VALUES (1760, 330802013, 330801, '花园街道', '28.90557', '118.90989', 4, 8, '浙江省 衢州市 柯城区花园街道');
-INSERT INTO `sys_dic_area` VALUES (1761, 330802100, 330801, '石梁镇', '29.01532', '118.79147', 4, 9, '浙江省 衢州市 柯城区石梁镇');
-INSERT INTO `sys_dic_area` VALUES (1762, 330802101, 330801, '航埠镇', '28.92823', '118.77916', 4, 10, '浙江省 衢州市 柯城区航埠镇');
-INSERT INTO `sys_dic_area` VALUES (1763, 330802205, 330801, '黄家乡', '28.90646', '118.84718', 4, 11, '浙江省 衢州市 柯城区黄家乡');
-INSERT INTO `sys_dic_area` VALUES (1764, 330802209, 330801, '七里乡', '29.14694', '118.76207', 4, 12, '浙江省 衢州市 柯城区七里乡');
-INSERT INTO `sys_dic_area` VALUES (1765, 330802210, 330801, '九华乡', '29.04634', '118.84887', 4, 13, '浙江省 衢州市 柯城区九华乡');
-INSERT INTO `sys_dic_area` VALUES (1766, 330802211, 330801, '沟溪乡', '28.95223', '118.73486', 4, 14, '浙江省 衢州市 柯城区沟溪乡');
-INSERT INTO `sys_dic_area` VALUES (1767, 330802212, 330801, '华墅乡', '28.878817', '118.7327', 4, 15, '浙江省 衢州市 柯城区华墅乡');
-INSERT INTO `sys_dic_area` VALUES (1768, 330802213, 330801, '姜家山乡', '28.9702', '118.82454', 4, 16, '浙江省 衢州市 柯城区姜家山乡');
-INSERT INTO `sys_dic_area` VALUES (1769, 330802214, 330801, '万田乡', '28.99681', '118.86022', 4, 17, '浙江省 衢州市 柯城区万田乡');
-INSERT INTO `sys_dic_area` VALUES (1770, 330802215, 330801, '石室乡', '28.86401', '118.90651', 4, 18, '浙江省 衢州市 柯城区石室乡');
-INSERT INTO `sys_dic_area` VALUES (1771, 330803001, 330801, '樟潭街道', '28.97471', '118.95787', 4, 1, '浙江省 衢州市 衢江区樟潭街道');
-INSERT INTO `sys_dic_area` VALUES (1772, 330803002, 330801, '浮石街道', '28.97833', '118.885125', 4, 2, '浙江省 衢州市 衢江区浮石街道');
-INSERT INTO `sys_dic_area` VALUES (1773, 330803100, 330801, '上方镇', '29.23769', '118.95691', 4, 3, '浙江省 衢州市 衢江区上方镇');
-INSERT INTO `sys_dic_area` VALUES (1774, 330803101, 330801, '峡川镇', '29.14181', '118.9973', 4, 4, '浙江省 衢州市 衢江区峡川镇');
-INSERT INTO `sys_dic_area` VALUES (1775, 330803103, 330801, '莲花镇', '29.0719', '119.01367', 4, 5, '浙江省 衢州市 衢江区莲花镇');
-INSERT INTO `sys_dic_area` VALUES (1776, 330803109, 330801, '全旺镇', '28.92538', '119.0554', 4, 6, '浙江省 衢州市 衢江区全旺镇');
-INSERT INTO `sys_dic_area` VALUES (1777, 330803110, 330801, '大洲镇', '28.87028', '118.98363', 4, 7, '浙江省 衢州市 衢江区大洲镇');
-INSERT INTO `sys_dic_area` VALUES (1778, 330803111, 330801, '后溪镇', '28.83225', '118.75277', 4, 8, '浙江省 衢州市 衢江区后溪镇');
-INSERT INTO `sys_dic_area` VALUES (1779, 330803112, 330801, '廿里镇', '28.87042', '118.832057', 4, 9, '浙江省 衢州市 衢江区廿里镇');
-INSERT INTO `sys_dic_area` VALUES (1780, 330803113, 330801, '湖南镇', '28.70608', '118.83853', 4, 10, '浙江省 衢州市 衢江区湖南镇');
-INSERT INTO `sys_dic_area` VALUES (1781, 330803114, 330801, '高家镇', '28.98438', '119.02582', 4, 11, '浙江省 衢州市 衢江区高家镇');
-INSERT INTO `sys_dic_area` VALUES (1782, 330803115, 330801, '杜泽镇', '29.1215', '118.95324', 4, 12, '浙江省 衢州市 衢江区杜泽镇');
-INSERT INTO `sys_dic_area` VALUES (1783, 330803200, 330801, '灰坪乡', '29.24167', '118.85719', 4, 13, '浙江省 衢州市 衢江区灰坪乡');
-INSERT INTO `sys_dic_area` VALUES (1784, 330803202, 330801, '太真乡', '29.17784', '118.84224', 4, 14, '浙江省 衢州市 衢江区太真乡');
-INSERT INTO `sys_dic_area` VALUES (1785, 330803203, 330801, '双桥乡', '29.13006', '118.88831', 4, 15, '浙江省 衢州市 衢江区双桥乡');
-INSERT INTO `sys_dic_area` VALUES (1786, 330803206, 330801, '周家乡', '29.07695', '118.90794', 4, 16, '浙江省 衢州市 衢江区周家乡');
-INSERT INTO `sys_dic_area` VALUES (1787, 330803207, 330801, '云溪乡', '28.99236', '118.96322', 4, 17, '浙江省 衢州市 衢江区云溪乡');
-INSERT INTO `sys_dic_area` VALUES (1788, 330803213, 330801, '举村乡', '28.67076', '118.92764', 4, 18, '浙江省 衢州市 衢江区举村乡');
-INSERT INTO `sys_dic_area` VALUES (1789, 330803218, 330801, '岭洋乡', '28.63207', '118.84789', 4, 19, '浙江省 衢州市 衢江区岭洋乡');
-INSERT INTO `sys_dic_area` VALUES (1790, 330803219, 330801, '黄坛口乡', '28.82871', '118.90738', 4, 20, '浙江省 衢州市 衢江区黄坛口乡');
-INSERT INTO `sys_dic_area` VALUES (1791, 330881001, 330801, '双塔街道', '28.74487', '118.63882', 4, 1, '浙江省 衢州市 江山市双塔街道');
-INSERT INTO `sys_dic_area` VALUES (1792, 330881002, 330801, '虎山街道', '28.71051', '118.61315', 4, 2, '浙江省 衢州市 江山市虎山街道');
-INSERT INTO `sys_dic_area` VALUES (1793, 330881003, 330801, '清湖街道', '28.67602', '118.60943', 4, 3, '浙江省 衢州市 江山市清湖街道');
-INSERT INTO `sys_dic_area` VALUES (1794, 330881102, 330801, '四都镇', '28.83691', '118.6959', 4, 4, '浙江省 衢州市 江山市四都镇');
-INSERT INTO `sys_dic_area` VALUES (1795, 330881105, 330801, '坛石镇', '28.71015', '118.50227', 4, 5, '浙江省 衢州市 江山市坛石镇');
-INSERT INTO `sys_dic_area` VALUES (1796, 330881106, 330801, '大桥镇', '28.73786', '118.4164', 4, 6, '浙江省 衢州市 江山市大桥镇');
-INSERT INTO `sys_dic_area` VALUES (1797, 330881109, 330801, '新塘边镇', '28.61206', '118.45715', 4, 7, '浙江省 衢州市 江山市新塘边镇');
-INSERT INTO `sys_dic_area` VALUES (1798, 330881112, 330801, '廿八都镇', '28.29714', '118.4861', 4, 8, '浙江省 衢州市 江山市廿八都镇');
-INSERT INTO `sys_dic_area` VALUES (1799, 330881113, 330801, '长台镇', '28.59678', '118.63428', 4, 9, '浙江省 衢州市 江山市长台镇');
-INSERT INTO `sys_dic_area` VALUES (1800, 330881116, 330801, '上余镇', '28.78727', '118.70815', 4, 10, '浙江省 衢州市 江山市上余镇');
-INSERT INTO `sys_dic_area` VALUES (1801, 330881118, 330801, '凤林镇', '28.51866', '118.48951', 4, 11, '浙江省 衢州市 江山市凤林镇');
-INSERT INTO `sys_dic_area` VALUES (1802, 330881119, 330801, '峡口镇', '28.46689', '118.52142', 4, 12, '浙江省 衢州市 江山市峡口镇');
-INSERT INTO `sys_dic_area` VALUES (1803, 330881120, 330801, '石门镇', '28.58101', '118.58367', 4, 13, '浙江省 衢州市 江山市石门镇');
-INSERT INTO `sys_dic_area` VALUES (1804, 330881121, 330801, '贺村镇', '28.66332', '118.53576', 4, 14, '浙江省 衢州市 江山市贺村镇');
-INSERT INTO `sys_dic_area` VALUES (1805, 330881201, 330801, '大陈乡', '28.81943', '118.59689', 4, 15, '浙江省 衢州市 江山市大陈乡');
-INSERT INTO `sys_dic_area` VALUES (1806, 330881203, 330801, '碗窑乡', '28.38458', '118.52216', 4, 16, '浙江省 衢州市 江山市碗窑乡');
-INSERT INTO `sys_dic_area` VALUES (1807, 330881207, 330801, '保安乡', '28.38458', '118.52216', 4, 17, '浙江省 衢州市 江山市保安乡');
-INSERT INTO `sys_dic_area` VALUES (1808, 330881213, 330801, '塘源口乡', '28.59835', '118.74224', 4, 18, '浙江省 衢州市 江山市塘源口乡');
-INSERT INTO `sys_dic_area` VALUES (1809, 330881214, 330801, '张村乡', '28.56117', '118.67504', 4, 19, '浙江省 衢州市 江山市张村乡');
-INSERT INTO `sys_dic_area` VALUES (1810, 330825001, 330801, '龙洲街道', '29.022825', '119.165802', 4, 1, '浙江省 衢州市 龙游县龙洲街道');
-INSERT INTO `sys_dic_area` VALUES (1811, 330825002, 330801, '东华街道', '29.03645', '119.18966', 4, 2, '浙江省 衢州市 龙游县东华街道');
-INSERT INTO `sys_dic_area` VALUES (1812, 330825101, 330801, '湖镇镇', '29.05526', '119.285881', 4, 3, '浙江省 衢州市 龙游县湖镇镇');
-INSERT INTO `sys_dic_area` VALUES (1813, 330825102, 330801, '小南海镇', '29.0525', '119.16969', 4, 4, '浙江省 衢州市 龙游县小南海镇');
-INSERT INTO `sys_dic_area` VALUES (1814, 330825106, 330801, '詹家镇', '28.982', '119.14389', 4, 5, '浙江省 衢州市 龙游县詹家镇');
-INSERT INTO `sys_dic_area` VALUES (1815, 330825109, 330801, '溪口镇', '28.85144', '119.17352', 4, 6, '浙江省 衢州市 龙游县溪口镇');
-INSERT INTO `sys_dic_area` VALUES (1816, 330825110, 330801, '横山镇', '29.17417', '119.21102', 4, 7, '浙江省 衢州市 龙游县横山镇');
-INSERT INTO `sys_dic_area` VALUES (1817, 330825111, 330801, '塔石镇', '29.13057', '119.15955', 4, 8, '浙江省 衢州市 龙游县塔石镇');
-INSERT INTO `sys_dic_area` VALUES (1818, 330825201, 330801, '罗家乡', '28.91418', '119.26779', 4, 9, '浙江省 衢州市 龙游县罗家乡');
-INSERT INTO `sys_dic_area` VALUES (1819, 330825203, 330801, '庙下乡', '28.75629', '119.09827', 4, 10, '浙江省 衢州市 龙游县庙下乡');
-INSERT INTO `sys_dic_area` VALUES (1820, 330825207, 330801, '石佛乡', '29.16365', '119.11335', 4, 11, '浙江省 衢州市 龙游县石佛乡');
-INSERT INTO `sys_dic_area` VALUES (1821, 330825209, 330801, '社阳乡', '28.95837', '119.28955', 4, 12, '浙江省 衢州市 龙游县社阳乡');
-INSERT INTO `sys_dic_area` VALUES (1822, 330825211, 330801, '大街乡', '28.83807', '119.25896', 4, 13, '浙江省 衢州市 龙游县大街乡');
-INSERT INTO `sys_dic_area` VALUES (1823, 330825212, 330801, '沐尘畲族乡', '28.81983', '119.17902', 4, 14, '浙江省 衢州市 龙游县沐尘畲族乡');
-INSERT INTO `sys_dic_area` VALUES (1824, 330825213, 330801, '模环乡', '29.084244', '119.191032', 4, 15, '浙江省 衢州市 龙游县模环乡');
-INSERT INTO `sys_dic_area` VALUES (1825, 330822001, 330801, '天马街道', '28.90085', '118.51023', 4, 1, '浙江省 衢州市 常山县天马街道');
-INSERT INTO `sys_dic_area` VALUES (1826, 330822002, 330801, '紫港街道', '28.91186', '118.52155', 4, 2, '浙江省 衢州市 常山县紫港街道');
-INSERT INTO `sys_dic_area` VALUES (1827, 330822003, 330801, '金川街道', '28.90988', '118.49502', 4, 3, '浙江省 衢州市 常山县金川街道');
-INSERT INTO `sys_dic_area` VALUES (1828, 330822104, 330801, '白石镇', '28.81953', '118.4072', 4, 4, '浙江省 衢州市 常山县白石镇');
-INSERT INTO `sys_dic_area` VALUES (1829, 330822108, 330801, '招贤镇', '28.93319', '118.68293', 4, 5, '浙江省 衢州市 常山县招贤镇');
-INSERT INTO `sys_dic_area` VALUES (1830, 330822109, 330801, '青石镇', '28.90031', '118.59471', 4, 6, '浙江省 衢州市 常山县青石镇');
-INSERT INTO `sys_dic_area` VALUES (1831, 330822111, 330801, '球川镇', '28.8304', '118.35951', 4, 7, '浙江省 衢州市 常山县球川镇');
-INSERT INTO `sys_dic_area` VALUES (1832, 330822115, 330801, '辉埠镇', '28.93171', '118.50544', 4, 8, '浙江省 衢州市 常山县辉埠镇');
-INSERT INTO `sys_dic_area` VALUES (1833, 330822116, 330801, '芳村镇', '29.05003', '118.61336', 4, 9, '浙江省 衢州市 常山县芳村镇');
-INSERT INTO `sys_dic_area` VALUES (1834, 330822200, 330801, '何家乡', '28.94384', '118.43628', 4, 10, '浙江省 衢州市 常山县何家乡');
-INSERT INTO `sys_dic_area` VALUES (1835, 330822211, 330801, '同弓乡', '28.89522', '118.42876', 4, 11, '浙江省 衢州市 常山县同弓乡');
-INSERT INTO `sys_dic_area` VALUES (1836, 330822213, 330801, '大桥头乡', '28.96794', '118.63017', 4, 12, '浙江省 衢州市 常山县大桥头乡');
-INSERT INTO `sys_dic_area` VALUES (1837, 330822219, 330801, '新昌乡', '29.06809', '118.59699', 4, 13, '浙江省 衢州市 常山县新昌乡');
-INSERT INTO `sys_dic_area` VALUES (1838, 330822221, 330801, '东案乡', '28.98051', '118.66412', 4, 14, '浙江省 衢州市 常山县东案乡');
-INSERT INTO `sys_dic_area` VALUES (1839, 330824106, 330801, '桐村镇', '29.00531', '118.25458', 4, 1, '浙江省 衢州市 开化县桐村镇');
-INSERT INTO `sys_dic_area` VALUES (1840, 330824107, 330801, '杨林镇', '29.05551', '118.14792', 4, 2, '浙江省 衢州市 开化县杨林镇');
-INSERT INTO `sys_dic_area` VALUES (1841, 330824108, 330801, '苏庄镇', '29.17405', '118.12485', 4, 3, '浙江省 衢州市 开化县苏庄镇');
-INSERT INTO `sys_dic_area` VALUES (1842, 330824109, 330801, '齐溪镇', '29.42718', '118.31992', 4, 4, '浙江省 衢州市 开化县齐溪镇');
-INSERT INTO `sys_dic_area` VALUES (1843, 330824113, 330801, '村头镇', '29.26415', '118.4719', 4, 5, '浙江省 衢州市 开化县村头镇');
-INSERT INTO `sys_dic_area` VALUES (1844, 330824115, 330801, '华埠镇', '29.00762', '118.35914', 4, 6, '浙江省 衢州市 开化县华埠镇');
-INSERT INTO `sys_dic_area` VALUES (1845, 330824116, 330801, '马金镇', '29.29865', '118.41702', 4, 7, '浙江省 衢州市 开化县马金镇');
-INSERT INTO `sys_dic_area` VALUES (1846, 330824117, 330801, '池淮镇', '29.0803', '118.30624', 4, 8, '浙江省 衢州市 开化县池淮镇');
-INSERT INTO `sys_dic_area` VALUES (1847, 330824202, 330801, '中村乡', '29.21395', '118.34003', 4, 9, '浙江省 衢州市 开化县中村乡');
-INSERT INTO `sys_dic_area` VALUES (1848, 330824205, 330801, '长虹乡', '29.23357', '118.2304', 4, 10, '浙江省 衢州市 开化县长虹乡');
-INSERT INTO `sys_dic_area` VALUES (1849, 330824208, 330801, '何田乡', '29.32898', '118.31632', 4, 11, '浙江省 衢州市 开化县何田乡');
-INSERT INTO `sys_dic_area` VALUES (1850, 330824216, 330801, '林山乡', '29.14039', '118.50988', 4, 12, '浙江省 衢州市 开化县林山乡');
-INSERT INTO `sys_dic_area` VALUES (1851, 330824217, 330801, '音坑乡', '29.19689', '118.40412', 4, 13, '浙江省 衢州市 开化县音坑乡');
-INSERT INTO `sys_dic_area` VALUES (1852, 330824218, 330801, '大溪边乡', '29.30634', '118.56761', 4, 14, '浙江省 衢州市 开化县大溪边乡');
-INSERT INTO `sys_dic_area` VALUES (1853, 330203001, 330201, '南门街道', '29.861622', '121.54511', 4, 5, '南门街道');
-INSERT INTO `sys_dic_area` VALUES (1854, 330203002, 330201, '江厦街道', '29.863646', '121.55481', 4, 4, '江厦街道');
-INSERT INTO `sys_dic_area` VALUES (1855, 330203003, 330201, '西门街道', '29.882767', '121.53313', 4, 7, '西门街道');
-INSERT INTO `sys_dic_area` VALUES (1856, 330203004, 330201, '月湖街道', '29.86118', '121.547516', 4, 8, '月湖街道');
-INSERT INTO `sys_dic_area` VALUES (1857, 330203005, 330201, '鼓楼街道', '29.87691', '121.5445', 4, 3, '鼓楼街道');
-INSERT INTO `sys_dic_area` VALUES (1858, 330203006, 330201, '白云街道', '29.873337', '121.51988', 4, 1, '白云街道');
-INSERT INTO `sys_dic_area` VALUES (1859, 330203007, 330201, '段塘街道', '29.842388', '121.526596', 4, 2, '段塘街道');
-INSERT INTO `sys_dic_area` VALUES (1860, 330203008, 330201, '望春街道', '29.870401', '121.52007', 4, 6, '望春街道');
-INSERT INTO `sys_dic_area` VALUES (1861, 330205001, 330201, '中马街道', '29.888891', '121.55674', 4, 7, '中马街道');
-INSERT INTO `sys_dic_area` VALUES (1862, 330205002, 330201, '白沙街道', '29.885565', '121.56436', 4, 1, '白沙街道');
-INSERT INTO `sys_dic_area` VALUES (1863, 330205003, 330201, '孔浦街道', '29.894796', '121.573296', 4, 4, '孔浦街道');
-INSERT INTO `sys_dic_area` VALUES (1864, 330205004, 330201, '文教街道', '29.893261', '121.541245', 4, 5, '文教街道');
-INSERT INTO `sys_dic_area` VALUES (1865, 330205005, 330201, '甬江街道', '29.888361', '121.55928', 4, 6, '甬江街道');
-INSERT INTO `sys_dic_area` VALUES (1866, 330205006, 330201, '庄桥街道', '29.930193', '121.55433', 4, 8, '庄桥街道');
-INSERT INTO `sys_dic_area` VALUES (1867, 330205007, 330201, '洪塘街道', '29.947521', '121.50948', 4, 3, '洪塘街道');
-INSERT INTO `sys_dic_area` VALUES (1868, 330205103, 330201, '慈城镇', '29.977837', '121.44957', 4, 2, '慈城镇');
-INSERT INTO `sys_dic_area` VALUES (1869, 330206001, 330201, '大榭街道', '29.905506', '121.96269', 4, 6, '大榭街道');
-INSERT INTO `sys_dic_area` VALUES (1870, 330206002, 330201, '新碶街道', '29.913338', '121.83737', 4, 11, '新碶街道');
-INSERT INTO `sys_dic_area` VALUES (1871, 330206003, 330201, '小港街道', '29.938831', '121.7214', 4, 9, '小港街道');
-INSERT INTO `sys_dic_area` VALUES (1872, 330206004, 330201, '大碶街道', '29.894613', '121.802444', 4, 5, '大碶街道');
-INSERT INTO `sys_dic_area` VALUES (1873, 330206005, 330201, '霞浦街道', '29.888594', '121.884', 4, 10, '霞浦街道');
-INSERT INTO `sys_dic_area` VALUES (1874, 330206006, 330201, '柴桥街道', '29.872166', '121.91886', 4, 3, '柴桥街道');
-INSERT INTO `sys_dic_area` VALUES (1875, 330206007, 330201, '戚家山街道', '29.90944', '121.83131', 4, 8, '戚家山街道');
-INSERT INTO `sys_dic_area` VALUES (1876, 330206105, 330201, '白峰镇', '29.880487', '121.99273', 4, 1, '白峰镇');
-INSERT INTO `sys_dic_area` VALUES (1877, 330206107, 330201, '春晓镇', '29.767601', '121.88787', 4, 4, '春晓镇');
-INSERT INTO `sys_dic_area` VALUES (1878, 330206201, 330201, '梅山乡', '29.795536', '121.99396', 4, 7, '梅山乡');
-INSERT INTO `sys_dic_area` VALUES (1879, 330206401, 330201, '保税区', '29.90944', '121.83131', 4, 2, '保税区');
-INSERT INTO `sys_dic_area` VALUES (1880, 330211001, 330201, '招宝山街道', '29.950418', '121.71749', 4, 5, '招宝山街道');
-INSERT INTO `sys_dic_area` VALUES (1881, 330211002, 330201, '蛟川街道', '29.952106', '121.713165', 4, 1, '蛟川街道');
-INSERT INTO `sys_dic_area` VALUES (1882, 330211003, 330201, '骆驼街道', '29.985224', '121.58435', 4, 3, '骆驼街道');
-INSERT INTO `sys_dic_area` VALUES (1883, 330211004, 330201, '庄市街道', '29.926767', '121.61446', 4, 6, '庄市街道');
-INSERT INTO `sys_dic_area` VALUES (1884, 330211100, 330201, '澥浦镇', '30.031199', '121.6011', 4, 4, '澥浦镇');
-INSERT INTO `sys_dic_area` VALUES (1885, 330211101, 330201, '九龙湖镇', '30.032856', '121.552315', 4, 2, '九龙湖镇');
-INSERT INTO `sys_dic_area` VALUES (1886, 330212001, 330201, '下应街道', '29.810753', '121.589294', 4, 19, '下应街道');
-INSERT INTO `sys_dic_area` VALUES (1887, 330212002, 330201, '钟公庙街道', '29.822971', '121.53756', 4, 24, '钟公庙街道');
-INSERT INTO `sys_dic_area` VALUES (1888, 330212003, 330201, '石碶街道', '29.828068', '121.504616', 4, 14, '石碶街道');
-INSERT INTO `sys_dic_area` VALUES (1889, 330212004, 330201, '梅墟街道', '29.897528', '121.65256', 4, 11, '梅墟街道');
-INSERT INTO `sys_dic_area` VALUES (1890, 330212005, 330201, '中河街道', '29.831661', '121.55843', 4, 25, '中河街道');
-INSERT INTO `sys_dic_area` VALUES (1891, 330212006, 330201, '首南街道', '29.831661', '121.55843', 4, 15, '首南街道');
-INSERT INTO `sys_dic_area` VALUES (1892, 330212007, 330201, '潘火街道', '29.831661', '121.55843', 4, 12, '潘火街道');
-INSERT INTO `sys_dic_area` VALUES (1893, 330212100, 330201, '瞻岐镇', '29.729713', '121.82665', 4, 23, '瞻岐镇');
-INSERT INTO `sys_dic_area` VALUES (1894, 330212101, 330201, '咸祥镇', '29.686703', '121.774956', 4, 18, '咸祥镇');
-INSERT INTO `sys_dic_area` VALUES (1895, 330212102, 330201, '塘溪镇', '29.661774', '121.714226', 4, 16, '塘溪镇');
-INSERT INTO `sys_dic_area` VALUES (1896, 330212103, 330201, '东钱湖镇', '29.789446', '121.63408', 4, 1, '东钱湖镇');
-INSERT INTO `sys_dic_area` VALUES (1897, 330212104, 330201, '东吴镇', '29.81642', '121.723434', 4, 3, '东吴镇');
-INSERT INTO `sys_dic_area` VALUES (1898, 330212105, 330201, '五乡镇', '29.842045', '121.69539', 4, 17, '五乡镇');
-INSERT INTO `sys_dic_area` VALUES (1899, 330212106, 330201, '邱隘镇', '29.845974', '121.63958', 4, 13, '邱隘镇');
-INSERT INTO `sys_dic_area` VALUES (1900, 330212108, 330201, '云龙镇', '29.772968', '121.6005', 4, 21, '云龙镇');
-INSERT INTO `sys_dic_area` VALUES (1901, 330212109, 330201, '横溪镇', '29.71496', '121.60119', 4, 7, '横溪镇');
-INSERT INTO `sys_dic_area` VALUES (1902, 330212110, 330201, '姜山镇', '29.772497', '121.53883', 4, 8, '姜山镇');
-INSERT INTO `sys_dic_area` VALUES (1903, 330212113, 330201, '高桥镇', '29.904663', '121.46185', 4, 4, '高桥镇');
-INSERT INTO `sys_dic_area` VALUES (1904, 330212114, 330201, '横街镇', '29.854168', '121.39932', 4, 6, '横街镇');
-INSERT INTO `sys_dic_area` VALUES (1905, 330212115, 330201, '集士港镇', '29.865717', '121.43826', 4, 9, '集士港镇');
-INSERT INTO `sys_dic_area` VALUES (1906, 330212116, 330201, '古林镇', '29.83524', '121.43571', 4, 5, '古林镇');
-INSERT INTO `sys_dic_area` VALUES (1907, 330212118, 330201, '洞桥镇', '29.78043', '121.411446', 4, 2, '洞桥镇');
-INSERT INTO `sys_dic_area` VALUES (1908, 330212119, 330201, '鄞江镇', '29.770445', '121.35438', 4, 20, '鄞江镇');
-INSERT INTO `sys_dic_area` VALUES (1909, 330212120, 330201, '章水镇', '29.81514', '121.30055', 4, 22, '章水镇');
-INSERT INTO `sys_dic_area` VALUES (1910, 330212200, 330201, '龙观乡', '29.767572', '121.315636', 4, 10, '龙观乡');
-INSERT INTO `sys_dic_area` VALUES (1911, 330225001, 330201, '丹东街道', '29.470205', '121.87709', 4, 1, '丹东街道');
-INSERT INTO `sys_dic_area` VALUES (1912, 330225002, 330201, '丹西街道', '29.470205', '121.87709', 4, 2, '丹西街道');
-INSERT INTO `sys_dic_area` VALUES (1913, 330225003, 330201, '爵溪街道', '29.471586', '121.94807', 4, 9, '爵溪街道');
-INSERT INTO `sys_dic_area` VALUES (1914, 330225101, 330201, '石浦镇', '29.202595', '121.93192', 4, 12, '石浦镇');
-INSERT INTO `sys_dic_area` VALUES (1915, 330225102, 330201, '西周镇', '29.480776', '121.67547', 4, 18, '西周镇');
-INSERT INTO `sys_dic_area` VALUES (1916, 330225103, 330201, '鹤浦镇', '29.149336', '121.89836', 4, 7, '鹤浦镇');
-INSERT INTO `sys_dic_area` VALUES (1917, 330225104, 330201, '贤庠镇', '29.589415', '121.84623', 4, 15, '贤庠镇');
-INSERT INTO `sys_dic_area` VALUES (1918, 330225105, 330201, '墙头镇', '29.462912', '121.78197', 4, 11, '墙头镇');
-INSERT INTO `sys_dic_area` VALUES (1919, 330225106, 330201, '泗洲头镇', '29.372307', '121.77233', 4, 13, '泗洲头镇');
-INSERT INTO `sys_dic_area` VALUES (1920, 330225107, 330201, '定塘镇', '29.229464', '121.844734', 4, 4, '定塘镇');
-INSERT INTO `sys_dic_area` VALUES (1921, 330225108, 330201, '涂茨镇', '29.56068', '121.93928', 4, 14, '涂茨镇');
-INSERT INTO `sys_dic_area` VALUES (1922, 330225109, 330201, '大徐镇', '29.523447', '121.88388', 4, 3, '大徐镇');
-INSERT INTO `sys_dic_area` VALUES (1923, 330225110, 330201, '新桥镇', '29.314255', '121.86799', 4, 17, '新桥镇');
-INSERT INTO `sys_dic_area` VALUES (1924, 330225200, 330201, '东陈乡', '29.39306', '121.889', 4, 5, '东陈乡');
-INSERT INTO `sys_dic_area` VALUES (1925, 330225201, 330201, '晓塘乡', '29.206272', '121.85889', 4, 16, '晓塘乡');
-INSERT INTO `sys_dic_area` VALUES (1926, 330225202, 330201, '黄避岙乡', '29.573444', '121.79594', 4, 8, '黄避岙乡');
-INSERT INTO `sys_dic_area` VALUES (1927, 330225203, 330201, '茅洋乡', '29.393019', '121.83057', 4, 10, '茅洋乡');
-INSERT INTO `sys_dic_area` VALUES (1928, 330225204, 330201, '高塘岛乡', '29.115387', '121.83891', 4, 6, '高塘岛乡');
-INSERT INTO `sys_dic_area` VALUES (1929, 330226001, 330201, '跃龙街道', '29.295328', '121.43362', 4, 16, '跃龙街道');
-INSERT INTO `sys_dic_area` VALUES (1930, 330226002, 330201, '桃源街道', '29.330538', '121.449875', 4, 13, '桃源街道');
-INSERT INTO `sys_dic_area` VALUES (1931, 330226003, 330201, '梅林街道', '29.299835', '121.43261', 4, 7, '梅林街道');
-INSERT INTO `sys_dic_area` VALUES (1932, 330226004, 330201, '桥头胡街道', '29.299835', '121.43261', 4, 10, '桥头胡街道');
-INSERT INTO `sys_dic_area` VALUES (1933, 330226101, 330201, '长街镇', '29.24753', '121.713295', 4, 18, '长街镇');
-INSERT INTO `sys_dic_area` VALUES (1934, 330226102, 330201, '力洋镇', '29.304052', '121.62178', 4, 6, '力洋镇');
-INSERT INTO `sys_dic_area` VALUES (1935, 330226104, 330201, '一市镇', '29.20022', '121.479164', 4, 15, '一市镇');
-INSERT INTO `sys_dic_area` VALUES (1936, 330226105, 330201, '岔路镇', '29.203644', '121.31108', 4, 1, '岔路镇');
-INSERT INTO `sys_dic_area` VALUES (1937, 330226106, 330201, '前童镇', '29.228458', '121.34828', 4, 9, '前童镇');
-INSERT INTO `sys_dic_area` VALUES (1938, 330226107, 330201, '桑洲镇', '29.154066', '121.31789', 4, 11, '桑洲镇');
-INSERT INTO `sys_dic_area` VALUES (1939, 330226108, 330201, '黄坛镇', '29.29088', '121.36768', 4, 4, '黄坛镇');
-INSERT INTO `sys_dic_area` VALUES (1940, 330226109, 330201, '大佳何镇', '29.425274', '121.555374', 4, 3, '大佳何镇');
-INSERT INTO `sys_dic_area` VALUES (1941, 330226110, 330201, '强蛟镇', '29.457588', '121.53099', 4, 8, '强蛟镇');
-INSERT INTO `sys_dic_area` VALUES (1942, 330226111, 330201, '西店镇', '29.479166', '121.4368', 4, 14, '西店镇');
-INSERT INTO `sys_dic_area` VALUES (1943, 330226112, 330201, '深甽镇', '29.415274', '121.34848', 4, 12, '深甽镇');
-INSERT INTO `sys_dic_area` VALUES (1944, 330226200, 330201, '胡陈乡', '29.325409', '121.67731', 4, 5, '胡陈乡');
-INSERT INTO `sys_dic_area` VALUES (1945, 330226201, 330201, '茶院乡', '29.314968', '121.572845', 4, 2, '茶院乡');
-INSERT INTO `sys_dic_area` VALUES (1946, 330226202, 330201, '越溪乡', '29.265116', '121.52151', 4, 17, '越溪乡');
-INSERT INTO `sys_dic_area` VALUES (1947, 330281001, 330201, '梨洲街道', '30.045404', '121.156296', 4, 11, '梨洲街道');
-INSERT INTO `sys_dic_area` VALUES (1948, 330281002, 330201, '凤山街道', '30.067581', '121.182625', 4, 4, '凤山街道');
-INSERT INTO `sys_dic_area` VALUES (1949, 330281003, 330201, '兰江街道', '30.022562', '121.114456', 4, 8, '兰江街道');
-INSERT INTO `sys_dic_area` VALUES (1950, 330281004, 330201, '阳明街道', '30.045404', '121.156296', 4, 20, '阳明街道');
-INSERT INTO `sys_dic_area` VALUES (1951, 330281005, 330201, '低塘街道', '30.15947', '121.14888', 4, 3, '低塘街道');
-INSERT INTO `sys_dic_area` VALUES (1952, 330281006, 330201, '朗霞街道', '30.166471', '121.08892', 4, 7, '朗霞街道');
-INSERT INTO `sys_dic_area` VALUES (1953, 330281100, 330201, '临山镇', '30.15452', '120.98863', 4, 10, '临山镇');
-INSERT INTO `sys_dic_area` VALUES (1954, 330281101, 330201, '黄家埠镇', '30.12654', '120.96522', 4, 6, '黄家埠镇');
-INSERT INTO `sys_dic_area` VALUES (1955, 330281102, 330201, '小曹娥镇', '30.217209', '121.07401', 4, 19, '小曹娥镇');
-INSERT INTO `sys_dic_area` VALUES (1956, 330281103, 330201, '泗门镇', '30.153072', '121.04089', 4, 17, '泗门镇');
-INSERT INTO `sys_dic_area` VALUES (1957, 330281106, 330201, '马渚镇', '30.072088', '121.05016', 4, 14, '马渚镇');
-INSERT INTO `sys_dic_area` VALUES (1958, 330281108, 330201, '牟山镇', '30.074963', '121.00109', 4, 15, '牟山镇');
-INSERT INTO `sys_dic_area` VALUES (1959, 330281109, 330201, '丈亭镇', '30.029634', '121.281624', 4, 21, '丈亭镇');
-INSERT INTO `sys_dic_area` VALUES (1960, 330281110, 330201, '三七市镇', '30.024828', '121.34306', 4, 16, '三七市镇');
-INSERT INTO `sys_dic_area` VALUES (1961, 330281111, 330201, '河姆渡镇', '29.988918', '121.315315', 4, 5, '河姆渡镇');
-INSERT INTO `sys_dic_area` VALUES (1962, 330281112, 330201, '大隐镇', '29.933855', '121.37044', 4, 2, '大隐镇');
-INSERT INTO `sys_dic_area` VALUES (1963, 330281113, 330201, '陆埠镇', '29.9887', '121.24041', 4, 12, '陆埠镇');
-INSERT INTO `sys_dic_area` VALUES (1964, 330281114, 330201, '梁弄镇', '29.919422', '121.08579', 4, 9, '梁弄镇');
-INSERT INTO `sys_dic_area` VALUES (1965, 330281115, 330201, '大岚镇', '29.819134', '121.133194', 4, 1, '大岚镇');
-INSERT INTO `sys_dic_area` VALUES (1966, 330281116, 330201, '四明山镇', '29.736238', '121.11948', 4, 18, '四明山镇');
-INSERT INTO `sys_dic_area` VALUES (1967, 330281201, 330201, '鹿亭乡', '29.874268', '121.20932', 4, 13, '鹿亭乡');
-INSERT INTO `sys_dic_area` VALUES (1968, 330282002, 330201, '宗汉街道', '30.185476', '121.23185', 4, 22, '宗汉街道');
-INSERT INTO `sys_dic_area` VALUES (1969, 330282003, 330201, '坎墩街道', '30.224243', '121.266045', 4, 12, '坎墩街道');
-INSERT INTO `sys_dic_area` VALUES (1970, 330282004, 330201, '浒山街道', '30.177141', '121.248055', 4, 11, '浒山街道');
-INSERT INTO `sys_dic_area` VALUES (1971, 330282005, 330201, '白沙路街道', '30.177141', '121.248055', 4, 2, '白沙路街道');
-INSERT INTO `sys_dic_area` VALUES (1972, 330282006, 330201, '古塘街道', '30.177141', '121.248055', 4, 9, '古塘街道');
-INSERT INTO `sys_dic_area` VALUES (1973, 330282104, 330201, '掌起镇', '30.11684', '121.455864', 4, 20, '掌起镇');
-INSERT INTO `sys_dic_area` VALUES (1974, 330282107, 330201, '观海卫镇', '30.167591', '121.40665', 4, 8, '观海卫镇');
-INSERT INTO `sys_dic_area` VALUES (1975, 330282108, 330201, '附海镇', '30.22181', '121.39916', 4, 7, '附海镇');
-INSERT INTO `sys_dic_area` VALUES (1976, 330282109, 330201, '桥头镇', '30.159618', '121.35822', 4, 15, '桥头镇');
-INSERT INTO `sys_dic_area` VALUES (1977, 330282110, 330201, '匡堰镇', '30.156433', '121.30491', 4, 13, '匡堰镇');
-INSERT INTO `sys_dic_area` VALUES (1978, 330282111, 330201, '逍林镇', '30.17513', '121.32226', 4, 17, '逍林镇');
-INSERT INTO `sys_dic_area` VALUES (1979, 330282112, 330201, '新浦镇', '30.24608', '121.36739', 4, 18, '新浦镇');
-INSERT INTO `sys_dic_area` VALUES (1980, 330282113, 330201, '胜山镇', '30.233196', '121.32946', 4, 16, '胜山镇');
-INSERT INTO `sys_dic_area` VALUES (1981, 330282114, 330201, '横河镇', '30.13066', '121.24252', 4, 10, '横河镇');
-INSERT INTO `sys_dic_area` VALUES (1982, 330282116, 330201, '崇寿镇', '30.269676', '121.27159', 4, 3, '崇寿镇');
-INSERT INTO `sys_dic_area` VALUES (1983, 330282118, 330201, '庵东镇', '30.268826', '121.219025', 4, 1, '庵东镇');
-INSERT INTO `sys_dic_area` VALUES (1984, 330282120, 330201, '长河镇', '30.223724', '121.18089', 4, 19, '长河镇');
-INSERT INTO `sys_dic_area` VALUES (1985, 330282121, 330201, '周巷镇', '30.186197', '121.13569', 4, 21, '周巷镇');
-INSERT INTO `sys_dic_area` VALUES (1986, 330282123, 330201, '龙山镇', '30.07307', '121.5567', 4, 14, '龙山镇');
-INSERT INTO `sys_dic_area` VALUES (1987, 330282400, 330201, '慈溪市农垦场', '30.177141', '121.248055', 4, 6, '慈溪市农垦场');
-INSERT INTO `sys_dic_area` VALUES (1988, 330282401, 330201, '慈溪市林场', '30.177141', '121.248055', 4, 5, '慈溪市林场');
-INSERT INTO `sys_dic_area` VALUES (1989, 330282402, 330201, '慈东工业区', '30.133648', '121.55809', 4, 4, '慈东工业区');
-INSERT INTO `sys_dic_area` VALUES (1990, 330302006, 330301, '五马街道', '28.012081', '120.66103', 4, 7, '五马街道');
-INSERT INTO `sys_dic_area` VALUES (1991, 330302023, 330301, '七都街道', '28.003351', '120.67423', 4, 3, '七都街道');
-INSERT INTO `sys_dic_area` VALUES (1992, 330302024, 330301, '滨江街道', '28.003351', '120.67423', 4, 1, '滨江街道');
-INSERT INTO `sys_dic_area` VALUES (1993, 330302025, 330301, '南汇街道', '28.003351', '120.67423', 4, 2, '南汇街道');
-INSERT INTO `sys_dic_area` VALUES (1994, 330302026, 330301, '松台街道', '28.0104', '120.652306', 4, 5, '松台街道');
-INSERT INTO `sys_dic_area` VALUES (1995, 330302027, 330301, '双屿街道', '28.003351', '120.67423', 4, 4, '双屿街道');
-INSERT INTO `sys_dic_area` VALUES (1996, 330302028, 330301, '仰义街道', '28.003351', '120.67423', 4, 8, '仰义街道');
-INSERT INTO `sys_dic_area` VALUES (1997, 330302102, 330301, '藤桥镇', '28.064642', '120.50571', 4, 6, '藤桥镇');
-INSERT INTO `sys_dic_area` VALUES (1998, 330303001, 330301, '永中街道', '27.970255', '120.763466', 4, 10, '永中街道');
-INSERT INTO `sys_dic_area` VALUES (1999, 330303002, 330301, '蒲州街道', '27.970255', '120.763466', 4, 4, '蒲州街道');
-INSERT INTO `sys_dic_area` VALUES (2000, 330303003, 330301, '海滨街道', '27.970255', '120.763466', 4, 1, '海滨街道');
-INSERT INTO `sys_dic_area` VALUES (2001, 330303004, 330301, '永兴街道', '27.970255', '120.763466', 4, 9, '永兴街道');
-INSERT INTO `sys_dic_area` VALUES (2002, 330303005, 330301, '海城街道', '27.970255', '120.763466', 4, 2, '海城街道');
-INSERT INTO `sys_dic_area` VALUES (2003, 330303006, 330301, '状元街道', '27.970255', '120.763466', 4, 11, '状元街道');
-INSERT INTO `sys_dic_area` VALUES (2004, 330303007, 330301, '瑶溪街道', '27.970255', '120.763466', 4, 8, '瑶溪街道');
-INSERT INTO `sys_dic_area` VALUES (2005, 330303008, 330301, '沙城街道', '27.970255', '120.763466', 4, 5, '沙城街道');
-INSERT INTO `sys_dic_area` VALUES (2006, 330303009, 330301, '天河街道', '27.970255', '120.763466', 4, 6, '天河街道');
-INSERT INTO `sys_dic_area` VALUES (2007, 330303010, 330301, '灵昆街道', '27.970255', '120.763466', 4, 3, '灵昆街道');
-INSERT INTO `sys_dic_area` VALUES (2008, 330303011, 330301, '星海街道', '27.970255', '120.763466', 4, 7, '星海街道');
-INSERT INTO `sys_dic_area` VALUES (2009, 330304001, 330301, '景山街道', '28.008532', '120.636246', 4, 3, '景山街道');
-INSERT INTO `sys_dic_area` VALUES (2010, 330304002, 330301, '梧田街道', '28.006445', '120.637146', 4, 10, '梧田街道');
-INSERT INTO `sys_dic_area` VALUES (2011, 330304003, 330301, '南白象街道', '28.006445', '120.637146', 4, 7, '南白象街道');
-INSERT INTO `sys_dic_area` VALUES (2012, 330304004, 330301, '茶山街道', '28.006445', '120.637146', 4, 1, '茶山街道');
-INSERT INTO `sys_dic_area` VALUES (2013, 330304005, 330301, '娄桥街道', '28.006445', '120.637146', 4, 6, '娄桥街道');
-INSERT INTO `sys_dic_area` VALUES (2014, 330304006, 330301, '新桥街道', '28.006445', '120.637146', 4, 12, '新桥街道');
-INSERT INTO `sys_dic_area` VALUES (2015, 330304007, 330301, '三垟街道', '28.006445', '120.637146', 4, 9, '三垟街道');
-INSERT INTO `sys_dic_area` VALUES (2016, 330304008, 330301, '瞿溪街道', '28.006445', '120.637146', 4, 4, '瞿溪街道');
-INSERT INTO `sys_dic_area` VALUES (2017, 330304009, 330301, '郭溪街道', '28.006445', '120.637146', 4, 2, '郭溪街道');
-INSERT INTO `sys_dic_area` VALUES (2018, 330304010, 330301, '潘桥街道', '28.006445', '120.637146', 4, 8, '潘桥街道');
-INSERT INTO `sys_dic_area` VALUES (2019, 330304011, 330301, '丽岙街道', '28.006445', '120.637146', 4, 5, '丽岙街道');
-INSERT INTO `sys_dic_area` VALUES (2020, 330304012, 330301, '仙岩街道', '28.006445', '120.637146', 4, 11, '仙岩街道');
-INSERT INTO `sys_dic_area` VALUES (2021, 330304108, 330301, '泽雅镇', '28.029495', '120.48394', 4, 13, '泽雅镇');
-INSERT INTO `sys_dic_area` VALUES (2022, 330324001, 330301, '东城街道', '28.6438', '121.267365', 4, 4, '东城街道');
-INSERT INTO `sys_dic_area` VALUES (2023, 330324002, 330301, '北城街道', '28.668425', '121.25089', 4, 1, '北城街道');
-INSERT INTO `sys_dic_area` VALUES (2024, 330324003, 330301, '南城街道', '28.613335', '121.266716', 4, 10, '南城街道');
-INSERT INTO `sys_dic_area` VALUES (2025, 330324004, 330301, '江北街道', '28.153887', '120.69097', 4, 9, '江北街道');
-INSERT INTO `sys_dic_area` VALUES (2026, 330324005, 330301, '东瓯街道', '28.153887', '120.69097', 4, 5, '东瓯街道');
-INSERT INTO `sys_dic_area` VALUES (2027, 330324006, 330301, '三江街道', '28.153887', '120.69097', 4, 13, '三江街道');
-INSERT INTO `sys_dic_area` VALUES (2028, 330324007, 330301, '黄田街道', '28.153887', '120.69097', 4, 8, '黄田街道');
-INSERT INTO `sys_dic_area` VALUES (2029, 330324008, 330301, '乌牛街道', '28.153887', '120.69097', 4, 16, '乌牛街道');
-INSERT INTO `sys_dic_area` VALUES (2030, 330324102, 330301, '桥头镇', '28.168407', '120.4822', 4, 11, '桥头镇');
-INSERT INTO `sys_dic_area` VALUES (2031, 330324104, 330301, '桥下镇', '28.161354', '120.55683', 4, 12, '桥下镇');
-INSERT INTO `sys_dic_area` VALUES (2032, 330324105, 330301, '大若岩镇', '28.28048', '120.637794', 4, 3, '大若岩镇');
-INSERT INTO `sys_dic_area` VALUES (2033, 330324106, 330301, '碧莲镇', '28.311573', '120.56201', 4, 2, '碧莲镇');
-INSERT INTO `sys_dic_area` VALUES (2034, 330324107, 330301, '巽宅镇', '28.343431', '120.48905', 4, 18, '巽宅镇');
-INSERT INTO `sys_dic_area` VALUES (2035, 330324108, 330301, '岩头镇', '28.33899', '120.73556', 4, 20, '岩头镇');
-INSERT INTO `sys_dic_area` VALUES (2036, 330324109, 330301, '枫林镇', '28.315557', '120.7709', 4, 6, '枫林镇');
-INSERT INTO `sys_dic_area` VALUES (2037, 330324110, 330301, '岩坦镇', '28.446115', '120.730865', 4, 19, '岩坦镇');
-INSERT INTO `sys_dic_area` VALUES (2038, 330324111, 330301, '沙头镇', '28.195742', '120.76426', 4, 14, '沙头镇');
-INSERT INTO `sys_dic_area` VALUES (2039, 330324112, 330301, '鹤盛镇', '28.153887', '120.69097', 4, 7, '鹤盛镇');
-INSERT INTO `sys_dic_area` VALUES (2040, 330324400, 330301, '县特产场场区', '28.153887', '120.69097', 4, 17, '县特产场场区');
-INSERT INTO `sys_dic_area` VALUES (2041, 330324401, 330301, '四海山林场', '28.153887', '120.69097', 4, 15, '四海山林场');
-INSERT INTO `sys_dic_area` VALUES (2042, 330324402, 330301, '正江山林场', '28.153887', '120.69097', 4, 21, '正江山林场');
-INSERT INTO `sys_dic_area` VALUES (2043, 330326100, 330301, '昆阳镇', '27.668686', '120.55806', 4, 2, '昆阳镇');
-INSERT INTO `sys_dic_area` VALUES (2044, 330326101, 330301, '鳌江镇', '27.59321', '120.55819', 4, 1, '鳌江镇');
-INSERT INTO `sys_dic_area` VALUES (2045, 330326102, 330301, '水头镇', '27.631409', '120.32389', 4, 6, '水头镇');
-INSERT INTO `sys_dic_area` VALUES (2046, 330326103, 330301, '萧江镇', '27.569777', '120.476295', 4, 10, '萧江镇');
-INSERT INTO `sys_dic_area` VALUES (2047, 330326105, 330301, '腾蛟镇', '27.679277', '120.331276', 4, 8, '腾蛟镇');
-INSERT INTO `sys_dic_area` VALUES (2048, 330326107, 330301, '山门镇', '27.63361', '120.24107', 4, 5, '山门镇');
-INSERT INTO `sys_dic_area` VALUES (2049, 330326108, 330301, '顺溪镇', '27.563656', '120.197876', 4, 7, '顺溪镇');
-INSERT INTO `sys_dic_area` VALUES (2050, 330326109, 330301, '南雁镇', '27.614082', '120.2557', 4, 3, '南雁镇');
-INSERT INTO `sys_dic_area` VALUES (2051, 330326117, 330301, '万全镇', '27.719717', '120.60323', 4, 9, '万全镇');
-INSERT INTO `sys_dic_area` VALUES (2052, 330326214, 330301, '青街畲族乡', '27.548477', '120.22731', 4, 4, '青街畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2053, 330327100, 330301, '灵溪镇', '27.500528', '120.40157', 4, 6, '灵溪镇');
-INSERT INTO `sys_dic_area` VALUES (2054, 330327103, 330301, '宜山镇', '27.513498', '120.54496', 4, 11, '宜山镇');
-INSERT INTO `sys_dic_area` VALUES (2055, 330327104, 330301, '钱库镇', '27.479525', '120.57145', 4, 9, '钱库镇');
-INSERT INTO `sys_dic_area` VALUES (2056, 330327107, 330301, '金乡镇', '27.429665', '120.61329', 4, 5, '金乡镇');
-INSERT INTO `sys_dic_area` VALUES (2057, 330327112, 330301, '藻溪镇', '27.459814', '120.45015', 4, 12, '藻溪镇');
-INSERT INTO `sys_dic_area` VALUES (2058, 330327113, 330301, '桥墩镇', '27.460022', '120.31', 4, 10, '桥墩镇');
-INSERT INTO `sys_dic_area` VALUES (2059, 330327116, 330301, '矾山镇', '27.341944', '120.40678', 4, 3, '矾山镇');
-INSERT INTO `sys_dic_area` VALUES (2060, 330327117, 330301, '赤溪镇', '27.334942', '120.512436', 4, 1, '赤溪镇');
-INSERT INTO `sys_dic_area` VALUES (2061, 330327118, 330301, '马站镇', '27.264076', '120.46317', 4, 8, '马站镇');
-INSERT INTO `sys_dic_area` VALUES (2062, 330327216, 330301, '凤阳畲族乡', '27.336807', '120.45278', 4, 4, '凤阳畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2063, 330327218, 330301, '岱岭畲族乡', '27.27488', '120.43264', 4, 2, '岱岭畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2064, 330328100, 330301, '大峃镇', '27.789629', '120.08865', 4, 2, '大峃镇');
-INSERT INTO `sys_dic_area` VALUES (2065, 330328101, 330301, '百丈漈镇', '27.831957', '120.006294', 4, 1, '百丈漈镇');
-INSERT INTO `sys_dic_area` VALUES (2066, 330328102, 330301, '南田镇', '27.91748', '119.96351', 4, 5, '南田镇');
-INSERT INTO `sys_dic_area` VALUES (2067, 330328103, 330301, '西坑畲族镇', '27.841684', '119.93389', 4, 7, '西坑畲族镇');
-INSERT INTO `sys_dic_area` VALUES (2068, 330328104, 330301, '黄坦镇', '27.758087', '119.99563', 4, 3, '黄坦镇');
-INSERT INTO `sys_dic_area` VALUES (2069, 330328105, 330301, '珊溪镇', '27.665188', '120.056755', 4, 6, '珊溪镇');
-INSERT INTO `sys_dic_area` VALUES (2070, 330328106, 330301, '巨屿镇', '27.693861', '120.08856', 4, 4, '巨屿镇');
-INSERT INTO `sys_dic_area` VALUES (2071, 330328107, 330301, '玉壶镇', '27.869583', '120.14853', 4, 9, '玉壶镇');
-INSERT INTO `sys_dic_area` VALUES (2072, 330328108, 330301, '峃口镇', '27.751276', '120.15245', 4, 8, '峃口镇');
-INSERT INTO `sys_dic_area` VALUES (2073, 330328217, 330301, '周山畲族乡', '27.722286', '120.16772', 4, 10, '周山畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2074, 330329100, 330301, '罗阳镇', '27.556389', '119.71258', 4, 2, '罗阳镇');
-INSERT INTO `sys_dic_area` VALUES (2075, 330329101, 330301, '司前畲族镇', '27.666773', '119.78486', 4, 6, '司前畲族镇');
-INSERT INTO `sys_dic_area` VALUES (2076, 330329102, 330301, '百丈镇', '27.647099', '119.86344', 4, 1, '百丈镇');
-INSERT INTO `sys_dic_area` VALUES (2077, 330329103, 330301, '筱村镇', '27.559044', '119.91337', 4, 9, '筱村镇');
-INSERT INTO `sys_dic_area` VALUES (2078, 330329104, 330301, '泗溪镇', '27.468578', '120.00414', 4, 7, '泗溪镇');
-INSERT INTO `sys_dic_area` VALUES (2079, 330329105, 330301, '彭溪镇', '27.433819', '120.142555', 4, 3, '彭溪镇');
-INSERT INTO `sys_dic_area` VALUES (2080, 330329106, 330301, '雅阳镇', '27.386663', '120.045685', 4, 10, '雅阳镇');
-INSERT INTO `sys_dic_area` VALUES (2081, 330329107, 330301, '仕阳镇', '27.361593', '119.9046', 4, 5, '仕阳镇');
-INSERT INTO `sys_dic_area` VALUES (2082, 330329109, 330301, '三魁镇', '27.424294', '119.91487', 4, 4, '三魁镇');
-INSERT INTO `sys_dic_area` VALUES (2083, 330329204, 330301, '竹里畲族乡', '27.697052', '119.77706', 4, 11, '竹里畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2084, 330329400, 330301, '乌岩岭自然保护区', '27.70101', '119.6689', 4, 8, '乌岩岭自然保护区');
-INSERT INTO `sys_dic_area` VALUES (2085, 330381001, 330301, '安阳街道', '27.779322', '120.64617', 4, 1, '安阳街道');
-INSERT INTO `sys_dic_area` VALUES (2086, 330381002, 330301, '玉海街道', '27.779322', '120.64617', 4, 15, '玉海街道');
-INSERT INTO `sys_dic_area` VALUES (2087, 330381003, 330301, '锦湖街道', '27.779322', '120.64617', 4, 6, '锦湖街道');
-INSERT INTO `sys_dic_area` VALUES (2088, 330381004, 330301, '东山街道', '27.779322', '120.64617', 4, 2, '东山街道');
-INSERT INTO `sys_dic_area` VALUES (2089, 330381005, 330301, '上望街道', '27.779322', '120.64617', 4, 9, '上望街道');
-INSERT INTO `sys_dic_area` VALUES (2090, 330381007, 330301, '莘塍街道', '27.779322', '120.64617', 4, 14, '莘塍街道');
-INSERT INTO `sys_dic_area` VALUES (2091, 330381008, 330301, '汀田街道', '27.779322', '120.64617', 4, 12, '汀田街道');
-INSERT INTO `sys_dic_area` VALUES (2092, 330381009, 330301, '飞云街道', '27.779322', '120.64617', 4, 3, '飞云街道');
-INSERT INTO `sys_dic_area` VALUES (2093, 330381010, 330301, '仙降街道', '27.779322', '120.64617', 4, 13, '仙降街道');
-INSERT INTO `sys_dic_area` VALUES (2094, 330381011, 330301, '南滨街道', '27.779322', '120.64617', 4, 8, '南滨街道');
-INSERT INTO `sys_dic_area` VALUES (2095, 330381101, 330301, '塘下镇', '27.821201', '120.693825', 4, 10, '塘下镇');
-INSERT INTO `sys_dic_area` VALUES (2096, 330381116, 330301, '马屿镇', '27.77594', '120.45752', 4, 7, '马屿镇');
-INSERT INTO `sys_dic_area` VALUES (2097, 330381120, 330301, '陶山镇', '27.84135', '120.491936', 4, 11, '陶山镇');
-INSERT INTO `sys_dic_area` VALUES (2098, 330381122, 330301, '湖岭镇', '27.90381', '120.39072', 4, 5, '湖岭镇');
-INSERT INTO `sys_dic_area` VALUES (2099, 330381125, 330301, '高楼镇', '27.779322', '120.64617', 4, 4, '高楼镇');
-INSERT INTO `sys_dic_area` VALUES (2100, 330382001, 330301, '城东街道', '28.116083', '120.96715', 4, 3, '城东街道');
-INSERT INTO `sys_dic_area` VALUES (2101, 330382002, 330301, '乐成街道', '28.116083', '120.96715', 4, 9, '乐成街道');
-INSERT INTO `sys_dic_area` VALUES (2102, 330382003, 330301, '城南街道', '28.116083', '120.96715', 4, 4, '城南街道');
-INSERT INTO `sys_dic_area` VALUES (2103, 330382004, 330301, '盐盆街道', '28.116083', '120.96715', 4, 17, '盐盆街道');
-INSERT INTO `sys_dic_area` VALUES (2104, 330382005, 330301, '翁垟街道', '28.116083', '120.96715', 4, 14, '翁垟街道');
-INSERT INTO `sys_dic_area` VALUES (2105, 330382006, 330301, '白石街道', '28.116083', '120.96715', 4, 1, '白石街道');
-INSERT INTO `sys_dic_area` VALUES (2106, 330382007, 330301, '石帆街道', '28.116083', '120.96715', 4, 12, '石帆街道');
-INSERT INTO `sys_dic_area` VALUES (2107, 330382008, 330301, '天成街道', '28.116083', '120.96715', 4, 13, '天成街道');
-INSERT INTO `sys_dic_area` VALUES (2108, 330382101, 330301, '大荆镇', '28.408695', '121.15802', 4, 5, '大荆镇');
-INSERT INTO `sys_dic_area` VALUES (2109, 330382102, 330301, '仙溪镇', '28.414606', '121.072876', 4, 15, '仙溪镇');
-INSERT INTO `sys_dic_area` VALUES (2110, 330382104, 330301, '雁荡镇', '28.357765', '121.143875', 4, 16, '雁荡镇');
-INSERT INTO `sys_dic_area` VALUES (2111, 330382105, 330301, '芙蓉镇', '28.296856', '121.03158', 4, 7, '芙蓉镇');
-INSERT INTO `sys_dic_area` VALUES (2112, 330382106, 330301, '清江镇', '28.272156', '121.106514', 4, 11, '清江镇');
-INSERT INTO `sys_dic_area` VALUES (2113, 330382108, 330301, '虹桥镇', '28.220406', '121.03813', 4, 8, '虹桥镇');
-INSERT INTO `sys_dic_area` VALUES (2114, 330382111, 330301, '淡溪镇', '28.22927', '120.99733', 4, 6, '淡溪镇');
-INSERT INTO `sys_dic_area` VALUES (2115, 330382114, 330301, '柳市镇', '28.03825', '120.8922', 4, 10, '柳市镇');
-INSERT INTO `sys_dic_area` VALUES (2116, 330382115, 330301, '北白象镇', '28.033998', '120.86089', 4, 2, '北白象镇');
-INSERT INTO `sys_dic_area` VALUES (2117, 330302031, 330301, '南郊街道', NULL, NULL, 4, NULL, '南郊街道');
-INSERT INTO `sys_dic_area` VALUES (2118, 330602001, 330601, '塔山街道', '29.99443', '120.58693', 4, 14, '塔山街道');
-INSERT INTO `sys_dic_area` VALUES (2119, 330602002, 330601, '府山街道', '29.996351', '120.57579', 4, 7, '府山街道');
-INSERT INTO `sys_dic_area` VALUES (2120, 330602003, 330601, '蕺山街道', '30.012527', '120.59413', 4, 10, '蕺山街道');
-INSERT INTO `sys_dic_area` VALUES (2121, 330602004, 330601, '北海街道', '30.013868', '120.56582', 4, 1, '北海街道');
-INSERT INTO `sys_dic_area` VALUES (2122, 330602005, 330601, '城南街道', '29.982716', '120.57329', 4, 2, '城南街道');
-INSERT INTO `sys_dic_area` VALUES (2123, 330602006, 330601, '稽山街道', '29.981358', '120.6043', 4, 11, '稽山街道');
-INSERT INTO `sys_dic_area` VALUES (2124, 330602007, 330601, '迪荡街道', '29.996992', '120.58531', 4, 3, '迪荡街道');
-INSERT INTO `sys_dic_area` VALUES (2125, 330602100, 330601, '东湖镇', '30.021126', '120.60929', 4, 4, '东湖镇');
-INSERT INTO `sys_dic_area` VALUES (2126, 330602101, 330601, '灵芝镇', '30.025955', '120.57766', 4, 12, '灵芝镇');
-INSERT INTO `sys_dic_area` VALUES (2127, 330602102, 330601, '东浦镇', '30.052217', '120.53557', 4, 5, '东浦镇');
-INSERT INTO `sys_dic_area` VALUES (2128, 330602103, 330601, '鉴湖镇', '29.930676', '120.57334', 4, 9, '鉴湖镇');
-INSERT INTO `sys_dic_area` VALUES (2129, 330602104, 330601, '皋埠镇', '30.006973', '120.67517', 4, 8, '皋埠镇');
-INSERT INTO `sys_dic_area` VALUES (2130, 330602105, 330601, '马山镇', '30.07423', '120.66058', 4, 13, '马山镇');
-INSERT INTO `sys_dic_area` VALUES (2131, 330602106, 330601, '斗门镇', '30.087288', '120.60304', 4, 6, '斗门镇');
-INSERT INTO `sys_dic_area` VALUES (2132, 330624001, 330601, '羽林街道', '29.503557', '120.919846', 4, 16, '羽林街道');
-INSERT INTO `sys_dic_area` VALUES (2133, 330624002, 330601, '南明街道', '29.49684', '120.90706', 4, 8, '南明街道');
-INSERT INTO `sys_dic_area` VALUES (2134, 330624003, 330601, '七星街道', '29.51645', '120.86186', 4, 10, '七星街道');
-INSERT INTO `sys_dic_area` VALUES (2135, 330624101, 330601, '澄潭镇', '29.444384', '120.796165', 4, 2, '澄潭镇');
-INSERT INTO `sys_dic_area` VALUES (2136, 330624102, 330601, '梅渚镇', '29.47611', '120.8045', 4, 7, '梅渚镇');
-INSERT INTO `sys_dic_area` VALUES (2137, 330624104, 330601, '回山镇', '29.273903', '120.815834', 4, 5, '回山镇');
-INSERT INTO `sys_dic_area` VALUES (2138, 330624106, 330601, '大市聚镇', '29.444529', '121.04024', 4, 3, '大市聚镇');
-INSERT INTO `sys_dic_area` VALUES (2139, 330624107, 330601, '小将镇', '29.378874', '121.119736', 4, 14, '小将镇');
-INSERT INTO `sys_dic_area` VALUES (2140, 330624108, 330601, '沙溪镇', '29.514225', '121.133316', 4, 12, '沙溪镇');
-INSERT INTO `sys_dic_area` VALUES (2141, 330624109, 330601, '镜岭镇', '29.36946', '120.786125', 4, 6, '镜岭镇');
-INSERT INTO `sys_dic_area` VALUES (2142, 330624110, 330601, '儒岙镇', '29.362246', '120.93156', 4, 11, '儒岙镇');
-INSERT INTO `sys_dic_area` VALUES (2143, 330624200, 330601, '城南乡', '29.467426', '120.90949', 4, 1, '城南乡');
-INSERT INTO `sys_dic_area` VALUES (2144, 330624201, 330601, '东茗乡', '29.421629', '120.83466', 4, 4, '东茗乡');
-INSERT INTO `sys_dic_area` VALUES (2145, 330624203, 330601, '双彩乡', '29.327074', '120.8473', 4, 13, '双彩乡');
-INSERT INTO `sys_dic_area` VALUES (2146, 330624205, 330601, '新林乡', '29.487816', '121.03316', 4, 15, '新林乡');
-INSERT INTO `sys_dic_area` VALUES (2147, 330624206, 330601, '巧英乡', '29.390188', '121.20377', 4, 9, '巧英乡');
-INSERT INTO `sys_dic_area` VALUES (2148, 330681001, 330601, '暨阳街道', '29.715034', '120.24059', 4, 14, '暨阳街道');
-INSERT INTO `sys_dic_area` VALUES (2149, 330681002, 330601, '浣东街道', '29.713486', '120.261086', 4, 10, '浣东街道');
-INSERT INTO `sys_dic_area` VALUES (2150, 330681003, 330601, '陶朱街道', '29.72989', '120.206566', 4, 21, '陶朱街道');
-INSERT INTO `sys_dic_area` VALUES (2151, 330681101, 330601, '大唐镇', '29.693316', '120.16777', 4, 5, '大唐镇');
-INSERT INTO `sys_dic_area` VALUES (2152, 330681102, 330601, '应店街镇', '29.808374', '120.11833', 4, 25, '应店街镇');
-INSERT INTO `sys_dic_area` VALUES (2153, 330681103, 330601, '次坞镇', '29.887703', '120.15946', 4, 4, '次坞镇');
-INSERT INTO `sys_dic_area` VALUES (2154, 330681104, 330601, '店口镇', '29.92462', '120.32244', 4, 6, '店口镇');
-INSERT INTO `sys_dic_area` VALUES (2155, 330681105, 330601, '阮市镇', '29.871181', '120.392784', 4, 19, '阮市镇');
-INSERT INTO `sys_dic_area` VALUES (2156, 330681106, 330601, '直埠镇', '29.828632', '120.25062', 4, 27, '直埠镇');
-INSERT INTO `sys_dic_area` VALUES (2157, 330681107, 330601, '江藻镇', '29.831642', '120.307335', 4, 12, '江藻镇');
-INSERT INTO `sys_dic_area` VALUES (2158, 330681108, 330601, '山下湖镇', '29.852982', '120.35214', 4, 20, '山下湖镇');
-INSERT INTO `sys_dic_area` VALUES (2159, 330681109, 330601, '枫桥镇', '29.783388', '120.414', 4, 9, '枫桥镇');
-INSERT INTO `sys_dic_area` VALUES (2160, 330681110, 330601, '赵家镇', '29.75126', '120.45945', 4, 26, '赵家镇');
-INSERT INTO `sys_dic_area` VALUES (2161, 330681111, 330601, '马剑镇', '29.724363', '119.99182', 4, 17, '马剑镇');
-INSERT INTO `sys_dic_area` VALUES (2162, 330681112, 330601, '五泄镇', '29.690334', '120.08504', 4, 24, '五泄镇');
-INSERT INTO `sys_dic_area` VALUES (2163, 330681113, 330601, '草塔镇', '29.683903', '120.13483', 4, 2, '草塔镇');
-INSERT INTO `sys_dic_area` VALUES (2164, 330681114, 330601, '王家井镇', '29.631796', '120.21333', 4, 23, '王家井镇');
-INSERT INTO `sys_dic_area` VALUES (2165, 330681115, 330601, '牌头镇', '29.597961', '120.15257', 4, 18, '牌头镇');
-INSERT INTO `sys_dic_area` VALUES (2166, 330681116, 330601, '同山镇', '29.57867', '120.07076', 4, 22, '同山镇');
-INSERT INTO `sys_dic_area` VALUES (2167, 330681117, 330601, '安华镇', '29.550316', '120.12743', 4, 1, '安华镇');
-INSERT INTO `sys_dic_area` VALUES (2168, 330681118, 330601, '街亭镇', '29.641685', '120.273994', 4, 13, '街亭镇');
-INSERT INTO `sys_dic_area` VALUES (2169, 330681119, 330601, '璜山镇', '29.569988', '120.33156', 4, 11, '璜山镇');
-INSERT INTO `sys_dic_area` VALUES (2170, 330681120, 330601, '陈宅镇', '29.502817', '120.34184', 4, 3, '陈宅镇');
-INSERT INTO `sys_dic_area` VALUES (2171, 330681121, 330601, '岭北镇', '29.400866', '120.30989', 4, 15, '岭北镇');
-INSERT INTO `sys_dic_area` VALUES (2172, 330681122, 330601, '浬浦镇', '29.610603', '120.34735', 4, 16, '浬浦镇');
-INSERT INTO `sys_dic_area` VALUES (2173, 330681124, 330601, '东白湖镇', '29.578835', '120.381676', 4, 7, '东白湖镇');
-INSERT INTO `sys_dic_area` VALUES (2174, 330681201, 330601, '东和乡', '29.690578', '120.42949', 4, 8, '东和乡');
-INSERT INTO `sys_dic_area` VALUES (2175, 330683001, 330601, '剡湖街道', '29.586605', '120.82888', 4, 20, '剡湖街道');
-INSERT INTO `sys_dic_area` VALUES (2176, 330683002, 330601, '三江街道', '29.578695', '120.83063', 4, 11, '三江街道');
-INSERT INTO `sys_dic_area` VALUES (2177, 330683003, 330601, '鹿山街道', '29.586605', '120.82888', 4, 9, '鹿山街道');
-INSERT INTO `sys_dic_area` VALUES (2178, 330683004, 330601, '浦口街道', '29.586605', '120.82888', 4, 10, '浦口街道');
-INSERT INTO `sys_dic_area` VALUES (2179, 330683100, 330601, '甘霖镇', '29.5243', '120.72509', 4, 3, '甘霖镇');
-INSERT INTO `sys_dic_area` VALUES (2180, 330683101, 330601, '长乐镇', '29.461266', '120.61369', 4, 21, '长乐镇');
-INSERT INTO `sys_dic_area` VALUES (2181, 330683102, 330601, '崇仁镇', '29.603727', '120.70808', 4, 2, '崇仁镇');
-INSERT INTO `sys_dic_area` VALUES (2182, 330683103, 330601, '黄泽镇', '29.574608', '120.93439', 4, 6, '黄泽镇');
-INSERT INTO `sys_dic_area` VALUES (2183, 330683104, 330601, '三界镇', '29.756695', '120.845825', 4, 12, '三界镇');
-INSERT INTO `sys_dic_area` VALUES (2184, 330683105, 330601, '石璜镇', '29.538448', '120.65351', 4, 14, '石璜镇');
-INSERT INTO `sys_dic_area` VALUES (2185, 330683106, 330601, '谷来镇', '29.687805', '120.64387', 4, 5, '谷来镇');
-INSERT INTO `sys_dic_area` VALUES (2186, 330683107, 330601, '仙岩镇', '29.67198', '120.81784', 4, 17, '仙岩镇');
-INSERT INTO `sys_dic_area` VALUES (2187, 330683108, 330601, '金庭镇', '29.569456', '121.03582', 4, 7, '金庭镇');
-INSERT INTO `sys_dic_area` VALUES (2188, 330683109, 330601, '北漳镇', '29.58908', '121.04822', 4, 1, '北漳镇');
-INSERT INTO `sys_dic_area` VALUES (2189, 330683110, 330601, '下王镇', '29.704344', '120.93077', 4, 18, '下王镇');
-INSERT INTO `sys_dic_area` VALUES (2190, 330683200, 330601, '贵门乡', '29.401968', '120.60845', 4, 4, '贵门乡');
-INSERT INTO `sys_dic_area` VALUES (2191, 330683201, 330601, '里南乡', '29.444471', '120.69259', 4, 8, '里南乡');
-INSERT INTO `sys_dic_area` VALUES (2192, 330683202, 330601, '竹溪乡', '29.64982', '120.52979', 4, 22, '竹溪乡');
-INSERT INTO `sys_dic_area` VALUES (2193, 330683203, 330601, '雅璜乡', '29.593225', '120.54967', 4, 19, '雅璜乡');
-INSERT INTO `sys_dic_area` VALUES (2194, 330683204, 330601, '王院乡', '29.630537', '120.60696', 4, 16, '王院乡');
-INSERT INTO `sys_dic_area` VALUES (2195, 330683205, 330601, '通源乡', '29.557848', '120.568596', 4, 15, '通源乡');
-INSERT INTO `sys_dic_area` VALUES (2196, 330683400, 330601, '嵊州经济开发区', '29.586605', '120.82888', 4, 13, '嵊州经济开发区');
-INSERT INTO `sys_dic_area` VALUES (2197, 330604001, 330601, '百官街道', '', '', 4, 3, '百官街道');
-INSERT INTO `sys_dic_area` VALUES (2198, 330604002, 330601, '曹娥街道', NULL, NULL, 4, 3, '曹娥街道');
-INSERT INTO `sys_dic_area` VALUES (2199, 330604003, 330601, '东关街道', NULL, NULL, 4, 3, '东关街道');
-INSERT INTO `sys_dic_area` VALUES (2200, 330604004, 330601, '道墟街道', NULL, NULL, 4, 3, '道墟街道');
-INSERT INTO `sys_dic_area` VALUES (2201, 330604006, 330601, '小越街道', NULL, NULL, 4, 3, '小越街道');
-INSERT INTO `sys_dic_area` VALUES (2202, 330604005, 330601, '梁湖街道', NULL, NULL, 4, 3, '梁湖街道');
-INSERT INTO `sys_dic_area` VALUES (2203, 330604007, 330601, '崧厦街道', NULL, NULL, 4, 3, '崧厦街道');
-INSERT INTO `sys_dic_area` VALUES (2204, 330604104, 330601, '章镇镇', NULL, NULL, 4, 3, '章镇镇');
-INSERT INTO `sys_dic_area` VALUES (2205, 330604106, 330601, '丰惠镇', NULL, NULL, 4, 3, '丰惠镇');
-INSERT INTO `sys_dic_area` VALUES (2206, 330604102, 330601, '上浦镇', NULL, NULL, 4, 3, '上浦镇');
-INSERT INTO `sys_dic_area` VALUES (2207, 330604103, 330601, '汤浦镇', NULL, NULL, 4, 3, '汤浦镇');
-INSERT INTO `sys_dic_area` VALUES (2208, 330604107, 330601, '永和镇', NULL, NULL, 4, 3, '永和镇');
-INSERT INTO `sys_dic_area` VALUES (2209, 330604109, 330601, '驿亭镇', NULL, NULL, 4, 3, '驿亭镇');
-INSERT INTO `sys_dic_area` VALUES (2210, 330604111, 330601, '谢塘镇', NULL, NULL, 4, 3, '谢塘镇');
-INSERT INTO `sys_dic_area` VALUES (2211, 330604112, 330601, '盖北镇', NULL, NULL, 4, 3, '盖北镇');
-INSERT INTO `sys_dic_area` VALUES (2212, 330604101, 330601, '长塘镇', NULL, NULL, 4, 3, '长塘镇');
-INSERT INTO `sys_dic_area` VALUES (2213, 330604200, 330601, '岭南乡', NULL, NULL, 4, 3, '岭南乡');
-INSERT INTO `sys_dic_area` VALUES (2214, 330604201, 330601, '陈溪乡', NULL, NULL, 4, 3, '陈溪乡');
-INSERT INTO `sys_dic_area` VALUES (2215, 330604105, 330601, '下管镇', NULL, NULL, 4, 3, '下管镇');
-INSERT INTO `sys_dic_area` VALUES (2216, 330604202, 330601, '丁宅乡', NULL, NULL, 4, 3, '丁宅乡');
-INSERT INTO `sys_dic_area` VALUES (2217, 330702001, 330701, '城东街道', '29.10942', '119.66149', 4, 4, '城东街道');
-INSERT INTO `sys_dic_area` VALUES (2218, 330702002, 330701, '城中街道', '29.106548', '119.655304', 4, 6, '城中街道');
-INSERT INTO `sys_dic_area` VALUES (2219, 330702003, 330701, '城西街道', '29.101938', '119.64418', 4, 5, '城西街道');
-INSERT INTO `sys_dic_area` VALUES (2220, 330702004, 330701, '城北街道', '29.115942', '119.64389', 4, 3, '城北街道');
-INSERT INTO `sys_dic_area` VALUES (2221, 330702005, 330701, '江南街道', '29.092413', '119.65446', 4, 7, '江南街道');
-INSERT INTO `sys_dic_area` VALUES (2222, 330702006, 330701, '三江街道', '29.076778', '119.654816', 4, 16, '三江街道');
-INSERT INTO `sys_dic_area` VALUES (2223, 330702007, 330701, '西关街道', '29.087801', '119.645805', 4, 21, '西关街道');
-INSERT INTO `sys_dic_area` VALUES (2224, 330702008, 330701, '秋滨街道', '29.082607', '119.65258', 4, 14, '秋滨街道');
-INSERT INTO `sys_dic_area` VALUES (2225, 330702009, 330701, '新狮街道', '29.082607', '119.65258', 4, 23, '新狮街道');
-INSERT INTO `sys_dic_area` VALUES (2226, 330702100, 330701, '罗店镇', '29.157635', '119.62087', 4, 12, '罗店镇');
-INSERT INTO `sys_dic_area` VALUES (2227, 330702101, 330701, '雅畈镇', '29.031761', '119.68203', 4, 24, '雅畈镇');
-INSERT INTO `sys_dic_area` VALUES (2228, 330702102, 330701, '安地镇', '28.97314', '119.64492', 4, 1, '安地镇');
-INSERT INTO `sys_dic_area` VALUES (2229, 330702103, 330701, '白龙桥镇', '29.073828', '119.556526', 4, 2, '白龙桥镇');
-INSERT INTO `sys_dic_area` VALUES (2230, 330702104, 330701, '琅琊镇', '29.004316', '119.49903', 4, 9, '琅琊镇');
-INSERT INTO `sys_dic_area` VALUES (2231, 330702105, 330701, '蒋堂镇', '29.050905', '119.46105', 4, 8, '蒋堂镇');
-INSERT INTO `sys_dic_area` VALUES (2232, 330702106, 330701, '汤溪镇', '29.053005', '119.399925', 4, 19, '汤溪镇');
-INSERT INTO `sys_dic_area` VALUES (2233, 330702107, 330701, '罗埠镇', '29.113153', '119.39346', 4, 11, '罗埠镇');
-INSERT INTO `sys_dic_area` VALUES (2234, 330702108, 330701, '洋埠镇', '29.090302', '119.33743', 4, 25, '洋埠镇');
-INSERT INTO `sys_dic_area` VALUES (2235, 330702201, 330701, '乾西乡', '29.097078', '119.615875', 4, 13, '乾西乡');
-INSERT INTO `sys_dic_area` VALUES (2236, 330702202, 330701, '竹马乡', '29.137955', '119.590485', 4, 27, '竹马乡');
-INSERT INTO `sys_dic_area` VALUES (2237, 330702203, 330701, '长山乡', '29.018274', '119.554665', 4, 26, '长山乡');
-INSERT INTO `sys_dic_area` VALUES (2238, 330702204, 330701, '箬阳乡', '28.856388', '119.56093', 4, 15, '箬阳乡');
-INSERT INTO `sys_dic_area` VALUES (2239, 330702205, 330701, '沙畈乡', '28.878437', '119.49355', 4, 17, '沙畈乡');
-INSERT INTO `sys_dic_area` VALUES (2240, 330702206, 330701, '塔石乡', '28.852972', '119.40937', 4, 20, '塔石乡');
-INSERT INTO `sys_dic_area` VALUES (2241, 330702207, 330701, '岭上乡', '28.934427', '119.40733', 4, 10, '岭上乡');
-INSERT INTO `sys_dic_area` VALUES (2242, 330702208, 330701, '莘畈乡', '28.970375', '119.34882', 4, 22, '莘畈乡');
-INSERT INTO `sys_dic_area` VALUES (2243, 330702209, 330701, '苏孟乡', '29.029057', '119.64277', 4, 18, '苏孟乡');
-INSERT INTO `sys_dic_area` VALUES (2244, 330703001, 330701, '多湖街道', '29.09586', '119.693245', 4, 4, '多湖街道');
-INSERT INTO `sys_dic_area` VALUES (2245, 330703002, 330701, '东孝街道', '29.112347', '119.68672', 4, 3, '东孝街道');
-INSERT INTO `sys_dic_area` VALUES (2246, 330703101, 330701, '孝顺镇', '29.182661', '119.86804', 4, 10, '孝顺镇');
-INSERT INTO `sys_dic_area` VALUES (2247, 330703102, 330701, '傅村镇', '29.236246', '119.90024', 4, 5, '傅村镇');
-INSERT INTO `sys_dic_area` VALUES (2248, 330703103, 330701, '曹宅镇', '29.195173', '119.75443', 4, 1, '曹宅镇');
-INSERT INTO `sys_dic_area` VALUES (2249, 330703104, 330701, '澧浦镇', '29.108248', '119.80532', 4, 8, '澧浦镇');
-INSERT INTO `sys_dic_area` VALUES (2250, 330703105, 330701, '岭下镇', '29.05606', '119.759254', 4, 7, '岭下镇');
-INSERT INTO `sys_dic_area` VALUES (2251, 330703106, 330701, '江东镇', '29.047035', '119.743004', 4, 6, '江东镇');
-INSERT INTO `sys_dic_area` VALUES (2252, 330703107, 330701, '塘雅镇', '29.159422', '119.79436', 4, 9, '塘雅镇');
-INSERT INTO `sys_dic_area` VALUES (2253, 330703108, 330701, '赤松镇', '29.147488', '119.69701', 4, 2, '赤松镇');
-INSERT INTO `sys_dic_area` VALUES (2254, 330703200, 330701, '源东乡', '29.271551', '119.828476', 4, 11, '源东乡');
-INSERT INTO `sys_dic_area` VALUES (2255, 330723001, 330701, '白洋街道', '28.896563', '119.81916', 4, 2, '白洋街道');
-INSERT INTO `sys_dic_area` VALUES (2256, 330723002, 330701, '壶山街道', '28.896563', '119.81916', 4, 5, '壶山街道');
-INSERT INTO `sys_dic_area` VALUES (2257, 330723003, 330701, '熟溪街道', '28.886374', '119.81643', 4, 11, '熟溪街道');
-INSERT INTO `sys_dic_area` VALUES (2258, 330723100, 330701, '柳城畲族镇', '28.62041', '119.59921', 4, 7, '柳城畲族镇');
-INSERT INTO `sys_dic_area` VALUES (2259, 330723101, 330701, '履坦镇', '28.94665', '119.7986', 4, 8, '履坦镇');
-INSERT INTO `sys_dic_area` VALUES (2260, 330723102, 330701, '桐琴镇', '28.873928', '119.94011', 4, 14, '桐琴镇');
-INSERT INTO `sys_dic_area` VALUES (2261, 330723103, 330701, '泉溪镇', '28.870224', '119.879005', 4, 9, '泉溪镇');
-INSERT INTO `sys_dic_area` VALUES (2262, 330723104, 330701, '新宅镇', '28.733692', '119.78484', 4, 17, '新宅镇');
-INSERT INTO `sys_dic_area` VALUES (2263, 330723105, 330701, '王宅镇', '28.827864', '119.695496', 4, 15, '王宅镇');
-INSERT INTO `sys_dic_area` VALUES (2264, 330723106, 330701, '桃溪镇', '28.71442', '119.60122', 4, 13, '桃溪镇');
-INSERT INTO `sys_dic_area` VALUES (2265, 330723107, 330701, '茭道镇', '28.982933', '119.88744', 4, 6, '茭道镇');
-INSERT INTO `sys_dic_area` VALUES (2266, 330723200, 330701, '大田乡', '28.789648', '119.779655', 4, 3, '大田乡');
-INSERT INTO `sys_dic_area` VALUES (2267, 330723201, 330701, '白姆乡', '28.832', '119.65227', 4, 1, '白姆乡');
-INSERT INTO `sys_dic_area` VALUES (2268, 330723202, 330701, '俞源乡', '28.77262', '119.66424', 4, 18, '俞源乡');
-INSERT INTO `sys_dic_area` VALUES (2269, 330723203, 330701, '坦洪乡', '28.71033', '119.65213', 4, 12, '坦洪乡');
-INSERT INTO `sys_dic_area` VALUES (2270, 330723204, 330701, '西联乡', '28.646381', '119.569016', 4, 16, '西联乡');
-INSERT INTO `sys_dic_area` VALUES (2271, 330723205, 330701, '三港乡', '28.556492', '119.64635', 4, 10, '三港乡');
-INSERT INTO `sys_dic_area` VALUES (2272, 330723206, 330701, '大溪口乡', '28.580769', '119.65863', 4, 4, '大溪口乡');
-INSERT INTO `sys_dic_area` VALUES (2273, 330726001, 330701, '浦南街道', '29.451254', '119.893364', 4, 6, '浦南街道');
-INSERT INTO `sys_dic_area` VALUES (2274, 330726002, 330701, '仙华街道', '29.451254', '119.893364', 4, 10, '仙华街道');
-INSERT INTO `sys_dic_area` VALUES (2275, 330726003, 330701, '浦阳街道', '29.451254', '119.893364', 4, 7, '浦阳街道');
-INSERT INTO `sys_dic_area` VALUES (2276, 330726101, 330701, '黄宅镇', '29.45419', '119.99685', 4, 4, '黄宅镇');
-INSERT INTO `sys_dic_area` VALUES (2277, 330726102, 330701, '白马镇', '29.503788', '120.06078', 4, 1, '白马镇');
-INSERT INTO `sys_dic_area` VALUES (2278, 330726103, 330701, '郑家坞镇', '29.495655', '120.08865', 4, 13, '郑家坞镇');
-INSERT INTO `sys_dic_area` VALUES (2279, 330726104, 330701, '郑宅镇', '29.484695', '120.01176', 4, 14, '郑宅镇');
-INSERT INTO `sys_dic_area` VALUES (2280, 330726105, 330701, '岩头镇', '29.489285', '119.96036', 4, 11, '岩头镇');
-INSERT INTO `sys_dic_area` VALUES (2281, 330726106, 330701, '檀溪镇', '29.62558', '119.94652', 4, 9, '檀溪镇');
-INSERT INTO `sys_dic_area` VALUES (2282, 330726107, 330701, '杭坪镇', '29.514887', '119.854645', 4, 3, '杭坪镇');
-INSERT INTO `sys_dic_area` VALUES (2283, 330726200, 330701, '大畈乡', '29.583586', '119.88654', 4, 2, '大畈乡');
-INSERT INTO `sys_dic_area` VALUES (2284, 330726201, 330701, '中余乡', '29.610758', '119.99431', 4, 15, '中余乡');
-INSERT INTO `sys_dic_area` VALUES (2285, 330726202, 330701, '前吴乡', '29.456654', '119.82494', 4, 8, '前吴乡');
-INSERT INTO `sys_dic_area` VALUES (2286, 330726203, 330701, '花桥乡', '29.431253', '119.78449', 4, 5, '花桥乡');
-INSERT INTO `sys_dic_area` VALUES (2287, 330726204, 330701, '虞宅乡', '29.558487', '119.86874', 4, 12, '虞宅乡');
-INSERT INTO `sys_dic_area` VALUES (2288, 330727100, 330701, '安文镇', '29.045229', '120.43326', 4, 1, '安文镇');
-INSERT INTO `sys_dic_area` VALUES (2289, 330727101, 330701, '新渥镇', '28.945478', '120.379715', 4, 17, '新渥镇');
-INSERT INTO `sys_dic_area` VALUES (2290, 330727102, 330701, '尖山镇', '29.221344', '120.72527', 4, 6, '尖山镇');
-INSERT INTO `sys_dic_area` VALUES (2291, 330727103, 330701, '仁川镇', '28.893658', '120.40146', 4, 10, '仁川镇');
-INSERT INTO `sys_dic_area` VALUES (2292, 330727104, 330701, '大盘镇', '29.00091', '120.568855', 4, 2, '大盘镇');
-INSERT INTO `sys_dic_area` VALUES (2293, 330727105, 330701, '方前镇', '29.045687', '120.68652', 4, 3, '方前镇');
-INSERT INTO `sys_dic_area` VALUES (2294, 330727106, 330701, '玉山镇', '29.2363', '120.651', 4, 19, '玉山镇');
-INSERT INTO `sys_dic_area` VALUES (2295, 330727107, 330701, '尚湖镇', '29.141346', '120.66676', 4, 11, '尚湖镇');
-INSERT INTO `sys_dic_area` VALUES (2296, 330727108, 330701, '冷水镇', '28.89454', '120.35382', 4, 8, '冷水镇');
-INSERT INTO `sys_dic_area` VALUES (2297, 330727200, 330701, '深泽乡', '29.00167', '120.41679', 4, 12, '深泽乡');
-INSERT INTO `sys_dic_area` VALUES (2298, 330727201, 330701, '双峰乡', '28.920712', '120.46117', 4, 13, '双峰乡');
-INSERT INTO `sys_dic_area` VALUES (2299, 330727203, 330701, '双溪乡', '29.122757', '120.513985', 4, 14, '双溪乡');
-INSERT INTO `sys_dic_area` VALUES (2300, 330727205, 330701, '窈川乡', '29.091684', '120.559265', 4, 18, '窈川乡');
-INSERT INTO `sys_dic_area` VALUES (2301, 330727206, 330701, '盘峰乡', '28.937737', '120.5471', 4, 9, '盘峰乡');
-INSERT INTO `sys_dic_area` VALUES (2302, 330727207, 330701, '高二乡', '28.91841', '120.585014', 4, 4, '高二乡');
-INSERT INTO `sys_dic_area` VALUES (2303, 330727208, 330701, '维新乡', '28.92905', '120.617256', 4, 16, '维新乡');
-INSERT INTO `sys_dic_area` VALUES (2304, 330727209, 330701, '胡宅乡', '29.249813', '120.75342', 4, 5, '胡宅乡');
-INSERT INTO `sys_dic_area` VALUES (2305, 330727210, 330701, '万苍乡', '29.183367', '120.69262', 4, 15, '万苍乡');
-INSERT INTO `sys_dic_area` VALUES (2306, 330727211, 330701, '九和乡', '29.172836', '120.61198', 4, 7, '九和乡');
-INSERT INTO `sys_dic_area` VALUES (2307, 330781001, 330701, '兰江街道', '29.215298', '119.46543', 4, 5, '兰江街道');
-INSERT INTO `sys_dic_area` VALUES (2308, 330781002, 330701, '云山街道', '29.216022', '119.476326', 4, 15, '云山街道');
-INSERT INTO `sys_dic_area` VALUES (2309, 330781004, 330701, '永昌街道', '29.224375', '119.35761', 4, 13, '永昌街道');
-INSERT INTO `sys_dic_area` VALUES (2310, 330781005, 330701, '赤溪街道', '29.210066', '119.46052', 4, 2, '赤溪街道');
-INSERT INTO `sys_dic_area` VALUES (2311, 330781006, 330701, '女埠街道', '29.261677', '119.46666', 4, 9, '女埠街道');
-INSERT INTO `sys_dic_area` VALUES (2312, 330781007, 330701, '上华街道', '29.210066', '119.46052', 4, 10, '上华街道');
-INSERT INTO `sys_dic_area` VALUES (2313, 330781102, 330701, '游埠镇', '29.11863', '119.32896', 4, 14, '游埠镇');
-INSERT INTO `sys_dic_area` VALUES (2314, 330781104, 330701, '诸葛镇', '29.254705', '119.292816', 4, 16, '诸葛镇');
-INSERT INTO `sys_dic_area` VALUES (2315, 330781106, 330701, '黄店镇', '29.300575', '119.41758', 4, 4, '黄店镇');
-INSERT INTO `sys_dic_area` VALUES (2316, 330781108, 330701, '香溪镇', '29.28397', '119.53568', 4, 12, '香溪镇');
-INSERT INTO `sys_dic_area` VALUES (2317, 330781109, 330701, '马涧镇', '29.311264', '119.60658', 4, 7, '马涧镇');
-INSERT INTO `sys_dic_area` VALUES (2318, 330781111, 330701, '梅江镇', '29.346127', '119.75981', 4, 8, '梅江镇');
-INSERT INTO `sys_dic_area` VALUES (2319, 330781112, 330701, '横溪镇', '29.364206', '119.81108', 4, 3, '横溪镇');
-INSERT INTO `sys_dic_area` VALUES (2320, 330781200, 330701, '灵洞乡', '29.189901', '119.50767', 4, 6, '灵洞乡');
-INSERT INTO `sys_dic_area` VALUES (2321, 330781203, 330701, '水亭畲族乡', '29.179617', '119.27233', 4, 11, '水亭畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2322, 330781209, 330701, '柏社乡', '29.33648', '119.653244', 4, 1, '柏社乡');
-INSERT INTO `sys_dic_area` VALUES (2323, 330782001, 330701, '稠城街道', '29.306864', '120.07491', 4, 4, '稠城街道');
-INSERT INTO `sys_dic_area` VALUES (2324, 330782002, 330701, '江东街道', '29.306864', '120.07491', 4, 9, '江东街道');
-INSERT INTO `sys_dic_area` VALUES (2325, 330782003, 330701, '稠江街道', '29.306864', '120.07491', 4, 5, '稠江街道');
-INSERT INTO `sys_dic_area` VALUES (2326, 330782004, 330701, '北苑街道', '29.326788', '120.05757', 4, 1, '北苑街道');
-INSERT INTO `sys_dic_area` VALUES (2327, 330782005, 330701, '后宅街道', '29.306864', '120.07491', 4, 8, '后宅街道');
-INSERT INTO `sys_dic_area` VALUES (2328, 330782006, 330701, '城西街道', '29.29796', '119.99122', 4, 2, '城西街道');
-INSERT INTO `sys_dic_area` VALUES (2329, 330782007, 330701, '廿三里街道', '29.306864', '120.07491', 4, 10, '廿三里街道');
-INSERT INTO `sys_dic_area` VALUES (2330, 330782100, 330701, '佛堂镇', '29.196281', '120.01735', 4, 7, '佛堂镇');
-INSERT INTO `sys_dic_area` VALUES (2331, 330782101, 330701, '赤岸镇', '29.148973', '120.036896', 4, 3, '赤岸镇');
-INSERT INTO `sys_dic_area` VALUES (2332, 330782102, 330701, '义亭镇', '29.231472', '119.95995', 4, 13, '义亭镇');
-INSERT INTO `sys_dic_area` VALUES (2333, 330782104, 330701, '上溪镇', '29.280493', '119.940125', 4, 11, '上溪镇');
-INSERT INTO `sys_dic_area` VALUES (2334, 330782105, 330701, '苏溪镇', '29.409609', '120.13131', 4, 12, '苏溪镇');
-INSERT INTO `sys_dic_area` VALUES (2335, 330782106, 330701, '大陈镇', '29.452642', '120.12988', 4, 6, '大陈镇');
-INSERT INTO `sys_dic_area` VALUES (2336, 330783001, 330701, '吴宁街道', '29.26761', '120.27254', 4, 17, '吴宁街道');
-INSERT INTO `sys_dic_area` VALUES (2337, 330783003, 330701, '南市街道', '29.262547', '120.23334', 4, 13, '南市街道');
-INSERT INTO `sys_dic_area` VALUES (2338, 330783004, 330701, '白云街道', '29.269691', '120.226715', 4, 1, '白云街道');
-INSERT INTO `sys_dic_area` VALUES (2339, 330783005, 330701, '江北街道', '29.284565', '120.251816', 4, 9, '江北街道');
-INSERT INTO `sys_dic_area` VALUES (2340, 330783006, 330701, '城东街道', '29.326296', '120.43599', 4, 2, '城东街道');
-INSERT INTO `sys_dic_area` VALUES (2341, 330783007, 330701, '六石街道', '29.302025', '120.331924', 4, 10, '六石街道');
-INSERT INTO `sys_dic_area` VALUES (2342, 330783106, 330701, '巍山镇', '29.318493', '120.4351', 4, 16, '巍山镇');
-INSERT INTO `sys_dic_area` VALUES (2343, 330783107, 330701, '虎鹿镇', '29.366346', '120.45622', 4, 7, '虎鹿镇');
-INSERT INTO `sys_dic_area` VALUES (2344, 330783108, 330701, '歌山镇', '29.275696', '120.39628', 4, 4, '歌山镇');
-INSERT INTO `sys_dic_area` VALUES (2345, 330783109, 330701, '佐村镇', '29.317749', '120.50117', 4, 18, '佐村镇');
-INSERT INTO `sys_dic_area` VALUES (2346, 330783110, 330701, '东阳江镇', '29.241514', '120.44019', 4, 3, '东阳江镇');
-INSERT INTO `sys_dic_area` VALUES (2347, 330783112, 330701, '湖溪镇', '29.176523', '120.39093', 4, 8, '湖溪镇');
-INSERT INTO `sys_dic_area` VALUES (2348, 330783114, 330701, '马宅镇', '29.086937', '120.372185', 4, 11, '马宅镇');
-INSERT INTO `sys_dic_area` VALUES (2349, 330783116, 330701, '千祥镇', '29.037205', '120.31512', 4, 14, '千祥镇');
-INSERT INTO `sys_dic_area` VALUES (2350, 330783118, 330701, '南马镇', '29.102764', '120.22155', 4, 12, '南马镇');
-INSERT INTO `sys_dic_area` VALUES (2351, 330783122, 330701, '画水镇', '29.159927', '120.14397', 4, 6, '画水镇');
-INSERT INTO `sys_dic_area` VALUES (2352, 330783123, 330701, '横店镇', '29.148878', '120.319954', 4, 5, '横店镇');
-INSERT INTO `sys_dic_area` VALUES (2353, 330783201, 330701, '三单乡', '29.297104', '120.63652', 4, 15, '三单乡');
-INSERT INTO `sys_dic_area` VALUES (2354, 330784001, 330701, '东城街道', '28.895292', '120.03633', 4, 1, '东城街道');
-INSERT INTO `sys_dic_area` VALUES (2355, 330784002, 330701, '西城街道', '28.891964', '120.02765', 4, 11, '西城街道');
-INSERT INTO `sys_dic_area` VALUES (2356, 330784003, 330701, '江南街道', '28.895292', '120.03633', 4, 5, '江南街道');
-INSERT INTO `sys_dic_area` VALUES (2357, 330784105, 330701, '石柱镇', '28.844725', '120.09683', 4, 8, '石柱镇');
-INSERT INTO `sys_dic_area` VALUES (2358, 330784106, 330701, '前仓镇', '28.800762', '120.09256', 4, 7, '前仓镇');
-INSERT INTO `sys_dic_area` VALUES (2359, 330784107, 330701, '舟山镇', '28.796003', '120.18403', 4, 14, '舟山镇');
-INSERT INTO `sys_dic_area` VALUES (2360, 330784108, 330701, '古山镇', '28.97605', '120.164215', 4, 3, '古山镇');
-INSERT INTO `sys_dic_area` VALUES (2361, 330784109, 330701, '方岩镇', '28.93742', '120.191826', 4, 2, '方岩镇');
-INSERT INTO `sys_dic_area` VALUES (2362, 330784110, 330701, '龙山镇', '29.022247', '120.19063', 4, 6, '龙山镇');
-INSERT INTO `sys_dic_area` VALUES (2363, 330784111, 330701, '西溪镇', '29.002224', '120.23313', 4, 12, '西溪镇');
-INSERT INTO `sys_dic_area` VALUES (2364, 330784112, 330701, '象珠镇', '28.97602', '120.08336', 4, 10, '象珠镇');
-INSERT INTO `sys_dic_area` VALUES (2365, 330784113, 330701, '唐先镇', '29.030037', '120.12153', 4, 9, '唐先镇');
-INSERT INTO `sys_dic_area` VALUES (2366, 330784114, 330701, '花街镇', '28.919504', '119.973045', 4, 4, '花街镇');
-INSERT INTO `sys_dic_area` VALUES (2367, 330784115, 330701, '芝英镇', '28.895292', '120.03633', 4, 13, '芝英镇');
-INSERT INTO `sys_dic_area` VALUES (2368, 331002001, 331001, '海门街道', '28.670893', '121.44426', 4, 4, '海门街道');
-INSERT INTO `sys_dic_area` VALUES (2369, 331002002, 331001, '白云街道', '28.675049', '121.43023', 4, 1, '白云街道');
-INSERT INTO `sys_dic_area` VALUES (2370, 331002003, 331001, '葭沚街道', '28.662794', '121.410355', 4, 7, '葭沚街道');
-INSERT INTO `sys_dic_area` VALUES (2371, 331002004, 331001, '洪家街道', '28.610935', '121.41861', 4, 5, '洪家街道');
-INSERT INTO `sys_dic_area` VALUES (2372, 331002005, 331001, '三甲街道', '28.61162', '121.47901', 4, 9, '三甲街道');
-INSERT INTO `sys_dic_area` VALUES (2373, 331002006, 331001, '下陈街道', '28.59002', '121.45371', 4, 10, '下陈街道');
-INSERT INTO `sys_dic_area` VALUES (2374, 331002007, 331001, '前所街道', '28.698671', '121.446556', 4, 8, '前所街道');
-INSERT INTO `sys_dic_area` VALUES (2375, 331002008, 331001, '章安街道', '28.707815', '121.41927', 4, 12, '章安街道');
-INSERT INTO `sys_dic_area` VALUES (2376, 331002101, 331001, '大陈镇', '28.44537', '121.90543', 4, 3, '大陈镇');
-INSERT INTO `sys_dic_area` VALUES (2377, 331002400, 331001, '椒江农场', '28.67615', '121.431046', 4, 6, '椒江农场');
-INSERT INTO `sys_dic_area` VALUES (2378, 331002401, 331001, '滨海工业区', '28.596884', '121.522484', 4, 2, '滨海工业区');
-INSERT INTO `sys_dic_area` VALUES (2379, 331002402, 331001, '月湖新城', '28.67615', '121.431046', 4, 11, '月湖新城');
-INSERT INTO `sys_dic_area` VALUES (2380, 331003001, 331001, '东城街道', '28.6438', '121.267365', 4, 4, '东城街道');
-INSERT INTO `sys_dic_area` VALUES (2381, 331003002, 331001, '南城街道', '28.613335', '121.266716', 4, 9, '南城街道');
-INSERT INTO `sys_dic_area` VALUES (2382, 331003003, 331001, '西城街道', '28.64537', '121.258575', 4, 16, '西城街道');
-INSERT INTO `sys_dic_area` VALUES (2383, 331003004, 331001, '北城街道', '28.668425', '121.25089', 4, 1, '北城街道');
-INSERT INTO `sys_dic_area` VALUES (2384, 331003005, 331001, '新前街道', '28.64488', '121.26214', 4, 17, '新前街道');
-INSERT INTO `sys_dic_area` VALUES (2385, 331003006, 331001, '澄江街道', '28.627968', '121.203735', 4, 3, '澄江街道');
-INSERT INTO `sys_dic_area` VALUES (2386, 331003007, 331001, '江口街道', '28.673134', '121.3191', 4, 7, '江口街道');
-INSERT INTO `sys_dic_area` VALUES (2387, 331003008, 331001, '高桥街道', '28.64488', '121.26214', 4, 6, '高桥街道');
-INSERT INTO `sys_dic_area` VALUES (2388, 331003101, 331001, '宁溪镇', '28.588484', '120.976166', 4, 10, '宁溪镇');
-INSERT INTO `sys_dic_area` VALUES (2389, 331003102, 331001, '北洋镇', '28.614786', '121.11139', 4, 2, '北洋镇');
-INSERT INTO `sys_dic_area` VALUES (2390, 331003103, 331001, '头陀镇', '28.626257', '121.14683', 4, 15, '头陀镇');
-INSERT INTO `sys_dic_area` VALUES (2391, 331003107, 331001, '院桥镇', '28.549812', '121.25337', 4, 18, '院桥镇');
-INSERT INTO `sys_dic_area` VALUES (2392, 331003108, 331001, '沙埠镇', '28.558548', '121.20307', 4, 12, '沙埠镇');
-INSERT INTO `sys_dic_area` VALUES (2393, 331003200, 331001, '屿头乡', '28.635912', '121.01447', 4, 19, '屿头乡');
-INSERT INTO `sys_dic_area` VALUES (2394, 331003201, 331001, '上郑乡', '28.595041', '120.93092', 4, 14, '上郑乡');
-INSERT INTO `sys_dic_area` VALUES (2395, 331003202, 331001, '富山乡', '28.527925', '120.88716', 4, 5, '富山乡');
-INSERT INTO `sys_dic_area` VALUES (2396, 331003203, 331001, '茅畲乡', '28.57375', '121.125046', 4, 8, '茅畲乡');
-INSERT INTO `sys_dic_area` VALUES (2397, 331003204, 331001, '上垟乡', '28.509066', '121.01332', 4, 13, '上垟乡');
-INSERT INTO `sys_dic_area` VALUES (2398, 331003205, 331001, '平田乡', '28.540213', '121.07655', 4, 11, '平田乡');
-INSERT INTO `sys_dic_area` VALUES (2399, 331004001, 331001, '路南街道', '28.557226', '121.39414', 4, 7, '路南街道');
-INSERT INTO `sys_dic_area` VALUES (2400, 331004002, 331001, '路桥街道', '28.575655', '121.380066', 4, 9, '路桥街道');
-INSERT INTO `sys_dic_area` VALUES (2401, 331004003, 331001, '路北街道', '28.580137', '121.38067', 4, 6, '路北街道');
-INSERT INTO `sys_dic_area` VALUES (2402, 331004004, 331001, '螺洋街道', '28.557964', '121.329926', 4, 8, '螺洋街道');
-INSERT INTO `sys_dic_area` VALUES (2403, 331004005, 331001, '桐屿街道', '28.592196', '121.326775', 4, 11, '桐屿街道');
-INSERT INTO `sys_dic_area` VALUES (2404, 331004006, 331001, '峰江街道', '28.536442', '121.38469', 4, 3, '峰江街道');
-INSERT INTO `sys_dic_area` VALUES (2405, 331004103, 331001, '新桥镇', '28.52016', '121.419014', 4, 12, '新桥镇');
-INSERT INTO `sys_dic_area` VALUES (2406, 331004104, 331001, '横街镇', '28.532904', '121.44286', 4, 4, '横街镇');
-INSERT INTO `sys_dic_area` VALUES (2407, 331004106, 331001, '金清镇', '28.50722', '121.518776', 4, 5, '金清镇');
-INSERT INTO `sys_dic_area` VALUES (2408, 331004107, 331001, '蓬街镇', '28.552284', '121.48583', 4, 10, '蓬街镇');
-INSERT INTO `sys_dic_area` VALUES (2409, 331004400, 331001, '滨海工业城', '28.581799', '121.37292', 4, 1, '滨海工业城');
-INSERT INTO `sys_dic_area` VALUES (2410, 331004401, 331001, '滨海新区', '28.581799', '121.37292', 4, 2, '滨海新区');
-INSERT INTO `sys_dic_area` VALUES (2411, 331022100, 331001, '海游镇', '29.110643', '121.36293', 4, 2, '海游镇');
-INSERT INTO `sys_dic_area` VALUES (2412, 331022101, 331001, '沙柳镇', '29.15022', '121.40318', 4, 8, '沙柳镇');
-INSERT INTO `sys_dic_area` VALUES (2413, 331022102, 331001, '珠岙镇', '29.065649', '121.292915', 4, 14, '珠岙镇');
-INSERT INTO `sys_dic_area` VALUES (2414, 331022103, 331001, '亭旁镇', '29.039038', '121.348305', 4, 11, '亭旁镇');
-INSERT INTO `sys_dic_area` VALUES (2415, 331022104, 331001, '六敖镇', '29.078562', '121.59934', 4, 7, '六敖镇');
-INSERT INTO `sys_dic_area` VALUES (2416, 331022105, 331001, '健跳镇', '29.042269', '121.62696', 4, 5, '健跳镇');
-INSERT INTO `sys_dic_area` VALUES (2417, 331022106, 331001, '横渡镇', '29.008076', '121.51644', 4, 3, '横渡镇');
-INSERT INTO `sys_dic_area` VALUES (2418, 331022107, 331001, '浬浦镇', '28.965302', '121.61672', 4, 6, '浬浦镇');
-INSERT INTO `sys_dic_area` VALUES (2419, 331022108, 331001, '花桥镇', '28.92218', '121.47948', 4, 4, '花桥镇');
-INSERT INTO `sys_dic_area` VALUES (2420, 331022109, 331001, '小雄镇', '28.88134', '121.58165', 4, 12, '小雄镇');
-INSERT INTO `sys_dic_area` VALUES (2421, 331022200, 331001, '高枧乡', '29.04966', '121.2661', 4, 1, '高枧乡');
-INSERT INTO `sys_dic_area` VALUES (2422, 331022203, 331001, '沿赤乡', '28.937447', '121.66064', 4, 13, '沿赤乡');
-INSERT INTO `sys_dic_area` VALUES (2423, 331022204, 331001, '泗淋乡', '28.86434', '121.6042', 4, 10, '泗淋乡');
-INSERT INTO `sys_dic_area` VALUES (2424, 331022205, 331001, '蛇蟠乡', '29.135202', '121.5823', 4, 9, '蛇蟠乡');
-INSERT INTO `sys_dic_area` VALUES (2425, 331023001, 331001, '赤城街道', '29.139149', '121.04635', 4, 2, '赤城街道');
-INSERT INTO `sys_dic_area` VALUES (2426, 331023002, 331001, '始丰街道', '29.148277', '121.006035', 4, 12, '始丰街道');
-INSERT INTO `sys_dic_area` VALUES (2427, 331023003, 331001, '福溪街道', '29.121775', '121.01399', 4, 3, '福溪街道');
-INSERT INTO `sys_dic_area` VALUES (2428, 331023101, 331001, '白鹤镇', '29.228725', '120.94238', 4, 1, '白鹤镇');
-INSERT INTO `sys_dic_area` VALUES (2429, 331023102, 331001, '石梁镇', '29.23906', '121.051544', 4, 13, '石梁镇');
-INSERT INTO `sys_dic_area` VALUES (2430, 331023104, 331001, '街头镇', '29.1151', '120.80733', 4, 5, '街头镇');
-INSERT INTO `sys_dic_area` VALUES (2431, 331023105, 331001, '平桥镇', '29.153584', '120.8849', 4, 9, '平桥镇');
-INSERT INTO `sys_dic_area` VALUES (2432, 331023106, 331001, '坦头镇', '29.107527', '121.12966', 4, 14, '坦头镇');
-INSERT INTO `sys_dic_area` VALUES (2433, 331023107, 331001, '三合镇', '29.079836', '121.172226', 4, 10, '三合镇');
-INSERT INTO `sys_dic_area` VALUES (2434, 331023108, 331001, '洪畴镇', '29.056202', '121.20597', 4, 4, '洪畴镇');
-INSERT INTO `sys_dic_area` VALUES (2435, 331023200, 331001, '三州乡', '29.211765', '120.80376', 4, 11, '三州乡');
-INSERT INTO `sys_dic_area` VALUES (2436, 331023203, 331001, '龙溪乡', '29.04535', '120.80628', 4, 7, '龙溪乡');
-INSERT INTO `sys_dic_area` VALUES (2437, 331023204, 331001, '雷峰乡', '29.084038', '120.8998', 4, 6, '雷峰乡');
-INSERT INTO `sys_dic_area` VALUES (2438, 331023207, 331001, '南屏乡', '29.060322', '120.9871', 4, 8, '南屏乡');
-INSERT INTO `sys_dic_area` VALUES (2439, 331023209, 331001, '泳溪乡', '29.170517', '121.229126', 4, 15, '泳溪乡');
-INSERT INTO `sys_dic_area` VALUES (2440, 331024001, 331001, '安洲街道', '28.857244', '120.731255', 4, 2, '安洲街道');
-INSERT INTO `sys_dic_area` VALUES (2441, 331024002, 331001, '南峰街道', '28.846088', '120.735504', 4, 12, '南峰街道');
-INSERT INTO `sys_dic_area` VALUES (2442, 331024003, 331001, '福应街道', '28.858728', '120.74534', 4, 8, '福应街道');
-INSERT INTO `sys_dic_area` VALUES (2443, 331024101, 331001, '横溪镇', '28.736832', '120.47936', 4, 11, '横溪镇');
-INSERT INTO `sys_dic_area` VALUES (2444, 331024102, 331001, '埠头镇', '28.75229', '120.524284', 4, 5, '埠头镇');
-INSERT INTO `sys_dic_area` VALUES (2445, 331024103, 331001, '白塔镇', '28.750189', '120.60174', 4, 3, '白塔镇');
-INSERT INTO `sys_dic_area` VALUES (2446, 331024104, 331001, '田市镇', '28.77551', '120.63451', 4, 17, '田市镇');
-INSERT INTO `sys_dic_area` VALUES (2447, 331024105, 331001, '官路镇', '28.82914', '120.661964', 4, 10, '官路镇');
-INSERT INTO `sys_dic_area` VALUES (2448, 331024106, 331001, '下各镇', '28.858212', '120.85535', 4, 18, '下各镇');
-INSERT INTO `sys_dic_area` VALUES (2449, 331024107, 331001, '朱溪镇', '28.725258', '120.83812', 4, 20, '朱溪镇');
-INSERT INTO `sys_dic_area` VALUES (2450, 331024200, 331001, '安岭乡', '28.558426', '120.35739', 4, 1, '安岭乡');
-INSERT INTO `sys_dic_area` VALUES (2451, 331024201, 331001, '溪港乡', '28.628061', '120.401344', 4, 19, '溪港乡');
-INSERT INTO `sys_dic_area` VALUES (2452, 331024202, 331001, '湫山乡', '28.695967', '120.42145', 4, 14, '湫山乡');
-INSERT INTO `sys_dic_area` VALUES (2453, 331024203, 331001, '淡竹乡', '28.669853', '120.575806', 4, 6, '淡竹乡');
-INSERT INTO `sys_dic_area` VALUES (2454, 331024204, 331001, '皤滩乡', '28.738222', '120.54141', 4, 13, '皤滩乡');
-INSERT INTO `sys_dic_area` VALUES (2455, 331024205, 331001, '上张乡', '28.663628', '120.73179', 4, 15, '上张乡');
-INSERT INTO `sys_dic_area` VALUES (2456, 331024206, 331001, '步路乡', '28.796099', '120.716805', 4, 4, '步路乡');
-INSERT INTO `sys_dic_area` VALUES (2457, 331024207, 331001, '广度乡', '28.947458', '120.74847', 4, 9, '广度乡');
-INSERT INTO `sys_dic_area` VALUES (2458, 331024209, 331001, '大战乡', '28.818993', '120.81783', 4, 7, '大战乡');
-INSERT INTO `sys_dic_area` VALUES (2459, 331024210, 331001, '双庙乡', '28.789768', '120.85294', 4, 16, '双庙乡');
-INSERT INTO `sys_dic_area` VALUES (2460, 331081001, 331001, '太平街道', '28.371422', '121.37036', 4, 13, '太平街道');
-INSERT INTO `sys_dic_area` VALUES (2461, 331081002, 331001, '城东街道', '28.400574', '121.3896', 4, 3, '城东街道');
-INSERT INTO `sys_dic_area` VALUES (2462, 331081003, 331001, '城西街道', '28.36878', '121.37361', 4, 5, '城西街道');
-INSERT INTO `sys_dic_area` VALUES (2463, 331081004, 331001, '城北街道', '28.45453', '121.39522', 4, 2, '城北街道');
-INSERT INTO `sys_dic_area` VALUES (2464, 331081005, 331001, '横峰街道', '28.36878', '121.37361', 4, 8, '横峰街道');
-INSERT INTO `sys_dic_area` VALUES (2465, 331081100, 331001, '泽国镇', '28.498966', '121.36231', 4, 17, '泽国镇');
-INSERT INTO `sys_dic_area` VALUES (2466, 331081101, 331001, '大溪镇', '28.46233', '121.26116', 4, 6, '大溪镇');
-INSERT INTO `sys_dic_area` VALUES (2467, 331081102, 331001, '松门镇', '28.340412', '121.600586', 4, 12, '松门镇');
-INSERT INTO `sys_dic_area` VALUES (2468, 331081103, 331001, '箬横镇', '28.390097', '121.52842', 4, 9, '箬横镇');
-INSERT INTO `sys_dic_area` VALUES (2469, 331081104, 331001, '新河镇', '28.459877', '121.45749', 4, 16, '新河镇');
-INSERT INTO `sys_dic_area` VALUES (2470, 331081105, 331001, '石塘镇', '28.27854', '121.60619', 4, 11, '石塘镇');
-INSERT INTO `sys_dic_area` VALUES (2471, 331081106, 331001, '滨海镇', '28.45899', '121.52711', 4, 1, '滨海镇');
-INSERT INTO `sys_dic_area` VALUES (2472, 331081107, 331001, '温峤镇', '28.380892', '121.30625', 4, 14, '温峤镇');
-INSERT INTO `sys_dic_area` VALUES (2473, 331081108, 331001, '城南镇', '28.32628', '121.40676', 4, 4, '城南镇');
-INSERT INTO `sys_dic_area` VALUES (2474, 331081109, 331001, '石桥头镇', '28.350994', '121.45251', 4, 10, '石桥头镇');
-INSERT INTO `sys_dic_area` VALUES (2475, 331081110, 331001, '坞根镇', '28.321745', '121.26947', 4, 15, '坞根镇');
-INSERT INTO `sys_dic_area` VALUES (2476, 331081400, 331001, '东部新区', '28.36878', '121.37361', 4, 7, '东部新区');
-INSERT INTO `sys_dic_area` VALUES (2477, 331082001, 331001, '古城街道', '28.84985', '121.12878', 4, 6, '古城街道');
-INSERT INTO `sys_dic_area` VALUES (2478, 331082002, 331001, '大洋街道', '28.86283', '121.152084', 4, 3, '大洋街道');
-INSERT INTO `sys_dic_area` VALUES (2479, 331082003, 331001, '江南街道', '28.845442', '121.131226', 4, 9, '江南街道');
-INSERT INTO `sys_dic_area` VALUES (2480, 331082004, 331001, '大田街道', '28.845442', '121.131226', 4, 2, '大田街道');
-INSERT INTO `sys_dic_area` VALUES (2481, 331082005, 331001, '邵家渡街道', '28.845442', '121.131226', 4, 12, '邵家渡街道');
-INSERT INTO `sys_dic_area` VALUES (2482, 331082100, 331001, '汛桥镇', '28.793907', '121.1788', 4, 15, '汛桥镇');
-INSERT INTO `sys_dic_area` VALUES (2483, 331082101, 331001, '东塍镇', '28.92551', '121.267075', 4, 4, '东塍镇');
-INSERT INTO `sys_dic_area` VALUES (2484, 331082103, 331001, '汇溪镇', '28.955217', '121.21724', 4, 8, '汇溪镇');
-INSERT INTO `sys_dic_area` VALUES (2485, 331082104, 331001, '小芝镇', '28.853313', '121.45501', 4, 14, '小芝镇');
-INSERT INTO `sys_dic_area` VALUES (2486, 331082105, 331001, '河头镇', '28.993055', '121.10106', 4, 7, '河头镇');
-INSERT INTO `sys_dic_area` VALUES (2487, 331082106, 331001, '白水洋镇', '28.894047', '120.90044', 4, 1, '白水洋镇');
-INSERT INTO `sys_dic_area` VALUES (2488, 331082107, 331001, '括苍镇', '28.855682', '120.9887', 4, 10, '括苍镇');
-INSERT INTO `sys_dic_area` VALUES (2489, 331082108, 331001, '永丰镇', '28.89222', '121.06982', 4, 17, '永丰镇');
-INSERT INTO `sys_dic_area` VALUES (2490, 331082109, 331001, '尤溪镇', '28.737764', '121.10072', 4, 19, '尤溪镇');
-INSERT INTO `sys_dic_area` VALUES (2491, 331082110, 331001, '涌泉镇', '28.759602', '121.318665', 4, 18, '涌泉镇');
-INSERT INTO `sys_dic_area` VALUES (2492, 331082111, 331001, '沿江镇', '28.741514', '121.241005', 4, 16, '沿江镇');
-INSERT INTO `sys_dic_area` VALUES (2493, 331082112, 331001, '杜桥镇', '28.761896', '121.4915', 4, 5, '杜桥镇');
-INSERT INTO `sys_dic_area` VALUES (2494, 331082113, 331001, '上盘镇', '28.749651', '121.59138', 4, 11, '上盘镇');
-INSERT INTO `sys_dic_area` VALUES (2495, 331082114, 331001, '桃渚镇', '28.821762', '121.58699', 4, 13, '桃渚镇');
-INSERT INTO `sys_dic_area` VALUES (2496, 331102001, 331101, '紫金街道', '28.445793', '119.9214', 4, 16, '紫金街道');
-INSERT INTO `sys_dic_area` VALUES (2497, 331102002, 331101, '岩泉街道', '28.466393', '119.94032', 4, 14, '岩泉街道');
-INSERT INTO `sys_dic_area` VALUES (2498, 331102003, 331101, '万象街道', '28.449911', '119.912964', 4, 12, '万象街道');
-INSERT INTO `sys_dic_area` VALUES (2499, 331102004, 331101, '白云街道', '28.460514', '119.91917', 4, 1, '白云街道');
-INSERT INTO `sys_dic_area` VALUES (2500, 331102005, 331101, '水阁街道', '28.451103', '119.922295', 4, 10, '水阁街道');
-INSERT INTO `sys_dic_area` VALUES (2501, 331102006, 331101, '富岭街道', '28.451103', '119.922295', 4, 5, '富岭街道');
-INSERT INTO `sys_dic_area` VALUES (2502, 331102007, 331101, '联城街道', '28.451103', '119.922295', 4, 8, '联城街道');
-INSERT INTO `sys_dic_area` VALUES (2503, 331102100, 331101, '碧湖镇', '28.341612', '119.786156', 4, 2, '碧湖镇');
-INSERT INTO `sys_dic_area` VALUES (2504, 331102102, 331101, '大港头镇', '28.295805', '119.74196', 4, 3, '大港头镇');
-INSERT INTO `sys_dic_area` VALUES (2505, 331102103, 331101, '老竹畲族镇', '28.505913', '119.74857', 4, 7, '老竹畲族镇');
-INSERT INTO `sys_dic_area` VALUES (2506, 331102104, 331101, '雅溪镇', '28.585802', '119.87774', 4, 15, '雅溪镇');
-INSERT INTO `sys_dic_area` VALUES (2507, 331102200, 331101, '太平乡', '28.524115', '119.86859', 4, 11, '太平乡');
-INSERT INTO `sys_dic_area` VALUES (2508, 331102201, 331101, '仙渡乡', '28.582388', '119.92253', 4, 13, '仙渡乡');
-INSERT INTO `sys_dic_area` VALUES (2509, 331102202, 331101, '峰源乡', '28.195639', '119.80258', 4, 4, '峰源乡');
-INSERT INTO `sys_dic_area` VALUES (2510, 331102204, 331101, '丽新畲族乡', '28.477629', '119.70266', 4, 9, '丽新畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2511, 331102206, 331101, '黄村乡', '28.504564', '120.05938', 4, 6, '黄村乡');
-INSERT INTO `sys_dic_area` VALUES (2512, 331121001, 331101, '鹤城街道', '28.135246', '120.29194', 4, 11, '鹤城街道');
-INSERT INTO `sys_dic_area` VALUES (2513, 331121002, 331101, '瓯南街道', '28.135246', '120.29194', 4, 16, '瓯南街道');
-INSERT INTO `sys_dic_area` VALUES (2514, 331121003, 331101, '油竹街道', '28.135246', '120.29194', 4, 28, '油竹街道');
-INSERT INTO `sys_dic_area` VALUES (2515, 331121101, 331101, '温溪镇', '28.154207', '120.38769', 4, 25, '温溪镇');
-INSERT INTO `sys_dic_area` VALUES (2516, 331121102, 331101, '东源镇', '28.312', '120.24047', 4, 3, '东源镇');
-INSERT INTO `sys_dic_area` VALUES (2517, 331121103, 331101, '高湖镇', '28.330309', '120.2267', 4, 6, '高湖镇');
-INSERT INTO `sys_dic_area` VALUES (2518, 331121104, 331101, '船寮镇', '28.254076', '120.21892', 4, 2, '船寮镇');
-INSERT INTO `sys_dic_area` VALUES (2519, 331121105, 331101, '海口镇', '28.322071', '120.08719', 4, 9, '海口镇');
-INSERT INTO `sys_dic_area` VALUES (2520, 331121106, 331101, '腊口镇', '28.336267', '119.96037', 4, 15, '腊口镇');
-INSERT INTO `sys_dic_area` VALUES (2521, 331121107, 331101, '北山镇', '28.073591', '120.028', 4, 1, '北山镇');
-INSERT INTO `sys_dic_area` VALUES (2522, 331121108, 331101, '山口镇', '28.064383', '120.32442', 4, 19, '山口镇');
-INSERT INTO `sys_dic_area` VALUES (2523, 331121109, 331101, '仁庄镇', '28.039083', '120.25355', 4, 18, '仁庄镇');
-INSERT INTO `sys_dic_area` VALUES (2524, 331121200, 331101, '万山乡', '28.331238', '120.31566', 4, 24, '万山乡');
-INSERT INTO `sys_dic_area` VALUES (2525, 331121201, 331101, '黄垟乡', '28.2908', '120.361946', 4, 12, '黄垟乡');
-INSERT INTO `sys_dic_area` VALUES (2526, 331121202, 331101, '季宅乡', '28.384302', '120.206055', 4, 13, '季宅乡');
-INSERT INTO `sys_dic_area` VALUES (2527, 331121203, 331101, '高市乡', '28.25973', '120.12889', 4, 7, '高市乡');
-INSERT INTO `sys_dic_area` VALUES (2528, 331121204, 331101, '海溪乡', '28.392775', '120.09709', 4, 10, '海溪乡');
-INSERT INTO `sys_dic_area` VALUES (2529, 331121205, 331101, '章村乡', '28.284214', '119.89888', 4, 29, '章村乡');
-INSERT INTO `sys_dic_area` VALUES (2530, 331121206, 331101, '祯旺乡', '28.250267', '119.93897', 4, 32, '祯旺乡');
-INSERT INTO `sys_dic_area` VALUES (2531, 331121207, 331101, '祯埠乡', '28.303288', '120.03479', 4, 31, '祯埠乡');
-INSERT INTO `sys_dic_area` VALUES (2532, 331121208, 331101, '舒桥乡', '28.420801', '120.07546', 4, 21, '舒桥乡');
-INSERT INTO `sys_dic_area` VALUES (2533, 331121209, 331101, '巨浦乡', '28.126656', '120.07756', 4, 14, '巨浦乡');
-INSERT INTO `sys_dic_area` VALUES (2534, 331121211, 331101, '万阜乡', '27.95867', '120.03453', 4, 23, '万阜乡');
-INSERT INTO `sys_dic_area` VALUES (2535, 331121212, 331101, '方山乡', '28.018457', '120.32135', 4, 4, '方山乡');
-INSERT INTO `sys_dic_area` VALUES (2536, 331121213, 331101, '汤垟乡', '27.993052', '120.226685', 4, 22, '汤垟乡');
-INSERT INTO `sys_dic_area` VALUES (2537, 331121214, 331101, '贵岙乡', '28.169538', '120.357956', 4, 8, '贵岙乡');
-INSERT INTO `sys_dic_area` VALUES (2538, 331121215, 331101, '小舟山乡', '28.201092', '120.39409', 4, 27, '小舟山乡');
-INSERT INTO `sys_dic_area` VALUES (2539, 331121216, 331101, '吴坑乡', '28.237968', '120.4113', 4, 26, '吴坑乡');
-INSERT INTO `sys_dic_area` VALUES (2540, 331121217, 331101, '仁宫乡', '28.163462', '120.17943', 4, 17, '仁宫乡');
-INSERT INTO `sys_dic_area` VALUES (2541, 331121218, 331101, '章旦乡', '28.125406', '120.25161', 4, 30, '章旦乡');
-INSERT INTO `sys_dic_area` VALUES (2542, 331121219, 331101, '阜山乡', '28.071405', '120.191605', 4, 5, '阜山乡');
-INSERT INTO `sys_dic_area` VALUES (2543, 331121220, 331101, '石溪乡', '28.18907', '120.25213', 4, 20, '石溪乡');
-INSERT INTO `sys_dic_area` VALUES (2544, 331122001, 331101, '五云街道', '28.654207', '120.078964', 4, 15, '五云街道');
-INSERT INTO `sys_dic_area` VALUES (2545, 331122002, 331101, '新碧街道', '28.654207', '120.078964', 4, 17, '新碧街道');
-INSERT INTO `sys_dic_area` VALUES (2546, 331122003, 331101, '仙都街道', '28.654207', '120.078964', 4, 16, '仙都街道');
-INSERT INTO `sys_dic_area` VALUES (2547, 331122101, 331101, '壶镇镇', '28.80901', '120.26121', 4, 7, '壶镇镇');
-INSERT INTO `sys_dic_area` VALUES (2548, 331122102, 331101, '新建镇', '28.721395', '120.029915', 4, 18, '新建镇');
-INSERT INTO `sys_dic_area` VALUES (2549, 331122103, 331101, '舒洪镇', '28.639484', '120.16508', 4, 14, '舒洪镇');
-INSERT INTO `sys_dic_area` VALUES (2550, 331122105, 331101, '大洋镇', '28.50456', '120.26601', 4, 1, '大洋镇');
-INSERT INTO `sys_dic_area` VALUES (2551, 331122106, 331101, '东渡镇', '28.614595', '120.06475', 4, 3, '东渡镇');
-INSERT INTO `sys_dic_area` VALUES (2552, 331122107, 331101, '东方镇', '28.74895', '120.16979', 4, 4, '东方镇');
-INSERT INTO `sys_dic_area` VALUES (2553, 331122108, 331101, '大源镇', '28.603352', '120.32541', 4, 2, '大源镇');
-INSERT INTO `sys_dic_area` VALUES (2554, 331122203, 331101, '七里乡', '28.671469', '120.06202', 4, 9, '七里乡');
-INSERT INTO `sys_dic_area` VALUES (2555, 331122206, 331101, '前路乡', '28.761538', '120.26897', 4, 8, '前路乡');
-INSERT INTO `sys_dic_area` VALUES (2556, 331122207, 331101, '三溪乡', '28.699533', '120.28073', 4, 11, '三溪乡');
-INSERT INTO `sys_dic_area` VALUES (2557, 331122208, 331101, '溶江乡', '28.636791', '120.23855', 4, 10, '溶江乡');
-INSERT INTO `sys_dic_area` VALUES (2558, 331122209, 331101, '双溪口乡', '28.631151', '120.26625', 4, 13, '双溪口乡');
-INSERT INTO `sys_dic_area` VALUES (2559, 331122210, 331101, '胡源乡', '28.59996', '120.21109', 4, 6, '胡源乡');
-INSERT INTO `sys_dic_area` VALUES (2560, 331122211, 331101, '方溪乡', '28.537369', '120.148605', 4, 5, '方溪乡');
-INSERT INTO `sys_dic_area` VALUES (2561, 331122212, 331101, '石笕乡', '28.477362', '120.15536', 4, 12, '石笕乡');
-INSERT INTO `sys_dic_area` VALUES (2562, 331123001, 331101, '妙高街道', '28.5924', '119.27589', 4, 12, '妙高街道');
-INSERT INTO `sys_dic_area` VALUES (2563, 331123002, 331101, '云峰街道', '28.5924', '119.27589', 4, 19, '云峰街道');
-INSERT INTO `sys_dic_area` VALUES (2564, 331123102, 331101, '新路湾镇', '28.697443', '119.26289', 4, 17, '新路湾镇');
-INSERT INTO `sys_dic_area` VALUES (2565, 331123103, 331101, '北界镇', '28.764254', '119.22451', 4, 2, '北界镇');
-INSERT INTO `sys_dic_area` VALUES (2566, 331123104, 331101, '金竹镇', '28.608566', '119.049324', 4, 9, '金竹镇');
-INSERT INTO `sys_dic_area` VALUES (2567, 331123105, 331101, '大柘镇', '28.524391', '119.1153', 4, 4, '大柘镇');
-INSERT INTO `sys_dic_area` VALUES (2568, 331123106, 331101, '石练镇', '28.497217', '119.06234', 4, 14, '石练镇');
-INSERT INTO `sys_dic_area` VALUES (2569, 331123107, 331101, '王村口镇', '28.350716', '118.989975', 4, 15, '王村口镇');
-INSERT INTO `sys_dic_area` VALUES (2570, 331123108, 331101, '黄沙腰镇', '28.411663', '118.83157', 4, 6, '黄沙腰镇');
-INSERT INTO `sys_dic_area` VALUES (2571, 331123200, 331101, '三仁畲族乡', '28.573566', '119.22197', 4, 13, '三仁畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2572, 331123201, 331101, '濂竹乡', '28.60788', '119.43581', 4, 10, '濂竹乡');
-INSERT INTO `sys_dic_area` VALUES (2573, 331123202, 331101, '应村乡', '28.701538', '119.16437', 4, 18, '应村乡');
-INSERT INTO `sys_dic_area` VALUES (2574, 331123203, 331101, '高坪乡', '28.708689', '119.074486', 4, 5, '高坪乡');
-INSERT INTO `sys_dic_area` VALUES (2575, 331123204, 331101, '湖山乡', '28.584904', '119.01176', 4, 7, '湖山乡');
-INSERT INTO `sys_dic_area` VALUES (2576, 331123205, 331101, '蔡源乡', '28.436377', '118.95061', 4, 3, '蔡源乡');
-INSERT INTO `sys_dic_area` VALUES (2577, 331123206, 331101, '焦滩乡', '28.444075', '118.99163', 4, 8, '焦滩乡');
-INSERT INTO `sys_dic_area` VALUES (2578, 331123207, 331101, '龙洋乡', '28.299871', '118.949776', 4, 11, '龙洋乡');
-INSERT INTO `sys_dic_area` VALUES (2579, 331123208, 331101, '柘岱口乡', '28.368338', '118.7975', 4, 20, '柘岱口乡');
-INSERT INTO `sys_dic_area` VALUES (2580, 331123209, 331101, '西畈乡', '28.494137', '118.81552', 4, 16, '西畈乡');
-INSERT INTO `sys_dic_area` VALUES (2581, 331123210, 331101, '垵口乡', '28.406473', '119.18376', 4, 1, '垵口乡');
-INSERT INTO `sys_dic_area` VALUES (2582, 331124001, 331101, '西屏街道', '28.449938', '119.48529', 4, 13, '西屏街道');
-INSERT INTO `sys_dic_area` VALUES (2583, 331124002, 331101, '水南街道', '28.449938', '119.48529', 4, 8, '水南街道');
-INSERT INTO `sys_dic_area` VALUES (2584, 331124003, 331101, '望松街道', '28.449938', '119.48529', 4, 10, '望松街道');
-INSERT INTO `sys_dic_area` VALUES (2585, 331124101, 331101, '古市镇', '28.525854', '119.40841', 4, 6, '古市镇');
-INSERT INTO `sys_dic_area` VALUES (2586, 331124102, 331101, '玉岩镇', '28.36591', '119.277596', 4, 16, '玉岩镇');
-INSERT INTO `sys_dic_area` VALUES (2587, 331124103, 331101, '象溪镇', '28.367588', '119.598495', 4, 11, '象溪镇');
-INSERT INTO `sys_dic_area` VALUES (2588, 331124104, 331101, '大东坝镇', '28.34287', '119.48655', 4, 4, '大东坝镇');
-INSERT INTO `sys_dic_area` VALUES (2589, 331124105, 331101, '新兴镇', '28.449938', '119.48529', 4, 12, '新兴镇');
-INSERT INTO `sys_dic_area` VALUES (2590, 331124201, 331101, '叶村乡', '28.443129', '119.45475', 4, 14, '叶村乡');
-INSERT INTO `sys_dic_area` VALUES (2591, 331124202, 331101, '斋坛乡', '28.46912', '119.434425', 4, 17, '斋坛乡');
-INSERT INTO `sys_dic_area` VALUES (2592, 331124203, 331101, '三都乡', '28.471159', '119.585846', 4, 7, '三都乡');
-INSERT INTO `sys_dic_area` VALUES (2593, 331124204, 331101, '竹源乡', '28.381676', '119.43869', 4, 19, '竹源乡');
-INSERT INTO `sys_dic_area` VALUES (2594, 331124205, 331101, '四都乡', '28.502659', '119.526764', 4, 9, '四都乡');
-INSERT INTO `sys_dic_area` VALUES (2595, 331124206, 331101, '赤寿乡', '28.543467', '119.38394', 4, 3, '赤寿乡');
-INSERT INTO `sys_dic_area` VALUES (2596, 331124208, 331101, '樟溪乡', '28.495075', '119.40188', 4, 18, '樟溪乡');
-INSERT INTO `sys_dic_area` VALUES (2597, 331124211, 331101, '枫坪乡', '28.324703', '119.2647', 4, 5, '枫坪乡');
-INSERT INTO `sys_dic_area` VALUES (2598, 331124212, 331101, '板桥畲族乡', '28.447348', '119.665306', 4, 2, '板桥畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2599, 331124213, 331101, '裕溪乡', '28.348608', '119.67202', 4, 15, '裕溪乡');
-INSERT INTO `sys_dic_area` VALUES (2600, 331124214, 331101, '安民乡', '28.277987', '119.34015', 4, 1, '安民乡');
-INSERT INTO `sys_dic_area` VALUES (2601, 331125001, 331101, '浮云街道', '28.111076', '119.56946', 4, 6, '浮云街道');
-INSERT INTO `sys_dic_area` VALUES (2602, 331125002, 331101, '元和街道', '28.111076', '119.56946', 4, 10, '元和街道');
-INSERT INTO `sys_dic_area` VALUES (2603, 331125003, 331101, '白龙山街道', '28.111076', '119.56946', 4, 2, '白龙山街道');
-INSERT INTO `sys_dic_area` VALUES (2604, 331125004, 331101, '凤凰山街道', '28.111076', '119.56946', 4, 5, '凤凰山街道');
-INSERT INTO `sys_dic_area` VALUES (2605, 331125105, 331101, '崇头镇', '28.052624', '119.49638', 4, 4, '崇头镇');
-INSERT INTO `sys_dic_area` VALUES (2606, 331125106, 331101, '石塘镇', '28.218155', '119.6738', 4, 8, '石塘镇');
-INSERT INTO `sys_dic_area` VALUES (2607, 331125107, 331101, '紧水滩镇', '28.198671', '119.543655', 4, 7, '紧水滩镇');
-INSERT INTO `sys_dic_area` VALUES (2608, 331125201, 331101, '雾溪畲族乡', '28.050743', '119.548874', 4, 9, '雾溪畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2609, 331125202, 331101, '安溪畲族乡', '28.050327', '119.59121', 4, 1, '安溪畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2610, 331125206, 331101, '赤石乡', '28.127378', '119.44951', 4, 3, '赤石乡');
-INSERT INTO `sys_dic_area` VALUES (2611, 331126001, 331101, '松源街道', '27.61823', '119.06723', 4, 13, '松源街道');
-INSERT INTO `sys_dic_area` VALUES (2612, 331126002, 331101, '濛洲街道', '27.61823', '119.06723', 4, 11, '濛洲街道');
-INSERT INTO `sys_dic_area` VALUES (2613, 331126003, 331101, '屏都街道', '27.61823', '119.06723', 4, 12, '屏都街道');
-INSERT INTO `sys_dic_area` VALUES (2614, 331126101, 331101, '黄田镇', '27.760014', '118.94116', 4, 5, '黄田镇');
-INSERT INTO `sys_dic_area` VALUES (2615, 331126102, 331101, '竹口镇', '27.691813', '118.92235', 4, 18, '竹口镇');
-INSERT INTO `sys_dic_area` VALUES (2616, 331126104, 331101, '荷地镇', '27.570269', '119.2906', 4, 4, '荷地镇');
-INSERT INTO `sys_dic_area` VALUES (2617, 331126105, 331101, '左溪镇', '27.622797', '119.38831', 4, 19, '左溪镇');
-INSERT INTO `sys_dic_area` VALUES (2618, 331126106, 331101, '贤良镇', '27.642996', '119.23758', 4, 15, '贤良镇');
-INSERT INTO `sys_dic_area` VALUES (2619, 331126107, 331101, '百山祖镇', '27.61823', '119.06723', 4, 2, '百山祖镇');
-INSERT INTO `sys_dic_area` VALUES (2620, 331126200, 331101, '岭头乡', '27.543848', '119.25771', 4, 8, '岭头乡');
-INSERT INTO `sys_dic_area` VALUES (2621, 331126201, 331101, '五大堡乡', '27.603697', '119.17189', 4, 14, '五大堡乡');
-INSERT INTO `sys_dic_area` VALUES (2622, 331126202, 331101, '淤上乡', '27.569502', '118.99642', 4, 16, '淤上乡');
-INSERT INTO `sys_dic_area` VALUES (2623, 331126203, 331101, '安南乡', '27.500372', '119.06356', 4, 1, '安南乡');
-INSERT INTO `sys_dic_area` VALUES (2624, 331126204, 331101, '张村乡', '27.669836', '119.3156', 4, 17, '张村乡');
-INSERT INTO `sys_dic_area` VALUES (2625, 331126205, 331101, '隆宫乡', '27.483223', '118.95418', 4, 9, '隆宫乡');
-INSERT INTO `sys_dic_area` VALUES (2626, 331126206, 331101, '举水乡', '27.489605', '119.18424', 4, 7, '举水乡');
-INSERT INTO `sys_dic_area` VALUES (2627, 331126207, 331101, '江根乡', '27.55363', '119.446495', 4, 6, '江根乡');
-INSERT INTO `sys_dic_area` VALUES (2628, 331126209, 331101, '龙溪乡', '27.440125', '119.25771', 4, 10, '龙溪乡');
-INSERT INTO `sys_dic_area` VALUES (2629, 331126211, 331101, '官塘乡', '27.668446', '119.465256', 4, 3, '官塘乡');
-INSERT INTO `sys_dic_area` VALUES (2630, 331127001, 331101, '红星街道', '27.977247', '119.63467', 4, 9, '红星街道');
-INSERT INTO `sys_dic_area` VALUES (2631, 331127002, 331101, '鹤溪街道', '27.977247', '119.63467', 4, 8, '鹤溪街道');
-INSERT INTO `sys_dic_area` VALUES (2632, 331127101, 331101, '渤海镇', '28.029482', '119.797066', 4, 2, '渤海镇');
-INSERT INTO `sys_dic_area` VALUES (2633, 331127102, 331101, '东坑镇', '27.78802', '119.71893', 4, 7, '东坑镇');
-INSERT INTO `sys_dic_area` VALUES (2634, 331127103, 331101, '英川镇', '27.845873', '119.32431', 4, 20, '英川镇');
-INSERT INTO `sys_dic_area` VALUES (2635, 331127104, 331101, '沙湾镇', '27.845684', '119.4724', 4, 17, '沙湾镇');
-INSERT INTO `sys_dic_area` VALUES (2636, 331127201, 331101, '大均乡', '27.947845', '119.56781', 4, 6, '大均乡');
-INSERT INTO `sys_dic_area` VALUES (2637, 331127202, 331101, '澄照乡', '27.914354', '119.62453', 4, 3, '澄照乡');
-INSERT INTO `sys_dic_area` VALUES (2638, 331127203, 331101, '梅岐乡', '27.904356', '119.76696', 4, 15, '梅岐乡');
-INSERT INTO `sys_dic_area` VALUES (2639, 331127205, 331101, '郑坑乡', '27.980808', '119.811066', 4, 21, '郑坑乡');
-INSERT INTO `sys_dic_area` VALUES (2640, 331127208, 331101, '大漈乡', '27.804796', '119.5965', 4, 5, '大漈乡');
-INSERT INTO `sys_dic_area` VALUES (2641, 331127209, 331101, '景南乡', '27.750162', '119.65106', 4, 11, '景南乡');
-INSERT INTO `sys_dic_area` VALUES (2642, 331127210, 331101, '雁溪乡', '27.729849', '119.60087', 4, 19, '雁溪乡');
-INSERT INTO `sys_dic_area` VALUES (2643, 331127212, 331101, '鸬鹚乡', '27.872965', '119.413574', 4, 13, '鸬鹚乡');
-INSERT INTO `sys_dic_area` VALUES (2644, 331127213, 331101, '梧桐乡', '27.883457', '119.5174', 4, 18, '梧桐乡');
-INSERT INTO `sys_dic_area` VALUES (2645, 331127214, 331101, '标溪乡', '27.842594', '119.506226', 4, 1, '标溪乡');
-INSERT INTO `sys_dic_area` VALUES (2646, 331127215, 331101, '毛垟乡', '27.718296', '119.39415', 4, 14, '毛垟乡');
-INSERT INTO `sys_dic_area` VALUES (2647, 331127216, 331101, '秋炉乡', '27.717987', '119.354034', 4, 16, '秋炉乡');
-INSERT INTO `sys_dic_area` VALUES (2648, 331127217, 331101, '大地乡', '27.7588', '119.47236', 4, 4, '大地乡');
-INSERT INTO `sys_dic_area` VALUES (2649, 331127218, 331101, '家地乡', '27.709616', '119.53032', 4, 10, '家地乡');
-INSERT INTO `sys_dic_area` VALUES (2650, 331127219, 331101, '九龙乡', '27.977247', '119.63467', 4, 12, '九龙乡');
-INSERT INTO `sys_dic_area` VALUES (2651, 331181001, 331101, '龙渊街道', '28.07404', '119.138405', 4, 11, '龙渊街道');
-INSERT INTO `sys_dic_area` VALUES (2652, 331181002, 331101, '西街街道', '28.072573', '119.1264', 4, 16, '西街街道');
-INSERT INTO `sys_dic_area` VALUES (2653, 331181003, 331101, '剑池街道', '28.064178', '119.133194', 4, 7, '剑池街道');
-INSERT INTO `sys_dic_area` VALUES (2654, 331181004, 331101, '石达石街道', '28.069178', '119.13232', 4, 14, '石达石街道');
-INSERT INTO `sys_dic_area` VALUES (2655, 331181100, 331101, '八都镇', '27.97264', '118.943565', 4, 2, '八都镇');
-INSERT INTO `sys_dic_area` VALUES (2656, 331181101, 331101, '上垟镇', '27.960356', '118.875465', 4, 13, '上垟镇');
-INSERT INTO `sys_dic_area` VALUES (2657, 331181102, 331101, '小梅镇', '27.814653', '118.98022', 4, 15, '小梅镇');
-INSERT INTO `sys_dic_area` VALUES (2658, 331181103, 331101, '查田镇', '27.87291', '118.99622', 4, 4, '查田镇');
-INSERT INTO `sys_dic_area` VALUES (2659, 331181104, 331101, '安仁镇', '28.057941', '119.348434', 4, 1, '安仁镇');
-INSERT INTO `sys_dic_area` VALUES (2660, 331181105, 331101, '锦溪镇', '28.079576', '119.02286', 4, 8, '锦溪镇');
-INSERT INTO `sys_dic_area` VALUES (2661, 331181106, 331101, '住龙镇', '28.169434', '118.904175', 4, 18, '住龙镇');
-INSERT INTO `sys_dic_area` VALUES (2662, 331181107, 331101, '屏南镇', '27.83304', '119.09282', 4, 12, '屏南镇');
-INSERT INTO `sys_dic_area` VALUES (2663, 331181200, 331101, '兰巨乡', '27.982527', '119.10777', 4, 9, '兰巨乡');
-INSERT INTO `sys_dic_area` VALUES (2664, 331181202, 331101, '宝溪乡', '28.001661', '118.769394', 4, 3, '宝溪乡');
-INSERT INTO `sys_dic_area` VALUES (2665, 331181203, 331101, '竹垟畲族乡', '28.003002', '118.92665', 4, 19, '竹垟畲族乡');
-INSERT INTO `sys_dic_area` VALUES (2666, 331181204, 331101, '道太乡', '28.136642', '119.242714', 4, 6, '道太乡');
-INSERT INTO `sys_dic_area` VALUES (2667, 331181205, 331101, '岩樟乡', '28.186258', '119.012375', 4, 17, '岩樟乡');
-INSERT INTO `sys_dic_area` VALUES (2668, 331181206, 331101, '城北乡', '28.209064', '119.10221', 4, 5, '城北乡');
-INSERT INTO `sys_dic_area` VALUES (2669, 331181207, 331101, '龙南乡', '27.927954', '119.30322', 4, 10, '龙南乡');
-INSERT INTO `sys_dic_area` VALUES (2670, 330902002, 330901, '昌国街道', '30.022223', '122.106926', 4, 3, '昌国街道');
-INSERT INTO `sys_dic_area` VALUES (2671, 330902003, 330901, '环南街道', '30.00904', '122.10823', 4, 6, '环南街道');
-INSERT INTO `sys_dic_area` VALUES (2672, 330902004, 330901, '城东街道', '30.017027', '122.11781', 4, 4, '城东街道');
-INSERT INTO `sys_dic_area` VALUES (2673, 330902005, 330901, '盐仓街道', '30.016422', '122.1085', 4, 12, '盐仓街道');
-INSERT INTO `sys_dic_area` VALUES (2674, 330902006, 330901, '临城街道', '30.016422', '122.1085', 4, 8, '临城街道');
-INSERT INTO `sys_dic_area` VALUES (2675, 330902007, 330901, '岑港街道', '30.016422', '122.1085', 4, 2, '岑港街道');
-INSERT INTO `sys_dic_area` VALUES (2676, 330902008, 330901, '马岙街道', '30.016422', '122.1085', 4, 9, '马岙街道');
-INSERT INTO `sys_dic_area` VALUES (2677, 330902009, 330901, '双桥街道', '30.016422', '122.1085', 4, 10, '双桥街道');
-INSERT INTO `sys_dic_area` VALUES (2678, 330902010, 330901, '小沙街道', '30.016422', '122.1085', 4, 11, '小沙街道');
-INSERT INTO `sys_dic_area` VALUES (2679, 330902100, 330901, '金塘镇', '30.006786', '121.87068', 4, 7, '金塘镇');
-INSERT INTO `sys_dic_area` VALUES (2680, 330902104, 330901, '白泉镇', '30.067133', '122.159615', 4, 1, '白泉镇');
-INSERT INTO `sys_dic_area` VALUES (2681, 330902105, 330901, '干览镇', '30.016422', '122.1085', 4, 5, '干览镇');
-INSERT INTO `sys_dic_area` VALUES (2682, 330903001, 330901, '沈家门街道', '29.945614', '122.301956', 4, 5, '沈家门街道');
-INSERT INTO `sys_dic_area` VALUES (2683, 330903003, 330901, '东港街道', '29.945614', '122.301956', 4, 1, '东港街道');
-INSERT INTO `sys_dic_area` VALUES (2684, 330903004, 330901, '朱家尖街道', '29.945614', '122.301956', 4, 9, '朱家尖街道');
-INSERT INTO `sys_dic_area` VALUES (2685, 330903005, 330901, '展茅街道', '29.945614', '122.301956', 4, 8, '展茅街道');
-INSERT INTO `sys_dic_area` VALUES (2686, 330903100, 330901, '六横镇', '29.743828', '122.10827', 4, 3, '六横镇');
-INSERT INTO `sys_dic_area` VALUES (2687, 330903102, 330901, '虾峙镇', '29.752941', '122.24468', 4, 7, '虾峙镇');
-INSERT INTO `sys_dic_area` VALUES (2688, 330903104, 330901, '桃花镇', '29.82697', '122.2859', 4, 6, '桃花镇');
-INSERT INTO `sys_dic_area` VALUES (2689, 330903105, 330901, '东极镇', '30.190334', '122.68975', 4, 2, '东极镇');
-INSERT INTO `sys_dic_area` VALUES (2690, 330903106, 330901, '普陀山镇', '29.982498', '122.390305', 4, 4, '普陀山镇');
-INSERT INTO `sys_dic_area` VALUES (2691, 330921100, 330901, '高亭镇', '30.243689', '122.2052', 4, 4, '高亭镇');
-INSERT INTO `sys_dic_area` VALUES (2692, 330921101, 330901, '东沙镇', '30.31052', '122.152405', 4, 3, '东沙镇');
-INSERT INTO `sys_dic_area` VALUES (2693, 330921102, 330901, '岱东镇', '30.291054', '122.20749', 4, 1, '岱东镇');
-INSERT INTO `sys_dic_area` VALUES (2694, 330921103, 330901, '岱西镇', '30.27414', '122.12275', 4, 2, '岱西镇');
-INSERT INTO `sys_dic_area` VALUES (2695, 330921105, 330901, '长涂镇', '30.24894', '122.31625', 4, 7, '长涂镇');
-INSERT INTO `sys_dic_area` VALUES (2696, 330921106, 330901, '衢山镇', '30.443764', '122.289276', 4, 5, '衢山镇');
-INSERT INTO `sys_dic_area` VALUES (2697, 330921200, 330901, '秀山乡', '30.184994', '122.17701', 4, 6, '秀山乡');
-INSERT INTO `sys_dic_area` VALUES (2698, 330922100, 330901, '菜园镇', '30.820328', '122.624825', 4, 1, '菜园镇');
-INSERT INTO `sys_dic_area` VALUES (2699, 330922101, 330901, '嵊山镇', '30.716984', '122.81521', 4, 5, '嵊山镇');
-INSERT INTO `sys_dic_area` VALUES (2700, 330922102, 330901, '洋山镇', '30.592419', '122.07467', 4, 7, '洋山镇');
-INSERT INTO `sys_dic_area` VALUES (2701, 330922200, 330901, '五龙乡', '30.706278', '122.518265', 4, 6, '五龙乡');
-INSERT INTO `sys_dic_area` VALUES (2702, 330922201, 330901, '黄龙乡', '30.656578', '122.56878', 4, 3, '黄龙乡');
-INSERT INTO `sys_dic_area` VALUES (2703, 330922202, 330901, '枸杞乡', '30.71196', '122.78351', 4, 2, '枸杞乡');
-INSERT INTO `sys_dic_area` VALUES (2704, 330922203, 330901, '花鸟乡', '30.845806', '122.699295', 4, 4, '花鸟乡');
-INSERT INTO `sys_dic_area` VALUES (2705, 330402007, 330401, '建设街道', '30.763016', '120.75099', 4, 5, '建设街道');
-INSERT INTO `sys_dic_area` VALUES (2706, 330402008, 330401, '解放街道', '30.774763', '120.76801', 4, 6, '解放街道');
-INSERT INTO `sys_dic_area` VALUES (2707, 330402009, 330401, '新嘉街道', '30.773214', '120.74558', 4, 10, '新嘉街道');
-INSERT INTO `sys_dic_area` VALUES (2708, 330402010, 330401, '南湖街道', '30.757236', '120.76222', 4, 7, '南湖街道');
-INSERT INTO `sys_dic_area` VALUES (2709, 330402011, 330401, '新兴街道', '30.75672', '120.73673', 4, 11, '新兴街道');
-INSERT INTO `sys_dic_area` VALUES (2710, 330402012, 330401, '城南街道', '30.734417', '120.73329', 4, 1, '城南街道');
-INSERT INTO `sys_dic_area` VALUES (2711, 330402013, 330401, '东栅街道', '30.7586', '120.794334', 4, 3, '东栅街道');
-INSERT INTO `sys_dic_area` VALUES (2712, 330402014, 330401, '长水街道', '30.764652', '120.749954', 4, 13, '长水街道');
-INSERT INTO `sys_dic_area` VALUES (2713, 330402100, 330401, '凤桥镇', '30.659145', '120.86079', 4, 4, '凤桥镇');
-INSERT INTO `sys_dic_area` VALUES (2714, 330402101, 330401, '余新镇', '30.669678', '120.79414', 4, 12, '余新镇');
-INSERT INTO `sys_dic_area` VALUES (2715, 330402103, 330401, '新丰镇', '30.705145', '120.92246', 4, 9, '新丰镇');
-INSERT INTO `sys_dic_area` VALUES (2716, 330402104, 330401, '七星镇', '30.812735', '120.820694', 4, 8, '七星镇');
-INSERT INTO `sys_dic_area` VALUES (2717, 330402105, 330401, '大桥镇', '30.742556', '120.8606', 4, 2, '大桥镇');
-INSERT INTO `sys_dic_area` VALUES (2718, 330411002, 330401, '新城街道', '30.76247', '120.71478', 4, 7, '新城街道');
-INSERT INTO `sys_dic_area` VALUES (2719, 330411003, 330401, '嘉北街道', '30.777512', '120.716805', 4, 3, '嘉北街道');
-INSERT INTO `sys_dic_area` VALUES (2720, 330411004, 330401, '塘汇街道', '30.763323', '120.72043', 4, 4, '塘汇街道');
-INSERT INTO `sys_dic_area` VALUES (2721, 330411005, 330401, '高照街道', '30.75532', '120.67139', 4, 1, '高照街道');
-INSERT INTO `sys_dic_area` VALUES (2722, 330411101, 330401, '王江泾镇', '30.895426', '120.73332', 4, 6, '王江泾镇');
-INSERT INTO `sys_dic_area` VALUES (2723, 330411103, 330401, '油车港镇', '30.82672', '120.75279', 4, 9, '油车港镇');
-INSERT INTO `sys_dic_area` VALUES (2724, 330411104, 330401, '新塍镇', '30.797009', '120.62318', 4, 8, '新塍镇');
-INSERT INTO `sys_dic_area` VALUES (2725, 330411105, 330401, '王店镇', '30.627657', '120.71434', 4, 5, '王店镇');
-INSERT INTO `sys_dic_area` VALUES (2726, 330411106, 330401, '洪合镇', '30.682268', '120.666756', 4, 2, '洪合镇');
-INSERT INTO `sys_dic_area` VALUES (2727, 330421001, 330401, '魏塘街道', '30.841352', '120.92187', 4, 7, '魏塘街道');
-INSERT INTO `sys_dic_area` VALUES (2728, 330421002, 330401, '罗星街道', '30.841352', '120.92187', 4, 4, '罗星街道');
-INSERT INTO `sys_dic_area` VALUES (2729, 330421003, 330401, '惠民街道', '30.841352', '120.92187', 4, 3, '惠民街道');
-INSERT INTO `sys_dic_area` VALUES (2730, 330421102, 330401, '大云镇', '30.78296', '120.94959', 4, 1, '大云镇');
-INSERT INTO `sys_dic_area` VALUES (2731, 330421103, 330401, '西塘镇', '30.938671', '120.890976', 4, 8, '西塘镇');
-INSERT INTO `sys_dic_area` VALUES (2732, 330421105, 330401, '干窑镇', '30.88418', '120.89593', 4, 2, '干窑镇');
-INSERT INTO `sys_dic_area` VALUES (2733, 330421107, 330401, '陶庄镇', '30.96635', '120.8148', 4, 5, '陶庄镇');
-INSERT INTO `sys_dic_area` VALUES (2734, 330421111, 330401, '姚庄镇', '30.908966', '120.96111', 4, 9, '姚庄镇');
-INSERT INTO `sys_dic_area` VALUES (2735, 330421112, 330401, '天凝镇', '30.891815', '120.805305', 4, 6, '天凝镇');
-INSERT INTO `sys_dic_area` VALUES (2736, 330424001, 330401, '武原街道', '30.522223', '120.94202', 4, 6, '武原街道');
-INSERT INTO `sys_dic_area` VALUES (2737, 330424002, 330401, '西塘桥街道', '30.522223', '120.94202', 4, 7, '西塘桥街道');
-INSERT INTO `sys_dic_area` VALUES (2738, 330424003, 330401, '元通街道', '30.522223', '120.94202', 4, 8, '元通街道');
-INSERT INTO `sys_dic_area` VALUES (2739, 330424004, 330401, '秦山街道', '30.522223', '120.94202', 4, 3, '秦山街道');
-INSERT INTO `sys_dic_area` VALUES (2740, 330424101, 330401, '沈荡镇', '30.575552', '120.823586', 4, 4, '沈荡镇');
-INSERT INTO `sys_dic_area` VALUES (2741, 330424102, 330401, '百步镇', '30.53917', '120.782036', 4, 1, '百步镇');
-INSERT INTO `sys_dic_area` VALUES (2742, 330424103, 330401, '于城镇', '30.529858', '120.8578', 4, 9, '于城镇');
-INSERT INTO `sys_dic_area` VALUES (2743, 330424105, 330401, '澉浦镇', '30.397156', '120.85509', 4, 2, '澉浦镇');
-INSERT INTO `sys_dic_area` VALUES (2744, 330424106, 330401, '通元镇', '30.451576', '120.843796', 4, 5, '通元镇');
-INSERT INTO `sys_dic_area` VALUES (2745, 330481001, 330401, '硖石街道', '30.525543', '120.68882', 4, 6, '硖石街道');
-INSERT INTO `sys_dic_area` VALUES (2746, 330481002, 330401, '海洲街道', '30.514185', '120.68277', 4, 3, '海洲街道');
-INSERT INTO `sys_dic_area` VALUES (2747, 330481003, 330401, '海昌街道', '30.533417', '120.69418', 4, 2, '海昌街道');
-INSERT INTO `sys_dic_area` VALUES (2748, 330481004, 330401, '马桥街道', '30.525543', '120.68882', 4, 5, '马桥街道');
-INSERT INTO `sys_dic_area` VALUES (2749, 330481101, 330401, '许村镇', '30.4337', '120.36914', 4, 8, '许村镇');
-INSERT INTO `sys_dic_area` VALUES (2750, 330481103, 330401, '长安镇', '30.453068', '120.44793', 4, 11, '长安镇');
-INSERT INTO `sys_dic_area` VALUES (2751, 330481105, 330401, '周王庙镇', '30.459494', '120.50938', 4, 12, '周王庙镇');
-INSERT INTO `sys_dic_area` VALUES (2752, 330481106, 330401, '丁桥镇', '30.421585', '120.64215', 4, 1, '丁桥镇');
-INSERT INTO `sys_dic_area` VALUES (2753, 330481107, 330401, '斜桥镇', '30.494495', '120.613815', 4, 7, '斜桥镇');
-INSERT INTO `sys_dic_area` VALUES (2754, 330481108, 330401, '黄湾镇', '30.335052', '120.79376', 4, 4, '黄湾镇');
-INSERT INTO `sys_dic_area` VALUES (2755, 330481110, 330401, '盐官镇', '30.451675', '120.55825', 4, 9, '盐官镇');
-INSERT INTO `sys_dic_area` VALUES (2756, 330481112, 330401, '袁花镇', '30.410053', '120.77869', 4, 10, '袁花镇');
-INSERT INTO `sys_dic_area` VALUES (2757, 330482001, 330401, '当湖街道', '30.68919', '121.021736', 4, 2, '当湖街道');
-INSERT INTO `sys_dic_area` VALUES (2758, 330482002, 330401, '钟埭街道', '30.705374', '121.00193', 4, 9, '钟埭街道');
-INSERT INTO `sys_dic_area` VALUES (2759, 330482003, 330401, '曹桥街道', '30.698921', '121.01466', 4, 1, '曹桥街道');
-INSERT INTO `sys_dic_area` VALUES (2760, 330482101, 330401, '乍浦镇', '30.603546', '121.0956', 4, 8, '乍浦镇');
-INSERT INTO `sys_dic_area` VALUES (2761, 330482102, 330401, '新埭镇', '30.819696', '121.08105', 4, 7, '新埭镇');
-INSERT INTO `sys_dic_area` VALUES (2762, 330482103, 330401, '新仓镇', '30.721533', '121.19033', 4, 6, '新仓镇');
-INSERT INTO `sys_dic_area` VALUES (2763, 330482106, 330401, '广陈镇', '30.75021', '121.13457', 4, 4, '广陈镇');
-INSERT INTO `sys_dic_area` VALUES (2764, 330482107, 330401, '林埭镇', '30.65263', '121.09792', 4, 5, '林埭镇');
-INSERT INTO `sys_dic_area` VALUES (2765, 330482108, 330401, '独山港镇', '30.698921', '121.01466', 4, 3, '独山港镇');
-INSERT INTO `sys_dic_area` VALUES (2766, 330483001, 330401, '梧桐街道', '30.629065', '120.55109', 4, 10, '梧桐街道');
-INSERT INTO `sys_dic_area` VALUES (2767, 330483002, 330401, '龙翔街道', '30.629065', '120.55109', 4, 6, '龙翔街道');
-INSERT INTO `sys_dic_area` VALUES (2768, 330483003, 330401, '凤鸣街道', '30.629065', '120.55109', 4, 3, '凤鸣街道');
-INSERT INTO `sys_dic_area` VALUES (2769, 330483100, 330401, '乌镇镇', '30.742695', '120.48796', 4, 11, '乌镇镇');
-INSERT INTO `sys_dic_area` VALUES (2770, 330483101, 330401, '濮院镇', '30.67705', '120.61858', 4, 7, '濮院镇');
-INSERT INTO `sys_dic_area` VALUES (2771, 330483102, 330401, '屠甸镇', '30.574318', '120.6214', 4, 9, '屠甸镇');
-INSERT INTO `sys_dic_area` VALUES (2772, 330483103, 330401, '石门镇', '30.624193', '120.44555', 4, 8, '石门镇');
-INSERT INTO `sys_dic_area` VALUES (2773, 330483104, 330401, '河山镇', '30.632263', '120.368355', 4, 5, '河山镇');
-INSERT INTO `sys_dic_area` VALUES (2774, 330483105, 330401, '洲泉镇', '30.574957', '120.355865', 4, 12, '洲泉镇');
-INSERT INTO `sys_dic_area` VALUES (2775, 330483106, 330401, '大麻镇', '30.49855', '120.34586', 4, 2, '大麻镇');
-INSERT INTO `sys_dic_area` VALUES (2776, 330483107, 330401, '崇福镇', '30.527435', '120.423546', 4, 1, '崇福镇');
-INSERT INTO `sys_dic_area` VALUES (2777, 330483108, 330401, '高桥镇', '30.522217', '120.54824', 4, 4, '高桥镇');
 INSERT INTO `sys_dic_area` VALUES (2778, 330451001, 330451, '城南街道', '30.734420', '120.733290', 4, 1, '城南街道');
 INSERT INTO `sys_dic_area` VALUES (2779, 330451002, 330451, '长水街道', '1', '1', 4, 2, '长水街道');
 INSERT INTO `sys_dic_area` VALUES (2780, 330451003, 330451, '塘汇街道', '1', '1', 4, 3, '塘汇街道');
 INSERT INTO `sys_dic_area` VALUES (2781, 330451004, 330451, '嘉北街道', '1', '1', 4, 4, '嘉北街道');
 INSERT INTO `sys_dic_area` VALUES (2782, 330451, 330400, '嘉兴经济技术开发区', NULL, NULL, 3, 9, '开发区');
-INSERT INTO `sys_dic_area` VALUES (2783, 330452, 330400, '嘉兴港区', NULL, NULL, 3, 8, '浙江省 宁波市 嘉兴港区');
 INSERT INTO `sys_dic_area` VALUES (2784, 330603001, 330603, '柯桥街道', NULL, NULL, 4, 1, '柯桥街道');
 INSERT INTO `sys_dic_area` VALUES (2785, 330603002, 330603, '柯岩街道', NULL, NULL, 4, 2, '柯岩街道');
 INSERT INTO `sys_dic_area` VALUES (2786, 330603003, 330603, '华舍街道', NULL, NULL, 4, 3, '华舍街道');
@@ -4923,34 +3755,10 @@ INSERT INTO `sys_dic_area` VALUES (2795, 330603109, 330603, '稽东镇', NULL, N
 INSERT INTO `sys_dic_area` VALUES (2796, 330603114, 330603, '夏履镇', NULL, NULL, 4, 15, '夏履镇');
 INSERT INTO `sys_dic_area` VALUES (2797, 330603111, 330603, '漓渚镇', NULL, NULL, 4, 14, '漓渚镇');
 INSERT INTO `sys_dic_area` VALUES (2798, 330603110, 330603, '杨汛桥街道', NULL, NULL, 4, 13, '杨汛桥街道');
-INSERT INTO `sys_dic_area` VALUES (2799, 330902006, 330952, '临城街道', NULL, NULL, 4, NULL, '临城街道');
-INSERT INTO `sys_dic_area` VALUES (2800, 330902106, 330952, '千岛街道', NULL, NULL, 4, NULL, '千岛街道');
-INSERT INTO `sys_dic_area` VALUES (2801, 330903004, 330953, '朱家尖街道', NULL, NULL, 4, NULL, '朱家尖街道');
-INSERT INTO `sys_dic_area` VALUES (2802, 330903106, 330953, '普陀山镇', NULL, NULL, 4, NULL, '普陀山镇');
 INSERT INTO `sys_dic_area` VALUES (2803, 330955, 330900, '六横管委会', NULL, NULL, 3, 10, NULL);
-INSERT INTO `sys_dic_area` VALUES (2804, 330903100, 330955, '六横镇', NULL, NULL, 4, NULL, '六横镇');
-INSERT INTO `sys_dic_area` VALUES (2805, 330902100, 330954, '金塘镇', NULL, NULL, 4, NULL, '金塘镇');
-INSERT INTO `sys_dic_area` VALUES (2806, 330902104, 330951, '白泉镇', NULL, NULL, 4, NULL, '白泉镇');
 INSERT INTO `sys_dic_area` VALUES (2807, 330951, 330900, '海洋产业集聚区', NULL, NULL, 3, 6, NULL);
-INSERT INTO `sys_dic_area` VALUES (2808, 330502001, 330500, '月河街道', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2809, 330502002, 330500, '朝阳街道', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2810, 330502003, 330500, '爱山街道', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2811, 330502004, 330500, '飞英街道', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2812, 330502005, 330500, '龙泉街道', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2813, 330502012, 330500, '环渚街道', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2814, 330502013, 330500, '湖东街道', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2815, 330502200, 330500, '道场乡', '30.892999489142967', '120.088000026227250', 4, 1, '浙江省 湖州市 市辖区');
-INSERT INTO `sys_dic_area` VALUES (2816, 330502006, 330591, '凤凰街道', '30.638600859659854', '119.679999636643740', 4, 7, '浙江省 湖州市 南太湖新区');
-INSERT INTO `sys_dic_area` VALUES (2817, 330502007, 330591, '康山街道', '30.638600859659854', '119.679999636643740', 4, 7, '浙江省 湖州市 南太湖新区');
-INSERT INTO `sys_dic_area` VALUES (2818, 330502008, 330591, '仁皇山街道', '30.638600859659854', '119.679999636643740', 4, 7, '浙江省 湖州市 南太湖新区');
-INSERT INTO `sys_dic_area` VALUES (2819, 330502009, 330591, '滨湖街道', '30.638600859659854', '119.679999636643740', 4, 7, '浙江省 湖州市 南太湖新区');
-INSERT INTO `sys_dic_area` VALUES (2820, 330502010, 330591, '龙溪街道', '30.638600859659854', '119.679999636643740', 4, 7, '浙江省 湖州市 南太湖新区');
-INSERT INTO `sys_dic_area` VALUES (2821, 330502011, 330591, '杨家埠街道', '30.638600859659854', '119.679999636643740', 4, 7, '浙江省 湖州市 南太湖新区');
 INSERT INTO `sys_dic_area` VALUES (2822, 330752101, 330752, '孝顺镇', '29.840199', '121.03216', 4, NULL, '孝顺镇');
 INSERT INTO `sys_dic_area` VALUES (2823, 330213006, 330213, '方桥街道', NULL, NULL, 4, NULL, '方桥街道');
-INSERT INTO `sys_dic_area` VALUES (2824, 330501, 330500, '长合区', NULL, NULL, 3, 8, '浙江省 湖州市 长合区');
-INSERT INTO `sys_dic_area` VALUES (2825, 330522111, 330501, '泗安镇', NULL, NULL, 4, NULL, '浙江省 湖州市 长合区');
-INSERT INTO `sys_dic_area` VALUES (2826, 330523111, 330501, '天子湖镇', NULL, NULL, 4, NULL, '浙江省 湖州市 长合区');
 INSERT INTO `sys_dic_area` VALUES (2827, 330901, 330900, '市辖区', NULL, NULL, 3, 1, NULL);
 INSERT INTO `sys_dic_area` VALUES (2828, 330213001, 330213, '锦屏街道', NULL, NULL, 4, NULL, '锦屏街道');
 INSERT INTO `sys_dic_area` VALUES (2829, 330213002, 330213, '岳林街道', NULL, NULL, 4, NULL, '岳林街道');
@@ -5037,9 +3845,6 @@ INSERT INTO `sys_dic_area` VALUES (2910, 330382125, 330382, '磐石镇', NULL, N
 INSERT INTO `sys_dic_area` VALUES (2911, 330382210, 330382, '智仁乡', NULL, NULL, 4, NULL, '智仁乡');
 INSERT INTO `sys_dic_area` VALUES (2912, 330382211, 330382, '龙西乡', NULL, NULL, 4, NULL, '龙西乡');
 INSERT INTO `sys_dic_area` VALUES (2913, 330382212, 330382, '岭底乡', NULL, NULL, 4, NULL, '岭底乡');
-INSERT INTO `sys_dic_area` VALUES (2914, 330305006, 330355, '昆鹏街道', NULL, NULL, 4, NULL, '昆鹏街道');
-INSERT INTO `sys_dic_area` VALUES (2915, 330304004, 330354, '茶山街道', NULL, NULL, 4, NULL, '茶山街道');
-INSERT INTO `sys_dic_area` VALUES (2916, 330303006, 330354, '状元街道', NULL, NULL, 4, NULL, '状元街道');
 INSERT INTO `sys_dic_area` VALUES (2917, 331083002, 331083, '大麦屿街道', NULL, NULL, 4, NULL, '大麦屿街道');
 INSERT INTO `sys_dic_area` VALUES (2918, 331083003, 331083, '玉城街道', NULL, NULL, 4, NULL, '玉城街道');
 INSERT INTO `sys_dic_area` VALUES (2919, 331083004, 331083, '坎门街道', NULL, NULL, 4, NULL, '坎门街道');
@@ -5049,14 +3854,6 @@ INSERT INTO `sys_dic_area` VALUES (2922, 331083007, 331083, '沙门镇', NULL, N
 INSERT INTO `sys_dic_area` VALUES (2923, 331083008, 331083, '玉环市经济开发区', NULL, NULL, 4, NULL, '玉环市经济开发区');
 INSERT INTO `sys_dic_area` VALUES (2924, 331083009, 331083, '清港镇', NULL, NULL, 4, NULL, '清港镇');
 INSERT INTO `sys_dic_area` VALUES (2925, 330212011, 330212, '白鹤街道', '29.854362', '121.566724', 4, 11, '白鹤街道');
-INSERT INTO `sys_dic_area` VALUES (2926, 330212014, 330201, '福明街道', NULL, NULL, 4, 1, '福明街道');
-INSERT INTO `sys_dic_area` VALUES (2927, 330212010, 330201, '明楼街道', NULL, NULL, 4, 1, '明楼街道');
-INSERT INTO `sys_dic_area` VALUES (2928, 330303005, 330351, '海城街道', '27.970255', '120.763466', 4, 2, '海城街道');
-INSERT INTO `sys_dic_area` VALUES (2929, 330303008, 330351, '沙城街道', '27.970255', '120.763466', 4, 5, '沙城街道');
-INSERT INTO `sys_dic_area` VALUES (2930, 330303009, 330351, '天河街道', '27.970255', '120.763466', 4, 6, '天河街道');
-INSERT INTO `sys_dic_area` VALUES (2931, 330305002, 330355, '灵昆街道', '27.970255', '120.763466', 4, 3, '灵昆街道');
-INSERT INTO `sys_dic_area` VALUES (2932, 330303011, 330351, '星海街道', '27.970255', '120.763466', 4, 7, '星海街道');
-INSERT INTO `sys_dic_area` VALUES (2933, 330304007, 330354, '三垟街道', '28.006445', '120.637146', 4, 9, '三垟街道');
 INSERT INTO `sys_dic_area` VALUES (2934, 330802216, 330802, '花园街道', '28.905570', '118.909890', 4, 18, '浙江省衢州市');
 INSERT INTO `sys_dic_area` VALUES (2935, 331083001, 331083, '双湫路金海大道风屿西路', '28.135930', '121.231805', 4, 1, '双湫路金海大道风屿西路');
 INSERT INTO `sys_dic_area` VALUES (2936, 330000, 156, '浙江省', NULL, NULL, 1, 11, '浙江省');
@@ -5069,7 +3866,6 @@ INSERT INTO `sys_dic_area` VALUES (2942, 330254001, 330254, '聚贤街道', '29.
 INSERT INTO `sys_dic_area` VALUES (2943, 330203014, 330203, '洞桥镇', '29.780432', '121.411469', 4, 14, '洞桥镇');
 INSERT INTO `sys_dic_area` VALUES (2944, 330203015, 330203, '横街镇', '29.854034', '121.399318', 4, 15, '横街镇');
 INSERT INTO `sys_dic_area` VALUES (2947, 330602107, 330602, '陶堰街道', '30.01932', '120.73669', 4, 7, '陶堰街道');
-INSERT INTO `sys_dic_area` VALUES (2948, 330155001, 330150, '测试街道', NULL, NULL, 4, 1, NULL);
 INSERT INTO `sys_dic_area` VALUES (2949, 330102001051, 330102001, '清波门社区', NULL, NULL, 5, 1, NULL);
 INSERT INTO `sys_dic_area` VALUES (2950, 330102001052, 330102001, '劳动路社区', NULL, NULL, 5, 2, NULL);
 
@@ -5078,8 +3874,8 @@ INSERT INTO `sys_dic_area` VALUES (2950, 330102001052, 330102001, '劳动路社�
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dict_data`;
 CREATE TABLE `sys_dict_data`  (
-  `dict_code` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '字典编码',
-  `dict_sort` int(0) NULL DEFAULT 0 COMMENT '字典排序',
+  `dict_code` bigint NOT NULL AUTO_INCREMENT COMMENT '字典编码',
+  `dict_sort` int NULL DEFAULT 0 COMMENT '字典排序',
   `dict_label` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典标签',
   `dict_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典键值',
   `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
@@ -5088,12 +3884,12 @@ CREATE TABLE `sys_dict_data`  (
   `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 205 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 205 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -5163,15 +3959,13 @@ INSERT INTO `sys_dict_data` VALUES (132, 16, '卫生和社会工作', 'Q', 'bd_i
 INSERT INTO `sys_dict_data` VALUES (133, 17, '文化、体育和娱乐业', 'R', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:34:57', 'admin', '2025-09-22 15:35:01', NULL);
 INSERT INTO `sys_dict_data` VALUES (134, 18, '公共管理、社会保障和社会组织', 'S', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:35:45', 'admin', '2025-09-22 15:35:49', NULL);
 INSERT INTO `sys_dict_data` VALUES (135, 19, '国际组织', 'T', 'bd_industry', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:36:03', '', NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (136, 1, '北京市', '11', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:33', '', NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (137, 2, '天津市', '12', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:43', 'admin', '2025-09-22 15:38:47', NULL);
-INSERT INTO `sys_dict_data` VALUES (138, 3, '河北省', '13', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:58', '', NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (139, 4, '山西省', '14', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:10', '', NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (140, 5, '内蒙古自治区', '15', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:28', '', NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (141, 6, '辽宁省', '21', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:41', '', NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (142, 7, '吉林省', '22', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:58', '', NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (143, 8, '黑龙江省', '23', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:40:34', 'admin', '2025-09-22 15:40:39', NULL);
-INSERT INTO `sys_dict_data` VALUES (144, 9, '上海市', '31', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:40:54', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (136, 1, '华北', '1', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:33', 'admin', '2025-11-02 16:17:41', NULL);
+INSERT INTO `sys_dict_data` VALUES (137, 2, '华东', '2', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:43', 'admin', '2025-11-02 16:17:51', NULL);
+INSERT INTO `sys_dict_data` VALUES (138, 3, '东北', '3', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:38:58', 'admin', '2025-11-02 16:18:07', NULL);
+INSERT INTO `sys_dict_data` VALUES (139, 4, '华中', '4', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:10', 'admin', '2025-11-02 16:18:19', NULL);
+INSERT INTO `sys_dict_data` VALUES (140, 5, '华南', '5', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:28', 'admin', '2025-11-02 16:18:29', NULL);
+INSERT INTO `sys_dict_data` VALUES (141, 6, '西南', '6', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:41', 'admin', '2025-11-02 16:18:42', NULL);
+INSERT INTO `sys_dict_data` VALUES (142, 7, '西北', '7', 'bd_region', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:39:58', 'admin', '2025-11-02 16:18:53', NULL);
 INSERT INTO `sys_dict_data` VALUES (145, 1, '原材料', '1', 'bd_vendor_category', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:42:18', '', NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (146, 2, '标准件', '2', 'bd_vendor_category', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:42:34', '', NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (147, 3, '服务类', '3', 'bd_vendor_category', NULL, 'default', 'N', '0', 'admin', '2025-09-22 15:42:45', '', NULL, NULL);
@@ -5238,18 +4032,18 @@ INSERT INTO `sys_dict_data` VALUES (204, 5, '社区', '5', 'sys_area_level', NUL
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dict_type`;
 CREATE TABLE `sys_dict_type`  (
-  `dict_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '字典主键',
+  `dict_id` bigint NOT NULL AUTO_INCREMENT COMMENT '字典主键',
   `dict_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典名称',
   `dict_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '字典类型',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
-  UNIQUE INDEX `dict_type`(`dict_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 122 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `dict_type`(`dict_type` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 122 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -5292,7 +4086,7 @@ INSERT INTO `sys_dict_type` VALUES (121, '行政区划层级', 'sys_area_level',
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_job`;
 CREATE TABLE `sys_job`  (
-  `job_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '任务ID',
+  `job_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务ID',
   `job_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '任务名称',
   `job_group` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'DEFAULT' COMMENT '任务组名',
   `invoke_target` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调用目标字符串',
@@ -5301,12 +4095,12 @@ CREATE TABLE `sys_job`  (
   `concurrent` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '1' COMMENT '是否并发执行（0允许 1禁止）',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '状态（0正常 1暂停）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注信息',
   PRIMARY KEY (`job_id`, `job_name`, `job_group`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_job
@@ -5321,16 +4115,16 @@ INSERT INTO `sys_job` VALUES (4, '测试', 'SYSTEM', 'soTask.customerToSalesOrde
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_job_log`;
 CREATE TABLE `sys_job_log`  (
-  `job_log_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '任务日志ID',
+  `job_log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务日志ID',
   `job_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务名称',
   `job_group` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务组名',
   `invoke_target` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '调用目标字符串',
   `job_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '日志信息',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '执行状态（0正常 1失败）',
   `exception_info` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '异常信息',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`job_log_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_job_log
@@ -5347,7 +4141,7 @@ INSERT INTO `sys_job_log` VALUES (6, '测试', 'SYSTEM', 'soTask.customerToSales
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_logininfor`;
 CREATE TABLE `sys_logininfor`  (
-  `info_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '访问ID',
+  `info_id` bigint NOT NULL AUTO_INCREMENT COMMENT '访问ID',
   `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '用户账号',
   `ipaddr` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '登录IP地址',
   `login_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '登录地点',
@@ -5355,11 +4149,11 @@ CREATE TABLE `sys_logininfor`  (
   `os` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作系统',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
   `msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '提示消息',
-  `login_time` datetime(0) NULL DEFAULT NULL COMMENT '访问时间',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
   PRIMARY KEY (`info_id`) USING BTREE,
-  INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
-  INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 312 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+  INDEX `idx_sys_logininfor_s`(`status` ASC) USING BTREE,
+  INDEX `idx_sys_logininfor_lt`(`login_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 318 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -5577,34 +4371,39 @@ INSERT INTO `sys_logininfor` VALUES (309, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (310, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-31 09:33:55');
 INSERT INTO `sys_logininfor` VALUES (311, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-31 14:07:41');
 INSERT INTO `sys_logininfor` VALUES (312, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-10-31 16:02:32');
+INSERT INTO `sys_logininfor` VALUES (313, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-11-01 22:52:42');
+INSERT INTO `sys_logininfor` VALUES (314, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '1', '验证码错误', '2025-11-01 23:30:00');
+INSERT INTO `sys_logininfor` VALUES (315, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-11-01 23:30:03');
+INSERT INTO `sys_logininfor` VALUES (316, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-11-02 16:00:14');
+INSERT INTO `sys_logininfor` VALUES (317, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-11-02 18:17:00');
 
 -- ----------------------------
 -- Table structure for sys_menu
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_menu`;
 CREATE TABLE `sys_menu`  (
-  `menu_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
+  `menu_id` bigint NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
   `menu_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '菜单名称',
-  `parent_id` bigint(0) NULL DEFAULT 0 COMMENT '父菜单ID',
-  `order_num` int(0) NULL DEFAULT 0 COMMENT '显示顺序',
+  `parent_id` bigint NULL DEFAULT 0 COMMENT '父菜单ID',
+  `order_num` int NULL DEFAULT 0 COMMENT '显示顺序',
   `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '路由地址',
   `component` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '组件路径',
   `query` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '路由参数',
   `route_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '路由名称',
-  `is_frame` int(0) NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
-  `is_cache` int(0) NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
+  `is_frame` int NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
+  `is_cache` int NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
   `menu_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
   `visible` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '菜单状态（0显示 1隐藏）',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
   `perms` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '权限标识',
   `icon` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2100 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2100 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -5756,7 +4555,7 @@ INSERT INTO `sys_menu` VALUES (2090, '销售订单新增', 2088, 2, '#', '', NUL
 INSERT INTO `sys_menu` VALUES (2091, '销售订单修改', 2088, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:orderheader:edit', '#', 'admin', '2025-10-22 18:16:16', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2092, '销售订单删除', 2088, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:orderheader:remove', '#', 'admin', '2025-10-22 18:16:16', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2093, '销售订单导出', 2088, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'so:orderheader:export', '#', 'admin', '2025-10-22 18:16:16', '', NULL, '');
-INSERT INTO `sys_menu` VALUES (2094, '行政区划', 1, 11, 'area', 'system/area/index', NULL, '', 1, 0, 'C', '0', '0', 'system:area:list', '#', 'admin', '2025-10-29 16:51:58', 'admin', '2025-10-29 16:53:59', '行政区划菜单');
+INSERT INTO `sys_menu` VALUES (2094, '行政区划', 1, 11, 'area', 'system/area/index', NULL, '', 1, 0, 'C', '0', '0', 'system:area:list', '地图类_地图', 'admin', '2025-10-29 16:51:58', 'admin', '2025-11-01 21:53:17', '行政区划菜单');
 INSERT INTO `sys_menu` VALUES (2095, '行政区划查询', 2094, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'system:area:query', '#', 'admin', '2025-10-29 16:51:58', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2096, '行政区划新增', 2094, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'system:area:add', '#', 'admin', '2025-10-29 16:51:58', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2097, '行政区划修改', 2094, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'system:area:edit', '#', 'admin', '2025-10-29 16:51:58', '', NULL, '');
@@ -5768,18 +4567,18 @@ INSERT INTO `sys_menu` VALUES (2099, '行政区划导出', 2094, 5, '#', '', NUL
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_notice`;
 CREATE TABLE `sys_notice`  (
-  `notice_id` int(0) NOT NULL AUTO_INCREMENT COMMENT '公告ID',
+  `notice_id` int NOT NULL AUTO_INCREMENT COMMENT '公告ID',
   `notice_title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '公告标题',
   `notice_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '公告类型（1通知 2公告）',
   `notice_content` longblob NULL COMMENT '公告内容',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -5792,12 +4591,12 @@ INSERT INTO `sys_notice` VALUES (2, '维护通知：2018-07-01 若依系统凌�
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_oper_log`;
 CREATE TABLE `sys_oper_log`  (
-  `oper_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '日志主键',
+  `oper_id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志主键',
   `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '模块标题',
-  `business_type` int(0) NULL DEFAULT 0 COMMENT '业务类型（0其它 1新增 2修改 3删除）',
+  `business_type` int NULL DEFAULT 0 COMMENT '业务类型（0其它 1新增 2修改 3删除）',
   `method` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '方法名称',
   `request_method` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求方式',
-  `operator_type` int(0) NULL DEFAULT 0 COMMENT '操作类别（0其它 1后台用户 2手机端用户）',
+  `operator_type` int NULL DEFAULT 0 COMMENT '操作类别（0其它 1后台用户 2手机端用户）',
   `oper_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作人员',
   `dept_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '部门名称',
   `oper_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求URL',
@@ -5805,15 +4604,15 @@ CREATE TABLE `sys_oper_log`  (
   `oper_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '操作地点',
   `oper_param` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '请求参数',
   `json_result` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '返回参数',
-  `status` int(0) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
+  `status` int NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
   `error_msg` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '错误消息',
-  `oper_time` datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
-  `cost_time` bigint(0) NULL DEFAULT 0 COMMENT '消耗时间',
+  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
+  `cost_time` bigint NULL DEFAULT 0 COMMENT '消耗时间',
   PRIMARY KEY (`oper_id`) USING BTREE,
-  INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
-  INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
-  INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 734 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+  INDEX `idx_sys_oper_log_bt`(`business_type` ASC) USING BTREE,
+  INDEX `idx_sys_oper_log_s`(`status` ASC) USING BTREE,
+  INDEX `idx_sys_oper_log_ot`(`oper_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 760 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -6454,24 +5253,48 @@ INSERT INTO `sys_oper_log` VALUES (732, '行政区划', 2, 'com.nexus.web.contro
 INSERT INTO `sys_oper_log` VALUES (733, '行政区划', 1, 'com.nexus.web.controller.system.SysDicAreaController.add()', 'POST', 1, 'admin', '研发部门', '/system/area', '127.0.0.1', '内网IP', '{\"areaId\":330102001,\"areaName\":\"清波门社区\",\"layered\":5,\"parentAreaId\":330102001,\"pkid\":2949,\"sort\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-31 15:09:29', 102);
 INSERT INTO `sys_oper_log` VALUES (734, '行政区划', 2, 'com.nexus.web.controller.system.SysDicAreaController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/area', '127.0.0.1', '内网IP', '{\"areaId\":330102001051,\"areaName\":\"清波门社区\",\"layered\":5,\"parentAreaId\":330102001,\"pkid\":2949,\"sort\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-31 16:05:11', 2);
 INSERT INTO `sys_oper_log` VALUES (735, '行政区划', 1, 'com.nexus.web.controller.system.SysDicAreaController.add()', 'POST', 1, 'admin', '研发部门', '/system/area', '127.0.0.1', '内网IP', '{\"areaId\":330102001052,\"areaName\":\"劳动路社区\",\"layered\":5,\"parentAreaId\":330102001,\"pkid\":2950,\"sort\":2}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-10-31 16:06:22', 5);
+INSERT INTO `sys_oper_log` VALUES (736, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"system/area/index\",\"createTime\":\"2025-10-29 16:51:58\",\"icon\":\"地图类_地图\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2094,\"menuName\":\"行政区划\",\"menuType\":\"C\",\"orderNum\":11,\"params\":{},\"parentId\":1,\"path\":\"area\",\"perms\":\"system:area:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-01 21:53:17', 23);
+INSERT INTO `sys_oper_log` VALUES (737, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"tel\":\"123\",\"updateTime\":\"2025-11-02 00:32:35\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 00:32:35', 36);
+INSERT INTO `sys_oper_log` VALUES (738, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330155,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"tel\":\"123\",\"updateTime\":\"2025-11-02 00:36:01\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 00:36:01', 6);
+INSERT INTO `sys_oper_log` VALUES (739, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102001\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 01:12:13\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 01:12:13', 22);
+INSERT INTO `sys_oper_log` VALUES (740, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102001\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 01:13:07\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 01:13:07', 5);
+INSERT INTO `sys_oper_log` VALUES (741, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102001\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 01:49:47\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 01:49:47', 6);
+INSERT INTO `sys_oper_log` VALUES (742, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102003\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 02:18:50\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 02:18:50', 5);
+INSERT INTO `sys_oper_log` VALUES (743, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"123\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102004\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 02:19:24\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 02:19:24', 5);
+INSERT INTO `sys_oper_log` VALUES (744, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"浙江省杭州市上城区采荷街道\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102012\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 16:10:01\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:10:01', 15);
+INSERT INTO `sys_oper_log` VALUES (745, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"浙江省杭州市上城区采荷街道\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102012\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 16:10:16\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:10:16', 5);
+INSERT INTO `sys_oper_log` VALUES (746, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"浙江省杭州市上城区闸弄口街道\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102013\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 16:10:28\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:10:28', 5);
+INSERT INTO `sys_oper_log` VALUES (747, '客户信息', 2, 'com.nexus.core.bd.controller.BdClientController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/bd', '127.0.0.1', '内网IP', '{\"address\":\"浙江省杭州市上城区彭埠街道\",\"cityAreaId\":330100,\"clientCode\":\"C00001\",\"clientDesc\":\"测试测试\",\"clientEn\":\"cs\",\"clientId\":1,\"clientLogo\":\"/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png\",\"clientName\":\"测试\",\"clientNick\":\"测试\",\"clientType\":\"ENTERPRISE\",\"contact1\":\"123\",\"contact1Tel\":\"123\",\"createTime\":\"2025-09-18 15:45:44\",\"districtAreaId\":330102,\"email\":\"123\",\"params\":{},\"provinceAreaId\":330000,\"streetId\":\"330102015\",\"tel\":\"123\",\"updateTime\":\"2025-11-02 16:14:00\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:14:00', 20);
+INSERT INTO `sys_oper_log` VALUES (748, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:38:33\",\"default\":false,\"dictCode\":136,\"dictLabel\":\"华北\",\"dictSort\":1,\"dictType\":\"bd_region\",\"dictValue\":\"1\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:17:41', 7);
+INSERT INTO `sys_oper_log` VALUES (749, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:38:43\",\"default\":false,\"dictCode\":137,\"dictLabel\":\"华东\",\"dictSort\":2,\"dictType\":\"bd_region\",\"dictValue\":\"2\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:17:51', 8);
+INSERT INTO `sys_oper_log` VALUES (750, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:38:58\",\"default\":false,\"dictCode\":138,\"dictLabel\":\"东北\",\"dictSort\":3,\"dictType\":\"bd_region\",\"dictValue\":\"3\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:18:07', 7);
+INSERT INTO `sys_oper_log` VALUES (751, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:39:10\",\"default\":false,\"dictCode\":139,\"dictLabel\":\"华中\",\"dictSort\":4,\"dictType\":\"bd_region\",\"dictValue\":\"4\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:18:19', 7);
+INSERT INTO `sys_oper_log` VALUES (752, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:39:28\",\"default\":false,\"dictCode\":140,\"dictLabel\":\"华南\",\"dictSort\":5,\"dictType\":\"bd_region\",\"dictValue\":\"5\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:18:29', 6);
+INSERT INTO `sys_oper_log` VALUES (753, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:39:41\",\"default\":false,\"dictCode\":141,\"dictLabel\":\"西南\",\"dictSort\":6,\"dictType\":\"bd_region\",\"dictValue\":\"6\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:18:42', 8);
+INSERT INTO `sys_oper_log` VALUES (754, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-09-22 15:39:58\",\"default\":false,\"dictCode\":142,\"dictLabel\":\"西北\",\"dictSort\":7,\"dictType\":\"bd_region\",\"dictValue\":\"7\",\"isDefault\":\"N\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:18:53', 8);
+INSERT INTO `sys_oper_log` VALUES (755, '字典类型', 3, 'com.nexus.web.controller.system.SysDictDataController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/dict/data/143', '127.0.0.1', '内网IP', '[143]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:18:56', 8);
+INSERT INTO `sys_oper_log` VALUES (756, '字典类型', 3, 'com.nexus.web.controller.system.SysDictDataController.remove()', 'DELETE', 1, 'admin', '研发部门', '/system/dict/data/144', '127.0.0.1', '内网IP', '[144]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:18:58', 11);
+INSERT INTO `sys_oper_log` VALUES (757, '供应商', 2, 'com.nexus.core.bd.controller.BdVendorController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/vendor', '127.0.0.1', '内网IP', '{\"address\":\"北京海定区111号\",\"bankAccount\":\"1231231231233\",\"category\":\"1\",\"contactPerson\":\"张三\",\"createTime\":\"2025-09-22 16:28:36\",\"industry\":\"B\",\"params\":{},\"phone\":\"15388888888\",\"region\":\"1\",\"remark\":\"测试\",\"status\":\"ACTIVE\",\"taxId\":\"123123123312\",\"updateTime\":\"2025-11-02 16:19:28\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 16:19:28', 8);
+INSERT INTO `sys_oper_log` VALUES (758, '供应商', 2, 'com.nexus.core.bd.controller.BdVendorController.edit()', 'PUT', 1, 'admin', '研发部门', '/core/vendor', '127.0.0.1', '内网IP', '{\"address\":\"浙江省杭州市上城区湖滨街道\",\"bankAccount\":\"1231231231233\",\"category\":\"1\",\"cityAreaId\":330100,\"contactPerson\":\"张三\",\"createTime\":\"2025-09-22 16:28:36\",\"districtAreaId\":330102,\"industry\":\"B\",\"params\":{},\"phone\":\"15388888888\",\"provinceAreaId\":330000,\"region\":\"1\",\"remark\":\"测试\",\"status\":\"ACTIVE\",\"streetId\":\"330102003\",\"taxId\":\"123123123312\",\"updateTime\":\"2025-11-02 18:20:15\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 18:20:15', 15);
+INSERT INTO `sys_oper_log` VALUES (759, '仓库设置', 2, 'com.nexus.core.wm.controller.WmWarehouseController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/warehouse', '127.0.0.1', '内网IP', '{\"area\":400.3,\"createTime\":\"2025-09-30 12:04:16\",\"location\":\"四川省\",\"manager\":\"ry\",\"managerId\":2,\"params\":{},\"provinceAreaId\":510000,\"status\":1,\"updateTime\":\"2025-11-02 18:34:46\",\"warehouseCode\":\"WH003\",\"warehouseId\":1,\"warehouseName\":\"内江东兴区仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-02 18:34:46', 17);
 
 -- ----------------------------
 -- Table structure for sys_post
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_post`;
 CREATE TABLE `sys_post`  (
-  `post_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '岗位ID',
+  `post_id` bigint NOT NULL AUTO_INCREMENT COMMENT '岗位ID',
   `post_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位编码',
   `post_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '岗位名称',
-  `post_sort` int(0) NOT NULL COMMENT '显示顺序',
+  `post_sort` int NOT NULL COMMENT '显示顺序',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '状态（0正常 1停用）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_post
@@ -6499,22 +5322,22 @@ INSERT INTO `sys_post` VALUES (17, 'XS002', '销售代表', 17, '0', 'admin', '2
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role`;
 CREATE TABLE `sys_role`  (
-  `role_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+  `role_id` bigint NOT NULL AUTO_INCREMENT COMMENT '角色ID',
   `role_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色名称',
   `role_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色权限字符串',
-  `role_sort` int(0) NOT NULL COMMENT '显示顺序',
+  `role_sort` int NOT NULL COMMENT '显示顺序',
   `data_scope` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '1' COMMENT '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）',
   `menu_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '菜单树选择项是否关联显示',
   `dept_check_strictly` tinyint(1) NULL DEFAULT 1 COMMENT '部门树选择项是否关联显示',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role
@@ -6528,20 +5351,24 @@ INSERT INTO `sys_role` VALUES (3, '部门主管', 'manager', 2, '4', 1, 1, '0', 
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_dept`;
 CREATE TABLE `sys_role_dept`  (
-  `role_id` bigint(0) NOT NULL COMMENT '角色ID',
-  `dept_id` bigint(0) NOT NULL COMMENT '部门ID',
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `dept_id` bigint NOT NULL COMMENT '部门ID',
   PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_role_dept
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_role_menu
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_menu`;
 CREATE TABLE `sys_role_menu`  (
-  `role_id` bigint(0) NOT NULL COMMENT '角色ID',
-  `menu_id` bigint(0) NOT NULL COMMENT '菜单ID',
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `menu_id` bigint NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -6682,8 +5509,8 @@ INSERT INTO `sys_role_menu` VALUES (3, 2093);
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE `sys_user`  (
-  `user_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '用户ID',
-  `dept_id` bigint(0) NULL DEFAULT NULL COMMENT '部门ID',
+  `user_id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+  `dept_id` bigint NULL DEFAULT NULL COMMENT '部门ID',
   `user_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户账号',
   `nick_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '用户昵称',
   `user_type` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '00' COMMENT '用户类型（00系统用户）',
@@ -6695,20 +5522,20 @@ CREATE TABLE `sys_user`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `login_ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `login_date` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
-  `pwd_update_date` datetime(0) NULL DEFAULT NULL COMMENT '密码最后更新时间',
+  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `pwd_update_date` datetime NULL DEFAULT NULL COMMENT '密码最后更新时间',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 104 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 104 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-10-31 16:02:32', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-10-31 16:02:32', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-02 18:17:00', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-02 18:16:59', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-09-19 11:54:15', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-09-19 11:54:15', '测试员');
 INSERT INTO `sys_user` VALUES (100, 112, 'xiaowang', '小王', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-10-23 16:45:02', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', '麦得朶', '2025-10-23 19:33:53', '耳朵聋');
@@ -6720,10 +5547,10 @@ INSERT INTO `sys_user` VALUES (103, 115, '麦痕邵', '麦痕邵', '00', '', '',
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_post`;
 CREATE TABLE `sys_user_post`  (
-  `user_id` bigint(0) NOT NULL COMMENT '用户ID',
-  `post_id` bigint(0) NOT NULL COMMENT '岗位ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `post_id` bigint NOT NULL COMMENT '岗位ID',
   PRIMARY KEY (`user_id`, `post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_post
@@ -6740,10 +5567,10 @@ INSERT INTO `sys_user_post` VALUES (103, 17);
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_role`;
 CREATE TABLE `sys_user_role`  (
-  `user_id` bigint(0) NOT NULL COMMENT '用户ID',
-  `role_id` bigint(0) NOT NULL COMMENT '角色ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `role_id` bigint NOT NULL COMMENT '角色ID',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -6760,30 +5587,36 @@ INSERT INTO `sys_user_role` VALUES (103, 2);
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_warehouse`;
 CREATE TABLE `wm_warehouse`  (
-  `warehouse_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '仓库ID',
+  `warehouse_id` bigint NOT NULL AUTO_INCREMENT COMMENT '仓库ID',
   `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '仓库编码',
   `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '仓库名称',
   `location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '位置',
   `area` double(12, 2) NULL DEFAULT NULL COMMENT '面积',
   `manager` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '负责人',
-  `manager_id` bigint(0) NULL DEFAULT NULL COMMENT 'user_id',
+  `manager_id` bigint NULL DEFAULT NULL COMMENT 'user_id',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
-  `status` int(0) NULL DEFAULT NULL COMMENT '仓库状态',
+  `status` int NULL DEFAULT NULL COMMENT '仓库状态',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int(0) NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` int(0) NULL DEFAULT NULL COMMENT '预留字段4',
+  `attr3` int NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT NULL COMMENT '预留字段4',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `province_area_id` bigint NULL DEFAULT NULL COMMENT '省份行政区划ID',
+  `city_area_id` bigint NULL DEFAULT NULL COMMENT '城市行政区划ID',
+  `district_area_id` bigint NULL DEFAULT NULL COMMENT '区县行政区划ID',
+  `street_id` bigint NULL DEFAULT NULL COMMENT '街道行政区划id',
+  `address_lat` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址纬度',
+  `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址经度',
   PRIMARY KEY (`warehouse_id`) USING BTREE,
-  UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `uk_warehouse_code`(`warehouse_code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_warehouse
 -- ----------------------------
-INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '内江东兴区仓库', '内江市东兴区红牌坊', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-30 12:04:16', NULL, '2025-09-30 13:12:37');
+INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '内江东兴区仓库', '四川省', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-30 12:04:16', NULL, '2025-11-02 18:34:46', 510000, NULL, NULL, NULL, NULL, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

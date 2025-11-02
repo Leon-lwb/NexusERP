@@ -79,4 +79,16 @@ public class BdClient extends BaseEntity
     private Long attr3;
     /** 预留字段4 */
     private Long attr4;
+    /** 省份行政区划ID */
+    private Long provinceAreaId;
+    /** 城市行政区划ID */
+    private Long cityAreaId;
+    /** 区县行政区划ID */
+    private Long districtAreaId;
+    /** 详细地址(街道、门牌号等) */
+    private String streetId;
+    /** 地址纬度 */
+    private String addressLat;
+    /** 地址经度 */
+    private String addressLng;
 }

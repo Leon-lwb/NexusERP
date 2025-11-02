@@ -3,6 +3,7 @@ package com.nexus.web.controller.system;
 import com.nexus.common.annotation.Log;
 import com.nexus.common.core.controller.BaseController;
 import com.nexus.common.core.domain.AjaxResult;
+import com.nexus.common.core.plus.response.Result;
 import com.nexus.common.enums.BusinessType;
 import com.nexus.common.utils.StringUtils;
 import com.nexus.common.utils.poi.ExcelUtil;
@@ -52,6 +53,33 @@ public class SysDicAreaController extends BaseController {
         // 传入空的SysDicArea对象以获取所有数据
         List<SysDicArea> list = sysDicAreaService.selectChildrenTreeList(sysDicArea);
         return success(list);
+    }
+
+    /**
+     * 获取所有省份
+     */
+    @ApiOperation("获取所有省份")
+    @PreAuthorize("@ss.hasPermi('system:area:list')")
+    @GetMapping("/provinces")
+    public AjaxResult getProvinces() {
+        List<SysDicArea> provinces = sysDicAreaService.selectProvinces();
+        return success(provinces);
+    }
+
+    /**
+     * 获取下一级行政区划信息
+     */
+    @ApiOperation("获取下一级行政区划信息")
+    @PreAuthorize("@ss.hasPermi('system:area:list')")
+    @GetMapping("/nextLevel/{parentAreaId}")
+    public AjaxResult getNextLevel(@PathVariable Long parentAreaId) {
+        // 参数校验
+        if (parentAreaId == null) {
+            return AjaxResult.error("参数错误：parentAreaId不能为空");
+        }
+        
+        List<SysDicArea> nextLevel = sysDicAreaService.selectNextLevel(parentAreaId);
+        return success(nextLevel);
     }
 
     /**

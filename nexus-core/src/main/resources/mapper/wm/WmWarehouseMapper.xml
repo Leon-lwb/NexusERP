@@ -22,10 +22,18 @@
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
         <result property="updateTime"    column="update_time"    />
+        <result property="provinceAreaId"    column="province_area_id"    />
+        <result property="cityAreaId"    column="city_area_id"    />
+        <result property="districtAreaId"    column="district_area_id"    />
+        <result property="streetId"    column="street_id"    />
+        <result property="addressLat"    column="address_lat"    />
+        <result property="addressLng"    column="address_lng"    />
     </resultMap>
 
     <sql id="selectWmWarehouseVo">
-        select warehouse_id, warehouse_code, warehouse_name, location, area, manager, manager_id, remark, status, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from wm_warehouse
+        select warehouse_id, warehouse_code, warehouse_name, location, area, manager, manager_id, remark, status,
+               province_area_id, city_area_id, district_area_id, street_id, address_lat, address_lng,
+               attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from wm_warehouse
     </sql>
 
     <select id="selectWmWarehouseList" parameterType="WmWarehouse" resultMap="WmWarehouseResult">
@@ -37,6 +45,10 @@
             <if test="area != null "> and area = #{area}</if>
             <if test="manager != null  and manager != ''"> and manager = #{manager}</if>
             <if test="status != null "> and status = #{status}</if>
+            <if test="provinceAreaId != null"> and province_area_id = #{provinceAreaId}</if>
+            <if test="cityAreaId != null"> and city_area_id = #{cityAreaId}</if>
+            <if test="districtAreaId != null"> and district_area_id = #{districtAreaId}</if>
+            <if test="streetId != null"> and street_id = #{streetId}</if>
         </where>
     </select>
 
@@ -64,6 +76,12 @@
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
             <if test="updateTime != null">update_time,</if>
+            <if test="provinceAreaId != null">province_area_id,</if>
+            <if test="cityAreaId != null">city_area_id,</if>
+            <if test="districtAreaId != null">district_area_id,</if>
+            <if test="streetId != null and streetId != ''">street_id,</if>
+            <if test="addressLat != null and addressLat != ''">address_lat,</if>
+            <if test="addressLng != null and addressLng != ''">address_lng,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="warehouseCode != null and warehouseCode != ''">#{warehouseCode},</if>
@@ -82,6 +100,12 @@
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
             <if test="updateTime != null">#{updateTime},</if>
+            <if test="provinceAreaId != null">#{provinceAreaId},</if>
+            <if test="cityAreaId != null">#{cityAreaId},</if>
+            <if test="districtAreaId != null">#{districtAreaId},</if>
+            <if test="streetId != null and streetId != ''">#{streetId},</if>
+            <if test="addressLat != null and addressLat != ''">#{addressLat},</if>
+            <if test="addressLng != null and addressLng != ''">#{addressLng},</if>
         </trim>
     </insert>
 
@@ -104,6 +128,12 @@
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="provinceAreaId != null">province_area_id = #{provinceAreaId},</if>
+            <if test="cityAreaId != null">city_area_id = #{cityAreaId},</if>
+            <if test="districtAreaId != null">district_area_id = #{districtAreaId},</if>
+            <if test="streetId != null and streetId != ''">street_id = #{streetId},</if>
+            <if test="addressLat != null and addressLat != ''">address_lat = #{addressLat},</if>
+            <if test="addressLng != null and addressLng != ''">address_lng = #{addressLng},</if>
         </trim>
         where warehouse_id = #{warehouseId}
     </update>

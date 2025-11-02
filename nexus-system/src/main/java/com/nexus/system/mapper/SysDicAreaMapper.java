@@ -58,4 +58,18 @@ public interface SysDicAreaMapper extends BaseMapper<SysDicArea> {
      * @return 结果
      */
     public int deleteSysDicAreaByPkids(Long[] pkids);
+
+
+    /**
+     * 查询所有省份
+     * @return
+     */
+    List<SysDicArea> selectProvinces();
+
+    /**
+     * 查询下一级
+     * @param parentAreaId
+     * @return
+     */
+    List<SysDicArea> selectNextLevel(Long parentAreaId);
 }

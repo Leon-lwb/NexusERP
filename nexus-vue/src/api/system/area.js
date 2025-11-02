@@ -59,3 +59,19 @@ export function listChildren(query) {
     params: query
   })
 }
+
+// 获取所有省份
+export function getProvinces() {
+  return request({
+    url: '/system/area/provinces',
+    method: 'get'
+  })
+}
+
+// 获取下一级
+export function getNextLevel(parentAreaId) {
+  return request({
+    url: '/system/area/nextLevel/' + parentAreaId,
+    method: 'get'
+  })
+}

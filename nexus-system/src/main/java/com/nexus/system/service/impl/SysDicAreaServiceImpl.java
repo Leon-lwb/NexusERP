@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.nexus.system.mapper.SysDicAreaMapper;
@@ -172,4 +171,16 @@ public class SysDicAreaServiceImpl extends ServiceImpl<SysDicAreaMapper, SysDicA
 
         return buildTree(areas);
     }
+
+    @Override
+    public List<SysDicArea> selectProvinces() {
+        return sysDicAreaMapper.selectProvinces();
+    }
+
+    @Override
+    public List<SysDicArea> selectNextLevel(Long parentAreaId) {
+        return  sysDicAreaMapper.selectNextLevel(parentAreaId);
+    }
+
+
 }

@@ -74,4 +74,20 @@ public interface ISysDicAreaService extends IService<SysDicArea> {
      * @return 树形列表
      */
     List<SysDicArea> selectChildrenTreeList(SysDicArea sysDicArea);
+
+
+    /**
+     * 获取所有省份
+     *
+     * @return 省份列表
+     */
+    List<SysDicArea> selectProvinces();
+
+    /**
+     * 获取下一级
+     *
+     * @param parentAreaId 父级ID
+     * @return 下一级列表
+     */
+    List<SysDicArea> selectNextLevel(Long parentAreaId);
 }

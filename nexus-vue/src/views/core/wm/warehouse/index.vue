@@ -87,7 +87,7 @@
                 <el-input v-model="form.warehouseCode" placeholder="请输入仓库编码" :disabled="autoGenFlag || isViewMode"
                   style="flex: 1;" />
                 <el-switch v-model="autoGenFlag" inline-prompt active-color="#13ce66" active-text="自动"
-                  inactive-text="手动" @change="handleAutoGenChange" :disabled="isViewMode" />
+                  inactive-text="自动生成" @change="handleAutoGenChange" :disabled="isViewMode" />
               </div>
             </el-form-item>
           </el-col>
@@ -98,18 +98,115 @@
           </el-col>
         </el-row>
 
+        <!-- 新增地址信息字段 -->
         <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="位置" prop="location">
-              <el-input v-model="form.location" placeholder="请输入位置" />
+          <el-col :span="6">
+            <el-form-item label="省份" prop="provinceAreaId">
+              <el-select 
+                v-model="form.provinceAreaId" 
+                placeholder="请选择省份" 
+                :disabled="isViewMode"
+                @change="handleProvinceChange"
+                style="width: 100%">
+                <el-option
+                  v-for="item in provinceOptions"
+                  :key="item.areaId"
+                  :label="item.areaName"
+                  :value="item.areaId">
+                </el-option>
+              </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="6">
+            <el-form-item label="城市" prop="cityAreaId">
+              <el-select 
+                v-model="form.cityAreaId" 
+                placeholder="请选择城市" 
+                :disabled="isViewMode || !cityOptions.length"
+                @change="handleCityChange"
+                style="width: 100%">
+                <el-option
+                  v-for="item in cityOptions"
+                  :key="item.areaId"
+                  :label="item.areaName"
+                  :value="item.areaId">
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="区县" prop="districtAreaId">
+              <el-select 
+                v-model="form.districtAreaId" 
+                placeholder="请选择区县" 
+                :disabled="isViewMode || !districtOptions.length"
+                @change="handleDistrictChange"
+                style="width: 100%">
+                <el-option
+                  v-for="item in districtOptions"
+                  :key="item.areaId"
+                  :label="item.areaName"
+                  :value="item.areaId">
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="街道" prop="streetId">
+              <el-select 
+                v-model="form.streetId" 
+                placeholder="请选择街道" 
+                :disabled="isViewMode || !streetOptions.length"
+                style="width: 100%"
+                @change="handleStreetChange">
+                <el-option
+                  v-for="item in streetOptions"
+                  :key="item.areaId"
+                  :label="item.areaName"
+                  :value="item.areaId">
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="经度" prop="addressLng">
+              <el-input v-model="form.addressLng" placeholder="请输入地址经度" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="纬度" prop="addressLat">
+              <el-input v-model="form.addressLat" placeholder="请输入地址纬度" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="位置" prop="location">
+              <el-input v-model="form.location" type="textarea" placeholder="请输入位置" :rows="3" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="面积" prop="area">
               <el-input-number v-model="form.area" placeholder="请输入面积" :precision="2" :step="1"
                 controls-position="right" style="width: 100%">
                 <template #append>㎡</template>
               </el-input-number>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="仓库状态" prop="status">
+              <el-select v-model="form.status" placeholder="请选择仓库状态" style="width: 100%">
+                <el-option v-for="dict in wm_warehouse_status" :key="dict.value" :label="dict.label"
+                  :value="parseInt(dict.value)">
+                </el-option>
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -122,15 +219,6 @@
                   <el-button icon="User" @click="openUserSelect" :disabled="isViewMode"></el-button>
                 </template>
               </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="仓库状态" prop="status">
-              <el-select v-model="form.status" placeholder="请选择仓库状态" style="width: 100%">
-                <el-option v-for="dict in wm_warehouse_status" :key="dict.value" :label="dict.label"
-                  :value="parseInt(dict.value)">
-                </el-option>
-              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -195,6 +283,7 @@
 import { listWarehouse, getWarehouse, delWarehouse, addWarehouse, updateWarehouse } from "@/api/core/wm/warehouse"
 import { genCode } from "@/api/system/autocode/rule"
 import { listUser } from "@/api/system/user"
+import { getProvinces, getNextLevel } from "@/api/system/area"
 
 const { proxy } = getCurrentInstance()
 const { wm_warehouse_status } = proxy.useDict('wm_warehouse_status')
@@ -209,6 +298,7 @@ const multiple = ref(true)
 const total = ref(0)
 const title = ref("")
 const isViewMode = ref(false) // 新增：标识是否为查看模式
+const autoGenFlag = ref(false) // 新增：自动生成标识
 
 // 添加用户列表相关变量
 const userList = ref([])
@@ -221,6 +311,12 @@ const userQueryParams = reactive({
   userName: undefined,
   phonenumber: undefined
 })
+
+// 新增地址相关数据
+const provinceOptions = ref([])
+const cityOptions = ref([])
+const districtOptions = ref([])
+const streetOptions = ref([])
 
 const data = reactive({
   form: {},
@@ -281,9 +377,20 @@ function reset() {
     createBy: null,
     createTime: null,
     updateBy: null,
-    updateTime: null
+    updateTime: null,
+    // 新增地址字段
+    provinceAreaId: null,
+    cityAreaId: null,
+    districtAreaId: null,
+    streetId: null,
+    addressLat: null,
+    addressLng: null
   }
   proxy.resetForm("warehouseRef")
+  // 重置地址选项
+  cityOptions.value = []
+  districtOptions.value = []
+  streetOptions.value = []
 }
 
 /** 搜索按钮操作 */
@@ -309,6 +416,7 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset()
   isViewMode.value = false // 设置为编辑模式
+  loadProvinceOptions() // 加载省份数据
   open.value = true
   title.value = "添加仓库设置"
 }
@@ -320,6 +428,34 @@ function handleUpdate(row) {
   const _warehouseId = row.warehouseId || ids.value
   getWarehouse(_warehouseId).then(response => {
     form.value = response.data
+    // 加载地址级联数据
+    loadProvinceOptions().then(() => {
+      if (form.value.provinceAreaId) {
+        loadCityOptions(form.value.provinceAreaId).then(() => {
+          if (form.value.cityAreaId) {
+            loadDistrictOptions(form.value.cityAreaId).then(() => {
+              // 如果有街道ID，加载街道数据
+              if (form.value.streetId && form.value.districtAreaId) {
+                loadStreetOptions(form.value.districtAreaId).then(() => {
+                  // 确保街道选项中包含当前选中的街道
+                  const selectedStreet = streetOptions.value.find(option => option.areaId === form.value.streetId);
+                  if (!selectedStreet && form.value.streetId) {
+                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
+                    // 创建一个新的街道选项对象
+                    const newStreetOption = {
+                      areaId: form.value.streetId,
+                      areaName: form.value.streetName || form.value.streetId,
+                      parentAreaId: form.value.districtAreaId
+                    };
+                    streetOptions.value.push(newStreetOption);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
     open.value = true
     title.value = "修改仓库设置"
   })
@@ -332,6 +468,34 @@ function handleView(row) {
   const _warehouseId = row.warehouseId || ids.value
   getWarehouse(_warehouseId).then(response => {
     form.value = response.data
+    // 加载地址级联数据
+    loadProvinceOptions().then(() => {
+      if (form.value.provinceAreaId) {
+        loadCityOptions(form.value.provinceAreaId).then(() => {
+          if (form.value.cityAreaId) {
+            loadDistrictOptions(form.value.cityAreaId).then(() => {
+              // 如果有街道ID，加载街道数据
+              if (form.value.streetId && form.value.districtAreaId) {
+                loadStreetOptions(form.value.districtAreaId).then(() => {
+                  // 确保街道选项中包含当前选中的街道
+                  const selectedStreet = streetOptions.value.find(option => option.areaId === form.value.streetId);
+                  if (!selectedStreet && form.value.streetId) {
+                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
+                    // 创建一个新的街道选项对象
+                    const newStreetOption = {
+                      areaId: form.value.streetId,
+                      areaName: form.value.streetName || form.value.streetId,
+                      parentAreaId: form.value.districtAreaId
+                    };
+                    streetOptions.value.push(newStreetOption);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
     open.value = true
     title.value = "查看仓库设置"
   })
@@ -415,6 +579,104 @@ function resetUserQuery() {
   userQueryParams.userName = undefined
   userQueryParams.phonenumber = undefined
   getUserList()
+}
+
+// 加载省份数据
+function loadProvinceOptions() {
+  return getProvinces().then(response => {
+    provinceOptions.value = response.data
+  })
+}
+
+// 省份变化处理
+function handleProvinceChange(value) {
+  form.value.cityAreaId = null
+  form.value.districtAreaId = null
+  form.value.streetId = null
+  cityOptions.value = []
+  districtOptions.value = []
+  streetOptions.value = []
+  
+  if (value) {
+    loadCityOptions(value)
+  }
+  
+  // 更新地址字段
+  nextTick(() => {
+    updateAddressField()
+  })
+}
+
+// 加载城市数据
+function loadCityOptions(parentId) {
+  return getNextLevel(parentId).then(response => {
+    cityOptions.value = response.data
+  })
+}
+
+// 城市变化处理
+function handleCityChange(value) {
+  form.value.districtAreaId = null
+  form.value.streetId = null
+  districtOptions.value = []
+  streetOptions.value = []
+  
+  if (value) {
+    loadDistrictOptions(value)
+  }
+  
+  // 更新地址字段
+  nextTick(() => {
+    updateAddressField()
+  })
+}
+
+// 区县变化处理
+function handleDistrictChange(value) {
+  form.value.streetId = null
+  streetOptions.value = []
+  
+  if (value) {
+    loadStreetOptions(value)
+  }
+  
+  // 更新地址字段
+  nextTick(() => {
+    updateAddressField()
+  })
+}
+
+// 街道变化处理
+function handleStreetChange(value) {
+  // 更新地址字段
+  updateAddressField()
+}
+
+// 加载区县数据
+function loadDistrictOptions(parentId) {
+  return getNextLevel(parentId).then(response => {
+    districtOptions.value = response.data
+  })
+}
+
+// 加载街道数据
+function loadStreetOptions(parentId) {
+  return getNextLevel(parentId).then(response => {
+    streetOptions.value = response.data
+  })
+}
+
+// 更新地址字段
+function updateAddressField() {
+  // 获取各级区域的名称
+  const provinceName = provinceOptions.value.find(p => p.areaId === form.value.provinceAreaId)?.areaName || ''
+  const cityName = cityOptions.value.find(c => c.areaId === form.value.cityAreaId)?.areaName || ''
+  const districtName = districtOptions.value.find(d => d.areaId === form.value.districtAreaId)?.areaName || ''
+  const streetName = streetOptions.value.find(s => s.areaId === form.value.streetId)?.areaName || ''
+  
+  // 拼接地址
+  const addressParts = [provinceName, cityName, districtName, streetName].filter(part => part !== '')
+  form.value.location = addressParts.join('')
 }
 
 getList()

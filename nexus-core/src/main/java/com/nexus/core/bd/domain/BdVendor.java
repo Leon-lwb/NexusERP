@@ -19,46 +19,101 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @TableName("bd_vendor")
-public class BdVendor extends BaseEntity
-        {
-private static final long serialVersionUID = 1L;
+public class BdVendor extends BaseEntity {
+    private static final long serialVersionUID = 1L;
 
-    /** 供应商ID */
-    @TableId(value = "vendor_id",type = IdType.AUTO)
+    /**
+     * 供应商ID
+     */
+    @TableId(value = "vendor_id", type = IdType.AUTO)
     private Long vendorId;
-    /** 供应商编码 */
+    /**
+     * 供应商编码
+     */
     @Excel(name = "供应商编码")
     private String vendorCode;
-    /** 供应商名称 */
+    /**
+     * 供应商名称
+     */
     @Excel(name = "供应商名称")
     private String vendorName;
-    /** 税号 */
+    /**
+     * 税号
+     */
     private String taxId;
-    /** 地址 */
+    /**
+     * 地址
+     */
     private String address;
-    /** 联系人 */
+    /**
+     * 联系人
+     */
     private String contactPerson;
-    /** 电话 */
+    /**
+     * 电话
+     */
     private String phone;
-    /** 银行账户 */
+    /**
+     * 银行账户
+     */
     private String bankAccount;
-    /** 行业 */
+    /**
+     * 行业
+     */
     @Excel(name = "行业")
     private String industry;
-    /** 地区 */
+    /**
+     * 地区
+     */
     @Excel(name = "地区")
     private String region;
-    /** 分类 (原材料/标准件/服务类) */
+    /**
+     * 分类 (原材料/标准件/服务类)
+     */
     private String category;
-    /** 合作状态  */
+    /**
+     * 合作状态
+     */
     @Excel(name = "合作状态 ")
     private String status;
-    /** 预留字段1 */
+    /**
+     * 预留字段1
+     */
     private String attr1;
-    /** 预留字段2 */
+    /**
+     * 预留字段2
+     */
     private String attr2;
-    /** 预留字段3 */
+    /**
+     * 预留字段3
+     */
     private Long attr3;
-    /** 预留字段4 */
+    /**
+     * 预留字段4
+     */
     private Long attr4;
+    /**
+     * 省份行政区划ID
+     */
+    private Long provinceAreaId;
+    /**
+     * 城市行政区划ID
+     */
+    private Long cityAreaId;
+    /**
+     * 区县行政区划ID
+     */
+    private Long districtAreaId;
+    /**
+     * 详细地址(街道、门牌号等)
+     */
+    private String streetId;
+    /**
+     * 地址纬度
+     */
+    private String addressLat;
+    /**
+     * 地址经度
+     */
+    private String addressLng;
 }

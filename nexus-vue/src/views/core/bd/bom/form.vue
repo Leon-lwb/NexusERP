@@ -104,7 +104,7 @@
       
       <el-table :data="materialItems" style="width: 100%" class="material-table">
         <el-table-column type="index" width="50" align="center" label="序号" />
-        <el-table-column label="子项物料" align="center" prop="childMaterialName">
+        <el-table-column label="子项物料" align="center" prop="childMaterialName" min-width="200">
           <template #default="scope">
             <el-input v-model="scope.row.childMaterialName" placeholder="请选择子项物料" readonly v-show="isViewMode" />
             <el-input v-model="scope.row.childMaterialId" style="display: none" />
@@ -122,7 +122,7 @@
             </el-row>
           </template>
         </el-table-column>
-        <el-table-column label="单位父项用量" align="center" prop="quantityPerParent">
+        <el-table-column label="单位父项用量" align="center" prop="quantityPerParent" width="140">
           <template #default="scope">
             <el-input-number 
               v-model="scope.row.quantityPerParent" 
@@ -133,7 +133,7 @@
               style="width: 100%" />
           </template>
         </el-table-column>
-        <el-table-column label="损耗率(%)" align="center" prop="lossRate">
+        <el-table-column label="损耗率(%)" align="center" prop="lossRate" width="140">
           <template #default="scope">
             <el-input-number 
               v-model="scope.row.lossRate" 
@@ -145,7 +145,7 @@
               style="width: 100%" />
           </template>
         </el-table-column>
-        <el-table-column label="工序步骤" align="center" prop="operationStep">
+        <el-table-column label="工序步骤" align="center" prop="operationStep" width="140">
           <template #default="scope">
             <el-input-number 
               v-model="scope.row.operationStep" 
@@ -155,7 +155,7 @@
               style="width: 100%" />
           </template>
         </el-table-column>
-        <el-table-column label="提前期(小时)" align="center" prop="leadTime">
+        <el-table-column label="提前期(小时)" align="center" prop="leadTime" width="140">
           <template #default="scope">
             <el-input-number 
               v-model="scope.row.leadTime" 
@@ -165,7 +165,7 @@
               style="width: 100%" />
           </template>
         </el-table-column>
-        <el-table-column label="生效日期" align="center" prop="effectiveDate">
+        <el-table-column label="生效日期" align="center" prop="effectiveDate" width="140">
           <template #default="scope">
             <el-date-picker
               v-model="scope.row.effectiveDate"
@@ -176,7 +176,7 @@
               :readonly="isViewMode" />
           </template>
         </el-table-column>
-        <el-table-column label="失效日期" align="center" prop="expiryDate">
+        <el-table-column label="失效日期" align="center" prop="expiryDate" width="140">
           <template #default="scope">
             <el-date-picker
               v-model="scope.row.expiryDate"
@@ -187,9 +187,9 @@
               :readonly="isViewMode" />
           </template>
         </el-table-column>
-        <el-table-column label="状态" align="center" prop="status">
+        <el-table-column label="状态" align="center" prop="status" width="100">
           <template #default="scope">
-            <el-select v-model="scope.row.status" placeholder="请选择状态" :disabled="isViewMode" style="width: 100%">
+            <el-select v-model="scope.row.status" placeholder="请选择状态"  disabled style="width: 100%">
               <el-option
                 v-for="dict in sys_core_status"
                 :key="dict.value"
