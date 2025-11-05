@@ -43,6 +43,8 @@ import ImageUpload from "@/components/ImageUpload"
 import ImagePreview from "@/components/ImagePreview"
 // 字典标签组件
 import DictTag from '@/components/DictTag'
+// VForm组件
+import VForm from '@/components/vform'
 
 const app = createApp(App)
 
@@ -71,6 +73,8 @@ app.use(store)
 app.use(plugins)
 app.use(elementIcons)
 app.component('svg-icon', SvgIcon)
+// 注册VForm组件
+app.use(VForm)
 
 directive(app)
 

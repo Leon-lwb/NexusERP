@@ -60,6 +60,12 @@
             <artifactId>nexus-core</artifactId>
         </dependency>
 
+        <!-- 流程模块-->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-flowable</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

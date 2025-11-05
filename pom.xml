@@ -36,6 +36,8 @@
         <jakarta.version>6.0.0</jakarta.version>
         <springdoc.version>2.6.0</springdoc.version>
         <nexus.core.version>3.9.0</nexus.core.version>
+        <nexus.common.version>3.9.0</nexus.common.version>
+        <flowable.version>7.0.0</flowable.version>
     </properties>
 
     <!-- 依赖声明 -->
@@ -202,6 +204,25 @@
                 <version>${nexus.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.flowable</groupId>
+                <artifactId>flowable-spring-boot-starter</artifactId>
+                <version>${flowable.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>1.5.21</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <!-- 流程模块-->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-flowable</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -213,6 +234,7 @@
         <module>nexus-generator</module>
         <module>nexus-common</module>
         <module>nexus-core</module>
+        <module>nexus-flowable</module>
     </modules>
     <packaging>pom</packaging>
 
