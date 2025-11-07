@@ -1,14 +1,14 @@
 package com.nexus.flowable.service.impl;
 
-import java.util.List;
-import java.util.Objects;
-
-import com.nexus.flowable.domain.SysForm;
+import com.nexus.flowable.domain.SysDeployForm;
+import com.nexus.flowable.mapper.SysDeployFormMapper;
+import com.nexus.flowable.service.ISysDeployFormService;
+import com.nexus.flowable.domain.FormTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.nexus.flowable.mapper.SysDeployFormMapper;
-import com.nexus.flowable.domain.SysDeployForm;
-import com.nexus.flowable.service.ISysDeployFormService;
+
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 流程实例关联表单Service业务层处理
@@ -17,8 +17,7 @@ import com.nexus.flowable.service.ISysDeployFormService;
  * @date 2021-04-03
  */
 @Service
-public class SysDeployFormServiceImpl implements ISysDeployFormService 
-{
+public class SysDeployFormServiceImpl implements ISysDeployFormService {
     @Autowired
     private SysDeployFormMapper sysDeployFormMapper;
 
@@ -29,8 +28,7 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
      * @return 流程实例关联表单
      */
     @Override
-    public SysDeployForm selectSysDeployFormById(Long id)
-    {
+    public SysDeployForm selectSysDeployFormById(Long id) {
         return sysDeployFormMapper.selectSysDeployFormById(id);
     }
 
@@ -41,8 +39,7 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
      * @return 流程实例关联表单
      */
     @Override
-    public List<SysDeployForm> selectSysDeployFormList(SysDeployForm sysDeployForm)
-    {
+    public List<SysDeployForm> selectSysDeployFormList(SysDeployForm sysDeployForm) {
         return sysDeployFormMapper.selectSysDeployFormList(sysDeployForm);
     }
 
@@ -53,13 +50,12 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
      * @return 结果
      */
     @Override
-    public int insertSysDeployForm(SysDeployForm sysDeployForm)
-    {
-        SysForm sysForm = sysDeployFormMapper.selectSysDeployFormByDeployId(sysDeployForm.getDeployId());
+    public int insertSysDeployForm(SysDeployForm sysDeployForm) {
+        FormTemplate sysForm = sysDeployFormMapper.selectSysDeployFormByDeployId(sysDeployForm.getDeployId());
         if (Objects.isNull(sysForm)) {
             return sysDeployFormMapper.insertSysDeployForm(sysDeployForm);
-        }else {
-            return 1;
+        } else {
+            return updateSysDeployForm(sysDeployForm);
         }
     }
 
@@ -70,8 +66,7 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
      * @return 结果
      */
     @Override
-    public int updateSysDeployForm(SysDeployForm sysDeployForm)
-    {
+    public int updateSysDeployForm(SysDeployForm sysDeployForm) {
         return sysDeployFormMapper.updateSysDeployForm(sysDeployForm);
     }
 
@@ -82,8 +77,7 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
      * @return 结果
      */
     @Override
-    public int deleteSysDeployFormByIds(Long[] ids)
-    {
+    public int deleteSysDeployFormByIds(Long[] ids) {
         return sysDeployFormMapper.deleteSysDeployFormByIds(ids);
     }
 
@@ -94,8 +88,7 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
      * @return 结果
      */
     @Override
-    public int deleteSysDeployFormById(Long id)
-    {
+    public int deleteSysDeployFormById(Long id) {
         return sysDeployFormMapper.deleteSysDeployFormById(id);
     }
 
@@ -106,7 +99,7 @@ public class SysDeployFormServiceImpl implements ISysDeployFormService
      * @return
      */
     @Override
-    public SysForm selectSysDeployFormByDeployId(String deployId) {
+    public FormTemplate selectSysDeployFormByDeployId(String deployId) {
         return sysDeployFormMapper.selectSysDeployFormByDeployId(deployId);
     }
 }

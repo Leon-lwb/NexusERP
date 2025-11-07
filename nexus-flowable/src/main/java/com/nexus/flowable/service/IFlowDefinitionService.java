@@ -1,11 +1,11 @@
 package com.nexus.flowable.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.AjaxResult;
-import com.nexus.flowable.domain.FlowProcDefDto;
+import com.nexus.flowable.domain.dto.FlowProcDefDto;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,7 +24,7 @@ public interface IFlowDefinitionService {
      * @param pageSize 每页条数
      * @return 流程定义分页列表数据
      */
-    Page<FlowProcDefDto> list(String name,Integer pageNum, Integer pageSize);
+    List<FlowProcDefDto> list(String name,Integer pageNum, Integer pageSize);
 
     /**
      * 导入流程文件

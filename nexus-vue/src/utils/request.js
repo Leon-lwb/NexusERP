@@ -104,7 +104,7 @@ service.interceptors.response.use(res => {
       ElNotification.error({ title: msg })
       return Promise.reject('error')
     } else {
-      return  Promise.resolve(res.data)
+      return Promise.resolve(res.data)
     }
   },
   error => {
@@ -147,6 +147,23 @@ export function download(url, params, filename, config) {
     ElMessage.error('下载文件出现错误，请联系管理员！')
     downloadLoadingInstance.close()
   })
+}
+
+// 添加新的请求方法，与 geek-vue 保持一致
+export function postAction(url, data, isToken = true) {
+  return service({ url, method: 'POST', data, headers: { isToken } })
+}
+
+export function getAction(url, params, isToken = true) {
+  return service({ url, method: 'GET', params, headers: { isToken } })
+}
+
+export function putAction(url, data, isToken = true) {
+  return service({ url, method: 'PUT', data, headers: { isToken } })
+}
+
+export function deleteAction(url, data, isToken = true) {
+  return service({ url, method: 'DELETE', data, headers: { isToken } })
 }
 
 export default service

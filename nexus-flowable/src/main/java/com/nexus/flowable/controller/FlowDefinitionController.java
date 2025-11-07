@@ -7,25 +7,24 @@ import com.nexus.common.core.domain.entity.SysRole;
 import com.nexus.common.core.domain.entity.SysUser;
 import com.nexus.common.core.page.TableDataInfo;
 import com.nexus.common.enums.BusinessType;
-import com.nexus.flowable.domain.FlowProcDefDto;
+import com.nexus.flowable.domain.SysDeployForm;
+import com.nexus.flowable.domain.SysExpression;
 import com.nexus.flowable.domain.dto.FlowSaveXmlVo;
 import com.nexus.flowable.service.IFlowDefinitionService;
-import com.nexus.flowable.domain.SysExpression;
+import com.nexus.flowable.service.ISysDeployFormService;
 import com.nexus.flowable.service.ISysExpressionService;
 import com.nexus.system.service.ISysRoleService;
 import com.nexus.system.service.ISysUserService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.Resource;
 import javax.imageio.ImageIO;
-import jakarta.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -44,7 +43,7 @@ import java.util.Map;
  * @date 2021-04-03
  */
 @Slf4j
-@Api(tags = "流程定义")
+@Tag(name = "流程定义")
 @RestController
 @RequestMapping("/flowable/definition")
 public class FlowDefinitionController extends BaseController {
@@ -60,20 +59,24 @@ public class FlowDefinitionController extends BaseController {
     @Resource
     private ISysExpressionService sysExpressionService;
 
+    @Resource
+    private ISysDeployFormService sysDeployFormService;
+
     @GetMapping(value = "/list")
-    @ApiOperation(value = "流程定义列表", response = FlowProcDefDto.class)
-    public AjaxResult list(@ApiParam(value = "当前页码", required = true) @RequestParam Integer pageNum,
-                           @ApiParam(value = "每页条数", required = true) @RequestParam Integer pageSize,
-                           @ApiParam(value = "流程名称", required = false) @RequestParam(required = false) String name) {
-        return AjaxResult.success(flowDefinitionService.list(name, pageNum, pageSize));
+    @Operation(summary = "流程定义列表")
+    public TableDataInfo list(
+            @RequestParam Integer pageNum,
+            @RequestParam Integer pageSize,
+            @RequestParam(required = false) String name) {
+        return getDataTable(flowDefinitionService.list(name, pageNum, pageSize));
     }
 
-
-    @ApiOperation(value = "导入流程文件", notes = "上传bpmn20的xml文件")
+    @Operation(summary = "导入流程文件")
     @PostMapping("/import")
-    public AjaxResult importFile(@RequestParam(required = false) String name,
-                                 @RequestParam(required = false) String category,
-                                 MultipartFile file) {
+    public AjaxResult importFile(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String category,
+            MultipartFile file) {
         InputStream in = null;
         try {
             in = file.getInputStream();
@@ -94,10 +97,9 @@ public class FlowDefinitionController extends BaseController {
         return AjaxResult.success("导入成功");
     }
 
-
-    @ApiOperation(value = "读取xml文件")
+    @Operation(summary = "读取xml文件")
     @GetMapping("/readXml/{deployId}")
-    public AjaxResult readXml(@ApiParam(value = "流程定义id") @PathVariable(value = "deployId") String deployId) {
+    public AjaxResult readXml(@PathVariable String deployId) {
         try {
             return flowDefinitionService.readXml(deployId);
         } catch (Exception e) {
@@ -106,9 +108,9 @@ public class FlowDefinitionController extends BaseController {
 
     }
 
-    @ApiOperation(value = "读取图片文件")
+    @Operation(summary = "读取图片文件")
     @GetMapping("/readImage/{deployId}")
-    public void readImage(@ApiParam(value = "流程定义id") @PathVariable(value = "deployId") String deployId, HttpServletResponse response) {
+    public void readImage(@PathVariable String deployId, HttpServletResponse response) {
         OutputStream os = null;
         BufferedImage image = null;
         try {
@@ -133,8 +135,7 @@ public class FlowDefinitionController extends BaseController {
 
     }
 
-
-    @ApiOperation(value = "保存流程设计器内的xml文件")
+    @Operation(summary = "保存流程设计器内的xml文件")
     @Log(title = "流程定义", businessType = BusinessType.INSERT)
     @PostMapping("/save")
     public AjaxResult save(@RequestBody FlowSaveXmlVo vo) {
@@ -158,24 +159,22 @@ public class FlowDefinitionController extends BaseController {
         return AjaxResult.success("导入成功");
     }
 
-    @ApiOperation(value = "发起流程")
+    @Operation(summary = "发起流程")
     @Log(title = "发起流程", businessType = BusinessType.INSERT)
     @PostMapping("/start/{procDefId}")
-    public AjaxResult start(@ApiParam(value = "流程定义id") @PathVariable(value = "procDefId") String procDefId,
-                            @ApiParam(value = "变量集合,json对象") @RequestBody Map<String, Object> variables) {
+    public AjaxResult start(@PathVariable String procDefId, @RequestBody Map<String, Object> variables) {
         return flowDefinitionService.startProcessInstanceById(procDefId, variables);
     }
 
-    @ApiOperation(value = "激活或挂起流程定义")
+    @Operation(summary = "激活或挂起流程定义")
     @Log(title = "激活/挂起流程", businessType = BusinessType.UPDATE)
     @PutMapping(value = "/updateState")
-    public AjaxResult updateState(@ApiParam(value = "1:激活,2:挂起", required = true) @RequestParam Integer state,
-                                  @ApiParam(value = "流程部署ID", required = true) @RequestParam String deployId) {
+    public AjaxResult updateState(@RequestParam Integer state, @RequestParam String deployId) {
         flowDefinitionService.updateState(state, deployId);
         return AjaxResult.success();
     }
 
-    @ApiOperation(value = "删除流程")
+    @Operation(summary = "删除流程")
     @Log(title = "删除流程", businessType = BusinessType.DELETE)
     @DeleteMapping(value = "/{deployIds}")
     public AjaxResult delete(@PathVariable String[] deployIds) {
@@ -185,25 +184,34 @@ public class FlowDefinitionController extends BaseController {
         return AjaxResult.success();
     }
 
-    @ApiOperation(value = "指定流程办理人员列表")
+    @Operation(summary = "指定流程办理人员列表")
     @GetMapping("/userList")
     public AjaxResult userList(SysUser user) {
         List<SysUser> list = userService.selectUserList(user);
         return AjaxResult.success(list);
     }
 
-    @ApiOperation(value = "指定流程办理组列表")
+    @Operation(summary = "指定流程办理组列表")
     @GetMapping("/roleList")
     public AjaxResult roleList(SysRole role) {
         List<SysRole> list = sysRoleService.selectRoleList(role);
         return AjaxResult.success(list);
     }
 
-    @ApiOperation(value = "指定流程达式列表")
+    @Operation(summary = "指定流程达式列表")
     @GetMapping("/expList")
     public AjaxResult expList(SysExpression sysExpression) {
         List<SysExpression> list = sysExpressionService.selectSysExpressionList(sysExpression);
         return AjaxResult.success(list);
+    }
+
+    /**
+     * 挂载流程表单
+     */
+    @Log(title = "流程表单", businessType = BusinessType.INSERT)
+    @PostMapping("/addDeployForm")
+    public AjaxResult addDeployForm(@RequestBody SysDeployForm sysDeployForm) {
+        return toAjax(sysDeployFormService.insertSysDeployForm(sysDeployForm));
     }
 
 }

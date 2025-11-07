@@ -1,7 +1,8 @@
 package com.nexus.flowable.mapper;
 
+
 import com.nexus.flowable.domain.SysDeployForm;
-import com.nexus.flowable.domain.SysForm;
+import com.nexus.flowable.domain.FormTemplate;
 
 import java.util.List;
 
@@ -68,5 +69,5 @@ public interface SysDeployFormMapper
      * @param deployId
      * @return
      */
-    SysForm selectSysDeployFormByDeployId(String deployId);
+    FormTemplate selectSysDeployFormByDeployId(String deployId);
 }

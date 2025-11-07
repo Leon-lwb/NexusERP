@@ -20,7 +20,8 @@ export default defineConfig(({ mode, command }) => {
         // 设置路径
         '~': path.resolve(__dirname, './'),
         // 设置别名
-        '@': path.resolve(__dirname, './src')
+        '@': path.resolve(__dirname, './src'),
+        '@lib': path.resolve(__dirname, './lib')
       },
       // https://cn.vitejs.dev/config/#resolve-extensions
       extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue']
@@ -38,6 +39,9 @@ export default defineConfig(({ mode, command }) => {
           entryFileNames: 'static/js/[name]-[hash].js',
           assetFileNames: 'static/[ext]/[name]-[hash].[ext]'
         }
+      },
+      commonjsOptions: {
+        include: /node_modules|lib/
       }
     },
     // vite 相关配置
@@ -74,6 +78,11 @@ export default defineConfig(({ mode, command }) => {
           }
         ]
       }
+    },
+    optimizeDeps: {
+      include: [
+        '@lib/vform/designer.umd.js',
+      ]
     }
   }
 })

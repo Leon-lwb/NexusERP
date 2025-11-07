@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.nexus.flowable.mapper.FlowDeployMapper">
     
 
-    <select id="selectDeployList" resultType="com.nexus.flowable.domain.FlowProcDefDto">
+    <select id="selectDeployList" resultType="com.nexus.flowable.domain.dto.FlowProcDefDto">
 
         SELECT
             rp.id_ as id,

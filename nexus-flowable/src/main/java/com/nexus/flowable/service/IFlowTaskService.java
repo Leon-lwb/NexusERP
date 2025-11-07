@@ -1,9 +1,9 @@
 package com.nexus.flowable.service;
 
 import com.nexus.common.core.domain.AjaxResult;
+import com.nexus.flowable.domain.dto.FlowTaskDto;
 import com.nexus.flowable.domain.vo.FlowQueryVo;
 import com.nexus.flowable.domain.vo.FlowTaskVo;
-import org.flowable.task.api.Task;
 
 import java.io.InputStream;
 import java.util.List;
@@ -105,7 +105,7 @@ public interface IFlowTaskService {
      * @param queryVo  请求参数
      * @return
      */
-    AjaxResult myProcess(FlowQueryVo queryVo);
+    List<FlowTaskDto> myProcess(FlowQueryVo queryVo);
 
     /**
      * 取消申请
@@ -129,7 +129,7 @@ public interface IFlowTaskService {
      * @param queryVo  请求参数
      * @return
      */
-    AjaxResult todoList(FlowQueryVo queryVo);
+    List<FlowTaskDto> todoList(FlowQueryVo queryVo);
 
 
     /**
@@ -138,7 +138,7 @@ public interface IFlowTaskService {
      * @param queryVo  请求参数
      * @return
      */
-    AjaxResult finishedList(FlowQueryVo queryVo);
+    List<FlowTaskDto> finishedList(FlowQueryVo queryVo);
 
     /**
      * 流程历史流转记录

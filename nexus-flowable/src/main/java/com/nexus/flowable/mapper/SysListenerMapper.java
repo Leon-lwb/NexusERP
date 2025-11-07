@@ -1,7 +1,8 @@
 package com.nexus.flowable.mapper;
 
-import java.util.List;
 import com.nexus.flowable.domain.SysListener;
+
+import java.util.List;
 
 /**
  * 流程监听Mapper接口

@@ -740,7 +740,10 @@ function getCategoryTree() {
   // 确保分类树也只获取启用状态的分类
   listCategory({ status: 1 }).then(response => {
     // 处理分类树数据，确保数据结构符合 el-tree 要求
-    const treeData = proxy.handleTree(response.rows, "categoryId", "parentId");
+    // 修改处理逻辑，适配AjaxResult返回格式
+    const data = response.data || response.rows || []
+    const filteredData = Array.isArray(data) ? data.filter(item => item !== null && item !== undefined) : []
+    const treeData = proxy.handleTree(filteredData, "categoryId", "parentId");
     categoryTree.value = treeData;
     
     console.log('分类树数据:', treeData);

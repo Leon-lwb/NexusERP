@@ -35,7 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
-    <insert id="insertSysExpression" parameterType="SysExpression" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSysExpression" parameterType="com.nexus.flowable.domain.SysExpression" useGeneratedKeys="true" keyProperty="id">
         insert into sys_expression
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="name != null">name,</if>
@@ -61,7 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
     </insert>
 
-    <update id="updateSysExpression" parameterType="SysExpression">
+    <update id="updateSysExpression" parameterType="com.nexus.flowable.domain.SysExpression">
         update sys_expression
         <trim prefix="SET" suffixOverrides=",">
             <if test="name != null">name = #{name},</if>

@@ -43,8 +43,8 @@ import ImageUpload from "@/components/ImageUpload"
 import ImagePreview from "@/components/ImagePreview"
 // 字典标签组件
 import DictTag from '@/components/DictTag'
-// VForm组件
-import VForm from '@/components/vform'
+// 流程全局状态管理
+import modelerStore from '@/components/Process/common/global'
 
 const app = createApp(App)
 
@@ -68,13 +68,14 @@ app.component('ImagePreview', ImagePreview)
 app.component('RightToolbar', RightToolbar)
 app.component('Editor', Editor)
 
+// 注册流程全局状态管理
+app.config.globalProperties.modelerStore = modelerStore.modelerStore
+
 app.use(router)
 app.use(store)
 app.use(plugins)
 app.use(elementIcons)
 app.component('svg-icon', SvgIcon)
-// 注册VForm组件
-app.use(VForm)
 
 directive(app)
 
@@ -84,5 +85,9 @@ app.use(ElementPlus, {
   // 支持 large、default、small
   size: Cookies.get('size') || 'default'
 })
+
+import VForm3 from '@lib/vform/designer.umd.js'  //引入VForm 3库
+import '@lib/vform/designer.style.css'  //引入VForm3样式
+app.use(VForm3)
 
 app.mount('#app')

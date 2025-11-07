@@ -1,25 +1,19 @@
 package com.nexus.flowable.controller;
 
-import java.util.List;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import com.nexus.common.annotation.Log;
 import com.nexus.common.core.controller.BaseController;
 import com.nexus.common.core.domain.AjaxResult;
+import com.nexus.common.core.page.TableDataInfo;
 import com.nexus.common.enums.BusinessType;
+import com.nexus.common.utils.poi.ExcelUtil;
 import com.nexus.flowable.domain.SysListener;
 import com.nexus.flowable.service.ISysListenerService;
-import com.nexus.common.utils.poi.ExcelUtil;
-import com.nexus.common.core.page.TableDataInfo;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 流程监听Controller
@@ -29,8 +23,7 @@ import com.nexus.common.core.page.TableDataInfo;
  */
 @RestController
 @RequestMapping("/system/listener")
-public class SysListenerController extends BaseController
-{
+public class SysListenerController extends BaseController {
     @Autowired
     private ISysListenerService sysListenerService;
 
@@ -39,8 +32,7 @@ public class SysListenerController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:listener:list')")
     @GetMapping("/list")
-    public TableDataInfo list(SysListener sysListener)
-    {
+    public TableDataInfo list(SysListener sysListener) {
         startPage();
         List<SysListener> list = sysListenerService.selectSysListenerList(sysListener);
         return getDataTable(list);
@@ -52,8 +44,7 @@ public class SysListenerController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:listener:export')")
     @Log(title = "流程监听", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, SysListener sysListener)
-    {
+    public void export(HttpServletResponse response, SysListener sysListener) {
         List<SysListener> list = sysListenerService.selectSysListenerList(sysListener);
         ExcelUtil<SysListener> util = new ExcelUtil<SysListener>(SysListener.class);
         util.exportExcel(response, list, "流程监听数据");
@@ -64,8 +55,7 @@ public class SysListenerController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:listener:query')")
     @GetMapping(value = "/{id}")
-    public AjaxResult getInfo(@PathVariable("id") Long id)
-    {
+    public AjaxResult getInfo(@PathVariable("id") Long id) {
         return success(sysListenerService.selectSysListenerById(id));
     }
 
@@ -75,8 +65,7 @@ public class SysListenerController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:listener:add')")
     @Log(title = "流程监听", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody SysListener sysListener)
-    {
+    public AjaxResult add(@RequestBody SysListener sysListener) {
         return toAjax(sysListenerService.insertSysListener(sysListener));
     }
 
@@ -86,8 +75,7 @@ public class SysListenerController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:listener:edit')")
     @Log(title = "流程监听", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody SysListener sysListener)
-    {
+    public AjaxResult edit(@RequestBody SysListener sysListener) {
         return toAjax(sysListenerService.updateSysListener(sysListener));
     }
 
@@ -96,9 +84,8 @@ public class SysListenerController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:listener:remove')")
     @Log(title = "流程监听", businessType = BusinessType.DELETE)
-	@DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable Long[] ids)
-    {
+    @DeleteMapping("/{ids}")
+    public AjaxResult remove(@PathVariable Long[] ids) {
         return toAjax(sysListenerService.deleteSysListenerByIds(ids));
     }
 }

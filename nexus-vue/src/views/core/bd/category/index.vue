@@ -231,9 +231,12 @@ function normalizer(node) {
 function getTreeselect() {
   listCategory().then(response => {
     categoryOptions.value = []
-    const data = { categoryId: 0, categoryName: '主类目', children: [] }
-    data.children = proxy.handleTree(response.rows, "categoryId", "parentId")
-    categoryOptions.value.push(data)
+    // 修改处理逻辑，适配AjaxResult返回格式
+    const data = response.data || response.rows || []
+    const filteredData = Array.isArray(data) ? data.filter(item => item !== null && item !== undefined) : []
+    const treeData = { categoryId: 0, categoryName: '主类目', children: [] }
+    treeData.children = proxy.handleTree(filteredData, "categoryId", "parentId")
+    categoryOptions.value.push(treeData)
   })
 }
 
@@ -241,7 +244,10 @@ function getTreeselect() {
 function getList() {
   loading.value = true
   listCategory(queryParams.value).then(response => {
-    categoryList.value = proxy.handleTree(response.rows, "categoryId", "parentId")
+    // 修改处理逻辑，适配AjaxResult返回格式
+    const data = response.data || response.rows || []
+    const filteredData = Array.isArray(data) ? data.filter(item => item !== null && item !== undefined) : []
+    categoryList.value = proxy.handleTree(filteredData, "categoryId", "parentId")
     loading.value = false
   })
 }
@@ -319,10 +325,43 @@ function handleView(row) {
   })
 }
 
+/** 计算分类层级 */
+function calculateLevel(parentId) {
+  if (!parentId || parentId === 0) {
+    return 1
+  }
+  
+  // 在categoryOptions中查找父节点
+  const findLevel = (nodes, id) => {
+    for (const node of nodes) {
+      if (node.categoryId === id) {
+        return 2 // 父节点存在且不是根节点，所以当前节点是第2层
+      }
+      if (node.children && node.children.length > 0) {
+        const childResult = findLevel(node.children, id)
+        if (childResult > 0) {
+          return childResult + 1
+        }
+      }
+    }
+    return 0
+  }
+  
+  const level = findLevel(categoryOptions.value, parentId)
+  return level > 0 ? level : 1
+}
+
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["categoryRef"].validate(valid => {
     if (valid) {
+      // 计算并设置level_num
+      if (form.value.parentId !== null && form.value.parentId !== undefined) {
+        form.value.levelNum = calculateLevel(form.value.parentId)
+      } else {
+        form.value.levelNum = 1
+      }
+      
       if (form.value.categoryId != null) {
         updateCategory(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")

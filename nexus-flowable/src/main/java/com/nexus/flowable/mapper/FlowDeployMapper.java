@@ -1,6 +1,6 @@
 package com.nexus.flowable.mapper;
 
-import com.nexus.flowable.domain.FlowProcDefDto;
+import com.nexus.flowable.domain.dto.FlowProcDefDto;
 
 import java.util.List;
 
@@ -15,6 +15,7 @@ public interface FlowDeployMapper {
 
     /**
      * 流程定义列表
+     * 
      * @param name
      * @return
      */

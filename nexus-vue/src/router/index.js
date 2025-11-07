@@ -85,83 +85,53 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/flowable/definition/model',
+    path: '/flowable',
     component: Layout,
     hidden: true,
     children: [
       {
-        path: '',
-        component: () => import('@/views/flowable/definition/model'),
+        path: 'definition/model/',
+        component: () => import('@/views/flowable/definition/model.vue'),
         name: 'Model',
+        hidden: true,
         meta: { title: '流程设计', icon: '' }
-      }
-    ]
-  },
-  {
-    path: '/flowable/task/finished/detail',
-    component: Layout,
-    hidden: true,
-    children: [
+      },
       {
-        path: '',
-        component: () => import('@/views/flowable/task/finished/detail/index'),
+        path: 'task/finished/detail/index',
+        component: () => import('@/views/flowable/task/finished/detail/index.vue'),
         name: 'FinishedRecord',
+        hidden: true,
         meta: { title: '流程详情', icon: '' }
-      }
-    ]
-  },
-  {
-    path: '/flowable/task/myProcess/detail',
-    component: Layout,
-    hidden: true,
-    children: [
+      },
       {
-        path: '',
-        component: () => import('@/views/flowable/task/myProcess/detail/index'),
+        path: 'task/myProcess/detail/index',
+        component: () => import('@/views/flowable/task/myProcess/detail/index.vue'),
         name: 'MyProcessRecord',
+        hidden: true,
         meta: { title: '流程详情', icon: '' }
-      }
-    ]
-  },
-  {
-    path: '/flowable/task/myProcess/send',
-    component: Layout,
-    hidden: true,
-    children: [
+      },
       {
-        path: '',
-        component: () => import('@/views/flowable/task/myProcess/send/index'),
+        path: 'task/myProcess/send/index',
+        component: () => import('@/views/flowable/task/myProcess/send/index.vue'),
         name: 'SendRecord',
+        hidden: true,
         meta: { title: '流程发起', icon: '' }
-      }
-    ]
-  },
-  {
-    path: '/flowable/task/todo/detail',
-    component: Layout,
-    hidden: true,
-    children: [
+      },
       {
-        path: '',
-        component: () => import('@/views/flowable/task/todo/detail/index'),
+        path: 'task/todo/detail/index',
+        component: () => import('@/views/flowable/task/todo/detail/index.vue'),
         name: 'TodoRecord',
+        hidden: true,
         meta: { title: '流程处理', icon: '' }
+      },
+      {
+        path: 'form',
+        component: () => import('@/views/form/template/index.vue'),
+        name: 'FormTemplate',
+        meta: { title: '表单配置', icon: '' }
       }
     ]
   },
-  {
-    path: '/flowable/task/flowForm',
-    component: Layout,
-    hidden: true,
-    children: [
-      {
-        path: '',
-        component: () => import('@/views/flowable/task/flowForm/index'),
-        name: 'FlowForm',
-        meta: { title: '流程表单', icon: '' }
-      }
-    ]
-  }
 ]
 
 // 动态路由，基于用户权限动态去加载
@@ -289,57 +259,6 @@ export const dynamicRoutes = [
         component: () => import('@/views/core/so/orderheader/form'),
         name: 'OrderForm',
         meta: { title: '销售表单', activeMenu: '/core/so/orderheader' }
-      }
-    ]
-  },
-  {
-    path: '/workflow',
-    component: Layout,
-    redirect: '/workflow/definition',
-    meta: { title: '工作流', icon: 'nested' },
-    children: [
-      {
-        path: 'definition',
-        component: () => import('@/views/flowable/definition/index'),
-        name: 'WorkflowDefinition',
-        meta: { title: '流程定义', icon: 'button' }
-      },
-      {
-        path: 'task',
-        component: () => import('@/views/flowable/task/todo/index'),
-        name: 'WorkflowTask',
-        meta: { title: '待办任务', icon: 'button' }
-      },
-      {
-        path: 'task/finished',
-        component: () => import('@/views/flowable/task/finished/index'),
-        name: 'WorkflowFinished',
-        meta: { title: '已办任务', icon: 'button' }
-      },
-      {
-        path: 'task/myProcess',
-        component: () => import('@/views/flowable/task/myProcess/index'),
-        name: 'WorkflowMyProcess',
-        meta: { title: '我的流程', icon: 'button' }
-      },
-      {
-        path: 'task/form',
-        component: () => import('@/views/flowable/task/form/index'),
-        name: 'WorkflowForm',
-        meta: { title: '流程表单', activeMenu: '/workflow/task' },
-        hidden: true
-      },
-      {
-        path: 'expression',
-        component: () => import('@/views/flowable/expression/index'),
-        name: 'WorkflowExpression',
-        meta: { title: '流程表达式', icon: 'button' }
-      },
-      {
-        path: 'listener',
-        component: () => import('@/views/flowable/listener/index'),
-        name: 'WorkflowListener',
-        meta: { title: '流程监听器', icon: 'button' }
       }
     ]
   }
