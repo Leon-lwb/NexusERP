@@ -9,7 +9,9 @@
             <result property="soNo"    column="so_no"    />
             <result property="coId"    column="co_id"    />
             <result property="clientId"    column="client_id"    />
+            <result property="clientName"    column="client_name"    />
             <result property="salesRepId"    column="sales_rep_id"    />
+            <result property="salesRepName"    column="sales_rep_name"    />
             <result property="orderDate"    column="order_date"    />
             <result property="promiseDate"    column="promise_date"    />
             <result property="requestedDate"    column="requested_date"    />
@@ -98,7 +100,7 @@
         </resultMap>
 
     <sql id="selectSoSalesOrderHeaderVo">
-        select so_id, so_no, co_id, client_id, sales_rep_id, order_date, promise_date, requested_date, delivery_address_id, invoice_address_id, delivery_address, invoice_address, payment_terms, currency, exchange_rate, total_amount, tax_amount, discount_amount, discount_rate, credit_status, credit_check_time, credit_blocked_by, order_status, project_id, is_pa_enabled, confirmed_time, fulfilled_time, closed_time, cancelled_time, cancelled_reason, sales_org_id, distribution_channel, customer_ref_no, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from so_sales_order_header
+        select so_id, so_no, co_id, client_id, client_name, sales_rep_id, sales_rep_name, order_date, promise_date, requested_date, delivery_address_id, invoice_address_id, delivery_address, invoice_address, payment_terms, currency, exchange_rate, total_amount, tax_amount, discount_amount, discount_rate, credit_status, credit_check_time, credit_blocked_by, order_status, project_id, is_pa_enabled, confirmed_time, fulfilled_time, closed_time, cancelled_time, cancelled_reason, sales_org_id, distribution_channel, customer_ref_no, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from so_sales_order_header
     </sql>
 
     <select id="selectSoSalesOrderHeaderList" parameterType="SoSalesOrderHeader" resultMap="SoSalesOrderHeaderResult">
@@ -107,7 +109,9 @@
                         <if test="soNo != null  and soNo != ''"> and so_no = #{soNo}</if>
                         <if test="coId != null "> and co_id = #{coId}</if>
                         <if test="clientId != null "> and client_id = #{clientId}</if>
+                         <if test="clientName != null  and clientName != ''"> and client_name = #{clientName}</if>
                         <if test="salesRepId != null "> and sales_rep_id = #{salesRepId}</if>
+                         <if test="salesRepName != null  and salesRepName != ''"> and sales_rep_name = #{salesRepName}</if>
                         <if test="orderDate != null "> and order_date = #{orderDate}</if>
                         <if test="promiseDate != null "> and promise_date = #{promiseDate}</if>
                         <if test="requestedDate != null "> and requested_date = #{requestedDate}</if>
@@ -119,7 +123,7 @@
     </select>
 
     <select id="selectSoSalesOrderHeaderBySoId" parameterType="Long" resultMap="SoSalesOrderHeaderSoSalesOrderLineResult">
-            select so_id, so_no, co_id, client_id, sales_rep_id, order_date, promise_date, requested_date, delivery_address_id, invoice_address_id, delivery_address, invoice_address, payment_terms, currency, exchange_rate, total_amount, tax_amount, discount_amount, discount_rate, credit_status, credit_check_time, credit_blocked_by, order_status, project_id, is_pa_enabled, confirmed_time, fulfilled_time, closed_time, cancelled_time, cancelled_reason, sales_org_id, distribution_channel, customer_ref_no, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time
+            select so_id, so_no, co_id, client_id, client_name, sales_rep_id, sales_rep_name, order_date, promise_date, requested_date, delivery_address_id, invoice_address_id, delivery_address, invoice_address, payment_terms, currency, exchange_rate, total_amount, tax_amount, discount_amount, discount_rate, credit_status, credit_check_time, credit_blocked_by, order_status, project_id, is_pa_enabled, confirmed_time, fulfilled_time, closed_time, cancelled_time, cancelled_reason, sales_org_id, distribution_channel, customer_ref_no, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time
             from so_sales_order_header
             where so_id = #{soId}
     </select>
@@ -136,7 +140,9 @@
                     <if test="soNo != null and soNo != ''">so_no,</if>
                     <if test="coId != null">co_id,</if>
                     <if test="clientId != null">client_id,</if>
+                    <if test="clientName != null and clientName != ''">client_name,</if>
                     <if test="salesRepId != null">sales_rep_id,</if>
+                    <if test="salesRepName != null and salesRepName != ''">sales_rep_name,</if>
                     <if test="orderDate != null">order_date,</if>
                     <if test="promiseDate != null">promise_date,</if>
                     <if test="requestedDate != null">requested_date,</if>
@@ -179,7 +185,9 @@
                     <if test="soNo != null and soNo != ''">#{soNo},</if>
                     <if test="coId != null">#{coId},</if>
                     <if test="clientId != null">#{clientId},</if>
+                    <if test="clientName != null and clientName != ''">#{clientName},</if>
                     <if test="salesRepId != null">#{salesRepId},</if>
+                    <if test="salesRepName != null and salesRepName != ''">#{salesRepName},</if>
                     <if test="orderDate != null">#{orderDate},</if>
                     <if test="promiseDate != null">#{promiseDate},</if>
                     <if test="requestedDate != null">#{requestedDate},</if>
@@ -226,7 +234,9 @@
                     <if test="soNo != null and soNo != ''">so_no = #{soNo},</if>
                     <if test="coId != null">co_id = #{coId},</if>
                     <if test="clientId != null">client_id = #{clientId},</if>
+                    <if test="clientName != null and clientName != ''">client_name = #{clientName},</if>
                     <if test="salesRepId != null">sales_rep_id = #{salesRepId},</if>
+                    <if test="salesRepName != null and salesRepName != ''">sales_rep_name = #{salesRepName},</if>
                     <if test="orderDate != null">order_date = #{orderDate},</if>
                     <if test="promiseDate != null">promise_date = #{promiseDate},</if>
                     <if test="requestedDate != null">requested_date = #{requestedDate},</if>

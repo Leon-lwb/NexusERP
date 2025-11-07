@@ -4,8 +4,8 @@
       <el-form-item label="客户订单号" prop="coNo">
         <el-input v-model="queryParams.coNo" placeholder="请输入客户订单号" clearable @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="客户ID" prop="clientId">
-        <el-input v-model="queryParams.clientId" placeholder="请输入客户ID" clearable @keyup.enter="handleQuery" />
+      <el-form-item label="客户名称" prop="clientName">
+        <el-input v-model="queryParams.clientName" placeholder="请输入客户名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="下单日期" prop="orderDate">
         <el-date-picker clearable v-model="queryParams.orderDate" type="date" value-format="YYYY-MM-DD"
@@ -65,7 +65,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="客户订单ID" align="center" prop="coId" />
       <el-table-column label="客户订单号" align="center" prop="coNo" />
-      <el-table-column label="客户ID" align="center" prop="clientId" />
+      <el-table-column label="客户名称" align="center" prop="clientName" />
       <el-table-column label="客户下单日期" align="center" prop="orderDate" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
@@ -380,7 +380,7 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     coNo: null,
-    clientId: null,
+    clientName: null,
     selectUser: null,
     orderDate: null,
     status: null,
@@ -446,7 +446,7 @@ function reset() {
     attr2: null,
     salesRepId: null,
     salesRepName: null,
-    attr4: null,
+    sales_rep_name: null,
     createBy: null,
     createTime: null,
     updateBy: null,
@@ -511,6 +511,7 @@ function handleUpdate(row) {
         if (userResponse.rows && userResponse.rows.length > 0) {
           const user = userResponse.rows[0];
           form.value.salesRepName = user.userName;
+          form.value.sales_rep_name = user.userName; // 添加这一行以确保新字段也被填充
         }
       }).catch(() => {
         console.warn('获取销售代表名称失败');
@@ -550,6 +551,7 @@ function handleView(row) {
         if (userResponse.rows && userResponse.rows.length > 0) {
           const user = userResponse.rows[0];
           form.value.salesRepName = user.userName;
+          form.value.sales_rep_name = user.userName; // 添加这一行以确保新字段也被填充
         }
       }).catch(() => {
         console.warn('获取销售代表名称失败');
@@ -700,6 +702,7 @@ function openUserSelect() {
 function selectUser(row) {
   form.value.salesRepId = row.userId
   form.value.salesRepName = row.userName
+  form.value.sales_rep_name = row.userName // 添加这一行以确保保存到新字段
   userVisible.value = false
 }
 

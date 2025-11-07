@@ -4,24 +4,21 @@
 <h1 align="center" style="margin: 30px 0 30px; font-weight: bold;">NexusERP</h1>
 <h4 align="center">基于若依SpringBoot+Vue前后端分离的Java快速开发框架</h4>
 <p align="center">
-	<a href="https://gitee.com/y_project/RuoYi-Vue/stargazers"><img src="https://gitee.com/y_project/RuoYi-Vue/badge/star.svg?theme=dark"></a>
-	<a href="https://gitee.com/y_project/RuoYi-Vue"><img src="https://img.shields.io/badge/RuoYi-v3.9.0-brightgreen.svg"></a>
-	<a href="https://gitee.com/y_project/RuoYi-Vue/blob/master/LICENSE"><img src="https://img.shields.io/github/license/mashape/apistatus.svg"></a>
+	<a href="https://gitee.com/helloworld_wh18/nexus-erp"><img src="https://gitee.com/helloworld_wh18/nexus-erp/badge/star.svg?theme=dark"></a>
+	<a href="https://gitee.com/helloworld_wh18/nexus-erp"><img src="https://img.shields.io/badge/RuoYi-v3.9.0-brightgreen.svg"></a>
+	<a href="https://gitee.com/helloworld_wh18/nexus-erp/blob/master/LICENSE"><img src="https://img.shields.io/github/license/mashape/apistatus.svg"></a>
 </p>
 
 ## 平台简介
 
-若依是一套全部开源的快速开发平台，毫无保留给个人及企业免费使用。
+NEXUS-ERP是一套全部开源的ERP企业管理平台，毫无保留给个人及企业免费使用。
 
 * 前端采用Vue、Element UI。
 * 后端采用Spring Boot、Spring Security、Redis & Jwt。
 * 权限认证使用Jwt，支持多终端认证系统。
 * 支持加载动态权限菜单，多方式轻松权限控制。
 * 高效率开发，使用代码生成器可以一键生成前后端代码。
-* 提供了技术栈（[Vue3](https://v3.cn.vuejs.org) [Element Plus](https://element-plus.org/zh-CN) [Vite](https://cn.vitejs.dev)）版本[RuoYi-Vue3](https://gitcode.com/yangzongzhuan/RuoYi-Vue3)，保持同步更新。
-* 提供了单应用版本[RuoYi-Vue-fast](https://gitcode.com/yangzongzhuan/RuoYi-Vue-fast)，Oracle版本[RuoYi-Vue-Oracle](https://gitcode.com/yangzongzhuan/RuoYi-Vue-Oracle)，保持同步更新。
-* 不分离版本，请移步[RuoYi](https://gitee.com/y_project/RuoYi)，微服务版本，请移步[RuoYi-Cloud](https://gitee.com/y_project/RuoYi-Cloud)
-* 阿里云折扣场：[点我进入](http://aly.nexus.vip)，腾讯云秒杀场：[点我进入](http://txy.nexus.vip)&nbsp;&nbsp;
+* 集成了flowable流程业务。
 
 ## 内置功能
 
@@ -43,13 +40,20 @@
 16. 缓存监控：对系统的缓存信息查询，命令统计等。
 17. 在线构建器：拖动表单元素生成相应的HTML代码。
 18. 连接池监视：监视当前系统数据库连接池状态，可进行分析SQL找出系统性能瓶颈。
+19. 主数据：系统基础数据维护。
+20. 销售管理：销售订单、销售合同、销售订单等
+21. 采购管理：采购订单、采购合同、采购订单等
+22. 库存管理：库存盘点、库存调拨等
+23. 生产管理：生产订单、生产合同、生产订单等
+24. 流程管理：流程定义、流程实例、流程任务、流程监控等
+25. 任务管理：任务列表、任务分配、任务监控等
 
 ## 在线体验
 
 - admin/admin123  
-- 陆陆续续收到一些打赏，为了更好的体验已用于演示服务器升级。谢谢各位小伙伴。
 
-演示地址：
+演示地址：暂时下架
+
 文档地址：
 ## 演示图
 

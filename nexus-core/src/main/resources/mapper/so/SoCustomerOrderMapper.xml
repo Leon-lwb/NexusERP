@@ -8,6 +8,7 @@
             <result property="coId"    column="co_id"    />
             <result property="coNo"    column="co_no"    />
             <result property="clientId"    column="client_id"    />
+            <result property="clientName"    column="client_name"    />
             <result property="contactName"    column="contact_name"    />
             <result property="contactPhone"    column="contact_phone"    />
             <result property="orderDate"    column="order_date"    />
@@ -22,7 +23,7 @@
             <result property="clientCode"    column="client_code"    />
             <result property="attr2"    column="attr2"    />
             <result property="salesRepId"    column="sales_rep_id"    />
-            <result property="attr4"    column="attr4"    />
+            <result property="salesRepName"    column="sales_rep_name"    />
             <result property="createBy"    column="create_by"    />
             <result property="createTime"    column="create_time"    />
             <result property="updateBy"    column="update_by"    />
@@ -30,14 +31,14 @@
     </resultMap>
 
     <sql id="selectSoCustomerOrderVo">
-        select co_id, co_no, client_id, contact_name, contact_phone, order_date, requested_date, currency, total_amount, status, priority, customer_po_no, source_channel, remark, client_code, attr2, sales_rep_id, attr4, create_by, create_time, update_by, update_time from so_customer_order
+        select co_id, co_no, client_id, client_name, contact_name, contact_phone, order_date, requested_date, currency, total_amount, status, priority, customer_po_no, source_channel, remark, client_code, attr2, sales_rep_id, sales_rep_name, create_by, create_time, update_by, update_time from so_customer_order
     </sql>
 
     <select id="selectSoCustomerOrderList" parameterType="SoCustomerOrder" resultMap="SoCustomerOrderResult">
         <include refid="selectSoCustomerOrderVo"/>
         <where>
                         <if test="coNo != null  and coNo != ''"> and co_no = #{coNo}</if>
-                        <if test="clientId != null "> and client_id = #{clientId}</if>
+                        <if test="clientName != null "> and client_name = #{clientName}</if>
                         <if test="orderDate != null "> and order_date = #{orderDate}</if>
                         <if test="status != null  and status != ''"> and status = #{status}</if>
                         <if test="priority != null "> and priority = #{priority}</if>
@@ -56,6 +57,7 @@
         <trim prefix="(" suffix=")" suffixOverrides=",">
                     <if test="coNo != null and coNo != ''">co_no,</if>
                     <if test="clientId != null">client_id,</if>
+                    <if test="clientName != null and clientName != ''">client_name,</if>
                     <if test="contactName != null">contact_name,</if>
                     <if test="contactPhone != null">contact_phone,</if>
                     <if test="orderDate != null">order_date,</if>
@@ -70,7 +72,7 @@
                     <if test="clientCode != null">client_code,</if>
                     <if test="attr2 != null">attr2,</if>
                     <if test="salesRepId != null">sales_rep_id,</if>
-                    <if test="attr4 != null">attr4,</if>
+                    <if test="salesRepName != null">sales_rep_name,</if>
                     <if test="createBy != null">create_by,</if>
                     <if test="createTime != null">create_time,</if>
                     <if test="updateBy != null">update_by,</if>
@@ -79,6 +81,7 @@
         <trim prefix="values (" suffix=")" suffixOverrides=",">
                     <if test="coNo != null and coNo != ''">#{coNo},</if>
                     <if test="clientId != null">#{clientId},</if>
+                    <if test="clientName != null and clientName != ''">#{clientName},</if>
                     <if test="contactName != null">#{contactName},</if>
                     <if test="contactPhone != null">#{contactPhone},</if>
                     <if test="orderDate != null">#{orderDate},</if>
@@ -93,7 +96,7 @@
                     <if test="clientCode != null">#{clientCode},</if>
                     <if test="attr2 != null">#{attr2},</if>
                     <if test="salesRepId != null">#{salesRepId},</if>
-                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="salesRepName != null">#{salesRepName},</if>
                     <if test="createBy != null">#{createBy},</if>
                     <if test="createTime != null">#{createTime},</if>
                     <if test="updateBy != null">#{updateBy},</if>
@@ -106,6 +109,7 @@
         <trim prefix="SET" suffixOverrides=",">
                     <if test="coNo != null and coNo != ''">co_no = #{coNo},</if>
                     <if test="clientId != null">client_id = #{clientId},</if>
+                    <if test="clientName != null and clientName != ''">client_name = #{clientName},</if>
                     <if test="contactName != null">contact_name = #{contactName},</if>
                     <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
                     <if test="orderDate != null">order_date = #{orderDate},</if>
@@ -120,7 +124,7 @@
                     <if test="clientCode != null">client_code = #{clientCode},</if>
                     <if test="attr2 != null">attr2 = #{attr2},</if>
                     <if test="salesRepId != null">sales_rep_id = #{salesRepId},</if>
-                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="salesRepName != null">sales_rep_name = #{salesRepName},</if>
                     <if test="createBy != null">create_by = #{createBy},</if>
                     <if test="createTime != null">create_time = #{createTime},</if>
                     <if test="updateBy != null">update_by = #{updateBy},</if>

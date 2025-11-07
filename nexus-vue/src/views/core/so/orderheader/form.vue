@@ -1,4 +1,3 @@
-form.vue
 <template>
     <div class="app-container">
         <el-card>
@@ -22,19 +21,19 @@ form.vue
                                 <el-input v-model="form.soNo" placeholder="请输入销售订单编号" />
                             </el-form-item>
                         </el-col>
-                        <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                        <!-- <el-col :xs="24" :sm="12" :md="8" :lg="6">
                             <el-form-item label="来源客户订单" prop="coId">
                                 <el-input v-model="form.coId" placeholder="请输入来源客户订单" />
                             </el-form-item>
-                        </el-col>
+                        </el-col> -->
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
-                            <el-form-item label="来源客户ID" prop="clientId">
-                                <el-input v-model="form.clientId" placeholder="请输入来源客户ID" />
+                            <el-form-item label="来源客户" prop="clientName">
+                                <el-input v-model="form.clientName" placeholder="请输入来源客户" />
                             </el-form-item>
                         </el-col>
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
-                            <el-form-item label="销售代表" prop="salesRepId">
-                                <el-input v-model="form.salesRepId" placeholder="请输入销售代表" />
+                            <el-form-item label="销售代表" prop="salesRepName">
+                                <el-input v-model="form.salesRepName" placeholder="请输入销售代表" />
                             </el-form-item>
                         </el-col>
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
@@ -459,8 +458,8 @@ const rules = {
     soNo: [
         { required: true, message: "销售订单编号不能为空", trigger: "blur" }
     ],
-    clientId: [
-        { required: true, message: "来源客户ID不能为空", trigger: "blur" }
+    clientName: [
+        { required: true, message: "来源客户不能为空", trigger: "blur" }
     ],
     orderDate: [
         { required: true, message: "订单生成日期不能为空", trigger: "blur" }
@@ -520,8 +519,8 @@ function reset() {
         soId: null,
         soNo: null,
         coId: null,
-        clientId: null,
-        salesRepId: null,
+        clientName: null,
+        salesRepName: null,
         orderDate: null,
         promiseDate: null,
         requestedDate: null,
@@ -551,10 +550,11 @@ function reset() {
         distributionChannel: null,
         customerRefNo: null,
         remark: null,
+        client_name: null,
+        sales_rep_name: null,
         attr1: null,
         attr2: null,
         attr3: null,
-        attr4: null,
         createBy: null,
         createTime: null,
         updateBy: null,

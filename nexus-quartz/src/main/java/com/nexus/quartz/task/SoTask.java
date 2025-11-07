@@ -51,8 +51,11 @@ public class SoTask {
                 
                 // 基本字段映射
                 salesOrderHeader.setCoId(customerOrder.getCoId());
-                salesOrderHeader.setSoNo(String.valueOf(System.currentTimeMillis()));
+                salesOrderHeader.setSoNo(customerOrder.getCoNo());
                 salesOrderHeader.setClientId(customerOrder.getClientId());
+                salesOrderHeader.setClientName(customerOrder.getClientName());
+                salesOrderHeader.setSalesRepId(customerOrder.getSalesRepId());
+                salesOrderHeader.setSalesRepName(customerOrder.getSalesRepName());
                 salesOrderHeader.setOrderDate(customerOrder.getOrderDate());
                 salesOrderHeader.setRequestedDate(customerOrder.getRequestedDate());
                 salesOrderHeader.setCurrency(customerOrder.getCurrency());

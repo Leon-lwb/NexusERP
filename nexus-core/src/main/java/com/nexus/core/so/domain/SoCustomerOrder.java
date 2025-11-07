@@ -35,6 +35,11 @@ private static final long serialVersionUID = 1L;
     /** 客户ID */
     @Excel(name = "客户ID")
     private Long clientId;
+    
+    /** 客户名称 */
+    @Excel(name = "客户名称")
+    private String clientName;
+    
     /** 联系人 */
     private String contactName;
     /** 联系人电话 */
@@ -66,8 +71,8 @@ private static final long serialVersionUID = 1L;
     private String clientCode;
     /** 预留字段2 */
     private String attr2;
-    /** 销售代表 */
+    /** 销售代表id */
     private Long salesRepId;
-    /** 预留字段4 */
-    private Long attr4;
+    /** 销售代表 */
+    private String salesRepName;
 }

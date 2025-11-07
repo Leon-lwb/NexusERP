@@ -17,17 +17,17 @@
                         @keyup.enter="handleQuery"
                     />
                   </el-form-item>
-                  <el-form-item label="来源客户ID" prop="clientId">
+                  <el-form-item label="来源客户" prop="clientName">
                     <el-input
-                        v-model="queryParams.clientId"
-                        placeholder="请输入来源客户ID"
+                        v-model="queryParams.clientName"
+                        placeholder="请输入来源客户"
                         clearable
                         @keyup.enter="handleQuery"
                     />
                   </el-form-item>
-                  <el-form-item label="销售代表" prop="salesRepId">
+                  <el-form-item label="销售代表" prop="salesRepName">
                     <el-input
-                        v-model="queryParams.salesRepId"
+                        v-model="queryParams.salesRepName"
                         placeholder="请输入销售代表"
                         clearable
                         @keyup.enter="handleQuery"
@@ -154,10 +154,10 @@
     <el-table v-loading="loading" :data="orderheaderList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
               <el-table-column label="序号" type="index" width="50" align="center" prop="soId" />
-              <el-table-column label="销售订单编号" align="center" prop="soNo" />
-              <el-table-column label="来源客户订单" align="center" prop="coId" />
-              <el-table-column label="来源客户ID" align="center" prop="clientId" />
-              <el-table-column label="销售代表" align="center" prop="salesRepId" />
+              <el-table-column label="销售订单编号" align="center" prop="soNo" width="150"/>
+              <!-- <el-table-column label="来源客户订单" align="center" prop="coId" /> -->
+              <el-table-column label="来源客户" align="center" prop="clientName" />
+              <el-table-column label="销售代表" align="center" prop="salesRepName" />
               <el-table-column label="订单生成日期" align="center" prop="orderDate" width="180">
                 <template #default="scope">
                   <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
@@ -273,8 +273,8 @@ import { useRouter } from 'vue-router'
       pageSize: 10,
                     soNo: null,
                     coId: null,
-                    clientId: null,
-                    salesRepId: null,
+                    clientName: null,
+                    salesRepName: null,
                     orderDate: null,
                     promiseDate: null,
                     requestedDate: null,

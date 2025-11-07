@@ -39,9 +39,19 @@ private static final long serialVersionUID = 1L;
     /** 来源客户ID */
     @Excel(name = "来源客户ID")
     private Long clientId;
+    
+    /** 客户名称 */
+    @Excel(name = "客户名称")
+    private String clientName;
+    
     /** 销售代表 */
     @Excel(name = "销售代表")
     private Long salesRepId;
+    
+    /** 销售代表名称 */
+    @Excel(name = "销售代表名称")
+    private String salesRepName;
+    
     /** 订单生成日期 */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "订单生成日期", width = 30, dateFormat = "yyyy-MM-dd")
