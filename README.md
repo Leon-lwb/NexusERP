@@ -52,7 +52,7 @@ NEXUS-ERP是一套全部开源的ERP企业管理平台，毫无保留给个人�
 
 - admin/admin123  
 
-演示地址：暂时下架
+演示地址：http://nexuserp.website/
 
 文档地址：
 ## 演示图

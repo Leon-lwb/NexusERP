@@ -42,3 +42,12 @@ export function delMeasure(uomId) {
     method: 'delete'
   })
 }
+
+// 查询基础单位不分页
+export function listMeasureAll(query) {
+  return request({
+    url: '/bd/measure/all',
+    method: 'get',
+    params: query
+  })
+}

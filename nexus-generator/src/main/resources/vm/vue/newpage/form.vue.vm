@@ -294,7 +294,7 @@
 
   // 取消按钮
   function cancel() {
-    const obj = { path: 'core/${moduleName}/${businessName}' }
+    const obj = { path: '/core/${moduleName}/${businessName}' }
     proxy.$tab.closeOpenPage(obj)
   }
 

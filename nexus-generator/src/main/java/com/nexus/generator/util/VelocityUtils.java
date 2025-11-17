@@ -173,7 +173,7 @@ public class VelocityUtils
 
         } else if (GenConstants.TPL_NEW_CRUD.equals(tplCategory)) {
             templates.add("vm/vue/newpage/idnex.vue.vm");
-            templates.add("vm/vue/newpage/form.vue.vm");
+            templates.add("vm/vue/newpage/form_one.vue.vm");
             templates.add("vm/uniapp/uni-index.vue.vm");
             templates.add("vm/uniapp/uni-table-index.vue.vm");
             templates.add("vm/uniapp/uni-add.vue.vm");

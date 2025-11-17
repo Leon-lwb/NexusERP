@@ -278,7 +278,7 @@ import { useRouter } from 'vue-router'
           return;
         }
         // 从列表中找到选中的记录
-        const selectedRow = ${businessName}List.value.find(item => item.bomId == ids.value[0]);
+        const selectedRow = ${businessName}List.value.find(item => item.${pkColumn.javaField} == ids.value[0]);
         if (!selectedRow) {
           proxy.$modal.msgWarning("未找到选中的数据");
           return;
@@ -315,7 +315,7 @@ import { useRouter } from 'vue-router'
           return;
         }
         // 从列表中找到选中的记录
-        const selectedRow = ${businessName}List.value.find(item => item.bomId == ids.value[0]);
+        const selectedRow = ${businessName}List.value.find(item => item.${pkColumn.javaField} == ids.value[0]);
         if (!selectedRow) {
           proxy.$modal.msgWarning("未找到选中的数据");
           return;

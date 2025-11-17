@@ -88,4 +88,13 @@ public class BdUnitOfMeasureServiceImpl extends ServiceImpl<BdUnitOfMeasureMappe
     public int deleteBdUnitOfMeasureByUomId(Long uomId) {
         return bdUnitOfMeasureMapper.deleteBdUnitOfMeasureByUomId(uomId);
     }
+
+    /**
+     * 查询所有计量单位
+     * @return
+     */
+    @Override
+    public List<BdUnitOfMeasure> selectBdUnitOfMeasureAll() {
+        return bdUnitOfMeasureMapper.selectBdUnitOfMeasureAll();
+    }
 }

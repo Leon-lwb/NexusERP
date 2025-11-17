@@ -110,4 +110,15 @@ public class BdUnitOfMeasureController extends BaseController
     {
         return toAjax(bdUnitOfMeasureService.deleteBdUnitOfMeasureByUomIds(uomIds));
     }
+
+    /**
+     * 查询所有基本单位不分页
+     */
+    @ApiOperation("查询所有基本单位不分页")
+    @PreAuthorize("@ss.hasPermi('bd:measure:list')")
+    @GetMapping("/all")
+    public AjaxResult all()
+    {
+        return success(bdUnitOfMeasureService.selectBdUnitOfMeasureAll());
+    }
 }

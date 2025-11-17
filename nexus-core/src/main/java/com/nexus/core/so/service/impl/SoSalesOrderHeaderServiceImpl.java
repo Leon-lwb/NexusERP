@@ -119,6 +119,7 @@ public class SoSalesOrderHeaderServiceImpl extends ServiceImpl<SoSalesOrderHeade
             List<SoSalesOrderLine> list = new ArrayList<SoSalesOrderLine>();
             for (SoSalesOrderLine soSalesOrderLine : soSalesOrderLineList) {
                 soSalesOrderLine.setSoId(soId);
+                soSalesOrderLine.setCreateTime(DateUtils.getNowDate());
                 list.add(soSalesOrderLine);
             }
             if (list.size() > 0) {

@@ -440,7 +440,7 @@
 <script setup name="Material">
 import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial } from "@/api/core/bd/material"
 import { listCategory, getCategory, addCategory, updateCategory,delCategory,listDeptExcludeChild,getAllChildrenIds } from "@/api/core/bd/category"
-import { listMeasure } from "@/api/core/bd/measure"
+import { listMeasureAll } from "@/api/core/bd/measure"
 import { genCode } from "@/api/system/autocode/rule"
 import { debounce } from 'lodash'
 
@@ -797,8 +797,8 @@ function handleAutoGenChange(autoGenFlag){
 
 /** 查询计量单位列表 */
 function getUomList() {
-  listMeasure().then(response => {
-    uomList.value = response.rows;
+  listMeasureAll().then(response => {
+    uomList.value = response.data;
   })
 }
 

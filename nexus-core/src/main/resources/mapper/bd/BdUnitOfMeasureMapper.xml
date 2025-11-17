@@ -43,6 +43,10 @@
             <include refid="selectBdUnitOfMeasureVo"/>
             where uom_id = #{uomId}
     </select>
+    <select id="selectBdUnitOfMeasureAll" resultMap="BdUnitOfMeasureResult">
+        <include refid="selectBdUnitOfMeasureVo"/>
+        where status = '1' and is_base = '1'
+    </select>
 
     <insert id="insertBdUnitOfMeasure" parameterType="BdUnitOfMeasure" useGeneratedKeys="true" keyProperty="uomId">
         insert into bd_unit_of_measure

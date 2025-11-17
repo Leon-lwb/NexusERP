@@ -58,4 +58,11 @@ public interface BdUnitOfMeasureMapper extends BaseMapper<BdUnitOfMeasure> {
      * @return 结果
      */
     public int deleteBdUnitOfMeasureByUomIds(Long[] uomIds);
+
+    /**
+     * 查询所有计量单位
+     *
+     * @return 所有计量单位
+     */
+    List<BdUnitOfMeasure> selectBdUnitOfMeasureAll();
 }

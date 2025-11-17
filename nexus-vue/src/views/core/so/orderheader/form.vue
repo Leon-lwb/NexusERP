@@ -264,27 +264,27 @@
                                 <span v-else>{{ scope.row.lineNo }}</span>
                             </template>
                         </el-table-column>
-                        <el-table-column label="物料ID" prop="materialId" width="150">
+                        <el-table-column label="物料" align="center" prop="materialName" min-width="200">
                             <template #default="scope">
-                                <el-input v-model="scope.row.materialId" placeholder="请输入物料ID" v-if="!isViewMode" />
-                                <span v-else>{{ scope.row.materialId }}</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="物料编码" prop="materialCode" width="150">
-                            <template #default="scope">
-                                <el-input v-model="scope.row.materialCode" placeholder="请输入物料编码" v-if="!isViewMode" />
-                                <span v-else>{{ scope.row.materialCode }}</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="物料名称" prop="materialName" width="150">
-                            <template #default="scope">
-                                <el-input v-model="scope.row.materialName" placeholder="请输入物料名称" v-if="!isViewMode" />
-                                <span v-else>{{ scope.row.materialName }}</span>
+                                <el-input v-model="scope.row.materialName" placeholder="请选择物料" readonly v-show="isViewMode" />
+                                <el-input v-model="scope.row.materialId" style="display: none" />
+                                <el-row :gutter="10" v-show="!isViewMode">
+                                    <el-col :span="18">
+                                        <el-input v-model="scope.row.materialName" placeholder="请选择物料" readonly>
+                                            <template #append>
+                                                <el-button icon="Search" @click.stop="openMaterialSelect(scope.$index)" />
+                                            </template>
+                                        </el-input>
+                                    </el-col>
+                                    <el-col :span="6">
+                                        <el-button v-if="scope.row.materialId" type="danger" icon="Delete" @click.stop="clearMaterial(scope.$index)" />
+                                    </el-col>
+                                </el-row>
                             </template>
                         </el-table-column>
                         <el-table-column label="订单数量" prop="orderedQty" width="150">
                             <template #default="scope">
-                                <el-input v-model="scope.row.orderedQty" placeholder="请输入订单数量" v-if="!isViewMode" />
+                                <el-input v-model="scope.row.orderedQty" placeholder="请输入订单数量" v-if="!isViewMode" @input="calculateLineAmount(scope.row)" />
                                 <span v-else>{{ scope.row.orderedQty }}</span>
                             </template>
                         </el-table-column>
@@ -302,14 +302,14 @@
                         </el-table-column>
                         <el-table-column label="单价" prop="unitPrice" width="150">
                             <template #default="scope">
-                                <el-input v-model="scope.row.unitPrice" placeholder="请输入单价" v-if="!isViewMode" />
+                                <el-input v-model="scope.row.unitPrice" placeholder="请输入单价" v-if="!isViewMode" @input="calculateLineAmount(scope.row)" />
                                 <span v-else>{{ scope.row.unitPrice }}</span>
                             </template>
                         </el-table-column>
-                        <el-table-column label="行金额 = qty * price" prop="lineAmount" width="150">
+                        <el-table-column label="行金额" prop="lineAmount" width="150">
                             <template #default="scope">
-                                <el-input v-model="scope.row.lineAmount" placeholder="请输入行金额 = qty * price"
-                                    v-if="!isViewMode" />
+                                <el-input v-model="scope.row.lineAmount" placeholder="请输入行金额"
+                                    v-if="!isViewMode" readonly />
                                 <span v-else>{{ scope.row.lineAmount }}</span>
                             </template>
                         </el-table-column>
@@ -435,15 +435,120 @@
                 </el-form>
             </div>
         </el-card>
+        
+        <!-- 物料选择对话框 -->
+        <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1200px" append-to-body>
+            <el-row :gutter="20">
+                <!-- 左侧物料分类树 -->
+                <el-col :span="6">
+                    <div class="category-tree-container">
+                        <!-- 增加分类树搜索框 -->
+                        <el-input
+                            v-model="categoryFilterText"
+                            placeholder="请输入分类名称"
+                            clearable
+                            prefix-icon="Search"
+                            class="category-search-input"
+                            aria-label="分类搜索"
+                            @input="debouncedHandleCategoryFilter"
+                        />
+                        <el-tree
+                            ref="categoryTreeRef"
+                            class="category-tree"
+                            :data="categoryTree"
+                            :props="categoryTreeProps"
+                            :expand-on-click-node="false"
+                            :highlight-current="true"
+                            node-key="id"
+                            default-expand-all
+                            :filter-node-method="filterCategoryNode"
+                            @node-click="handleCategoryNodeClick"
+                        />
+                    </div>
+                </el-col>
+                
+                <!-- 右侧物料列表 -->
+                <el-col :span="18">
+                    <el-form :model="materialQueryParams" ref="materialQueryRef" :inline="true" label-width="68px">
+                        <el-form-item label="物料编码" prop="materialCode">
+                            <el-input
+                                v-model="materialQueryParams.materialCode"
+                                placeholder="请输入物料编码"
+                                clearable
+                                @keyup.enter="handleMaterialQuery"
+                            />
+                        </el-form-item>
+                        <el-form-item label="物料名称" prop="materialName">
+                            <el-input
+                                v-model="materialQueryParams.materialName"
+                                placeholder="请输入物料名称"
+                                clearable
+                                @keyup.enter="handleMaterialQuery"
+                            />
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button>
+                            <el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button>
+                        </el-form-item>
+                    </el-form>
+                    
+                    <el-table 
+                        v-loading="materialLoading" 
+                        :data="materialList" 
+                        @row-dblclick="selectMaterial"
+                        highlight-current-row
+                        style="width: 100%"
+                        height="400"
+                    >
+                        <el-table-column type="index" width="50" align="center" />
+                        <el-table-column label="物料编码" align="center" prop="materialCode" />
+                        <el-table-column label="物料名称" align="center" prop="materialName" />
+                        <el-table-column label="规格型号" align="center" prop="materialSpec" />
+                        <el-table-column label="物料类型" align="center" prop="materialType">
+                            <template #default="scope">
+                                <dict-tag :options="bd_material_type" :value="scope.row.materialType"/>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="状态" align="center" prop="status">
+                            <template #default="scope">
+                                <dict-tag :options="sys_true_or_false" :value="scope.row.status"/>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" align="center" width="100">
+                            <template #default="scope">
+                                <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    
+                    <pagination
+                        v-show="materialTotal > 0"
+                        :total="materialTotal"
+                        v-model:page="materialQueryParams.pageNum"
+                        v-model:limit="materialQueryParams.pageSize"
+                        @pagination="getMaterialList"
+                    />
+                </el-col>
+            </el-row>
+            
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="materialSelectOpen = false">取 消</el-button>
+                </div>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
 <script setup name="OrderForm">
 import { getOrderheader, addOrderheader, updateOrderheader } from "@/api/core/so/orderheader"
+import { listMaterial, getMaterial } from "@/api/core/bd/material"
+import { listCategory, getAllChildrenIds } from "@/api/core/bd/category"
+import { debounce } from 'lodash'
 import { useRouter, useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
-const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type } = proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type')
+const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type } = proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type', 'so_order_line_status', 'so_order_priority', 'bd_material_type')
 
 const route = useRoute()
 const router = useRouter()
@@ -453,6 +558,38 @@ const soSalesOrderLineList = ref([])
 const checkedSoSalesOrderLine = ref([])
 const isViewMode = ref(false)
 const title = ref("")
+
+// 物料选择相关
+const materialSelectOpen = ref(false)
+const materialList = ref([])
+const materialLoading = ref(false)
+const materialTotal = ref(0)
+const materialDialogTitle = ref("选择物料")
+const currentMaterialRowIndex = ref(-1)
+
+// 物料分类相关
+const categoryTree = ref([])
+const categoryTreeProps = { 
+    children: 'children', 
+    label: 'categoryName',
+    value: 'categoryId'
+}
+const categoryTreeRef = ref(null)
+const categoryFilterText = ref('')
+
+// 创建防抖函数
+const debouncedHandleCategoryFilter = debounce(function(val) {
+    handleCategoryFilter(val)
+}, 300)
+
+const materialQueryParams = ref({
+    pageNum: 1,
+    pageSize: 10,
+    materialCode: null,
+    materialName: null,
+    categoryId: null,
+    categoryIds: []  // 初始化为空数组
+})
 
 const rules = {
     soNo: [
@@ -476,6 +613,9 @@ onMounted(() => {
     if (id) {
         initPage(id)
     }
+    
+    // 获取物料分类树
+    getCategoryTree()
 })
 
 function initPage(id) {
@@ -612,8 +752,8 @@ function handleAddSoSalesOrderLine() {
         taxAmount: "",
         discountPercent: "",
         discountAmount: "",
-        requestedDate: "",
-        promiseDate: "",
+        requestedDate: form.value.requestedDate || "",
+        promiseDate: form.value.promiseDate || "",
         fulfilledQty: "",
         productionQty: "",
         purchaseQty: "",
@@ -680,6 +820,195 @@ function getLineStatusTagType(status) {
     }
     return typeMap[status] || 'info'
 }
+
+/** 计算行金额 */
+function calculateLineAmount(row) {
+    const qty = parseFloat(row.orderedQty) || 0
+    const price = parseFloat(row.unitPrice) || 0
+    row.lineAmount = (qty * price).toFixed(2)
+}
+
+// 打开物料选择对话框
+function openMaterialSelect(rowIndex) {
+    currentMaterialRowIndex.value = rowIndex
+    materialSelectOpen.value = true
+    materialDialogTitle.value = "选择物料"
+    getMaterialList()
+}
+
+// 查询物料列表
+function getMaterialList() {
+    materialLoading.value = true
+    
+    const params = {}
+    
+    // 添加基础参数
+    if (materialQueryParams.value.pageNum) params.pageNum = materialQueryParams.value.pageNum
+    if (materialQueryParams.value.pageSize) params.pageSize = materialQueryParams.value.pageSize
+    if (materialQueryParams.value.materialCode) params.materialCode = materialQueryParams.value.materialCode
+    if (materialQueryParams.value.materialName) params.materialName = materialQueryParams.value.materialName
+    if (materialQueryParams.value.categoryId) params.categoryId = materialQueryParams.value.categoryId
+    
+    // 只显示启用状态的物料 (status = 1)
+    params.status = 1
+
+    // 处理 categoryIds 参数
+    if (materialQueryParams.value.categoryIds && 
+        Array.isArray(materialQueryParams.value.categoryIds) && 
+        materialQueryParams.value.categoryIds.length > 0) {
+        const validCategoryIds = materialQueryParams.value.categoryIds
+            .map(id => Number(id))
+            .filter(id => !isNaN(id) && id > 0)
+        
+        if (validCategoryIds.length > 0) {
+            params.categoryIds = validCategoryIds
+        }
+    }
+    
+    console.log('发送物料查询参数:', params)
+    
+    listMaterial(params).then(response => {
+        // 更宽松的状态过滤，处理字符串和数字类型
+        const enabledMaterials = response.rows.filter(material => {
+            return String(material.status) === '1' || material.status === 1;
+        });
+        materialList.value = enabledMaterials
+        materialTotal.value = enabledMaterials.length
+        materialLoading.value = false
+    }).catch((error) => {
+        console.error('获取物料列表失败:', error)
+        materialLoading.value = false
+        proxy.$modal.msgError("获取物料列表失败")
+    })
+}
+
+// 搜索物料
+function handleMaterialQuery() {
+    materialQueryParams.value.pageNum = 1
+    getMaterialList()
+}
+
+// 重置物料查询
+function resetMaterialQuery() {
+    proxy.resetForm("materialQueryRef")
+    materialQueryParams.value.materialCode = null
+    materialQueryParams.value.materialName = null
+    materialQueryParams.value.categoryId = null
+    materialQueryParams.value.categoryIds = []  // 重置为数组
+    handleMaterialQuery()
+}
+
+// 选择物料
+function selectMaterial(row) {
+    if (currentMaterialRowIndex.value >= 0) {
+        soSalesOrderLineList.value[currentMaterialRowIndex.value].materialId = row.materialId
+        soSalesOrderLineList.value[currentMaterialRowIndex.value].materialCode = row.materialCode
+        soSalesOrderLineList.value[currentMaterialRowIndex.value].materialName = row.materialName
+        soSalesOrderLineList.value[currentMaterialRowIndex.value].materialSpec = row.materialSpec
+        soSalesOrderLineList.value[currentMaterialRowIndex.value].unitPrice = row.referencePrice
+    }
+    materialSelectOpen.value = false
+    currentMaterialRowIndex.value = -1
+}
+
+// 清除已选择的物料
+function clearMaterial(rowIndex) {
+    soSalesOrderLineList.value[rowIndex].materialId = null
+    soSalesOrderLineList.value[rowIndex].materialCode = ''
+    soSalesOrderLineList.value[rowIndex].materialName = ''
+    soSalesOrderLineList.value[rowIndex].materialSpec = ''
+}
+
+// 获取物料分类树
+function getCategoryTree() {
+    // 确保分类树也只获取启用状态的分类
+    listCategory({ status: 1 }).then(response => {
+        // 处理分类树数据，确保数据结构符合 el-tree 要求
+        // 修改处理逻辑，适配AjaxResult返回格式
+        const data = response.data || response.rows || []
+        const filteredData = Array.isArray(data) ? data.filter(item => item !== null && item !== undefined) : []
+        const treeData = proxy.handleTree(filteredData, "categoryId", "parentId");
+        categoryTree.value = treeData;
+        
+        console.log('分类树数据:', treeData);
+    }).catch(error => {
+        console.error('获取物料分类失败:', error)
+        proxy.$modal.msgError("获取物料分类失败")
+    })
+}
+
+// 处理物料分类节点点击 - 使用getAllChildrenIds接口返回的物料数据
+function handleCategoryNodeClick(data) {
+    console.log('点击的分类数据:', data)
+    
+    const categoryId = Number(data.id || data.categoryId)
+    
+    if (isNaN(categoryId) || categoryId <= 0) {
+        console.error('无效的分类ID:', categoryId)
+        proxy.$modal.msgError("无效的分类ID")
+        return
+    }
+    
+    materialLoading.value = true
+    getAllChildrenIds(categoryId).then(response => {
+        console.log('getAllChildrenIds响应:', response)
+        
+        if (response.code === 200) {
+            let allMaterials = [];
+            
+            // 处理不同可能的数据结构
+            if (response.data && Array.isArray(response.data)) {
+                // 直接是物料数组
+                allMaterials = response.data;
+            } else if (response.data && response.data.materials && Array.isArray(response.data.materials)) {
+                // 包含在materials字段中
+                allMaterials = response.data.materials;
+            }
+            
+            // 过滤启用状态的物料（更宽松的比较）
+            const enabledMaterials = allMaterials.filter(material => {
+                return String(material.status) === '1' || material.status === 1;
+            });
+            
+            console.log('过滤前物料数量:', allMaterials.length);
+            console.log('过滤后物料数量:', enabledMaterials.length);
+            
+            materialList.value = enabledMaterials
+            materialTotal.value = enabledMaterials.length
+            materialLoading.value = false
+        } else {
+            proxy.$modal.msgError("获取分类信息失败: " + response.msg)
+            materialLoading.value = false
+        }
+    }).catch(error => {
+        console.error('获取分类信息异常:', error)
+        proxy.$modal.msgError("请求出现异常: " + error.message)
+        materialLoading.value = false
+    })
+}
+
+// 添加分类树过滤方法
+function filterCategoryNode(value, data) {
+    if (!value) return true
+    return data.categoryName && data.categoryName.includes(value)
+}
+
+// 添加处理分类过滤输入
+function handleCategoryFilter(val) {
+    if (categoryTreeRef.value) {
+        categoryTreeRef.value.filter(val)
+    }
+}
+
+// 添加组件销毁时的清理逻辑
+onUnmounted(() => {
+    // 取消防抖函数的执行
+    if (debouncedHandleCategoryFilter && typeof debouncedHandleCategoryFilter.cancel === 'function') {
+        debouncedHandleCategoryFilter.cancel()
+    }
+})
+
+
 </script>
 
 <style scoped>
@@ -746,6 +1075,22 @@ function getLineStatusTagType(status) {
 
 :deep(.el-input .el-input-group__append) {
     padding: 0 8px;
+}
+
+.category-tree-container {
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    padding: 10px;
+    height: 500px;
+    overflow-y: auto;
+}
+
+.category-tree {
+    height: 100%;
+}
+
+.category-search-input {
+    margin-bottom: 10px;
 }
 
 /* 响应式调整 */

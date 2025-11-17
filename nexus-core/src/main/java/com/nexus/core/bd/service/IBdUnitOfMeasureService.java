@@ -58,4 +58,10 @@ public interface IBdUnitOfMeasureService extends IService<BdUnitOfMeasure> {
      * @return 结果
      */
     public int deleteBdUnitOfMeasureByUomId(Long uomId);
+
+    /**
+     * 查询所有计量单位信息
+     * @return 结果
+     */
+    List<BdUnitOfMeasure> selectBdUnitOfMeasureAll();
 }

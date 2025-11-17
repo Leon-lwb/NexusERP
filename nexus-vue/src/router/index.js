@@ -261,6 +261,20 @@ export const dynamicRoutes = [
         meta: { title: '销售表单', activeMenu: '/core/so/orderheader' }
       }
     ]
+  },
+  {
+    path: '/core/prd/plan/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:plan:edit'],
+    children: [
+      {
+        path: '',  // 添加参数定义
+        component: () => import('@/views/core/prd/plan/form'),
+        name: 'PlanForm',
+        meta: { title: '生产计划表单', activeMenu: '/core/prd/plan' }
+      }
+    ]
   }
 ]
 
