@@ -92,14 +92,29 @@ private static final long serialVersionUID = 1L;
     private Date closedTime;
     /** 预留字段1 */
     @Excel(name = "预留字段1")
-    private String attr1;
+    private String bomName;
     /** 预留字段2 */
     @Excel(name = "预留字段2")
     private String attr2;
+    /** 是否当前版本 */
+    @Excel(name = "是否当前版本")
+    private Long isCurrent;
     /** 预留字段3 */
     @Excel(name = "预留字段3")
-    private Long attr3;
+    private Long bomId;
     /** 预留字段4 */
     @Excel(name = "预留字段4")
     private Long attr4;
+    /** 物料需求单ID */
+    @Excel(name = "物料需求单ID")
+    private Long materialRequirementId;
+    /** 物料需求单编号 */
+    @Excel(name = "物料需求单编号")
+    private String materialRequirementNo;
+    /** 销售订单子表id */
+    @Excel(name = "销售订单子表id")
+    private Long orderLineId;
+    /** 销售订单子表行号 */
+    @Excel(name = "销售订单子表行号")
+    private String orderLineNo;
 }

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.so.mapper.SoSalesOrderLineMapper">
+
+    <resultMap type="SoSalesOrderLine" id="SoSalesOrderLineResult">
+        <result property="lineId"    column="line_id"    />
+        <result property="soId"    column="so_id"    />
+        <result property="lineNo"    column="line_no"    />
+        <result property="materialId"    column="material_id"    />
+        <result property="materialCode"    column="material_code"    />
+        <result property="materialName"    column="material_name"    />
+        <result property="materialSpec"    column="material_spec"    />
+        <result property="orderedQty"    column="ordered_qty"    />
+        <result property="deliveredQty"    column="delivered_qty"    />
+        <result property="unit"    column="unit"    />
+        <result property="unitPrice"    column="unit_price"    />
+        <result property="lineAmount"    column="line_amount"    />
+        <result property="taxRate"    column="tax_rate"    />
+        <result property="taxAmount"    column="tax_amount"    />
+        <result property="discountPercent"    column="discount_percent"    />
+        <result property="discountAmount"    column="discount_amount"    />
+        <result property="requestedDate"    column="requested_date"    />
+        <result property="promiseDate"    column="promise_date"    />
+        <result property="fulfilledQty"    column="fulfilled_qty"    />
+        <result property="productionQty"    column="production_qty"    />
+        <result property="purchaseQty"    column="purchase_qty"    />
+        <result property="reservedQty"    column="reserved_qty"    />
+        <result property="lineStatus"    column="line_status"    />
+        <result property="linkedMoId"    column="linked_mo_id"    />
+        <result property="linkedPoId"    column="linked_po_id"    />
+        <result property="reservedBatchNo"    column="reserved_batch_no"    />
+        <result property="reservedSerials"    column="reserved_serials"    />
+        <result property="paGroupId"    column="pa_group_id"    />
+        <result property="warehouseId"    column="warehouse_id"    />
+        <result property="deliveryPriority"    column="delivery_priority"    />
+        <result property="customerLineRef"    column="customer_line_ref"    />
+        <result property="sortOrder"    column="sort_order"    />
+        <result property="remark"    column="remark"    />
+        <result property="attr1"    column="attr1"    />
+        <result property="attr2"    column="attr2"    />
+        <result property="attr3"    column="attr3"    />
+        <result property="attr4"    column="attr4"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSoSalesOrderLineVo">
+        select line_id, so_id, line_no, material_id, material_code, material_name, material_spec, ordered_qty, delivered_qty, unit, unit_price, line_amount, tax_rate, tax_amount, discount_percent, discount_amount, requested_date, promise_date, fulfilled_qty, production_qty, purchase_qty, reserved_qty, line_status, linked_mo_id, linked_po_id, reserved_batch_no, reserved_serials, pa_group_id, warehouse_id, delivery_priority, customer_line_ref, sort_order, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from so_sales_order_line
+    </sql>
+
+</mapper>

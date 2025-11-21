@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.prd.mapper.PrdMaterialRequirementMapper">
+
+    <resultMap type="PrdMaterialRequirement" id="PrdMaterialRequirementResult">
+            <result property="requirementId"    column="requirement_id"    />
+            <result property="requirementNo"    column="requirement_no"    />
+            <result property="planId"    column="plan_id"    />
+            <result property="planNo"    column="plan_no"    />
+            <result property="bomId"    column="bom_id"    />
+            <result property="requirementDate"    column="requirement_date"    />
+            <result property="totalMaterialTypes"    column="total_material_types"    />
+            <result property="totalRequiredQuantity"    column="total_required_quantity"    />
+            <result property="status"    column="status"    />
+            <result property="plannerId"    column="planner_id"    />
+            <result property="plannerName"    column="planner_name"    />
+            <result property="departmentId"    column="department_id"    />
+            <result property="departmentName"    column="department_name"    />
+            <result property="confirmedTime"    column="confirmed_time"    />
+            <result property="issuedTime"    column="issued_time"    />
+            <result property="closedTime"    column="closed_time"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+        <resultMap id="PrdMaterialRequirementPrdMaterialRequirementDetailResult" type="PrdMaterialRequirement" extends="PrdMaterialRequirementResult">
+            <collection property="prdMaterialRequirementDetailList" ofType="PrdMaterialRequirementDetail" column="requirement_id" select="selectPrdMaterialRequirementDetailList" />
+        </resultMap>
+
+        <resultMap type="PrdMaterialRequirementDetail" id="PrdMaterialRequirementDetailResult">
+                <result property="detailId"    column="detail_id"    />
+                <result property="requirementId"    column="requirement_id"    />
+                <result property="materialId"    column="material_id"    />
+                <result property="materialCode"    column="material_code"    />
+                <result property="materialName"    column="material_name"    />
+                <result property="materialSpec"    column="material_spec"    />
+                <result property="unit"    column="unit"    />
+                <result property="bomQuantity"    column="bom_quantity"    />
+                <result property="lossRate"    column="loss_rate"    />
+                <result property="requiredQuantity"    column="required_quantity"    />
+                <result property="issuedQuantity"    column="issued_quantity"    />
+                <result property="stockQuantity"    column="stock_quantity"    />
+                <result property="shortageQuantity"    column="shortage_quantity"    />
+                <result property="operationStep"    column="operation_step"    />
+                <result property="workstationId"    column="workstation_id"    />
+                <result property="workstationName"    column="workstation_name"    />
+                <result property="leadTime"    column="lead_time"    />
+                <result property="requiredDate"    column="required_date"    />
+                <result property="status"    column="status"    />
+                <result property="remark"    column="remark"    />
+                <result property="createBy"    column="create_by"    />
+                <result property="createTime"    column="create_time"    />
+                <result property="updateBy"    column="update_by"    />
+                <result property="updateTime"    column="update_time"    />
+        </resultMap>
+
+    <sql id="selectPrdMaterialRequirementVo">
+        select requirement_id, requirement_no, plan_id, plan_no, bom_id, requirement_date, total_material_types, total_required_quantity, status, planner_id, planner_name, department_id, department_name, confirmed_time, issued_time, closed_time, remark, create_by, create_time, update_by, update_time from prd_material_requirement
+    </sql>
+
+    <select id="selectPrdMaterialRequirementList" parameterType="PrdMaterialRequirement" resultMap="PrdMaterialRequirementResult">
+        <include refid="selectPrdMaterialRequirementVo"/>
+        <where>
+                        <if test="requirementNo != null  and requirementNo != ''"> and requirement_no = #{requirementNo}</if>
+                        <if test="planId != null "> and plan_id = #{planId}</if>
+                        <if test="planNo != null  and planNo != ''"> and plan_no = #{planNo}</if>
+                        <if test="bomId != null "> and bom_id = #{bomId}</if>
+                        <if test="requirementDate != null "> and requirement_date = #{requirementDate}</if>
+                        <if test="totalMaterialTypes != null "> and total_material_types = #{totalMaterialTypes}</if>
+                        <if test="totalRequiredQuantity != null "> and total_required_quantity = #{totalRequiredQuantity}</if>
+                        <if test="status != null  and status != ''"> and status = #{status}</if>
+                        <if test="plannerId != null "> and planner_id = #{plannerId}</if>
+                        <if test="plannerName != null  and plannerName != ''"> and planner_name like concat('%', #{plannerName}, '%')</if>
+                        <if test="departmentId != null "> and department_id = #{departmentId}</if>
+                        <if test="departmentName != null  and departmentName != ''"> and department_name like concat('%', #{departmentName}, '%')</if>
+        </where>
+    </select>
+
+    <select id="selectPrdMaterialRequirementByRequirementId" parameterType="Long" resultMap="PrdMaterialRequirementPrdMaterialRequirementDetailResult">
+            select requirement_id, requirement_no, plan_id, plan_no, bom_id, requirement_date, total_material_types, total_required_quantity, status, planner_id, planner_name, department_id, department_name, confirmed_time, issued_time, closed_time, remark, create_by, create_time, update_by, update_time
+            from prd_material_requirement
+            where requirement_id = #{requirementId}
+    </select>
+
+        <select id="selectPrdMaterialRequirementDetailList" resultMap="PrdMaterialRequirementDetailResult">
+            select detail_id, requirement_id, material_id, material_code, material_name, material_spec, unit, bom_quantity, loss_rate, required_quantity, issued_quantity, stock_quantity, shortage_quantity, operation_step, workstation_id, workstation_name, lead_time, required_date, status, remark, create_by, create_time, update_by, update_time
+            from prd_material_requirement_detail
+            where requirement_id = #{requirement_id}
+        </select>
+
+    <insert id="insertPrdMaterialRequirement" parameterType="PrdMaterialRequirement" useGeneratedKeys="true" keyProperty="requirementId">
+        insert into prd_material_requirement
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="requirementNo != null and requirementNo != ''">requirement_no,</if>
+                    <if test="planId != null">plan_id,</if>
+                    <if test="planNo != null and planNo != ''">plan_no,</if>
+                    <if test="bomId != null">bom_id,</if>
+                    <if test="requirementDate != null">requirement_date,</if>
+                    <if test="totalMaterialTypes != null">total_material_types,</if>
+                    <if test="totalRequiredQuantity != null">total_required_quantity,</if>
+                    <if test="status != null and status != ''">status,</if>
+                    <if test="plannerId != null">planner_id,</if>
+                    <if test="plannerName != null">planner_name,</if>
+                    <if test="departmentId != null">department_id,</if>
+                    <if test="departmentName != null">department_name,</if>
+                    <if test="confirmedTime != null">confirmed_time,</if>
+                    <if test="issuedTime != null">issued_time,</if>
+                    <if test="closedTime != null">closed_time,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="requirementNo != null and requirementNo != ''">#{requirementNo},</if>
+                    <if test="planId != null">#{planId},</if>
+                    <if test="planNo != null and planNo != ''">#{planNo},</if>
+                    <if test="bomId != null">#{bomId},</if>
+                    <if test="requirementDate != null">#{requirementDate},</if>
+                    <if test="totalMaterialTypes != null">#{totalMaterialTypes},</if>
+                    <if test="totalRequiredQuantity != null">#{totalRequiredQuantity},</if>
+                    <if test="status != null and status != ''">#{status},</if>
+                    <if test="plannerId != null">#{plannerId},</if>
+                    <if test="plannerName != null">#{plannerName},</if>
+                    <if test="departmentId != null">#{departmentId},</if>
+                    <if test="departmentName != null">#{departmentName},</if>
+                    <if test="confirmedTime != null">#{confirmedTime},</if>
+                    <if test="issuedTime != null">#{issuedTime},</if>
+                    <if test="closedTime != null">#{closedTime},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePrdMaterialRequirement" parameterType="PrdMaterialRequirement">
+        update prd_material_requirement
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="requirementNo != null and requirementNo != ''">requirement_no = #{requirementNo},</if>
+                    <if test="planId != null">plan_id = #{planId},</if>
+                    <if test="planNo != null and planNo != ''">plan_no = #{planNo},</if>
+                    <if test="bomId != null">bom_id = #{bomId},</if>
+                    <if test="requirementDate != null">requirement_date = #{requirementDate},</if>
+                    <if test="totalMaterialTypes != null">total_material_types = #{totalMaterialTypes},</if>
+                    <if test="totalRequiredQuantity != null">total_required_quantity = #{totalRequiredQuantity},</if>
+                    <if test="status != null and status != ''">status = #{status},</if>
+                    <if test="plannerId != null">planner_id = #{plannerId},</if>
+                    <if test="plannerName != null">planner_name = #{plannerName},</if>
+                    <if test="departmentId != null">department_id = #{departmentId},</if>
+                    <if test="departmentName != null">department_name = #{departmentName},</if>
+                    <if test="confirmedTime != null">confirmed_time = #{confirmedTime},</if>
+                    <if test="issuedTime != null">issued_time = #{issuedTime},</if>
+                    <if test="closedTime != null">closed_time = #{closedTime},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where requirement_id = #{requirementId}
+    </update>
+
+    <delete id="deletePrdMaterialRequirementByRequirementId" parameterType="Long">
+        delete from prd_material_requirement where requirement_id = #{requirementId}
+    </delete>
+
+    <delete id="deletePrdMaterialRequirementByRequirementIds" parameterType="String">
+        delete from prd_material_requirement where requirement_id in
+        <foreach item="requirementId" collection="array" open="(" separator="," close=")">
+            #{requirementId}
+        </foreach>
+    </delete>
+
+        <delete id="deletePrdMaterialRequirementDetailByRequirementIds" parameterType="String">
+            delete from prd_material_requirement_detail where requirement_id in
+            <foreach item="requirementId" collection="array" open="(" separator="," close=")">
+                #{requirementId}
+            </foreach>
+        </delete>
+
+        <delete id="deletePrdMaterialRequirementDetailByRequirementId" parameterType="Long">
+            delete from prd_material_requirement_detail where requirement_id = #{requirementId}
+        </delete>
+
+        <insert id="batchPrdMaterialRequirementDetail">
+            insert into prd_material_requirement_detail( detail_id, requirement_id, material_id, material_code, material_name, material_spec, unit, bom_quantity, loss_rate, required_quantity, issued_quantity, stock_quantity, shortage_quantity, operation_step, workstation_id, workstation_name, lead_time, required_date, status, remark, create_by, create_time, update_by, update_time) values
+            <foreach item="item" index="index" collection="list" separator=",">
+                ( #{item.detailId}, #{item.requirementId}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, #{item.unit}, #{item.bomQuantity}, #{item.lossRate}, #{item.requiredQuantity}, #{item.issuedQuantity}, #{item.stockQuantity}, #{item.shortageQuantity}, #{item.operationStep}, #{item.workstationId}, #{item.workstationName}, #{item.leadTime}, #{item.requiredDate}, #{item.status}, #{item.remark}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
+            </foreach>
+        </insert>
+</mapper>

@@ -4,9 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -461,6 +459,21 @@ public class GenTableServiceImpl implements IGenTableService
             table.setPkColumn(table.getColumns().get(0));
         }
         if (GenConstants.TPL_SUB.equals(table.getTplCategory()))
+        {
+            for (GenTableColumn column : table.getSubTable().getColumns())
+            {
+                if (column.isPk())
+                {
+                    table.getSubTable().setPkColumn(column);
+                    break;
+                }
+            }
+            if (StringUtils.isNull(table.getSubTable().getPkColumn()))
+            {
+                table.getSubTable().setPkColumn(table.getSubTable().getColumns().get(0));
+            }
+        }
+        if (GenConstants.TPL_NEW_SUB.equals(table.getTplCategory()))
         {
             for (GenTableColumn column : table.getSubTable().getColumns())
             {

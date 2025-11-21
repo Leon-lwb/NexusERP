@@ -42,3 +42,12 @@ export function delPlan(planId) {
     method: 'delete'
   })
 }
+
+// 生产计划版本更新
+export function updatePlanVersion(data) {
+  return request({
+    url: '/prd/plan/updateVersion',
+    method: 'put',
+    data: data
+  })
+}

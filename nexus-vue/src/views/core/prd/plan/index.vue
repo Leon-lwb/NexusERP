@@ -4,6 +4,7 @@
       <el-form-item label="生产计划编号" prop="planNo">
         <el-input v-model="queryParams.planNo" placeholder="请输入生产计划编号" clearable @keyup.enter="handleQuery" />
       </el-form-item>
+
       <el-form-item label="计划名称" prop="planName">
         <el-input v-model="queryParams.planName" placeholder="请输入计划名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
@@ -11,7 +12,7 @@
         <el-input v-model="queryParams.referenceNo" placeholder="请输入参考单据号" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="计划类型" prop="planType">
-        <el-select v-model="queryParams.planType" placeholder="请选择计划类型" clearable  style="width: 120px;">
+        <el-select v-model="queryParams.planType" placeholder="请选择计划类型" clearable style="width: 120px;">
           <el-option v-for="dict in prd_plan_type" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
@@ -30,13 +31,13 @@
           placeholder="请选择计划结束日期">
         </el-date-picker>
       </el-form-item>
-      <el-form-item label="状态" prop="status" >
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable  style="width: 120px;">
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
           <el-option v-for="dict in prd_plan_status" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
       <el-form-item label="优先级" prop="priority">
-        <el-select v-model="queryParams.priority" placeholder="请选择优先级" clearable  style="width: 120px;">
+        <el-select v-model="queryParams.priority" placeholder="请选择优先级" clearable style="width: 120px;">
           <el-option v-for="dict in so_order_priority" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
@@ -96,9 +97,14 @@
     <el-table v-loading="loading" :data="planList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="生产计划ID" align="center" prop="planId" />
-      <el-table-column label="生产计划编号" align="center" prop="planNo" width="200px"/>
+      <el-table-column label="生产计划编号" align="center" prop="planNo" width="200px" />
       <el-table-column label="计划名称" align="center" prop="planName" />
       <el-table-column label="版本号" align="center" prop="version" />
+      <el-table-column label="是否当前版本" align="center" prop="isCurrent">
+        <template #default="scope">
+          <dict-tag :options="sys_true_or_false" :value="scope.row.isCurrent" />
+        </template>
+      </el-table-column>
       <el-table-column label="原始计划ID" align="center" prop="originalPlanId" />
       <el-table-column label="参考单据号" align="center" prop="referenceNo" />
       <el-table-column label="计划类型" align="center" prop="planType">
@@ -149,10 +155,6 @@
           <span>{{ parseTime(scope.row.closedTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <!-- <el-table-column label="预留字段1" align="center" prop="attr1" />
-      <el-table-column label="预留字段2" align="center" prop="attr2" />
-      <el-table-column label="预留字段3" align="center" prop="attr3" />
-      <el-table-column label="预留字段4" align="center" prop="attr4" /> -->
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -164,8 +166,8 @@
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
-      @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改生产计划对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
@@ -183,9 +185,13 @@
             </el-form-item>
           </el-col>
           <!-- 右侧留空保持对齐 -->
-          <el-col :span="8"></el-col>
+          <el-col :span="8">
+            <el-row>
+              <el-button type="primary" @click="handleSelectSalesOrder">选择销售订单</el-button>
+            </el-row>
+          </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="计划名称" prop="planName">
@@ -198,7 +204,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="原始计划ID" prop="originalPlanId">
@@ -211,7 +217,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="计划类型" prop="planType">
@@ -223,12 +229,13 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="计划日期" prop="planDate">
-              <el-date-picker clearable v-model="form.planDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择计划日期" style="width: 100%">
+              <el-date-picker clearable v-model="form.planDate" type="date" value-format="YYYY-MM-DD"
+                placeholder="请选择计划日期" style="width: 100%">
               </el-date-picker>
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="计划开始日期" prop="startDate">
@@ -245,12 +252,13 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status" :disabled="isStatusDisabled">
-                <el-radio v-for="dict in prd_plan_status" :key="dict.value" :label="dict.value">{{ dict.label }}</el-radio>
+                <el-radio v-for="dict in prd_plan_status" :key="dict.value" :label="dict.value">{{ dict.label
+                  }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -263,7 +271,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="计划员ID" prop="plannerId">
@@ -276,7 +284,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="生产部门ID" prop="departmentId">
@@ -289,7 +297,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="计划总数量" prop="totalQuantity">
@@ -304,7 +312,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="下达时间" prop="releasedTime">
@@ -321,7 +329,20 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="销售订单子表ID" prop="orderLineId">
+              <el-input v-model="form.orderLineId" placeholder="请输入销售订单子表ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="销售订单子表行号" prop="orderLineNo">
+              <el-input v-model="form.orderLineNo" placeholder="请输入销售订单子表行号" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="备注" prop="remark">
@@ -338,17 +359,111 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 销售订单选择对话框 -->
+    <el-dialog title="选择销售订单" v-model="salesOrderOpen" width="1000px" append-to-body>
+      <el-form :model="salesOrderQueryParams" :inline="true">
+        <el-form-item label="销售订单编号">
+          <el-input
+            v-model="salesOrderQueryParams.soNo"
+            placeholder="请输入销售订单编号"
+            clearable
+            @keyup.enter="getSalesOrderList"
+          />
+        </el-form-item>
+        <el-form-item label="客户名称">
+          <el-input
+            v-model="salesOrderQueryParams.clientName"
+            placeholder="请输入客户名称"
+            clearable
+            @keyup.enter="getSalesOrderList"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="getSalesOrderList">搜索</el-button>
+          <el-button icon="Refresh" @click="resetSalesOrderQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table
+        v-loading="salesOrderLoading"
+        :data="salesOrderList"
+        @row-dblclick="selectSalesOrder"
+        highlight-current-row
+      >
+        <el-table-column label="销售订单编号" align="center" prop="soNo" />
+        <el-table-column label="客户名称" align="center" prop="clientName" />
+        <el-table-column label="订单日期" align="center" prop="orderDate" width="180">
+          <template #default="scope">
+            <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="承诺交货日" align="center" prop="promiseDate" width="180">
+          <template #default="scope">
+            <span>{{ parseTime(scope.row.promiseDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="订单状态" align="center" prop="orderStatus">
+          <template #default="scope">
+            <dict-tag :options="so_customer_order_status" :value="scope.row.orderStatus" />
+          </template>
+        </el-table-column>
+        <el-table-column label="含税总金额" align="center" prop="totalAmount" />
+        <el-table-column label="操作" align="center" width="100" class-name="small-padding fixed-width">
+          <template #default="scope">
+            <el-button size="small" type="text" @click="showOrderLines(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <pagination
+        v-show="salesOrderList.length > 0"
+        :total="salesOrderList.length"
+        v-model:page="salesOrderQueryParams.pageNum"
+        v-model:limit="salesOrderQueryParams.pageSize"
+        @pagination="getSalesOrderList"
+      />
+    </el-dialog>
+    
+    <!-- 销售订单行选择对话框 -->
+    <el-dialog title="选择销售订单行" v-model="salesOrderLineOpen" width="1000px" append-to-body>
+      <el-table
+        v-loading="salesOrderLineLoading"
+        :data="salesOrderLineList"
+        @row-dblclick="selectSalesOrderLine"
+        highlight-current-row
+      >
+        <el-table-column label="行号" align="center" prop="lineNo" />
+        <el-table-column label="物料编码" align="center" prop="materialCode" />
+        <el-table-column label="物料名称" align="center" prop="materialName" />
+        <el-table-column label="规格" align="center" prop="materialSpec" />
+        <el-table-column label="订单数量" align="center" prop="orderedQty" />
+        <el-table-column label="单位" align="center" prop="unit" />
+        <el-table-column label="操作" align="center" width="100" class-name="small-padding fixed-width">
+          <template #default="scope">
+            <el-button size="small" type="text" @click="selectSalesOrderLine(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="salesOrderLineOpen = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Plan">
 import { listPlan, getPlan, delPlan, addPlan, updatePlan } from "@/api/core/prd/plan"
+import { listOrderheader, getOrderLine } from "@/api/core/so/orderheader" 
 import { genCode } from "@/api/system/autocode/rule"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance()
-const { prd_plan_type, prd_plan_status, so_order_priority } = proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority')
+const { prd_plan_type, prd_plan_status, so_order_priority, sys_true_or_false, so_customer_order_status } = proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'sys_true_or_false', 'so_customer_order_status')
 
 const planList = ref([])
 const open = ref(false)
@@ -362,6 +477,23 @@ const title = ref("")
 const isViewMode = ref(false) // 新增：标识是否为查看模式
 const autoGenFlag = ref(false) // 新增：控制编号自动生成开关
 const isStatusDisabled = ref(true) // 新增：控制状态字段是否可修改
+
+// 销售订单选择相关变量
+const salesOrderList = ref([])
+const salesOrderOpen = ref(false)
+const salesOrderLoading = ref(false)
+const salesOrderQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  soNo: null,
+  clientName: null,
+  orderStatus: null
+})
+
+// 销售订单行选择相关变量
+const salesOrderLineList = ref([])
+const salesOrderLineOpen = ref(false)
+const salesOrderLineLoading = ref(false)
 
 const data = reactive({
   form: {},
@@ -383,6 +515,9 @@ const data = reactive({
     confirmedTime: null,
     releasedTime: null,
     closedTime: null,
+    isCurrent: null,
+    orderLineId: null,
+    orderLineNo: null,
   },
   rules: {
     planNo: [
@@ -445,10 +580,13 @@ function reset() {
     confirmedTime: null,
     releasedTime: null,
     closedTime: null,
-    attr1: null,
+    bomName: null,
     attr2: null,
-    attr3: null,
+    bomId: null,
+    isCurrent: "1",
     attr4: null,
+    orderLineId: null,
+    orderLineNo: null,
     remark: null,
     createBy: null,
     createTime: null,
@@ -592,6 +730,64 @@ function handleAutoGenChange(autoGenFlag) {
   } else {
     form.value.planNo = null;
   }
+}
+
+/** 选择销售订单按钮操作 */
+function handleSelectSalesOrder() {
+  salesOrderOpen.value = true
+  resetSalesOrderQuery()
+  getSalesOrderList()
+}
+
+/** 查询销售订单列表 */
+function getSalesOrderList() {
+  salesOrderLoading.value = true
+  // 设置查询条件为CONFIRMED状态
+  const params = {...salesOrderQueryParams}
+  params.orderStatus = 'CONFIRMED'
+  listOrderheader(params).then(response => {
+    salesOrderList.value = response.rows
+    salesOrderLoading.value = false
+  })
+}
+
+/** 显示销售订单行 */
+function showOrderLines(row) {
+  salesOrderLineOpen.value = true
+  salesOrderLineLoading.value = true
+  
+  // 调用接口获取销售订单行数据
+  getOrderLine(row.soNo).then(response => {
+    salesOrderLineList.value = response.data || []
+    salesOrderLineLoading.value = false
+  }).catch(error => {
+    proxy.$modal.msgError("获取销售订单行信息失败: " + error.message)
+    salesOrderLineLoading.value = false
+  })
+}
+
+/** 选择销售订单行 */
+function selectSalesOrderLine(row) {
+  form.value.orderLineId = row.lineId
+  form.value.orderLineNo = row.lineNo
+  form.value.referenceNo = row.soNo || form.value.referenceNo
+  salesOrderLineOpen.value = false
+  salesOrderOpen.value = false
+}
+
+/** 选择销售订单 */
+function selectSalesOrder(row) {
+  form.value.referenceNo = row.soNo
+  salesOrderOpen.value = false
+}
+
+/** 重置销售订单查询 */
+function resetSalesOrderQuery() {
+  salesOrderQueryParams.pageNum = 1
+  salesOrderQueryParams.pageSize = 10
+  salesOrderQueryParams.soNo = null
+  salesOrderQueryParams.clientName = null
+  salesOrderQueryParams.orderStatus = null
 }
 
 getList()

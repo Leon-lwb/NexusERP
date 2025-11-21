@@ -172,17 +172,17 @@ public class VelocityUtils
             templates.add("vm/uniapp/uni-edit.vue.vm");
 
         } else if (GenConstants.TPL_NEW_CRUD.equals(tplCategory)) {
-            templates.add("vm/vue/newpage/idnex.vue.vm");
+            templates.add("vm/vue/newpage/index.vue.vm");
             templates.add("vm/vue/newpage/form_one.vue.vm");
             templates.add("vm/uniapp/uni-index.vue.vm");
             templates.add("vm/uniapp/uni-table-index.vue.vm");
             templates.add("vm/uniapp/uni-add.vue.vm");
             templates.add("vm/uniapp/uni-edit.vue.vm");
 //        } else if (GenConstants.TPL_NEW_TREE.equals(tplCategory)){
-//            templates.add("vm/vue/newpage/idnex.vue.vm");
+//            templates.add("vm/vue/newpage/index.vue.vm");
 //            templates.add("vm/vue/newpage/form.vue.vm");
         }else if (GenConstants.TPL_NEW_SUB.equals(tplCategory)) {
-            templates.add("vm/vue/newpage/idnex.vue.vm");
+            templates.add("vm/vue/newpage/index.vue.vm");
             templates.add("vm/vue/newpage/form.vue.vm");
             templates.add("vm/java/sub-domain_plus.java.vm");
             templates.add("vm/uniapp/uni-index.vue.vm");
@@ -218,7 +218,8 @@ public class VelocityUtils
         {
             fileName = StringUtils.format("{}/domain/{}.java", javaPath, className);
         }
-        if (template.contains("sub-domain_plus.java.vm") && StringUtils.equals(GenConstants.TPL_SUB, genTable.getTplCategory()))
+        if (template.contains("sub-domain_plus.java.vm") &&
+                (StringUtils.equals(GenConstants.TPL_SUB, genTable.getTplCategory()) || StringUtils.equals(GenConstants.TPL_NEW_SUB, genTable.getTplCategory())))
         {
             fileName = StringUtils.format("{}/domain/{}.java", javaPath, genTable.getSubTable().getClassName());
         }
@@ -267,13 +268,25 @@ public class VelocityUtils
             fileName = StringUtils.format("{}/{}/{}/uni-tree-add.vue", uniappPath, moduleName, businessName);
         } else if (template.contains("uni-tree-edit.vue.vm")) {
             fileName = StringUtils.format("{}/{}/{}/uni-tree-edit.vue", uniappPath, moduleName, businessName);
-        }else if (template.contains("index_plus.vue.vm"))
+        }else if (template.contains("index.vue.vm"))
+        {
+            fileName = StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
+        }
+        else if (template.contains("index_plus.vue.vm"))
         {
             fileName = StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
         }
         else if (template.contains("index-tree.vue.vm"))
         {
             fileName = StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
+        }
+        else if (template.contains("form.vue.vm"))
+        {
+            fileName = StringUtils.format("{}/views/{}/{}/form.vue", vuePath, moduleName, businessName);
+        }
+        else if (template.contains("form_one.vue.vm"))
+        {
+            fileName = StringUtils.format("{}/views/{}/{}/form.vue", vuePath, moduleName, businessName);
         }
         return fileName;
     }

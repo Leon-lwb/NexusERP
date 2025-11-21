@@ -42,3 +42,11 @@ export function delOrderheader(soId) {
     method: 'delete'
   })
 }
+
+// 通过销售订单编号查询销售订单行信息
+export function getOrderLine(soNo) {
+  return request({
+    url: '/so/orderheader/listLine/' + soNo,
+    method: 'get'
+  })
+}

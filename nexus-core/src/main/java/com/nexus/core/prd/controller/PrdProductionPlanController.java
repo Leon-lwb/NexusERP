@@ -110,4 +110,18 @@ public class PrdProductionPlanController extends BaseController
     {
         return toAjax(prdProductionPlanService.deletePrdProductionPlanByPlanIds(planIds));
     }
+
+    /**
+     * 生产计划版本更新
+     */
+    @ApiOperation("生产计划版本更新")
+    @PreAuthorize("@ss.hasPermi('prd:plan:edit')")
+    @Log(title = "生产计划", businessType = BusinessType.UPDATE)
+    @PutMapping("/updateVersion")
+    public AjaxResult updateVersion(@RequestBody PrdProductionPlan prdProductionPlan)
+    {
+        System.out.println(prdProductionPlan.getPlanId());
+        return toAjax(prdProductionPlanService.updatePrdProductionPlanVersion(prdProductionPlan));
+    }
+
 }

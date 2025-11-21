@@ -58,4 +58,12 @@ public interface IPrdProductionPlanService extends IService<PrdProductionPlan> {
      * @return 结果
      */
     public int deletePrdProductionPlanByPlanId(Long planId);
+
+    /**
+     * 更新生产计划版本
+     *
+     * @param prdProductionPlan
+     * @return 影响行数
+     */
+    int updatePrdProductionPlanVersion(PrdProductionPlan prdProductionPlan);
 }

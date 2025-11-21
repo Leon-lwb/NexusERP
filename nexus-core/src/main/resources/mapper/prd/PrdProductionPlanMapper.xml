@@ -25,19 +25,24 @@
             <result property="confirmedTime"    column="confirmed_time"    />
             <result property="releasedTime"    column="released_time"    />
             <result property="closedTime"    column="closed_time"    />
-            <result property="attr1"    column="attr1"    />
+            <result property="bomName"    column="bom_name"    />
             <result property="attr2"    column="attr2"    />
-            <result property="attr3"    column="attr3"    />
+            <result property="isCurrent"    column="is_current"    />
+            <result property="bomId"    column="bom_id"    />
             <result property="attr4"    column="attr4"    />
             <result property="remark"    column="remark"    />
             <result property="createBy"    column="create_by"    />
             <result property="createTime"    column="create_time"    />
             <result property="updateBy"    column="update_by"    />
             <result property="updateTime"    column="update_time"    />
+            <result property="materialRequirementId"    column="material_requirement_id"    />
+            <result property="materialRequirementNo"    column="material_requirement_no"    />
+            <result property="orderLineId"    column="order_line_id"    />
+            <result property="orderLineNo"    column="order_line_no"    />
     </resultMap>
 
     <sql id="selectPrdProductionPlanVo">
-        select plan_id, plan_no, plan_name, version, original_plan_id, reference_no, plan_type, plan_date, start_date, end_date, status, priority, planner_id, planner_name, department_id, department_name, total_quantity, confirmed_time, released_time, closed_time, attr1, attr2, attr3, attr4, remark, create_by, create_time, update_by, update_time from prd_production_plan
+        select plan_id, plan_no, plan_name, version, original_plan_id, reference_no, plan_type, plan_date, start_date, end_date, status, priority, planner_id, planner_name, department_id, department_name, total_quantity, confirmed_time, released_time, closed_time, bom_name, attr2, is_current, bom_id, attr4, remark, create_by, create_time, update_by, update_time, material_requirement_id, material_requirement_no, order_line_id, order_line_no from prd_production_plan
     </sql>
 
     <select id="selectPrdProductionPlanList" parameterType="PrdProductionPlan" resultMap="PrdProductionPlanResult">
@@ -58,6 +63,8 @@
                         <if test="confirmedTime != null "> and confirmed_time = #{confirmedTime}</if>
                         <if test="releasedTime != null "> and released_time = #{releasedTime}</if>
                         <if test="closedTime != null "> and closed_time = #{closedTime}</if>
+                        <if test="isCurrent != null  and isCurrent != ''"> and is_current = #{isCurrent}</if>
+                        <if test="materialRequirementNo != null  and materialRequirementNo != ''"> and material_requirement_no = #{materialRequirementNo}</if>
         </where>
     </select>
 
@@ -88,15 +95,20 @@
                     <if test="confirmedTime != null">confirmed_time,</if>
                     <if test="releasedTime != null">released_time,</if>
                     <if test="closedTime != null">closed_time,</if>
-                    <if test="attr1 != null">attr1,</if>
+                    <if test="bomName != null">bom_name,</if>
                     <if test="attr2 != null">attr2,</if>
-                    <if test="attr3 != null">attr3,</if>
+                    <if test="isCurrent != null">is_current,</if>
+                    <if test="bomId != null">bom_id,</if>
                     <if test="attr4 != null">attr4,</if>
                     <if test="remark != null">remark,</if>
                     <if test="createBy != null">create_by,</if>
                     <if test="createTime != null">create_time,</if>
                     <if test="updateBy != null">update_by,</if>
                     <if test="updateTime != null">update_time,</if>
+                    <if test="materialRequirementId != null">material_requirement_id,</if>
+                    <if test="materialRequirementNo != null">material_requirement_no,</if>
+                    <if test="orderLineId != null">order_line_id,</if>
+                    <if test="orderLineNo != null">order_line_no,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
                     <if test="planNo != null and planNo != ''">#{planNo},</if>
@@ -118,15 +130,20 @@
                     <if test="confirmedTime != null">#{confirmedTime},</if>
                     <if test="releasedTime != null">#{releasedTime},</if>
                     <if test="closedTime != null">#{closedTime},</if>
-                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="bomName != null">#{bomName},</if>
                     <if test="attr2 != null">#{attr2},</if>
-                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="isCurrent != null">#{isCurrent},</if>
+                    <if test="bomId != null">#{bomId},</if>
                     <if test="attr4 != null">#{attr4},</if>
                     <if test="remark != null">#{remark},</if>
                     <if test="createBy != null">#{createBy},</if>
                     <if test="createTime != null">#{createTime},</if>
                     <if test="updateBy != null">#{updateBy},</if>
                     <if test="updateTime != null">#{updateTime},</if>
+                    <if test="materialRequirementId != null">#{materialRequirementId},</if>
+                    <if test="materialRequirementNo != null">#{materialRequirementNo},</if>
+                    <if test="orderLineId != null">#{orderLineId},</if>
+                    <if test="orderLineNo != null">#{orderLineNo},</if>
         </trim>
     </insert>
 
@@ -152,15 +169,18 @@
                     <if test="confirmedTime != null">confirmed_time = #{confirmedTime},</if>
                     <if test="releasedTime != null">released_time = #{releasedTime},</if>
                     <if test="closedTime != null">closed_time = #{closedTime},</if>
-                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="bomName != null">bom_name = #{bomName},</if>
                     <if test="attr2 != null">attr2 = #{attr2},</if>
-                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="isCurrent != null">is_current = #{isCurrent},</if>
+                    <if test="bomId != null">bom_id = #{bomId},</if>
                     <if test="attr4 != null">attr4 = #{attr4},</if>
                     <if test="remark != null">remark = #{remark},</if>
                     <if test="createBy != null">create_by = #{createBy},</if>
                     <if test="createTime != null">create_time = #{createTime},</if>
                     <if test="updateBy != null">update_by = #{updateBy},</if>
                     <if test="updateTime != null">update_time = #{updateTime},</if>
+                    <if test="materialRequirementId != null">material_requirement_id = #{materialRequirementId},</if>
+                    <if test="materialRequirementNo != null">material_requirement_no = #{materialRequirementNo},</if>
         </trim>
         where plan_id = #{planId}
     </update>

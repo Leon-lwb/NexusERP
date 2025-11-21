@@ -275,6 +275,20 @@ export const dynamicRoutes = [
         meta: { title: '生产计划表单', activeMenu: '/core/prd/plan' }
       }
     ]
+  },
+  {
+    path: '/core/prd/requirement/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:requirement:edit'],
+    children: [
+      {
+        path: '',  // 添加参数定义
+        component: () => import('@/views/core/prd/requirement/form'),
+        name: 'RequirementForm',
+        meta: { title: '物料清单', activeMenu: '/core/prd/requirement' }
+      }
+    ]
   }
 ]
 

@@ -1,5 +1,9 @@
 package com.nexus.core.so.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.core.so.domain.SoSalesOrderLine;
+import com.nexus.core.so.service.SoSalesOrderLineService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.util.List;
@@ -36,6 +40,9 @@ public class SoSalesOrderHeaderController extends BaseController
 {
     @Autowired
     private ISoSalesOrderHeaderService soSalesOrderHeaderService;
+
+    @Autowired
+    private SoSalesOrderLineService soSalesOrderLineService;
 
     /**
      * 查询销售订单列表
@@ -110,4 +117,29 @@ public class SoSalesOrderHeaderController extends BaseController
     {
         return toAjax(soSalesOrderHeaderService.deleteSoSalesOrderHeaderBySoIds(soIds));
     }
+
+    /**
+     * 通过销售订单编号查询销售订单行信息
+     */
+    @ApiOperation("通过销售订单编号查询销售订单行信息")
+    @PreAuthorize("@ss.hasPermi('so:orderheader:list')")
+    @GetMapping("/listLine/{soNo}")
+    public AjaxResult listLine(@PathVariable("soNo") String soNo)
+    {
+        LambdaQueryWrapper<SoSalesOrderHeader> headerWrapper = new LambdaQueryWrapper<>();
+        headerWrapper.eq(SoSalesOrderHeader::getSoNo, soNo);
+        List<SoSalesOrderHeader> headerList = soSalesOrderHeaderService.list(headerWrapper);
+        SoSalesOrderHeader header = soSalesOrderHeaderService.getOne(headerWrapper);
+
+        if (header == null) {
+            return AjaxResult.error("未找到对应的销售订单");
+        }
+
+        LambdaQueryWrapper<SoSalesOrderLine> lineWrapper = new LambdaQueryWrapper<>();
+        lineWrapper.eq(SoSalesOrderLine::getSoId, header.getSoId());
+        lineWrapper.orderByDesc(SoSalesOrderLine::getSortOrder);
+        List<SoSalesOrderLine> lineList = soSalesOrderLineService.list(lineWrapper);
+        return success(lineList);
+    }
+
 }
