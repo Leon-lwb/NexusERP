@@ -50,3 +50,11 @@ export function getOrderLine(soNo) {
     method: 'get'
   })
 }
+
+// 通过销售订单子表id获取销售订单行详细信息
+export function getOrderLineById(soLineId) {
+  return request({
+    url: '/so/orderheader/listLineById/' + soLineId,
+    method: 'get'
+  })
+}

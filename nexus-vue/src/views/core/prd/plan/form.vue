@@ -330,7 +330,7 @@
 
 <script setup name="PlanForm">
 import { getPlan, addPlan, updatePlan,updatePlanVersion } from "@/api/core/prd/plan"
-import { getOrderLine } from "@/api/core/so/orderheader"
+import { getOrderLine, getOrderLineById } from "@/api/core/so/orderheader"
 import { listBom } from "@/api/core/bd/bom"
 
 const { proxy } = getCurrentInstance()
@@ -376,27 +376,32 @@ onMounted(() => {
   isViewMode.value = action === 'view'
    console.log('form.value:', form.value);
   console.log('id:', id);
+  console.log('action:', action);
 
-  if (id) {
+  if (id && id !== '0') { // 添加id为'0'的判断
     initPage(id)
+  } else {
+    // 处理新增模式
+    initPage()
   }
 })
 
 function initPage(id) {
   const action = route.query.action
+  console.log('initPage被调用，id:', id, 'action:', action);
 
   if (action === 'view') {
     // 查看模式
     isViewMode.value = true
     title.value = "查看生产计划"
-    if (id) {
+    if (id && id !== '0') {
       getInfo(id)
     }
   } else if (action === 'edit') {
     // 编辑模式
     isViewMode.value = false
     title.value = "修改生产计划"
-    if (id) {
+    if (id && id !== '0') {
       getInfo(id)
     }
   } else if (action === 'add') {
@@ -404,6 +409,15 @@ function initPage(id) {
     isViewMode.value = false
     title.value = "新增生产计划"
     reset()
+  } else {
+    // 默认处理，可能是编辑模式
+    isViewMode.value = false
+    title.value = "生产计划"
+    if (id && id !== '0') {
+      getInfo(id)
+    } else {
+      reset()
+    }
   }
 }
 
@@ -412,19 +426,36 @@ function getInfo(id) {
   getPlan(id).then(response => {
     form.value = response.data
     // 获取订单行信息
-    if (form.value.referenceNo) {
-      loadOrderLines(form.value.referenceNo)
+    console.log('生产计划数据:', response.data); // 调试日志
+    // 检查是否存在soLineId字段
+    if (form.value.soLineId) {
+      console.log('使用soLineId加载订单行:', form.value.soLineId);
+      loadOrderLines(form.value.soLineId)
+    } else {
+      console.log('soLineId不存在，尝试其他可能的字段');
+      // 尝试其他可能的字段名
+      if (form.value.orderLineId) {
+        console.log('使用orderLineId加载订单行:', form.value.orderLineId);
+        loadOrderLines(form.value.orderLineId)
+      }
     }
+  }).catch(error => {
+    console.error('获取生产计划详情失败:', error);
+    proxy.$modal.msgError("获取生产计划详情失败: " + error.message)
   })
 }
 
-// 加载订单行信息
-function loadOrderLines(referenceNo) {
+// 加载订单行信息 - 使用新的接口和soLineId参数
+function loadOrderLines(soLineId) {
+  console.log('准备调用getOrderLineById，soLineId:', soLineId);
   orderLineLoading.value = true
-  getOrderLine(referenceNo).then(response => {
+  getOrderLineById(soLineId).then(response => {
+    console.log('getOrderLineById返回结果:', response);
+    // 接口返回的是数组，直接赋值给orderLineList
     orderLineList.value = response.data || []
     orderLineLoading.value = false
   }).catch(error => {
+    console.error("获取订单行信息失败:", error);
     proxy.$modal.msgError("获取订单行信息失败: " + error.message)
     orderLineLoading.value = false
   })
@@ -471,7 +502,10 @@ function reset() {
     deliveredQuantity: 0,
     remainingQuantity: 0,
     materialRequirementId: null,
-    materialRequirementNo: null
+    materialRequirementNo: null,
+    orderLineId: null,
+    orderLineNo: null,
+    soLineId: null // 添加这个字段
   }
   materialItems.value = [
     {

@@ -142,4 +142,18 @@ public class SoSalesOrderHeaderController extends BaseController
         return success(lineList);
     }
 
+    /**
+     * 通过销售订单子表id获取销售订单行详细信息
+     */
+    @ApiOperation("通过销售订单子表id获取销售订单行详细信息")
+    @PreAuthorize("@ss.hasPermi('so:orderheader:list')")
+    @GetMapping("/listLineById/{soLineId}")
+    public AjaxResult listLineById(@PathVariable("soLineId") Long soLineId)
+    {
+        LambdaQueryWrapper<SoSalesOrderLine> lineWrapper = new LambdaQueryWrapper<>();
+        lineWrapper.eq(SoSalesOrderLine::getLineId, soLineId);
+        List<SoSalesOrderLine> lineList = soSalesOrderLineService.list(lineWrapper);
+        return success(lineList);
+    }
+
 }

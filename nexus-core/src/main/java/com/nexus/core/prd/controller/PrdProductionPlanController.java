@@ -120,8 +120,20 @@ public class PrdProductionPlanController extends BaseController
     @PutMapping("/updateVersion")
     public AjaxResult updateVersion(@RequestBody PrdProductionPlan prdProductionPlan)
     {
-        System.out.println(prdProductionPlan.getPlanId());
         return toAjax(prdProductionPlanService.updatePrdProductionPlanVersion(prdProductionPlan));
     }
 
+    /**
+     * TODO
+     * BOM计算
+     */
+    @ApiOperation("BOM计算")
+    @PreAuthorize("@ss.hasPermi('prd:plan:edit')")
+    @Log(title = "生产计划", businessType = BusinessType.UPDATE)
+    @PutMapping("/createBom")
+    public AjaxResult bom(@RequestBody PrdProductionPlan prdProductionPlan)
+    {
+        return success();
+        //return toAjax(prdProductionPlanService.updatePrdProductionPlanBom(prdProductionPlan));
+    }
 }
