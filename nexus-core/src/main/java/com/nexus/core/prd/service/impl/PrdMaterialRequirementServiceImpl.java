@@ -5,10 +5,10 @@ import java.util.List;
 import com.nexus.common.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-    import java.util.ArrayList;
-    import com.nexus.common.utils.StringUtils;
-    import org.springframework.transaction.annotation.Transactional;
-    import com.nexus.core.prd.domain.PrdMaterialRequirementDetail;
+import java.util.ArrayList;
+import com.nexus.common.utils.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
+import com.nexus.core.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.core.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.core.prd.domain.PrdMaterialRequirement;
 import com.nexus.core.prd.service.IPrdMaterialRequirementService;
@@ -125,4 +125,20 @@ public class PrdMaterialRequirementServiceImpl extends ServiceImpl<PrdMaterialRe
                 }
             }
         }
+
+    /**
+     * 批量插入物料需求明细
+     *
+     * @param detailList 物料需求明细列表
+     * @return 结果
+     */
+    @Transactional
+    @Override
+    public int insertPrdMaterialRequirementDetails(List<PrdMaterialRequirementDetail> detailList) {
+        int count = 0;
+        for (PrdMaterialRequirementDetail detail : detailList) {
+            count += prdMaterialRequirementMapper.insertPrdMaterialRequirementDetail(detail);
+        }
+        return count;
+    }
 }

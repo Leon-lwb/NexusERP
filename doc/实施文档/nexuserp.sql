@@ -11,7 +11,7 @@
  Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 21/11/2025 18:09:19
+ Date: 29/11/2025 15:18:24
 */
 
 SET NAMES utf8mb4;
@@ -46,7 +46,7 @@ CREATE TABLE `act_app_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL,
+  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
   `ORDEREXECUTED` int(0) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
@@ -143,7 +143,7 @@ CREATE TABLE `act_cmmn_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL,
+  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
   `ORDEREXECUTED` int(0) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
@@ -436,7 +436,7 @@ CREATE TABLE `act_dmn_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL,
+  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
   `ORDEREXECUTED` int(0) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
@@ -634,7 +634,7 @@ CREATE TABLE `act_hi_actinst`  (
   `ACT_NAME_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `ACT_TYPE_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `ASSIGNEE_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
-  `START_TIME_` datetime(3) NULL,
+  `START_TIME_` datetime(3) NULL DEFAULT NULL,
   `END_TIME_` datetime(3) NULL DEFAULT NULL,
   `TRANSACTION_ORDER_` int(0) NULL DEFAULT NULL,
   `DURATION_` bigint(0) NULL DEFAULT NULL,
@@ -684,7 +684,7 @@ DROP TABLE IF EXISTS `act_hi_comment`;
 CREATE TABLE `act_hi_comment`  (
   `ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `TYPE_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
-  `TIME_` datetime(3) NULL,
+  `TIME_` datetime(3) NULL DEFAULT NULL,
   `USER_ID_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `TASK_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `PROC_INST_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
@@ -714,7 +714,7 @@ CREATE TABLE `act_hi_detail`  (
   `NAME_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `VAR_TYPE_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `REV_` int(0) NULL DEFAULT NULL,
-  `TIME_` datetime(3) NULL,
+  `TIME_` datetime(3) NULL DEFAULT NULL,
   `BYTEARRAY_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `DOUBLE_` double NULL DEFAULT NULL,
   `LONG_` bigint(0) NULL DEFAULT NULL,
@@ -799,7 +799,7 @@ CREATE TABLE `act_hi_procinst`  (
   `PROC_INST_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `BUSINESS_KEY_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `PROC_DEF_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
-  `START_TIME_` datetime(3) NULL,
+  `START_TIME_` datetime(3) NULL DEFAULT NULL,
   `END_TIME_` datetime(3) NULL DEFAULT NULL,
   `DURATION_` bigint(0) NULL DEFAULT NULL,
   `START_USER_ID_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
@@ -849,7 +849,7 @@ CREATE TABLE `act_hi_taskinst`  (
   `DESCRIPTION_` varchar(4000) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `OWNER_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `ASSIGNEE_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
-  `START_TIME_` datetime(3) NULL,
+  `START_TIME_` datetime(3) NULL DEFAULT NULL,
   `CLAIM_TIME_` datetime(3) NULL DEFAULT NULL,
   `END_TIME_` datetime(3) NULL DEFAULT NULL,
   `DURATION_` bigint(0) NULL DEFAULT NULL,
@@ -881,7 +881,7 @@ CREATE TABLE `act_hi_tsk_log`  (
   `ID_` bigint(0) NOT NULL AUTO_INCREMENT,
   `TYPE_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `TASK_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
-  `TIME_STAMP_` timestamp(3) NULL,
+  `TIME_STAMP_` timestamp(3) NULL DEFAULT NULL,
   `USER_ID_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `DATA_` varchar(4000) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `EXECUTION_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
@@ -1182,7 +1182,7 @@ CREATE TABLE `act_ru_actinst`  (
   `ACT_NAME_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `ACT_TYPE_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `ASSIGNEE_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
-  `START_TIME_` datetime(3) NULL,
+  `START_TIME_` datetime(3) NULL DEFAULT NULL,
   `END_TIME_` datetime(3) NULL DEFAULT NULL,
   `DURATION_` bigint(0) NULL DEFAULT NULL,
   `TRANSACTION_ORDER_` int(0) NULL DEFAULT NULL,
@@ -1717,10 +1717,10 @@ INSERT INTO `bd_bom` VALUES (1, 2, '1.0', '减速机JZQ-350标准版BOM', '2024-
 INSERT INTO `bd_bom` VALUES (2, 2, '1.1', '减速机JZQ-350改进版BOM', '2024-06-01', '2025-10-20', 0, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-21 11:09:24');
 INSERT INTO `bd_bom` VALUES (3, 3, '1.0', '电机Y132M-4标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-18 23:22:23');
 INSERT INTO `bd_bom` VALUES (4, 4, '1.0', '齿轮组标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:22:23', NULL, '2025-10-18 23:22:23');
-INSERT INTO `bd_bom` VALUES (5, 1001, '1.0', '自行车标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:44:35', NULL, '2025-10-26 19:44:35');
+INSERT INTO `bd_bom` VALUES (5, 1001, '1.0', '自行车标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:44:35', NULL, '2025-11-27 18:02:16');
 INSERT INTO `bd_bom` VALUES (6, 2002, '1.0', '车轮标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:46:19', NULL, '2025-10-26 19:46:19');
 INSERT INTO `bd_bom` VALUES (7, 2003, '1.0', '车把标准版BOM', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:47:37', NULL, '2025-10-26 19:47:37');
-INSERT INTO `bd_bom` VALUES (9, 2001, '1.0', '车把标准版BOM', '2025-11-01', '2026-11-01', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-03 14:47:25', NULL, '2025-11-03 14:49:07');
+INSERT INTO `bd_bom` VALUES (9, 2001, '1.0', '车架标准版BOM', '2025-11-01', '2026-11-01', 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-03 14:47:25', NULL, '2025-11-28 10:48:54');
 
 -- ----------------------------
 -- Table structure for bd_bom_detail
@@ -1754,7 +1754,7 @@ CREATE TABLE `bd_bom_detail`  (
   INDEX `idx_operation_step`(`operation_step`) USING BTREE,
   CONSTRAINT `fk_bom_detail_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_bom_detail_child` FOREIGN KEY (`child_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 36 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 39 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom_detail
@@ -1786,15 +1786,16 @@ INSERT INTO `bd_bom_detail` VALUES (24, 1, 16, 1.000000, 0.0000, 10, NULL, 0, NU
 INSERT INTO `bd_bom_detail` VALUES (25, 1, 2, 1.000000, 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 10:58:37', NULL, '2025-10-21 10:58:37');
 INSERT INTO `bd_bom_detail` VALUES (26, 2, 3, 1.000000, 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 11:02:31', NULL, '2025-10-21 11:02:31');
 INSERT INTO `bd_bom_detail` VALUES (27, 2, 3, 1.000000, 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-21 11:03:42', NULL, '2025-10-21 11:03:42');
-INSERT INTO `bd_bom_detail` VALUES (28, 5, 2001, 1.000000, 0.0000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:45:40', NULL, '2025-10-26 19:45:40');
-INSERT INTO `bd_bom_detail` VALUES (29, 5, 2002, 2.000000, 2.0000, 20, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:45:40', NULL, '2025-10-26 19:45:40');
-INSERT INTO `bd_bom_detail` VALUES (30, 5, 2003, 1.000000, 1.0000, 30, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:45:40', NULL, '2025-10-26 19:45:40');
+INSERT INTO `bd_bom_detail` VALUES (28, 5, 2001, 1.000000, 0.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:45:40', NULL, '2025-11-27 18:02:15');
+INSERT INTO `bd_bom_detail` VALUES (29, 5, 2002, 2.000000, 2.0000, 20, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:45:40', NULL, '2025-11-27 18:02:15');
+INSERT INTO `bd_bom_detail` VALUES (30, 5, 2003, 1.000000, 1.0000, 30, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:45:40', NULL, '2025-11-27 18:02:15');
 INSERT INTO `bd_bom_detail` VALUES (31, 6, 3001, 1.000000, 1.0000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:47:04', NULL, '2025-10-26 19:47:04');
 INSERT INTO `bd_bom_detail` VALUES (32, 6, 3002, 1.000000, 0.0000, 10, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:47:04', NULL, '2025-10-26 19:47:04');
 INSERT INTO `bd_bom_detail` VALUES (33, 6, 3003, 36.000000, 3.0000, 20, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:47:04', NULL, '2025-10-26 19:47:04');
 INSERT INTO `bd_bom_detail` VALUES (34, 7, 3004, 1.000000, 0.5000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:48:08', NULL, '2025-10-26 19:48:08');
 INSERT INTO `bd_bom_detail` VALUES (35, 7, 3005, 2.000000, 0.0000, 10, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:48:08', NULL, '2025-10-26 19:48:08');
-INSERT INTO `bd_bom_detail` VALUES (36, 9, 1, 1.000000, 0.0000, 1, NULL, 1, '2025-11-01', '2026-11-01', 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-11-03 14:49:06', NULL, '2025-11-03 14:49:06');
+INSERT INTO `bd_bom_detail` VALUES (36, 9, 1, 1.000000, 0.0000, 1, NULL, 1, '2025-11-01', '2026-11-01', 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-11-03 14:49:06', NULL, '2025-11-28 10:48:54');
+INSERT INTO `bd_bom_detail` VALUES (37, 5, 10, 1.000000, 0.0000, 40, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, NULL, '2025-11-27 17:45:55', NULL, '2025-11-27 18:02:15');
 
 -- ----------------------------
 -- Table structure for bd_client
@@ -2275,7 +2276,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL,
+  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
   `ORDEREXECUTED` int(0) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
@@ -2366,7 +2367,7 @@ CREATE TABLE `flw_ru_batch`  (
   `TYPE_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NOT NULL,
   `SEARCH_KEY_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `SEARCH_KEY2_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
-  `CREATE_TIME_` datetime(3) NULL,
+  `CREATE_TIME_` datetime(3) NULL DEFAULT NULL,
   `COMPLETE_TIME_` datetime(3) NULL DEFAULT NULL,
   `STATUS_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `BATCH_DOC_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
@@ -2388,7 +2389,7 @@ CREATE TABLE `flw_ru_batch_part`  (
   `SCOPE_TYPE_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `SEARCH_KEY_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `SEARCH_KEY2_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
-  `CREATE_TIME_` datetime(3) NULL,
+  `CREATE_TIME_` datetime(3) NULL DEFAULT NULL,
   `COMPLETE_TIME_` datetime(3) NULL DEFAULT NULL,
   `STATUS_` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
   `RESULT_DOC_ID_` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_bin NULL DEFAULT NULL,
@@ -2469,7 +2470,7 @@ CREATE TABLE `gen_table`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2525,7 +2526,7 @@ CREATE TABLE `gen_table_column`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 544 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 589 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3123,7 +3124,15 @@ CREATE TABLE `prd_material_requirement`  (
   INDEX `fk_requirement_bom`(`bom_id`) USING BTREE,
   CONSTRAINT `fk_requirement_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_plan` FOREIGN KEY (`plan_id`) REFERENCES `prd_production_plan` (`plan_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 39 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of prd_material_requirement
+-- ----------------------------
+INSERT INTO `prd_material_requirement` VALUES (39, 'MBOM251128038', 8, 'SCJH20250001', 5, '2025-11-28', 1, 100.0000, 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement` VALUES (40, 'MBOM251128039', 8, 'SCJH20250001', 9, '2025-11-28', 1, 100.0000, 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement` VALUES (41, 'MBOM251128040', 8, 'SCJH20250001', 6, '2025-11-28', 3, 7974.3600, 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-28 17:57:51', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement` VALUES (42, 'MBOM251128041', 8, 'SCJH20250001', 7, '2025-11-28', 2, 303.5050, 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-28 17:57:51', NULL, '2025-11-28 17:57:50');
 
 -- ----------------------------
 -- Table structure for prd_material_requirement_detail
@@ -3160,7 +3169,18 @@ CREATE TABLE `prd_material_requirement_detail`  (
   INDEX `idx_required_date`(`required_date`) USING BTREE,
   CONSTRAINT `fk_requirement_detail` FOREIGN KEY (`requirement_id`) REFERENCES `prd_material_requirement` (`requirement_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 66 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of prd_material_requirement_detail
+-- ----------------------------
+INSERT INTO `prd_material_requirement_detail` VALUES (60, 39, 10, NULL, NULL, NULL, NULL, 1.000000, 0.0000, 100.000000, 0.000000, 0.000000, 0.000000, 40, NULL, NULL, 0, '2025-11-28', 1, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement_detail` VALUES (61, 40, 1, NULL, NULL, NULL, NULL, 1.000000, 0.0000, 100.000000, 0.000000, 0.000000, 0.000000, 1, NULL, NULL, 0, '2025-11-28', 1, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement_detail` VALUES (62, 41, 3001, NULL, NULL, NULL, NULL, 1.000000, 1.0000, 206.040000, 0.000000, 0.000000, 0.000000, 10, NULL, NULL, 0, '2025-11-28', 1, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement_detail` VALUES (63, 41, 3002, NULL, NULL, NULL, NULL, 1.000000, 0.0000, 204.000000, 0.000000, 0.000000, 0.000000, 10, NULL, NULL, 0, '2025-11-28', 1, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement_detail` VALUES (64, 41, 3003, NULL, NULL, NULL, NULL, 36.000000, 3.0000, 7564.320000, 0.000000, 0.000000, 0.000000, 20, NULL, NULL, 0, '2025-11-28', 1, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement_detail` VALUES (65, 42, 3004, NULL, NULL, NULL, NULL, 1.000000, 0.5000, 101.505000, 0.000000, 0.000000, 0.000000, 10, NULL, NULL, 0, '2025-11-28', 1, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
+INSERT INTO `prd_material_requirement_detail` VALUES (66, 42, 3005, NULL, NULL, NULL, NULL, 2.000000, 0.0000, 202.000000, 0.000000, 0.000000, 0.000000, 10, NULL, NULL, 0, '2025-11-28', 1, NULL, NULL, '2025-11-28 17:57:50', NULL, '2025-11-28 17:57:50');
 
 -- ----------------------------
 -- Table structure for prd_production_plan
@@ -3207,14 +3227,14 @@ CREATE TABLE `prd_production_plan`  (
   INDEX `idx_planner_id`(`planner_id`) USING BTREE,
   INDEX `uk_plan_no`(`plan_no`) USING BTREE,
   INDEX `idx_material_requirement`(`material_requirement_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_production_plan
 -- ----------------------------
 INSERT INTO `prd_production_plan` VALUES (1, 'SCJH20250001', '测试计划单3', 1, 0, NULL, NULL, 'MPS', '2025-11-01', NULL, NULL, 'DRAFT', 0, NULL, NULL, NULL, NULL, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '', '2025-11-13 17:47:49', '', '2025-11-18 16:29:07', NULL, NULL, NULL, NULL);
 INSERT INTO `prd_production_plan` VALUES (7, 'SCJH20250001', '自行车订单', 2, 0, NULL, 'CO20251029001', 'MPS', '2025-11-01', '2025-11-01', '2025-11-30', 'DRAFT', 0, NULL, NULL, NULL, NULL, 100.0000, '2025-11-01 00:00:00', '2025-11-01 00:00:00', NULL, 0, NULL, NULL, 0, NULL, '', '2025-11-13 17:47:49', 'admin', '2025-11-18 17:19:37', NULL, NULL, NULL, NULL);
-INSERT INTO `prd_production_plan` VALUES (8, 'SCJH20250001', '自行车订单', 3, 1, NULL, 'CO20251029001', 'MPS', '2025-11-01', '2025-11-01', '2025-11-30', 'DRAFT', 0, NULL, NULL, NULL, NULL, 100.0000, '2025-11-01 00:00:00', '2025-11-01 00:00:00', NULL, 5, '自行车标准版BOM', NULL, 0, NULL, '', '2025-11-13 17:47:49', 'admin', '2025-11-20 18:06:58', NULL, NULL, NULL, NULL);
+INSERT INTO `prd_production_plan` VALUES (8, 'SCJH20250001', '自行车订单', 3, 1, NULL, 'CO20251029001', 'MPS', '2025-11-01', '2025-11-01', '2025-11-30', 'DRAFT', 0, NULL, NULL, NULL, NULL, 100.0000, '2025-11-01 00:00:00', '2025-11-01 00:00:00', NULL, 5, '自行车标准版BOM', NULL, 0, NULL, '', '2025-11-13 17:47:49', 'admin', '2025-11-20 18:06:58', NULL, NULL, 1, '101');
 
 -- ----------------------------
 -- Table structure for prd_work_order
@@ -3595,7 +3615,7 @@ CREATE TABLE `so_sales_order_header`  (
   INDEX `idx_co_id`(`co_id`) USING BTREE,
   INDEX `idx_sales_rep_id`(`sales_rep_id`) USING BTREE,
   CONSTRAINT `fk_so_header_co` FOREIGN KEY (`co_id`) REFERENCES `so_customer_order` (`co_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_sales_order_header
@@ -3661,7 +3681,7 @@ CREATE TABLE `so_sales_order_line`  (
   INDEX `idx_linked_po_id`(`linked_po_id`) USING BTREE,
   INDEX `idx_pa_group_id`(`pa_group_id`) USING BTREE,
   CONSTRAINT `fk_so_line_header` FOREIGN KEY (`so_id`) REFERENCES `so_sales_order_header` (`so_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_sales_order_line
@@ -3698,7 +3718,7 @@ CREATE TABLE `sys_auto_code_part`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`part_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 364 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 368 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -3860,6 +3880,9 @@ INSERT INTO `sys_auto_code_part` VALUES (361, 266, 3, 'SERIALNO', 'SERIAL', '流
 INSERT INTO `sys_auto_code_part` VALUES (362, 267, 1, 'FIXCHAR', 'PREFIX', '固定前缀', 4, NULL, NULL, 'SCJH', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-11-17 16:41:17', 'admin', '2025-11-17 17:24:09');
 INSERT INTO `sys_auto_code_part` VALUES (363, 267, 2, 'NOWDATE', 'YEAR', '年份', 4, 'yyyy', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-11-17 16:42:05', '', NULL);
 INSERT INTO `sys_auto_code_part` VALUES (364, 267, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'YEAR', NULL, NULL, NULL, 0, 0, 'admin', '2025-11-17 16:42:53', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (365, 268, 1, 'FIXCHAR', '前缀', '固定字符', 4, NULL, NULL, 'MBOM', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-11-27 15:58:41', 'admin', '2025-11-27 15:59:19');
+INSERT INTO `sys_auto_code_part` VALUES (367, 268, 1, 'NOWDATE', '后缀', '固定字符', 6, 'yyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 'admin', '2025-11-27 16:03:12', '', NULL);
+INSERT INTO `sys_auto_code_part` VALUES (368, 268, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', NULL, NULL, NULL, 0, 0, 'admin', '2025-11-27 16:04:42', '', NULL);
 
 -- ----------------------------
 -- Table structure for sys_auto_code_result
@@ -3883,7 +3906,7 @@ CREATE TABLE `sys_auto_code_result`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`code_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 664 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 666 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -4343,6 +4366,8 @@ INSERT INTO `sys_auto_code_result` VALUES (661, 236, '20251026193017', 1, 'IF202
 INSERT INTO `sys_auto_code_result` VALUES (662, 266, '20251029160502', 1, 'CO20251029001', 1, NULL, '', NULL, NULL, 0, 0, '', '2025-10-29 16:05:02', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (663, 236, '20251110165325', 1, 'IF20251110001', 1, NULL, '', NULL, NULL, 0, 0, '', '2025-11-10 16:53:25', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (664, 267, '20251117172310', 1, 'SCJS20250001', 1, NULL, '', NULL, NULL, 0, 0, '', '2025-11-17 17:23:10', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (665, 268, '20251127173422', 3, 'MBOM251127003', 3, NULL, '', NULL, NULL, 0, 0, '', '2025-11-27 16:10:34', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (666, 268, '20251128175750', 41, 'MBOM251128041', 41, NULL, '', NULL, NULL, 0, 0, '', '2025-11-28 10:17:53', '', NULL);
 
 -- ----------------------------
 -- Table structure for sys_auto_code_rule
@@ -4368,7 +4393,7 @@ CREATE TABLE `sys_auto_code_rule`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`rule_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 267 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 268 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -4434,6 +4459,7 @@ INSERT INTO `sys_auto_code_rule` VALUES (264, 'MISC_ISSUE_CODE', '杂项出库�
 INSERT INTO `sys_auto_code_rule` VALUES (265, 'BOM_CODE', 'BOM编码规则', NULL, 5, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-06-20 10:07:51', '', NULL);
 INSERT INTO `sys_auto_code_rule` VALUES (266, 'SO_CO_NO', '客户订单号', '客户订单号', 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-10-22 10:46:36', 'admin', '2025-10-22 10:46:59');
 INSERT INTO `sys_auto_code_rule` VALUES (267, 'PRD_PLAN_CODE', '生产计划编码', NULL, 12, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-11-17 16:36:20', 'admin', '2025-11-17 16:36:37');
+INSERT INTO `sys_auto_code_rule` VALUES (268, 'PRD_MATERIAL_MBOM', '物料清单编码', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-11-27 15:57:06', 'admin', '2025-11-27 15:57:37');
 
 -- ----------------------------
 -- Table structure for sys_config
@@ -4451,7 +4477,7 @@ CREATE TABLE `sys_config`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_config
@@ -4502,7 +4528,7 @@ CREATE TABLE `sys_dept`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 117 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 116 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -6229,7 +6255,7 @@ CREATE TABLE `sys_dict_data`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 220 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 224 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -6403,7 +6429,7 @@ CREATE TABLE `sys_dict_type`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `dict_type`(`dict_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 128 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -6486,7 +6512,7 @@ CREATE TABLE `sys_job`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注信息',
   PRIMARY KEY (`job_id`, `job_name`, `job_group`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_job
@@ -6561,7 +6587,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 373 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 385 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -6841,6 +6867,17 @@ INSERT INTO `sys_logininfor` VALUES (371, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (372, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-21 09:30:20');
 INSERT INTO `sys_logininfor` VALUES (373, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-21 10:44:33');
 INSERT INTO `sys_logininfor` VALUES (374, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-21 14:38:51');
+INSERT INTO `sys_logininfor` VALUES (375, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-25 17:40:55');
+INSERT INTO `sys_logininfor` VALUES (376, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-26 16:33:09');
+INSERT INTO `sys_logininfor` VALUES (377, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-27 09:17:16');
+INSERT INTO `sys_logininfor` VALUES (378, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-27 09:22:21');
+INSERT INTO `sys_logininfor` VALUES (379, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-27 10:58:37');
+INSERT INTO `sys_logininfor` VALUES (380, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-27 15:43:43');
+INSERT INTO `sys_logininfor` VALUES (381, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-27 16:41:06');
+INSERT INTO `sys_logininfor` VALUES (382, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-28 09:51:02');
+INSERT INTO `sys_logininfor` VALUES (383, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-28 11:55:58');
+INSERT INTO `sys_logininfor` VALUES (384, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-28 16:10:38');
+INSERT INTO `sys_logininfor` VALUES (385, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-11-28 17:41:58');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -6868,7 +6905,7 @@ CREATE TABLE `sys_menu`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2171 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2176 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -7141,7 +7178,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 914 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1060 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -8015,6 +8052,98 @@ INSERT INTO `sys_oper_log` VALUES (965, '代码生成', 2, 'com.nexus.generator.
 INSERT INTO `sys_oper_log` VALUES (966, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"prd_material_requirement\"}', NULL, 0, NULL, '2025-11-21 16:38:54', 212);
 INSERT INTO `sys_oper_log` VALUES (967, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"prd_material_requirement\"}', NULL, 0, NULL, '2025-11-21 16:44:03', 227);
 INSERT INTO `sys_oper_log` VALUES (968, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"requirement\",\"className\":\"PrdMaterialRequirement\",\"columns\":[{\"capJavaField\":\"RequirementId\",\"columnComment\":\"物料需求单ID\",\"columnId\":545,\"columnName\":\"requirement_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-11-21 10:44:56\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"requirementId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":24,\"updateBy\":\"\",\"updateTime\":\"2025-11-21 16:38:52\",\"usableColumn\":false},{\"capJavaField\":\"RequirementNo\",\"columnComment\":\"物料需求单编号\",\"columnId\":546,\"columnName\":\"requirement_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-11-21 10:44:56\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"requirementNo\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":24,\"updateBy\":\"\",\"updateTime\":\"2025-11-21 16:38:52\",\"usableColumn\":false},{\"capJavaField\":\"PlanId\",\"columnComment\":\"生产计划ID\",\"columnId\":547,\"columnName\":\"plan_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-11-21 10:44:56\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"planId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":24,\"updateBy\":\"\",\"updateTime\":\"2025-11-21 16:38:52\",\"usableColumn\":false},{\"capJavaField\":\"PlanNo\",\"columnComment\":\"生产计划编号\",\"columnId\":548,\"columnName\":\"plan_no\",\"columnType\":\"varchar(50)\",\"createBy\":\"admin\",\"createTime\":\"2025-11-21 10:44:56\",\"dictType\":\"\",\"', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-21 16:54:42', 64);
+INSERT INTO `sys_oper_log` VALUES (969, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.calculateBom()', 'GET', 1, 'admin', '研发部门', '/prd/plan/calculateBom/8', '127.0.0.1', '内网IP', '{}', NULL, 1, '该生产计划未关联订单行信息', '2025-11-27 11:19:16', 24);
+INSERT INTO `sys_oper_log` VALUES (970, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.calculateBom()', 'GET', 1, 'admin', '研发部门', '/prd/plan/calculateBom/8', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200,\"data\":[{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"LARGE_GEAR\",\"childMaterialId\":16,\"childMaterialName\":\"大齿轮\",\"childMaterialSpec\":\"模数3 齿数50\",\"createTime\":\"2025-10-21 10:53:59\",\"detailId\":23,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":10,\"quantityPerParent\":1.000000,\"remark\":\"\",\"sortOrder\":0,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-21 10:53:59\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"LARGE_GEAR\",\"childMaterialId\":16,\"childMaterialName\":\"大齿轮\",\"childMaterialSpec\":\"模数3 齿数50\",\"createTime\":\"2025-10-21 10:55:17\",\"detailId\":24,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":10,\"quantityPerParent\":1.000000,\"remark\":\"\",\"sortOrder\":0,\"status\":0,\"statusDesc\":\"停用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-21 10:55:17\"},{\"baseUomId\":2,\"baseUomName\":\"千克\",\"bomId\":1,\"childMaterialCode\":\"IF20251018001\",\"childMaterialId\":2,\"childMaterialName\":\"电机Y132M-4 7.5KW\",\"childMaterialSpec\":\"7.5KW 380V\",\"createTime\":\"2025-10-21 10:58:37\",\"detailId\":25,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":1,\"quantityPerParent\":1.000000,\"remark\":\"\",\"sortOrder\":0,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-21 10:58:37\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"HOUSING\",\"childMaterialId\":6,\"childMaterialName\":\"箱体\",\"childMaterialSpec\":\"铸铁箱体\",\"createTime\":\"2025-10-18 23:29:00\",\"detailId\":1,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":10,\"quantityPerParent\":1.000000,\"sortOrder\":1,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-18 23:29:00\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"GEAR_SET\",\"childMaterialId\":5,\"childMaterialName\":\"齿轮组\",\"childMaterialSpec\":\"标准齿轮组\",\"createTime\":\"2025-10-18 23:29:00\",\"detailId\":3,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":20,\"quantityPerParent\":1.000000,\"sortOrder\":1,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.0000000000000', 0, NULL, '2025-11-27 11:21:31', 27);
+INSERT INTO `sys_oper_log` VALUES (971, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.calculateBom()', 'GET', 1, 'admin', '研发部门', '/prd/plan/calculateBom/8', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200,\"data\":[{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"LARGE_GEAR\",\"childMaterialId\":16,\"childMaterialName\":\"大齿轮\",\"childMaterialSpec\":\"模数3 齿数50\",\"createTime\":\"2025-10-21 10:53:59\",\"detailId\":23,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":10,\"quantityPerParent\":1.000000,\"remark\":\"\",\"sortOrder\":0,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-21 10:53:59\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"LARGE_GEAR\",\"childMaterialId\":16,\"childMaterialName\":\"大齿轮\",\"childMaterialSpec\":\"模数3 齿数50\",\"createTime\":\"2025-10-21 10:55:17\",\"detailId\":24,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":10,\"quantityPerParent\":1.000000,\"remark\":\"\",\"sortOrder\":0,\"status\":0,\"statusDesc\":\"停用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-21 10:55:17\"},{\"baseUomId\":2,\"baseUomName\":\"千克\",\"bomId\":1,\"childMaterialCode\":\"IF20251018001\",\"childMaterialId\":2,\"childMaterialName\":\"电机Y132M-4 7.5KW\",\"childMaterialSpec\":\"7.5KW 380V\",\"createTime\":\"2025-10-21 10:58:37\",\"detailId\":25,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":1,\"quantityPerParent\":1.000000,\"remark\":\"\",\"sortOrder\":0,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-21 10:58:37\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"HOUSING\",\"childMaterialId\":6,\"childMaterialName\":\"箱体\",\"childMaterialSpec\":\"铸铁箱体\",\"createTime\":\"2025-10-18 23:29:00\",\"detailId\":1,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":10,\"quantityPerParent\":1.000000,\"sortOrder\":1,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-18 23:29:00\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":1,\"childMaterialCode\":\"GEAR_SET\",\"childMaterialId\":5,\"childMaterialName\":\"齿轮组\",\"childMaterialSpec\":\"标准齿轮组\",\"createTime\":\"2025-10-18 23:29:00\",\"detailId\":3,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":20,\"quantityPerParent\":1.000000,\"sortOrder\":1,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.0000000000000', 0, NULL, '2025-11-27 11:42:54', 280839);
+INSERT INTO `sys_oper_log` VALUES (972, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.calculateBom()', 'GET', 1, 'admin', '研发部门', '/prd/plan/calculateBom/8', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200,\"data\":[{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":5,\"childMaterialCode\":\"FRAME\",\"childMaterialId\":2001,\"childMaterialName\":\"车架\",\"createTime\":\"2025-10-26 19:45:40\",\"detailId\":28,\"leadTime\":0,\"lossRate\":0.0000,\"operationStep\":10,\"quantityPerParent\":1.000000,\"sortOrder\":1,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.00000000000000,\"updateTime\":\"2025-10-26 19:45:40\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":5,\"childMaterialCode\":\"WHEEL\",\"childMaterialId\":2002,\"childMaterialName\":\"车轮\",\"createTime\":\"2025-10-26 19:45:40\",\"detailId\":29,\"leadTime\":0,\"lossRate\":2.0000,\"operationStep\":20,\"quantityPerParent\":2.000000,\"sortOrder\":1,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":2.04000000000000,\"updateTime\":\"2025-10-26 19:45:40\"},{\"baseUomId\":1,\"baseUomName\":\"克\",\"bomId\":5,\"childMaterialCode\":\"HANDLEBAR\",\"childMaterialId\":2003,\"childMaterialName\":\"车把\",\"createTime\":\"2025-10-26 19:45:40\",\"detailId\":30,\"leadTime\":0,\"lossRate\":1.0000,\"operationStep\":30,\"quantityPerParent\":1.000000,\"sortOrder\":1,\"status\":1,\"statusDesc\":\"启用\",\"totalQuantity\":1.01000000000000,\"updateTime\":\"2025-10-26 19:45:40\"}]}', 0, NULL, '2025-11-27 15:44:02', 30);
+INSERT INTO `sys_oper_log` VALUES (973, '新增自动编码规则', 1, 'com.nexus.web.controller.system.SysAutoCodeRuleController.add()', 'POST', 1, 'admin', '研发部门', '/system/autocode/rule', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"enableFlag\":\"Y\",\"isPadded\":\"N\",\"maxLength\":10,\"params\":{},\"ruleCode\":\"PRD_MATERIAL_MBOM\",\"ruleName\":\"物料清单编码\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 15:57:06', 10);
+INSERT INTO `sys_oper_log` VALUES (974, '更新自动编码规则', 2, 'com.nexus.web.controller.system.SysAutoCodeRuleController.updateInfo()', 'PUT', 1, 'admin', '研发部门', '/system/autocode/rule', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-11-27 15:57:06\",\"enableFlag\":\"Y\",\"isPadded\":\"N\",\"maxLength\":13,\"paddedMethod\":\"L\",\"params\":{},\"ruleCode\":\"PRD_MATERIAL_MBOM\",\"ruleId\":268,\"ruleName\":\"物料清单编码\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 15:57:37', 7);
+INSERT INTO `sys_oper_log` VALUES (975, '新增编码生产规则组成部分', 1, 'com.nexus.web.controller.system.SysAutoCodePartController.add()', 'POST', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"params\":{},\"partCode\":\"前缀\",\"partIndex\":0,\"partLength\":4,\"partName\":\"固定字符\",\"partType\":\"FIXCHAR\",\"ruleId\":268}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 15:58:41', 20);
+INSERT INTO `sys_oper_log` VALUES (976, '更新物料编码', 2, 'com.nexus.web.controller.system.SysAutoCodePartController.update()', 'PUT', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-11-27 15:58:41\",\"fixCharacter\":\"MBOM\",\"params\":{},\"partCode\":\"前缀\",\"partId\":365,\"partIndex\":1,\"partLength\":4,\"partName\":\"固定字符\",\"partType\":\"FIXCHAR\",\"ruleId\":268,\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 15:59:19', 20);
+INSERT INTO `sys_oper_log` VALUES (977, '新增编码生产规则组成部分', 1, 'com.nexus.web.controller.system.SysAutoCodePartController.add()', 'POST', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dateFormat\":\"yyyymmdd\",\"params\":{},\"partCode\":\"后缀\",\"partIndex\":1,\"partLength\":0,\"partName\":\"固定字符\",\"partType\":\"NOWDATE\",\"ruleId\":268}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLException: Field \'part_length\' doesn\'t have a default value\r\n### The error may exist in file [E:\\nexus-erp\\nexus-system\\target\\classes\\mapper\\system\\SysAutoCodePartMapper.xml]\r\n### The error may involve com.nexus.system.mapper.SysAutoCodePartMapper.add-Inline\r\n### The error occurred while setting parameters\r\n### SQL: insert into sys_auto_code_part(         rule_id,         part_index,         part_type,         part_code,         part_name,                                 date_format,                                                                                         remark,         create_by,         create_time         )values(         ?,         ?,         ?,         ?,         ?,                                 ?,                                                                                         ?,         ?,         sysdate()         )\r\n### Cause: java.sql.SQLException: Field \'part_length\' doesn\'t have a default value\n; Field \'part_length\' doesn\'t have a default value', '2025-11-27 15:59:58', 59);
+INSERT INTO `sys_oper_log` VALUES (978, '新增编码生产规则组成部分', 1, 'com.nexus.web.controller.system.SysAutoCodePartController.add()', 'POST', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dateFormat\":\"yyyymmdd\",\"params\":{},\"partCode\":\"后缀\",\"partIndex\":1,\"partLength\":6,\"partName\":\"固定字符\",\"partType\":\"NOWDATE\",\"ruleId\":268}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 16:00:06', 16);
+INSERT INTO `sys_oper_log` VALUES (979, '更新物料编码', 2, 'com.nexus.web.controller.system.SysAutoCodePartController.update()', 'PUT', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-11-27 16:00:06\",\"dateFormat\":\"yyMMdd\",\"params\":{},\"partCode\":\"后缀\",\"partId\":366,\"partIndex\":1,\"partLength\":6,\"partName\":\"固定字符\",\"partType\":\"NOWDATE\",\"ruleId\":268,\"updateBy\":\"\"}', NULL, 1, 'Expected one result (or null) to be returned by selectOne(), but found: 2', '2025-11-27 16:00:38', 4);
+INSERT INTO `sys_oper_log` VALUES (980, '更新物料编码', 2, 'com.nexus.web.controller.system.SysAutoCodePartController.update()', 'PUT', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-11-27 16:00:06\",\"dateFormat\":\"yyyyMMdd\",\"params\":{},\"partCode\":\"后缀\",\"partId\":366,\"partIndex\":1,\"partLength\":6,\"partName\":\"固定字符\",\"partType\":\"NOWDATE\",\"ruleId\":268,\"updateBy\":\"\"}', NULL, 1, 'Expected one result (or null) to be returned by selectOne(), but found: 2', '2025-11-27 16:00:46', 3);
+INSERT INTO `sys_oper_log` VALUES (981, '更新物料编码', 2, 'com.nexus.web.controller.system.SysAutoCodePartController.update()', 'PUT', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-11-27 16:00:06\",\"dateFormat\":\"yyyyMMdd\",\"params\":{},\"partCode\":\"后缀\",\"partId\":366,\"partIndex\":1,\"partLength\":8,\"partName\":\"固定字符\",\"partType\":\"NOWDATE\",\"ruleId\":268,\"updateBy\":\"\"}', NULL, 1, 'Expected one result (or null) to be returned by selectOne(), but found: 2', '2025-11-27 16:00:59', 3);
+INSERT INTO `sys_oper_log` VALUES (982, '删除物料编码', 3, 'com.nexus.web.controller.system.SysAutoCodePartController.delete()', 'DELETE', 1, 'admin', '研发部门', '/system/autocode/part/366', '127.0.0.1', '内网IP', '[366]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 16:01:12', 16);
+INSERT INTO `sys_oper_log` VALUES (983, '新增编码生产规则组成部分', 1, 'com.nexus.web.controller.system.SysAutoCodePartController.add()', 'POST', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dateFormat\":\"yyMMdd\",\"params\":{},\"partCode\":\"后缀\",\"partIndex\":1,\"partLength\":6,\"partName\":\"固定字符\",\"partType\":\"NOWDATE\",\"ruleId\":268}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 16:03:12', 7);
+INSERT INTO `sys_oper_log` VALUES (984, '新增编码生产规则组成部分', 1, 'com.nexus.web.controller.system.SysAutoCodePartController.add()', 'POST', 1, 'admin', '研发部门', '/system/autocode/part', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"cycleFlag\":\"Y\",\"cycleMethod\":\"DAY\",\"params\":{},\"partCode\":\"SERIAL\",\"partIndex\":3,\"partLength\":3,\"partName\":\"流水号\",\"partType\":\"SERIALNO\",\"ruleId\":268,\"seriaStartNo\":1,\"seriaStep\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 16:04:42', 6);
+INSERT INTO `sys_oper_log` VALUES (985, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/PRD_MATERIAL_MBOM', '127.0.0.1', '内网IP', '{}', '\"MBOM251127001\"', 0, NULL, '2025-11-27 16:10:34', 34);
+INSERT INTO `sys_oper_log` VALUES (986, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/PRD_MATERIAL_MBOM', '127.0.0.1', '内网IP', '{}', '\"MBOM251127002\"', 0, NULL, '2025-11-27 16:11:48', 13);
+INSERT INTO `sys_oper_log` VALUES (987, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成失败：\\r\\n### Error updating database.  Cause: java.sql.SQLException: Field \'requirement_no\' doesn\'t have a default value\\r\\n### The error may exist in file [E:\\\\nexus-erp\\\\nexus-core\\\\target\\\\classes\\\\mapper\\\\prd\\\\PrdMaterialRequirementMapper.xml]\\r\\n### The error may involve com.nexus.core.prd.mapper.PrdMaterialRequirementMapper.insertPrdMaterialRequirement-Inline\\r\\n### The error occurred while setting parameters\\r\\n### SQL: insert into prd_material_requirement          ( plan_id,                     plan_no,                     bom_id,                     requirement_date,                                                               status,                                                                                                                                                                                                                  create_time )           values ( ?,                     ?,                     ?,                     ?,                                                               ?,                                                                                                                                                                                                                  ? )\\r\\n### Cause: java.sql.SQLException: Field \'requirement_no\' doesn\'t have a default value\\n; Field \'requirement_no\' doesn\'t have a default value\",\"code\":500}', 0, NULL, '2025-11-27 17:22:30', 177);
+INSERT INTO `sys_oper_log` VALUES (988, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成失败：\\r\\n### Error updating database.  Cause: java.sql.SQLException: Field \'requirement_no\' doesn\'t have a default value\\r\\n### The error may exist in file [E:\\\\nexus-erp\\\\nexus-core\\\\target\\\\classes\\\\mapper\\\\prd\\\\PrdMaterialRequirementMapper.xml]\\r\\n### The error may involve com.nexus.core.prd.mapper.PrdMaterialRequirementMapper.insertPrdMaterialRequirement-Inline\\r\\n### The error occurred while setting parameters\\r\\n### SQL: insert into prd_material_requirement          ( plan_id,                     plan_no,                     bom_id,                     requirement_date,                                                               status,                                                                                                                                                                                                                  create_time )           values ( ?,                     ?,                     ?,                     ?,                                                               ?,                                                                                                                                                                                                                  ? )\\r\\n### Cause: java.sql.SQLException: Field \'requirement_no\' doesn\'t have a default value\\n; Field \'requirement_no\' doesn\'t have a default value\",\"code\":500}', 0, NULL, '2025-11-27 17:28:18', 180);
+INSERT INTO `sys_oper_log` VALUES (989, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251127003\"', 0, NULL, '2025-11-27 17:34:22', 54);
+INSERT INTO `sys_oper_log` VALUES (990, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 17:45:55\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:45:55', 7);
+INSERT INTO `sys_oper_log` VALUES (991, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":5,\"childMaterialId\":10,\"childMaterialName\":\"润滑油\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":40,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:45:55', 10);
+INSERT INTO `sys_oper_log` VALUES (992, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 17:46:38\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:46:38', 15);
+INSERT INTO `sys_oper_log` VALUES (993, '产品BOM明细', 1, 'com.nexus.core.bd.controller.BdBomController.addDetail()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail', '127.0.0.1', '内网IP', '{\"bomId\":5,\"childMaterialId\":10,\"childMaterialName\":\"润滑油\",\"leadTime\":0,\"lossRate\":0,\"operationStep\":1,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:46:38', 5);
+INSERT INTO `sys_oper_log` VALUES (994, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 17:51:10\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:51:10', 15);
+INSERT INTO `sys_oper_log` VALUES (995, '产品BOM明细', 3, 'com.nexus.core.bd.controller.BdBomController.removeDetails()', 'DELETE', 1, 'admin', '研发部门', '/bd/bom/detail/38', '127.0.0.1', '内网IP', '[38]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-11-27 17:51:10', 1);
+INSERT INTO `sys_oper_log` VALUES (996, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 17:51:34\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:51:34', 14);
+INSERT INTO `sys_oper_log` VALUES (997, '产品BOM明细', 3, 'com.nexus.core.bd.controller.BdBomController.removeDetails()', 'DELETE', 1, 'admin', '研发部门', '/bd/bom/detail/38', '127.0.0.1', '内网IP', '[38]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-11-27 17:51:34', 0);
+INSERT INTO `sys_oper_log` VALUES (998, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 17:57:39\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:57:40', 4);
+INSERT INTO `sys_oper_log` VALUES (999, '产品BOM明细', 2, 'com.nexus.core.bd.controller.BdBomController.saveDetailsBatch()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail/batch', '127.0.0.1', '内网IP', '[{\"bomId\":5,\"childMaterialId\":10,\"childMaterialName\":\"润滑油\",\"detailId\":37,\"leadTime\":0,\"lossRate\":0,\"operationStep\":40,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2001,\"childMaterialName\":\"车架\",\"detailId\":28,\"leadTime\":0,\"lossRate\":0,\"operationStep\":10,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2002,\"childMaterialName\":\"车轮\",\"detailId\":29,\"leadTime\":0,\"lossRate\":2,\"operationStep\":20,\"params\":{},\"quantityPerParent\":2,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2003,\"childMaterialName\":\"车把\",\"detailId\":30,\"leadTime\":0,\"lossRate\":1,\"operationStep\":30,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-11-27 17:57:40', 1);
+INSERT INTO `sys_oper_log` VALUES (1000, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 17:58:28\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 17:58:28', 5);
+INSERT INTO `sys_oper_log` VALUES (1001, '产品BOM明细', 2, 'com.nexus.core.bd.controller.BdBomController.saveDetailsBatch()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail/batch', '127.0.0.1', '内网IP', '[{\"bomId\":5,\"childMaterialId\":10,\"childMaterialName\":\"润滑油\",\"detailId\":37,\"leadTime\":0,\"lossRate\":0,\"operationStep\":40,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2001,\"childMaterialName\":\"车架\",\"detailId\":28,\"leadTime\":0,\"lossRate\":0,\"operationStep\":10,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2002,\"childMaterialName\":\"车轮\",\"detailId\":29,\"leadTime\":0,\"lossRate\":2,\"operationStep\":20,\"params\":{},\"quantityPerParent\":2,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2003,\"childMaterialName\":\"车把\",\"detailId\":30,\"leadTime\":0,\"lossRate\":1,\"operationStep\":30,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}]', '{\"msg\":\"操作失败\",\"code\":500}', 0, NULL, '2025-11-27 17:58:28', 1);
+INSERT INTO `sys_oper_log` VALUES (1002, '产品BOM明细', 2, 'com.nexus.core.bd.controller.BdBomController.saveDetailsBatch()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail/batch', '127.0.0.1', '内网IP', '[{\"bomId\":5,\"childMaterialId\":10,\"childMaterialName\":\"润滑油\",\"detailId\":37,\"leadTime\":0,\"lossRate\":0,\"operationStep\":40,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2001,\"childMaterialName\":\"车架\",\"detailId\":28,\"leadTime\":0,\"lossRate\":0,\"operationStep\":10,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2002,\"childMaterialName\":\"车轮\",\"detailId\":29,\"leadTime\":0,\"lossRate\":2,\"operationStep\":20,\"params\":{},\"quantityPerParent\":2,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2003,\"childMaterialName\":\"车把\",\"detailId\":30,\"leadTime\":0,\"lossRate\":1,\"operationStep\":30,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 18:01:34', 25);
+INSERT INTO `sys_oper_log` VALUES (1003, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 18:01:34\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 18:01:34', 28);
+INSERT INTO `sys_oper_log` VALUES (1004, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":5,\"bomName\":\"自行车标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-10-26 19:44:35\",\"effectiveDate\":\"2024-01-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":1001,\"status\":1,\"updateTime\":\"2025-11-27 18:02:15\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 18:02:15', 6);
+INSERT INTO `sys_oper_log` VALUES (1005, '产品BOM明细', 2, 'com.nexus.core.bd.controller.BdBomController.saveDetailsBatch()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail/batch', '127.0.0.1', '内网IP', '[{\"bomId\":5,\"childMaterialId\":2001,\"childMaterialName\":\"车架\",\"detailId\":28,\"leadTime\":0,\"lossRate\":0,\"operationStep\":10,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2002,\"childMaterialName\":\"车轮\",\"detailId\":29,\"leadTime\":0,\"lossRate\":2,\"operationStep\":20,\"params\":{},\"quantityPerParent\":2,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":2003,\"childMaterialName\":\"车把\",\"detailId\":30,\"leadTime\":0,\"lossRate\":1,\"operationStep\":30,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1},{\"bomId\":5,\"childMaterialId\":10,\"childMaterialName\":\"润滑油\",\"detailId\":37,\"leadTime\":0,\"lossRate\":0,\"operationStep\":40,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-27 18:02:15', 10);
+INSERT INTO `sys_oper_log` VALUES (1006, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128001\"', 0, NULL, '2025-11-28 10:17:53', 195);
+INSERT INTO `sys_oper_log` VALUES (1007, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128002\"', 0, NULL, '2025-11-28 10:17:53', 15);
+INSERT INTO `sys_oper_log` VALUES (1008, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128003\"', 0, NULL, '2025-11-28 10:20:45', 48);
+INSERT INTO `sys_oper_log` VALUES (1009, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128004\"', 0, NULL, '2025-11-28 10:20:46', 18);
+INSERT INTO `sys_oper_log` VALUES (1010, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成2条记录\",\"code\":200}', 0, NULL, '2025-11-28 10:20:46', 0);
+INSERT INTO `sys_oper_log` VALUES (1011, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128005\"', 0, NULL, '2025-11-28 10:24:25', 225);
+INSERT INTO `sys_oper_log` VALUES (1012, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128006\"', 0, NULL, '2025-11-28 10:31:49', 103);
+INSERT INTO `sys_oper_log` VALUES (1013, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成2条记录\",\"code\":200}', 0, NULL, '2025-11-28 10:31:50', 0);
+INSERT INTO `sys_oper_log` VALUES (1014, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128007\"', 0, NULL, '2025-11-28 10:35:04', 78);
+INSERT INTO `sys_oper_log` VALUES (1015, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128008\"', 0, NULL, '2025-11-28 10:36:42', 100);
+INSERT INTO `sys_oper_log` VALUES (1016, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成2条记录\",\"code\":200}', 0, NULL, '2025-11-28 10:36:42', 0);
+INSERT INTO `sys_oper_log` VALUES (1017, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128009\"', 0, NULL, '2025-11-28 10:37:20', 66);
+INSERT INTO `sys_oper_log` VALUES (1018, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128010\"', 0, NULL, '2025-11-28 10:37:20', 14);
+INSERT INTO `sys_oper_log` VALUES (1019, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128011\"', 0, NULL, '2025-11-28 10:37:20', 9);
+INSERT INTO `sys_oper_log` VALUES (1020, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128012\"', 0, NULL, '2025-11-28 10:37:20', 9);
+INSERT INTO `sys_oper_log` VALUES (1021, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 10:37:20', 0);
+INSERT INTO `sys_oper_log` VALUES (1022, '产品BOM', 2, 'com.nexus.core.bd.controller.BdBomController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/bom', '127.0.0.1', '内网IP', '{\"bomId\":9,\"bomName\":\"车架标准版BOM\",\"bomVersion\":\"1.0\",\"createTime\":\"2025-11-03 14:47:25\",\"effectiveDate\":\"2025-11-01\",\"expiryDate\":\"2026-11-01\",\"isCurrent\":1,\"params\":{},\"parentMaterialId\":2001,\"status\":1,\"updateTime\":\"2025-11-28 10:48:54\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-28 10:48:54', 17);
+INSERT INTO `sys_oper_log` VALUES (1023, '产品BOM明细', 2, 'com.nexus.core.bd.controller.BdBomController.saveDetailsBatch()', 'POST', 1, 'admin', '研发部门', '/bd/bom/detail/batch', '127.0.0.1', '内网IP', '[{\"bomId\":9,\"childMaterialId\":1,\"childMaterialName\":\"钢板\",\"detailId\":36,\"effectiveDate\":\"2025-11-01\",\"expiryDate\":\"2026-11-01\",\"leadTime\":1,\"lossRate\":0,\"operationStep\":1,\"params\":{},\"quantityPerParent\":1,\"remark\":\"\",\"sortOrder\":0,\"status\":1}]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-11-28 10:48:54', 9);
+INSERT INTO `sys_oper_log` VALUES (1024, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128013\"', 0, NULL, '2025-11-28 11:56:53', 44);
+INSERT INTO `sys_oper_log` VALUES (1025, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128014\"', 0, NULL, '2025-11-28 11:56:53', 10);
+INSERT INTO `sys_oper_log` VALUES (1026, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128015\"', 0, NULL, '2025-11-28 11:56:53', 11);
+INSERT INTO `sys_oper_log` VALUES (1027, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128016\"', 0, NULL, '2025-11-28 11:56:53', 11);
+INSERT INTO `sys_oper_log` VALUES (1028, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 11:56:53', 0);
+INSERT INTO `sys_oper_log` VALUES (1029, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128017\"', 0, NULL, '2025-11-28 16:24:07', 58);
+INSERT INTO `sys_oper_log` VALUES (1030, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128018\"', 0, NULL, '2025-11-28 16:24:07', 10);
+INSERT INTO `sys_oper_log` VALUES (1031, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128019\"', 0, NULL, '2025-11-28 16:24:07', 13);
+INSERT INTO `sys_oper_log` VALUES (1032, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128020\"', 0, NULL, '2025-11-28 16:24:07', 15);
+INSERT INTO `sys_oper_log` VALUES (1033, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 16:24:07', 0);
+INSERT INTO `sys_oper_log` VALUES (1034, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128021\"', 0, NULL, '2025-11-28 16:28:54', 53);
+INSERT INTO `sys_oper_log` VALUES (1035, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128022\"', 0, NULL, '2025-11-28 16:28:54', 12);
+INSERT INTO `sys_oper_log` VALUES (1036, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128023\"', 0, NULL, '2025-11-28 16:28:54', 13);
+INSERT INTO `sys_oper_log` VALUES (1037, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128024\"', 0, NULL, '2025-11-28 16:28:54', 13);
+INSERT INTO `sys_oper_log` VALUES (1038, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 16:28:54', 0);
+INSERT INTO `sys_oper_log` VALUES (1039, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128025\"', 0, NULL, '2025-11-28 16:34:57', 59);
+INSERT INTO `sys_oper_log` VALUES (1040, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128026\"', 0, NULL, '2025-11-28 16:34:57', 10);
+INSERT INTO `sys_oper_log` VALUES (1041, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128027\"', 0, NULL, '2025-11-28 16:34:57', 12);
+INSERT INTO `sys_oper_log` VALUES (1042, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128028\"', 0, NULL, '2025-11-28 16:34:57', 15);
+INSERT INTO `sys_oper_log` VALUES (1043, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 16:34:57', 0);
+INSERT INTO `sys_oper_log` VALUES (1044, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128029\"', 0, NULL, '2025-11-28 16:44:41', 49);
+INSERT INTO `sys_oper_log` VALUES (1045, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128030\"', 0, NULL, '2025-11-28 16:44:41', 11);
+INSERT INTO `sys_oper_log` VALUES (1046, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128031\"', 0, NULL, '2025-11-28 16:44:41', 10);
+INSERT INTO `sys_oper_log` VALUES (1047, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128032\"', 0, NULL, '2025-11-28 16:44:41', 13);
+INSERT INTO `sys_oper_log` VALUES (1048, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 16:44:41', 0);
+INSERT INTO `sys_oper_log` VALUES (1049, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128033\"', 0, NULL, '2025-11-28 16:45:49', 9);
+INSERT INTO `sys_oper_log` VALUES (1050, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128034\"', 0, NULL, '2025-11-28 16:45:49', 12);
+INSERT INTO `sys_oper_log` VALUES (1051, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128035\"', 0, NULL, '2025-11-28 16:45:49', 10);
+INSERT INTO `sys_oper_log` VALUES (1052, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128036\"', 0, NULL, '2025-11-28 16:45:49', 10);
+INSERT INTO `sys_oper_log` VALUES (1053, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 16:45:49', 0);
+INSERT INTO `sys_oper_log` VALUES (1054, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128037\"', 0, NULL, '2025-11-28 17:42:15', 41);
+INSERT INTO `sys_oper_log` VALUES (1055, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成1条记录\",\"code\":200}', 0, NULL, '2025-11-28 17:42:15', 0);
+INSERT INTO `sys_oper_log` VALUES (1056, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128038\"', 0, NULL, '2025-11-28 17:57:50', 57);
+INSERT INTO `sys_oper_log` VALUES (1057, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128039\"', 0, NULL, '2025-11-28 17:57:50', 12);
+INSERT INTO `sys_oper_log` VALUES (1058, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128040\"', 0, NULL, '2025-11-28 17:57:50', 11);
+INSERT INTO `sys_oper_log` VALUES (1059, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251128041\"', 0, NULL, '2025-11-28 17:57:50', 13);
+INSERT INTO `sys_oper_log` VALUES (1060, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-28 17:57:50', 0);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -8075,7 +8204,7 @@ CREATE TABLE `sys_role`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role
@@ -8310,12 +8439,12 @@ CREATE TABLE `sys_user`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 104 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 103 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-21 14:38:51', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-21 14:38:51', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-28 17:41:59', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-28 17:41:58', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员');
 INSERT INTO `sys_user` VALUES (100, 112, 'xiaowang', '小王', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-10-23 16:45:02', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', '麦得朶', '2025-10-23 19:33:53', '耳朵聋');
@@ -8398,5 +8527,72 @@ CREATE TABLE `wm_warehouse`  (
 -- Records of wm_warehouse
 -- ----------------------------
 INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '内江东兴区仓库', '浙江省杭州市上城区小营街道', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-30 12:04:16', NULL, '2025-11-03 10:06:56', 330000, 330100, 330102, 330102004, NULL, NULL);
+
+-- ----------------------------
+-- View structure for v_material_requirement_detail
+-- ----------------------------
+DROP VIEW IF EXISTS `v_material_requirement_detail`;
+CREATE ALGORITHM = UNDEFINED DEFINER = `root`@`localhost` SQL SECURITY DEFINER VIEW `v_material_requirement_detail` AS with recursive `bom_expansion` as (select `b`.`parent_material_id` AS `top_material_id`,`d`.`child_material_id` AS `child_material_id`,`d`.`quantity_per_parent` AS `quantity_per_parent`,`d`.`loss_rate` AS `loss_rate`,1 AS `level`,`b`.`parent_material_id` AS `path_start` from (`bd_bom` `b` join `bd_bom_detail` `d` on((`b`.`bom_id` = `d`.`bom_id`))) where ((`b`.`is_current` = 1) and (`b`.`status` = 1) and (`d`.`status` = 1)) union all select `be`.`top_material_id` AS `top_material_id`,`d`.`child_material_id` AS `child_material_id`,(`be`.`quantity_per_parent` * `d`.`quantity_per_parent`) AS `be.quantity_per_parent * d.quantity_per_parent`,`d`.`loss_rate` AS `loss_rate`,(`be`.`level` + 1) AS `be.level + 1`,`be`.`path_start` AS `path_start` from ((`bom_expansion` `be` join `bd_bom` `b` on((`be`.`child_material_id` = `b`.`parent_material_id`))) join `bd_bom_detail` `d` on((`b`.`bom_id` = `d`.`bom_id`))) where ((`b`.`is_current` = 1) and (`b`.`status` = 1) and (`d`.`status` = 1))) select `be`.`top_material_id` AS `top_material_id`,`be`.`child_material_id` AS `child_material_id`,`m`.`material_name` AS `material_name`,`m`.`material_code` AS `material_code`,`mc`.`category_id` AS `category_id`,`mc`.`category_name` AS `category_name`,`mc`.`path_names` AS `category_path`,`be`.`quantity_per_parent` AS `unit_requirement`,`be`.`loss_rate` AS `loss_rate`,`be`.`level` AS `level` from ((`bom_expansion` `be` join `bd_material` `m` on((`be`.`child_material_id` = `m`.`material_id`))) join `bd_material_category` `mc` on((`m`.`category_id` = `mc`.`category_id`)));
+
+-- ----------------------------
+-- Procedure structure for sp_calculate_material_requirement
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `sp_calculate_material_requirement`;
+delimiter ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_calculate_material_requirement`(
+    IN p_parent_material_id BIGINT,
+    IN p_quantity DECIMAL(18,6),
+    IN p_include_semi_finished BOOLEAN
+)
+BEGIN
+    WITH RECURSIVE requirement_calc AS (
+        SELECT 
+            d.child_material_id,
+            m.material_name,
+            mc.category_name,
+            p_quantity * d.quantity_per_parent * (1 + COALESCE(d.loss_rate,0)/100) as calc_quantity,
+            1 as level,
+            m.category_id
+        FROM bd_bom b
+        JOIN bd_bom_detail d ON b.bom_id = d.bom_id
+        JOIN bd_material m ON d.child_material_id = m.material_id
+        JOIN bd_material_category mc ON m.category_id = mc.category_id
+        WHERE b.parent_material_id = p_parent_material_id
+          AND b.is_current = 1 AND b.status = 1 AND d.status = 1
+        
+        UNION ALL
+        
+        SELECT 
+            d.child_material_id,
+            m.material_name,
+            mc.category_name,
+            rc.calc_quantity * d.quantity_per_parent * (1 + COALESCE(d.loss_rate,0)/100),
+            rc.level + 1,
+            m.category_id
+        FROM requirement_calc rc
+        JOIN bd_bom b ON rc.child_material_id = b.parent_material_id
+        JOIN bd_bom_detail d ON b.bom_id = d.bom_id
+        JOIN bd_material m ON d.child_material_id = m.material_id
+        JOIN bd_material_category mc ON m.category_id = mc.category_id
+        WHERE b.is_current = 1 AND b.status = 1 AND d.status = 1
+          AND (p_include_semi_finished OR mc.parent_id = 1) -- 根据参数决定是否展开半成品
+    )
+    SELECT 
+        child_material_id,
+        material_name,
+        category_name,
+        SUM(calc_quantity) as total_required,
+        level
+    FROM requirement_calc
+    -- 只显示最终原材料（分类为原材料）
+    WHERE category_id IN (
+        SELECT category_id FROM bd_material_category 
+        WHERE path_ids LIKE '1,%' OR category_id = 1
+    )
+    GROUP BY child_material_id, material_name, category_name, level
+    ORDER BY level, category_name, material_name;
+END
+;;
+delimiter ;
 
 SET FOREIGN_KEY_CHECKS = 1;

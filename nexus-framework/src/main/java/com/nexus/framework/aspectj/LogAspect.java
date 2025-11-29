@@ -120,7 +120,12 @@ public class LogAspect
             // 处理设置注解上的参数
             getControllerMethodDescription(joinPoint, controllerLog, operLog, jsonResult);
             // 设置消耗时间
-            operLog.setCostTime(System.currentTimeMillis() - TIME_THREADLOCAL.get());
+            Long startTime = TIME_THREADLOCAL.get();
+            if (startTime != null) {
+                operLog.setCostTime(System.currentTimeMillis() - startTime);
+            } else {
+                operLog.setCostTime(0L);
+            }
             // 保存数据库
             AsyncManager.me().execute(AsyncFactory.recordOper(operLog));
         }

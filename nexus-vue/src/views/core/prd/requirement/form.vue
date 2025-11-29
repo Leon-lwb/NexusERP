@@ -15,7 +15,13 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="物料需求单编号" prop="requirementNo">
-              <el-input v-model="form.requirementNo" placeholder="请输入物料需求单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.requirementNo" placeholder="请输入物料需求单编号" :disabled="autoGenFlag || isViewMode"
+                  style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange"
+                  :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -255,11 +261,13 @@
 
 <script setup name="RequirementForm">
 import { getRequirement, addRequirement, updateRequirement } from "@/api/core/prd/requirement"
+import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
 const { sys_core_status, prd_requirement_status } = proxy.useDict('sys_core_status', 'prd_requirement_status')
 const route = useRoute()
 const router = useRouter()
+const autoGenFlag = ref(false) // 新增：控制编号自动生成开关
 
 const form = ref({})
 const isViewMode = ref(false)
@@ -314,6 +322,7 @@ function getInfo(id) {
 
 // 表单重置
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     requirementId: null,
     requirementNo: null,
@@ -419,6 +428,18 @@ function getDictLabel(dictOptions, value) {
   const dict = dictOptions.find(item => item.value === value)
   return dict ? dict.label : value
 }
+
+// 自动生产编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('PRD_MATERIAL_MBOM').then(response => {
+      form.value.requirementNo = response;
+    });
+  } else {
+    form.value.requirementNo = null;
+  }
+}
+
 </script>
 
 <style scoped>

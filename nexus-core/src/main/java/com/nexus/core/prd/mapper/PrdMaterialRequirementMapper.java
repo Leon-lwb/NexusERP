@@ -84,4 +84,12 @@ public interface PrdMaterialRequirementMapper extends BaseMapper<PrdMaterialRequ
          * @return 结果
          */
         public int deletePrdMaterialRequirementDetailByRequirementId(Long requirementId);
+        
+        /**
+         * 新增物料需求单明细
+         *
+         * @param prdMaterialRequirementDetail 物料需求单明细
+         * @return 结果
+         */
+        public int insertPrdMaterialRequirementDetail(PrdMaterialRequirementDetail prdMaterialRequirementDetail);
 }

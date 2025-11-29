@@ -51,3 +51,11 @@ export function updatePlanVersion(data) {
     data: data
   })
 }
+
+// BOM计算
+export function calculateBom(planId) {
+  return request({
+    url: '/prd/plan/calculateBom/' + planId,
+    method: 'get'
+  })
+}

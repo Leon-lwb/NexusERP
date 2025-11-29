@@ -124,16 +124,32 @@ public class PrdProductionPlanController extends BaseController
     }
 
     /**
-     * TODO
-     * BOM计算
+     * BOM树计算子节点
      */
-    @ApiOperation("BOM计算")
+    @ApiOperation("BOM树计算子节点")
     @PreAuthorize("@ss.hasPermi('prd:plan:edit')")
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
-    @PutMapping("/createBom")
-    public AjaxResult bom(@RequestBody PrdProductionPlan prdProductionPlan)
+    @GetMapping("/calculateBom/{planId}")
+    public AjaxResult calculateBom(@PathVariable Long planId)
     {
-        return success();
-        //return toAjax(prdProductionPlanService.updatePrdProductionPlanBom(prdProductionPlan));
+        return success(prdProductionPlanService.calculateBomTree(planId));
+    }
+
+    /**
+     * 根据BOM详情生成物料需求清单及明细
+     */
+    @ApiOperation("根据BOM详情生成物料需求清单及明细")
+    @PreAuthorize("@ss.hasPermi('prd:plan:edit')")
+    @Log(title = "生产计划", businessType = BusinessType.UPDATE)
+    @PostMapping("/generateMaterialRequirementsWithDetails/{planId}")
+    public AjaxResult generateMaterialRequirementsWithDetails(@PathVariable Long planId)
+    {
+        try {
+            // 调用服务层方法生成物料需求清单及明细
+            List<com.nexus.core.prd.domain.PrdMaterialRequirement> requirements = prdProductionPlanService.generateMaterialRequirementsWithDetails(planId);
+            return success("物料需求清单及明细生成成功，共生成" + requirements.size() + "条记录");
+        } catch (Exception e) {
+            return error("物料需求清单及明细生成失败：" + e.getMessage());
+        }
     }
 }

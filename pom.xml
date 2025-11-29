@@ -38,6 +38,7 @@
         <nexus.core.version>3.9.0</nexus.core.version>
         <nexus.common.version>3.9.0</nexus.common.version>
         <flowable.version>7.0.0</flowable.version>
+        <mockito.version>4.6.1</mockito.version>
     </properties>
 
     <!-- 依赖声明 -->
@@ -221,6 +222,14 @@
                 <groupId>com.nexus</groupId>
                 <artifactId>nexus-flowable</artifactId>
                 <version>${nexus.version}</version>
+            </dependency>
+            
+            <!-- Mockito测试框架 -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
             </dependency>
 
         </dependencies>

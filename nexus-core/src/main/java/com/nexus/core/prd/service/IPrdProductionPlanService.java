@@ -2,6 +2,7 @@ package com.nexus.core.prd.service;
 
 import java.util.List;
 import com.nexus.core.prd.domain.PrdProductionPlan;
+import com.nexus.core.prd.domain.PrdMaterialRequirement;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -66,4 +67,20 @@ public interface IPrdProductionPlanService extends IService<PrdProductionPlan> {
      * @return 影响行数
      */
     int updatePrdProductionPlanVersion(PrdProductionPlan prdProductionPlan);
+
+    /**
+     * BOM计算 - 根据生产计划中的订单行物料计算BOM树
+     *
+     * @param planId 生产计划ID
+     * @return BOM树结构列表
+     */
+    List<com.nexus.core.bd.domain.vo.BomDetailVO> calculateBomTree(Long planId);
+
+    /**
+     * 根据生产计划ID生成物料需求清单及明细
+     *
+     * @param planId 生产计划ID
+     * @return 物料需求清单列表
+     */
+    List<PrdMaterialRequirement> generateMaterialRequirementsWithDetails(Long planId);
 }

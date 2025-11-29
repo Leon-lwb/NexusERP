@@ -311,7 +311,7 @@
 </template>
 
 <script setup name="BomForm">
-import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail } from "@/api/core/bd/bom"
+import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail, saveBomDetailsBatch } from "@/api/core/bd/bom"
 import { listMaterial, getMaterial } from "@/api/core/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/core/bd/category"
 import { useRouter, useRoute } from 'vue-router'
@@ -654,78 +654,20 @@ function updateBomAndDetails() {
 
 // 保存BOM明细数据的通用方法
 function saveBomDetails(bomId) {
-  // 过滤掉空行数据
-  const validMaterialItems = materialItems.value.filter(item => 
-    item.childMaterialId && item.childMaterialName
-  );
+  // 过滤掉空行数据并添加 bomId
+  const validMaterialItems = materialItems.value
+    .filter(item => item.childMaterialId && item.childMaterialName)
+    .map(item => ({
+      ...item,
+      bomId: bomId
+    }));
   
-  if (form.value.bomId) {
-    // 更新操作：获取现有明细，决定是更新还是新增
-    return listBomDetails(bomId).then(response => {
-      const existingDetails = response.rows || [];
-      
-      // 需要新增的明细
-      const newDetails = validMaterialItems.filter(item => !item.detailId);
-      
-      // 需要更新的明细
-      const updateDetails = validMaterialItems.filter(item => item.detailId);
-      
-      // 需要删除的明细（在现有明细中但不在当前列表中的）
-      const currentDetailIds = validMaterialItems
-        .filter(item => item.detailId)
-        .map(item => item.detailId);
-      const deleteDetailIds = existingDetails
-        .filter(detail => !currentDetailIds.includes(detail.detailId))
-        .map(detail => detail.detailId);
-      
-      // 创建所有操作的Promise
-      const promises = [];
-      
-      // 删除不需要的明细
-      deleteDetailIds.forEach(detailId => {
-        if (detailId) {
-          promises.push(delBomDetail(detailId));
-        }
-      });
-      
-      // 更新现有明细
-      updateDetails.forEach(item => {
-        const detailData = {
-          ...item,
-          bomId: bomId
-        };
-        // 确保传入正确的参数格式
-        if (item.detailId) {
-          promises.push(updateBomDetail(detailData));
-        }
-      });
-      
-      // 新增新的明细
-      newDetails.forEach(item => {
-        const detailData = {
-          ...item,
-          bomId: bomId
-        };
-        // 删除 detailId 字段，因为是新增操作
-        delete detailData.detailId;
-        promises.push(addBomDetail(detailData));
-      });
-      
-      return Promise.all(promises);
-    });
-  } else {
-    // 新增操作：直接添加明细数据
-    const addPromises = validMaterialItems.map(item => {
-      const detailData = {
-        ...item,
-        bomId: bomId
-      };
-      // 删除 detailId 字段，因为是新增操作
-      delete detailData.detailId;
-      return addBomDetail(detailData);
-    });
-    return Promise.all(addPromises);
+  // 如果有有效的明细数据，则使用批量保存接口
+  if (validMaterialItems.length > 0) {
+    return saveBomDetailsBatch(validMaterialItems);
   }
+  
+  return Promise.resolve();
 }
 
 // 关闭按钮

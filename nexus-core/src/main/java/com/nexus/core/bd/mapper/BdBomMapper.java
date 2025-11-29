@@ -78,6 +78,14 @@ public interface BdBomMapper extends BaseMapper<BdBom> {
     int updateBomDetail(BomDetailDTO bomDetailDTO);
     
     /**
+     * 批量删除BOM明细
+     *
+     * @param detailIds 明细ID数组
+     * @return 删除结果
+     */
+    int deleteBomDetails(Long[] detailIds);
+    
+    /**
      * 根据明细ID查询BOM明细
      *
      * @param detailId 明细ID

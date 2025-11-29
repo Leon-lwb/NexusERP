@@ -196,4 +196,58 @@
                 ( #{item.detailId}, #{item.requirementId}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, #{item.unit}, #{item.bomQuantity}, #{item.lossRate}, #{item.requiredQuantity}, #{item.issuedQuantity}, #{item.stockQuantity}, #{item.shortageQuantity}, #{item.operationStep}, #{item.workstationId}, #{item.workstationName}, #{item.leadTime}, #{item.requiredDate}, #{item.status}, #{item.remark}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
             </foreach>
         </insert>
+        
+        <insert id="insertPrdMaterialRequirementDetail" parameterType="PrdMaterialRequirementDetail" useGeneratedKeys="true" keyProperty="detailId">
+            insert into prd_material_requirement_detail
+            <trim prefix="(" suffix=")" suffixOverrides=",">
+                <if test="requirementId != null">requirement_id,</if>
+                <if test="materialId != null">material_id,</if>
+                <if test="materialCode != null and materialCode != ''">material_code,</if>
+                <if test="materialName != null and materialName != ''">material_name,</if>
+                <if test="materialSpec != null and materialSpec != ''">material_spec,</if>
+                <if test="unit != null and unit != ''">unit,</if>
+                <if test="bomQuantity != null">bom_quantity,</if>
+                <if test="lossRate != null">loss_rate,</if>
+                <if test="requiredQuantity != null">required_quantity,</if>
+                <if test="issuedQuantity != null">issued_quantity,</if>
+                <if test="stockQuantity != null">stock_quantity,</if>
+                <if test="shortageQuantity != null">shortage_quantity,</if>
+                <if test="operationStep != null">operation_step,</if>
+                <if test="workstationId != null">workstation_id,</if>
+                <if test="workstationName != null and workstationName != ''">workstation_name,</if>
+                <if test="leadTime != null">lead_time,</if>
+                <if test="requiredDate != null">required_date,</if>
+                <if test="status != null">status,</if>
+                <if test="remark != null and remark != ''">remark,</if>
+                <if test="createBy != null and createBy != ''">create_by,</if>
+                <if test="createTime != null">create_time,</if>
+                <if test="updateBy != null and updateBy != ''">update_by,</if>
+                <if test="updateTime != null">update_time,</if>
+            </trim>
+            <trim prefix="values (" suffix=")" suffixOverrides=",">
+                <if test="requirementId != null">#{requirementId},</if>
+                <if test="materialId != null">#{materialId},</if>
+                <if test="materialCode != null and materialCode != ''">#{materialCode},</if>
+                <if test="materialName != null and materialName != ''">#{materialName},</if>
+                <if test="materialSpec != null and materialSpec != ''">#{materialSpec},</if>
+                <if test="unit != null and unit != ''">#{unit},</if>
+                <if test="bomQuantity != null">#{bomQuantity},</if>
+                <if test="lossRate != null">#{lossRate},</if>
+                <if test="requiredQuantity != null">#{requiredQuantity},</if>
+                <if test="issuedQuantity != null">#{issuedQuantity},</if>
+                <if test="stockQuantity != null">#{stockQuantity},</if>
+                <if test="shortageQuantity != null">#{shortageQuantity},</if>
+                <if test="operationStep != null">#{operationStep},</if>
+                <if test="workstationId != null">#{workstationId},</if>
+                <if test="workstationName != null and workstationName != ''">#{workstationName},</if>
+                <if test="leadTime != null">#{leadTime},</if>
+                <if test="requiredDate != null">#{requiredDate},</if>
+                <if test="status != null">#{status},</if>
+                <if test="remark != null and remark != ''">#{remark},</if>
+                <if test="createBy != null and createBy != ''">#{createBy},</if>
+                <if test="createTime != null">#{createTime},</if>
+                <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+                <if test="updateTime != null">#{updateTime},</if>
+            </trim>
+        </insert>
 </mapper>

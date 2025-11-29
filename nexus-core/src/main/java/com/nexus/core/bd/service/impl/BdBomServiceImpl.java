@@ -212,8 +212,53 @@ public class BdBomServiceImpl extends ServiceImpl<BdBomMapper, BdBom> implements
     }
 
     @Override
+    @Transactional
     public int saveBomDetailsBatch(List<BomDetailDTO> detailList) {
-        return 0;
+        if (detailList == null || detailList.isEmpty()) {
+            return 0;
+        }
+        
+        int count = 0;
+        for (BomDetailDTO detail : detailList) {
+            if (detail.getDetailId() != null) {
+                // 更新现有记录
+                count += getBaseMapper().updateBomDetail(detail);
+            } else {
+                // 新增记录
+                // 检查必填字段
+                if (detail.getBomId() == null) {
+                    throw new IllegalArgumentException("BOM主表ID不能为空");
+                }
+                
+                if (detail.getChildMaterialId() == null) {
+                    throw new IllegalArgumentException("子项物料ID不能为空");
+                }
+                
+                if (detail.getQuantityPerParent() == null) {
+                    throw new IllegalArgumentException("单位父项用量不能为空");
+                }
+                
+                // 检查数量必须大于0
+                if (detail.getQuantityPerParent().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("单位父项用量必须大于0");
+                }
+                
+                // 检查损耗率范围
+                if (detail.getLossRate() != null && 
+                    (detail.getLossRate().compareTo(BigDecimal.ZERO) < 0 || 
+                     detail.getLossRate().compareTo(new BigDecimal("100")) > 0)) {
+                    throw new IllegalArgumentException("损耗率必须在0-100之间");
+                }
+
+                if (detail.getOperationStep() == null) {
+                    throw new IllegalArgumentException("工序步骤不能为空");
+                }
+                
+                count += getBaseMapper().insertBomDetail(detail);
+            }
+        }
+        
+        return count;
     }
 
     @Override

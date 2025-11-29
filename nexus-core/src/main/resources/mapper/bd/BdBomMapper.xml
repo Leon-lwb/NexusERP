@@ -31,6 +31,8 @@
     <select id="selectBdBomList" parameterType="BdBom" resultMap="BdBomResult">
         <include refid="selectBdBomVo"/>
         <where>
+                        <if test="bomId != null"> and bom_id = #{bomId}</if>
+                        <if test="parentMaterialId != null"> and parent_material_id = #{parentMaterialId}</if>
                         <if test="bomName != null  and bomName != ''"> and bom_name like concat('%', #{bomName}, '%')</if>
                         <if test="effectiveDate != null "> and effective_date = #{effectiveDate}</if>
                         <if test="expiryDate != null "> and expiry_date = #{expiryDate}</if>
@@ -256,4 +258,11 @@
         WHERE d.bom_id = #{bomId}
         ORDER BY d.sort_order
     </select>
+    
+    <delete id="deleteBomDetails" parameterType="Long">
+        DELETE FROM bd_bom_detail WHERE detail_id IN
+        <foreach item="detailId" collection="array" open="(" separator="," close=")">
+            #{detailId}
+        </foreach>
+    </delete>
 </mapper>

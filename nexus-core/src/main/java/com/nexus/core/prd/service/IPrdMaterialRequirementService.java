@@ -2,6 +2,7 @@ package com.nexus.core.prd.service;
 
 import java.util.List;
 import com.nexus.core.prd.domain.PrdMaterialRequirement;
+import com.nexus.core.prd.domain.PrdMaterialRequirementDetail;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -58,4 +59,12 @@ public interface IPrdMaterialRequirementService extends IService<PrdMaterialRequ
      * @return 结果
      */
     public int deletePrdMaterialRequirementByRequirementId(Long requirementId);
+
+    /**
+     * 批量插入物料需求明细
+     *
+     * @param detailList 物料需求明细列表
+     * @return 结果
+     */
+    public int insertPrdMaterialRequirementDetails(List<PrdMaterialRequirementDetail> detailList);
 }

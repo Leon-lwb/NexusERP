@@ -27,9 +27,7 @@ export default {
   data() {
     return {
       formList: [], // 表单数据
-      bpmnFormData: {
-        formKey: ''
-      }
+      bpmnFormData: {}
     }
   },
 
@@ -67,10 +65,10 @@ export default {
     // 获取表单信息
     getListForm() {
       listAllForm().then(res => {
-        res.data.forEach(item => {
+        res.rows.forEach(item => {
           item.formId = item.formId.toString();
         })
-        this.formList = res.data;
+        this.formList = res.rows;
       })
     }
   }
