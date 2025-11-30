@@ -73,6 +73,19 @@ private static final long serialVersionUID = 1L;
     private Date issuedTime;
     /** 关闭时间 */
     private Date closedTime;
+    
+    /** 物料ID */
+    @Excel(name = "物料ID")
+    private Long materialId;
+    /** 物料编码 */
+    @Excel(name = "物料编码")
+    private String materialCode;
+    /** 物料名称 */
+    @Excel(name = "物料名称")
+    private String materialName;
+    /** 物料规格 */
+    @Excel(name = "物料规格")
+    private String materialSpec;
 
     /** 物料需求单行列表 */
     private List<PrdMaterialRequirementDetail> prdMaterialRequirementDetailList;

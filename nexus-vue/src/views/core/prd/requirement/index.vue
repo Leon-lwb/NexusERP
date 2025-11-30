@@ -43,6 +43,20 @@
       <el-form-item label="部门" prop="departmentName">
         <el-input v-model="queryParams.departmentName" placeholder="请输入部门" clearable @keyup.enter="handleQuery" />
       </el-form-item>
+      <!-- 新增的物料相关查询字段 -->
+      <el-form-item label="物料ID" prop="materialId">
+        <el-input v-model="queryParams.materialId" placeholder="请输入物料ID" clearable @keyup.enter="handleQuery" />
+      </el-form-item>
+      <el-form-item label="物料编码" prop="materialCode">
+        <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
+      </el-form-item>
+      <el-form-item label="物料名称" prop="materialName">
+        <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery" />
+      </el-form-item>
+      <el-form-item label="物料规格" prop="materialSpec">
+        <el-input v-model="queryParams.materialSpec" placeholder="请输入物料规格" clearable @keyup.enter="handleQuery" />
+      </el-form-item>
+      <!-- 新增的物料相关查询字段结束 -->
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -92,6 +106,12 @@
           <dict-tag :options="prd_requirement_status" :value="scope.row.status" />
         </template>
       </el-table-column>
+      <!-- 新增的物料相关显示列 -->
+      <el-table-column label="物料ID" align="center" prop="materialId" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" />
+      <el-table-column label="物料名称" align="center" prop="materialName" />
+      <el-table-column label="物料规格" align="center" prop="materialSpec" />
+      <!-- 新增的物料相关显示列结束 -->
       <el-table-column label="计划员ID" align="center" prop="plannerId" />
       <el-table-column label="计划员" align="center" prop="plannerName" />
       <el-table-column label="部门ID" align="center" prop="departmentId" />
@@ -144,6 +164,11 @@ const data = reactive({
     plannerName: null,
     departmentId: null,
     departmentName: null,
+    // 新增的物料相关查询参数
+    materialId: null,
+    materialCode: null,
+    materialName: null,
+    materialSpec: null
   }
 })
 

@@ -48,6 +48,17 @@ public class PrdMaterialRequirementServiceImpl extends ServiceImpl<PrdMaterialRe
     }
 
     /**
+     * 查询带明细的物料清单列表
+     *
+     * @param prdMaterialRequirement 物料清单
+     * @return 物料清单（包含明细）
+     */
+    @Override
+    public List<PrdMaterialRequirement> selectPrdMaterialRequirementListWithDetails(PrdMaterialRequirement prdMaterialRequirement) {
+        return prdMaterialRequirementMapper.selectPrdMaterialRequirementListWithDetails(prdMaterialRequirement);
+    }
+
+    /**
      * 新增物料清单
      *
      * @param prdMaterialRequirement 物料清单

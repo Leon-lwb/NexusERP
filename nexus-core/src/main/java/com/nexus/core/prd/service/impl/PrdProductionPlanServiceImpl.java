@@ -11,6 +11,8 @@ import com.nexus.core.bd.domain.BdMaterial;
 import com.nexus.core.bd.domain.BdMaterialCategory;
 import com.nexus.core.bd.domain.vo.BomDetailVO;
 import com.nexus.core.bd.service.IBdBomService;
+import com.nexus.core.bd.service.IBdMaterialService;
+import com.nexus.core.bd.service.IBdMaterialCategoryService;
 import com.nexus.core.prd.domain.dto.MaterialRequirementCalcDTO;
 import com.nexus.core.so.domain.SoSalesOrderLine;
 import com.nexus.core.so.service.SoSalesOrderLineService;
@@ -56,6 +58,12 @@ public class PrdProductionPlanServiceImpl extends ServiceImpl<PrdProductionPlanM
 
     @Autowired
     private IBdBomService bdBomService;
+    
+    @Autowired
+    private IBdMaterialService bdMaterialService;
+    
+    @Autowired
+    private IBdMaterialCategoryService bdMaterialCategoryService;
     
     @Autowired
     private IPrdMaterialRequirementService prdMaterialRequirementService;
@@ -341,6 +349,10 @@ public class PrdProductionPlanServiceImpl extends ServiceImpl<PrdProductionPlanM
                         dto.setCategoryName(category.getCategoryName());
                         dto.setCategoryPath(category.getPathNames());
                     }
+                } else {
+                    // 如果获取不到物料信息，至少设置从BOM明细中可以获得的基本信息
+                    dto.setMaterialCode(detail.getChildMaterialCode());
+                    dto.setMaterialName(detail.getChildMaterialName());
                 }
                 leafRequirements.add(dto);
             }
@@ -491,19 +503,30 @@ public class PrdProductionPlanServiceImpl extends ServiceImpl<PrdProductionPlanM
      * 获取物料信息
      */
     private BdMaterial getMaterialInfo(Long materialId) {
-        // 这里需要调用物料服务的查询方法
-        // 假设有 bdMaterialService.getById(materialId)
-        // 暂时返回null，您需要根据实际情况实现
-        return null;
+        if (materialId == null) {
+            return null;
+        }
+        try {
+            return bdMaterialService.selectBdMaterialByMaterialId(materialId);
+        } catch (Exception e) {
+            log.warn("获取物料信息失败，物料ID: {}", materialId, e);
+            return null;
+        }
     }
 
     /**
      * 获取物料分类信息
      */
     private BdMaterialCategory getMaterialCategory(Long categoryId) {
-        // 这里需要调用分类服务的查询方法
-        // 暂时返回null，您需要根据实际情况实现
-        return null;
+        if (categoryId == null) {
+            return null;
+        }
+        try {
+            return bdMaterialCategoryService.selectBdMaterialCategoryByCategoryId(categoryId);
+        } catch (Exception e) {
+            log.warn("获取物料分类信息失败，分类ID: {}", categoryId, e);
+            return null;
+        }
     }
 
     /**
@@ -525,7 +548,7 @@ public class PrdProductionPlanServiceImpl extends ServiceImpl<PrdProductionPlanM
      * 创建物料需求主表记录
      */
     private PrdMaterialRequirement createMaterialRequirement(PrdProductionPlan plan, Long bomId,
-                                                             List<MaterialRequirementCalcDTO> requirements) {
+                                                         List<MaterialRequirementCalcDTO> requirements) {
         PrdMaterialRequirement mainRequirement = new PrdMaterialRequirement();
 
         // 设置基本信息
@@ -540,6 +563,18 @@ public class PrdProductionPlanServiceImpl extends ServiceImpl<PrdProductionPlanM
         mainRequirement.setPlannerName(plan.getPlannerName());
         mainRequirement.setDepartmentId(plan.getDepartmentId());
         mainRequirement.setDepartmentName(plan.getDepartmentName());
+
+        // 设置物料信息（新增）
+        BdBom bom = bdBomService.getById(bomId);
+        if (bom != null) {
+            mainRequirement.setMaterialId(bom.getParentMaterialId());
+            BdMaterial material = getMaterialInfo(bom.getParentMaterialId());
+            if (material != null) {
+                mainRequirement.setMaterialCode(material.getMaterialCode());
+                mainRequirement.setMaterialName(material.getMaterialName());
+                mainRequirement.setMaterialSpec(material.getMaterialSpec());
+            }
+        }
 
         // 自动生成需求单号
         String requirementNo = autoCodeUtil.genSerialCode("PRD_MATERIAL_MBOM", null);
@@ -569,8 +604,19 @@ public class PrdProductionPlanServiceImpl extends ServiceImpl<PrdProductionPlanM
         detail.setMaterialName(calcDto.getMaterialName());
         detail.setMaterialSpec(calcDto.getMaterialSpec());
 
-        // 设置单位信息 - 需要根据实际情况获取
-        detail.setUnit(""); // 这里需要从物料主数据获取单位
+        // 设置单位信息 - 从物料主数据获取
+        String unit = "";
+        BdMaterial material = getMaterialInfo(calcDto.getMaterialId());
+        if (material != null && material.getBaseUomId() != null) {
+            // 获取单位ID对应的单位信息
+            try {
+                // 这里应该通过单位服务获取单位名称，暂时使用单位ID作为单位名称
+                unit = String.valueOf(material.getBaseUomId());
+            } catch (Exception e) {
+                log.warn("获取物料单位信息失败，物料ID: {}", calcDto.getMaterialId(), e);
+            }
+        }
+        detail.setUnit(unit);
 
         detail.setBomQuantity(calcDto.getQuantityPerParent() != null ?
                 calcDto.getQuantityPerParent() : BigDecimal.ZERO);

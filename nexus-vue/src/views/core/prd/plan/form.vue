@@ -205,56 +205,81 @@
           <template #header>
             <div class="card-header">
               <span>物料清单</span>
-              <el-button type="primary" @click="addMaterialItem" v-if="!isViewMode">添加物料</el-button>
+              <div>
+                <el-button type="primary" @click="handleBomCalculate" v-if="!isViewMode">BOM计算</el-button>
+                <el-button type="primary" @click="handleMaterialList" v-if="form.planNo">物料清单</el-button>
+              </div>
             </div>
           </template>
           <el-table :data="materialItems" style="width: 100%">
             <el-table-column type="index" width="50" label="序号" align="center" />
             <el-table-column label="物料编码" prop="materialCode" width="150">
               <template #default="scope">
-                <el-input v-model="scope.row.materialCode" placeholder="请输入物料编码" v-if="!isViewMode" />
-                <span v-else>{{ scope.row.materialCode }}</span>
+                <span>{{ scope.row.materialCode }}</span>
               </template>
             </el-table-column>
             <el-table-column label="物料名称" prop="materialName" min-width="200">
               <template #default="scope">
-                <el-input v-model="scope.row.materialName" placeholder="请输入物料名称" v-if="!isViewMode" />
-                <span v-else>{{ scope.row.materialName }}</span>
+                <span>{{ scope.row.materialName }}</span>
               </template>
             </el-table-column>
             <el-table-column label="规格型号" prop="specification" width="150">
               <template #default="scope">
-                <el-input v-model="scope.row.specification" placeholder="请输入规格型号" v-if="!isViewMode" />
-                <span v-else>{{ scope.row.specification }}</span>
+                <span>{{ scope.row.specification }}</span>
               </template>
             </el-table-column>
             <el-table-column label="单位" prop="unit" width="100">
               <template #default="scope">
-                <el-input v-model="scope.row.unit" placeholder="请输入单位" v-if="!isViewMode" />
-                <span v-else>{{ scope.row.unit }}</span>
+                <span>{{ scope.row.unit }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="需求数量" prop="requiredQuantity" width="120">
+            <el-table-column label="需求数量" prop="requiredQuantity" width="175">
               <template #default="scope">
-                <el-input-number v-model="scope.row.requiredQuantity" :min="0" v-if="!isViewMode" />
-                <span v-else>{{ scope.row.requiredQuantity }}</span>
+                <span>{{ scope.row.requiredQuantity }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="已分配数量" prop="allocatedQuantity" width="120">
+            <el-table-column label="已分配数量" prop="allocatedQuantity" width="175">
               <template #default="scope">
-                <el-input-number v-model="scope.row.allocatedQuantity" :min="0" v-if="!isViewMode" />
-                <span v-else>{{ scope.row.allocatedQuantity }}</span>
+                <span>{{ scope.row.allocatedQuantity }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="80" align="center" v-if="!isViewMode">
+            <!-- <el-table-column label="操作" width="80" align="center" v-if="!isViewMode">
               <template #default="scope">
                 <el-button type="danger" icon="Delete" circle @click="removeMaterialItem(scope.$index)" />
               </template>
-            </el-table-column>
+            </el-table-column> -->
           </el-table>
         </el-card>
       </el-form>
     </el-card>
+    
+    <!-- 物料清单详情弹窗 -->
+    <el-drawer
+      v-model="materialListOpen"
+      :title="materialListTitle"
+      direction="rtl"
+      size="80%"
+    >
+      <el-table :data="materialListData" height="100%" style="width: 100%">
+        <el-table-column label="物料编码" prop="materialCode" width="150" />
+        <el-table-column label="物料名称" prop="materialName" min-width="200" />
+        <el-table-column label="规格型号" prop="materialSpec" width="150" />
+        <el-table-column label="单位" prop="unit" width="100" />
+        <el-table-column label="BOM标准用量" prop="bomQuantity" width="120" />
+        <el-table-column label="损耗率(%)" prop="lossRate" width="120" />
+        <el-table-column label="需求数量" prop="requiredQuantity" width="120" />
+        <el-table-column label="已发料数量" prop="issuedQuantity" width="120" />
+        <el-table-column label="当前库存数量" prop="stockQuantity" width="120" />
+        <el-table-column label="缺料数量" prop="shortageQuantity" width="120" />
+        <el-table-column label="工序步骤" prop="operationStep" width="100" />
+        <el-table-column label="需求日期" prop="requiredDate" width="120" />
+        <!-- <el-table-column label="状态" prop="status" width="100">
+          <template #default="scope">
+            <dict-tag :options="sys_core_status" :value="scope.row.status" />
+          </template>
+        </el-table-column> -->
+      </el-table>
+    </el-drawer>
     
     <!-- BOM选择对话框 -->
     <el-dialog :title="bomDialogTitle" v-model="bomSelectOpen" width="1200px" append-to-body>
@@ -329,9 +354,10 @@
 </template>
 
 <script setup name="PlanForm">
-import { getPlan, addPlan, updatePlan,updatePlanVersion } from "@/api/core/prd/plan"
+import { getPlan, addPlan, updatePlan,updatePlanVersion, generateMaterialRequirementsWithDetails, listDetailsByPlanNo } from "@/api/core/prd/plan"
 import { getOrderLine, getOrderLineById } from "@/api/core/so/orderheader"
 import { listBom } from "@/api/core/bd/bom"
+import { listRequirement, getRequirement } from "@/api/core/prd/requirement"
 
 const { proxy } = getCurrentInstance()
 const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status } = proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'so_order_line_status', 'sys_true_or_false', 'sys_core_status')
@@ -366,6 +392,12 @@ const materialItems = ref([
     allocatedQuantity: 0
   }
 ])
+
+// 物料清单弹窗相关变量
+const materialListOpen = ref(false)
+const materialListData = ref([])
+const materialListTitle = ref("") // 新增物料清单标题变量
+
 const orderLineList = ref([]) // 存储订单行信息
 const orderLineLoading = ref(false) // 订单行信息加载状态
 
@@ -438,6 +470,13 @@ function getInfo(id) {
         console.log('使用orderLineId加载订单行:', form.value.orderLineId);
         loadOrderLines(form.value.orderLineId)
       }
+    }
+    
+    // 查询物料需求信息
+    if (response.data.planNo) {
+      loadMaterialRequirements(response.data.planNo)
+    } else {
+      console.log('planNo 不存在，无法加载物料需求信息'); // 调试日志
     }
   }).catch(error => {
     console.error('获取生产计划详情失败:', error);
@@ -531,6 +570,10 @@ function submitForm() {
       if (formData.planId) {
         updatePlanVersion(formData).then(response => {
           proxy.$modal.msgSuccess("版本变更成功")
+          // 重新加载物料需求信息
+          if (form.value.planNo) {
+            loadMaterialRequirements(form.value.planNo)
+          }
           router.push('/core/prd/plan')
         }).catch(error => {
           proxy.$modal.msgError("版本变更失败: " + (error.message || "未知错误"));
@@ -622,6 +665,168 @@ function selectBom(row) {
   form.value.bomName = row.bomName
   bomSelectOpen.value = false
 }
+
+// BOM计算处理
+function handleBomCalculate() {
+  if (!form.value.planId) {
+    proxy.$modal.msgWarning("请先保存生产计划")
+    return
+  }
+  
+  proxy.$modal.confirm('确定要执行BOM计算吗？这将会重新生成物料需求信息。').then(() => {
+    // 调用后端接口生成物料需求
+    return generateMaterialRequirementsWithDetails(form.value.planId)
+  }).then(response => {
+    proxy.$modal.msgSuccess("BOM计算完成")
+    console.log('BOM计算响应:', response); // 调试日志
+    // 重新加载物料需求信息
+    if (form.value.planNo) {
+      loadMaterialRequirements(form.value.planNo)
+    }
+  }).catch(error => {
+    if (error !== 'cancel') {
+      console.error("BOM计算失败:", error); // 调试日志
+      proxy.$modal.msgError("BOM计算失败: " + (error.message || "未知错误"))
+    }
+  })
+}
+
+// 加载物料需求信息
+function loadMaterialRequirements(planNo) {
+  if (!planNo) {
+    console.log('planNo 为空，无法查询物料需求信息'); // 调试日志
+    return;
+  }
+  
+  // 设置分页参数以获取所有数据
+  const queryParams = {
+    planNo: planNo,
+    pageNum: 1,
+    pageSize: 1000  // 设置一个足够大的页数以获取所有数据
+  }
+  
+  console.log('开始查询物料需求信息，查询参数:', queryParams); // 调试日志
+  
+  listRequirement(queryParams).then(response => {
+    console.log('物料需求查询结果:', response); // 调试日志
+    
+    if (response.rows && response.rows.length > 0) {
+      // 创建一个空数组来存储所有物料信息
+      let allMaterialItems = [];
+      
+      // 按 requirementId 升序排列
+      const sortedRequirements = response.rows.sort((a, b) => {
+        return a.requirementId - b.requirementId;
+      });
+      
+      console.log('按主键排序后的物料需求记录:', sortedRequirements); // 调试日志
+      
+      // 处理每个物料需求记录
+      sortedRequirements.forEach((requirement, index) => {
+        console.log(`处理第${index + 1}条记录:`, requirement); // 调试日志
+        
+        // 添加主表物料信息（如果存在）
+        if (requirement.materialId) {
+          console.log(`第${index + 1}条记录包含主表物料信息`); // 调试日志
+          allMaterialItems.push({
+            materialCode: requirement.materialCode || '',
+            materialName: requirement.materialName || '',
+            specification: requirement.materialSpec || '',
+            unit: '', // 需要从其他地方获取单位信息
+            requiredQuantity: requirement.totalRequiredQuantity || 0,
+            allocatedQuantity: 0
+          });
+        }
+        
+        // 添加明细列表中的物料信息（如果存在）
+        if (requirement.prdMaterialRequirementDetailList && requirement.prdMaterialRequirementDetailList.length > 0) {
+          console.log(`第${index + 1}条记录包含明细列表，数量:`, requirement.prdMaterialRequirementDetailList.length); // 调试日志
+          // 将明细列表中的物料信息添加到总列表中
+          requirement.prdMaterialRequirementDetailList.forEach((item, itemIndex) => {
+            console.log(`处理第${index + 1}条记录的第${itemIndex + 1}个明细项:`, item); // 调试日志
+            allMaterialItems.push({
+              materialCode: item.materialCode || item.code || '',
+              materialName: item.materialName || item.name || '',
+              specification: item.materialSpec || item.specification || item.spec || '',
+              unit: item.unit || item.uom || '',
+              requiredQuantity: item.requiredQuantity || item.quantity || 0,
+              allocatedQuantity: item.issuedQuantity || item.allocatedQuantity || item.allocatedQty || 0
+            });
+          });
+        }
+        
+        // 如果主表和明细都没有物料信息，也要添加一个空行来表示这条记录
+        if (!requirement.materialId && 
+            (!requirement.prdMaterialRequirementDetailList || requirement.prdMaterialRequirementDetailList.length === 0)) {
+          console.log(`第${index + 1}条记录没有物料信息`); // 调试日志
+          allMaterialItems.push({
+            materialCode: "",
+            materialName: "[无物料信息] requirementId: " + requirement.requirementId,
+            specification: "",
+            unit: "",
+            requiredQuantity: requirement.totalRequiredQuantity || 0,
+            allocatedQuantity: 0
+          });
+        }
+      });
+      
+      console.log('提取的物料信息总数:', allMaterialItems.length); // 调试日志
+      console.log('提取的物料信息:', allMaterialItems); // 调试日志
+      
+      // 更新物料清单显示
+      materialItems.value = allMaterialItems;
+      console.log('最终物料清单数据:', allMaterialItems); // 调试日志
+    } else {
+      console.log('未查询到物料需求数据，响应数据:', response); // 调试日志
+      // 如果没有数据，清空物料清单
+      materialItems.value = [{
+        materialCode: "",
+        materialName: "",
+        specification: "",
+        unit: "",
+        requiredQuantity: 0,
+        allocatedQuantity: 0
+      }];
+    }
+  }).catch(error => {
+    console.error("获取物料需求信息失败:", error);
+    proxy.$modal.msgError("获取物料需求信息失败: " + error.message)
+    // 出错时也清空物料清单
+    materialItems.value = [{
+      materialCode: "",
+      materialName: "",
+      specification: "",
+      unit: "",
+      requiredQuantity: 0,
+      allocatedQuantity: 0
+    }];
+  });
+}
+
+// 物料清单按钮处理
+function handleMaterialList() {
+  if (!form.value.planNo) {
+    proxy.$modal.msgWarning("生产计划编号不存在")
+    return
+  }
+  
+  // 设置弹窗标题为"生产计划编号+计划名称+物料清单"
+  materialListTitle.value = (form.value.planNo || '') + (form.value.planName ? ' ' + form.value.planName : '') + ' - 物料清单'
+  
+  // 显示加载状态
+  materialListOpen.value = true
+  
+  // 调用接口获取物料清单详情
+  listDetailsByPlanNo(form.value.planNo).then(response => {
+    console.log('物料清单详情数据:', response)
+    materialListData.value = response.data || []
+  }).catch(error => {
+    console.error('获取物料清单详情失败:', error)
+    proxy.$modal.msgError("获取物料清单详情失败: " + error.message)
+    materialListData.value = []
+  })
+}
+
 </script>
 
 <style scoped>

@@ -29,6 +29,14 @@ public interface PrdMaterialRequirementMapper extends BaseMapper<PrdMaterialRequ
     public List<PrdMaterialRequirement> selectPrdMaterialRequirementList(PrdMaterialRequirement prdMaterialRequirement);
 
     /**
+     * 查询带明细的物料清单列表
+     *
+     * @param prdMaterialRequirement 物料清单
+     * @return 物料清单集合（包含明细）
+     */
+    public List<PrdMaterialRequirement> selectPrdMaterialRequirementListWithDetails(PrdMaterialRequirement prdMaterialRequirement);
+
+    /**
      * 新增物料清单
      *
      * @param prdMaterialRequirement 物料清单
@@ -92,4 +100,12 @@ public interface PrdMaterialRequirementMapper extends BaseMapper<PrdMaterialRequ
          * @return 结果
          */
         public int insertPrdMaterialRequirementDetail(PrdMaterialRequirementDetail prdMaterialRequirementDetail);
+        
+        /**
+         * 根据需求单ID查询明细列表
+         *
+         * @param requirementId 需求单ID
+         * @return 明细列表
+         */
+        public List<PrdMaterialRequirementDetail> selectPrdMaterialRequirementDetailList(Long requirementId);
 }

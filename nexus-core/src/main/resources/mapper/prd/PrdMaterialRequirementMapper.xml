@@ -21,6 +21,10 @@
             <result property="confirmedTime"    column="confirmed_time"    />
             <result property="issuedTime"    column="issued_time"    />
             <result property="closedTime"    column="closed_time"    />
+            <result property="materialId"    column="material_id"    />
+            <result property="materialCode"    column="material_code"    />
+            <result property="materialName"    column="material_name"    />
+            <result property="materialSpec"    column="material_spec"    />
             <result property="remark"    column="remark"    />
             <result property="createBy"    column="create_by"    />
             <result property="createTime"    column="create_time"    />
@@ -60,7 +64,7 @@
         </resultMap>
 
     <sql id="selectPrdMaterialRequirementVo">
-        select requirement_id, requirement_no, plan_id, plan_no, bom_id, requirement_date, total_material_types, total_required_quantity, status, planner_id, planner_name, department_id, department_name, confirmed_time, issued_time, closed_time, remark, create_by, create_time, update_by, update_time from prd_material_requirement
+        select requirement_id, requirement_no, plan_id, plan_no, bom_id, requirement_date, total_material_types, total_required_quantity, status, planner_id, planner_name, department_id, department_name, confirmed_time, issued_time, closed_time, material_id, material_code, material_name, material_spec, remark, create_by, create_time, update_by, update_time from prd_material_requirement
     </sql>
 
     <select id="selectPrdMaterialRequirementList" parameterType="PrdMaterialRequirement" resultMap="PrdMaterialRequirementResult">
@@ -81,8 +85,26 @@
         </where>
     </select>
 
+    <select id="selectPrdMaterialRequirementListWithDetails" parameterType="PrdMaterialRequirement" resultMap="PrdMaterialRequirementPrdMaterialRequirementDetailResult">
+        <include refid="selectPrdMaterialRequirementVo"/>
+        <where>
+                        <if test="requirementNo != null  and requirementNo != ''"> and requirement_no = #{requirementNo}</if>
+                        <if test="planId != null "> and plan_id = #{planId}</if>
+                        <if test="planNo != null  and planNo != ''"> and plan_no = #{planNo}</if>
+                        <if test="bomId != null "> and bom_id = #{bomId}</if>
+                        <if test="requirementDate != null "> and requirement_date = #{requirementDate}</if>
+                        <if test="totalMaterialTypes != null "> and total_material_types = #{totalMaterialTypes}</if>
+                        <if test="totalRequiredQuantity != null "> and total_required_quantity = #{totalRequiredQuantity}</if>
+                        <if test="status != null  and status != ''"> and status = #{status}</if>
+                        <if test="plannerId != null "> and planner_id = #{plannerId}</if>
+                        <if test="plannerName != null  and plannerName != ''"> and planner_name like concat('%', #{plannerName}, '%')</if>
+                        <if test="departmentId != null "> and department_id = #{departmentId}</if>
+                        <if test="departmentName != null  and departmentName != ''"> and department_name like concat('%', #{departmentName}, '%')</if>
+        </where>
+    </select>
+    
     <select id="selectPrdMaterialRequirementByRequirementId" parameterType="Long" resultMap="PrdMaterialRequirementPrdMaterialRequirementDetailResult">
-            select requirement_id, requirement_no, plan_id, plan_no, bom_id, requirement_date, total_material_types, total_required_quantity, status, planner_id, planner_name, department_id, department_name, confirmed_time, issued_time, closed_time, remark, create_by, create_time, update_by, update_time
+            select requirement_id, requirement_no, plan_id, plan_no, bom_id, requirement_date, total_material_types, total_required_quantity, status, planner_id, planner_name, department_id, department_name, confirmed_time, issued_time, closed_time, material_id, material_code, material_name, material_spec, remark, create_by, create_time, update_by, update_time
             from prd_material_requirement
             where requirement_id = #{requirementId}
     </select>
@@ -111,6 +133,10 @@
                     <if test="confirmedTime != null">confirmed_time,</if>
                     <if test="issuedTime != null">issued_time,</if>
                     <if test="closedTime != null">closed_time,</if>
+                    <if test="materialId != null">material_id,</if>
+                    <if test="materialCode != null and materialCode != ''">material_code,</if>
+                    <if test="materialName != null and materialName != ''">material_name,</if>
+                    <if test="materialSpec != null and materialSpec != ''">material_spec,</if>
                     <if test="remark != null">remark,</if>
                     <if test="createBy != null">create_by,</if>
                     <if test="createTime != null">create_time,</if>
@@ -133,6 +159,10 @@
                     <if test="confirmedTime != null">#{confirmedTime},</if>
                     <if test="issuedTime != null">#{issuedTime},</if>
                     <if test="closedTime != null">#{closedTime},</if>
+                    <if test="materialId != null">#{materialId},</if>
+                    <if test="materialCode != null and materialCode != ''">#{materialCode},</if>
+                    <if test="materialName != null and materialName != ''">#{materialName},</if>
+                    <if test="materialSpec != null and materialSpec != ''">#{materialSpec},</if>
                     <if test="remark != null">#{remark},</if>
                     <if test="createBy != null">#{createBy},</if>
                     <if test="createTime != null">#{createTime},</if>
@@ -159,6 +189,10 @@
                     <if test="confirmedTime != null">confirmed_time = #{confirmedTime},</if>
                     <if test="issuedTime != null">issued_time = #{issuedTime},</if>
                     <if test="closedTime != null">closed_time = #{closedTime},</if>
+                    <if test="materialId != null">material_id = #{materialId},</if>
+                    <if test="materialCode != null and materialCode != ''">material_code = #{materialCode},</if>
+                    <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+                    <if test="materialSpec != null and materialSpec != ''">material_spec = #{materialSpec},</if>
                     <if test="remark != null">remark = #{remark},</if>
                     <if test="createBy != null">create_by = #{createBy},</if>
                     <if test="createTime != null">create_time = #{createTime},</if>

@@ -3,6 +3,7 @@ package com.nexus.core.prd.controller;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.util.List;
+import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import com.nexus.common.core.controller.BaseController;
 import com.nexus.common.core.domain.AjaxResult;
 import com.nexus.common.enums.BusinessType;
 import com.nexus.core.prd.domain.PrdMaterialRequirement;
+import com.nexus.core.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.core.prd.service.IPrdMaterialRequirementService;
 import com.nexus.common.utils.poi.ExcelUtil;
 import com.nexus.common.core.page.TableDataInfo;
@@ -111,10 +113,24 @@ public class PrdMaterialRequirementController extends BaseController
         return toAjax(prdMaterialRequirementService.deletePrdMaterialRequirementByRequirementIds(requirementIds));
     }
 
-
-    /** TODO
-     * 通过生产计划中的bomId确认需要的物料种类和组成
-     * 通过生产计划中参考单据号和销售订单行表id，确定产品的数量、需求日期等
-     * 计算后批量生成物料需求
+    /**
+     * 根据生产计划编号查询物料清单子表（无分页）
      */
+    @ApiOperation("根据生产计划编号查询物料清单子表")
+    @PreAuthorize("@ss.hasPermi('prd:requirement:list')")
+    @GetMapping("/listDetailsByPlanNo/{planNo}")
+    public AjaxResult listDetailsByPlanNo(@PathVariable String planNo) {
+        // 1. 先根据planNo查询主表数据（包含明细）
+        PrdMaterialRequirement queryParam = new PrdMaterialRequirement();
+        queryParam.setPlanNo(planNo);
+        List<PrdMaterialRequirement> mainList = prdMaterialRequirementService.selectPrdMaterialRequirementListWithDetails(queryParam);
+        
+        // 2. 收集所有子表数据
+        List<PrdMaterialRequirementDetail> detailList = mainList.stream()
+                .filter(main -> main.getPrdMaterialRequirementDetailList() != null)
+                .flatMap(main -> main.getPrdMaterialRequirementDetailList().stream())
+                .collect(Collectors.toList());
+                
+        return AjaxResult.success(detailList);
+    }
 }

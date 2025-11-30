@@ -29,6 +29,14 @@ public interface IPrdMaterialRequirementService extends IService<PrdMaterialRequ
     public List<PrdMaterialRequirement> selectPrdMaterialRequirementList(PrdMaterialRequirement prdMaterialRequirement);
 
     /**
+     * 查询带明细的物料清单列表
+     *
+     * @param prdMaterialRequirement 物料清单
+     * @return 物料清单集合（包含明细）
+     */
+    public List<PrdMaterialRequirement> selectPrdMaterialRequirementListWithDetails(PrdMaterialRequirement prdMaterialRequirement);
+
+    /**
      * 新增物料清单
      *
      * @param prdMaterialRequirement 物料清单

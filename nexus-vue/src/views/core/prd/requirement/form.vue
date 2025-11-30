@@ -120,6 +120,32 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <!-- 新增的物料相关字段 -->
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="物料ID" prop="materialId">
+              <el-input v-model="form.materialId" placeholder="请输入物料ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="物料编码" prop="materialCode">
+              <el-input v-model="form.materialCode" placeholder="请输入物料编码" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="物料名称" prop="materialName">
+              <el-input v-model="form.materialName" placeholder="请输入物料名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="物料规格" prop="materialSpec">
+              <el-input v-model="form.materialSpec" placeholder="请输入物料规格" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <!-- 新增的物料相关字段结束 -->
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="备注" prop="remark">
@@ -344,7 +370,12 @@ function reset() {
     createBy: null,
     createTime: null,
     updateBy: null,
-    updateTime: null
+    updateTime: null,
+    // 新增的物料相关字段
+    materialId: null,
+    materialCode: null,
+    materialName: null,
+    materialSpec: null
   }
   prdMaterialRequirementDetailList.value = []
   proxy.resetForm("requirementRef")

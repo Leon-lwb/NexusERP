@@ -59,3 +59,19 @@ export function calculateBom(planId) {
     method: 'get'
   })
 }
+
+// 生成物料需求（带明细）
+export function generateMaterialRequirementsWithDetails(planId) {
+  return request({
+    url: '/prd/plan/generateMaterialRequirementsWithDetails/' + planId,
+    method: 'post'
+  })
+}
+
+// 根据计划编号查询物料需求明细列表
+export function listDetailsByPlanNo(planNo) {
+  return request({
+    url: '/prd/requirement/listDetailsByPlanNo/' + planNo,
+    method: 'get'
+  })
+}
