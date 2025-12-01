@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.wm.mapper.WmStorageAreaMapper">
+
+    <resultMap type="WmStorageArea" id="WmStorageAreaResult">
+            <result property="areaId"    column="area_id"    />
+            <result property="areaCode"    column="area_code"    />
+            <result property="areaName"    column="area_name"    />
+            <result property="warehouseId"    column="warehouse_id"    />
+            <result property="area"    column="area"    />
+            <result property="locationFlag"    column="location_flag"    />
+            <result property="enableFlag"    column="enable_flag"    />
+            <result property="frozenFlag"    column="frozen_flag"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+            <result property="layoutType"    column="layout_type"    />
+            <result property="posX"    column="pos_x"    />
+            <result property="posY"    column="pos_y"    />
+            <result property="posZ"    column="pos_z"    />
+            <result property="areaWidth"    column="area_width"    />
+            <result property="areaLength"    column="area_length"    />
+            <result property="areaHeight"    column="area_height"    />
+            <result property="rotationX"    column="rotation_x"    />
+            <result property="rotationY"    column="rotation_y"    />
+            <result property="rotationZ"    column="rotation_z"    />
+            <result property="color"    column="color"    />
+            <result property="opacity"    column="opacity"    />
+            <result property="modelType"    column="model_type"    />
+            <result property="modelUrl"    column="model_url"    />
+            <result property="showWalls"    column="show_walls"    />
+            <result property="showLabel"    column="show_label"    />
+            <result property="gridVisible"    column="grid_visible"    />
+            <result property="configJson"    column="config_json"    />
+    </resultMap>
+
+    <sql id="selectWmStorageAreaVo">
+        select area_id, area_code, area_name, warehouse_id, area, location_flag, enable_flag, frozen_flag, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time, layout_type, pos_x, pos_y, pos_z, area_width, area_length, area_height, rotation_x, rotation_y, rotation_z, color, opacity, model_type, model_url, show_walls, show_label, grid_visible, config_json from wm_storage_area
+    </sql>
+
+    <select id="selectWmStorageAreaList" parameterType="WmStorageArea" resultMap="WmStorageAreaResult">
+        <include refid="selectWmStorageAreaVo"/>
+        <where>
+                        <if test="areaCode != null  and areaCode != ''"> and area_code = #{areaCode}</if>
+                        <if test="areaName != null  and areaName != ''"> and area_name like concat('%', #{areaName}, '%')</if>
+                        <if test="warehouseId != null "> and warehouse_id = #{warehouseId}</if>
+                        <if test="area != null "> and area = #{area}</if>
+                        <if test="locationFlag != null "> and location_flag = #{locationFlag}</if>
+                        <if test="enableFlag != null "> and enable_flag = #{enableFlag}</if>
+                        <if test="frozenFlag != null "> and frozen_flag = #{frozenFlag}</if>
+                        <if test="layoutType != null  and layoutType != ''"> and layout_type = #{layoutType}</if>
+        </where>
+    </select>
+
+    <select id="selectWmStorageAreaByAreaId" parameterType="Long" resultMap="WmStorageAreaResult">
+            <include refid="selectWmStorageAreaVo"/>
+            where area_id = #{areaId}
+    </select>
+
+    <insert id="insertWmStorageArea" parameterType="WmStorageArea" useGeneratedKeys="true" keyProperty="areaId">
+        insert into wm_storage_area
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="areaCode != null and areaCode != ''">area_code,</if>
+                    <if test="areaName != null and areaName != ''">area_name,</if>
+                    <if test="warehouseId != null">warehouse_id,</if>
+                    <if test="area != null">area,</if>
+                    <if test="locationFlag != null">location_flag,</if>
+                    <if test="enableFlag != null">enable_flag,</if>
+                    <if test="frozenFlag != null">frozen_flag,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+                    <if test="layoutType != null">layout_type,</if>
+                    <if test="posX != null">pos_x,</if>
+                    <if test="posY != null">pos_y,</if>
+                    <if test="posZ != null">pos_z,</if>
+                    <if test="areaWidth != null">area_width,</if>
+                    <if test="areaLength != null">area_length,</if>
+                    <if test="areaHeight != null">area_height,</if>
+                    <if test="rotationX != null">rotation_x,</if>
+                    <if test="rotationY != null">rotation_y,</if>
+                    <if test="rotationZ != null">rotation_z,</if>
+                    <if test="color != null">color,</if>
+                    <if test="opacity != null">opacity,</if>
+                    <if test="modelType != null">model_type,</if>
+                    <if test="modelUrl != null">model_url,</if>
+                    <if test="showWalls != null">show_walls,</if>
+                    <if test="showLabel != null">show_label,</if>
+                    <if test="gridVisible != null">grid_visible,</if>
+                    <if test="configJson != null">config_json,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="areaCode != null and areaCode != ''">#{areaCode},</if>
+                    <if test="areaName != null and areaName != ''">#{areaName},</if>
+                    <if test="warehouseId != null">#{warehouseId},</if>
+                    <if test="area != null">#{area},</if>
+                    <if test="locationFlag != null">#{locationFlag},</if>
+                    <if test="enableFlag != null">#{enableFlag},</if>
+                    <if test="frozenFlag != null">#{frozenFlag},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+                    <if test="layoutType != null">#{layoutType},</if>
+                    <if test="posX != null">#{posX},</if>
+                    <if test="posY != null">#{posY},</if>
+                    <if test="posZ != null">#{posZ},</if>
+                    <if test="areaWidth != null">#{areaWidth},</if>
+                    <if test="areaLength != null">#{areaLength},</if>
+                    <if test="areaHeight != null">#{areaHeight},</if>
+                    <if test="rotationX != null">#{rotationX},</if>
+                    <if test="rotationY != null">#{rotationY},</if>
+                    <if test="rotationZ != null">#{rotationZ},</if>
+                    <if test="color != null">#{color},</if>
+                    <if test="opacity != null">#{opacity},</if>
+                    <if test="modelType != null">#{modelType},</if>
+                    <if test="modelUrl != null">#{modelUrl},</if>
+                    <if test="showWalls != null">#{showWalls},</if>
+                    <if test="showLabel != null">#{showLabel},</if>
+                    <if test="gridVisible != null">#{gridVisible},</if>
+                    <if test="configJson != null">#{configJson},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWmStorageArea" parameterType="WmStorageArea">
+        update wm_storage_area
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="areaCode != null and areaCode != ''">area_code = #{areaCode},</if>
+                    <if test="areaName != null and areaName != ''">area_name = #{areaName},</if>
+                    <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+                    <if test="area != null">area = #{area},</if>
+                    <if test="locationFlag != null">location_flag = #{locationFlag},</if>
+                    <if test="enableFlag != null">enable_flag = #{enableFlag},</if>
+                    <if test="frozenFlag != null">frozen_flag = #{frozenFlag},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+                    <if test="layoutType != null">layout_type = #{layoutType},</if>
+                    <if test="posX != null">pos_x = #{posX},</if>
+                    <if test="posY != null">pos_y = #{posY},</if>
+                    <if test="posZ != null">pos_z = #{posZ},</if>
+                    <if test="areaWidth != null">area_width = #{areaWidth},</if>
+                    <if test="areaLength != null">area_length = #{areaLength},</if>
+                    <if test="areaHeight != null">area_height = #{areaHeight},</if>
+                    <if test="rotationX != null">rotation_x = #{rotationX},</if>
+                    <if test="rotationY != null">rotation_y = #{rotationY},</if>
+                    <if test="rotationZ != null">rotation_z = #{rotationZ},</if>
+                    <if test="color != null">color = #{color},</if>
+                    <if test="opacity != null">opacity = #{opacity},</if>
+                    <if test="modelType != null">model_type = #{modelType},</if>
+                    <if test="modelUrl != null">model_url = #{modelUrl},</if>
+                    <if test="showWalls != null">show_walls = #{showWalls},</if>
+                    <if test="showLabel != null">show_label = #{showLabel},</if>
+                    <if test="gridVisible != null">grid_visible = #{gridVisible},</if>
+                    <if test="configJson != null">config_json = #{configJson},</if>
+        </trim>
+        where area_id = #{areaId}
+    </update>
+
+    <delete id="deleteWmStorageAreaByAreaId" parameterType="Long">
+        delete from wm_storage_area where area_id = #{areaId}
+    </delete>
+
+    <delete id="deleteWmStorageAreaByAreaIds" parameterType="String">
+        delete from wm_storage_area where area_id in
+        <foreach item="areaId" collection="array" open="(" separator="," close=")">
+            #{areaId}
+        </foreach>
+    </delete>
+</mapper>

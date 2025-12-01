@@ -11,7 +11,7 @@
  Target Server Version : 80040 (8.0.40)
  File Encoding         : 65001
 
- Date: 30/11/2025 23:22:16
+ Date: 01/12/2025 22:15:11
 */
 
 SET NAMES utf8mb4;
@@ -2686,7 +2686,7 @@ CREATE TABLE `gen_table`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2713,6 +2713,9 @@ INSERT INTO `gen_table` VALUES (22, 'bd_workstation', '工作站表', NULL, NULL
 INSERT INTO `gen_table` VALUES (23, 'prd_work_order', '生产工单主表', NULL, NULL, 'PrdWorkOrder', 'crud', 'element-plus', 'com.nexus.core.prd', 'prd', 'work', '生产工单', 'nexus', '0', '/', '{\"parentMenuId\":2038}', 'admin', '2025-11-19 17:38:45', '', '2025-11-19 17:40:08', NULL);
 INSERT INTO `gen_table` VALUES (24, 'prd_material_requirement', '物料需求单主表', 'prd_material_requirement_detail', 'requirement_id', 'PrdMaterialRequirement', 'sub', 'element-plus', 'com.nexus.core.prd', 'prd', 'requirement', '物料清单', 'nexus', '0', '/', '{\"parentMenuId\":2038}', 'admin', '2025-11-21 10:44:56', '', '2025-11-21 16:54:42', NULL);
 INSERT INTO `gen_table` VALUES (25, 'prd_material_requirement_detail', '物料需求单明细表', NULL, NULL, 'PrdMaterialRequirementDetail', 'crud', 'element-plus', 'com.nexus.core.prd', 'prd', 'detail', '物料需求单明细', 'nexus', '0', '/', '{\"parentMenuId\":2038}', 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07', NULL);
+INSERT INTO `gen_table` VALUES (26, 'wm_material_stock', '库存物料记录表', NULL, NULL, 'WmMaterialStock', 'crud', '', 'com.nexus.core', 'core', 'stock', '库存物料记录', 'nexus', '0', '/', NULL, 'admin', '2025-12-01 17:46:29', '', NULL, NULL);
+INSERT INTO `gen_table` VALUES (27, 'wm_storage_area', '库区表', NULL, NULL, 'WmStorageArea', 'crud', 'element-plus', 'com.nexus.core.wm', 'wm', 'storagearea', '库区', 'nexus', '0', '/', '{\"parentMenuId\":2039}', 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44', NULL);
+INSERT INTO `gen_table` VALUES (28, 'wm_storage_location', '库位表', NULL, NULL, 'WmStorageLocation', 'crud', '', 'com.nexus.core', 'core', 'location', '库位', 'nexus', '0', '/', NULL, 'admin', '2025-12-01 17:46:42', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for gen_table_column
@@ -2742,7 +2745,7 @@ CREATE TABLE `gen_table_column`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 590 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 715 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3262,6 +3265,131 @@ INSERT INTO `gen_table_column` VALUES (586, 25, 'create_by', '创建人', 'varch
 INSERT INTO `gen_table_column` VALUES (587, 25, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 22, 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07');
 INSERT INTO `gen_table_column` VALUES (588, 25, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 23, 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07');
 INSERT INTO `gen_table_column` VALUES (589, 25, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 24, 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07');
+INSERT INTO `gen_table_column` VALUES (590, 26, 'stock_id', '事务ID', 'bigint', 'Long', 'stockId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (591, 26, 'category_id', '物料类型ID', 'bigint', 'Long', 'categoryId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (592, 26, 'material_id', '产品物料ID', 'bigint', 'Long', 'materialId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (593, 26, 'material_code', '产品物料编码', 'varchar(64)', 'String', 'materialCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (594, 26, 'material_name', '产品物料名称', 'varchar(255)', 'String', 'materialName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 5, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (595, 26, 'material_spec', '规格型号', 'varchar(500)', 'String', 'materialSpec', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 6, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (596, 26, 'base_uom_id', '单位', 'varchar(64)', 'String', 'baseUomId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (597, 26, 'batch_code', '入库批次号', 'varchar(255)', 'String', 'batchCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (598, 26, 'warehouse_id', '仓库ID', 'bigint', 'Long', 'warehouseId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (599, 26, 'warehouse_code', '仓库编码', 'varchar(64)', 'String', 'warehouseCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (600, 26, 'warehouse_name', '仓库名称', 'varchar(255)', 'String', 'warehouseName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 11, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (601, 26, 'area_id', '库区ID', 'bigint', 'Long', 'areaId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (602, 26, 'area_code', '库区编码', 'varchar(64)', 'String', 'areaCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (603, 26, 'area_name', '库区名称', 'varchar(255)', 'String', 'areaName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 14, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (604, 26, 'location_id', '库位ID', 'bigint', 'Long', 'locationId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 15, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (605, 26, 'location_code', '库位编码', 'varchar(64)', 'String', 'locationCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 16, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (606, 26, 'location_name', '库位名称', 'varchar(255)', 'String', 'locationName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 17, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (607, 26, 'vendor_id', '供应商ID', 'bigint', 'Long', 'vendorId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 18, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (608, 26, 'vendor_code', '供应商编号', 'varchar(64)', 'String', 'vendorCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 19, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (609, 26, 'vendor_name', '供应商名称', 'varchar(255)', 'String', 'vendorName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 20, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (610, 26, 'vendor_nick', '供应商简称', 'varchar(64)', 'String', 'vendorNick', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 21, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (611, 26, 'stock_quantity', '在库数量', 'double(12,2)', 'BigDecimal', 'stockQuantity', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 22, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (612, 26, 'workorder_id', '生产工单ID', 'bigint', 'Long', 'workorderId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 23, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (613, 26, 'workorder_code', '生产工单编号', 'varchar(64)', 'String', 'workorderCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 24, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (614, 26, 'recpt_date', '入库时间', 'datetime', 'Date', 'recptDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 25, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (615, 26, 'expire_date', '库存有效期', 'datetime', 'Date', 'expireDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 26, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (616, 26, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 27, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (617, 26, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 28, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (618, 26, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 29, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (619, 26, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 30, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (620, 26, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 31, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (621, 26, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 32, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (622, 26, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 33, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (623, 26, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 34, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (624, 26, 'frozen_flag', NULL, 'tinyint', 'Long', 'frozenFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 35, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (625, 26, 'production_date', NULL, 'datetime', 'Date', 'productionDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 36, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (626, 26, 'unit_name', '单位名称', 'varchar(128)', 'String', 'unitName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 37, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (627, 26, 'batch_id', '批次ID', 'bigint', 'Long', 'batchId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 38, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (628, 27, 'area_id', '库区ID', 'bigint', 'Long', 'areaId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (629, 27, 'area_code', '库区编码', 'varchar(64)', 'String', 'areaCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (630, 27, 'area_name', '库区名称', 'varchar(255)', 'String', 'areaName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (631, 27, 'warehouse_id', '仓库ID', 'bigint', 'Long', 'warehouseId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (632, 27, 'area', '面积', 'double(12,2)', 'BigDecimal', 'area', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (633, 27, 'location_flag', '是否开启库位管理', 'tinyint', 'Long', 'locationFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 6, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (634, 27, 'enable_flag', '是否启用', 'tinyint', 'Long', 'enableFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 7, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (635, 27, 'frozen_flag', '是否冻结', 'tinyint', 'Long', 'frozenFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 8, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (636, 27, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 9, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (637, 27, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 10, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (638, 27, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 11, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (639, 27, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 12, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (640, 27, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 13, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (641, 27, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 14, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (642, 27, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 15, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (643, 27, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 16, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (644, 27, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 17, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (645, 27, 'layout_type', '布局类型: GRID-网格, RACK-货架, FLUID-流体, BULK-散货', 'varchar(50)', 'String', 'layoutType', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'wm_layout_type', 18, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (646, 27, 'pos_x', '3D坐标X(米)', 'decimal(10,2)', 'BigDecimal', 'posX', '0', '0', '0', '1', '0', '0', '0', 'EQ', 'input', '', 19, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (647, 27, 'pos_y', '3D坐标Y(米)', 'decimal(10,2)', 'BigDecimal', 'posY', '0', '0', '0', '1', '0', '0', '0', 'EQ', 'input', '', 20, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (648, 27, 'pos_z', '3D坐标Z(米)', 'decimal(10,2)', 'BigDecimal', 'posZ', '0', '0', '0', '1', '0', '0', '0', 'EQ', 'input', '', 21, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (649, 27, 'area_width', '库区宽度(米)', 'decimal(10,2)', 'BigDecimal', 'areaWidth', '0', '0', '0', '1', '0', '0', '0', 'EQ', 'input', '', 22, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (650, 27, 'area_length', '库区长度(米)', 'decimal(10,2)', 'BigDecimal', 'areaLength', '0', '0', '0', '1', '0', '0', '0', 'EQ', 'input', '', 23, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (651, 27, 'area_height', '库区高度(米)', 'decimal(10,2)', 'BigDecimal', 'areaHeight', '0', '0', '0', '1', '0', '0', '0', 'EQ', 'input', '', 24, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (652, 27, 'rotation_x', 'X轴旋转角度', 'decimal(5,2)', 'BigDecimal', 'rotationX', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 25, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (653, 27, 'rotation_y', 'Y轴旋转角度', 'decimal(5,2)', 'BigDecimal', 'rotationY', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 26, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (654, 27, 'rotation_z', 'Z轴旋转角度', 'decimal(5,2)', 'BigDecimal', 'rotationZ', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 27, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (655, 27, 'color', '显示颜色', 'varchar(20)', 'String', 'color', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 28, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (656, 27, 'opacity', '透明度', 'decimal(3,2)', 'BigDecimal', 'opacity', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 29, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (657, 27, 'model_type', '模型类型: CUBE-立方体, CUSTOM-自定义', 'varchar(50)', 'String', 'modelType', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'select', '', 30, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (658, 27, 'model_url', '自定义模型URL', 'varchar(500)', 'String', 'modelUrl', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'textarea', '', 31, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (659, 27, 'show_walls', '是否显示边界墙', 'tinyint', 'Long', 'showWalls', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 32, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (660, 27, 'show_label', '是否显示标签', 'tinyint', 'Long', 'showLabel', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 33, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (661, 27, 'grid_visible', '是否显示网格', 'tinyint', 'Long', 'gridVisible', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 34, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (662, 27, 'config_json', '3D配置JSON', 'json', 'String', 'configJson', '0', '0', '0', '0', '0', '0', '0', 'EQ', NULL, '', 35, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
+INSERT INTO `gen_table_column` VALUES (663, 28, 'location_id', '库位ID', 'bigint', 'Long', 'locationId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (664, 28, 'location_code', '库位编码', 'varchar(64)', 'String', 'locationCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (665, 28, 'location_name', '库位名称', 'varchar(255)', 'String', 'locationName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (666, 28, 'area_id', '库区ID', 'bigint', 'Long', 'areaId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (667, 28, 'area', '面积', 'double(8,2)', 'BigDecimal', 'area', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (668, 28, 'max_loa', '最大载重量', 'double(8,2)', 'BigDecimal', 'maxLoa', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 6, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (669, 28, 'position_x', '库位位置X', 'int', 'Long', 'positionX', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (670, 28, 'position_y', '库位位置y', 'int', 'Long', 'positionY', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (671, 28, 'position_z', '库位位置z', 'int', 'Long', 'positionZ', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (672, 28, 'product_mixing', '是否允许产品混放', 'tinyint', 'Long', 'productMixing', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (673, 28, 'batch_mixing', '是否允许批次混放', 'tinyint', 'Long', 'batchMixing', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 11, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (674, 28, 'enable_flag', '是否启用', 'tinyint', 'Long', 'enableFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (675, 28, 'frozen_flag', '是否冻结', 'tinyint', 'Long', 'frozenFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (676, 28, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 14, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (677, 28, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 15, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (678, 28, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 16, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (679, 28, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 17, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (680, 28, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 18, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (681, 28, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 19, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (682, 28, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 20, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (683, 28, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 21, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (684, 28, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 22, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (685, 28, 'location_type', '库位类型: STORAGE-存储, PICKING-拣货, TRANSIT-中转', 'varchar(50)', 'String', 'locationType', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', '', 23, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (686, 28, 'rack_id', '所属货架ID', 'varchar(100)', 'String', 'rackId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 24, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (687, 28, 'layer', '层数(从下往上)', 'int', 'Long', 'layer', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 25, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (688, 28, 'col', '列数(从左往右)', 'int', 'Long', 'col', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 26, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (689, 28, 'row', '行数(从前到后)', 'int', 'Long', 'row', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 27, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (690, 28, 'pos_x', '3D坐标X(米)', 'decimal(10,2)', 'BigDecimal', 'posX', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 28, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (691, 28, 'pos_y', '3D坐标Y(米)', 'decimal(10,2)', 'BigDecimal', 'posY', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 29, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (692, 28, 'pos_z', '3D坐标Z(米)', 'decimal(10,2)', 'BigDecimal', 'posZ', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 30, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (693, 28, 'width', '库位宽度(米)', 'decimal(8,2)', 'BigDecimal', 'width', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 31, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (694, 28, 'height', '库位高度(米)', 'decimal(8,2)', 'BigDecimal', 'height', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 32, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (695, 28, 'location_depth', '库位深度(米)', 'decimal(8,2)', 'BigDecimal', 'locationDepth', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 33, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (696, 28, 'rotation_x', 'X轴旋转角度', 'decimal(5,2)', 'BigDecimal', 'rotationX', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 34, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (697, 28, 'rotation_y', 'Y轴旋转角度', 'decimal(5,2)', 'BigDecimal', 'rotationY', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 35, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (698, 28, 'rotation_z', 'Z轴旋转角度', 'decimal(5,2)', 'BigDecimal', 'rotationZ', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 36, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (699, 28, 'color_empty', '空置时颜色', 'varchar(20)', 'String', 'colorEmpty', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 37, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (700, 28, 'color_occupied', '占用时颜色', 'varchar(20)', 'String', 'colorOccupied', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 38, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (701, 28, 'color_locked', '锁定时颜色', 'varchar(20)', 'String', 'colorLocked', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 39, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (702, 28, 'color_warning', '预警时颜色', 'varchar(20)', 'String', 'colorWarning', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 40, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (703, 28, 'opacity', '透明度', 'decimal(3,2)', 'BigDecimal', 'opacity', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 41, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (704, 28, 'show_border', '是否显示边框', 'tinyint', 'Long', 'showBorder', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 42, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (705, 28, 'border_color', '边框颜色', 'varchar(20)', 'String', 'borderColor', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 43, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (706, 28, 'border_width', '边框宽度', 'decimal(3,2)', 'BigDecimal', 'borderWidth', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 44, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (707, 28, 'show_label', '是否显示标签', 'tinyint', 'Long', 'showLabel', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 45, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (708, 28, 'label_position', '标签位置: TOP-顶部, FRONT-前面', 'varchar(20)', 'String', 'labelPosition', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 46, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (709, 28, 'label_size', '标签大小', 'decimal(3,2)', 'BigDecimal', 'labelSize', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 47, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (710, 28, 'status', '库位状态: 0-空置, 1-占用, 2-锁定, 3-预警', 'int', 'Long', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', '', 48, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (711, 28, 'occupancy_rate', '占用率(0-100)', 'decimal(5,2)', 'BigDecimal', 'occupancyRate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 49, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (712, 28, 'last_inbound_time', '最后入库时间', 'datetime', 'Date', 'lastInboundTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 50, 'admin', '2025-12-01 17:46:42', '', NULL);
+INSERT INTO `gen_table_column` VALUES (713, 28, 'last_outbound_time', '最后出库时间', 'datetime', 'Date', 'lastOutboundTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 51, 'admin', '2025-12-01 17:46:43', '', NULL);
+INSERT INTO `gen_table_column` VALUES (714, 28, 'config_json', '3D配置JSON数据', 'json', 'String', 'configJson', '0', '0', '0', '1', '1', '1', '1', 'EQ', NULL, '', 52, 'admin', '2025-12-01 17:46:43', '', NULL);
 
 -- ----------------------------
 -- Table structure for prd_material_request
@@ -6533,7 +6661,7 @@ CREATE TABLE `sys_dict_data`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 225 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 230 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -6690,6 +6818,11 @@ INSERT INTO `sys_dict_data` VALUES (221, 2, '已确认', 'CONFIRMED', 'prd_requi
 INSERT INTO `sys_dict_data` VALUES (222, 3, '部分发料', 'PARTIAL_ISSUED', 'prd_requirement_status', NULL, 'success', 'N', '0', 'admin', '2025-11-21 11:33:37', '', NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (223, 4, '已发料', 'ISSUED', 'prd_requirement_status', NULL, 'success', 'N', '0', 'admin', '2025-11-21 11:33:55', 'admin', '2025-11-21 11:34:05', NULL);
 INSERT INTO `sys_dict_data` VALUES (224, 5, '已关闭', 'CLOSED', 'prd_requirement_status', NULL, 'warning', 'N', '0', 'admin', '2025-11-21 11:34:19', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (225, 1, '网格', 'GRID', 'wm_layout_type', NULL, 'primary', 'N', '0', 'admin', '2025-12-01 21:32:39', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (226, 2, '货架', 'RACK', 'wm_layout_type', NULL, 'primary', 'N', '0', 'admin', '2025-12-01 21:32:55', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (227, 3, '流体', 'FLUID', 'wm_layout_type', NULL, 'primary', 'N', '0', 'admin', '2025-12-01 21:33:10', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (228, 4, '散货', 'BULK', 'wm_layout_type', NULL, 'primary', 'N', '0', 'admin', '2025-12-01 21:33:29', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (229, 5, '托盘', 'PALLET', 'wm_layout_type', NULL, 'primary', 'N', '0', 'admin', '2025-12-01 21:34:31', 'admin', '2025-12-01 21:34:37', NULL);
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -6707,7 +6840,7 @@ CREATE TABLE `sys_dict_type`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `dict_type`(`dict_type` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 130 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 131 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -6752,6 +6885,7 @@ INSERT INTO `sys_dict_type` VALUES (126, '流程分类', 'sys_process_category',
 INSERT INTO `sys_dict_type` VALUES (127, '生产计划状态', 'prd_plan_status', '0', 'admin', '2025-11-13 17:09:52', '', NULL, '生产计划状态');
 INSERT INTO `sys_dict_type` VALUES (128, '生产计划类型', 'prd_plan_type', '0', 'admin', '2025-11-13 17:14:27', '', NULL, '生产计划类型');
 INSERT INTO `sys_dict_type` VALUES (129, '物料需求状态', 'prd_requirement_status', '0', 'admin', '2025-11-21 11:32:28', '', NULL, '物料需求状态');
+INSERT INTO `sys_dict_type` VALUES (130, '库区类型', 'wm_layout_type', '0', 'admin', '2025-12-01 21:32:14', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_expression
@@ -6873,7 +7007,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status` ASC) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 389 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 392 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -7167,6 +7301,9 @@ INSERT INTO `sys_logininfor` VALUES (385, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (386, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-11-29 22:29:16');
 INSERT INTO `sys_logininfor` VALUES (387, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-11-29 23:22:49');
 INSERT INTO `sys_logininfor` VALUES (388, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-11-30 21:13:05');
+INSERT INTO `sys_logininfor` VALUES (389, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-01 10:41:14');
+INSERT INTO `sys_logininfor` VALUES (390, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-01 17:45:52');
+INSERT INTO `sys_logininfor` VALUES (391, 'admin', '127.0.0.1', '内网IP', 'Chrome 14', 'Windows 10', '0', '登录成功', '2025-12-01 21:00:08');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -7194,7 +7331,7 @@ CREATE TABLE `sys_menu`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2177 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2183 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -7416,6 +7553,12 @@ INSERT INTO `sys_menu` VALUES (2173, '物料清单新增', 2171, 2, '#', '', NUL
 INSERT INTO `sys_menu` VALUES (2174, '物料清单修改', 2171, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'prd:requirement:edit', '#', 'admin', '2025-11-21 16:47:07', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2175, '物料清单删除', 2171, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'prd:requirement:remove', '#', 'admin', '2025-11-21 16:47:07', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2176, '物料清单导出', 2171, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'prd:requirement:export', '#', 'admin', '2025-11-21 16:47:07', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2177, '库区', 2039, 1, 'storagearea', 'core/wm/storagearea/index', NULL, '', 1, 0, 'C', '0', '0', 'wm:storagearea:list', '#', 'admin', '2025-12-01 21:20:40', '', NULL, '库区菜单');
+INSERT INTO `sys_menu` VALUES (2178, '库区查询', 2040, 6, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagearea:query', '#', 'admin', '2025-12-01 21:20:40', 'admin', '2025-12-01 21:38:17', '');
+INSERT INTO `sys_menu` VALUES (2179, '库区新增', 2040, 7, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagearea:add', '#', 'admin', '2025-12-01 21:20:40', 'admin', '2025-12-01 21:38:43', '');
+INSERT INTO `sys_menu` VALUES (2180, '库区修改', 2040, 8, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagearea:edit', '#', 'admin', '2025-12-01 21:20:40', 'admin', '2025-12-01 21:38:54', '');
+INSERT INTO `sys_menu` VALUES (2181, '库区删除', 2040, 9, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagearea:remove', '#', 'admin', '2025-12-01 21:20:40', 'admin', '2025-12-01 21:39:08', '');
+INSERT INTO `sys_menu` VALUES (2182, '库区导出', 2040, 10, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagearea:export', '#', 'admin', '2025-12-01 21:20:40', 'admin', '2025-12-01 21:39:21', '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -7467,7 +7610,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type` ASC) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status` ASC) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1077 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1099 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -8449,6 +8592,28 @@ INSERT INTO `sys_oper_log` VALUES (1073, '生成业务编号', 1, 'com.nexus.sys
 INSERT INTO `sys_oper_log` VALUES (1074, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251130003\"', 0, NULL, '2025-11-30 00:30:58', 8);
 INSERT INTO `sys_oper_log` VALUES (1075, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '\"PRD_MATERIAL_MBOM\"', '\"MBOM251130004\"', 0, NULL, '2025-11-30 00:30:58', 7);
 INSERT INTO `sys_oper_log` VALUES (1076, '生产计划', 2, 'com.nexus.core.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/prd/plan/generateMaterialRequirementsWithDetails/8', '127.0.0.1', '内网IP', '8', '{\"msg\":\"物料需求清单及明细生成成功，共生成4条记录\",\"code\":200}', 0, NULL, '2025-11-30 00:30:58', 0);
+INSERT INTO `sys_oper_log` VALUES (1077, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"wm_material_stock\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 17:46:29', 114);
+INSERT INTO `sys_oper_log` VALUES (1078, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"wm_storage_location,wm_storage_area\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 17:46:43', 175);
+INSERT INTO `sys_oper_log` VALUES (1079, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"storageArea\",\"className\":\"WmStorageArea\",\"columns\":[{\"capJavaField\":\"AreaId\",\"columnComment\":\"库区ID\",\"columnId\":628,\"columnName\":\"area_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"areaId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"AreaCode\",\"columnComment\":\"库区编码\",\"columnId\":629,\"columnName\":\"area_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"AreaName\",\"columnComment\":\"库区名称\",\"columnId\":630,\"columnName\":\"area_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":631,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuer', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 17:58:33', 109);
+INSERT INTO `sys_oper_log` VALUES (1080, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"storageArea\",\"className\":\"WmStorageArea\",\"columns\":[{\"capJavaField\":\"AreaId\",\"columnComment\":\"库区ID\",\"columnId\":628,\"columnName\":\"area_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"areaId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 17:58:33\",\"usableColumn\":false},{\"capJavaField\":\"AreaCode\",\"columnComment\":\"库区编码\",\"columnId\":629,\"columnName\":\"area_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 17:58:33\",\"usableColumn\":false},{\"capJavaField\":\"AreaName\",\"columnComment\":\"库区名称\",\"columnId\":630,\"columnName\":\"area_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 17:58:33\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":631,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:13:49', 76);
+INSERT INTO `sys_oper_log` VALUES (1081, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"storageArea\",\"className\":\"WmStorageArea\",\"columns\":[{\"capJavaField\":\"AreaId\",\"columnComment\":\"库区ID\",\"columnId\":628,\"columnName\":\"area_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"areaId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:13:49\",\"usableColumn\":false},{\"capJavaField\":\"AreaCode\",\"columnComment\":\"库区编码\",\"columnId\":629,\"columnName\":\"area_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:13:49\",\"usableColumn\":false},{\"capJavaField\":\"AreaName\",\"columnComment\":\"库区名称\",\"columnId\":630,\"columnName\":\"area_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:13:49\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":631,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:15:52', 41);
+INSERT INTO `sys_oper_log` VALUES (1082, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"storagearea\",\"className\":\"WmStorageArea\",\"columns\":[{\"capJavaField\":\"AreaId\",\"columnComment\":\"库区ID\",\"columnId\":628,\"columnName\":\"area_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"areaId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:15:52\",\"usableColumn\":false},{\"capJavaField\":\"AreaCode\",\"columnComment\":\"库区编码\",\"columnId\":629,\"columnName\":\"area_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:15:52\",\"usableColumn\":false},{\"capJavaField\":\"AreaName\",\"columnComment\":\"库区名称\",\"columnId\":630,\"columnName\":\"area_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:15:52\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":631,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:18:11', 40);
+INSERT INTO `sys_oper_log` VALUES (1083, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"wm_storage_area\"}', NULL, 0, NULL, '2025-12-01 21:18:16', 159);
+INSERT INTO `sys_oper_log` VALUES (1084, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"库区类型\",\"dictType\":\"wm_layout_type\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:32:14', 81);
+INSERT INTO `sys_oper_log` VALUES (1085, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"网格\",\"dictSort\":1,\"dictType\":\"wm_layout_type\",\"dictValue\":\"GRID\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:32:39', 6);
+INSERT INTO `sys_oper_log` VALUES (1086, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"货架\",\"dictSort\":2,\"dictType\":\"wm_layout_type\",\"dictValue\":\"RACK\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:32:55', 6);
+INSERT INTO `sys_oper_log` VALUES (1087, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"流体\",\"dictSort\":3,\"dictType\":\"wm_layout_type\",\"dictValue\":\"FLUID\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:33:10', 6);
+INSERT INTO `sys_oper_log` VALUES (1088, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"散货\",\"dictSort\":4,\"dictType\":\"wm_layout_type\",\"dictValue\":\"BULK\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:33:29', 6);
+INSERT INTO `sys_oper_log` VALUES (1089, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"托盘\",\"dictSort\":5,\"dictType\":\"wm_layout_type\",\"dictValue\":\"PALLET\",\"listClass\":\"default\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:34:31', 6);
+INSERT INTO `sys_oper_log` VALUES (1090, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2025-12-01 21:34:31\",\"default\":false,\"dictCode\":229,\"dictLabel\":\"托盘\",\"dictSort\":5,\"dictType\":\"wm_layout_type\",\"dictValue\":\"PALLET\",\"isDefault\":\"N\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:34:37', 7);
+INSERT INTO `sys_oper_log` VALUES (1091, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"storagearea\",\"className\":\"WmStorageArea\",\"columns\":[{\"capJavaField\":\"AreaId\",\"columnComment\":\"库区ID\",\"columnId\":628,\"columnName\":\"area_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"areaId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:18:11\",\"usableColumn\":false},{\"capJavaField\":\"AreaCode\",\"columnComment\":\"库区编码\",\"columnId\":629,\"columnName\":\"area_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:18:11\",\"usableColumn\":false},{\"capJavaField\":\"AreaName\",\"columnComment\":\"库区名称\",\"columnId\":630,\"columnName\":\"area_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"areaName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":27,\"updateBy\":\"\",\"updateTime\":\"2025-12-01 21:18:11\",\"usableColumn\":false},{\"capJavaField\":\"WarehouseId\",\"columnComment\":\"仓库ID\",\"columnId\":631,\"columnName\":\"warehouse_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:42\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"inc', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:35:45', 61);
+INSERT INTO `sys_oper_log` VALUES (1092, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"\",\"createTime\":\"2025-12-01 21:20:40\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2178,\"menuName\":\"库区查询\",\"menuType\":\"F\",\"orderNum\":6,\"params\":{},\"parentId\":2040,\"path\":\"#\",\"perms\":\"wm:storagearea:query\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:38:17', 9);
+INSERT INTO `sys_oper_log` VALUES (1093, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"\",\"createTime\":\"2025-12-01 21:20:40\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2179,\"menuName\":\"库区新增\",\"menuType\":\"F\",\"orderNum\":7,\"params\":{},\"parentId\":2177,\"path\":\"#\",\"perms\":\"wm:storagearea:add\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:38:32', 5);
+INSERT INTO `sys_oper_log` VALUES (1094, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"\",\"createTime\":\"2025-12-01 21:20:40\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2179,\"menuName\":\"库区新增\",\"menuType\":\"F\",\"orderNum\":7,\"params\":{},\"parentId\":2040,\"path\":\"#\",\"perms\":\"wm:storagearea:add\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:38:43', 6);
+INSERT INTO `sys_oper_log` VALUES (1095, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"\",\"createTime\":\"2025-12-01 21:20:40\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2180,\"menuName\":\"库区修改\",\"menuType\":\"F\",\"orderNum\":8,\"params\":{},\"parentId\":2040,\"path\":\"#\",\"perms\":\"wm:storagearea:edit\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:38:54', 5);
+INSERT INTO `sys_oper_log` VALUES (1096, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"\",\"createTime\":\"2025-12-01 21:20:40\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2181,\"menuName\":\"库区删除\",\"menuType\":\"F\",\"orderNum\":9,\"params\":{},\"parentId\":2040,\"path\":\"#\",\"perms\":\"wm:storagearea:remove\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:39:08', 5);
+INSERT INTO `sys_oper_log` VALUES (1097, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"\",\"createTime\":\"2025-12-01 21:20:40\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2182,\"menuName\":\"库区导出\",\"menuType\":\"F\",\"orderNum\":10,\"params\":{},\"parentId\":2040,\"path\":\"#\",\"perms\":\"wm:storagearea:export\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 21:39:21', 5);
+INSERT INTO `sys_oper_log` VALUES (1098, '库区', 1, 'com.nexus.core.wm.controller.WmStorageAreaController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagearea', '127.0.0.1', '内网IP', '{\"areaCode\":\"cs123\",\"areaId\":227,\"areaName\":\"cs\",\"createTime\":\"2025-12-01 22:08:20\",\"enableFlag\":1,\"frozenFlag\":1,\"layoutType\":\"GRID\",\"locationFlag\":1,\"params\":{},\"warehouseId\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-01 22:08:20', 13);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -8753,7 +8918,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-30 21:13:05', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-30 21:13:05', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-01 21:00:08', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-12-01 21:00:08', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员');
 INSERT INTO `sys_user` VALUES (100, 112, 'xiaowang', '小王', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-10-23 16:45:02', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', '麦得朶', '2025-10-23 19:33:53', '耳朵聋');
@@ -8799,6 +8964,157 @@ INSERT INTO `sys_user_role` VALUES (100, 3);
 INSERT INTO `sys_user_role` VALUES (101, 3);
 INSERT INTO `sys_user_role` VALUES (102, 2);
 INSERT INTO `sys_user_role` VALUES (103, 2);
+
+-- ----------------------------
+-- Table structure for wm_3d_operation_log
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_3d_operation_log`;
+CREATE TABLE `wm_3d_operation_log`  (
+  `log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+  `warehouse_id` bigint NULL DEFAULT NULL COMMENT '仓库ID',
+  `operation_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '操作类型: VIEW-查看, EDIT-编辑, ADD-添加, DELETE-删除, MOVE-移动, CONFIG-配置',
+  `target_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '目标类型: WAREHOUSE-仓库, AREA-库区, LOCATION-库位, RACK-货架, MODEL-模型',
+  `target_id` bigint NULL DEFAULT NULL COMMENT '目标ID',
+  `target_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '目标编码',
+  `operation_data` json NULL COMMENT '操作数据',
+  `before_data` json NULL COMMENT '操作前数据',
+  `after_data` json NULL COMMENT '操作后数据',
+  `ip_address` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'IP地址',
+  `user_agent` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '用户代理',
+  `operate_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '操作人',
+  `operate_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`log_id`) USING BTREE,
+  INDEX `idx_warehouse_id`(`warehouse_id` ASC) USING BTREE,
+  INDEX `idx_operation_type`(`operation_type` ASC) USING BTREE,
+  INDEX `idx_target_type`(`target_type` ASC) USING BTREE,
+  INDEX `idx_operate_time`(`operate_time` ASC) USING BTREE,
+  INDEX `idx_operate_by`(`operate_by` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '3D操作日志表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_3d_operation_log
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for wm_layout_snapshot
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_layout_snapshot`;
+CREATE TABLE `wm_layout_snapshot`  (
+  `snapshot_id` bigint NOT NULL AUTO_INCREMENT COMMENT '快照ID',
+  `warehouse_id` bigint NOT NULL COMMENT '仓库ID',
+  `snapshot_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '快照名称',
+  `snapshot_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'MANUAL' COMMENT '快照类型: MANUAL-手动, AUTO-自动, TEMPLATE-模板',
+  `layout_data` json NOT NULL COMMENT '布局数据JSON',
+  `thumbnail_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '缩略图路径',
+  `data_size` bigint NULL DEFAULT 0 COMMENT '数据大小(字节)',
+  `version` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '版本号',
+  `description` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '描述',
+  `tags` json NULL COMMENT '标签数组',
+  `is_public` tinyint NULL DEFAULT 0 COMMENT '是否公开',
+  `restore_count` int NULL DEFAULT 0 COMMENT '恢复次数',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`snapshot_id`) USING BTREE,
+  INDEX `idx_warehouse_id`(`warehouse_id` ASC) USING BTREE,
+  INDEX `idx_create_time`(`create_time` ASC) USING BTREE,
+  CONSTRAINT `fk_snapshot_warehouse` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '3D布局快照表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_layout_snapshot
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for wm_location_inventory_3d
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_location_inventory_3d`;
+CREATE TABLE `wm_location_inventory_3d`  (
+  `view_id` bigint NOT NULL AUTO_INCREMENT COMMENT '视图ID',
+  `location_id` bigint NOT NULL COMMENT '库位ID',
+  `inventory_id` bigint NULL DEFAULT NULL COMMENT '库存ID',
+  `material_id` bigint NOT NULL COMMENT '物料ID',
+  `material_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '物料名称',
+  `quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '数量',
+  `max_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '最大容量',
+  `unit` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '单位',
+  `model_id` bigint NULL DEFAULT NULL COMMENT '3D模型ID',
+  `display_mode` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'STACK' COMMENT '显示模式: STACK-堆叠, FILL-填充, SINGLE-单个',
+  `stack_count` int NULL DEFAULT 1 COMMENT '堆叠数量',
+  `stack_height` decimal(8, 2) NULL DEFAULT 0.00 COMMENT '堆叠高度',
+  `pos_offset_x` decimal(8, 2) NULL DEFAULT 0.00 COMMENT '位置偏移X',
+  `pos_offset_y` decimal(8, 2) NULL DEFAULT 0.00 COMMENT '位置偏移Y',
+  `pos_offset_z` decimal(8, 2) NULL DEFAULT 0.00 COMMENT '位置偏移Z',
+  `rotation_x` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '旋转X',
+  `rotation_y` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '旋转Y',
+  `rotation_z` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '旋转Z',
+  `scale_x` decimal(5, 2) NULL DEFAULT 1.00 COMMENT '缩放X',
+  `scale_y` decimal(5, 2) NULL DEFAULT 1.00 COMMENT '缩放Y',
+  `scale_z` decimal(5, 2) NULL DEFAULT 1.00 COMMENT '缩放Z',
+  `color_override` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '颜色覆盖',
+  `opacity` decimal(3, 2) NULL DEFAULT 1.00 COMMENT '透明度',
+  `show_label` tinyint NULL DEFAULT 1 COMMENT '是否显示标签',
+  `label_content` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '标签内容',
+  `status` int NULL DEFAULT 1 COMMENT '状态: 0-隐藏, 1-显示',
+  `last_update` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
+  `snapshot_data` json NULL COMMENT '快照数据',
+  PRIMARY KEY (`view_id`) USING BTREE,
+  UNIQUE INDEX `uk_location_material`(`location_id` ASC, `material_id` ASC) USING BTREE,
+  INDEX `idx_location_id`(`location_id` ASC) USING BTREE,
+  INDEX `idx_material_id`(`material_id` ASC) USING BTREE,
+  INDEX `idx_inventory_id`(`inventory_id` ASC) USING BTREE,
+  CONSTRAINT `fk_location_inventory_loc` FOREIGN KEY (`location_id`) REFERENCES `wm_storage_location` (`location_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位库存3D视图表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_location_inventory_3d
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for wm_material_3d_model
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_material_3d_model`;
+CREATE TABLE `wm_material_3d_model`  (
+  `model_id` bigint NOT NULL AUTO_INCREMENT COMMENT '模型ID',
+  `material_id` bigint NULL DEFAULT NULL COMMENT '物料ID',
+  `material_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `model_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'BOX' COMMENT '模型类型: BOX-立方体, CYLINDER-圆柱, SPHERE-球体, CONE-圆锥, CUSTOM-自定义',
+  `model_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '模型名称',
+  `model_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '自定义模型URL',
+  `model_format` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '模型格式: gltf, glb, obj, fbx',
+  `width` decimal(8, 2) NULL DEFAULT 1.00 COMMENT '模型宽度(米)',
+  `height` decimal(8, 2) NULL DEFAULT 1.00 COMMENT '模型高度(米)',
+  `depth` decimal(8, 2) NULL DEFAULT 1.00 COMMENT '模型深度(米)',
+  `radius` decimal(8, 2) NULL DEFAULT NULL COMMENT '半径(用于圆柱/球体)',
+  `color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#FF5722' COMMENT '模型颜色',
+  `texture_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '贴图URL',
+  `opacity` decimal(3, 2) NULL DEFAULT 1.00 COMMENT '透明度',
+  `show_label` tinyint NULL DEFAULT 1 COMMENT '是否显示标签',
+  `label_position` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'TOP' COMMENT '标签位置',
+  `label_size` decimal(3, 2) NULL DEFAULT 0.30 COMMENT '标签大小',
+  `category` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '模型分类',
+  `tags` json NULL COMMENT '标签数组',
+  `is_default` tinyint NULL DEFAULT 0 COMMENT '是否为默认模型',
+  `status` int NULL DEFAULT 1 COMMENT '状态: 0-停用, 1-启用',
+  `download_count` int NULL DEFAULT 0 COMMENT '下载次数',
+  `preview_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预览图URL',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`model_id`) USING BTREE,
+  INDEX `idx_material_id`(`material_id` ASC) USING BTREE,
+  INDEX `idx_material_code`(`material_code` ASC) USING BTREE,
+  INDEX `idx_category`(`category` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料3D模型表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_material_3d_model
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wm_material_stock
@@ -8856,27 +9172,47 @@ CREATE TABLE `wm_material_stock`  (
 DROP TABLE IF EXISTS `wm_storage_area`;
 CREATE TABLE `wm_storage_area`  (
   `area_id` bigint NOT NULL AUTO_INCREMENT COMMENT '库区ID',
-  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '库区编码',
-  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '库区名称',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '库区名称',
   `warehouse_id` bigint NOT NULL COMMENT '仓库ID',
   `area` double(12, 2) NULL DEFAULT NULL COMMENT '面积',
   `location_flag` tinyint NOT NULL DEFAULT 1 COMMENT '是否开启库位管理',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `enable_flag` tinyint NOT NULL COMMENT '是否启用',
+  `frozen_flag` tinyint NOT NULL DEFAULT 1 COMMENT '是否冻结',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
   `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
-  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `frozen_flag` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
+  `layout_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'GRID' COMMENT '布局类型: GRID-网格, RACK-货架, FLUID-流体, BULK-散货',
+  `pos_x` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标X(米)',
+  `pos_y` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标Y(米)',
+  `pos_z` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标Z(米)',
+  `area_width` decimal(10, 2) NULL DEFAULT NULL COMMENT '库区宽度(米)',
+  `area_length` decimal(10, 2) NULL DEFAULT NULL COMMENT '库区长度(米)',
+  `area_height` decimal(10, 2) NULL DEFAULT 3.00 COMMENT '库区高度(米)',
+  `rotation_x` decimal(5, 2) NULL DEFAULT 0.00 COMMENT 'X轴旋转角度',
+  `rotation_y` decimal(5, 2) NULL DEFAULT 0.00 COMMENT 'Y轴旋转角度',
+  `rotation_z` decimal(5, 2) NULL DEFAULT 0.00 COMMENT 'Z轴旋转角度',
+  `color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#4CAF50' COMMENT '显示颜色',
+  `opacity` decimal(3, 2) NULL DEFAULT 0.80 COMMENT '透明度',
+  `model_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'CUBE' COMMENT '模型类型: CUBE-立方体, CUSTOM-自定义',
+  `model_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '自定义模型URL',
+  `show_walls` tinyint NULL DEFAULT 1 COMMENT '是否显示边界墙',
+  `show_label` tinyint NULL DEFAULT 1 COMMENT '是否显示标签',
+  `grid_visible` tinyint NULL DEFAULT 1 COMMENT '是否显示网格',
+  `config_json` json NULL COMMENT '3D配置JSON',
   PRIMARY KEY (`area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 227 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库区表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 228 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库区表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_storage_area
 -- ----------------------------
+INSERT INTO `wm_storage_area` VALUES (227, 'cs123', 'cs', 1, NULL, 1, 1, 1, '', NULL, NULL, 0, 0, '', '2025-12-01 22:08:20', '', NULL, 'GRID', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
 
 -- ----------------------------
 -- Table structure for wm_storage_location
@@ -8884,32 +9220,110 @@ CREATE TABLE `wm_storage_area`  (
 DROP TABLE IF EXISTS `wm_storage_location`;
 CREATE TABLE `wm_storage_location`  (
   `location_id` bigint NOT NULL AUTO_INCREMENT COMMENT '库位ID',
-  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '库位编码',
-  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '库位名称',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '库位名称',
   `area_id` bigint NOT NULL COMMENT '库区ID',
   `area` double(8, 2) NULL DEFAULT NULL COMMENT '面积',
   `max_loa` double(8, 2) NULL DEFAULT NULL COMMENT '最大载重量',
   `position_x` int NULL DEFAULT NULL COMMENT '库位位置X',
   `position_y` int NULL DEFAULT NULL COMMENT '库位位置y',
   `position_z` int NULL DEFAULT NULL COMMENT '库位位置z',
-  `enable_flag` tinyint NOT NULL DEFAULT 1 COMMENT '是否启用',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
-  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
-  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `frozen_flag` tinyint NOT NULL DEFAULT 1 COMMENT '状态',
   `product_mixing` tinyint NOT NULL DEFAULT 1 COMMENT '是否允许产品混放',
   `batch_mixing` tinyint NOT NULL DEFAULT 1 COMMENT '是否允许批次混放',
+  `enable_flag` tinyint NOT NULL DEFAULT 1 COMMENT '是否启用',
+  `frozen_flag` tinyint NOT NULL DEFAULT 1 COMMENT '是否冻结',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `location_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'STORAGE' COMMENT '库位类型: STORAGE-存储, PICKING-拣货, TRANSIT-中转',
+  `rack_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '所属货架ID',
+  `layer` int NULL DEFAULT 1 COMMENT '层数(从下往上)',
+  `col` int NULL DEFAULT 1 COMMENT '列数(从左往右)',
+  `row` int NULL DEFAULT 1 COMMENT '行数(从前到后)',
+  `pos_x` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标X(米)',
+  `pos_y` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标Y(米)',
+  `pos_z` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标Z(米)',
+  `width` decimal(8, 2) NULL DEFAULT 1.00 COMMENT '库位宽度(米)',
+  `height` decimal(8, 2) NULL DEFAULT 1.00 COMMENT '库位高度(米)',
+  `location_depth` decimal(8, 2) NULL DEFAULT 1.00 COMMENT '库位深度(米)',
+  `rotation_x` decimal(5, 2) NULL DEFAULT 0.00 COMMENT 'X轴旋转角度',
+  `rotation_y` decimal(5, 2) NULL DEFAULT 0.00 COMMENT 'Y轴旋转角度',
+  `rotation_z` decimal(5, 2) NULL DEFAULT 0.00 COMMENT 'Z轴旋转角度',
+  `color_empty` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#4CAF50' COMMENT '空置时颜色',
+  `color_occupied` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#2196F3' COMMENT '占用时颜色',
+  `color_locked` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#F44336' COMMENT '锁定时颜色',
+  `color_warning` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#FF9800' COMMENT '预警时颜色',
+  `opacity` decimal(3, 2) NULL DEFAULT 0.85 COMMENT '透明度',
+  `show_border` tinyint NULL DEFAULT 1 COMMENT '是否显示边框',
+  `border_color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#000000' COMMENT '边框颜色',
+  `border_width` decimal(3, 2) NULL DEFAULT 0.02 COMMENT '边框宽度',
+  `show_label` tinyint NULL DEFAULT 1 COMMENT '是否显示标签',
+  `label_position` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'TOP' COMMENT '标签位置: TOP-顶部, FRONT-前面',
+  `label_size` decimal(3, 2) NULL DEFAULT 0.30 COMMENT '标签大小',
+  `status` int NULL DEFAULT 0 COMMENT '库位状态: 0-空置, 1-占用, 2-锁定, 3-预警',
+  `occupancy_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '占用率(0-100)',
+  `last_inbound_time` datetime NULL DEFAULT NULL COMMENT '最后入库时间',
+  `last_outbound_time` datetime NULL DEFAULT NULL COMMENT '最后出库时间',
+  `config_json` json NULL COMMENT '3D配置JSON数据',
   PRIMARY KEY (`location_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 254 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库位表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 254 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_storage_location
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for wm_storage_rack_3d
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_storage_rack_3d`;
+CREATE TABLE `wm_storage_rack_3d`  (
+  `rack_id` bigint NOT NULL AUTO_INCREMENT COMMENT '货架ID',
+  `rack_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '货架编码',
+  `rack_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '货架名称',
+  `warehouse_id` bigint NOT NULL COMMENT '仓库ID',
+  `area_id` bigint NULL DEFAULT NULL COMMENT '库区ID',
+  `rack_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'STANDARD' COMMENT '货架类型: STANDARD-标准, FLOW-流利, CANTILEVER-悬臂, DRIVE_IN-驶入',
+  `pos_x` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '货架X坐标',
+  `pos_y` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '货架Y坐标',
+  `pos_z` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '货架Z坐标',
+  `width` decimal(8, 2) NOT NULL COMMENT '货架宽度(米)',
+  `height` decimal(8, 2) NOT NULL COMMENT '货架高度(米)',
+  `rack_depth` decimal(8, 2) NOT NULL COMMENT '货架深度(米)',
+  `row_count` int NULL DEFAULT 1 COMMENT '行数',
+  `column_count` int NULL DEFAULT 1 COMMENT '列数',
+  `layers` int NULL DEFAULT 1 COMMENT '层数',
+  `row_spacing` decimal(5, 2) NULL DEFAULT 0.05 COMMENT '行间距',
+  `column_spacing` decimal(5, 2) NULL DEFAULT 0.05 COMMENT '列间距',
+  `layer_spacing` decimal(5, 2) NULL DEFAULT 0.05 COMMENT '层间距',
+  `frame_color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#795548' COMMENT '货架框架颜色',
+  `shelf_color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#9E9E9E' COMMENT '货架层板颜色',
+  `show_frame` tinyint NULL DEFAULT 1 COMMENT '是否显示框架',
+  `frame_width` decimal(4, 2) NULL DEFAULT 0.05 COMMENT '框架宽度',
+  `show_label` tinyint NULL DEFAULT 1 COMMENT '是否显示标签',
+  `auto_generate_locations` tinyint NULL DEFAULT 1 COMMENT '是否自动生成库位',
+  `location_prefix` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '库位编码前缀',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `config_json` json NULL COMMENT '货架配置JSON',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`rack_id`) USING BTREE,
+  UNIQUE INDEX `uk_rack_code`(`rack_code` ASC) USING BTREE,
+  INDEX `idx_warehouse_id`(`warehouse_id` ASC) USING BTREE,
+  INDEX `idx_area_id`(`area_id` ASC) USING BTREE,
+  CONSTRAINT `fk_rack_area` FOREIGN KEY (`area_id`) REFERENCES `wm_storage_area` (`area_id`) ON DELETE SET NULL ON UPDATE RESTRICT,
+  CONSTRAINT `fk_rack_warehouse` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '货架3D配置表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_storage_rack_3d
 -- ----------------------------
 
 -- ----------------------------
@@ -8948,6 +9362,44 @@ CREATE TABLE `wm_warehouse`  (
 -- Records of wm_warehouse
 -- ----------------------------
 INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '内江东兴区仓库', '浙江省杭州市上城区小营街道', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-30 12:04:16', NULL, '2025-11-03 10:06:56', 330000, 330100, 330102, 330102004, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for wm_warehouse_3d_config
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_warehouse_3d_config`;
+CREATE TABLE `wm_warehouse_3d_config`  (
+  `config_id` bigint NOT NULL AUTO_INCREMENT COMMENT '配置ID',
+  `warehouse_id` bigint NOT NULL COMMENT '仓库ID',
+  `config_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '配置名称',
+  `config_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'BASIC' COMMENT '配置类型: BASIC-基础, RACK-货架, AUTOMATED-自动化',
+  `scale_factor` decimal(10, 4) NULL DEFAULT 1.0000 COMMENT '3D场景缩放因子(米/单位)',
+  `grid_enabled` tinyint NULL DEFAULT 1 COMMENT '是否显示网格',
+  `grid_size` decimal(10, 2) NULL DEFAULT 1.00 COMMENT '网格大小',
+  `background_color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#f0f0f0' COMMENT '背景颜色',
+  `floor_color` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '#cccccc' COMMENT '地面颜色',
+  `wall_height` decimal(10, 2) NULL DEFAULT 5.00 COMMENT '墙高度(米)',
+  `light_intensity` decimal(5, 2) NULL DEFAULT 1.00 COMMENT '灯光强度',
+  `default_camera_x` decimal(10, 2) NULL DEFAULT 30.00 COMMENT '默认相机X坐标',
+  `default_camera_y` decimal(10, 2) NULL DEFAULT 40.00 COMMENT '默认相机Y坐标',
+  `default_camera_z` decimal(10, 2) NULL DEFAULT 30.00 COMMENT '默认相机Z坐标',
+  `view_angle` decimal(5, 2) NULL DEFAULT 75.00 COMMENT '视角角度',
+  `config_data` json NULL COMMENT '完整配置JSON数据',
+  `snapshot_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '布局快照路径',
+  `version` int NULL DEFAULT 1 COMMENT '版本号',
+  `is_active` tinyint NULL DEFAULT 1 COMMENT '是否激活',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`config_id`) USING BTREE,
+  INDEX `idx_warehouse_id`(`warehouse_id` ASC) USING BTREE,
+  CONSTRAINT `fk_warehouse_3d_config` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库3D配置表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_warehouse_3d_config
+-- ----------------------------
 
 -- ----------------------------
 -- View structure for v_material_requirement_detail

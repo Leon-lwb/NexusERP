@@ -65,7 +65,8 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <el-button size="mini" type="text" icon="box" @click="handleStoragearea(scope.row.warehouseId)"
+            v-hasPermi="['wm:storagearea:edit', 'wm:storagearea:list']">库区</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
             v-hasPermi="['wm:warehouse:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
@@ -102,16 +103,9 @@
         <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="省份" prop="provinceAreaId">
-              <el-select 
-                v-model="form.provinceAreaId" 
-                placeholder="请选择省份" 
-                :disabled="isViewMode"
-                @change="handleProvinceChange"
-                style="width: 100%">
-                <el-option
-                  v-for="item in provinceOptions"
-                  :key="item.areaId"
-                  :label="item.areaName"
+              <el-select v-model="form.provinceAreaId" placeholder="请选择省份" :disabled="isViewMode"
+                @change="handleProvinceChange" style="width: 100%">
+                <el-option v-for="item in provinceOptions" :key="item.areaId" :label="item.areaName"
                   :value="item.areaId">
                 </el-option>
               </el-select>
@@ -119,33 +113,18 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="城市" prop="cityAreaId">
-              <el-select 
-                v-model="form.cityAreaId" 
-                placeholder="请选择城市" 
-                :disabled="isViewMode || !cityOptions.length"
-                @change="handleCityChange"
-                style="width: 100%">
-                <el-option
-                  v-for="item in cityOptions"
-                  :key="item.areaId"
-                  :label="item.areaName"
-                  :value="item.areaId">
+              <el-select v-model="form.cityAreaId" placeholder="请选择城市" :disabled="isViewMode || !cityOptions.length"
+                @change="handleCityChange" style="width: 100%">
+                <el-option v-for="item in cityOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId">
                 </el-option>
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="区县" prop="districtAreaId">
-              <el-select 
-                v-model="form.districtAreaId" 
-                placeholder="请选择区县" 
-                :disabled="isViewMode || !districtOptions.length"
-                @change="handleDistrictChange"
-                style="width: 100%">
-                <el-option
-                  v-for="item in districtOptions"
-                  :key="item.areaId"
-                  :label="item.areaName"
+              <el-select v-model="form.districtAreaId" placeholder="请选择区县"
+                :disabled="isViewMode || !districtOptions.length" @change="handleDistrictChange" style="width: 100%">
+                <el-option v-for="item in districtOptions" :key="item.areaId" :label="item.areaName"
                   :value="item.areaId">
                 </el-option>
               </el-select>
@@ -153,23 +132,15 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="街道" prop="streetId">
-              <el-select 
-                v-model="form.streetId" 
-                placeholder="请选择街道" 
-                :disabled="isViewMode || !streetOptions.length"
-                style="width: 100%"
-                @change="handleStreetChange">
-                <el-option
-                  v-for="item in streetOptions"
-                  :key="item.areaId"
-                  :label="item.areaName"
-                  :value="item.areaId">
+              <el-select v-model="form.streetId" placeholder="请选择街道" :disabled="isViewMode || !streetOptions.length"
+                style="width: 100%" @change="handleStreetChange">
+                <el-option v-for="item in streetOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId">
                 </el-option>
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="经度" prop="addressLng">
@@ -182,7 +153,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="位置" prop="location">
@@ -596,11 +567,11 @@ function handleProvinceChange(value) {
   cityOptions.value = []
   districtOptions.value = []
   streetOptions.value = []
-  
+
   if (value) {
     loadCityOptions(value)
   }
-  
+
   // 更新地址字段
   nextTick(() => {
     updateAddressField()
@@ -620,11 +591,11 @@ function handleCityChange(value) {
   form.value.streetId = null
   districtOptions.value = []
   streetOptions.value = []
-  
+
   if (value) {
     loadDistrictOptions(value)
   }
-  
+
   // 更新地址字段
   nextTick(() => {
     updateAddressField()
@@ -635,11 +606,11 @@ function handleCityChange(value) {
 function handleDistrictChange(value) {
   form.value.streetId = null
   streetOptions.value = []
-  
+
   if (value) {
     loadStreetOptions(value)
   }
-  
+
   // 更新地址字段
   nextTick(() => {
     updateAddressField()
@@ -673,10 +644,15 @@ function updateAddressField() {
   const cityName = cityOptions.value.find(c => c.areaId === form.value.cityAreaId)?.areaName || ''
   const districtName = districtOptions.value.find(d => d.areaId === form.value.districtAreaId)?.areaName || ''
   const streetName = streetOptions.value.find(s => s.areaId === form.value.streetId)?.areaName || ''
-  
+
   // 拼接地址
   const addressParts = [provinceName, cityName, districtName, streetName].filter(part => part !== '')
   form.value.location = addressParts.join('')
+}
+
+// 跳转库区位置
+function handleStoragearea(warehouseId) {
+  proxy.$router.push({ path: '/core/wm/storagearea/index', query: { warehouseId: warehouseId || 0 } })
 }
 
 getList()

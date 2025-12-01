@@ -289,6 +289,20 @@ export const dynamicRoutes = [
         meta: { title: '物料清单', activeMenu: '/core/prd/requirement' }
       }
     ]
+  },
+  {
+    path: '/core/wm/storagearea',
+    component: Layout,
+    hidden: true,
+    permissions: ['core:wm:storagearea:list'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/core/wm/storagearea/index'),
+        name: 'areaList',
+        meta: { title: '库位设置', activeMenu: '/core/wm/storagearea' }
+      }
+    ]
   }
 ]
 
