@@ -63,7 +63,7 @@
           <dict-tag :options="wm_warehouse_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220px">
         <template #default="scope">
           <el-button size="mini" type="text" icon="box" @click="handleStoragearea(scope.row.warehouseId)"
             v-hasPermi="['wm:storagearea:edit', 'wm:storagearea:list']">库区</el-button>

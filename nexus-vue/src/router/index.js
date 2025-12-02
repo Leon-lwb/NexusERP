@@ -300,7 +300,21 @@ export const dynamicRoutes = [
         path: 'index',
         component: () => import('@/views/core/wm/storagearea/index'),
         name: 'areaList',
-        meta: { title: '库位设置', activeMenu: '/core/wm/storagearea' }
+        meta: { title: '库区设置', activeMenu: '/core/wm/storagearea' }
+      }
+    ]
+  },
+  {
+    path: '/core/wm/storagelocation',
+    component: Layout,
+    hidden: true,
+    permissions: ['core:wm:storagelocation:list'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/core/wm/storagelocation/index'),
+        name: 'locationList',
+        meta: { title: '库位设置', activeMenu: '/core/wm/storagelocation' }
       }
     ]
   }

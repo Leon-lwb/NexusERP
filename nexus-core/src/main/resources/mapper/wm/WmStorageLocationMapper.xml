@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.wm.mapper.WmStorageLocationMapper">
+
+    <resultMap type="WmStorageLocation" id="WmStorageLocationResult">
+            <result property="locationId"    column="location_id"    />
+            <result property="locationCode"    column="location_code"    />
+            <result property="locationName"    column="location_name"    />
+            <result property="areaId"    column="area_id"    />
+            <result property="area"    column="area"    />
+            <result property="maxLoa"    column="max_loa"    />
+            <result property="positionX"    column="position_x"    />
+            <result property="positionY"    column="position_y"    />
+            <result property="positionZ"    column="position_z"    />
+            <result property="productMixing"    column="product_mixing"    />
+            <result property="batchMixing"    column="batch_mixing"    />
+            <result property="enableFlag"    column="enable_flag"    />
+            <result property="frozenFlag"    column="frozen_flag"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+            <result property="locationType"    column="location_type"    />
+            <result property="rackId"    column="rack_id"    />
+            <result property="layer"    column="layer"    />
+            <result property="col"    column="col"    />
+            <result property="rowNum"    column="row_num"    />
+            <result property="posX"    column="pos_x"    />
+            <result property="posY"    column="pos_y"    />
+            <result property="posZ"    column="pos_z"    />
+            <result property="width"    column="width"    />
+            <result property="height"    column="height"    />
+            <result property="locationDepth"    column="location_depth"    />
+            <result property="rotationX"    column="rotation_x"    />
+            <result property="rotationY"    column="rotation_y"    />
+            <result property="rotationZ"    column="rotation_z"    />
+            <result property="colorEmpty"    column="color_empty"    />
+            <result property="colorOccupied"    column="color_occupied"    />
+            <result property="colorLocked"    column="color_locked"    />
+            <result property="colorWarning"    column="color_warning"    />
+            <result property="opacity"    column="opacity"    />
+            <result property="showBorder"    column="show_border"    />
+            <result property="borderColor"    column="border_color"    />
+            <result property="borderWidth"    column="border_width"    />
+            <result property="showLabel"    column="show_label"    />
+            <result property="labelPosition"    column="label_position"    />
+            <result property="labelSize"    column="label_size"    />
+            <result property="status"    column="status"    />
+            <result property="occupancyRate"    column="occupancy_rate"    />
+            <result property="lastInboundTime"    column="last_inbound_time"    />
+            <result property="lastOutboundTime"    column="last_outbound_time"    />
+            <result property="configJson"    column="config_json"    />
+    </resultMap>
+
+    <sql id="selectWmStorageLocationVo">
+        select location_id, location_code, location_name, area_id, area, max_loa, position_x, position_y, position_z, product_mixing, batch_mixing, enable_flag, frozen_flag, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time, location_type, rack_id, layer, col, row_num, pos_x, pos_y, pos_z, width, height, location_depth, rotation_x, rotation_y, rotation_z, color_empty, color_occupied, color_locked, color_warning, opacity, show_border, border_color, border_width, show_label, label_position, label_size, status, occupancy_rate, last_inbound_time, last_outbound_time, config_json from wm_storage_location
+    </sql>
+
+    <select id="selectWmStorageLocationList" parameterType="WmStorageLocation" resultMap="WmStorageLocationResult">
+        <include refid="selectWmStorageLocationVo"/>
+        <where>
+                        <if test="locationCode != null  and locationCode != ''"> and location_code = #{locationCode}</if>
+                        <if test="locationName != null  and locationName != ''"> and location_name like concat('%', #{locationName}, '%')</if>
+                        <if test="area != null "> and area = #{area}</if>
+                        <if test="maxLoa != null "> and max_loa = #{maxLoa}</if>
+                        <if test="productMixing != null "> and product_mixing = #{productMixing}</if>
+                        <if test="batchMixing != null "> and batch_mixing = #{batchMixing}</if>
+                        <if test="enableFlag != null "> and enable_flag = #{enableFlag}</if>
+                        <if test="frozenFlag != null "> and frozen_flag = #{frozenFlag}</if>
+                        <if test="locationType != null  and locationType != ''"> and location_type = #{locationType}</if>
+                        <if test="status != null "> and status = #{status}</if>
+                        <if test="lastInboundTime != null "> and last_inbound_time = #{lastInboundTime}</if>
+                        <if test="lastOutboundTime != null "> and last_outbound_time = #{lastOutboundTime}</if>
+        </where>
+    </select>
+
+    <select id="selectWmStorageLocationByLocationId" parameterType="Long" resultMap="WmStorageLocationResult">
+            <include refid="selectWmStorageLocationVo"/>
+            where location_id = #{locationId}
+    </select>
+
+    <insert id="insertWmStorageLocation" parameterType="WmStorageLocation" useGeneratedKeys="true" keyProperty="locationId">
+        insert into wm_storage_location
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="locationCode != null and locationCode != ''">location_code,</if>
+                    <if test="locationName != null and locationName != ''">location_name,</if>
+                    <if test="areaId != null">area_id,</if>
+                    <if test="area != null">area,</if>
+                    <if test="maxLoa != null">max_loa,</if>
+                    <if test="positionX != null">position_x,</if>
+                    <if test="positionY != null">position_y,</if>
+                    <if test="positionZ != null">position_z,</if>
+                    <if test="productMixing != null">product_mixing,</if>
+                    <if test="batchMixing != null">batch_mixing,</if>
+                    <if test="enableFlag != null">enable_flag,</if>
+                    <if test="frozenFlag != null">frozen_flag,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+                    <if test="locationType != null">location_type,</if>
+                    <if test="rackId != null">rack_id,</if>
+                    <if test="layer != null">layer,</if>
+                    <if test="col != null">col,</if>
+                    <if test="rowNum != null">row_num,</if>
+                    <if test="posX != null">pos_x,</if>
+                    <if test="posY != null">pos_y,</if>
+                    <if test="posZ != null">pos_z,</if>
+                    <if test="width != null">width,</if>
+                    <if test="height != null">height,</if>
+                    <if test="locationDepth != null">location_depth,</if>
+                    <if test="rotationX != null">rotation_x,</if>
+                    <if test="rotationY != null">rotation_y,</if>
+                    <if test="rotationZ != null">rotation_z,</if>
+                    <if test="colorEmpty != null">color_empty,</if>
+                    <if test="colorOccupied != null">color_occupied,</if>
+                    <if test="colorLocked != null">color_locked,</if>
+                    <if test="colorWarning != null">color_warning,</if>
+                    <if test="opacity != null">opacity,</if>
+                    <if test="showBorder != null">show_border,</if>
+                    <if test="borderColor != null">border_color,</if>
+                    <if test="borderWidth != null">border_width,</if>
+                    <if test="showLabel != null">show_label,</if>
+                    <if test="labelPosition != null">label_position,</if>
+                    <if test="labelSize != null">label_size,</if>
+                    <if test="status != null">status,</if>
+                    <if test="occupancyRate != null">occupancy_rate,</if>
+                    <if test="lastInboundTime != null">last_inbound_time,</if>
+                    <if test="lastOutboundTime != null">last_outbound_time,</if>
+                    <if test="configJson != null">config_json,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="locationCode != null and locationCode != ''">#{locationCode},</if>
+                    <if test="locationName != null and locationName != ''">#{locationName},</if>
+                    <if test="areaId != null">#{areaId},</if>
+                    <if test="area != null">#{area},</if>
+                    <if test="maxLoa != null">#{maxLoa},</if>
+                    <if test="positionX != null">#{positionX},</if>
+                    <if test="positionY != null">#{positionY},</if>
+                    <if test="positionZ != null">#{positionZ},</if>
+                    <if test="productMixing != null">#{productMixing},</if>
+                    <if test="batchMixing != null">#{batchMixing},</if>
+                    <if test="enableFlag != null">#{enableFlag},</if>
+                    <if test="frozenFlag != null">#{frozenFlag},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+                    <if test="locationType != null">#{locationType},</if>
+                    <if test="rackId != null">#{rackId},</if>
+                    <if test="layer != null">#{layer},</if>
+                    <if test="col != null">#{col},</if>
+                    <if test="rowNum != null">#{rowNum},</if>
+                    <if test="posX != null">#{posX},</if>
+                    <if test="posY != null">#{posY},</if>
+                    <if test="posZ != null">#{posZ},</if>
+                    <if test="width != null">#{width},</if>
+                    <if test="height != null">#{height},</if>
+                    <if test="locationDepth != null">#{locationDepth},</if>
+                    <if test="rotationX != null">#{rotationX},</if>
+                    <if test="rotationY != null">#{rotationY},</if>
+                    <if test="rotationZ != null">#{rotationZ},</if>
+                    <if test="colorEmpty != null">#{colorEmpty},</if>
+                    <if test="colorOccupied != null">#{colorOccupied},</if>
+                    <if test="colorLocked != null">#{colorLocked},</if>
+                    <if test="colorWarning != null">#{colorWarning},</if>
+                    <if test="opacity != null">#{opacity},</if>
+                    <if test="showBorder != null">#{showBorder},</if>
+                    <if test="borderColor != null">#{borderColor},</if>
+                    <if test="borderWidth != null">#{borderWidth},</if>
+                    <if test="showLabel != null">#{showLabel},</if>
+                    <if test="labelPosition != null">#{labelPosition},</if>
+                    <if test="labelSize != null">#{labelSize},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="occupancyRate != null">#{occupancyRate},</if>
+                    <if test="lastInboundTime != null">#{lastInboundTime},</if>
+                    <if test="lastOutboundTime != null">#{lastOutboundTime},</if>
+                    <if test="configJson != null">#{configJson},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWmStorageLocation" parameterType="WmStorageLocation">
+        update wm_storage_location
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="locationCode != null and locationCode != ''">location_code = #{locationCode},</if>
+                    <if test="locationName != null and locationName != ''">location_name = #{locationName},</if>
+                    <if test="areaId != null">area_id = #{areaId},</if>
+                    <if test="area != null">area = #{area},</if>
+                    <if test="maxLoa != null">max_loa = #{maxLoa},</if>
+                    <if test="positionX != null">position_x = #{positionX},</if>
+                    <if test="positionY != null">position_y = #{positionY},</if>
+                    <if test="positionZ != null">position_z = #{positionZ},</if>
+                    <if test="productMixing != null">product_mixing = #{productMixing},</if>
+                    <if test="batchMixing != null">batch_mixing = #{batchMixing},</if>
+                    <if test="enableFlag != null">enable_flag = #{enableFlag},</if>
+                    <if test="frozenFlag != null">frozen_flag = #{frozenFlag},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+                    <if test="locationType != null">location_type = #{locationType},</if>
+                    <if test="rackId != null">rack_id = #{rackId},</if>
+                    <if test="layer != null">layer = #{layer},</if>
+                    <if test="col != null">col = #{col},</if>
+                    <if test="rowNum != null">row_num = #{rowNum},</if>
+                    <if test="posX != null">pos_x = #{posX},</if>
+                    <if test="posY != null">pos_y = #{posY},</if>
+                    <if test="posZ != null">pos_z = #{posZ},</if>
+                    <if test="width != null">width = #{width},</if>
+                    <if test="height != null">height = #{height},</if>
+                    <if test="locationDepth != null">location_depth = #{locationDepth},</if>
+                    <if test="rotationX != null">rotation_x = #{rotationX},</if>
+                    <if test="rotationY != null">rotation_y = #{rotationY},</if>
+                    <if test="rotationZ != null">rotation_z = #{rotationZ},</if>
+                    <if test="colorEmpty != null">color_empty = #{colorEmpty},</if>
+                    <if test="colorOccupied != null">color_occupied = #{colorOccupied},</if>
+                    <if test="colorLocked != null">color_locked = #{colorLocked},</if>
+                    <if test="colorWarning != null">color_warning = #{colorWarning},</if>
+                    <if test="opacity != null">opacity = #{opacity},</if>
+                    <if test="showBorder != null">show_border = #{showBorder},</if>
+                    <if test="borderColor != null">border_color = #{borderColor},</if>
+                    <if test="borderWidth != null">border_width = #{borderWidth},</if>
+                    <if test="showLabel != null">show_label = #{showLabel},</if>
+                    <if test="labelPosition != null">label_position = #{labelPosition},</if>
+                    <if test="labelSize != null">label_size = #{labelSize},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="occupancyRate != null">occupancy_rate = #{occupancyRate},</if>
+                    <if test="lastInboundTime != null">last_inbound_time = #{lastInboundTime},</if>
+                    <if test="lastOutboundTime != null">last_outbound_time = #{lastOutboundTime},</if>
+                    <if test="configJson != null">config_json = #{configJson},</if>
+        </trim>
+        where location_id = #{locationId}
+    </update>
+
+    <delete id="deleteWmStorageLocationByLocationId" parameterType="Long">
+        delete from wm_storage_location where location_id = #{locationId}
+    </delete>
+
+    <delete id="deleteWmStorageLocationByLocationIds" parameterType="String">
+        delete from wm_storage_location where location_id in
+        <foreach item="locationId" collection="array" open="(" separator="," close=")">
+            #{locationId}
+        </foreach>
+    </delete>
+</mapper>
