@@ -516,9 +516,9 @@ const data = reactive({
     frozenFlag: [
       { required: true, message: "是否冻结不能为空", trigger: "change" }
     ],
-    rowNum: [
-      { required: true, message: "行数不能为空", trigger: "blur" }
-    ],
+    // rowNum: [
+    //   { required: true, message: "行数不能为空", trigger: "blur" }
+    // ],
   }
 })
 

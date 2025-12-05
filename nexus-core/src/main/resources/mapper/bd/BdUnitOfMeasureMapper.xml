@@ -45,7 +45,7 @@
     </select>
     <select id="selectBdUnitOfMeasureAll" resultMap="BdUnitOfMeasureResult">
         <include refid="selectBdUnitOfMeasureVo"/>
-        where status = '1' and is_base = '1'
+        where status = '1'
     </select>
 
     <insert id="insertBdUnitOfMeasure" parameterType="BdUnitOfMeasure" useGeneratedKeys="true" keyProperty="uomId">

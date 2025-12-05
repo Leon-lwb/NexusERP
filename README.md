@@ -54,6 +54,10 @@ NEXUS-ERP是一套全部开源的ERP企业管理平台，毫无保留给个人�
 
 演示地址：http://nexuserp.website/
 
+软件部署：
+  后端部署：运行 package.bat 文件打jar包，服务器启动jar包（nohup java -jar nexus-admin.jar > nexus.log 2>&1 & > nexus.log 2>&1）。
+  前端部署：终端运行 npm run build:prod
+
 文档地址：
 ## 演示图
 

@@ -68,6 +68,7 @@
         <where>
                         <if test="locationCode != null  and locationCode != ''"> and location_code = #{locationCode}</if>
                         <if test="locationName != null  and locationName != ''"> and location_name like concat('%', #{locationName}, '%')</if>
+                        <if test="areaId != null  and areaId != ''"> and area_Id = #{areaId}</if>
                         <if test="area != null "> and area = #{area}</if>
                         <if test="maxLoa != null "> and max_loa = #{maxLoa}</if>
                         <if test="productMixing != null "> and product_mixing = #{productMixing}</if>

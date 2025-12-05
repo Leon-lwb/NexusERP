@@ -175,7 +175,7 @@
 
     <!-- 添加或修改${functionName}对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
-      <el-form ref="${businessName}Ref" :model="form" :rules="rules" label-width="80px" :disabled="isViewMode">
+      <el-form ref="${businessName}Ref" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
           #foreach($column in $columns)
               #set($field=$column.javaField)
               #if($column.insert && !$column.pk)

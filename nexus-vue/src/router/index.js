@@ -317,6 +317,20 @@ export const dynamicRoutes = [
         meta: { title: '库位设置', activeMenu: '/core/wm/storagelocation' }
       }
     ]
+  },
+  {
+    path: '/core/wm/arrivalnotice/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['core:wm:storagelocation:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/core/wm/arrivalnotice/form'),
+        name: 'ArrivalnoticeForm',
+        meta: { title: '到货通知详情', activeMenu: '/core/wm/arrivalnotice' }
+      }
+    ]
   }
 ]
 

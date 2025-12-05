@@ -11,7 +11,7 @@
  Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 02/12/2025 17:56:25
+ Date: 05/12/2025 17:52:29
 */
 
 SET NAMES utf8mb4;
@@ -1708,7 +1708,7 @@ CREATE TABLE `bd_bom`  (
   INDEX `idx_parent_material`(`parent_material_id`) USING BTREE,
   INDEX `idx_current`(`is_current`) USING BTREE,
   CONSTRAINT `fk_bom_parent_material` FOREIGN KEY (`parent_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom
@@ -1754,7 +1754,7 @@ CREATE TABLE `bd_bom_detail`  (
   INDEX `idx_operation_step`(`operation_step`) USING BTREE,
   CONSTRAINT `fk_bom_detail_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_bom_detail_child` FOREIGN KEY (`child_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 39 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 37 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom_detail
@@ -1840,7 +1840,7 @@ CREATE TABLE `bd_client`  (
   INDEX `idx_province_area`(`province_area_id`) USING BTREE,
   INDEX `idx_city_area`(`city_area_id`) USING BTREE,
   INDEX `idx_district_area`(`district_area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_client
@@ -1931,7 +1931,7 @@ CREATE TABLE `bd_material`  (
   INDEX `fk_material_base_uom`(`base_uom_id`) USING BTREE,
   CONSTRAINT `fk_material_base_uom` FOREIGN KEY (`base_uom_id`) REFERENCES `bd_unit_of_measure` (`uom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_material_category` FOREIGN KEY (`category_id`) REFERENCES `bd_material_category` (`category_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 3006 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3005 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_material
@@ -1955,14 +1955,14 @@ INSERT INTO `bd_material` VALUES (16, 'LARGE_GEAR', '大齿轮', '模数3 齿数
 INSERT INTO `bd_material` VALUES (17, 'SMALL_GEAR', '小齿轮', '模数3 齿数20', NULL, 2, 1, NULL, NULL, NULL, 2, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:15:40', NULL, '2025-10-18 23:16:33');
 INSERT INTO `bd_material` VALUES (18, 'KEY_2', '键', '普通平键', NULL, 10, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-18 23:15:40', NULL, '2025-10-18 23:19:43');
 INSERT INTO `bd_material` VALUES (1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '儿童自行车', 3, 26, 26, 26, 26, 3, 1, 0, 0, 3.0000, 4.5000, 13.5000, 0.0000, 7.0000, 1, 1, 364, 6.0000, 0.2000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-11-10 17:37:34');
-INSERT INTO `bd_material` VALUES (2001, 'FRAME', '车架', NULL, NULL, 2, 1, NULL, NULL, NULL, 2, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
-INSERT INTO `bd_material` VALUES (2002, 'WHEEL', '车轮', NULL, NULL, 2, 1, NULL, NULL, NULL, 2, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
-INSERT INTO `bd_material` VALUES (2003, 'HANDLEBAR', '车把', NULL, NULL, 2, 1, NULL, NULL, NULL, 2, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
-INSERT INTO `bd_material` VALUES (3001, 'RIM', '轮圈', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
-INSERT INTO `bd_material` VALUES (3002, 'TIRE', '轮胎', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
-INSERT INTO `bd_material` VALUES (3003, 'SPOKE', '辐条', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
-INSERT INTO `bd_material` VALUES (3004, 'BAR_TUBE', '把管', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
-INSERT INTO `bd_material` VALUES (3005, 'GRIP', '把套', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-10-26 19:43:42');
+INSERT INTO `bd_material` VALUES (2001, 'IF20251203001', '车架', NULL, NULL, 2, 1, NULL, NULL, NULL, 2, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:15:29');
+INSERT INTO `bd_material` VALUES (2002, 'IF20251203002', '车轮', NULL, NULL, 2, 1, NULL, NULL, NULL, 2, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:15:40');
+INSERT INTO `bd_material` VALUES (2003, 'IF20251203003', '车把', NULL, NULL, 2, 1, NULL, NULL, NULL, 2, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:15:48');
+INSERT INTO `bd_material` VALUES (3001, 'IF20251203004', '轮圈', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:29:04');
+INSERT INTO `bd_material` VALUES (3002, 'IF20251203005', '轮胎', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:29:16');
+INSERT INTO `bd_material` VALUES (3003, 'IF20251203006', '辐条', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:29:21');
+INSERT INTO `bd_material` VALUES (3004, 'IF20251203007', '把管', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:29:26');
+INSERT INTO `bd_material` VALUES (3005, 'IF20251203008', '把套', NULL, NULL, 1, 1, NULL, NULL, NULL, 1, 1, 0, 0, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1, 1, 0, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL, '2025-10-26 19:43:42', NULL, '2025-12-03 17:29:30');
 
 -- ----------------------------
 -- Table structure for bd_material_category
@@ -1993,7 +1993,7 @@ CREATE TABLE `bd_material_category`  (
   INDEX `idx_parent_id`(`parent_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_level_sort`(`level_num`, `sort_order`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_material_category
@@ -2076,7 +2076,7 @@ CREATE TABLE `bd_unit_of_measure`  (
   UNIQUE INDEX `uk_uom_code`(`uom_code`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_unit_of_measure
@@ -2203,7 +2203,7 @@ CREATE TABLE `bd_workshop`  (
   PRIMARY KEY (`workshop_id`) USING BTREE,
   UNIQUE INDEX `uk_workshop_code`(`workshop_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '车间表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '车间表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_workshop
@@ -2240,7 +2240,7 @@ CREATE TABLE `bd_workstation`  (
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   CONSTRAINT `fk_workstation_workshop` FOREIGN KEY (`workshop_id`) REFERENCES `bd_workshop` (`workshop_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工作站表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工作站表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_workstation
@@ -2435,7 +2435,7 @@ CREATE TABLE `form_template`  (
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '表单模板表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '表单模板表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of form_template
@@ -2470,7 +2470,7 @@ CREATE TABLE `gen_table`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 30 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2497,9 +2497,11 @@ INSERT INTO `gen_table` VALUES (22, 'bd_workstation', '工作站表', NULL, NULL
 INSERT INTO `gen_table` VALUES (23, 'prd_work_order', '生产工单主表', NULL, NULL, 'PrdWorkOrder', 'crud', 'element-plus', 'com.nexus.core.prd', 'prd', 'work', '生产工单', 'nexus', '0', '/', '{\"parentMenuId\":2038}', 'admin', '2025-11-19 17:38:45', '', '2025-11-19 17:40:08', NULL);
 INSERT INTO `gen_table` VALUES (24, 'prd_material_requirement', '物料需求单主表', 'prd_material_requirement_detail', 'requirement_id', 'PrdMaterialRequirement', 'sub', 'element-plus', 'com.nexus.core.prd', 'prd', 'requirement', '物料清单', 'nexus', '0', '/', '{\"parentMenuId\":2038}', 'admin', '2025-11-21 10:44:56', '', '2025-11-21 16:54:42', NULL);
 INSERT INTO `gen_table` VALUES (25, 'prd_material_requirement_detail', '物料需求单明细表', NULL, NULL, 'PrdMaterialRequirementDetail', 'crud', 'element-plus', 'com.nexus.core.prd', 'prd', 'detail', '物料需求单明细', 'nexus', '0', '/', '{\"parentMenuId\":2038}', 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07', NULL);
-INSERT INTO `gen_table` VALUES (26, 'wm_material_stock', '库存物料记录表', NULL, NULL, 'WmMaterialStock', 'crud', '', 'com.nexus.core', 'core', 'stock', '库存物料记录', 'nexus', '0', '/', NULL, 'admin', '2025-12-01 17:46:29', '', NULL, NULL);
+INSERT INTO `gen_table` VALUES (26, 'wm_material_stock', '库存物料记录表', '', '', 'WmMaterialStock', 'crud', 'element-plus', 'com.nexus.core.wm', 'wm', 'stock', '库存清单', 'nexus', '0', '/', '{\"parentMenuId\":2039}', 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29', NULL);
 INSERT INTO `gen_table` VALUES (27, 'wm_storage_area', '库区表', NULL, NULL, 'WmStorageArea', 'crud', 'element-plus', 'com.nexus.core.wm', 'wm', 'storagearea', '库区', 'nexus', '0', '/', '{\"parentMenuId\":2039}', 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44', NULL);
 INSERT INTO `gen_table` VALUES (28, 'wm_storage_location', '库位表', NULL, NULL, 'WmStorageLocation', 'crud', 'element-plus', 'com.nexus.core.wm', 'wm', 'storagelocation', '库位', 'nexus', '0', '/', '{\"parentMenuId\":2039}', 'admin', '2025-12-01 17:46:42', '', '2025-12-02 15:09:24', NULL);
+INSERT INTO `gen_table` VALUES (29, 'wm_arrival_notice', '到货通知单表', 'wm_arrival_notice_line', 'notice_id', 'WmArrivalNotice', 'np_sub', 'element-plus', 'com.nexus.core.wm', 'wm', 'arrivalnotice', '到货通知', 'nexus', '0', '/', '{\"parentMenuId\":2039}', 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42', NULL);
+INSERT INTO `gen_table` VALUES (30, 'wm_arrival_notice_line', '到货通知单行表', NULL, NULL, 'WmArrivalNoticeLine', 'crud', 'element-plus', 'com.nexus.core.wm', 'wm', 'noticeline', '到货通知单行', 'nexus', '0', '/', '{\"parentMenuId\":2039}', 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47', NULL);
 
 -- ----------------------------
 -- Table structure for gen_table_column
@@ -2529,7 +2531,7 @@ CREATE TABLE `gen_table_column`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 715 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 760 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3049,44 +3051,41 @@ INSERT INTO `gen_table_column` VALUES (586, 25, 'create_by', '创建人', 'varch
 INSERT INTO `gen_table_column` VALUES (587, 25, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 22, 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07');
 INSERT INTO `gen_table_column` VALUES (588, 25, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 23, 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07');
 INSERT INTO `gen_table_column` VALUES (589, 25, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 24, 'admin', '2025-11-21 10:44:56', '', '2025-11-21 15:12:07');
-INSERT INTO `gen_table_column` VALUES (590, 26, 'stock_id', '事务ID', 'bigint', 'Long', 'stockId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (591, 26, 'category_id', '物料类型ID', 'bigint', 'Long', 'categoryId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (592, 26, 'material_id', '产品物料ID', 'bigint', 'Long', 'materialId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (593, 26, 'material_code', '产品物料编码', 'varchar(64)', 'String', 'materialCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (594, 26, 'material_name', '产品物料名称', 'varchar(255)', 'String', 'materialName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 5, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (595, 26, 'material_spec', '规格型号', 'varchar(500)', 'String', 'materialSpec', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 6, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (596, 26, 'base_uom_id', '单位', 'varchar(64)', 'String', 'baseUomId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (597, 26, 'batch_code', '入库批次号', 'varchar(255)', 'String', 'batchCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (598, 26, 'warehouse_id', '仓库ID', 'bigint', 'Long', 'warehouseId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (599, 26, 'warehouse_code', '仓库编码', 'varchar(64)', 'String', 'warehouseCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (600, 26, 'warehouse_name', '仓库名称', 'varchar(255)', 'String', 'warehouseName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 11, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (601, 26, 'area_id', '库区ID', 'bigint', 'Long', 'areaId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (602, 26, 'area_code', '库区编码', 'varchar(64)', 'String', 'areaCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (603, 26, 'area_name', '库区名称', 'varchar(255)', 'String', 'areaName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 14, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (604, 26, 'location_id', '库位ID', 'bigint', 'Long', 'locationId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 15, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (605, 26, 'location_code', '库位编码', 'varchar(64)', 'String', 'locationCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 16, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (606, 26, 'location_name', '库位名称', 'varchar(255)', 'String', 'locationName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 17, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (607, 26, 'vendor_id', '供应商ID', 'bigint', 'Long', 'vendorId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 18, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (608, 26, 'vendor_code', '供应商编号', 'varchar(64)', 'String', 'vendorCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 19, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (609, 26, 'vendor_name', '供应商名称', 'varchar(255)', 'String', 'vendorName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 20, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (610, 26, 'vendor_nick', '供应商简称', 'varchar(64)', 'String', 'vendorNick', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 21, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (611, 26, 'stock_quantity', '在库数量', 'double(12,2)', 'BigDecimal', 'stockQuantity', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 22, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (612, 26, 'workorder_id', '生产工单ID', 'bigint', 'Long', 'workorderId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 23, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (613, 26, 'workorder_code', '生产工单编号', 'varchar(64)', 'String', 'workorderCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 24, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (614, 26, 'recpt_date', '入库时间', 'datetime', 'Date', 'recptDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 25, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (615, 26, 'expire_date', '库存有效期', 'datetime', 'Date', 'expireDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 26, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (616, 26, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 27, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (617, 26, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 28, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (618, 26, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 29, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (619, 26, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 30, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (620, 26, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 31, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (621, 26, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'datetime', '', 32, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (622, 26, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', 33, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (623, 26, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', 34, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (624, 26, 'frozen_flag', NULL, 'tinyint', 'Long', 'frozenFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 35, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (625, 26, 'production_date', NULL, 'datetime', 'Date', 'productionDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 36, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (626, 26, 'unit_name', '单位名称', 'varchar(128)', 'String', 'unitName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 37, 'admin', '2025-12-01 17:46:29', '', NULL);
-INSERT INTO `gen_table_column` VALUES (627, 26, 'batch_id', '批次ID', 'bigint', 'Long', 'batchId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 38, 'admin', '2025-12-01 17:46:29', '', NULL);
+INSERT INTO `gen_table_column` VALUES (590, 26, 'stock_id', '库存ID', 'bigint', 'Long', 'stockId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (591, 26, 'category_id', '物料类型ID', 'bigint', 'Long', 'categoryId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (592, 26, 'material_id', '产品物料ID', 'bigint', 'Long', 'materialId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (593, 26, 'material_code', '产品物料编码', 'varchar(64)', 'String', 'materialCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (594, 26, 'material_name', '产品物料名称', 'varchar(255)', 'String', 'materialName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 5, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (595, 26, 'material_spec', '规格型号', 'varchar(500)', 'String', 'materialSpec', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 6, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (596, 26, 'base_uom_id', '单位id', 'varchar(64)', 'String', 'baseUomId', '0', '0', '0', '1', '1', '0', '1', 'EQ', 'input', '', 7, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (597, 26, 'batch_code', '入库批次号', 'varchar(255)', 'String', 'batchCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (598, 26, 'warehouse_id', '仓库ID', 'bigint', 'Long', 'warehouseId', '0', '0', '1', '1', '1', '0', '1', 'EQ', 'input', '', 11, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (599, 26, 'warehouse_code', '仓库编码', 'varchar(64)', 'String', 'warehouseCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (600, 26, 'warehouse_name', '仓库名称', 'varchar(255)', 'String', 'warehouseName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 13, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (601, 26, 'area_id', '库区ID', 'bigint', 'Long', 'areaId', '0', '0', '0', '1', '1', '0', '1', 'EQ', 'input', '', 14, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (602, 26, 'area_code', '库区编码', 'varchar(64)', 'String', 'areaCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 15, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (603, 26, 'area_name', '库区名称', 'varchar(255)', 'String', 'areaName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 16, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (604, 26, 'location_id', '库位ID', 'bigint', 'Long', 'locationId', '0', '0', '0', '1', '1', '0', '1', 'EQ', 'input', '', 17, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (605, 26, 'location_code', '库位编码', 'varchar(64)', 'String', 'locationCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 18, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (606, 26, 'location_name', '库位名称', 'varchar(255)', 'String', 'locationName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 19, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (607, 26, 'vendor_id', '供应商ID', 'bigint', 'Long', 'vendorId', '0', '0', '0', '1', '1', '0', '1', 'EQ', 'input', '', 20, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (608, 26, 'vendor_code', '供应商编号', 'varchar(64)', 'String', 'vendorCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 21, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (609, 26, 'vendor_name', '供应商名称', 'varchar(255)', 'String', 'vendorName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 22, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (610, 26, 'vendor_nick', '供应商简称', 'varchar(64)', 'String', 'vendorNick', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 23, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (611, 26, 'stock_quantity', '在库数量', 'double(12,2)', 'BigDecimal', 'stockQuantity', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 24, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (614, 26, 'recpt_date', '入库时间', 'datetime', 'Date', 'recptDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 28, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (615, 26, 'expire_date', '库存有效期', 'datetime', 'Date', 'expireDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 29, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (616, 26, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 31, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (617, 26, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 32, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (618, 26, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 33, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (619, 26, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 34, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (620, 26, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 35, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (621, 26, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 36, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (622, 26, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 37, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (623, 26, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 38, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (624, 26, 'frozen_flag', '冻结标志', 'tinyint', 'Long', 'frozenFlag', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 30, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (625, 26, 'production_date', '生产日期', 'datetime', 'Date', 'productionDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 27, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (627, 26, 'batch_id', '批次ID', 'bigint', 'Long', 'batchId', '0', '0', '0', '1', '1', '0', '1', 'EQ', 'input', '', 9, 'admin', '2025-12-01 17:46:29', '', '2025-12-03 16:29:29');
 INSERT INTO `gen_table_column` VALUES (628, 27, 'area_id', '库区ID', 'bigint', 'Long', 'areaId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
 INSERT INTO `gen_table_column` VALUES (629, 27, 'area_code', '库区编码', 'varchar(64)', 'String', 'areaCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
 INSERT INTO `gen_table_column` VALUES (630, 27, 'area_name', '库区名称', 'varchar(255)', 'String', 'areaName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-12-01 17:46:42', '', '2025-12-01 21:35:44');
@@ -3174,6 +3173,52 @@ INSERT INTO `gen_table_column` VALUES (711, 28, 'occupancy_rate', '占用率(0-1
 INSERT INTO `gen_table_column` VALUES (712, 28, 'last_inbound_time', '最后入库时间', 'datetime', 'Date', 'lastInboundTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 50, 'admin', '2025-12-01 17:46:42', '', '2025-12-02 15:09:25');
 INSERT INTO `gen_table_column` VALUES (713, 28, 'last_outbound_time', '最后出库时间', 'datetime', 'Date', 'lastOutboundTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 51, 'admin', '2025-12-01 17:46:43', '', '2025-12-02 15:09:25');
 INSERT INTO `gen_table_column` VALUES (714, 28, 'config_json', '3D配置JSON数据', 'json', 'String', 'configJson', '0', '0', '0', '1', '1', '0', '0', 'EQ', NULL, '', 52, 'admin', '2025-12-01 17:46:43', '', '2025-12-02 15:09:25');
+INSERT INTO `gen_table_column` VALUES (715, 26, 'base_uom_name', '单位名称', 'varchar(128)', 'String', 'baseUomName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 8, '', '2025-12-03 15:55:05', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (716, 26, 'wo_id', '生产工单ID', 'bigint', 'Long', 'woId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 25, '', '2025-12-03 15:55:05', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (717, 26, 'wo_no', '生产工单编号', 'varchar(64)', 'String', 'woNo', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 26, '', '2025-12-03 15:55:05', '', '2025-12-03 16:29:29');
+INSERT INTO `gen_table_column` VALUES (718, 29, 'notice_id', '通知单ID', 'bigint', 'Long', 'noticeId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (719, 29, 'notice_code', '通知单编号', 'varchar(64)', 'String', 'noticeCode', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (720, 29, 'notice_name', '通知单名称', 'varchar(255)', 'String', 'noticeName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (721, 29, 'pur_order_code', '采购订单编号', 'varchar(64)', 'String', 'purOrderCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (722, 29, 'vendor_id', '供应商ID', 'bigint', 'Long', 'vendorId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (723, 29, 'vendor_code', '供应商编码', 'varchar(64)', 'String', 'vendorCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 6, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (724, 29, 'vendor_name', '供应商名称', 'varchar(255)', 'String', 'vendorName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 7, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (725, 29, 'vendor_nick', '供应商简称', 'varchar(255)', 'String', 'vendorNick', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (726, 29, 'arrival_date', '到货日期', 'datetime', 'Date', 'arrivalDate', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 9, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (727, 29, 'contact', '联系人', 'varchar(64)', 'String', 'contact', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (728, 29, 'phone', '联系方式', 'varchar(128)', 'String', 'phone', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 11, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (729, 29, 'status', '单据状态', 'varchar(64)', 'String', 'status', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'wm_notice_status', 12, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (730, 29, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 13, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (731, 29, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 14, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (732, 29, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 15, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (733, 29, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 16, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (734, 29, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 17, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (735, 29, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 18, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (736, 29, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 19, 'admin', '2025-12-04 11:17:19', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (737, 29, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 20, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (738, 29, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 21, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 15:38:42');
+INSERT INTO `gen_table_column` VALUES (739, 30, 'line_id', '行ID', 'bigint', 'Long', 'lineId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (740, 30, 'notice_id', '通知单ID', 'bigint', 'Long', 'noticeId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (741, 30, 'material_id', '产品物料ID', 'bigint', 'Long', 'materialId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (742, 30, 'material_code', '产品物料编码', 'varchar(64)', 'String', 'materialCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 4, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (743, 30, 'material_name', '产品物料名称', 'varchar(255)', 'String', 'materialName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 5, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (744, 30, 'material_spec', '规格型号', 'varchar(500)', 'String', 'materialSpec', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 6, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (745, 30, 'base_uom_id', '单位', 'varchar(64)', 'String', 'baseUomId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 7, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (746, 30, 'base_uom_name', '单位名称', 'varchar(128)', 'String', 'baseUomName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 8, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (747, 30, 'quantity_arrival', '到货数量', 'double(12,2)', 'BigDecimal', 'quantityArrival', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (748, 30, 'quantity_quanlified', '合格数量', 'double(12,2)', 'BigDecimal', 'quantityQuanlified', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (749, 30, 'iqc_check', '是否来料检验', 'char(1)', 'String', 'iqcCheck', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 11, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (750, 30, 'iqc_id', '来料检验单ID', 'bigint', 'Long', 'iqcId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (751, 30, 'iqc_code', '来料检验单编号', 'varchar(64)', 'String', 'iqcCode', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (752, 30, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 14, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (753, 30, 'attr1', '预留字段1', 'varchar(64)', 'String', 'attr1', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 15, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (754, 30, 'attr2', '预留字段2', 'varchar(255)', 'String', 'attr2', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 16, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (755, 30, 'attr3', '预留字段3', 'int', 'Long', 'attr3', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 17, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (756, 30, 'attr4', '预留字段4', 'int', 'Long', 'attr4', '0', '0', '0', '0', '0', '0', '0', 'EQ', 'input', '', 18, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (757, 30, 'create_by', '创建者', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 19, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (758, 30, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 20, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (759, 30, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 21, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
+INSERT INTO `gen_table_column` VALUES (760, 30, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 22, 'admin', '2025-12-04 11:17:20', '', '2025-12-04 11:25:47');
 
 -- ----------------------------
 -- Table structure for prd_material_request
@@ -3256,7 +3301,7 @@ CREATE TABLE `prd_material_requirement`  (
   INDEX `fk_requirement_bom`(`bom_id`) USING BTREE,
   CONSTRAINT `fk_requirement_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_plan` FOREIGN KEY (`plan_id`) REFERENCES `prd_production_plan` (`plan_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_material_requirement
@@ -3301,7 +3346,7 @@ CREATE TABLE `prd_material_requirement_detail`  (
   INDEX `idx_required_date`(`required_date`) USING BTREE,
   CONSTRAINT `fk_requirement_detail` FOREIGN KEY (`requirement_id`) REFERENCES `prd_material_requirement` (`requirement_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 88 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_material_requirement_detail
@@ -3359,7 +3404,7 @@ CREATE TABLE `prd_production_plan`  (
   INDEX `idx_planner_id`(`planner_id`) USING BTREE,
   INDEX `uk_plan_no`(`plan_no`) USING BTREE,
   INDEX `idx_material_requirement`(`material_requirement_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_production_plan
@@ -3672,7 +3717,7 @@ CREATE TABLE `so_customer_order`  (
   INDEX `idx_order_date`(`order_date`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_requested_date`(`requested_date`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单（外部原始需求）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单（外部原始需求）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_customer_order
@@ -3747,7 +3792,7 @@ CREATE TABLE `so_sales_order_header`  (
   INDEX `idx_co_id`(`co_id`) USING BTREE,
   INDEX `idx_sales_rep_id`(`sales_rep_id`) USING BTREE,
   CONSTRAINT `fk_so_header_co` FOREIGN KEY (`co_id`) REFERENCES `so_customer_order` (`co_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_sales_order_header
@@ -3813,7 +3858,7 @@ CREATE TABLE `so_sales_order_line`  (
   INDEX `idx_linked_po_id`(`linked_po_id`) USING BTREE,
   INDEX `idx_pa_group_id`(`pa_group_id`) USING BTREE,
   CONSTRAINT `fk_so_line_header` FOREIGN KEY (`so_id`) REFERENCES `so_sales_order_header` (`so_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_sales_order_line
@@ -3850,7 +3895,7 @@ CREATE TABLE `sys_auto_code_part`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`part_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 369 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 368 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则组成表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -4038,7 +4083,7 @@ CREATE TABLE `sys_auto_code_result`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`code_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 669 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 670 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -4118,7 +4163,7 @@ INSERT INTO `sys_auto_code_result` VALUES (274, 210, '20220814231315', 5, 'WH079
 INSERT INTO `sys_auto_code_result` VALUES (275, 220, '20220813113700', 12, 'R1040', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 17:16:34', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (276, 226, '20220809174609', 2, 'R20220809002', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-09 17:36:22', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (277, 211, '20220810082146', 5, 'L022', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:21:39', '', NULL);
-INSERT INTO `sys_auto_code_result` VALUES (278, 211, '20251202155439', 36, 'L001', 1, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:21:48', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (278, 211, '20251203173355', 50, 'L015', 15, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:21:48', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (279, 212, '20220810082207', 2, 'A0013', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:22:06', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (280, 212, '20220810083445', 4, 'A0017', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 08:22:08', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (281, 218, '20220814194551', 6, 'T00023', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-10 10:58:10', '', NULL);
@@ -4221,7 +4266,7 @@ INSERT INTO `sys_auto_code_result` VALUES (377, 209, '20251119115244', 32, 'WS00
 INSERT INTO `sys_auto_code_result` VALUES (378, 227, '20220823083639', 10, 'T105', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-20 22:07:33', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (379, 215, '20220821192938', 5, 'MO202208210005', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 00:51:58', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (380, 214, '20220821094815', 1, 'M0042', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 09:48:15', '', NULL);
-INSERT INTO `sys_auto_code_result` VALUES (381, 212, '20251202155319', 23, 'A0002', 2, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 13:28:13', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (381, 212, '20251203173021', 26, 'A0005', 5, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 13:28:13', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (382, 214, '20250205105545', 16, 'M0058', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 13:31:39', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (383, 217, '20220823205336', 11, 'TT058', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 13:45:53', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (384, 226, '20220821225220', 7, 'R20220821007', 0, NULL, '', NULL, NULL, 0, 0, '', '2022-08-21 15:16:36', '', NULL);
@@ -4502,6 +4547,8 @@ INSERT INTO `sys_auto_code_result` VALUES (665, 268, '20251127173422', 3, 'MBOM2
 INSERT INTO `sys_auto_code_result` VALUES (666, 268, '20251128175750', 41, 'MBOM251128041', 41, NULL, '', NULL, NULL, 0, 0, '', '2025-11-28 10:17:53', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (667, 268, '20251129232308', 8, 'MBOM251129008', 8, NULL, '', NULL, NULL, 0, 0, '', '2025-11-29 22:30:51', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (668, 268, '20251130003058', 4, 'MBOM251130004', 4, NULL, '', NULL, NULL, 0, 0, '', '2025-11-30 00:30:58', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (669, 236, '20251203172929', 8, 'IF20251203008', 8, NULL, '', NULL, NULL, 0, 0, '', '2025-12-03 17:15:27', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (670, 255, '20251204153525', 1, 'AN20251204001', 1, NULL, '', NULL, NULL, 0, 0, '', '2025-12-04 15:35:25', '', NULL);
 
 -- ----------------------------
 -- Table structure for sys_auto_code_rule
@@ -4527,7 +4574,7 @@ CREATE TABLE `sys_auto_code_rule`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`rule_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 269 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 268 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '编码生成规则表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -4580,7 +4627,7 @@ INSERT INTO `sys_auto_code_rule` VALUES (251, 'PRINT_TEMPLATE_CODE', '打印模�
 INSERT INTO `sys_auto_code_rule` VALUES (252, 'QC_RESULT_CODE', '检测样品编号', NULL, 12, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-03 18:59:48', '', NULL);
 INSERT INTO `sys_auto_code_rule` VALUES (253, 'CARD_CODE', '流转卡编码规则', NULL, 11, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:06:40', 'admin', '2024-12-05 14:17:41');
 INSERT INTO `sys_auto_code_rule` VALUES (254, 'PRINTER_CODE', '打印机编号规则', NULL, 10, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-05 14:34:15', '', NULL);
-INSERT INTO `sys_auto_code_rule` VALUES (255, 'ARRIVALNOTICE_CODE', '到货通知单编号规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-09 21:15:58', '', NULL);
+INSERT INTO `sys_auto_code_rule` VALUES (255, 'WM_ARRIVAL_NOTICE_CODE', '到货通知单编号规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2024-12-09 21:15:58', 'admin', '2025-12-04 15:12:37');
 INSERT INTO `sys_auto_code_rule` VALUES (256, 'DEPT_CODE', '部门编码规则', NULL, 7, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-02-24 11:33:55', '', NULL);
 INSERT INTO `sys_auto_code_rule` VALUES (257, 'QC_RQC_CODE', '退料检验单编码规则', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-03-06 17:20:14', '', NULL);
 INSERT INTO `sys_auto_code_rule` VALUES (258, 'WM_SALES_NOTICE_CODE', '发货通知单编码规则', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, 'admin', '2025-03-14 09:30:45', '', NULL);
@@ -4634,7 +4681,7 @@ CREATE TABLE `sys_deploy_form`  (
   `form_id` bigint(0) NULL DEFAULT NULL COMMENT '表单主键',
   `deploy_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '流程实例主键',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9625 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '流程实例关联表单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9624 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '流程实例关联表单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_deploy_form
@@ -4662,7 +4709,7 @@ CREATE TABLE `sys_dept`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 117 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 116 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -4702,7 +4749,7 @@ CREATE TABLE `sys_dic_area`  (
   PRIMARY KEY (`pkid`) USING BTREE,
   INDEX `layered`(`layered`) USING BTREE,
   INDEX `area_id`(`area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '行政区划表' ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 2950 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '行政区划表' ROW_FORMAT = Compact;
 
 -- ----------------------------
 -- Records of sys_dic_area
@@ -6389,7 +6436,7 @@ CREATE TABLE `sys_dict_data`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 230 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 241 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -6558,6 +6605,10 @@ INSERT INTO `sys_dict_data` VALUES (233, 1, '空置', '0', 'wm_location_status',
 INSERT INTO `sys_dict_data` VALUES (234, 2, '占用', '1', 'wm_location_status', NULL, 'primary', 'N', '0', 'admin', '2025-12-02 14:59:34', 'admin', '2025-12-02 15:00:40', NULL);
 INSERT INTO `sys_dict_data` VALUES (235, 3, '锁定', '2', 'wm_location_status', NULL, 'danger', 'N', '0', 'admin', '2025-12-02 15:00:03', 'admin', '2025-12-02 15:00:27', NULL);
 INSERT INTO `sys_dict_data` VALUES (236, 4, '预警', '3', 'wm_location_status', NULL, 'warning', 'N', '0', 'admin', '2025-12-02 15:00:19', 'admin', '2025-12-02 15:00:34', NULL);
+INSERT INTO `sys_dict_data` VALUES (237, 1, '草稿', 'PREPARE', 'wm_notice_status', NULL, 'primary', 'N', '0', 'admin', '2025-12-04 11:34:24', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (238, 2, '待质检', 'APPROVING', 'wm_notice_status', NULL, 'primary', 'N', '0', 'admin', '2025-12-04 11:34:47', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (239, 3, '待入库', 'APPROVED', 'wm_notice_status', NULL, 'primary', 'N', '0', 'admin', '2025-12-04 11:35:04', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (240, 4, '已完成', 'FINISHED', 'wm_notice_status', NULL, 'primary', 'N', '0', 'admin', '2025-12-04 11:35:20', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -6575,7 +6626,7 @@ CREATE TABLE `sys_dict_type`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `dict_type`(`dict_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 131 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 133 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -6623,6 +6674,7 @@ INSERT INTO `sys_dict_type` VALUES (129, '物料需求状态', 'prd_requirement_
 INSERT INTO `sys_dict_type` VALUES (130, '库区类型', 'wm_layout_type', '0', 'admin', '2025-12-01 21:32:14', '', NULL, NULL);
 INSERT INTO `sys_dict_type` VALUES (131, '库位类型', 'wm_location_type', '0', 'admin', '2025-12-02 14:55:08', '', NULL, NULL);
 INSERT INTO `sys_dict_type` VALUES (132, '库位使用状态', 'wm_location_status', '0', 'admin', '2025-12-02 14:58:47', '', NULL, NULL);
+INSERT INTO `sys_dict_type` VALUES (133, '到货通知单状态', 'wm_notice_status', '0', 'admin', '2025-12-04 11:33:59', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_expression
@@ -6685,7 +6737,7 @@ CREATE TABLE `sys_job_log`  (
   `exception_info` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '异常信息',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`job_log_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '定时任务调度日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_job_log
@@ -6736,7 +6788,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 392 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 400 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -7036,6 +7088,16 @@ INSERT INTO `sys_logininfor` VALUES (391, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (392, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-02 10:33:22');
 INSERT INTO `sys_logininfor` VALUES (393, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-02 14:45:00');
 INSERT INTO `sys_logininfor` VALUES (394, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-02 17:13:41');
+INSERT INTO `sys_logininfor` VALUES (395, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-03 14:45:08');
+INSERT INTO `sys_logininfor` VALUES (396, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-03 15:54:47');
+INSERT INTO `sys_logininfor` VALUES (397, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-04 09:27:59');
+INSERT INTO `sys_logininfor` VALUES (398, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-04 11:16:58');
+INSERT INTO `sys_logininfor` VALUES (399, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-04 14:55:15');
+INSERT INTO `sys_logininfor` VALUES (400, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-04 17:20:09');
+INSERT INTO `sys_logininfor` VALUES (401, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-05 09:43:17');
+INSERT INTO `sys_logininfor` VALUES (402, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '验证码错误', '2025-12-05 16:44:06');
+INSERT INTO `sys_logininfor` VALUES (403, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-05 16:44:12');
+INSERT INTO `sys_logininfor` VALUES (404, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-05 16:53:08');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -7063,7 +7125,7 @@ CREATE TABLE `sys_menu`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2183 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2200 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -7172,7 +7234,7 @@ INSERT INTO `sys_menu` VALUES (2035, '供应商删除', 2031, 4, '#', '', NULL, 
 INSERT INTO `sys_menu` VALUES (2036, '供应商导出', 2031, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'core:vendor:export', '#', 'admin', '2025-09-22 15:53:56', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2037, '销售管理', 0, 5, 'core/so', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '订单', 'admin', '2025-09-29 17:21:31', 'admin', '2025-10-26 02:47:30', '');
 INSERT INTO `sys_menu` VALUES (2038, '生产管理', 0, 6, 'core/prd', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '生产管理', 'admin', '2025-09-29 17:25:44', 'admin', '2025-11-17 16:18:20', '');
-INSERT INTO `sys_menu` VALUES (2039, '库房管理', 0, 7, 'core.wm', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '货物', 'admin', '2025-09-29 17:58:29', 'admin', '2025-09-30 09:25:08', '');
+INSERT INTO `sys_menu` VALUES (2039, '库房管理', 0, 7, 'core/wm', NULL, NULL, '', 1, 0, 'M', '0', '0', '', '货物', 'admin', '2025-09-29 17:58:29', 'admin', '2025-12-05 09:48:08', '');
 INSERT INTO `sys_menu` VALUES (2040, '仓库设置', 2039, 1, 'warehouse', 'core/wm/warehouse/index', NULL, '', 1, 0, 'C', '0', '0', 'wm:warehouse:list', '存货', 'admin', '2025-09-30 10:44:27', 'admin', '2025-09-30 14:18:39', '仓库设置菜单');
 INSERT INTO `sys_menu` VALUES (2041, '仓库设置查询', 2040, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:warehouse:query', '#', 'admin', '2025-09-30 10:44:27', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2042, '仓库设置新增', 2040, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:warehouse:add', '#', 'admin', '2025-09-30 10:44:27', '', NULL, '');
@@ -7297,6 +7359,18 @@ INSERT INTO `sys_menu` VALUES (2185, '库位新增', 2040, 12, '#', '', NULL, ''
 INSERT INTO `sys_menu` VALUES (2186, '库位修改', 2040, 13, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagelocation:edit', '#', 'admin', '2025-12-02 15:13:42', 'admin', '2025-12-02 15:17:12', '');
 INSERT INTO `sys_menu` VALUES (2187, '库位删除', 2040, 14, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagelocation:remove', '#', 'admin', '2025-12-02 15:13:42', 'admin', '2025-12-02 15:17:24', '');
 INSERT INTO `sys_menu` VALUES (2188, '库位导出', 2040, 15, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:storagelocation:export', '#', 'admin', '2025-12-02 15:13:42', 'admin', '2025-12-02 15:17:34', '');
+INSERT INTO `sys_menu` VALUES (2189, '库存清单', 2039, 2, 'stock', 'core/wm/stock/index', NULL, '', 1, 0, 'C', '0', '0', 'wm:stock:list', 'chart', 'admin', '2025-12-03 16:29:52', 'admin', '2025-12-03 16:35:14', '库存清单菜单');
+INSERT INTO `sys_menu` VALUES (2190, '库存清单查询', 2189, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:stock:query', '#', 'admin', '2025-12-03 16:29:52', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2191, '库存清单新增', 2189, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:stock:add', '#', 'admin', '2025-12-03 16:29:52', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2192, '库存清单修改', 2189, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:stock:edit', '#', 'admin', '2025-12-03 16:29:52', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2193, '库存清单删除', 2189, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:stock:remove', '#', 'admin', '2025-12-03 16:29:52', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2194, '库存清单导出', 2189, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:stock:export', '#', 'admin', '2025-12-03 16:29:52', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2195, '到货通知', 2039, 3, 'arrivalnotice', 'core/wm/arrivalnotice/index', NULL, '', 1, 0, 'C', '0', '0', 'wm:arrivalnotice:list', 'table', 'admin', '2025-12-04 11:36:59', 'admin', '2025-12-04 11:50:40', '到货通知菜单');
+INSERT INTO `sys_menu` VALUES (2196, '到货通知查询', 2195, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:arrivalnotice:query', '#', 'admin', '2025-12-04 11:36:59', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2197, '到货通知新增', 2195, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:arrivalnotice:add', '#', 'admin', '2025-12-04 11:36:59', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2198, '到货通知修改', 2195, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:arrivalnotice:edit', '#', 'admin', '2025-12-04 11:36:59', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2199, '到货通知删除', 2195, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:arrivalnotice:remove', '#', 'admin', '2025-12-04 11:36:59', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2200, '到货通知导出', 2195, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'wm:arrivalnotice:export', '#', 'admin', '2025-12-04 11:36:59', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -7314,7 +7388,7 @@ CREATE TABLE `sys_notice`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -7348,7 +7422,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1099 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1219 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -8392,6 +8466,89 @@ INSERT INTO `sys_oper_log` VALUES (1135, '生成业务编号', 1, 'com.nexus.sys
 INSERT INTO `sys_oper_log` VALUES (1136, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":0.5,\"areaId\":1,\"batchMixing\":1,\"createTime\":\"2025-12-02 15:55:19\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L001\",\"locationId\":254,\"locationName\":\"五金库位\",\"locationType\":\"STORAGE\",\"maxLoa\":50,\"params\":{},\"productMixing\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-02 15:55:19', 23);
 INSERT INTO `sys_oper_log` VALUES (1137, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/wm/storagearea/index\",\"createTime\":\"2025-12-01 21:20:40\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2177,\"menuName\":\"库区\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2039,\"path\":\"storagearea\",\"perms\":\"wm:storagearea:list\",\"routeName\":\"\",\"status\":\"1\",\"updateBy\":\"admin\",\"visible\":\"1\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-02 17:33:35', 19);
 INSERT INTO `sys_oper_log` VALUES (1138, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/wm/storagelocation/index\",\"createTime\":\"2025-12-02 15:13:42\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2183,\"menuName\":\"库位\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":2039,\"path\":\"storagelocation\",\"perms\":\"wm:storagelocation:list\",\"routeName\":\"\",\"status\":\"1\",\"updateBy\":\"admin\",\"visible\":\"1\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-02 17:33:39', 8);
+INSERT INTO `sys_oper_log` VALUES (1139, '代码生成', 2, 'com.nexus.generator.controller.GenController.synchDb()', 'GET', 1, 'admin', '研发部门', '/tool/gen/synchDb/wm_material_stock', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 15:55:05', 117);
+INSERT INTO `sys_oper_log` VALUES (1140, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"stock\",\"className\":\"WmMaterialStock\",\"columns\":[{\"capJavaField\":\"StockId\",\"columnComment\":\"库存ID\",\"columnId\":590,\"columnName\":\"stock_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"stockId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 15:55:05\",\"usableColumn\":false},{\"capJavaField\":\"CategoryId\",\"columnComment\":\"物料类型ID\",\"columnId\":591,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 15:55:05\",\"usableColumn\":false},{\"capJavaField\":\"MaterialId\",\"columnComment\":\"产品物料ID\",\"columnId\":592,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 15:55:05\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"产品物料编码\",\"columnId\":593,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"inp', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 15:58:52', 60);
+INSERT INTO `sys_oper_log` VALUES (1141, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"stock\",\"className\":\"WmMaterialStock\",\"columns\":[{\"capJavaField\":\"StockId\",\"columnComment\":\"库存ID\",\"columnId\":590,\"columnName\":\"stock_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"stockId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 15:58:52\",\"usableColumn\":false},{\"capJavaField\":\"CategoryId\",\"columnComment\":\"物料类型ID\",\"columnId\":591,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 15:58:52\",\"usableColumn\":false},{\"capJavaField\":\"MaterialId\",\"columnComment\":\"产品物料ID\",\"columnId\":592,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 15:58:52\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"产品物料编码\",\"columnId\":593,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"inp', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 16:27:31', 78);
+INSERT INTO `sys_oper_log` VALUES (1142, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"stock\",\"className\":\"WmMaterialStock\",\"columns\":[{\"capJavaField\":\"StockId\",\"columnComment\":\"库存ID\",\"columnId\":590,\"columnName\":\"stock_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"stockId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:27:31\",\"usableColumn\":false},{\"capJavaField\":\"CategoryId\",\"columnComment\":\"物料类型ID\",\"columnId\":591,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:27:31\",\"usableColumn\":false},{\"capJavaField\":\"MaterialId\",\"columnComment\":\"产品物料ID\",\"columnId\":592,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:27:31\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"产品物料编码\",\"columnId\":593,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"inp', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 16:28:10', 66);
+INSERT INTO `sys_oper_log` VALUES (1143, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"stock\",\"className\":\"WmMaterialStock\",\"columns\":[{\"capJavaField\":\"StockId\",\"columnComment\":\"库存ID\",\"columnId\":590,\"columnName\":\"stock_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"stockId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:28:10\",\"usableColumn\":false},{\"capJavaField\":\"CategoryId\",\"columnComment\":\"物料类型ID\",\"columnId\":591,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:28:10\",\"usableColumn\":false},{\"capJavaField\":\"MaterialId\",\"columnComment\":\"产品物料ID\",\"columnId\":592,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:28:10\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"产品物料编码\",\"columnId\":593,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"inp', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 16:28:32', 46);
+INSERT INTO `sys_oper_log` VALUES (1144, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"stock\",\"className\":\"WmMaterialStock\",\"columns\":[{\"capJavaField\":\"StockId\",\"columnComment\":\"库存ID\",\"columnId\":590,\"columnName\":\"stock_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"stockId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:28:32\",\"usableColumn\":false},{\"capJavaField\":\"CategoryId\",\"columnComment\":\"物料类型ID\",\"columnId\":591,\"columnName\":\"category_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"categoryId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:28:32\",\"usableColumn\":false},{\"capJavaField\":\"MaterialId\",\"columnComment\":\"产品物料ID\",\"columnId\":592,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":26,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 16:28:32\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"产品物料编码\",\"columnId\":593,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-01 17:46:29\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"inp', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 16:29:29', 46);
+INSERT INTO `sys_oper_log` VALUES (1145, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"wm_material_stock\"}', NULL, 0, NULL, '2025-12-03 16:29:33', 262);
+INSERT INTO `sys_oper_log` VALUES (1146, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/wm/stock/index\",\"createTime\":\"2025-12-03 16:29:52\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2189,\"menuName\":\"库存清单\",\"menuType\":\"C\",\"orderNum\":2,\"params\":{},\"parentId\":2039,\"path\":\"stock\",\"perms\":\"wm:stock:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 16:33:37', 29);
+INSERT INTO `sys_oper_log` VALUES (1147, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/wm/stock/index\",\"createTime\":\"2025-12-03 16:29:52\",\"icon\":\"chart\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2189,\"menuName\":\"库存清单\",\"menuType\":\"C\",\"orderNum\":2,\"params\":{},\"parentId\":2039,\"path\":\"stock\",\"perms\":\"wm:stock:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 16:35:14', 17);
+INSERT INTO `sys_oper_log` VALUES (1148, '仓库设置', 2, 'com.nexus.core.wm.controller.WmWarehouseController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/warehouse', '127.0.0.1', '内网IP', '{\"area\":400.3,\"cityAreaId\":330100,\"createTime\":\"2025-09-30 12:04:16\",\"districtAreaId\":330102,\"location\":\"浙江省杭州市上城区小营街道\",\"manager\":\"ry\",\"managerId\":2,\"params\":{},\"provinceAreaId\":330000,\"status\":1,\"streetId\":\"330102004\",\"updateTime\":\"2025-12-03 17:06:02\",\"warehouseCode\":\"WH003\",\"warehouseId\":1,\"warehouseName\":\"成品仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:06:02', 23);
+INSERT INTO `sys_oper_log` VALUES (1149, '库区', 2, 'com.nexus.core.wm.controller.WmStorageAreaController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/storagearea', '127.0.0.1', '内网IP', '{\"area\":20,\"areaCode\":\"A0002\",\"areaHeight\":3,\"areaId\":1,\"areaName\":\"成品区\",\"attr3\":0,\"attr4\":0,\"color\":\"#4CAF50\",\"createBy\":\"\",\"createTime\":\"2025-12-01 22:08:20\",\"enableFlag\":1,\"frozenFlag\":1,\"gridVisible\":1,\"layoutType\":\"RACK\",\"locationFlag\":1,\"modelType\":\"CUBE\",\"opacity\":0.8,\"params\":{},\"posX\":0,\"posY\":0,\"posZ\":0,\"remark\":\"\",\"rotationX\":0,\"rotationY\":0,\"rotationZ\":0,\"showLabel\":1,\"showWalls\":1,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 17:07:19\",\"warehouseId\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:07:19', 19);
+INSERT INTO `sys_oper_log` VALUES (1150, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_AREA_CODE', '127.0.0.1', '内网IP', '{}', '\"A0003\"', 0, NULL, '2025-12-03 17:07:22', 43);
+INSERT INTO `sys_oper_log` VALUES (1151, '库区', 1, 'com.nexus.core.wm.controller.WmStorageAreaController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagearea', '127.0.0.1', '内网IP', '{\"area\":50,\"areaCode\":\"A0003\",\"areaId\":228,\"areaName\":\"半成品区\",\"createTime\":\"2025-12-03 17:07:43\",\"enableFlag\":1,\"frozenFlag\":0,\"layoutType\":\"PALLET\",\"locationFlag\":1,\"params\":{},\"warehouseId\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:07:43', 6);
+INSERT INTO `sys_oper_log` VALUES (1152, '库区', 2, 'com.nexus.core.wm.controller.WmStorageAreaController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/storagearea', '127.0.0.1', '内网IP', '{\"area\":20,\"areaCode\":\"A0002\",\"areaHeight\":3,\"areaId\":1,\"areaName\":\"成品区\",\"attr3\":0,\"attr4\":0,\"color\":\"#4CAF50\",\"createBy\":\"\",\"createTime\":\"2025-12-01 22:08:20\",\"enableFlag\":1,\"frozenFlag\":0,\"gridVisible\":1,\"layoutType\":\"RACK\",\"locationFlag\":1,\"modelType\":\"CUBE\",\"opacity\":0.8,\"params\":{},\"posX\":0,\"posY\":0,\"posZ\":0,\"remark\":\"\",\"rotationX\":0,\"rotationY\":0,\"rotationZ\":0,\"showLabel\":1,\"showWalls\":1,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 17:08:08\",\"warehouseId\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:08:08', 14);
+INSERT INTO `sys_oper_log` VALUES (1153, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_AREA_CODE', '127.0.0.1', '内网IP', '{}', '\"A0004\"', 0, NULL, '2025-12-03 17:10:51', 22);
+INSERT INTO `sys_oper_log` VALUES (1154, '库区', 1, 'com.nexus.core.wm.controller.WmStorageAreaController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagearea', '127.0.0.1', '内网IP', '{\"area\":30,\"areaCode\":\"A0004\",\"areaId\":3,\"areaName\":\"废品仓\",\"createTime\":\"2025-12-03 17:11:12\",\"enableFlag\":1,\"frozenFlag\":0,\"layoutType\":\"BULK\",\"locationFlag\":1,\"params\":{},\"warehouseId\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:11:12', 15);
+INSERT INTO `sys_oper_log` VALUES (1155, '库位', 2, 'com.nexus.core.wm.controller.WmStorageLocationController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":0.5,\"areaId\":1,\"attr3\":0,\"attr4\":0,\"batchMixing\":1,\"borderColor\":\"#000000\",\"borderWidth\":0.02,\"col\":1,\"colorEmpty\":\"#4CAF50\",\"colorLocked\":\"#F44336\",\"colorOccupied\":\"#2196F3\",\"colorWarning\":\"#FF9800\",\"createBy\":\"\",\"createTime\":\"2025-12-02 15:55:20\",\"enableFlag\":1,\"frozenFlag\":0,\"height\":1,\"labelPosition\":\"TOP\",\"labelSize\":0.3,\"layer\":1,\"locationCode\":\"L001\",\"locationDepth\":1,\"locationId\":1,\"locationName\":\"自行车库位\",\"locationType\":\"STORAGE\",\"maxLoa\":50,\"occupancyRate\":0,\"opacity\":0.85,\"params\":{},\"posX\":0,\"posY\":0,\"posZ\":0,\"productMixing\":1,\"remark\":\"\",\"rotationX\":0,\"rotationY\":0,\"rotationZ\":0,\"rowNum\":1,\"showBorder\":1,\"showLabel\":1,\"status\":0,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 17:11:49\",\"width\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:11:49', 20);
+INSERT INTO `sys_oper_log` VALUES (1156, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203001\"', 0, NULL, '2025-12-03 17:15:27', 123);
+INSERT INTO `sys_oper_log` VALUES (1157, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":2,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203001\",\"materialId\":2001,\"materialName\":\"车架\",\"materialType\":2,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:15:28\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:15:28', 26);
+INSERT INTO `sys_oper_log` VALUES (1158, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203002\"', 0, NULL, '2025-12-03 17:15:38', 22);
+INSERT INTO `sys_oper_log` VALUES (1159, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":2,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203002\",\"materialId\":2002,\"materialName\":\"车轮\",\"materialType\":2,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:15:39\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:15:39', 6);
+INSERT INTO `sys_oper_log` VALUES (1160, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203003\"', 0, NULL, '2025-12-03 17:15:46', 21);
+INSERT INTO `sys_oper_log` VALUES (1161, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":2,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203003\",\"materialId\":2003,\"materialName\":\"车把\",\"materialType\":2,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:15:47\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:15:47', 15);
+INSERT INTO `sys_oper_log` VALUES (1162, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L002\"', 0, NULL, '2025-12-03 17:16:16', 20);
+INSERT INTO `sys_oper_log` VALUES (1163, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L003\"', 0, NULL, '2025-12-03 17:17:33', 10);
+INSERT INTO `sys_oper_log` VALUES (1164, '仓库设置', 2, 'com.nexus.core.wm.controller.WmWarehouseController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/warehouse', '127.0.0.1', '内网IP', '{\"area\":300,\"cityAreaId\":330100,\"createTime\":\"2025-12-02 10:55:51\",\"districtAreaId\":330102,\"location\":\"浙江省杭州市上城区清波街道\",\"manager\":\"admin\",\"managerId\":1,\"params\":{},\"provinceAreaId\":330000,\"remark\":\"成品仓库\",\"status\":1,\"streetId\":\"330102001\",\"updateTime\":\"2025-12-03 17:19:13\",\"warehouseCode\":\"WH004\",\"warehouseId\":2,\"warehouseName\":\"原料仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:19:13', 19);
+INSERT INTO `sys_oper_log` VALUES (1165, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L004\"', 0, NULL, '2025-12-03 17:19:31', 23);
+INSERT INTO `sys_oper_log` VALUES (1166, '库位', 2, 'com.nexus.core.wm.controller.WmStorageLocationController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":5,\"areaId\":1,\"attr3\":0,\"attr4\":0,\"batchMixing\":1,\"borderColor\":\"#000000\",\"borderWidth\":0.02,\"col\":1,\"colorEmpty\":\"#4CAF50\",\"colorLocked\":\"#F44336\",\"colorOccupied\":\"#2196F3\",\"colorWarning\":\"#FF9800\",\"createBy\":\"\",\"createTime\":\"2025-12-02 15:55:20\",\"enableFlag\":1,\"frozenFlag\":0,\"height\":1,\"labelPosition\":\"TOP\",\"labelSize\":0.3,\"layer\":1,\"locationCode\":\"L001\",\"locationDepth\":1,\"locationId\":1,\"locationName\":\"自行车库位\",\"locationType\":\"STORAGE\",\"maxLoa\":50,\"occupancyRate\":0,\"opacity\":0.85,\"params\":{},\"posX\":0,\"posY\":0,\"posZ\":0,\"productMixing\":1,\"remark\":\"\",\"rotationX\":0,\"rotationY\":0,\"rotationZ\":0,\"rowNum\":1,\"showBorder\":1,\"showLabel\":1,\"status\":0,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 17:20:39\",\"width\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:20:39', 22);
+INSERT INTO `sys_oper_log` VALUES (1167, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L005\"', 0, NULL, '2025-12-03 17:20:45', 24);
+INSERT INTO `sys_oper_log` VALUES (1168, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L006\"', 0, NULL, '2025-12-03 17:25:04', 19);
+INSERT INTO `sys_oper_log` VALUES (1169, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":5,\"areaId\":2,\"batchMixing\":1,\"createTime\":\"2025-12-03 17:25:22\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L006\",\"locationId\":2,\"locationName\":\"车轮库位\",\"locationType\":\"STORAGE\",\"maxLoa\":200,\"params\":{},\"productMixing\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:25:22', 17);
+INSERT INTO `sys_oper_log` VALUES (1170, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L007\"', 0, NULL, '2025-12-03 17:26:00', 11);
+INSERT INTO `sys_oper_log` VALUES (1171, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":3,\"areaId\":2,\"batchMixing\":1,\"createTime\":\"2025-12-03 17:26:17\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L007\",\"locationId\":3,\"locationName\":\"车架库位\",\"locationType\":\"STORAGE\",\"maxLoa\":100,\"params\":{},\"productMixing\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:26:17', 16);
+INSERT INTO `sys_oper_log` VALUES (1172, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L008\"', 0, NULL, '2025-12-03 17:26:43', 22);
+INSERT INTO `sys_oper_log` VALUES (1173, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":4,\"areaId\":2,\"batchMixing\":0,\"createTime\":\"2025-12-03 17:26:45\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L008\",\"locationId\":4,\"locationName\":\"车把库位\",\"locationType\":\"STORAGE\",\"maxLoa\":200,\"params\":{},\"productMixing\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:26:45', 14);
+INSERT INTO `sys_oper_log` VALUES (1174, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L009\"', 0, NULL, '2025-12-03 17:27:04', 21);
+INSERT INTO `sys_oper_log` VALUES (1175, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":2,\"areaId\":3,\"batchMixing\":0,\"createTime\":\"2025-12-03 17:27:19\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L009\",\"locationId\":5,\"locationName\":\"废品库位\",\"locationType\":\"STORAGE\",\"maxLoa\":100,\"params\":{},\"productMixing\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:27:19', 15);
+INSERT INTO `sys_oper_log` VALUES (1176, '库位', 2, 'com.nexus.core.wm.controller.WmStorageLocationController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":2,\"areaId\":3,\"attr3\":0,\"attr4\":0,\"batchMixing\":0,\"borderColor\":\"#000000\",\"borderWidth\":0.02,\"col\":1,\"colorEmpty\":\"#4CAF50\",\"colorLocked\":\"#F44336\",\"colorOccupied\":\"#2196F3\",\"colorWarning\":\"#FF9800\",\"createBy\":\"\",\"createTime\":\"2025-12-03 17:27:19\",\"enableFlag\":1,\"frozenFlag\":0,\"height\":1,\"labelPosition\":\"TOP\",\"labelSize\":0.3,\"layer\":1,\"locationCode\":\"L009\",\"locationDepth\":1,\"locationId\":5,\"locationName\":\"废品库位\",\"locationType\":\"STORAGE\",\"maxLoa\":100,\"occupancyRate\":0,\"opacity\":0.85,\"params\":{},\"posX\":0,\"posY\":0,\"posZ\":0,\"productMixing\":0,\"remark\":\"\",\"rotationX\":0,\"rotationY\":0,\"rotationZ\":0,\"rowNum\":1,\"showBorder\":1,\"showLabel\":1,\"status\":0,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 17:27:26\",\"width\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:27:26', 15);
+INSERT INTO `sys_oper_log` VALUES (1177, '库位', 2, 'com.nexus.core.wm.controller.WmStorageLocationController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":2,\"areaId\":3,\"attr3\":0,\"attr4\":0,\"batchMixing\":1,\"borderColor\":\"#000000\",\"borderWidth\":0.02,\"col\":1,\"colorEmpty\":\"#4CAF50\",\"colorLocked\":\"#F44336\",\"colorOccupied\":\"#2196F3\",\"colorWarning\":\"#FF9800\",\"createBy\":\"\",\"createTime\":\"2025-12-03 17:27:19\",\"enableFlag\":1,\"frozenFlag\":0,\"height\":1,\"labelPosition\":\"TOP\",\"labelSize\":0.3,\"layer\":1,\"locationCode\":\"L009\",\"locationDepth\":1,\"locationId\":5,\"locationName\":\"废品库位\",\"locationType\":\"STORAGE\",\"maxLoa\":100,\"occupancyRate\":0,\"opacity\":0.85,\"params\":{},\"posX\":0,\"posY\":0,\"posZ\":0,\"productMixing\":1,\"remark\":\"\",\"rotationX\":0,\"rotationY\":0,\"rotationZ\":0,\"rowNum\":1,\"showBorder\":1,\"showLabel\":1,\"status\":0,\"updateBy\":\"\",\"updateTime\":\"2025-12-03 17:27:33\",\"width\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:27:33', 15);
+INSERT INTO `sys_oper_log` VALUES (1178, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203004\"', 0, NULL, '2025-12-03 17:29:02', 8);
+INSERT INTO `sys_oper_log` VALUES (1179, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":1,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"materialType\":1,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:29:04\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:29:04', 4);
+INSERT INTO `sys_oper_log` VALUES (1180, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203005\"', 0, NULL, '2025-12-03 17:29:14', 19);
+INSERT INTO `sys_oper_log` VALUES (1181, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":1,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"materialType\":1,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:29:15\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:29:15', 4);
+INSERT INTO `sys_oper_log` VALUES (1182, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203006\"', 0, NULL, '2025-12-03 17:29:20', 18);
+INSERT INTO `sys_oper_log` VALUES (1183, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":1,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"materialType\":1,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:29:21\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:29:21', 4);
+INSERT INTO `sys_oper_log` VALUES (1184, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203007\"', 0, NULL, '2025-12-03 17:29:24', 18);
+INSERT INTO `sys_oper_log` VALUES (1185, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":1,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"materialType\":1,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:29:25\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:29:25', 13);
+INSERT INTO `sys_oper_log` VALUES (1186, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/MATERIAL_CODE', '127.0.0.1', '内网IP', '{}', '\"IF20251203008\"', 0, NULL, '2025-12-03 17:29:29', 12);
+INSERT INTO `sys_oper_log` VALUES (1187, '物料产品主', 2, 'com.nexus.core.bd.controller.BdMaterialController.edit()', 'PUT', 1, 'admin', '研发部门', '/bd/material', '127.0.0.1', '内网IP', '{\"baseUomId\":1,\"categoryId\":1,\"createTime\":\"2025-10-26 19:43:42\",\"isBatchManage\":0,\"isSerialManage\":0,\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"materialType\":1,\"maxStock\":0,\"minStock\":0,\"params\":{},\"qualityStatus\":1,\"referencePrice\":0,\"safetyStock\":0,\"shelfLife\":0,\"sourceType\":1,\"standardCost\":0,\"status\":1,\"updateTime\":\"2025-12-03 17:29:30\",\"volume\":0,\"weight\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:29:30', 5);
+INSERT INTO `sys_oper_log` VALUES (1188, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_AREA_CODE', '127.0.0.1', '内网IP', '{}', '\"A0005\"', 0, NULL, '2025-12-03 17:30:21', 21);
+INSERT INTO `sys_oper_log` VALUES (1189, '库区', 1, 'com.nexus.core.wm.controller.WmStorageAreaController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagearea', '127.0.0.1', '内网IP', '{\"area\":200,\"areaCode\":\"A0005\",\"areaId\":4,\"areaName\":\"金属库区\",\"createTime\":\"2025-12-03 17:30:57\",\"enableFlag\":1,\"frozenFlag\":0,\"layoutType\":\"RACK\",\"locationFlag\":1,\"params\":{},\"warehouseId\":2}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:30:57', 18);
+INSERT INTO `sys_oper_log` VALUES (1190, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L010\"', 0, NULL, '2025-12-03 17:31:12', 20);
+INSERT INTO `sys_oper_log` VALUES (1191, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":10,\"areaId\":4,\"batchMixing\":0,\"createTime\":\"2025-12-03 17:31:40\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L010\",\"locationId\":6,\"locationName\":\"钢板库位\",\"locationType\":\"STORAGE\",\"maxLoa\":1000,\"params\":{},\"productMixing\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:31:40', 14);
+INSERT INTO `sys_oper_log` VALUES (1192, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L011\"', 0, NULL, '2025-12-03 17:31:55', 20);
+INSERT INTO `sys_oper_log` VALUES (1193, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":12,\"areaId\":4,\"batchMixing\":0,\"createTime\":\"2025-12-03 17:32:07\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L011\",\"locationId\":7,\"locationName\":\"轮圈库位\",\"locationType\":\"STORAGE\",\"params\":{},\"productMixing\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:32:07', 17);
+INSERT INTO `sys_oper_log` VALUES (1194, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L012\"', 0, NULL, '2025-12-03 17:32:14', 20);
+INSERT INTO `sys_oper_log` VALUES (1195, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":10,\"areaId\":4,\"batchMixing\":1,\"createTime\":\"2025-12-03 17:32:38\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L012\",\"locationId\":8,\"locationName\":\"轮胎库位\",\"locationType\":\"STORAGE\",\"maxLoa\":1000,\"params\":{},\"productMixing\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:32:38', 14);
+INSERT INTO `sys_oper_log` VALUES (1196, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L013\"', 0, NULL, '2025-12-03 17:33:00', 10);
+INSERT INTO `sys_oper_log` VALUES (1197, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":15,\"areaId\":4,\"batchMixing\":1,\"createTime\":\"2025-12-03 17:33:01\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L013\",\"locationId\":9,\"locationName\":\"辐条库位\",\"locationType\":\"STORAGE\",\"maxLoa\":1000,\"params\":{},\"productMixing\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:33:01', 4);
+INSERT INTO `sys_oper_log` VALUES (1198, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L014\"', 0, NULL, '2025-12-03 17:33:20', 20);
+INSERT INTO `sys_oper_log` VALUES (1199, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":10,\"areaId\":4,\"batchMixing\":1,\"createTime\":\"2025-12-03 17:33:42\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L014\",\"locationId\":10,\"locationName\":\"把管库位\",\"locationType\":\"STORAGE\",\"maxLoa\":100,\"params\":{},\"productMixing\":1}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:33:42', 14);
+INSERT INTO `sys_oper_log` VALUES (1200, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_LOCATION_CODE', '127.0.0.1', '内网IP', '{}', '\"L015\"', 0, NULL, '2025-12-03 17:33:55', 19);
+INSERT INTO `sys_oper_log` VALUES (1201, '库位', 1, 'com.nexus.core.wm.controller.WmStorageLocationController.add()', 'POST', 1, 'admin', '研发部门', '/wm/storagelocation', '127.0.0.1', '内网IP', '{\"area\":10,\"areaId\":4,\"batchMixing\":1,\"createTime\":\"2025-12-03 17:34:03\",\"enableFlag\":1,\"frozenFlag\":0,\"locationCode\":\"L015\",\"locationId\":11,\"locationName\":\"把套库位\",\"locationType\":\"STORAGE\",\"params\":{},\"productMixing\":0}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-03 17:34:04', 14);
+INSERT INTO `sys_oper_log` VALUES (1202, '用户管理', 1, 'com.nexus.web.controller.system.SysUserController.add()', 'POST', 1, 'admin', '研发部门', '/system/user', '127.0.0.1', '内网IP', '{\"admin\":false,\"createBy\":\"admin\",\"deptId\":114,\"email\":\"129@qq.com\",\"nickName\":\"蔡埋朶\",\"params\":{},\"phonenumber\":\"15888888881\",\"postIds\":[8],\"roleIds\":[3],\"sex\":\"0\",\"status\":\"0\",\"userId\":104,\"userName\":\"蔡埋朶\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 09:39:45', 87);
+INSERT INTO `sys_oper_log` VALUES (1203, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"wm_arrival_notice,wm_arrival_notice_line\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:17:20', 262);
+INSERT INTO `sys_oper_log` VALUES (1204, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"noticeline\",\"className\":\"WmArrivalNoticeLine\",\"columns\":[{\"capJavaField\":\"LineId\",\"columnComment\":\"行ID\",\"columnId\":739,\"columnName\":\"line_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:20\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"lineId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":30,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"NoticeId\",\"columnComment\":\"通知单ID\",\"columnId\":740,\"columnName\":\"notice_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"noticeId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":2,\"superColumn\":false,\"tableId\":30,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"MaterialId\",\"columnComment\":\"产品物料ID\",\"columnId\":741,\"columnName\":\"material_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"materialId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":30,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"MaterialCode\",\"columnComment\":\"产品物料编码\",\"columnId\":742,\"columnName\":\"material_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:20\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:25:47', 161);
+INSERT INTO `sys_oper_log` VALUES (1205, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"arrivalnotice\",\"className\":\"WmArrivalNotice\",\"columns\":[{\"capJavaField\":\"NoticeId\",\"columnComment\":\"通知单ID\",\"columnId\":718,\"columnName\":\"notice_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"noticeId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"NoticeCode\",\"columnComment\":\"通知单编号\",\"columnId\":719,\"columnName\":\"notice_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"NoticeName\",\"columnComment\":\"通知单名称\",\"columnId\":720,\"columnName\":\"notice_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"PurOrderCode\",\"columnComment\":\"采购订单编号\",\"columnId\":721,\"columnName\":\"pur_order_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:27:58', 81);
+INSERT INTO `sys_oper_log` VALUES (1206, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"到货通知单状态\",\"dictType\":\"wm_notice_status\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:33:59', 18);
+INSERT INTO `sys_oper_log` VALUES (1207, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"草稿\",\"dictSort\":1,\"dictType\":\"wm_notice_status\",\"dictValue\":\"PREPARE\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:34:24', 50);
+INSERT INTO `sys_oper_log` VALUES (1208, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"待质检\",\"dictSort\":2,\"dictType\":\"wm_notice_status\",\"dictValue\":\"APPROVING\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:34:48', 14);
+INSERT INTO `sys_oper_log` VALUES (1209, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"待入库\",\"dictSort\":3,\"dictType\":\"wm_notice_status\",\"dictValue\":\"APPROVED\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:35:04', 48);
+INSERT INTO `sys_oper_log` VALUES (1210, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"已完成\",\"dictSort\":4,\"dictType\":\"wm_notice_status\",\"dictValue\":\"FINISHED\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:35:20', 48);
+INSERT INTO `sys_oper_log` VALUES (1211, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"arrivalnotice\",\"className\":\"WmArrivalNotice\",\"columns\":[{\"capJavaField\":\"NoticeId\",\"columnComment\":\"通知单ID\",\"columnId\":718,\"columnName\":\"notice_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"noticeId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:27:58\",\"usableColumn\":false},{\"capJavaField\":\"NoticeCode\",\"columnComment\":\"通知单编号\",\"columnId\":719,\"columnName\":\"notice_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:27:58\",\"usableColumn\":false},{\"capJavaField\":\"NoticeName\",\"columnComment\":\"通知单名称\",\"columnId\":720,\"columnName\":\"notice_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:27:58\",\"usableColumn\":false},{\"capJavaField\":\"PurOrderCode\",\"columnComment\":\"采购订单编号\",\"columnId\":721,\"columnName\":\"pur_order_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:36:03', 89);
+INSERT INTO `sys_oper_log` VALUES (1212, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"wm_arrival_notice\"}', NULL, 0, NULL, '2025-12-04 11:36:11', 639);
+INSERT INTO `sys_oper_log` VALUES (1213, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"core/wm/arrivalnotice/index\",\"createTime\":\"2025-12-04 11:36:59\",\"icon\":\"table\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2195,\"menuName\":\"到货通知\",\"menuType\":\"C\",\"orderNum\":3,\"params\":{},\"parentId\":2039,\"path\":\"arrivalnotice\",\"perms\":\"wm:arrivalnotice:list\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:50:40', 18);
+INSERT INTO `sys_oper_log` VALUES (1214, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"arrivalnotice\",\"className\":\"WmArrivalNotice\",\"columns\":[{\"capJavaField\":\"NoticeId\",\"columnComment\":\"通知单ID\",\"columnId\":718,\"columnName\":\"notice_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"noticeId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:36:03\",\"usableColumn\":false},{\"capJavaField\":\"NoticeCode\",\"columnComment\":\"通知单编号\",\"columnId\":719,\"columnName\":\"notice_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:36:03\",\"usableColumn\":false},{\"capJavaField\":\"NoticeName\",\"columnComment\":\"通知单名称\",\"columnId\":720,\"columnName\":\"notice_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:36:03\",\"usableColumn\":false},{\"capJavaField\":\"PurOrderCode\",\"columnComment\":\"采购订单编号\",\"columnId\":721,\"columnName\":\"pur_order_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 11:57:50', 56);
+INSERT INTO `sys_oper_log` VALUES (1215, '更新自动编码规则', 2, 'com.nexus.web.controller.system.SysAutoCodeRuleController.updateInfo()', 'PUT', 1, 'admin', '研发部门', '/system/autocode/rule', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2024-12-09 21:15:58\",\"enableFlag\":\"Y\",\"isPadded\":\"N\",\"maxLength\":13,\"paddedMethod\":\"L\",\"params\":{},\"ruleCode\":\"WM_ARRIVAL_NOTICE_CODE\",\"ruleId\":255,\"ruleName\":\"到货通知单编号规则\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 15:12:37', 20);
+INSERT INTO `sys_oper_log` VALUES (1216, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_ARRIVAL_NOTICE_CODE', '127.0.0.1', '内网IP', '{}', '\"AN20251204001\"', 0, NULL, '2025-12-04 15:35:25', 51);
+INSERT INTO `sys_oper_log` VALUES (1217, '到货通知', 1, 'com.nexus.core.wm.controller.WmArrivalNoticeController.add()', 'POST', 1, 'admin', '研发部门', '/wm/arrivalnotice', '127.0.0.1', '内网IP', '{\"contact\":\"张三\",\"createTime\":\"2025-12-04 15:36:20\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"noticeName\":\"自行车所需物料\",\"params\":{},\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 15:36:20', 23);
+INSERT INTO `sys_oper_log` VALUES (1218, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"arrivalnotice\",\"className\":\"WmArrivalNotice\",\"columns\":[{\"capJavaField\":\"NoticeId\",\"columnComment\":\"通知单ID\",\"columnId\":718,\"columnName\":\"notice_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"noticeId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:57:50\",\"usableColumn\":false},{\"capJavaField\":\"NoticeCode\",\"columnComment\":\"通知单编号\",\"columnId\":719,\"columnName\":\"notice_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeCode\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:57:50\",\"usableColumn\":false},{\"capJavaField\":\"NoticeName\",\"columnComment\":\"通知单名称\",\"columnId\":720,\"columnName\":\"notice_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"noticeName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":3,\"superColumn\":false,\"tableId\":29,\"updateBy\":\"\",\"updateTime\":\"2025-12-04 11:57:50\",\"usableColumn\":false},{\"capJavaField\":\"PurOrderCode\",\"columnComment\":\"采购订单编号\",\"columnId\":721,\"columnName\":\"pur_order_code\",\"columnType\":\"varchar(64)\",\"createBy\":\"admin\",\"createTime\":\"2025-12-04 11:17:19\",\"dictType\":\"\",', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-04 15:38:43', 32);
+INSERT INTO `sys_oper_log` VALUES (1219, '到货通知', 2, 'com.nexus.core.wm.controller.WmArrivalNoticeController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/arrivalnotice', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"contact\":\"张三\",\"createBy\":\"\",\"createTime\":\"2025-12-04 15:36:20\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"noticeName\":\"自行车所需物料\",\"params\":{},\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"updateTime\":\"2025-12-04 17:49:07\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"wmArrivalNoticeLineList\":[{\"baseUomId\":\"\",\"baseUomName\":\"\",\"iqcCheck\":\"\",\"iqcCode\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"\",\"noticeId\":1,\"params\":{},\"remark\":\"\"}]}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLIntegrityConstraintViolationException: Column \'quantity_arrival\' cannot be null\r\n### The error may exist in file [E:\\nexus-erp\\nexus-core\\target\\classes\\mapper\\wm\\WmArrivalNoticeMapper.xml]\r\n### The error may involve defaultParameterMap\r\n### The error occurred while setting parameters\r\n### SQL: insert into wm_arrival_notice_line( line_id, notice_id, material_id, material_code, material_name, material_spec, base_uom_id, base_uom_name, quantity_arrival, quantity_quanlified, iqc_check, iqc_id, iqc_code, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time) values                                ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\r\n### Cause: java.sql.SQLIntegrityConstraintViolationException: Column \'quantity_arrival\' cannot be null\n; Column \'quantity_arrival\' cannot be null', '2025-12-04 17:49:07', 91);
+INSERT INTO `sys_oper_log` VALUES (1220, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:58:29\",\"icon\":\"货物\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2039,\"menuName\":\"库房管理\",\"menuType\":\"M\",\"orderNum\":7,\"params\":{},\"parentId\":0,\"path\":\"core\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-05 09:47:23', 29);
+INSERT INTO `sys_oper_log` VALUES (1221, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2025-09-29 17:58:29\",\"icon\":\"货物\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2039,\"menuName\":\"库房管理\",\"menuType\":\"M\",\"orderNum\":7,\"params\":{},\"parentId\":0,\"path\":\"core/wm\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-05 09:48:08', 6);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -8409,7 +8566,7 @@ CREATE TABLE `sys_post`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_post
@@ -8452,7 +8609,7 @@ CREATE TABLE `sys_role`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role
@@ -8692,12 +8849,13 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-02 17:13:41', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-12-02 17:13:41', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-05 16:53:08', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-12-05 16:53:08', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员');
 INSERT INTO `sys_user` VALUES (100, 112, 'xiaowang', '小王', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-10-23 16:45:02', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', '麦得朶', '2025-10-23 19:33:53', '耳朵聋');
 INSERT INTO `sys_user` VALUES (102, 115, '麦得邵', '麦得邵', '00', '', '', '0', '', '$2a$10$NDKFI8ezk4pCXp.TMTQWZu4thUF.035lFpWbDE.KdRTZTicynbdda', '0', '0', '127.0.0.1', '2025-10-23 18:54:16', NULL, 'admin', '2025-10-23 17:06:17', '麦得朶', '2025-10-23 19:02:56', '盐浸虾');
 INSERT INTO `sys_user` VALUES (103, 115, '麦痕邵', '麦痕邵', '00', '', '', '0', '', '$2a$10$N5tqnOCN9FmoPCpy5CWbYOYRORMPZ/GpH26uMFo3KfWrGJRNMvEeK', '0', '0', '', NULL, NULL, '麦得朶', '2025-10-23 19:03:36', '', NULL, NULL);
+INSERT INTO `sys_user` VALUES (104, 114, '蔡埋朶', '蔡埋朶', '00', '129@qq.com', '15888888881', '0', '', '$2a$10$8xOXZXBjDSphgPLquvBMMOLo8C5GSy0IeYT5uRwtonmZrVHdo.lVu', '0', '0', '', NULL, NULL, 'admin', '2025-12-04 09:39:45', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_post
@@ -8718,6 +8876,7 @@ INSERT INTO `sys_user_post` VALUES (100, 6);
 INSERT INTO `sys_user_post` VALUES (101, 9);
 INSERT INTO `sys_user_post` VALUES (102, 17);
 INSERT INTO `sys_user_post` VALUES (103, 17);
+INSERT INTO `sys_user_post` VALUES (104, 8);
 
 -- ----------------------------
 -- Table structure for sys_user_role
@@ -8738,6 +8897,7 @@ INSERT INTO `sys_user_role` VALUES (100, 3);
 INSERT INTO `sys_user_role` VALUES (101, 3);
 INSERT INTO `sys_user_role` VALUES (102, 2);
 INSERT INTO `sys_user_role` VALUES (103, 2);
+INSERT INTO `sys_user_role` VALUES (104, 3);
 
 -- ----------------------------
 -- Table structure for wm_3d_operation_log
@@ -8765,6 +8925,70 @@ CREATE TABLE `wm_3d_operation_log`  (
   INDEX `idx_operate_time`(`operate_time`) USING BTREE,
   INDEX `idx_operate_by`(`operate_by`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '3D操作日志表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for wm_arrival_notice
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_arrival_notice`;
+CREATE TABLE `wm_arrival_notice`  (
+  `notice_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '通知单ID',
+  `notice_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知单编号',
+  `notice_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知单名称',
+  `pur_order_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '采购订单编号',
+  `vendor_id` bigint(0) NULL DEFAULT NULL COMMENT '供应商ID',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `vendor_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商简称',
+  `arrival_date` datetime(0) NULL DEFAULT NULL COMMENT '到货日期',
+  `contact` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系人',
+  `phone` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系方式',
+  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'PREPARE' COMMENT '单据状态',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`notice_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '到货通知单表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of wm_arrival_notice
+-- ----------------------------
+INSERT INTO `wm_arrival_notice` VALUES (1, 'AN20251204001', '自行车所需物料', NULL, 1, 'V00005', '北京五道口', NULL, NULL, '张三', NULL, 'PREPARE', '', NULL, NULL, 0, 0, '', '2025-12-04 15:36:20', '', NULL);
+
+-- ----------------------------
+-- Table structure for wm_arrival_notice_line
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_arrival_notice_line`;
+CREATE TABLE `wm_arrival_notice_line`  (
+  `line_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '行ID',
+  `notice_id` bigint(0) NULL DEFAULT NULL COMMENT '通知单ID',
+  `material_id` bigint(0) NOT NULL COMMENT '产品物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `quantity_arrival` double(12, 2) NOT NULL COMMENT '到货数量',
+  `quantity_quanlified` double(12, 2) NULL DEFAULT NULL COMMENT '合格数量',
+  `iqc_check` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否来料检验',
+  `iqc_id` bigint(0) NULL DEFAULT NULL COMMENT '来料检验单ID',
+  `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '到货通知单行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_layout_snapshot
@@ -8875,17 +9099,136 @@ CREATE TABLE `wm_material_3d_model`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料3D模型表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_stock
+-- Table structure for wm_material_receve
 -- ----------------------------
-DROP TABLE IF EXISTS `wm_material_stock`;
-CREATE TABLE `wm_material_stock`  (
-  `stock_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '事务ID',
-  `category_id` bigint(0) NULL DEFAULT NULL COMMENT '物料类型ID',
+DROP TABLE IF EXISTS `wm_material_receve`;
+CREATE TABLE `wm_material_receve`  (
+  `receve_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '入库单ID',
+  `receve_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '入库单编号',
+  `receve_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '入库单名称',
+  `iqc_id` bigint(0) NULL DEFAULT NULL COMMENT '来料检验单ID',
+  `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
+  `notice_id` bigint(0) NULL DEFAULT NULL COMMENT '到货通知单ID',
+  `notice_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '到货通知单编号',
+  `pur_id` bigint(0) NULL DEFAULT NULL COMMENT '采购订单ID',
+  `pur_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '采购订单编号',
+  `vendor_id` bigint(0) NULL DEFAULT NULL COMMENT '供应商ID',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `vendor_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商简称',
+  `warehouse_id` bigint(0) NULL DEFAULT NULL COMMENT '仓库ID',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `area_id` bigint(0) NULL DEFAULT NULL COMMENT '库区ID',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `location_id` bigint(0) NULL DEFAULT NULL COMMENT '库位ID',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `receve_date` datetime(0) NULL DEFAULT NULL COMMENT '入库日期',
+  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'PREPARE' COMMENT '单据状态',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`receve_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for wm_material_receve_detail
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_material_receve_detail`;
+CREATE TABLE `wm_material_receve_detail`  (
+  `detail_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '明细ID',
+  `line_id` bigint(0) NULL DEFAULT NULL COMMENT '行ID',
+  `receve_id` bigint(0) NULL DEFAULT NULL COMMENT '入库单ID',
   `material_id` bigint(0) NOT NULL COMMENT '产品物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
   `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
   `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
   `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `quantity` double(12, 2) NOT NULL COMMENT '入库数量',
+  `batch_id` bigint(0) NULL DEFAULT NULL COMMENT '批次ID',
+  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '批次号',
+  `warehouse_id` bigint(0) NULL DEFAULT NULL COMMENT '仓库ID',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `area_id` bigint(0) NULL DEFAULT NULL COMMENT '库区ID',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `location_id` bigint(0) NULL DEFAULT NULL COMMENT '库位ID',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`detail_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单明细表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for wm_material_receve_line
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_material_receve_line`;
+CREATE TABLE `wm_material_receve_line`  (
+  `line_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '物料入库单行ID',
+  `receve_id` bigint(0) NULL DEFAULT NULL COMMENT '物料入库单ID',
+  `source_doc_line_id` bigint(0) NULL DEFAULT NULL COMMENT '来源单据行ID',
+  `material_id` bigint(0) NOT NULL COMMENT '产品物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `quantity_recived` double(12, 2) NOT NULL COMMENT '入库数量',
+  `batch_id` bigint(0) NULL DEFAULT NULL COMMENT '批次ID',
+  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '批次号',
+  `warehouse_id` bigint(0) NULL DEFAULT NULL COMMENT '仓库ID',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `area_id` bigint(0) NULL DEFAULT NULL COMMENT '库区ID',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `location_id` bigint(0) NULL DEFAULT NULL COMMENT '库位ID',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单行表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for wm_material_stock
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_material_stock`;
+CREATE TABLE `wm_material_stock`  (
+  `stock_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '库存ID',
+  `category_id` bigint(0) NULL DEFAULT NULL COMMENT '物料类型ID',
+  `material_id` bigint(0) NOT NULL COMMENT '产品物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位id',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `batch_id` bigint(0) NULL DEFAULT NULL COMMENT '批次ID',
   `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '入库批次号',
   `warehouse_id` bigint(0) NOT NULL COMMENT '仓库ID',
   `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
@@ -8901,10 +9244,12 @@ CREATE TABLE `wm_material_stock`  (
   `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `vendor_nick` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商简称',
   `stock_quantity` double(12, 2) NULL DEFAULT NULL COMMENT '在库数量',
-  `workorder_id` bigint(0) NULL DEFAULT NULL COMMENT '生产工单ID',
-  `workorder_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生产工单编号',
+  `wo_id` bigint(0) NULL DEFAULT NULL COMMENT '生产工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生产工单编号',
+  `production_date` datetime(0) NULL DEFAULT NULL COMMENT '生产日期',
   `recpt_date` datetime(0) NULL DEFAULT NULL COMMENT '入库时间',
   `expire_date` datetime(0) NULL DEFAULT NULL COMMENT '库存有效期',
+  `frozen_flag` tinyint(0) NOT NULL DEFAULT 1 COMMENT '冻结标志',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int(0) NULL DEFAULT 0 COMMENT '预留字段3',
@@ -8913,12 +9258,8 @@ CREATE TABLE `wm_material_stock`  (
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
-  `frozen_flag` tinyint(0) NOT NULL DEFAULT 1,
-  `production_date` datetime(0) NULL DEFAULT NULL,
-  `unit_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
-  `batch_id` bigint(0) NULL DEFAULT NULL COMMENT '批次ID',
   PRIMARY KEY (`stock_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_storage_area
@@ -8961,12 +9302,15 @@ CREATE TABLE `wm_storage_area`  (
   `grid_visible` tinyint(0) NULL DEFAULT 1 COMMENT '是否显示网格',
   `config_json` json NULL COMMENT '3D配置JSON',
   PRIMARY KEY (`area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 228 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_storage_area
 -- ----------------------------
-INSERT INTO `wm_storage_area` VALUES (1, 'A0002', 'cs', 1, 20.00, 1, 1, 1, '', NULL, NULL, 0, 0, '', '2025-12-01 22:08:20', '', '2025-12-02 15:53:21', 'RACK', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
+INSERT INTO `wm_storage_area` VALUES (1, 'A0002', '成品区', 1, 20.00, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-01 22:08:20', '', '2025-12-03 17:08:09', 'RACK', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
+INSERT INTO `wm_storage_area` VALUES (2, 'A0003', '半成品区', 1, 50.00, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:07:43', '', NULL, 'PALLET', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
+INSERT INTO `wm_storage_area` VALUES (3, 'A0004', '废品仓', 1, 30.00, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:11:12', '', NULL, 'BULK', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
+INSERT INTO `wm_storage_area` VALUES (4, 'A0005', '金属库区', 2, 200.00, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:30:57', '', NULL, 'RACK', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
 
 -- ----------------------------
 -- Table structure for wm_storage_location
@@ -9026,12 +9370,22 @@ CREATE TABLE `wm_storage_location`  (
   `last_outbound_time` datetime(0) NULL DEFAULT NULL COMMENT '最后出库时间',
   `config_json` json NULL COMMENT '3D配置JSON数据',
   PRIMARY KEY (`location_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 254 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_storage_location
 -- ----------------------------
-INSERT INTO `wm_storage_location` VALUES (1, 'L001', '五金库位', 1, 0.50, 50.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-02 15:55:20', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (1, 'L001', '自行车库位', 1, 5.00, 50.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-02 15:55:20', '', '2025-12-03 17:20:40', 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (2, 'L006', '车轮库位', 2, 5.00, 200.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:25:23', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (3, 'L007', '车架库位', 2, 3.00, 100.00, NULL, NULL, NULL, 0, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:26:17', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (4, 'L008', '车把库位', 2, 4.00, 200.00, NULL, NULL, NULL, 1, 0, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:26:45', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (5, 'L009', '废品库位', 3, 2.00, 100.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:27:19', '', '2025-12-03 17:27:34', 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (6, 'L010', '钢板库位', 4, 10.00, 1000.00, NULL, NULL, NULL, 0, 0, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:31:41', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (7, 'L011', '轮圈库位', 4, 12.00, NULL, NULL, NULL, NULL, 0, 0, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:32:07', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (8, 'L012', '轮胎库位', 4, 10.00, 1000.00, NULL, NULL, NULL, 0, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:32:38', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (9, 'L013', '辐条库位', 4, 15.00, 1000.00, NULL, NULL, NULL, 0, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:33:02', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (10, 'L014', '把管库位', 4, 10.00, 100.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:33:43', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
+INSERT INTO `wm_storage_location` VALUES (11, 'L015', '把套库位', 4, 10.00, NULL, NULL, NULL, NULL, 0, 1, 1, 0, '', NULL, NULL, 0, 0, '', '2025-12-03 17:34:04', '', NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_storage_rack_3d
@@ -9075,7 +9429,7 @@ CREATE TABLE `wm_storage_rack_3d`  (
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   CONSTRAINT `fk_rack_area` FOREIGN KEY (`area_id`) REFERENCES `wm_storage_area` (`area_id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `fk_rack_warehouse` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '货架3D配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '货架3D配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_warehouse
@@ -9112,8 +9466,8 @@ CREATE TABLE `wm_warehouse`  (
 -- ----------------------------
 -- Records of wm_warehouse
 -- ----------------------------
-INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '内江东兴区仓库', '浙江省杭州市上城区小营街道', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-30 12:04:16', NULL, '2025-11-03 10:06:56', 330000, 330100, 330102, 330102004, NULL, NULL);
-INSERT INTO `wm_warehouse` VALUES (2, 'WH004', '成品仓', '浙江省杭州市上城区清波街道', 300.00, 'admin', 1, '成品仓库', 1, NULL, NULL, NULL, NULL, NULL, '2025-12-02 10:55:51', NULL, NULL, 330000, 330100, 330102, 330102001, NULL, NULL);
+INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '成品仓库', '浙江省杭州市上城区小营街道', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-09-30 12:04:16', NULL, '2025-12-03 17:06:02', 330000, 330100, 330102, 330102004, NULL, NULL);
+INSERT INTO `wm_warehouse` VALUES (2, 'WH004', '原料仓库', '浙江省杭州市上城区清波街道', 300.00, 'admin', 1, '成品仓库', 1, NULL, NULL, NULL, NULL, NULL, '2025-12-02 10:55:51', NULL, '2025-12-03 17:19:14', 330000, 330100, 330102, 330102001, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_warehouse_3d_config

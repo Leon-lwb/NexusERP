@@ -215,6 +215,9 @@
   const route = useRoute()
   const router = useRouter()
 
+  const ${subclassName}List = ref([])
+  const checked${subClassName} = ref([])
+
   const form = ref({})
   const isViewMode = ref(false)
   const title = ref("")
