@@ -331,6 +331,20 @@ export const dynamicRoutes = [
         meta: { title: '到货通知详情', activeMenu: '/core/wm/arrivalnotice' }
       }
     ]
+  },
+  {
+    path: '/core/wm/receive/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['core:wm:receive:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/core/wm/receive/form'),
+        name: 'ReceiveForm',
+        meta: { title: '采购入库详情', activeMenu: '/core/wm/receive' }
+      }
+    ]
   }
 ]
 

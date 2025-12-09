@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.wm.mapper.WmMaterialReceiveMapper">
+
+    <resultMap type="WmMaterialReceive" id="WmMaterialReceiveResult">
+        <result property="receiveId" column="receive_id"/>
+        <result property="receiveCode" column="receive_code"/>
+        <result property="receiveName" column="receive_name"/>
+        <result property="iqcId" column="iqc_id"/>
+        <result property="iqcCode" column="iqc_code"/>
+        <result property="noticeId" column="notice_id"/>
+        <result property="noticeCode" column="notice_code"/>
+        <result property="purId" column="pur_id"/>
+        <result property="purCode" column="pur_code"/>
+        <result property="vendorId" column="vendor_id"/>
+        <result property="vendorCode" column="vendor_code"/>
+        <result property="vendorName" column="vendor_name"/>
+        <result property="vendorNick" column="vendor_nick"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="warehouseCode" column="warehouse_code"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="areaId" column="area_id"/>
+        <result property="areaCode" column="area_code"/>
+        <result property="areaName" column="area_name"/>
+        <result property="locationId" column="location_id"/>
+        <result property="locationCode" column="location_code"/>
+        <result property="locationName" column="location_name"/>
+        <result property="receiveDate" column="receive_date"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="attr1" column="attr1"/>
+        <result property="attr2" column="attr2"/>
+        <result property="attr3" column="attr3"/>
+        <result property="attr4" column="attr4"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="WmMaterialReceiveWmMaterialReceiveLineResult" type="WmMaterialReceive"
+               extends="WmMaterialReceiveResult">
+        <collection property="wmMaterialReceiveLineList" ofType="WmMaterialReceiveLine" column="receive_id"
+                    select="selectWmMaterialReceiveLineList"/>
+    </resultMap>
+
+    <resultMap type="WmMaterialReceiveLine" id="WmMaterialReceiveLineResult">
+        <result property="lineId" column="line_id"/>
+        <result property="receiveId" column="receive_id"/>
+        <result property="sourceDocLineId" column="source_doc_line_id"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="materialSpec" column="material_spec"/>
+        <result property="baseUomId" column="base_uom_id"/>
+        <result property="baseUomName" column="base_uom_name"/>
+        <result property="quantityReceived" column="quantity_received"/>
+        <result property="batchId" column="batch_id"/>
+        <result property="batchCode" column="batch_code"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="warehouseCode" column="warehouse_code"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="areaId" column="area_id"/>
+        <result property="areaCode" column="area_code"/>
+        <result property="areaName" column="area_name"/>
+        <result property="locationId" column="location_id"/>
+        <result property="locationCode" column="location_code"/>
+        <result property="locationName" column="location_name"/>
+        <result property="remark" column="remark"/>
+        <result property="attr1" column="attr1"/>
+        <result property="attr2" column="attr2"/>
+        <result property="attr3" column="attr3"/>
+        <result property="attr4" column="attr4"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectWmMaterialReceiveVo">
+        select receive_id,
+               receive_code,
+               receive_name,
+               iqc_id,
+               iqc_code,
+               notice_id,
+               notice_code,
+               pur_id,
+               pur_code,
+               vendor_id,
+               vendor_code,
+               vendor_name,
+               vendor_nick,
+               warehouse_id,
+               warehouse_code,
+               warehouse_name,
+               area_id,
+               area_code,
+               area_name,
+               location_id,
+               location_code,
+               location_name,
+               receive_date,
+               status,
+               remark,
+               attr1,
+               attr2,
+               attr3,
+               attr4,
+               create_by,
+               create_time,
+               update_by,
+               update_time
+        from wm_material_receive
+    </sql>
+
+    <select id="selectWmMaterialReceiveList" parameterType="WmMaterialReceive" resultMap="WmMaterialReceiveResult">
+        <include refid="selectWmMaterialReceiveVo"/>
+        <where>
+            <if test="receiveCode != null  and receiveCode != ''">and receive_code = #{receiveCode}</if>
+            <if test="receiveName != null  and receiveName != ''">and receive_name like concat('%', #{receiveName},
+                '%')
+            </if>
+            <if test="iqcId != null ">and iqc_id = #{iqcId}</if>
+            <if test="iqcCode != null  and iqcCode != ''">and iqc_code = #{iqcCode}</if>
+            <if test="noticeId != null ">and notice_id = #{noticeId}</if>
+            <if test="noticeCode != null  and noticeCode != ''">and notice_code = #{noticeCode}</if>
+            <if test="purId != null ">and pur_id = #{purId}</if>
+            <if test="purCode != null  and purCode != ''">and pur_code = #{purCode}</if>
+            <if test="vendorId != null ">and vendor_id = #{vendorId}</if>
+            <if test="vendorCode != null  and vendorCode != ''">and vendor_code = #{vendorCode}</if>
+            <if test="vendorName != null  and vendorName != ''">and vendor_name like concat('%', #{vendorName}, '%')
+            </if>
+            <if test="vendorNick != null  and vendorNick != ''">and vendor_nick = #{vendorNick}</if>
+            <if test="warehouseId != null ">and warehouse_id = #{warehouseId}</if>
+            <if test="warehouseCode != null  and warehouseCode != ''">and warehouse_code = #{warehouseCode}</if>
+            <if test="warehouseName != null  and warehouseName != ''">and warehouse_name like concat('%',
+                #{warehouseName}, '%')
+            </if>
+            <if test="areaId != null ">and area_id = #{areaId}</if>
+            <if test="areaCode != null  and areaCode != ''">and area_code = #{areaCode}</if>
+            <if test="areaName != null  and areaName != ''">and area_name like concat('%', #{areaName}, '%')</if>
+            <if test="locationId != null ">and location_id = #{locationId}</if>
+            <if test="locationCode != null  and locationCode != ''">and location_code = #{locationCode}</if>
+            <if test="locationName != null  and locationName != ''">and location_name like concat('%', #{locationName},
+                '%')
+            </if>
+            <if test="receiveDate != null ">and receive_date = #{receiveDate}</if>
+            <if test="status != null  and status != ''">and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectWmMaterialReceiveByReceiveId" parameterType="Long"
+            resultMap="WmMaterialReceiveWmMaterialReceiveLineResult">
+        select receive_id,
+               receive_code,
+               receive_name,
+               iqc_id,
+               iqc_code,
+               notice_id,
+               notice_code,
+               pur_id,
+               pur_code,
+               vendor_id,
+               vendor_code,
+               vendor_name,
+               vendor_nick,
+               warehouse_id,
+               warehouse_code,
+               warehouse_name,
+               area_id,
+               area_code,
+               area_name,
+               location_id,
+               location_code,
+               location_name,
+               receive_date,
+               status,
+               remark,
+               attr1,
+               attr2,
+               attr3,
+               attr4,
+               create_by,
+               create_time,
+               update_by,
+               update_time
+        from wm_material_receive
+        where receive_id = #{receiveId}
+    </select>
+
+    <select id="selectWmMaterialReceiveLineList" resultMap="WmMaterialReceiveLineResult">
+        select line_id,
+               receive_id,
+               source_doc_line_id,
+               material_id,
+               material_code,
+               material_name,
+               material_spec,
+               base_uom_id,
+               base_uom_name,
+               quantity_received,
+               batch_id,
+               batch_code,
+               warehouse_id,
+               warehouse_code,
+               warehouse_name,
+               area_id,
+               area_code,
+               area_name,
+               location_id,
+               location_code,
+               location_name,
+               remark,
+               attr1,
+               attr2,
+               attr3,
+               attr4,
+               create_by,
+               create_time,
+               update_by,
+               update_time
+        from wm_material_receive_line
+        where receive_id = #{receive_id}
+    </select>
+
+
+    <insert id="insertWmMaterialReceive" parameterType="WmMaterialReceive" useGeneratedKeys="true"
+            keyProperty="receiveId">
+        insert into wm_material_receive
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="receiveCode != null and receiveCode != ''">receive_code,</if>
+            <if test="receiveName != null and receiveName != ''">receive_name,</if>
+            <if test="iqcId != null">iqc_id,</if>
+            <if test="iqcCode != null">iqc_code,</if>
+            <if test="noticeId != null">notice_id,</if>
+            <if test="noticeCode != null">notice_code,</if>
+            <if test="purId != null">pur_id,</if>
+            <if test="purCode != null">pur_code,</if>
+            <if test="vendorId != null">vendor_id,</if>
+            <if test="vendorCode != null">vendor_code,</if>
+            <if test="vendorName != null">vendor_name,</if>
+            <if test="vendorNick != null">vendor_nick,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="warehouseCode != null">warehouse_code,</if>
+            <if test="warehouseName != null">warehouse_name,</if>
+            <if test="areaId != null">area_id,</if>
+            <if test="areaCode != null">area_code,</if>
+            <if test="areaName != null">area_name,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="locationCode != null">location_code,</if>
+            <if test="locationName != null">location_name,</if>
+            <if test="receiveDate != null">receive_date,</if>
+            <if test="status != null">status,</if>
+            <if test="remark != null">remark,</if>
+            <if test="attr1 != null">attr1,</if>
+            <if test="attr2 != null">attr2,</if>
+            <if test="attr3 != null">attr3,</if>
+            <if test="attr4 != null">attr4,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="receiveCode != null and receiveCode != ''">#{receiveCode},</if>
+            <if test="receiveName != null and receiveName != ''">#{receiveName},</if>
+            <if test="iqcId != null">#{iqcId},</if>
+            <if test="iqcCode != null">#{iqcCode},</if>
+            <if test="noticeId != null">#{noticeId},</if>
+            <if test="noticeCode != null">#{noticeCode},</if>
+            <if test="purId != null">#{purId},</if>
+            <if test="purCode != null">#{purCode},</if>
+            <if test="vendorId != null">#{vendorId},</if>
+            <if test="vendorCode != null">#{vendorCode},</if>
+            <if test="vendorName != null">#{vendorName},</if>
+            <if test="vendorNick != null">#{vendorNick},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="warehouseCode != null">#{warehouseCode},</if>
+            <if test="warehouseName != null">#{warehouseName},</if>
+            <if test="areaId != null">#{areaId},</if>
+            <if test="areaCode != null">#{areaCode},</if>
+            <if test="areaName != null">#{areaName},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="locationCode != null">#{locationCode},</if>
+            <if test="locationName != null">#{locationName},</if>
+            <if test="receiveDate != null">#{receiveDate},</if>
+            <if test="status != null">#{status},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="attr1 != null">#{attr1},</if>
+            <if test="attr2 != null">#{attr2},</if>
+            <if test="attr3 != null">#{attr3},</if>
+            <if test="attr4 != null">#{attr4},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWmMaterialReceive" parameterType="WmMaterialReceive">
+        update wm_material_receive
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="receiveCode != null and receiveCode != ''">receive_code = #{receiveCode},</if>
+            <if test="receiveName != null and receiveName != ''">receive_name = #{receiveName},</if>
+            <if test="iqcId != null">iqc_id = #{iqcId},</if>
+            <if test="iqcCode != null">iqc_code = #{iqcCode},</if>
+            <if test="noticeId != null">notice_id = #{noticeId},</if>
+            <if test="noticeCode != null">notice_code = #{noticeCode},</if>
+            <if test="purId != null">pur_id = #{purId},</if>
+            <if test="purCode != null">pur_code = #{purCode},</if>
+            <if test="vendorId != null">vendor_id = #{vendorId},</if>
+            <if test="vendorCode != null">vendor_code = #{vendorCode},</if>
+            <if test="vendorName != null">vendor_name = #{vendorName},</if>
+            <if test="vendorNick != null">vendor_nick = #{vendorNick},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="warehouseCode != null">warehouse_code = #{warehouseCode},</if>
+            <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
+            <if test="areaId != null">area_id = #{areaId},</if>
+            <if test="areaCode != null">area_code = #{areaCode},</if>
+            <if test="areaName != null">area_name = #{areaName},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="locationCode != null">location_code = #{locationCode},</if>
+            <if test="locationName != null">location_name = #{locationName},</if>
+            <if test="receiveDate != null">receive_date = #{receiveDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="attr1 != null">attr1 = #{attr1},</if>
+            <if test="attr2 != null">attr2 = #{attr2},</if>
+            <if test="attr3 != null">attr3 = #{attr3},</if>
+            <if test="attr4 != null">attr4 = #{attr4},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where receive_id = #{receiveId}
+    </update>
+
+    <delete id="deleteWmMaterialReceiveByReceiveId" parameterType="Long">
+        delete
+        from wm_material_receive
+        where receive_id = #{receiveId}
+    </delete>
+
+    <delete id="deleteWmMaterialReceiveByReceiveIds" parameterType="String">
+        delete from wm_material_receive where receive_id in
+        <foreach item="receiveId" collection="array" open="(" separator="," close=")">
+            #{receiveId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteWmMaterialReceiveLineByReceiveIds" parameterType="String">
+        delete from wm_material_receive_line where receive_id in
+        <foreach item="receiveId" collection="array" open="(" separator="," close=")">
+            #{receiveId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteWmMaterialReceiveLineByReceiveId" parameterType="Long">
+        delete
+        from wm_material_receive_line
+        where receive_id = #{receiveId}
+    </delete>
+
+    <insert id="batchWmMaterialReceiveLine">
+        insert into wm_material_receive_line( line_id, receive_id, source_doc_line_id, material_id, material_code,
+        material_name, material_spec, base_uom_id, base_uom_name, quantity_received, batch_id, batch_code, warehouse_id,
+        warehouse_code, warehouse_name, area_id, area_code, area_name, location_id, location_code, location_name,
+        remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            ( #{item.lineId}, #{item.receiveId}, #{item.sourceDocLineId}, #{item.materialId}, #{item.materialCode},
+            #{item.materialName}, #{item.materialSpec}, #{item.baseUomId}, #{item.baseUomName},
+            #{item.quantityReceived}, #{item.batchId}, #{item.batchCode}, #{item.warehouseId}, #{item.warehouseCode},
+            #{item.warehouseName}, #{item.areaId}, #{item.areaCode}, #{item.areaName}, #{item.locationId},
+            #{item.locationCode}, #{item.locationName}, #{item.remark}, #{item.attr1}, #{item.attr2}, #{item.attr3},
+            #{item.attr4}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
+        </foreach>
+    </insert>
+</mapper>
