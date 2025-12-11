@@ -1,6 +1,8 @@
 package com.nexus.core.wm.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -93,4 +95,6 @@ private static final long serialVersionUID = 1L;
     private Long gridVisible;
     /** 3D配置JSON */
     private String configJson;
+    /** 库位列表 */
+    private List<WmStorageLocation> children;
 }

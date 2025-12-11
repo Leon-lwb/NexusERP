@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * 物料入库单Service接口
- *
+ * 
  * @author nexus
  * @date 2025-12-08
  */
@@ -58,4 +58,12 @@ public interface IWmMaterialReceiveService extends IService<WmMaterialReceive> {
      * @return 结果
      */
     public int deleteWmMaterialReceiveByReceiveId(Long receiveId);
+    
+    /**
+     * 更新物料入库单并执行必要校验
+     * 
+     * @param wmMaterialReceive 物料入库单对象
+     * @return 结果
+     */
+    public boolean updateWithValidation(WmMaterialReceive wmMaterialReceive);
 }

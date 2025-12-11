@@ -3,6 +3,8 @@ package com.nexus.core.wm.service;
 import java.util.List;
 import com.nexus.core.wm.domain.WmWarehouse;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 仓库设置Service接口
@@ -58,4 +60,11 @@ public interface IWmWarehouseService extends IService<WmWarehouse> {
      * @return 结果
      */
     public int deleteWmWarehouseByWarehouseId(Long warehouseId);
+
+    /**
+     * 获取仓库树
+     *
+     * @return
+     */
+    List<WmWarehouse> getWareHouseTree();
 }

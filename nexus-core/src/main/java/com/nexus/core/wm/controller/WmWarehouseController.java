@@ -110,4 +110,16 @@ public class WmWarehouseController extends BaseController
     {
         return toAjax(wmWarehouseService.deleteWmWarehouseByWarehouseIds(warehouseIds));
     }
+
+    /**
+     * 查询树型的列表
+     * @return
+     */
+    @ApiOperation("查询树型的列表")
+    @PreAuthorize("@ss.hasPermi('wm:warehouse:list')")
+    @GetMapping("/getWareHouseTree")
+    public AjaxResult getWareHouseTree(){
+        List<WmWarehouse> list = wmWarehouseService.getWareHouseTree();
+        return AjaxResult.success(list);
+    }
 }

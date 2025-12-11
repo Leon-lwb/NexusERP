@@ -1,6 +1,8 @@
 package com.nexus.core.wm.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -79,4 +81,9 @@ public class WmWarehouse extends BaseEntity
      * 地址经度
      */
     private String addressLng;
+
+    /**
+     * 库区列表
+     */
+    private List<WmStorageArea> children;
 }

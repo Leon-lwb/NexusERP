@@ -42,3 +42,12 @@ export function delReceive(receiveId) {
     method: 'delete'
   })
 }
+
+// 执行物料入库
+export function execute(receiveId, data) {
+  return request({
+    url: '/wm/receive/execute/' + receiveId,
+    method: 'post',
+    data: data
+  })
+}

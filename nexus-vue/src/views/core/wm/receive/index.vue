@@ -98,6 +98,10 @@
           v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'APPROVING'">上架</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="success" plain icon="Finished" :disabled="single" @click="handleExecute"
+          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'APPROVED'">入库</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView"
           v-hasPermi="['wm:receive:query']">查看</el-button>
       </el-col>
@@ -148,6 +152,8 @@
             v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'PREPARE'">修改</el-button>
           <el-button link type="primary" icon="Upload" @click="handleShelf(scope.row)"
             v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVING'">上架</el-button>
+          <el-button link type="primary" icon="Finished" @click="handleExecuteRow(scope.row)"
+            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVED'">入库</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
             v-hasPermi="['wm:receive:remove']">删除</el-button>
         </template>
@@ -335,7 +341,7 @@
 </template>
 
 <script setup name="Receive">
-import { listReceive, getReceive, delReceive, addReceive, updateReceive } from "@/api/core/wm/receive"
+import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute } from "@/api/core/wm/receive"
 import { listArrivalnotice } from "@/api/core/wm/arrivalnotice"
 import { useRouter } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
@@ -604,6 +610,36 @@ function handleShelf(row) {
     path: '/core/wm/receive/form',
     query: { id: receiveId, action: 'edit', pageType: 'shelf' }
   });
+}
+
+/** 入库按钮操作 */
+function handleExecute() {
+  if (ids.value.length !== 1) {
+    proxy.$modal.msgWarning("请选择一条数据进行入库");
+    return;
+  }
+  const selectedRow = receiveList.value.find(item => item.receiveId == ids.value[0]);
+  if (!selectedRow) {
+    proxy.$modal.msgWarning("未找到选中的数据");
+    return;
+  }
+  
+  proxy.$modal.confirm('是否确认执行物料入库操作？').then(function() {
+    return execute(selectedRow.receiveId, {});
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("入库成功");
+  }).catch(() => { });
+}
+
+/** 行内入库按钮操作 */
+function handleExecuteRow(row) {
+  proxy.$modal.confirm('是否确认执行物料入库操作？').then(function() {
+    return execute(row.receiveId, {});
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("入库成功");
+  }).catch(() => { });
 }
 
 /** 导出按钮操作 */

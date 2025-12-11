@@ -11,7 +11,7 @@
  Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 09/12/2025 17:50:12
+ Date: 11/12/2025 18:27:43
 */
 
 SET NAMES utf8mb4;
@@ -1708,7 +1708,7 @@ CREATE TABLE `bd_bom`  (
   INDEX `idx_parent_material`(`parent_material_id`) USING BTREE,
   INDEX `idx_current`(`is_current`) USING BTREE,
   CONSTRAINT `fk_bom_parent_material` FOREIGN KEY (`parent_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom
@@ -1754,7 +1754,7 @@ CREATE TABLE `bd_bom_detail`  (
   INDEX `idx_operation_step`(`operation_step`) USING BTREE,
   CONSTRAINT `fk_bom_detail_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_bom_detail_child` FOREIGN KEY (`child_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 39 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 37 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom_detail
@@ -1931,7 +1931,7 @@ CREATE TABLE `bd_material`  (
   INDEX `fk_material_base_uom`(`base_uom_id`) USING BTREE,
   CONSTRAINT `fk_material_base_uom` FOREIGN KEY (`base_uom_id`) REFERENCES `bd_unit_of_measure` (`uom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_material_category` FOREIGN KEY (`category_id`) REFERENCES `bd_material_category` (`category_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 3006 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3005 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_material
@@ -1993,7 +1993,7 @@ CREATE TABLE `bd_material_category`  (
   INDEX `idx_parent_id`(`parent_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_level_sort`(`level_num`, `sort_order`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_material_category
@@ -2049,7 +2049,7 @@ CREATE TABLE `bd_material_vendor`  (
   INDEX `idx_supplier_id`(`vendor_id`) USING BTREE,
   INDEX `idx_default`(`is_default`) USING BTREE,
   CONSTRAINT `fk_ms_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for bd_unit_of_measure
@@ -2470,7 +2470,7 @@ CREATE TABLE `gen_table`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 33 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 34 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2534,7 +2534,7 @@ CREATE TABLE `gen_table_column`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 853 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 883 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3397,7 +3397,7 @@ CREATE TABLE `prd_material_requirement`  (
   INDEX `fk_requirement_bom`(`bom_id`) USING BTREE,
   CONSTRAINT `fk_requirement_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_plan` FOREIGN KEY (`plan_id`) REFERENCES `prd_production_plan` (`plan_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_material_requirement
@@ -3442,7 +3442,7 @@ CREATE TABLE `prd_material_requirement_detail`  (
   INDEX `idx_required_date`(`required_date`) USING BTREE,
   CONSTRAINT `fk_requirement_detail` FOREIGN KEY (`requirement_id`) REFERENCES `prd_material_requirement` (`requirement_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 88 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_material_requirement_detail
@@ -6891,7 +6891,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 410 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 419 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -7210,6 +7210,14 @@ INSERT INTO `sys_logininfor` VALUES (410, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (411, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-09 14:42:32');
 INSERT INTO `sys_logininfor` VALUES (412, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-09 15:46:20');
 INSERT INTO `sys_logininfor` VALUES (413, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-09 16:22:09');
+INSERT INTO `sys_logininfor` VALUES (414, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-10 09:18:03');
+INSERT INTO `sys_logininfor` VALUES (415, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-10 09:18:49');
+INSERT INTO `sys_logininfor` VALUES (416, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-10 11:12:18');
+INSERT INTO `sys_logininfor` VALUES (417, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-10 14:34:53');
+INSERT INTO `sys_logininfor` VALUES (418, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-11 11:18:48');
+INSERT INTO `sys_logininfor` VALUES (419, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-11 14:49:43');
+INSERT INTO `sys_logininfor` VALUES (420, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-11 16:12:40');
+INSERT INTO `sys_logininfor` VALUES (421, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-11 17:06:57');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -7540,7 +7548,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1248 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1289 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -8729,6 +8737,28 @@ INSERT INTO `sys_oper_log` VALUES (1280, '物料入库单', 2, 'com.nexus.core.w
 INSERT INTO `sys_oper_log` VALUES (1281, '物料入库单明细', 1, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.add()', 'POST', 1, 'admin', '研发部门', '/wm/detail', '127.0.0.1', '内网IP', '{\"baseUomId\":\"2\",\"baseUomName\":\"\",\"createTime\":\"2025-12-09 17:28:19\",\"detailId\":1,\"lineId\":10,\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板22\",\"params\":{},\"quantity\":20,\"receiveId\":2}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-09 17:28:19', 38);
 INSERT INTO `sys_oper_log` VALUES (1282, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-08 17:29:54\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"params\":{},\"receiveCode\":\"CGRK20251208003\",\"receiveDate\":\"2025-12-08\",\"receiveId\":2,\"receiveName\":\"自行车材料入库1\",\"remark\":\"\",\"status\":\"APPROVING\",\"updateBy\":\"\",\"updateTime\":\"2025-12-09 17:28:28\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"5\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"2\",\"baseUomName\":\"\",\"batchCode\":\"\",\"lineId\":1,\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"params\":{},\"quantityReceived\":100,\"receiveId\":2,\"sourceDocLineId\":10,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-09 17:28:28', 18);
 INSERT INTO `sys_oper_log` VALUES (1283, '物料入库单明细', 1, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.add()', 'POST', 1, 'admin', '研发部门', '/wm/detail', '127.0.0.1', '内网IP', '{\"baseUomId\":\"2\",\"baseUomName\":\"\",\"createTime\":\"2025-12-09 17:36:14\",\"detailId\":2,\"lineId\":1,\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"params\":{},\"quantity\":80,\"receiveId\":2}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-09 17:36:15', 16);
+INSERT INTO `sys_oper_log` VALUES (1284, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-08 17:29:54\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"params\":{},\"receiveCode\":\"CGRK20251208003\",\"receiveDate\":\"2025-12-08\",\"receiveId\":2,\"receiveName\":\"自行车材料入库1\",\"remark\":\"\",\"status\":\"APPROVED\",\"updateBy\":\"\",\"updateTime\":\"2025-12-09 17:28:29\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"5\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"2\",\"baseUomName\":\"\",\"batchCode\":\"\",\"lineId\":1,\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"params\":{},\"quantityReceived\":100,\"receiveId\":2,\"sourceDocLineId\":10,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', '{\"msg\":\"物料[钢板]未分配对应的明细行！\",\"code\":500}', 0, NULL, '2025-12-09 17:54:17', 3);
+INSERT INTO `sys_oper_log` VALUES (1285, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-08 17:29:54\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"params\":{},\"receiveCode\":\"CGRK20251208003\",\"receiveDate\":\"2025-12-08\",\"receiveId\":2,\"receiveName\":\"自行车材料入库1\",\"remark\":\"\",\"status\":\"APPROVED\",\"updateBy\":\"\",\"updateTime\":\"2025-12-09 17:28:29\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"5\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"2\",\"baseUomName\":\"\",\"batchCode\":\"\",\"lineId\":1,\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"params\":{},\"quantityReceived\":100,\"receiveId\":2,\"sourceDocLineId\":10,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', '{\"msg\":\"物料[钢板]未分配对应的明细行！\",\"code\":500}', 0, NULL, '2025-12-09 17:54:53', 8);
+INSERT INTO `sys_oper_log` VALUES (1286, '到货通知', 2, 'com.nexus.core.wm.controller.WmArrivalNoticeController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/arrivalnotice', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"contact\":\"张三\",\"createBy\":\"\",\"createTime\":\"2025-12-04 15:36:20\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"noticeName\":\"自行车所需物料\",\"params\":{},\"phone\":\"15388888888\",\"remark\":\"\",\"status\":\"APPROVED\",\"updateBy\":\"\",\"updateTime\":\"2025-12-10 11:34:10\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"wmArrivalNoticeLineList\":[{\"baseUomId\":\"2\",\"baseUomName\":\"千克\",\"iqcCheck\":\"1\",\"iqcCode\":\"\",\"lineId\":10,\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"noticeId\":1,\"params\":{},\"quantityArrival\":100,\"remark\":\"\"}]}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-10 11:34:10', 63);
+INSERT INTO `sys_oper_log` VALUES (1287, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-08 17:29:54\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"params\":{},\"receiveCode\":\"CGRK20251208003\",\"receiveDate\":\"2025-12-08\",\"receiveId\":2,\"receiveName\":\"自行车材料入库1\",\"remark\":\"\",\"status\":\"APPROVING\",\"updateBy\":\"\",\"updateTime\":\"2025-12-10 11:34:27\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"5\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"2\",\"baseUomName\":\"千克\",\"batchCode\":\"\",\"lineId\":1,\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"params\":{},\"quantityReceived\":100,\"receiveId\":2,\"sourceDocLineId\":10,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-10 11:34:27', 46);
+INSERT INTO `sys_oper_log` VALUES (1288, '物料入库单明细', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/detail', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"baseUomId\":\"2\",\"baseUomName\":\"\",\"createBy\":\"\",\"createTime\":\"2025-12-09 17:36:15\",\"detailId\":2,\"lineId\":1,\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"params\":{},\"quantity\":80,\"receiveId\":2,\"remark\":\"\",\"updateBy\":\"\",\"updateTime\":\"2025-12-11 11:34:34\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:34:34', 16);
+INSERT INTO `sys_oper_log` VALUES (1289, '物料入库单明细', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/detail', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"baseUomId\":\"2\",\"baseUomName\":\"\",\"createBy\":\"\",\"createTime\":\"2025-12-09 17:36:15\",\"detailId\":2,\"lineId\":1,\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"params\":{},\"quantity\":80,\"receiveId\":2,\"remark\":\"\",\"updateBy\":\"\",\"updateTime\":\"2025-12-11 11:35:01\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:35:01', 16);
+INSERT INTO `sys_oper_log` VALUES (1290, '物料入库单明细', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/detail', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"baseUomId\":\"2\",\"baseUomName\":\"\",\"createBy\":\"\",\"createTime\":\"2025-12-09 17:28:20\",\"detailId\":1,\"lineId\":1,\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板22\",\"params\":{},\"quantity\":21,\"receiveId\":2,\"remark\":\"\",\"updateBy\":\"\",\"updateTime\":\"2025-12-11 11:37:34\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:37:34', 4);
+INSERT INTO `sys_oper_log` VALUES (1291, '物料入库单明细', 3, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.remove()', 'DELETE', 1, 'admin', '研发部门', '/wm/detail/1', '127.0.0.1', '内网IP', '[1]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:39:34', 8);
+INSERT INTO `sys_oper_log` VALUES (1292, '物料入库单明细', 3, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.remove()', 'DELETE', 1, 'admin', '研发部门', '/wm/detail/2', '127.0.0.1', '内网IP', '[2]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:39:43', 4);
+INSERT INTO `sys_oper_log` VALUES (1293, '物料入库单明细', 1, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.add()', 'POST', 1, 'admin', '研发部门', '/wm/detail', '127.0.0.1', '内网IP', '{\"areaCode\":\"A0005\",\"areaId\":4,\"areaName\":\"金属库区\",\"baseUomId\":\"2\",\"baseUomName\":\"千克\",\"createTime\":\"2025-12-11 11:40:03\",\"detailId\":3,\"lineId\":1,\"locationCode\":\"L010\",\"locationId\":6,\"locationName\":\"钢板库位\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"params\":{},\"quantity\":20,\"receiveId\":2,\"warehouseCode\":\"WH004\",\"warehouseId\":2,\"warehouseName\":\"原料仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:40:03', 17);
+INSERT INTO `sys_oper_log` VALUES (1294, '物料入库单明细', 1, 'com.nexus.core.wm.controller.WmMaterialReceiveDetailController.add()', 'POST', 1, 'admin', '研发部门', '/wm/detail', '127.0.0.1', '内网IP', '{\"areaCode\":\"A0005\",\"areaId\":4,\"areaName\":\"金属库区\",\"baseUomId\":\"2\",\"baseUomName\":\"千克\",\"createTime\":\"2025-12-11 11:40:29\",\"detailId\":4,\"lineId\":1,\"locationCode\":\"L013\",\"locationId\":9,\"locationName\":\"辐条库位\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"params\":{},\"quantity\":80,\"receiveId\":2,\"warehouseCode\":\"WH004\",\"warehouseId\":2,\"warehouseName\":\"原料仓库\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:40:29', 14);
+INSERT INTO `sys_oper_log` VALUES (1295, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-08 17:29:54\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"params\":{},\"receiveCode\":\"CGRK20251208003\",\"receiveDate\":\"2025-12-08\",\"receiveId\":2,\"receiveName\":\"自行车材料入库1\",\"remark\":\"\",\"status\":\"APPROVING\",\"updateBy\":\"\",\"updateTime\":\"2025-12-11 11:45:29\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"5\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"2\",\"baseUomName\":\"千克\",\"batchCode\":\"\",\"lineId\":1,\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"params\":{},\"quantityReceived\":100,\"receiveId\":2,\"sourceDocLineId\":10,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:45:29', 39);
+INSERT INTO `sys_oper_log` VALUES (1296, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-08 17:29:54\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"params\":{},\"receiveCode\":\"CGRK20251208003\",\"receiveDate\":\"2025-12-08\",\"receiveId\":2,\"receiveName\":\"自行车材料入库1\",\"remark\":\"\",\"status\":\"APPROVING\",\"updateBy\":\"\",\"updateTime\":\"2025-12-11 11:46:10\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"5\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"2\",\"baseUomName\":\"千克\",\"batchCode\":\"\",\"lineId\":1,\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"params\":{},\"quantityReceived\":100,\"receiveId\":2,\"sourceDocLineId\":10,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-11 11:46:10', 21);
+INSERT INTO `sys_oper_log` VALUES (1297, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"只有已审核的入库单才能执行入库操作\",\"code\":500}', 0, NULL, '2025-12-11 14:57:02', 31);
+INSERT INTO `sys_oper_log` VALUES (1298, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-08 17:29:54\",\"noticeCode\":\"AN20251204001\",\"noticeId\":1,\"params\":{},\"receiveCode\":\"CGRK20251208003\",\"receiveDate\":\"2025-12-08\",\"receiveId\":2,\"receiveName\":\"自行车材料入库1\",\"remark\":\"\",\"status\":\"APPROVED\",\"updateBy\":\"\",\"updateTime\":\"2025-12-11 11:46:10\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"5\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"2\",\"baseUomName\":\"千克\",\"batchCode\":\"\",\"lineId\":1,\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251016004\",\"materialId\":1,\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"params\":{},\"quantityReceived\":100,\"receiveId\":2,\"sourceDocLineId\":10,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', '{\"msg\":\"物料[钢板]未分配对应的明细行！\",\"code\":500}', 0, NULL, '2025-12-11 14:57:23', 27);
+INSERT INTO `sys_oper_log` VALUES (1299, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：\\r\\n### Error updating database.  Cause: java.sql.SQLException: Field \'warehouse_id\' doesn\'t have a default value\\r\\n### The error may exist in file [E:\\\\nexus-erp\\\\nexus-core\\\\target\\\\classes\\\\mapper\\\\wm\\\\WmMaterialStockMapper.xml]\\r\\n### The error may involve com.nexus.core.wm.mapper.WmMaterialStockMapper.insertWmMaterialStock-Inline\\r\\n### The error occurred while setting parameters\\r\\n### SQL: insert into wm_material_stock          ( material_id,                     material_code,                     material_name,                     material_spec,                     base_uom_id,                     base_uom_name,                                          batch_code,                                          warehouse_code,                     warehouse_name,                                          area_code,                     area_name,                                          location_code,                     location_name,                                                                                                         stock_quantity,                                                                                    recpt_date,                                                                                                                                                                        create_time,                                          update_time )           values ( ?,                     ?,                     ?,                     ?,                     ?,                     ?,                                          ?,                                          ?,                     ?,                                          ?,                     ?,                                          ?,                     ?,                                                                                                         ?,                                                                                    ?,           ', 0, NULL, '2025-12-11 15:01:08', 84);
+INSERT INTO `sys_oper_log` VALUES (1300, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：仓库ID不能为空\",\"code\":500}', 0, NULL, '2025-12-11 15:15:59', 22);
+INSERT INTO `sys_oper_log` VALUES (1301, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：仓库ID不能为空\",\"code\":500}', 0, NULL, '2025-12-11 15:29:36', 23);
+INSERT INTO `sys_oper_log` VALUES (1302, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：仓库ID不能为空\",\"code\":500}', 0, NULL, '2025-12-11 15:29:59', 36);
+INSERT INTO `sys_oper_log` VALUES (1303, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：仓库ID不能为空\",\"code\":500}', 0, NULL, '2025-12-11 15:36:20', 31551);
+INSERT INTO `sys_oper_log` VALUES (1304, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：仓库ID不能为空\",\"code\":500}', 0, NULL, '2025-12-11 16:16:11', 199634);
+INSERT INTO `sys_oper_log` VALUES (1305, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行成功\",\"code\":200}', 0, NULL, '2025-12-11 16:17:01', 30054);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -9029,7 +9059,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-09 16:22:09', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-12-09 16:22:09', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-11 17:06:58', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-12-11 17:06:57', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员');
 INSERT INTO `sys_user` VALUES (100, 112, 'xiaowang', '小王', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-10-23 16:45:02', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', '麦得朶', '2025-10-23 19:33:53', '耳朵聋');
@@ -9138,7 +9168,7 @@ CREATE TABLE `wm_arrival_notice`  (
 -- ----------------------------
 -- Records of wm_arrival_notice
 -- ----------------------------
-INSERT INTO `wm_arrival_notice` VALUES (1, 'AN20251204001', '自行车所需物料', NULL, 1, 'V00005', '北京五道口', NULL, NULL, '张三', '15388888888', 'APPROVED', '', NULL, NULL, 0, 0, '', '2025-12-04 15:36:20', '', '2025-12-08 09:33:14');
+INSERT INTO `wm_arrival_notice` VALUES (1, 'AN20251204001', '自行车所需物料', NULL, 1, 'V00005', '北京五道口', NULL, NULL, '张三', '15388888888', 'FINISHED', '', NULL, NULL, 0, 0, '', '2025-12-04 15:36:20', '', '2025-12-11 16:17:01');
 
 -- ----------------------------
 -- Table structure for wm_arrival_notice_line
@@ -9173,7 +9203,7 @@ CREATE TABLE `wm_arrival_notice_line`  (
 -- ----------------------------
 -- Records of wm_arrival_notice_line
 -- ----------------------------
-INSERT INTO `wm_arrival_notice_line` VALUES (10, 1, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '', 100.00, NULL, '1', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (10, 1, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 100.00, NULL, '1', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_layout_snapshot
@@ -9200,7 +9230,7 @@ CREATE TABLE `wm_layout_snapshot`  (
   INDEX `idx_warehouse_id`(`warehouse_id`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE,
   CONSTRAINT `fk_snapshot_warehouse` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '3D布局快照表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '3D布局快照表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_location_inventory_3d
@@ -9242,7 +9272,7 @@ CREATE TABLE `wm_location_inventory_3d`  (
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_inventory_id`(`inventory_id`) USING BTREE,
   CONSTRAINT `fk_location_inventory_loc` FOREIGN KEY (`location_id`) REFERENCES `wm_storage_location` (`location_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位库存3D视图表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位库存3D视图表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_material_3d_model
@@ -9328,7 +9358,7 @@ CREATE TABLE `wm_material_receive`  (
 -- Records of wm_material_receive
 -- ----------------------------
 INSERT INTO `wm_material_receive` VALUES (1, 'CGRK20251208002', '测试订单1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'PREPARE', '', NULL, NULL, 0, 0, '', '2025-12-08 14:54:24', '', NULL);
-INSERT INTO `wm_material_receive` VALUES (2, 'CGRK20251208003', '自行车材料入库1', NULL, NULL, 1, 'AN20251204001', NULL, NULL, 1, 'V00005', '北京五道口', '5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-08 00:00:00', 'APPROVING', '', NULL, NULL, 0, 0, '', '2025-12-08 17:29:54', '', '2025-12-09 17:28:29');
+INSERT INTO `wm_material_receive` VALUES (2, 'CGRK20251208003', '自行车材料入库1', NULL, NULL, 1, 'AN20251204001', NULL, NULL, 1, 'V00005', '北京五道口', '5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-08 00:00:00', 'FINISHED', '', NULL, NULL, 0, 0, '', '2025-12-08 17:29:54', '', '2025-12-11 16:17:01');
 
 -- ----------------------------
 -- Table structure for wm_material_receive_detail
@@ -9366,13 +9396,13 @@ CREATE TABLE `wm_material_receive_detail`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`detail_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_material_receive_detail
 -- ----------------------------
-INSERT INTO `wm_material_receive_detail` VALUES (1, 1, 2, 1, 'IF20251016004', '钢板22', NULL, '2', '', 20.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '', '2025-12-09 17:28:20', '', NULL);
-INSERT INTO `wm_material_receive_detail` VALUES (2, 1, 2, 1, 'IF20251016004', '钢板', NULL, '2', '', 80.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '', '2025-12-09 17:36:15', '', NULL);
+INSERT INTO `wm_material_receive_detail` VALUES (3, 1, 2, 1, 'IF20251016004', '钢板', NULL, '2', '千克', 20.00, NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', '', NULL, NULL, 0, 0, '', '2025-12-11 11:40:04', '', NULL);
+INSERT INTO `wm_material_receive_detail` VALUES (4, 1, 2, 1, 'IF20251016004', '钢板', NULL, '2', '千克', 80.00, NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', '', NULL, NULL, 0, 0, '', '2025-12-11 11:40:29', '', NULL);
 
 -- ----------------------------
 -- Table structure for wm_material_receive_line
@@ -9415,7 +9445,7 @@ CREATE TABLE `wm_material_receive_line`  (
 -- ----------------------------
 -- Records of wm_material_receive_line
 -- ----------------------------
-INSERT INTO `wm_material_receive_line` VALUES (1, 2, 10, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '', 100.00, NULL, '', NULL, '', '', NULL, '', '', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_material_receive_line` VALUES (1, 2, 10, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 100.00, NULL, '', NULL, '', '', NULL, '', '', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_material_stock
@@ -9461,7 +9491,13 @@ CREATE TABLE `wm_material_stock`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`stock_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of wm_material_stock
+-- ----------------------------
+INSERT INTO `wm_material_stock` VALUES (55, NULL, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 20.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '', '2025-12-11 16:17:01', '', '2025-12-11 16:17:01');
+INSERT INTO `wm_material_stock` VALUES (56, NULL, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', NULL, NULL, NULL, NULL, 80.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '', '2025-12-11 16:17:01', '', '2025-12-11 16:17:01');
 
 -- ----------------------------
 -- Table structure for wm_storage_area
@@ -9504,7 +9540,7 @@ CREATE TABLE `wm_storage_area`  (
   `grid_visible` tinyint(0) NULL DEFAULT 1 COMMENT '是否显示网格',
   `config_json` json NULL COMMENT '3D配置JSON',
   PRIMARY KEY (`area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_storage_area
@@ -9572,7 +9608,7 @@ CREATE TABLE `wm_storage_location`  (
   `last_outbound_time` datetime(0) NULL DEFAULT NULL COMMENT '最后出库时间',
   `config_json` json NULL COMMENT '3D配置JSON数据',
   PRIMARY KEY (`location_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_storage_location
@@ -9631,7 +9667,7 @@ CREATE TABLE `wm_storage_rack_3d`  (
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   CONSTRAINT `fk_rack_area` FOREIGN KEY (`area_id`) REFERENCES `wm_storage_area` (`area_id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `fk_rack_warehouse` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '货架3D配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '货架3D配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_warehouse
@@ -9663,7 +9699,7 @@ CREATE TABLE `wm_warehouse`  (
   `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址经度',
   PRIMARY KEY (`warehouse_id`) USING BTREE,
   UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_warehouse
@@ -9703,13 +9739,7 @@ CREATE TABLE `wm_warehouse_3d_config`  (
   PRIMARY KEY (`config_id`) USING BTREE,
   INDEX `idx_warehouse_id`(`warehouse_id`) USING BTREE,
   CONSTRAINT `fk_warehouse_3d_config` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库3D配置表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- View structure for v_material_requirement_detail
--- ----------------------------
-DROP VIEW IF EXISTS `v_material_requirement_detail`;
-CREATE ALGORITHM = UNDEFINED DEFINER = `root`@`localhost` SQL SECURITY DEFINER VIEW `v_material_requirement_detail` AS with recursive `bom_expansion` as (select `b`.`parent_material_id` AS `top_material_id`,`d`.`child_material_id` AS `child_material_id`,`d`.`quantity_per_parent` AS `quantity_per_parent`,`d`.`loss_rate` AS `loss_rate`,1 AS `level`,`b`.`parent_material_id` AS `path_start` from (`bd_bom` `b` join `bd_bom_detail` `d` on((`b`.`bom_id` = `d`.`bom_id`))) where ((`b`.`is_current` = 1) and (`b`.`status` = 1) and (`d`.`status` = 1)) union all select `be`.`top_material_id` AS `top_material_id`,`d`.`child_material_id` AS `child_material_id`,(`be`.`quantity_per_parent` * `d`.`quantity_per_parent`) AS `be.quantity_per_parent * d.quantity_per_parent`,`d`.`loss_rate` AS `loss_rate`,(`be`.`level` + 1) AS `be.level + 1`,`be`.`path_start` AS `path_start` from ((`bom_expansion` `be` join `bd_bom` `b` on((`be`.`child_material_id` = `b`.`parent_material_id`))) join `bd_bom_detail` `d` on((`b`.`bom_id` = `d`.`bom_id`))) where ((`b`.`is_current` = 1) and (`b`.`status` = 1) and (`d`.`status` = 1))) select `be`.`top_material_id` AS `top_material_id`,`be`.`child_material_id` AS `child_material_id`,`m`.`material_name` AS `material_name`,`m`.`material_code` AS `material_code`,`mc`.`category_id` AS `category_id`,`mc`.`category_name` AS `category_name`,`mc`.`path_names` AS `category_path`,`be`.`quantity_per_parent` AS `unit_requirement`,`be`.`loss_rate` AS `loss_rate`,`be`.`level` AS `level` from ((`bom_expansion` `be` join `bd_material` `m` on((`be`.`child_material_id` = `m`.`material_id`))) join `bd_material_category` `mc` on((`m`.`category_id` = `mc`.`category_id`)));
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库3D配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- View structure for vw_location_3d_detail

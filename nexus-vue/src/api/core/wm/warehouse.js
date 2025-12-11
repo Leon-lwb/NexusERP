@@ -17,6 +17,14 @@ export function getWarehouse(warehouseId) {
   })
 }
 
+// 获取仓库树形结构
+export function getWareHouseTree() {
+  return request({
+    url: '/wm/warehouse/getWareHouseTree',
+    method: 'get'
+  })
+}
+
 // 新增仓库设置
 export function addWarehouse(data) {
   return request({

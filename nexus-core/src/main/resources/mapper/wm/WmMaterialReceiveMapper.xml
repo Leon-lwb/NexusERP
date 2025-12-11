@@ -46,7 +46,7 @@
                     select="selectWmMaterialReceiveLineList"/>
     </resultMap>
 
-    <resultMap type="WmMaterialReceiveLine" id="WmMaterialReceiveLineResult">
+    <resultMap id="WmMaterialReceiveLineResult" type="WmMaterialReceiveLine">
         <result property="lineId" column="line_id"/>
         <result property="receiveId" column="receive_id"/>
         <result property="sourceDocLineId" column="source_doc_line_id"/>
@@ -77,6 +77,9 @@
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
+        <!-- 关联查询明细 -->
+        <collection property="wmMaterialReceiveLineDetailList" ofType="WmMaterialReceiveDetail" column="line_id"
+                    select="selectWmMaterialReceiveDetailListByLineId"/>
     </resultMap>
 
     <sql id="selectWmMaterialReceiveVo">
@@ -189,6 +192,11 @@
                update_time
         from wm_material_receive
         where receive_id = #{receiveId}
+    </select>
+
+    <select id="selectWmMaterialReceiveDetailListByLineId" resultMap="com.nexus.core.wm.mapper.WmMaterialReceiveDetailMapper.WmMaterialReceiveDetailResult">
+        select detail_id, line_id, receive_id, material_id, material_code, material_name, material_spec, base_uom_id, base_uom_name, quantity, batch_id, batch_code, warehouse_id, warehouse_code, warehouse_name, area_id, area_code, area_name, location_id, location_code, location_name, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from wm_material_receive_detail
+        where line_id = #{line_id}
     </select>
 
     <select id="selectWmMaterialReceiveLineList" resultMap="WmMaterialReceiveLineResult">

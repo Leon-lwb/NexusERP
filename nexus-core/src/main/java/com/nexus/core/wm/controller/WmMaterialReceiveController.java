@@ -25,8 +25,10 @@ import com.nexus.common.core.domain.AjaxResult;
 import com.nexus.common.enums.BusinessType;
 import com.nexus.core.wm.domain.WmMaterialReceive;
 import com.nexus.core.wm.service.IWmMaterialReceiveService;
+import com.nexus.core.wm.service.IWmInventoryCoreService;
 import com.nexus.common.utils.poi.ExcelUtil;
 import com.nexus.common.core.page.TableDataInfo;
+import com.nexus.common.exception.ServiceException;
 
 /**
  * 物料入库单Controller
@@ -41,6 +43,9 @@ public class WmMaterialReceiveController extends BaseController
 {
     @Autowired
     private IWmMaterialReceiveService wmMaterialReceiveService;
+    
+    @Autowired
+    private IWmInventoryCoreService wmInventoryCoreService;
 
     /**
      * 查询物料入库单列表
@@ -101,68 +106,11 @@ public class WmMaterialReceiveController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody WmMaterialReceive wmMaterialReceive)
     {
-        // 检查入库单编号是否已经存在
-        LambdaQueryWrapper<WmMaterialReceive> queryWrapper = new LambdaQueryWrapper<>();
-        if (wmMaterialReceive.getReceiveCode() != null){
-            queryWrapper.eq(WmMaterialReceive::getReceiveCode, wmMaterialReceive.getReceiveCode());
-            Long receiveId = wmMaterialReceive.getReceiveId() == null ? -1L : wmMaterialReceive.getReceiveId();
-
-            List<WmMaterialReceive> existingReceives = wmMaterialReceiveService.list(queryWrapper);
-            if (!existingReceives.isEmpty()) {
-                WmMaterialReceive existingReceive = existingReceives.get(0);
-                if (!existingReceive.getReceiveId().equals(receiveId)) {
-                    return AjaxResult.error("编号已存在！");
-                }
-            }
-        } else {
-            return AjaxResult.error("编号不能为空！");
+        try {
+            return toAjax(wmMaterialReceiveService.updateWithValidation(wmMaterialReceive));
+        } catch (ServiceException e) {
+            return AjaxResult.error(e.getMessage());
         }
-
-        // 如果审核到待上架状态，则检查是否有对应的入库单行
-        if (NexusConstants.ORDER_STATUS_APPROVING.equals(wmMaterialReceive.getStatus())) {
-            // 检查是否存在入库单行表
-            if (wmMaterialReceive.getWmMaterialReceiveLineList() == null || wmMaterialReceive.getWmMaterialReceiveLineList().isEmpty()) {
-                return AjaxResult.error("入库单行不能为空！");
-            }
-        }
-
-        // 如果是提交到待入库状态，则检查各个行表是否都已分配了对应的明细行，数量必须一致。
-        if (NexusConstants.ORDER_STATUS_APPROVED.equals(wmMaterialReceive.getStatus())) {
-            boolean isValid = true;
-            StringBuilder errorMsg = new StringBuilder();
-            
-            if (wmMaterialReceive.getWmMaterialReceiveLineList() == null || 
-                wmMaterialReceive.getWmMaterialReceiveLineList().isEmpty()) {
-                isValid = false;
-                errorMsg.append("入库单行不能为空！");
-            } else {
-                for (WmMaterialReceiveLine line : wmMaterialReceive.getWmMaterialReceiveLineList()) {
-                    // 检查行表是否已分配对应的明细行
-                    if (line.getWmMaterialReceiveLineDetailList() == null || 
-                        line.getWmMaterialReceiveLineDetailList().isEmpty()) {
-                        isValid = false;
-                        errorMsg.append("物料[").append(line.getMaterialName())
-                               .append("]未分配对应的明细行！");
-                    } else {
-                        // 检查行表数量必须一致
-                        for (WmMaterialReceiveDetail detail : line.getWmMaterialReceiveLineDetailList()) {
-                            if (detail.getQuantity().compareTo(line.getQuantityReceived()) != 0) {
-                                isValid = false;
-                                errorMsg.append("物料[").append(line.getMaterialName())
-                                       .append("]明细数量与入库数量不一致！");
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (!isValid) {
-                return AjaxResult.error(errorMsg.toString());
-            }
-        }
-
-
-        return toAjax(wmMaterialReceiveService.updateWmMaterialReceive(wmMaterialReceive));
     }
 
     /**
@@ -175,5 +123,18 @@ public class WmMaterialReceiveController extends BaseController
     public AjaxResult remove(@PathVariable Long[] receiveIds)
     {
         return toAjax(wmMaterialReceiveService.deleteWmMaterialReceiveByReceiveIds(receiveIds));
+    }
+    
+    /**
+     * 执行物料入库
+     * @param receiveId 入库单ID
+     * @return 结果
+     */
+    @ApiOperation("执行物料入库")
+    @PreAuthorize("@ss.hasPermi('wm:receive:execute')")
+    @Log(title = "物料入库单", businessType = BusinessType.UPDATE)
+    @PostMapping("/execute/{receiveId}")
+    public AjaxResult executeReceive(@PathVariable Long receiveId) {
+        return wmInventoryCoreService.executeReceive(receiveId);
     }
 }

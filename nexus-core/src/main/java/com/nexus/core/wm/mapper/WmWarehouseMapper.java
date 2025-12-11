@@ -3,6 +3,8 @@ package com.nexus.core.wm.mapper;
 import java.util.List;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nexus.core.wm.domain.WmWarehouse;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 仓库设置Mapper接口

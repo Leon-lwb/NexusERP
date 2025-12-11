@@ -81,7 +81,7 @@
         </el-row>
 
         <!-- 子表部分开始 -->
-        <el-divider content-position="center">物料入库单行信息</el-divider>
+        <el-divider content-position="center">物料入库单信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button type="primary" icon="Plus" @click="handleAddWmMaterialReceiveLine"
@@ -93,11 +93,11 @@
           </el-col>
         </el-row>
         <el-table :data="wmMaterialReceiveLineList" :row-class-name="rowWmMaterialReceiveLineIndex"
-          @selection-change="handleWmMaterialReceiveLineSelectionChange" ref="wmMaterialReceiveLine">
+          @selection-change="handleWmMaterialReceiveLineSelectionChange" ref="wmMaterialReceiveLine" style="width: 100%">
           <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
           <el-table-column type="expand" v-if="form.status !== 'PREPARE'">
             <template #default="props">
-              <el-table :data="props.row.detailList" border style="width: 100%; margin-left: 50px;">
+              <el-table :data="props.row.detailList" border style="width: 90%; margin-left: 50px;">
                 <el-table-column label="明细ID" prop="detailId" />
                 <el-table-column label="产品物料编码" prop="materialCode" />
                 <el-table-column label="产品物料名称" prop="materialName" />
@@ -108,23 +108,17 @@
                 <el-table-column label="仓库名称" prop="warehouseName" />
                 <el-table-column label="库区名称" prop="areaName" />
                 <el-table-column label="库位名称" prop="locationName" />
+                <el-table-column label="操作" align="center" width="150" v-if="!isViewMode">
+                  <template #default="scope">
+                    <el-button link type="primary" @click="handleEditDetail(scope.row, props.row)">修改</el-button>
+                    <el-button link type="danger" @click="handleDeleteDetail(scope.row, props.row)">删除</el-button>
+                  </template>
+                </el-table-column>
               </el-table>
             </template>
           </el-table-column>
-          <el-table-column label="序号" align="center" prop="index" width="50" />
-          <el-table-column label="来源单据行ID" prop="sourceDocLineId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.sourceDocLineId" placeholder="请输入来源单据行ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.sourceDocLineId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="产品物料ID" prop="materialId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.materialId" placeholder="请输入产品物料ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.materialId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="产品物料编码" prop="materialCode" width="150">
+          <el-table-column label="序号" align="center" prop="index" width="60" />
+          <el-table-column label="产品物料编码" prop="materialCode" min-width="150">
             <template #default="scope">
               <el-input 
                 v-model="scope.row.materialCode" 
@@ -138,98 +132,32 @@
               <span v-else>{{ scope.row.materialCode }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="产品物料名称" prop="materialName" width="150">
+          <el-table-column label="产品物料名称" prop="materialName" min-width="150">
             <template #default="scope">
               <el-input v-model="scope.row.materialName" placeholder="请输入产品物料名称" v-if="!isViewMode" />
               <span v-else>{{ scope.row.materialName }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="单位" prop="baseUomId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.baseUomId" placeholder="请输入单位" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.baseUomId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单位名称" prop="baseUomName" width="150">
+          <el-table-column label="单位名称" prop="baseUomName" min-width="120">
             <template #default="scope">
               <el-input v-model="scope.row.baseUomName" placeholder="请输入单位名称" v-if="!isViewMode" />
               <span v-else>{{ scope.row.baseUomName }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="入库数量" prop="quantityRecived" width="150">
+          <el-table-column label="入库数量" prop="quantityRecived" min-width="120">
             <template #default="scope">
               <el-input v-model="scope.row.quantityRecived" placeholder="请输入入库数量" v-if="!isViewMode" />
               <span v-else>{{ scope.row.quantityRecived }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="批次ID" prop="batchId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.batchId" placeholder="请输入批次ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.batchId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="批次号" prop="batchCode" width="150">
+          <el-table-column label="批次号" prop="batchCode" min-width="120">
             <template #default="scope">
               <el-input v-model="scope.row.batchCode" placeholder="请输入批次号" v-if="!isViewMode" />
               <span v-else>{{ scope.row.batchCode }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="仓库ID" prop="warehouseId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.warehouseId" placeholder="请输入仓库ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.warehouseId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="仓库编码" prop="warehouseCode" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.warehouseCode" placeholder="请输入仓库编码" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.warehouseCode }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="仓库名称" prop="warehouseName" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.warehouseName" placeholder="请输入仓库名称" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.warehouseName }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库区ID" prop="areaId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.areaId" placeholder="请输入库区ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.areaId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库区编码" prop="areaCode" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.areaCode" placeholder="请输入库区编码" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.areaCode }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库区名称" prop="areaName" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.areaName" placeholder="请输入库区名称" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.areaName }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库位ID" prop="locationId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.locationId" placeholder="请输入库位ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.locationId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库位编码" prop="locationCode" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.locationCode" placeholder="请输入库位编码" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.locationCode }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库位名称" prop="locationName" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.locationName" placeholder="请输入库位名称" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.locationName }}</span>
-            </template>
-          </el-table-column>
           <!-- 上架操作列，只在通过上架按钮进入页面时显示 -->
-          <el-table-column label="操作" align="center" width="100" v-if="pageType === 'shelf' && !isViewMode">
+          <el-table-column label="操作" align="center" min-width="120" v-if="pageType === 'shelf' && !isViewMode">
             <template #default="scope">
               <el-button link type="primary" @click="handleShelf(scope.row)">上架</el-button>
             </template>
@@ -242,69 +170,155 @@
     <!-- 上架弹窗 -->
     <el-dialog :title="shelfTitle" v-model="shelfOpen" width="960px" append-to-body>
       <el-form ref="shelfRef" :model="shelfForm" :rules="shelfRules" label-width="100px" :disabled="isShelfViewMode">
-        <el-form-item label="行ID" prop="lineId">
-          <el-input v-model="shelfForm.lineId" placeholder="请输入行ID" />
-        </el-form-item>
-        <el-form-item label="入库单ID" prop="receiveId">
-          <el-input v-model="shelfForm.receiveId" placeholder="请输入入库单ID" />
-        </el-form-item>
-        <el-form-item label="产品物料ID" prop="materialId">
-          <el-input v-model="shelfForm.materialId" placeholder="请输入产品物料ID" />
-        </el-form-item>
-        <el-form-item label="产品物料编码" prop="materialCode">
-          <el-input v-model="shelfForm.materialCode" placeholder="请输入产品物料编码" />
-        </el-form-item>
-        <el-form-item label="产品物料名称" prop="materialName">
-          <el-input v-model="shelfForm.materialName" placeholder="请输入产品物料名称" />
-        </el-form-item>
-        <el-form-item label="规格型号" prop="materialSpec">
-          <el-input v-model="shelfForm.materialSpec" type="textarea" placeholder="请输入内容" />
-        </el-form-item>
-        <el-form-item label="单位" prop="baseUomId">
-          <el-input v-model="shelfForm.baseUomId" placeholder="请输入单位" />
-        </el-form-item>
-        <el-form-item label="单位名称" prop="baseUomName">
-          <el-input v-model="shelfForm.baseUomName" placeholder="请输入单位名称" />
-        </el-form-item>
-        <el-form-item label="入库数量" prop="quantity">
-          <el-input v-model="shelfForm.quantity" placeholder="请输入入库数量" />
-        </el-form-item>
-        <el-form-item label="批次ID" prop="batchId">
-          <el-input v-model="shelfForm.batchId" placeholder="请输入批次ID" />
-        </el-form-item>
-        <el-form-item label="批次号" prop="batchCode">
-          <el-input v-model="shelfForm.batchCode" placeholder="请输入批次号" />
-        </el-form-item>
-        <el-form-item label="仓库ID" prop="warehouseId">
-          <el-input v-model="shelfForm.warehouseId" placeholder="请输入仓库ID" />
-        </el-form-item>
-        <el-form-item label="仓库编码" prop="warehouseCode">
-          <el-input v-model="shelfForm.warehouseCode" placeholder="请输入仓库编码" />
-        </el-form-item>
-        <el-form-item label="仓库名称" prop="warehouseName">
-          <el-input v-model="shelfForm.warehouseName" placeholder="请输入仓库名称" />
-        </el-form-item>
-        <el-form-item label="库区ID" prop="areaId">
-          <el-input v-model="shelfForm.areaId" placeholder="请输入库区ID" />
-        </el-form-item>
-        <el-form-item label="库区编码" prop="areaCode">
-          <el-input v-model="shelfForm.areaCode" placeholder="请输入库区编码" />
-        </el-form-item>
-        <el-form-item label="库区名称" prop="areaName">
-          <el-input v-model="shelfForm.areaName" placeholder="请输入库区名称" />
-        </el-form-item>
-        <el-form-item label="库位ID" prop="locationId">
-          <el-input v-model="shelfForm.locationId" placeholder="请输入库位ID" />
-        </el-form-item>
-        <el-form-item label="库位编码" prop="locationCode">
-          <el-input v-model="shelfForm.locationCode" placeholder="请输入库位编码" />
-        </el-form-item>
-        <el-form-item label="库位名称" prop="locationName">
-          <el-input v-model="shelfForm.locationName" placeholder="请输入库位名称" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="shelfForm.remark" type="textarea" placeholder="请输入内容" />
-        </el-form-item>
+        <!-- <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="行ID" prop="lineId">
+              <el-input v-model="shelfForm.lineId" placeholder="请输入行ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="入库单ID" prop="receiveId">
+              <el-input v-model="shelfForm.receiveId" placeholder="请输入入库单ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="产品物料ID" prop="materialId">
+              <el-input v-model="shelfForm.materialId" placeholder="请输入产品物料ID" />
+            </el-form-item>
+          </el-col>
+        </el-row> -->
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="物料编码" prop="materialCode">
+              <el-input v-model="shelfForm.materialCode" placeholder="请输入物料编码" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="物料名称" prop="materialName">
+              <el-input v-model="shelfForm.materialName" placeholder="请输入物料名称" />
+            </el-form-item>
+          </el-col>
+          <!-- <el-col :span="8">
+            <el-form-item label="单位" prop="baseUomId">
+              <el-input v-model="shelfForm.baseUomId" placeholder="请输入单位" />
+            </el-form-item>
+          </el-col> -->
+          <el-col :span="8">
+            <el-form-item label="单位名称" prop="baseUomName">
+              <el-input v-model="shelfForm.baseUomName" placeholder="请输入单位名称" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="入库数量" prop="quantity">
+              <el-input v-model="shelfForm.quantity" placeholder="请输入入库数量" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="批次ID" prop="batchId">
+              <el-input v-model="shelfForm.batchId" placeholder="请输入批次ID" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="批次号" prop="batchCode">
+              <el-input v-model="shelfForm.batchCode" placeholder="请输入批次号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="仓库选择" prop="warehouseId">
+              <el-cascader
+                v-model="selectedWarehouse"
+                :options="normalizedWarehouseTree"
+                :props="cascaderProps"
+                placeholder="请选择仓库/库区/库位"
+                style="width: 100%"
+                @change="handleWarehouseChange"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <!-- 隐藏原有的仓库、库区、库位相关字段 -->
+        <div style="display: none;">
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="仓库ID" prop="warehouseId">
+                <el-input v-model="shelfForm.warehouseId" placeholder="请输入仓库ID" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="仓库编码" prop="warehouseCode">
+                <el-input v-model="shelfForm.warehouseCode" placeholder="请输入仓库编码" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="仓库名称" prop="warehouseName">
+                <el-input v-model="shelfForm.warehouseName" placeholder="请输入仓库名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="库区ID" prop="areaId">
+                <el-input v-model="shelfForm.areaId" placeholder="请输入库区ID" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="库区编码" prop="areaCode">
+                <el-input v-model="shelfForm.areaCode" placeholder="请输入库区编码" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="库区名称" prop="areaName">
+                <el-input v-model="shelfForm.areaName" placeholder="请输入库区名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="库位ID" prop="locationId">
+                <el-input v-model="shelfForm.locationId" placeholder="请输入库位ID" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="库位编码" prop="locationCode">
+                <el-input v-model="shelfForm.locationCode" placeholder="请输入库位编码" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="库位名称" prop="locationName">
+                <el-input v-model="shelfForm.locationName" placeholder="请输入库位名称" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
+        
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="规格型号" prop="materialSpec">
+              <el-input v-model="shelfForm.materialSpec" type="textarea" placeholder="请输入内容" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="shelfForm.remark" type="textarea" placeholder="请输入内容" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -354,7 +368,8 @@
 <script setup name="ReceiveForm">
 import { getReceive, addReceive, updateReceive } from "@/api/core/wm/receive"
 import { getArrivalnotice } from "@/api/core/wm/arrivalnotice"
-import { addDetail, updateDetail, listDetail } from "@/api/core/wm/detail"
+import { addDetail, updateDetail, delDetail, listDetail } from "@/api/core/wm/detail"
+import { getWareHouseTree } from "@/api/core/wm/warehouse"
 
 const { proxy } = getCurrentInstance()
 const { wm_material_receive_status } = proxy.useDict('wm_material_receive_status')
@@ -369,6 +384,53 @@ const shelfOpen = ref(false)
 const shelfForm = ref({})
 const shelfTitle = ref("")
 const isShelfViewMode = ref(false)
+
+// 仓库树相关数据
+const warehouseTree = ref([])
+const warehouseTreeLoading = ref(false)
+const selectedWarehouse = ref('')
+const selectedArea = ref('')
+const selectedLocation = ref('')
+
+// 级联选择器配置
+const cascaderProps = computed(() => ({
+  label: 'label',
+  value: 'value',
+  children: 'children',
+  emitPath: false,
+  expandTrigger: 'hover',
+  checkStrictly: true
+}))
+
+// 标准化仓库树数据，添加统一的 label 和 value 字段
+const normalizedWarehouseTree = computed(() => {
+  const convert = (nodes) => {
+    if (!nodes || !Array.isArray(nodes)) return []
+    return nodes.map(node => {
+      const newNode = { ...node }
+      // 确定标签
+      if (node.warehouseName !== undefined) {
+        newNode.label = node.warehouseName
+        newNode.value = node.warehouseId
+      } else if (node.areaName !== undefined) {
+        newNode.label = node.areaName
+        newNode.value = node.areaId
+      } else if (node.locationName !== undefined) {
+        newNode.label = node.locationName
+        newNode.value = node.locationId
+      } else {
+        newNode.label = node.name || node.label || node.warehouseCode || node.areaCode || node.locationCode || '未知节点'
+        newNode.value = node.id || null
+      }
+      // 递归处理子节点
+      if (node.children && node.children.length > 0) {
+        newNode.children = convert(node.children)
+      }
+      return newNode
+    })
+  }
+  return convert(warehouseTree.value)
+})
 
 // 明细数据显示相关
 const expandedRows = ref([])
@@ -715,6 +777,9 @@ function handleShelf(row) {
   resetShelfForm();
   isShelfViewMode.value = false;
   
+  // 加载仓库树数据
+  loadWarehouseTree();
+  
   // 填充从主表传递过来的数据
   shelfForm.value.lineId = row.lineId;
   shelfForm.value.materialId = row.materialId;
@@ -727,6 +792,125 @@ function handleShelf(row) {
   
   shelfOpen.value = true;
   shelfTitle.value = "添加物料入库单明细";
+}
+
+/** 加载仓库树数据 */
+function loadWarehouseTree() {
+  warehouseTreeLoading.value = true;
+  getWareHouseTree().then(response => {
+    warehouseTree.value = response.data;
+    warehouseTreeLoading.value = false;
+  }).catch(error => {
+    warehouseTreeLoading.value = false;
+    proxy.$modal.msgError("加载仓库数据失败");
+    console.error(error);
+  });
+}
+
+/** 仓库选择变更处理 */
+function handleWarehouseChange(value) {
+  if (!value) {
+    // 清空所有相关字段
+    shelfForm.value.warehouseId = "";
+    shelfForm.value.warehouseCode = "";
+    shelfForm.value.warehouseName = "";
+    shelfForm.value.areaId = "";
+    shelfForm.value.areaCode = "";
+    shelfForm.value.areaName = "";
+    shelfForm.value.locationId = "";
+    shelfForm.value.locationCode = "";
+    shelfForm.value.locationName = "";
+    return;
+  }
+  
+  // 解析选中的值
+  const selectedPath = value;
+  // 由于 el-cascader 的 emitPath 设置为 false，所以这里 value 是选中节点的值而不是路径
+  // 我们需要找到完整的节点路径来填充表单
+  const pathNodes = findPathNodes(normalizedWarehouseTree.value, selectedPath);
+  
+  // 根据选中路径提取相关信息
+  if (pathNodes.length >= 1) {
+    const warehouseNode = pathNodes[0];
+    shelfForm.value.warehouseId = warehouseNode.warehouseId;
+    shelfForm.value.warehouseCode = warehouseNode.warehouseCode;
+    shelfForm.value.warehouseName = warehouseNode.warehouseName;
+  }
+  
+  if (pathNodes.length >= 2) {
+    const areaNode = pathNodes[1];
+    shelfForm.value.areaId = areaNode.areaId;
+    shelfForm.value.areaCode = areaNode.areaCode;
+    shelfForm.value.areaName = areaNode.areaName;
+  }
+  
+  if (pathNodes.length >= 3) {
+    const locationNode = pathNodes[2];
+    shelfForm.value.locationId = locationNode.locationId;
+    shelfForm.value.locationCode = locationNode.locationCode;
+    shelfForm.value.locationName = locationNode.locationName;
+  }
+}
+
+/** 根据ID在树中查找节点 */
+function findNodeById(nodes, id, idField) {
+  if (!nodes || !Array.isArray(nodes)) return null;
+  
+  for (let node of nodes) {
+    if (node[idField] === id) {
+      return node;
+    }
+    if (node.children && node.children.length > 0) {
+      const found = findNodeById(node.children, id, idField);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** 根据选中的值查找完整路径节点 */
+function findPathNodes(nodes, selectedValue) {
+  if (!nodes || !selectedValue) return [];
+  
+  // 使用 value 字段查找节点（标准化后的树中每个节点都有 value 字段）
+  let path = [];
+  let currentNode = findNodeById(nodes, selectedValue, 'value');
+  
+  if (currentNode) {
+    path.push(currentNode);
+    // 查找父节点
+    const parentPath = findParentPath(nodes, currentNode);
+    path = [...parentPath, ...path];
+  }
+  
+  return path;
+}
+
+/** 查找父节点路径 */
+function findParentPath(nodes, node) {
+  if (!nodes || !node) return [];
+  
+  // 深度优先搜索查找父节点
+  function dfs(currentNodes, targetNode, path) {
+    for (let n of currentNodes) {
+      // 如果当前节点是目标节点的父节点
+      if (n.children && n.children.some(child => child.value === targetNode.value)) {
+        return [n, ...path];
+      }
+      // 递归搜索子节点
+      if (n.children && n.children.length > 0) {
+        const found = dfs(n.children, targetNode, [n, ...path]);
+        if (found.length > 0) {
+          return found;
+        }
+      }
+    }
+    return [];
+  }
+  
+  const result = dfs(nodes, node, []);
+  // 反转路径，使其从根节点到父节点
+  return result.reverse();
 }
 
 /** 重置上架表单 */
@@ -763,6 +947,9 @@ function resetShelfForm() {
     updateBy: null,
     updateTime: null
   };
+  selectedWarehouse.value = '';
+  selectedArea.value = '';
+  selectedLocation.value = '';
   proxy.resetForm("shelfRef");
 }
 
@@ -804,6 +991,81 @@ function refreshDetailList() {
     loadDetailList(lineId, rowIndex);
   }
 }
+
+/**
+ * 修改明细数据
+ */
+function handleEditDetail(detailRow, parentRow) {
+  // 打开上架弹窗进行编辑
+  resetShelfForm();
+  isShelfViewMode.value = false;
+  
+  // 加载仓库树数据
+  loadWarehouseTree();
+  
+  // 填充选中的明细数据到表单
+  Object.keys(shelfForm.value).forEach(key => {
+    if (detailRow[key] !== undefined) {
+      shelfForm.value[key] = detailRow[key];
+    }
+  });
+  
+  // 设置级联选择器的值
+  if (detailRow.warehouseId) {
+    const path = [];
+    path.push(detailRow.warehouseId);
+    if (detailRow.areaId) path.push(detailRow.areaId);
+    if (detailRow.locationId) path.push(detailRow.locationId);
+    selectedWarehouse.value = path;
+  }
+  
+  shelfOpen.value = true;
+  shelfTitle.value = "修改物料入库单明细";
+}
+
+/**
+ * 删除明细数据
+ */
+function handleDeleteDetail(detailRow, parentRow) {
+  proxy.$modal.confirm('确定要删除该条明细数据吗？').then(() => {
+    // 调用删除接口
+    return delDetail(detailRow.detailId);
+  }).then(() => {
+    proxy.$modal.msgSuccess("删除成功");
+    // 重新加载明细数据
+    const lineId = parentRow.lineId;
+    const rowIndex = wmMaterialReceiveLineList.value.findIndex(line => line.lineId === lineId);
+    if (rowIndex >= 0) {
+      loadDetailList(lineId, rowIndex);
+    }
+  }).catch(error => {
+    if (error !== 'cancel') {
+      proxy.$modal.msgError("删除失败");
+      console.error(error);
+    }
+  });
+}
+
+/** 监听仓库树数据变化，更新 cascader 选项 */
+watch(warehouseTree, (newVal) => {
+  if (newVal && newVal.length > 0) {
+    // 可以在这里处理数据转换
+  }
+});
+
+/** 监听表单数据变化，如果有初始值则设置选中项 */
+watch(shelfForm, (newVal) => {
+  if (newVal.warehouseId && !selectedWarehouse.value) {
+    // 如果表单中有仓库ID但没有选中项，则尝试设置选中项
+    const path = [];
+    if (newVal.warehouseId) path.push(newVal.warehouseId.toString());
+    if (newVal.areaId) path.push(newVal.areaId.toString());
+    if (newVal.locationId) path.push(newVal.locationId.toString());
+    if (path.length > 0) {
+      selectedWarehouse.value = path.join('-');
+    }
+  }
+}, { deep: true });
 
 </script>
 

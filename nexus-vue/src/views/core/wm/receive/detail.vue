@@ -127,69 +127,137 @@
     <!-- 添加或修改物料入库单明细对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form ref="detailRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
-        <el-form-item label="行ID" prop="lineId">
-          <el-input v-model="form.lineId" placeholder="请输入行ID" />
-        </el-form-item>
-        <el-form-item label="入库单ID" prop="receiveId">
-          <el-input v-model="form.receiveId" placeholder="请输入入库单ID" />
-        </el-form-item>
-        <el-form-item label="产品物料ID" prop="materialId">
-          <el-input v-model="form.materialId" placeholder="请输入产品物料ID" />
-        </el-form-item>
-        <el-form-item label="产品物料编码" prop="materialCode">
-          <el-input v-model="form.materialCode" placeholder="请输入产品物料编码" />
-        </el-form-item>
-        <el-form-item label="产品物料名称" prop="materialName">
-          <el-input v-model="form.materialName" placeholder="请输入产品物料名称" />
-        </el-form-item>
-        <el-form-item label="规格型号" prop="materialSpec">
-          <el-input v-model="form.materialSpec" type="textarea" placeholder="请输入内容" />
-        </el-form-item>
-        <el-form-item label="单位" prop="baseUomId">
-          <el-input v-model="form.baseUomId" placeholder="请输入单位" />
-        </el-form-item>
-        <el-form-item label="单位名称" prop="baseUomName">
-          <el-input v-model="form.baseUomName" placeholder="请输入单位名称" />
-        </el-form-item>
-        <el-form-item label="入库数量" prop="quantity">
-          <el-input v-model="form.quantity" placeholder="请输入入库数量" />
-        </el-form-item>
-        <el-form-item label="批次ID" prop="batchId">
-          <el-input v-model="form.batchId" placeholder="请输入批次ID" />
-        </el-form-item>
-        <el-form-item label="批次号" prop="batchCode">
-          <el-input v-model="form.batchCode" placeholder="请输入批次号" />
-        </el-form-item>
-        <el-form-item label="仓库ID" prop="warehouseId">
-          <el-input v-model="form.warehouseId" placeholder="请输入仓库ID" />
-        </el-form-item>
-        <el-form-item label="仓库编码" prop="warehouseCode">
-          <el-input v-model="form.warehouseCode" placeholder="请输入仓库编码" />
-        </el-form-item>
-        <el-form-item label="仓库名称" prop="warehouseName">
-          <el-input v-model="form.warehouseName" placeholder="请输入仓库名称" />
-        </el-form-item>
-        <el-form-item label="库区ID" prop="areaId">
-          <el-input v-model="form.areaId" placeholder="请输入库区ID" />
-        </el-form-item>
-        <el-form-item label="库区编码" prop="areaCode">
-          <el-input v-model="form.areaCode" placeholder="请输入库区编码" />
-        </el-form-item>
-        <el-form-item label="库区名称" prop="areaName">
-          <el-input v-model="form.areaName" placeholder="请输入库区名称" />
-        </el-form-item>
-        <el-form-item label="库位ID" prop="locationId">
-          <el-input v-model="form.locationId" placeholder="请输入库位ID" />
-        </el-form-item>
-        <el-form-item label="库位编码" prop="locationCode">
-          <el-input v-model="form.locationCode" placeholder="请输入库位编码" />
-        </el-form-item>
-        <el-form-item label="库位名称" prop="locationName">
-          <el-input v-model="form.locationName" placeholder="请输入库位名称" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="行ID" prop="lineId">
+              <el-input v-model="form.lineId" placeholder="请输入行ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="入库单ID" prop="receiveId">
+              <el-input v-model="form.receiveId" placeholder="请输入入库单ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="产品物料ID" prop="materialId">
+              <el-input v-model="form.materialId" placeholder="请输入产品物料ID" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="产品物料编码" prop="materialCode">
+              <el-input v-model="form.materialCode" placeholder="请输入产品物料编码" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="产品物料名称" prop="materialName">
+              <el-input v-model="form.materialName" placeholder="请输入产品物料名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="单位" prop="baseUomId">
+              <el-input v-model="form.baseUomId" placeholder="请输入单位" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="单位名称" prop="baseUomName">
+              <el-input v-model="form.baseUomName" placeholder="请输入单位名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="入库数量" prop="quantity">
+              <el-input v-model="form.quantity" placeholder="请输入入库数量" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="批次ID" prop="batchId">
+              <el-input v-model="form.batchId" placeholder="请输入批次ID" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="批次号" prop="batchCode">
+              <el-input v-model="form.batchCode" placeholder="请输入批次号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="仓库ID" prop="warehouseId">
+              <el-input v-model="form.warehouseId" placeholder="请输入仓库ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="仓库编码" prop="warehouseCode">
+              <el-input v-model="form.warehouseCode" placeholder="请输入仓库编码" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="仓库名称" prop="warehouseName">
+              <el-input v-model="form.warehouseName" placeholder="请输入仓库名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="库区ID" prop="areaId">
+              <el-input v-model="form.areaId" placeholder="请输入库区ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="库区编码" prop="areaCode">
+              <el-input v-model="form.areaCode" placeholder="请输入库区编码" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="库区名称" prop="areaName">
+              <el-input v-model="form.areaName" placeholder="请输入库区名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="库位ID" prop="locationId">
+              <el-input v-model="form.locationId" placeholder="请输入库位ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="库位编码" prop="locationCode">
+              <el-input v-model="form.locationCode" placeholder="请输入库位编码" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="库位名称" prop="locationName">
+              <el-input v-model="form.locationName" placeholder="请输入库位名称" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="规格型号" prop="materialSpec">
+              <el-input v-model="form.materialSpec" type="textarea" placeholder="请输入内容" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <div class="dialog-footer">

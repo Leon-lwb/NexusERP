@@ -484,17 +484,22 @@ function selectMaterial(row) {
     if (row.baseUomId) {
       console.log('row.baseUomId:', row.baseUomId);
       wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].baseUomId = row.baseUomId
+      
+      // 保存当前行索引的引用，防止异步回调时索引已变化
+      const rowIndex = currentMaterialRowIndex.value;
+      
       getMeasure(row.baseUomId).then(response => {
-        // 再次检查索引是否仍然有效
-        if (currentMaterialRowIndex.value >= 0 && wmArrivalNoticeLineList.value[currentMaterialRowIndex.value]) {
-          wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].baseUomName = response.data.uomName
+        // 使用保存的索引引用而不是 currentMaterialRowIndex.value
+        if (rowIndex >= 0 && wmArrivalNoticeLineList.value[rowIndex]) {
+          // 根据您提供的响应数据，字段访问是正确的
+          wmArrivalNoticeLineList.value[rowIndex].baseUomName = response.data.uomName
           console.log('baseUomName:', response.data.uomName);
         }
-      }).catch(() => {
-        // 再次检查索引是否仍然有效
-        if (currentMaterialRowIndex.value >= 0 && wmArrivalNoticeLineList.value[currentMaterialRowIndex.value]) {
-          // 如果获取失败，至少保留ID
-          wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].baseUomName = ''
+      }).catch(error => {
+        console.error('获取计量单位信息失败:', error);
+        // 同样使用保存的索引引用
+        if (rowIndex >= 0 && wmArrivalNoticeLineList.value[rowIndex]) {
+          wmArrivalNoticeLineList.value[rowIndex].baseUomName = ''
         }
       })
     } else {
