@@ -36,19 +36,19 @@
       <!-- 右侧库存列表 -->
       <el-col :span="19">
         <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-          <el-form-item label="物料类型ID" prop="categoryId">
+          <!-- <el-form-item label="物料类型ID" prop="categoryId">
             <el-input v-model="queryParams.categoryId" placeholder="请输入物料类型ID" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="产品物料ID" prop="materialId">
             <el-input v-model="queryParams.materialId" placeholder="请输入产品物料ID" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="产品物料编码" prop="materialCode">
             <el-input v-model="queryParams.materialCode" placeholder="请输入产品物料编码" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="产品物料名称" prop="materialName">
             <el-input v-model="queryParams.materialName" placeholder="请输入产品物料名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="单位id" prop="baseUomId">
+          <!-- <el-form-item label="单位id" prop="baseUomId">
             <el-input v-model="queryParams.baseUomId" placeholder="请输入单位id" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="单位名称" prop="baseUomName">
@@ -56,47 +56,47 @@
           </el-form-item>
           <el-form-item label="批次ID" prop="batchId">
             <el-input v-model="queryParams.batchId" placeholder="请输入批次ID" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="入库批次号" prop="batchCode">
             <el-input v-model="queryParams.batchCode" placeholder="请输入入库批次号" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="仓库ID" prop="warehouseId">
+          <!-- <el-form-item label="仓库ID" prop="warehouseId">
             <el-input v-model="queryParams.warehouseId" placeholder="请输入仓库ID" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="仓库编码" prop="warehouseCode">
             <el-input v-model="queryParams.warehouseCode" placeholder="请输入仓库编码" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="仓库名称" prop="warehouseName">
             <el-input v-model="queryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="库区ID" prop="areaId">
+          <!-- <el-form-item label="库区ID" prop="areaId">
             <el-input v-model="queryParams.areaId" placeholder="请输入库区ID" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="库区编码" prop="areaCode">
             <el-input v-model="queryParams.areaCode" placeholder="请输入库区编码" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="库区名称" prop="areaName">
             <el-input v-model="queryParams.areaName" placeholder="请输入库区名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="库位ID" prop="locationId">
+          <!-- <el-form-item label="库位ID" prop="locationId">
             <el-input v-model="queryParams.locationId" placeholder="请输入库位ID" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="库位编码" prop="locationCode">
             <el-input v-model="queryParams.locationCode" placeholder="请输入库位编码" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="库位名称" prop="locationName">
             <el-input v-model="queryParams.locationName" placeholder="请输入库位名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="供应商ID" prop="vendorId">
+          <!-- <el-form-item label="供应商ID" prop="vendorId">
             <el-input v-model="queryParams.vendorId" placeholder="请输入供应商ID" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="供应商编号" prop="vendorCode">
             <el-input v-model="queryParams.vendorCode" placeholder="请输入供应商编号" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="供应商名称" prop="vendorName">
             <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="供应商简称" prop="vendorNick">
+          <!-- <el-form-item label="供应商简称" prop="vendorNick">
             <el-input v-model="queryParams.vendorNick" placeholder="请输入供应商简称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
           <el-form-item label="在库数量" prop="stockQuantity">
@@ -104,15 +104,15 @@
           </el-form-item>
           <el-form-item label="生产工单ID" prop="woId">
             <el-input v-model="queryParams.woId" placeholder="请输入生产工单ID" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="生产工单编号" prop="woNo">
             <el-input v-model="queryParams.woNo" placeholder="请输入生产工单编号" clearable @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="生产日期" prop="productionDate">
+          <!-- <el-form-item label="生产日期" prop="productionDate">
             <el-date-picker clearable v-model="queryParams.productionDate" type="date" value-format="YYYY-MM-DD"
               placeholder="请选择生产日期">
             </el-date-picker>
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="入库时间" prop="recptDate">
             <el-date-picker clearable v-model="queryParams.recptDate" type="date" value-format="YYYY-MM-DD"
               placeholder="请选择入库时间">
@@ -159,9 +159,6 @@
 
         <el-table v-loading="loading" :data="stockList" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="库存ID" align="center" prop="stockId" />
-          <el-table-column label="物料类型ID" align="center" prop="categoryId" />
-          <el-table-column label="产品物料ID" align="center" prop="materialId" />
           <el-table-column label="产品物料编码" align="center" prop="materialCode" />
           <el-table-column label="产品物料名称" align="center" prop="materialName" />
           <el-table-column label="规格型号" align="center" prop="materialSpec" />
@@ -326,7 +323,7 @@
 </template>
 
 <script setup name="Stock">
-import { listStock, getStock, delStock, addStock, updateStock } from "@/api/core/wm/stock"
+import { listStock, getStock, delStock, addStock, updateStock, getCategoryStocks } from "@/api/core/wm/stock"
 import { listCategory, getAllChildrenIds } from "@/api/core/bd/category"
 import { debounce } from 'lodash'
 
@@ -456,11 +453,25 @@ function handleNodeClick(data) {
         })
       }
       
-      // 设置查询参数，支持多个分类ID查询
-      queryParams.value.categoryIds = categoryIds;
-      // 清除单个分类ID参数，避免冲突
-      queryParams.value.categoryId = null;
-      handleQuery();
+      // 使用新接口获取分类及其子分类的库存数据
+      loading.value = true;
+      getCategoryStocks(categoryIds).then(res => {
+        if (res.code === 200) {
+          stockList.value = res.data.stocks || [];
+          total.value = stockList.value.length;
+        } else {
+          stockList.value = [];
+          total.value = 0;
+          proxy.$modal.msgError("获取库存数据失败");
+        }
+        loading.value = false;
+      }).catch(err => {
+        stockList.value = [];
+        total.value = 0;
+        loading.value = false;
+        proxy.$modal.msgError("请求出现异常");
+        console.error(err);
+      });
     } else {
       proxy.$modal.msgError("获取分类信息失败");
     }
@@ -530,6 +541,8 @@ function handleQuery() {
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm("queryRef")
+  // 重置分类相关查询参数
+  queryParams.value.categoryId = null;
   handleQuery()
 }
 

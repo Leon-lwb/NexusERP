@@ -11,7 +11,7 @@
  Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 11/12/2025 18:27:43
+ Date: 12/12/2025 17:57:20
 */
 
 SET NAMES utf8mb4;
@@ -4646,6 +4646,8 @@ INSERT INTO `sys_auto_code_result` VALUES (668, 268, '20251130003058', 4, 'MBOM2
 INSERT INTO `sys_auto_code_result` VALUES (669, 236, '20251203172929', 8, 'IF20251203008', 8, NULL, '', NULL, NULL, 0, 0, '', '2025-12-03 17:15:27', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (670, 255, '20251204153525', 1, 'AN20251204001', 1, NULL, '', NULL, NULL, 0, 0, '', '2025-12-04 15:35:25', '', NULL);
 INSERT INTO `sys_auto_code_result` VALUES (671, 226, '20251208172925', 3, 'CGRK20251208003', 3, NULL, '', NULL, NULL, 0, 0, '', '2025-12-08 14:52:48', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (672, 226, '20251212173143', 2, 'CGRK20251212002', 2, NULL, '', NULL, NULL, 0, 0, '', '2025-12-12 17:10:19', '', NULL);
+INSERT INTO `sys_auto_code_result` VALUES (673, 255, '20251212172625', 3, 'AN20251212003', 3, NULL, '', NULL, NULL, 0, 0, '', '2025-12-12 17:10:37', '', NULL);
 
 -- ----------------------------
 -- Table structure for sys_auto_code_rule
@@ -4806,7 +4808,7 @@ CREATE TABLE `sys_dept`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 117 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 116 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -6891,7 +6893,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 419 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 421 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -7218,6 +7220,8 @@ INSERT INTO `sys_logininfor` VALUES (418, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (419, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-11 14:49:43');
 INSERT INTO `sys_logininfor` VALUES (420, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-11 16:12:40');
 INSERT INTO `sys_logininfor` VALUES (421, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-11 17:06:57');
+INSERT INTO `sys_logininfor` VALUES (422, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-12 15:30:37');
+INSERT INTO `sys_logininfor` VALUES (423, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2025-12-12 17:09:14');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -7245,7 +7249,7 @@ CREATE TABLE `sys_menu`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2213 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2212 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -7548,7 +7552,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1289 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1305 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -8759,6 +8763,24 @@ INSERT INTO `sys_oper_log` VALUES (1302, '物料入库单', 2, 'com.nexus.core.w
 INSERT INTO `sys_oper_log` VALUES (1303, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：仓库ID不能为空\",\"code\":500}', 0, NULL, '2025-12-11 15:36:20', 31551);
 INSERT INTO `sys_oper_log` VALUES (1304, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行失败：仓库ID不能为空\",\"code\":500}', 0, NULL, '2025-12-11 16:16:11', 199634);
 INSERT INTO `sys_oper_log` VALUES (1305, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/wm/receive/execute/2', '127.0.0.1', '内网IP', '2', '{\"msg\":\"物料入库执行成功\",\"code\":200}', 0, NULL, '2025-12-11 16:17:01', 30054);
+INSERT INTO `sys_oper_log` VALUES (1306, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_MATERIAL_RECEIVE_CODE', '127.0.0.1', '内网IP', '{}', '\"CGRK20251212001\"', 0, NULL, '2025-12-12 17:10:19', 59);
+INSERT INTO `sys_oper_log` VALUES (1307, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_ARRIVAL_NOTICE_CODE', '127.0.0.1', '内网IP', '{}', '\"AN20251212001\"', 0, NULL, '2025-12-12 17:10:37', 11);
+INSERT INTO `sys_oper_log` VALUES (1308, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_ARRIVAL_NOTICE_CODE', '127.0.0.1', '内网IP', '{}', '\"AN20251212002\"', 0, NULL, '2025-12-12 17:17:13', 21);
+INSERT INTO `sys_oper_log` VALUES (1309, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_ARRIVAL_NOTICE_CODE', '127.0.0.1', '内网IP', '{}', '\"AN20251212003\"', 0, NULL, '2025-12-12 17:26:25', 23);
+INSERT INTO `sys_oper_log` VALUES (1310, '到货通知', 1, 'com.nexus.core.wm.controller.WmArrivalNoticeController.add()', 'POST', 1, 'admin', '研发部门', '/wm/arrivalnotice', '127.0.0.1', '内网IP', '{\"arrivalDate\":\"2025-12-12\",\"contact\":\"张三\",\"createTime\":\"2025-12-12 17:26:47\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"noticeName\":\"自行车所需物料2\",\"params\":{},\"phone\":\"15388888888\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-12 17:26:47', 29);
+INSERT INTO `sys_oper_log` VALUES (1311, '到货通知', 2, 'com.nexus.core.wm.controller.WmArrivalNoticeController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/arrivalnotice', '127.0.0.1', '内网IP', '{\"arrivalDate\":\"2025-12-12\",\"attr3\":0,\"attr4\":0,\"contact\":\"张三\",\"createBy\":\"\",\"createTime\":\"2025-12-12 17:26:48\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"noticeName\":\"自行车所需物料2\",\"params\":{},\"phone\":\"15388888888\",\"purOrderCode\":\"231231\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"updateTime\":\"2025-12-12 17:30:46\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"wmArrivalNoticeLineList\":[{\"baseUomId\":\"29\",\"baseUomName\":\"打\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"materialCode\":\"LUBRICANT\",\"materialId\":10,\"materialName\":\"润滑油\",\"materialSpec\":\"ISO VG46\",\"noticeId\":2,\"params\":{},\"quantityArrival\":110,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"noticeId\":2,\"params\":{},\"quantityArrival\":250,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"noticeId\":2,\"params\":{},\"quantityArrival\":250,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"noticeId\":2,\"params\":{},\"quantityArrival\":10000,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"noticeId\":2,\"params\":{},\"quantityArrival\":120,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"noticeId\":2,\"params\":{},\"quantityArrival\":250,\"remark\":\"\"}]}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-12 17:30:46', 17);
+INSERT INTO `sys_oper_log` VALUES (1312, '到货通知', 2, 'com.nexus.core.wm.controller.WmArrivalNoticeController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/arrivalnotice', '127.0.0.1', '内网IP', '{\"arrivalDate\":\"2025-12-12\",\"attr3\":0,\"attr4\":0,\"contact\":\"张三\",\"createBy\":\"\",\"createTime\":\"2025-12-12 17:26:48\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"noticeName\":\"自行车所需物料2\",\"params\":{},\"phone\":\"15388888888\",\"purOrderCode\":\"231231\",\"remark\":\"\",\"status\":\"APPROVED\",\"updateBy\":\"\",\"updateTime\":\"2025-12-12 17:31:34\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"wmArrivalNoticeLineList\":[{\"baseUomId\":\"29\",\"baseUomName\":\"打\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"lineId\":11,\"materialCode\":\"LUBRICANT\",\"materialId\":10,\"materialName\":\"润滑油\",\"materialSpec\":\"ISO VG46\",\"noticeId\":2,\"params\":{},\"quantityArrival\":110,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"lineId\":12,\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"noticeId\":2,\"params\":{},\"quantityArrival\":250,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"lineId\":13,\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"noticeId\":2,\"params\":{},\"quantityArrival\":250,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"lineId\":14,\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"noticeId\":2,\"params\":{},\"quantityArrival\":10000,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"lineId\":15,\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"noticeId\":2,\"params\":{},\"quantityArrival\":120,\"remark\":\"\"},{\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"iqcCheck\":\"0\",\"iqcCode\":\"\",\"lineId\":16,\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"noticeId\":2,\"params\":{},\"quantityArrival\":250,\"remark\":\"\"}]}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-12 17:31:34', 13);
+INSERT INTO `sys_oper_log` VALUES (1313, '生成业务编号', 1, 'com.nexus.system.strategy.AutoCodeUtil.genSerialCode()', 'GET', 1, 'admin', '研发部门', '/system/autocode/get/WM_MATERIAL_RECEIVE_CODE', '127.0.0.1', '内网IP', '{}', '\"CGRK20251212002\"', 0, NULL, '2025-12-12 17:31:43', 12);
+INSERT INTO `sys_oper_log` VALUES (1314, '物料入库单', 1, 'com.nexus.core.wm.controller.WmMaterialReceiveController.add()', 'POST', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"createTime\":\"2025-12-12 17:32:10\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-12 17:32:11', 11);
+INSERT INTO `sys_oper_log` VALUES (1315, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"29\",\"baseUomName\":\"打\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"LUBRICANT\",\"materialId\":10,\"materialName\":\"润滑油\",\"materialSpec\":\"ISO VG46\",\"params\":{},\"sourceDocLineId\":11,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"params\":{},\"sourceDocLineId\":12,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"params\":{},\"sourceDocLineId\":13,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"params\":{},\"sourceDocLineId\":14,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"params\":{},\"sourceDocLineId\":15,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"params\":{},\"sourceDocLineId\":16,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\r\n### The error may exist in com/nexus/core/wm/mapper/WmMaterialReceiveMapper.java (best guess)\r\n### The error may involve com.nexus.core.wm.mapper.WmMaterialReceiveMapper.updateById-Inline\r\n### The error occurred while setting parameters\r\n### SQL: UPDATE wm_material_receive  SET receive_code=?, receive_name=?,   notice_id=?, notice_code=?,   vendor_id=?, vendor_code=?, vendor_name=?,           receive_date=?, status=?,   attr3=?, attr4=?, wm_material_receive_line_list=?,  create_by=?, create_time=?, update_by=?,  remark=?, params=?  WHERE receive_id=?\r\n### Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\n; bad SQL grammar []', '2025-12-12 17:32:55', 138);
+INSERT INTO `sys_oper_log` VALUES (1316, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"29\",\"baseUomName\":\"打\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"LUBRICANT\",\"materialId\":10,\"materialName\":\"润滑油\",\"materialSpec\":\"ISO VG46\",\"params\":{},\"sourceDocLineId\":11,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"params\":{},\"sourceDocLineId\":12,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"params\":{},\"sourceDocLineId\":13,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"params\":{},\"sourceDocLineId\":14,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"params\":{},\"sourceDocLineId\":15,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"params\":{},\"sourceDocLineId\":16,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\r\n### The error may exist in com/nexus/core/wm/mapper/WmMaterialReceiveMapper.java (best guess)\r\n### The error may involve com.nexus.core.wm.mapper.WmMaterialReceiveMapper.updateById-Inline\r\n### The error occurred while setting parameters\r\n### SQL: UPDATE wm_material_receive  SET receive_code=?, receive_name=?,   notice_id=?, notice_code=?,   vendor_id=?, vendor_code=?, vendor_name=?, vendor_nick=?,          receive_date=?, status=?,   attr3=?, attr4=?, wm_material_receive_line_list=?,  create_by=?, create_time=?, update_by=?,  remark=?, params=?  WHERE receive_id=?\r\n### Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\n; bad SQL grammar []', '2025-12-12 17:33:10', 6);
+INSERT INTO `sys_oper_log` VALUES (1317, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"29\",\"baseUomName\":\"打\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"LUBRICANT\",\"materialId\":10,\"materialName\":\"润滑油\",\"materialSpec\":\"ISO VG46\",\"params\":{},\"sourceDocLineId\":11,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"params\":{},\"sourceDocLineId\":12,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"params\":{},\"sourceDocLineId\":13,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"params\":{},\"sourceDocLineId\":14,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"params\":{},\"sourceDocLineId\":15,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"params\":{},\"sourceDocLineId\":16,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\r\n### The error may exist in com/nexus/core/wm/mapper/WmMaterialReceiveMapper.java (best guess)\r\n### The error may involve com.nexus.core.wm.mapper.WmMaterialReceiveMapper.updateById-Inline\r\n### The error occurred while setting parameters\r\n### SQL: UPDATE wm_material_receive  SET receive_code=?, receive_name=?,   notice_id=?, notice_code=?,   vendor_id=?, vendor_code=?, vendor_name=?, vendor_nick=?,          receive_date=?, status=?,   attr3=?, attr4=?, wm_material_receive_line_list=?,  create_by=?, create_time=?, update_by=?,  remark=?, params=?  WHERE receive_id=?\r\n### Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\n; bad SQL grammar []', '2025-12-12 17:40:18', 100);
+INSERT INTO `sys_oper_log` VALUES (1318, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"29\",\"baseUomName\":\"打\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"LUBRICANT\",\"materialId\":10,\"materialName\":\"润滑油\",\"materialSpec\":\"ISO VG46\",\"params\":{},\"sourceDocLineId\":11,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"params\":{},\"sourceDocLineId\":12,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"params\":{},\"sourceDocLineId\":13,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"params\":{},\"sourceDocLineId\":14,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"params\":{},\"sourceDocLineId\":15,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"params\":{},\"sourceDocLineId\":16,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\r\n### The error may exist in com/nexus/core/wm/mapper/WmMaterialReceiveMapper.java (best guess)\r\n### The error may involve com.nexus.core.wm.mapper.WmMaterialReceiveMapper.updateById-Inline\r\n### The error occurred while setting parameters\r\n### SQL: UPDATE wm_material_receive  SET receive_code=?, receive_name=?,   notice_id=?, notice_code=?,   vendor_id=?, vendor_code=?, vendor_name=?, vendor_nick=?,          receive_date=?, status=?,   attr3=?, attr4=?, wm_material_receive_line_list=?,  create_by=?, create_time=?, update_by=?,  remark=?, params=?  WHERE receive_id=?\r\n### Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\n; bad SQL grammar []', '2025-12-12 17:40:56', 101);
+INSERT INTO `sys_oper_log` VALUES (1319, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\",\"wmMaterialReceiveLineList\":[{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"29\",\"baseUomName\":\"打\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"LUBRICANT\",\"materialId\":10,\"materialName\":\"润滑油\",\"materialSpec\":\"ISO VG46\",\"params\":{},\"sourceDocLineId\":11,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203004\",\"materialId\":3001,\"materialName\":\"轮圈\",\"params\":{},\"sourceDocLineId\":12,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203005\",\"materialId\":3002,\"materialName\":\"轮胎\",\"params\":{},\"sourceDocLineId\":13,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203006\",\"materialId\":3003,\"materialName\":\"辐条\",\"params\":{},\"sourceDocLineId\":14,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203007\",\"materialId\":3004,\"materialName\":\"把管\",\"params\":{},\"sourceDocLineId\":15,\"warehouseCode\":\"\",\"warehouseName\":\"\"},{\"areaCode\":\"\",\"areaName\":\"\",\"baseUomId\":\"1\",\"baseUomName\":\"克\",\"batchCode\":\"\",\"locationCode\":\"\",\"locationName\":\"\",\"materialCode\":\"IF20251203008\",\"materialId\":3005,\"materialName\":\"把套\",\"params\":{},\"sourceDocLineId\":16,\"warehouseCode\":\"\",\"warehouseName\":\"\"}]}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\r\n### The error may exist in com/nexus/core/wm/mapper/WmMaterialReceiveMapper.java (best guess)\r\n### The error may involve com.nexus.core.wm.mapper.WmMaterialReceiveMapper.updateById-Inline\r\n### The error occurred while setting parameters\r\n### SQL: UPDATE wm_material_receive  SET receive_code=?, receive_name=?,   notice_id=?, notice_code=?,   vendor_id=?, vendor_code=?, vendor_name=?, vendor_nick=?,          receive_date=?, status=?,   attr3=?, attr4=?, wm_material_receive_line_list=?,  create_by=?, create_time=?, update_by=?,  remark=?, params=?  WHERE receive_id=?\r\n### Cause: java.sql.SQLSyntaxErrorException: Unknown column \'wm_material_receive_line_list\' in \'field list\'\n; bad SQL grammar []', '2025-12-12 17:45:52', 98);
+INSERT INTO `sys_oper_log` VALUES (1320, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\"}', NULL, 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: Unknown column \'params\' in \'field list\'\r\n### The error may exist in com/nexus/core/wm/mapper/WmMaterialReceiveMapper.java (best guess)\r\n### The error may involve com.nexus.core.wm.mapper.WmMaterialReceiveMapper.updateById-Inline\r\n### The error occurred while setting parameters\r\n### SQL: UPDATE wm_material_receive  SET receive_code=?, receive_name=?,   notice_id=?, notice_code=?,   vendor_id=?, vendor_code=?, vendor_name=?, vendor_nick=?,          receive_date=?, status=?,   attr3=?, attr4=?,  create_by=?, create_time=?, update_by=?,  remark=?, params=?  WHERE receive_id=?\r\n### Cause: java.sql.SQLSyntaxErrorException: Unknown column \'params\' in \'field list\'\n; bad SQL grammar []', '2025-12-12 17:50:25', 81);
+INSERT INTO `sys_oper_log` VALUES (1321, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-12 17:52:49', 53);
+INSERT INTO `sys_oper_log` VALUES (1322, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"purCode\":\"123\",\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"PREPARE\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2025-12-12 17:53:06', 10);
+INSERT INTO `sys_oper_log` VALUES (1323, '物料入库单', 2, 'com.nexus.core.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/wm/receive', '127.0.0.1', '内网IP', '{\"attr3\":0,\"attr4\":0,\"createBy\":\"\",\"createTime\":\"2025-12-12 17:32:11\",\"noticeCode\":\"AN20251212003\",\"noticeId\":2,\"params\":{},\"purCode\":\"123\",\"receiveCode\":\"CGRK20251212002\",\"receiveDate\":\"2025-12-12\",\"receiveId\":3,\"receiveName\":\"自行车材料2入库\",\"remark\":\"\",\"status\":\"APPROVING\",\"updateBy\":\"\",\"vendorCode\":\"V00005\",\"vendorId\":1,\"vendorName\":\"北京五道口\",\"vendorNick\":\"五\"}', '{\"msg\":\"入库单行不能为空！\",\"code\":500}', 0, NULL, '2025-12-12 17:53:18', 4);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -8819,7 +8841,7 @@ CREATE TABLE `sys_role`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role
@@ -9054,12 +9076,12 @@ CREATE TABLE `sys_user`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 105 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 104 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-11 17:06:58', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-12-11 17:06:57', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-12-12 17:09:14', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-12-12 17:09:14', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员');
 INSERT INTO `sys_user` VALUES (100, 112, 'xiaowang', '小王', '00', '', '', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-10-23 16:45:02', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', '麦得朶', '2025-10-23 19:33:53', '耳朵聋');
@@ -9169,6 +9191,7 @@ CREATE TABLE `wm_arrival_notice`  (
 -- Records of wm_arrival_notice
 -- ----------------------------
 INSERT INTO `wm_arrival_notice` VALUES (1, 'AN20251204001', '自行车所需物料', NULL, 1, 'V00005', '北京五道口', NULL, NULL, '张三', '15388888888', 'FINISHED', '', NULL, NULL, 0, 0, '', '2025-12-04 15:36:20', '', '2025-12-11 16:17:01');
+INSERT INTO `wm_arrival_notice` VALUES (2, 'AN20251212003', '自行车所需物料2', '231231', 1, 'V00005', '北京五道口', NULL, '2025-12-12 00:00:00', '张三', '15388888888', 'APPROVED', '', NULL, NULL, 0, 0, '', '2025-12-12 17:26:48', '', '2025-12-12 17:31:34');
 
 -- ----------------------------
 -- Table structure for wm_arrival_notice_line
@@ -9204,6 +9227,12 @@ CREATE TABLE `wm_arrival_notice_line`  (
 -- Records of wm_arrival_notice_line
 -- ----------------------------
 INSERT INTO `wm_arrival_notice_line` VALUES (10, 1, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 100.00, NULL, '1', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (11, 2, 10, 'LUBRICANT', '润滑油', 'ISO VG46', '29', '打', 110.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (12, 2, 3001, 'IF20251203004', '轮圈', NULL, '1', '克', 250.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (13, 2, 3002, 'IF20251203005', '轮胎', NULL, '1', '克', 250.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (14, 2, 3003, 'IF20251203006', '辐条', NULL, '1', '克', 10000.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (15, 2, 3004, 'IF20251203007', '把管', NULL, '1', '克', 120.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (16, 2, 3005, 'IF20251203008', '把套', NULL, '1', '克', 250.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_layout_snapshot
@@ -9230,7 +9259,7 @@ CREATE TABLE `wm_layout_snapshot`  (
   INDEX `idx_warehouse_id`(`warehouse_id`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE,
   CONSTRAINT `fk_snapshot_warehouse` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '3D布局快照表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '3D布局快照表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_location_inventory_3d
@@ -9272,7 +9301,7 @@ CREATE TABLE `wm_location_inventory_3d`  (
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_inventory_id`(`inventory_id`) USING BTREE,
   CONSTRAINT `fk_location_inventory_loc` FOREIGN KEY (`location_id`) REFERENCES `wm_storage_location` (`location_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位库存3D视图表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位库存3D视图表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_material_3d_model
@@ -9359,6 +9388,7 @@ CREATE TABLE `wm_material_receive`  (
 -- ----------------------------
 INSERT INTO `wm_material_receive` VALUES (1, 'CGRK20251208002', '测试订单1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'PREPARE', '', NULL, NULL, 0, 0, '', '2025-12-08 14:54:24', '', NULL);
 INSERT INTO `wm_material_receive` VALUES (2, 'CGRK20251208003', '自行车材料入库1', NULL, NULL, 1, 'AN20251204001', NULL, NULL, 1, 'V00005', '北京五道口', '5', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-08 00:00:00', 'FINISHED', '', NULL, NULL, 0, 0, '', '2025-12-08 17:29:54', '', '2025-12-11 16:17:01');
+INSERT INTO `wm_material_receive` VALUES (3, 'CGRK20251212002', '自行车材料2入库', NULL, NULL, 2, 'AN20251212003', NULL, '123', 1, 'V00005', '北京五道口', '五', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-12 00:00:00', 'APPROVING', '', NULL, NULL, 0, 0, '', '2025-12-12 17:32:11', '', NULL);
 
 -- ----------------------------
 -- Table structure for wm_material_receive_detail
@@ -9396,7 +9426,7 @@ CREATE TABLE `wm_material_receive_detail`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`detail_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_material_receive_detail
@@ -9440,7 +9470,7 @@ CREATE TABLE `wm_material_receive_line`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '物料入库单行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_material_receive_line
@@ -9491,13 +9521,63 @@ CREATE TABLE `wm_material_stock`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`stock_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 57 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_material_stock
 -- ----------------------------
-INSERT INTO `wm_material_stock` VALUES (55, NULL, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 20.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '', '2025-12-11 16:17:01', '', '2025-12-11 16:17:01');
-INSERT INTO `wm_material_stock` VALUES (56, NULL, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', NULL, NULL, NULL, NULL, 80.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '', '2025-12-11 16:17:01', '', '2025-12-11 16:17:01');
+INSERT INTO `wm_material_stock` VALUES (55, 5, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 20.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '', '2025-12-11 16:17:01', '', '2025-12-11 16:17:01');
+INSERT INTO `wm_material_stock` VALUES (56, 5, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', NULL, NULL, NULL, NULL, 80.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '', '2025-12-11 16:17:01', '', '2025-12-11 16:17:01');
+
+-- ----------------------------
+-- Table structure for wm_material_stock_tx
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_material_stock_tx`;
+CREATE TABLE `wm_material_stock_tx`  (
+  `tx_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '事务ID',
+  `tx_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '事务类型',
+  `material_id` bigint(0) NOT NULL COMMENT '产品物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '单位',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `batch_id` bigint(0) NULL DEFAULT NULL COMMENT '批次ID',
+  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '批次号',
+  `warehouse_id` bigint(0) NOT NULL COMMENT '仓库ID',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `area_id` bigint(0) NULL DEFAULT NULL COMMENT '库区ID',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `location_id` bigint(0) NULL DEFAULT NULL COMMENT '库位ID',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `package_id` bigint(0) NULL DEFAULT NULL COMMENT '容器ID',
+  `package_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '容器编号',
+  `source_doc_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '单据类型',
+  `source_doc_id` bigint(0) NULL DEFAULT NULL COMMENT '单据ID',
+  `source_doc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '单据编号',
+  `source_doc_line_id` bigint(0) NULL DEFAULT NULL COMMENT '单据行ID',
+  `material_stock_id` bigint(0) NOT NULL COMMENT '库存记录ID',
+  `tx_flag` int(0) NULL DEFAULT 1 COMMENT '库存方向',
+  `tx_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '事务数量',
+  `before_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '变动前数量',
+  `after_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '变动后数量',
+  `tx_date` datetime(0) NULL DEFAULT NULL COMMENT '事务日期',
+  `related_tx_id` bigint(0) NULL DEFAULT NULL COMMENT '关联的事务ID',
+  `erp_date` datetime(0) NULL DEFAULT NULL COMMENT 'ERP账期',
+  `recpt_date` datetime(0) NULL DEFAULT NULL COMMENT '接收日期',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` bigint(0) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` bigint(0) NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`tx_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库存事务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_storage_area
@@ -9540,7 +9620,7 @@ CREATE TABLE `wm_storage_area`  (
   `grid_visible` tinyint(0) NULL DEFAULT 1 COMMENT '是否显示网格',
   `config_json` json NULL COMMENT '3D配置JSON',
   PRIMARY KEY (`area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_storage_area
@@ -9608,7 +9688,7 @@ CREATE TABLE `wm_storage_location`  (
   `last_outbound_time` datetime(0) NULL DEFAULT NULL COMMENT '最后出库时间',
   `config_json` json NULL COMMENT '3D配置JSON数据',
   PRIMARY KEY (`location_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_storage_location
@@ -9667,7 +9747,7 @@ CREATE TABLE `wm_storage_rack_3d`  (
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   CONSTRAINT `fk_rack_area` FOREIGN KEY (`area_id`) REFERENCES `wm_storage_area` (`area_id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `fk_rack_warehouse` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '货架3D配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '货架3D配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wm_warehouse
@@ -9699,7 +9779,7 @@ CREATE TABLE `wm_warehouse`  (
   `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址经度',
   PRIMARY KEY (`warehouse_id`) USING BTREE,
   UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_warehouse
@@ -9739,7 +9819,7 @@ CREATE TABLE `wm_warehouse_3d_config`  (
   PRIMARY KEY (`config_id`) USING BTREE,
   INDEX `idx_warehouse_id`(`warehouse_id`) USING BTREE,
   CONSTRAINT `fk_warehouse_3d_config` FOREIGN KEY (`warehouse_id`) REFERENCES `wm_warehouse` (`warehouse_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库3D配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '仓库3D配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- View structure for vw_location_3d_detail

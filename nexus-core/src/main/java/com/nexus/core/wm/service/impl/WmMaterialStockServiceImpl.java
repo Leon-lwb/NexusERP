@@ -85,7 +85,13 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
      * @return 结果
      */
     @Override
-    public int deleteWmMaterialStockByStockId(Long stockId) {
+    public int deleteWmMaterialStockByStockId(Long stockId)
+    {
         return wmMaterialStockMapper.deleteWmMaterialStockByStockId(stockId);
+    }
+
+    @Override
+    public List<WmMaterialStock> selectByCategoryIds(List<Long> categoryIds) {
+        return wmMaterialStockMapper.selectByCategoryIds(categoryIds);
     }
 }

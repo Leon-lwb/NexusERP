@@ -23,7 +23,7 @@
         <el-input v-model="queryParams.vendorNick" placeholder="请输入供应商简称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="到货日期" prop="arrivalDate">
-        <el-date-picker clearable v-model="queryParams.arrivalDate" type="date" value-format="YYYY-MM-DD"
+        <el-date-picker clearable v-model="queryParams.arrivalDate" type="date" value-format="YYYY-MM-DD" format="yyyy-MM-dd"
           placeholder="请选择到货日期">
         </el-date-picker>
       </el-form-item>
@@ -172,7 +172,7 @@
               <el-date-picker clearable
                 v-model="form.arrivalDate"
                 type="date"
-                value-format="yyyy-MM-dd"
+                value-format="YYYY-MM-DD"
                 placeholder="请选择到货日期" style="width: 100%">
               </el-date-picker>
             </el-form-item>

@@ -58,4 +58,12 @@ public interface WmMaterialStockMapper extends BaseMapper<WmMaterialStock> {
      * @return 结果
      */
     public int deleteWmMaterialStockByStockIds(Long[] stockIds);
+
+    /**
+     * 根据分类ID列表查询库存清单
+     *
+     * @param categoryIds 分类ID列表
+     * @return 库存清单集合
+     */
+    public List<WmMaterialStock> selectByCategoryIds(List<Long> categoryIds);
 }

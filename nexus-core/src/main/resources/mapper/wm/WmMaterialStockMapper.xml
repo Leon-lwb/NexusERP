@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nexus.core.wm.mapper.WmMaterialStockMapper">
 
     <resultMap type="WmMaterialStock" id="WmMaterialStockResult">
@@ -87,6 +87,14 @@
     <select id="selectWmMaterialStockByStockId" parameterType="Long" resultMap="WmMaterialStockResult">
             <include refid="selectWmMaterialStockVo"/>
             where stock_id = #{stockId}
+    </select>
+
+    <select id="selectByCategoryIds" parameterType="list" resultMap="WmMaterialStockResult">
+        <include refid="selectWmMaterialStockVo"/>
+        WHERE category_id IN
+        <foreach item="id" collection="categoryIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </select>
 
     <insert id="insertWmMaterialStock" parameterType="WmMaterialStock" useGeneratedKeys="true" keyProperty="stockId">

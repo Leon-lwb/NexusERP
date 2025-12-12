@@ -42,3 +42,11 @@ export function delStock(stockId) {
     method: 'delete'
   })
 }
+
+// 获取指定分类及其子分类列表及库存数据
+export function getCategoryStocks(categoryIds) {
+  return request({
+    url: '/wm/stock/categoryStocks/' + categoryIds,
+    method: 'get'
+  })
+}

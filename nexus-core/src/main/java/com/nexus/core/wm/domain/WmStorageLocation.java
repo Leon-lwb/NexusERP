@@ -2,6 +2,7 @@ package com.nexus.core.wm.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -22,118 +23,211 @@ import com.nexus.common.core.domain.BaseEntity;
 @AllArgsConstructor
 @NoArgsConstructor
 @TableName(resultMap = "com.nexus.core.wm.mapper.WmStorageLocationMapper.WmStorageLocationResult")
-public class WmStorageLocation extends BaseEntity
-        {
-private static final long serialVersionUID = 1L;
+public class WmStorageLocation extends BaseEntity {
+    private static final long serialVersionUID = 1L;
 
-    /** 库位ID */
-    @TableId(value = "location_id",type = IdType.AUTO)
+    /**
+     * 库位ID
+     */
+    @TableId(value = "location_id", type = IdType.AUTO)
     private Long locationId;
-    /** 库位编码 */
+    /**
+     * 库位编码
+     */
     @Excel(name = "库位编码")
     private String locationCode;
-    /** 库位名称 */
+    /**
+     * 库位名称
+     */
     @Excel(name = "库位名称")
     private String locationName;
-    /** 库区ID */
+    /**
+     * 库区ID
+     */
     private Long areaId;
-    /** 面积 */
+    /**
+     * 面积
+     */
     @Excel(name = "面积")
     private BigDecimal area;
-    /** 最大载重量 */
+    /**
+     * 最大载重量
+     */
     @Excel(name = "最大载重量")
     private BigDecimal maxLoa;
-    /** 库位位置X */
+    /**
+     * 库位位置X
+     */
     private Long positionX;
-    /** 库位位置y */
+    /**
+     * 库位位置y
+     */
     private Long positionY;
-    /** 库位位置z */
+    /**
+     * 库位位置z
+     */
     private Long positionZ;
-    /** 是否允许产品混放 */
+    /**
+     * 是否允许产品混放
+     */
     @Excel(name = "是否允许产品混放")
     private Long productMixing;
-    /** 是否允许批次混放 */
+    /**
+     * 是否允许批次混放
+     */
     @Excel(name = "是否允许批次混放")
     private Long batchMixing;
-    /** 是否启用 */
+    /**
+     * 是否启用
+     */
     @Excel(name = "是否启用")
     private Long enableFlag;
-    /** 是否冻结 */
+    /**
+     * 是否冻结
+     */
     @Excel(name = "是否冻结")
     private Long frozenFlag;
-    /** 预留字段1 */
+    /**
+     * 预留字段1
+     */
     private String attr1;
-    /** 预留字段2 */
+    /**
+     * 预留字段2
+     */
     private String attr2;
-    /** 预留字段3 */
+    /**
+     * 预留字段3
+     */
     private Long attr3;
-    /** 预留字段4 */
+    /**
+     * 预留字段4
+     */
     private Long attr4;
-    /** 库位类型 */
+    /**
+     * 库位类型
+     */
     @Excel(name = "库位类型")
     private String locationType;
-    /** 所属货架ID */
+    /**
+     * 所属货架ID
+     */
     private String rackId;
-    /** 层数(从下往上) */
+    /**
+     * 层数(从下往上)
+     */
     private Long layer;
-    /** 列数(从左往右) */
+    /**
+     * 列数(从左往右)
+     */
     private Long col;
-    /** 行数(从前到后) */
+    /**
+     * 行数(从前到后)
+     */
     private Long rowNum;
-    /** 3D坐标X(米) */
+    /**
+     * 3D坐标X(米)
+     */
     private BigDecimal posX;
-    /** 3D坐标Y(米) */
+    /**
+     * 3D坐标Y(米)
+     */
     private BigDecimal posY;
-    /** 3D坐标Z(米) */
+    /**
+     * 3D坐标Z(米)
+     */
     private BigDecimal posZ;
-    /** 库位宽度(米) */
+    /**
+     * 库位宽度(米)
+     */
     private BigDecimal width;
-    /** 库位高度(米) */
+    /**
+     * 库位高度(米)
+     */
     private BigDecimal height;
-    /** 库位深度(米) */
+    /**
+     * 库位深度(米)
+     */
     private BigDecimal locationDepth;
-    /** X轴旋转角度 */
+    /**
+     * X轴旋转角度
+     */
     private BigDecimal rotationX;
-    /** Y轴旋转角度 */
+    /**
+     * Y轴旋转角度
+     */
     private BigDecimal rotationY;
-    /** Z轴旋转角度 */
+    /**
+     * Z轴旋转角度
+     */
     private BigDecimal rotationZ;
-    /** 空置时颜色 */
+    /**
+     * 空置时颜色
+     */
     private String colorEmpty;
-    /** 占用时颜色 */
+    /**
+     * 占用时颜色
+     */
     private String colorOccupied;
-    /** 锁定时颜色 */
+    /**
+     * 锁定时颜色
+     */
     private String colorLocked;
-    /** 预警时颜色 */
+    /**
+     * 预警时颜色
+     */
     private String colorWarning;
-    /** 透明度 */
+    /**
+     * 透明度
+     */
     private BigDecimal opacity;
-    /** 是否显示边框 */
+    /**
+     * 是否显示边框
+     */
     private Long showBorder;
-    /** 边框颜色 */
+    /**
+     * 边框颜色
+     */
     private String borderColor;
-    /** 边框宽度 */
+    /**
+     * 边框宽度
+     */
     private BigDecimal borderWidth;
-    /** 是否显示标签 */
+    /**
+     * 是否显示标签
+     */
     private Long showLabel;
-    /** 置: TOP-顶部, FRONT-前面标签位 */
+    /**
+     * 置: TOP-顶部, FRONT-前面标签位
+     */
     private String labelPosition;
-    /** 标签大小 */
+    /**
+     * 标签大小
+     */
     private BigDecimal labelSize;
-    /** 库位状态 */
+    /**
+     * 库位状态
+     */
     @Excel(name = "库位状态")
     private Long status;
-    /** 占用率(0-100) */
+    /**
+     * 占用率(0-100)
+     */
     @Excel(name = "占用率(0-100)")
     private BigDecimal occupancyRate;
-    /** 最后入库时间 */
+    /**
+     * 最后入库时间
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "最后入库时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date lastInboundTime;
-    /** 最后出库时间 */
+    /**
+     * 最后出库时间
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "最后出库时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date lastOutboundTime;
-    /** 3D配置JSON数据 */
+    /**
+     * 3D配置JSON数据
+     */
     private String configJson;
 }

@@ -3,6 +3,7 @@ package com.nexus.core.wm.controller;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.util.List;
+import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,10 @@ import com.nexus.core.wm.domain.WmMaterialStock;
 import com.nexus.core.wm.service.IWmMaterialStockService;
 import com.nexus.common.utils.poi.ExcelUtil;
 import com.nexus.common.core.page.TableDataInfo;
+import com.nexus.core.bd.domain.BdMaterialCategory;
+import com.nexus.core.bd.service.IBdMaterialCategoryService;
+import com.nexus.core.wm.domain.vo.CategoryWithStockVo;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 库存清单Controller
@@ -36,6 +41,9 @@ public class WmMaterialStockController extends BaseController
 {
     @Autowired
     private IWmMaterialStockService wmMaterialStockService;
+
+    @Autowired
+    private IBdMaterialCategoryService bdMaterialCategoryService;
 
     /**
      * 查询库存清单列表
@@ -109,5 +117,32 @@ public class WmMaterialStockController extends BaseController
     public AjaxResult remove(@PathVariable Long[] stockIds)
     {
         return toAjax(wmMaterialStockService.deleteWmMaterialStockByStockIds(stockIds));
+    }
+
+    /**
+     * 获取指定分类及其子分类列表及库存数据
+     */
+    @ApiOperation("获取指定分类及其子分类列表及库存数据")
+    @GetMapping("/categoryStocks/{categoryIds}")
+    public AjaxResult getCategoryStocks(@PathVariable Long[] categoryIds)
+    {
+        if (categoryIds == null || categoryIds.length == 0) {
+            return success(new CategoryWithStockVo());
+        }
+
+        // 获取分类及其子分类
+        List<BdMaterialCategory> categories = bdMaterialCategoryService.selectAllChildrenIds(categoryIds);
+
+        // 查询这些分类下的库存数据
+        List<Long> categoryIdsList = categories.stream()
+                .map(BdMaterialCategory::getCategoryId)
+                .collect(Collectors.toList());
+        List<WmMaterialStock> stocks = wmMaterialStockService.selectByCategoryIds(categoryIdsList);
+
+        CategoryWithStockVo result = new CategoryWithStockVo();
+        result.setCategories(categories);
+        result.setStocks(stocks);
+
+        return success(result);
     }
 }

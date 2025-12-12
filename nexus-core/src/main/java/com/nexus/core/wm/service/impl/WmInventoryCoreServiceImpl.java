@@ -3,15 +3,21 @@ package com.nexus.core.wm.service.impl;
 import com.nexus.common.core.domain.AjaxResult;
 import com.nexus.common.constant.NexusConstants;
 import com.nexus.common.utils.StringUtils;
+import com.nexus.common.utils.SecurityUtils;
+import com.nexus.common.utils.bean.BeanUtils;
 import com.nexus.core.wm.domain.WmMaterialReceive;
 import com.nexus.core.wm.domain.WmMaterialReceiveLine;
 import com.nexus.core.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.core.wm.domain.WmMaterialStock;
 import com.nexus.core.wm.domain.WmArrivalNotice;
+import com.nexus.core.wm.domain.WmMaterialStockTx;
+import com.nexus.core.bd.domain.BdMaterial;
 import com.nexus.core.wm.service.IWmMaterialReceiveService;
 import com.nexus.core.wm.service.IWmMaterialStockService;
 import com.nexus.core.wm.service.IWmArrivalNoticeService;
 import com.nexus.core.wm.service.IWmInventoryCoreService;
+import com.nexus.core.wm.service.IWmMaterialStockTxService;
+import com.nexus.core.bd.service.IBdMaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +43,12 @@ public class WmInventoryCoreServiceImpl implements IWmInventoryCoreService {
 
     @Autowired
     private IWmArrivalNoticeService wmArrivalNoticeService;
+
+    @Autowired
+    private IWmMaterialStockTxService wmMaterialStockTxService;
+
+    @Autowired
+    private IBdMaterialService bdMaterialService;
 
     /**
      * 执行物料入库
@@ -77,28 +89,28 @@ public class WmInventoryCoreServiceImpl implements IWmInventoryCoreService {
 
                             // 构造库存对象，从明细中获取所有必要字段
                             WmMaterialStock stock = new WmMaterialStock();
-                            stock.setMaterialId(detail.getMaterialId());
-                            stock.setMaterialCode(detail.getMaterialCode());
-                            stock.setMaterialName(detail.getMaterialName());
-                            stock.setMaterialSpec(detail.getMaterialSpec());
-                            stock.setBaseUomId(detail.getBaseUomId());
-                            stock.setBaseUomName(detail.getBaseUomName());
-                            stock.setBatchId(detail.getBatchId());
-                            stock.setBatchCode(detail.getBatchCode());
-                            stock.setWarehouseId(detail.getWarehouseId());
-                            stock.setWarehouseCode(detail.getWarehouseCode());
-                            stock.setWarehouseName(detail.getWarehouseName());
-                            stock.setAreaId(detail.getAreaId());
-                            stock.setAreaCode(detail.getAreaCode());
-                            stock.setAreaName(detail.getAreaName());
-                            stock.setLocationId(detail.getLocationId());
-                            stock.setLocationCode(detail.getLocationCode());
-                            stock.setLocationName(detail.getLocationName());
+                            
+                            // 使用BeanUtils复制相同属性
+                            BeanUtils.copyBeanProp(stock, detail);
+                            
+                            // 通过materialId查询物料信息获取categoryId
+                            BdMaterial material = bdMaterialService.selectBdMaterialByMaterialId(detail.getMaterialId());
+                            if (material != null && material.getCategoryId() != null) {
+                                stock.setCategoryId(material.getCategoryId());
+                            }
+                            
+                            // 设置其他特殊字段
                             stock.setStockQuantity(detail.getQuantity());
                             stock.setRecptDate(new Date());
+                            
+                            // 从主表获取供应商信息
+                            stock.setVendorId(recpt.getVendorId());
+                            stock.setVendorCode(recpt.getVendorCode());
+                            stock.setVendorName(recpt.getVendorName());
+                            stock.setVendorNick(recpt.getVendorNick());
 
-                            // 处理库存事务
-                            processTransaction(stock, 1); // 1表示入库增加库存
+                            // 处理库存转移事务
+                            processStockTransferTransaction(stock, detail.getQuantity());
                         }
                     } else {
                         // 如果没有明细，则从行项目本身获取信息（向后兼容）
@@ -111,28 +123,28 @@ public class WmInventoryCoreServiceImpl implements IWmInventoryCoreService {
                         }
 
                         WmMaterialStock stock = new WmMaterialStock();
-                        stock.setMaterialId(line.getMaterialId());
-                        stock.setMaterialCode(line.getMaterialCode());
-                        stock.setMaterialName(line.getMaterialName());
-                        stock.setMaterialSpec(line.getMaterialSpec());
-                        stock.setBaseUomId(line.getBaseUomId());
-                        stock.setBaseUomName(line.getBaseUomName());
-                        stock.setBatchId(line.getBatchId());
-                        stock.setBatchCode(line.getBatchCode());
-                        stock.setWarehouseId(line.getWarehouseId());
-                        stock.setWarehouseCode(line.getWarehouseCode());
-                        stock.setWarehouseName(line.getWarehouseName());
-                        stock.setAreaId(line.getAreaId());
-                        stock.setAreaCode(line.getAreaCode());
-                        stock.setAreaName(line.getAreaName());
-                        stock.setLocationId(line.getLocationId());
-                        stock.setLocationCode(line.getLocationCode());
-                        stock.setLocationName(line.getLocationName());
+                        
+                        // 使用BeanUtils复制相同属性
+                        BeanUtils.copyBeanProp(stock, line);
+                        
+                        // 通过materialId查询物料信息获取categoryId
+                        BdMaterial material = bdMaterialService.selectBdMaterialByMaterialId(line.getMaterialId());
+                        if (material != null && material.getCategoryId() != null) {
+                            stock.setCategoryId(material.getCategoryId());
+                        }
+                        
+                        // 设置其他特殊字段
                         stock.setStockQuantity(line.getQuantityReceived());
                         stock.setRecptDate(new Date());
+                        
+                        // 从主表获取供应商信息
+                        stock.setVendorId(recpt.getVendorId());
+                        stock.setVendorCode(recpt.getVendorCode());
+                        stock.setVendorName(recpt.getVendorName());
+                        stock.setVendorNick(recpt.getVendorNick());
 
-                        // 处理库存事务
-                        processTransaction(stock, 1); // 1表示入库增加库存
+                        // 处理库存转移事务
+                        processStockTransferTransaction(stock, line.getQuantityReceived());
                     }
                 }
             }
@@ -174,12 +186,10 @@ public class WmInventoryCoreServiceImpl implements IWmInventoryCoreService {
 
         // 查询现有库存
         WmMaterialStock condition = new WmMaterialStock();
-        condition.setMaterialId(stock.getMaterialId());
-        condition.setWarehouseId(stock.getWarehouseId());
-        condition.setAreaId(stock.getAreaId());
-        condition.setLocationId(stock.getLocationId());
-        condition.setBatchId(stock.getBatchId());
-
+        
+        // 使用BeanUtils复制查询条件
+        BeanUtils.copyBeanProp(condition, stock);
+        
         List<WmMaterialStock> existingStocks = wmMaterialStockService.selectWmMaterialStockList(condition);
 
         if (existingStocks != null && !existingStocks.isEmpty()) {
@@ -196,6 +206,11 @@ public class WmInventoryCoreServiceImpl implements IWmInventoryCoreService {
             existingStock.setStockQuantity(resultQuantity);
             existingStock.setUpdateTime(new Date());
             wmMaterialStockService.updateWmMaterialStock(existingStock);
+            
+            // 记录库存事务
+            recordStockTransaction(stock, transactionFlag, stock.getStockQuantity(), 
+                               existingStock.getStockQuantity().subtract(transactionQuantity), resultQuantity, 
+                               existingStock.getStockId());
         } else {
             // 如果库存记录不存在，新增记录
             if (transactionFlag == 1) {
@@ -203,9 +218,184 @@ public class WmInventoryCoreServiceImpl implements IWmInventoryCoreService {
                 stock.setCreateTime(new Date());
                 stock.setUpdateTime(new Date());
                 wmMaterialStockService.insertWmMaterialStock(stock);
+                
+                // 记录库存事务
+                recordStockTransaction(stock, transactionFlag, stock.getStockQuantity(), 
+                                   BigDecimal.ZERO, stock.getStockQuantity(), 
+                                   stock.getStockId());
             } else {
                 throw new RuntimeException("库存记录不存在，无法执行出库操作！");
             }
+        }
+    }
+
+    /**
+     * 处理库存转移事务（从虚拟库位到目标库位）
+     * 
+     * @param stock 库存对象
+     * @param transactionQuantity 事务数量
+     */
+    private void processStockTransferTransaction(WmMaterialStock stock, BigDecimal transactionQuantity) {
+        Date now = new Date();
+        
+        // 1. 查询虚拟库位库存（假设虚拟库位ID为0或其他特定值）
+        WmMaterialStock virtualCondition = new WmMaterialStock();
+        
+        // 使用BeanUtils复制查询条件
+        BeanUtils.copyBeanProp(virtualCondition, stock);
+        
+        // 设置虚拟库位的特殊条件
+        virtualCondition.setAreaId(0L); // 虚拟库区ID
+        virtualCondition.setLocationId(0L); // 虚拟库位ID
+        
+        List<WmMaterialStock> virtualStocks = wmMaterialStockService.selectWmMaterialStockList(virtualCondition);
+        WmMaterialStock virtualStock = (virtualStocks != null && !virtualStocks.isEmpty()) ? virtualStocks.get(0) : null;
+        
+        // 2. 查询目标库位库存
+        WmMaterialStock targetCondition = new WmMaterialStock();
+        
+        // 使用BeanUtils复制查询条件
+        BeanUtils.copyBeanProp(targetCondition, stock);
+        
+        List<WmMaterialStock> targetStocks = wmMaterialStockService.selectWmMaterialStockList(targetCondition);
+        WmMaterialStock targetStock = (targetStocks != null && !targetStocks.isEmpty()) ? targetStocks.get(0) : null;
+        
+        // 3. 处理库存转移
+        processStockTransfer(stock, virtualStock, targetStock, transactionQuantity);
+    }
+
+    /**
+     * 处理库存转移事务（从虚拟库位到目标库位）
+     * 
+     * @param stock 库存对象
+     * @param virtualLocationStock 虚拟库位库存对象
+     * @param targetLocationStock 目标库位库存对象
+     * @param transactionQuantity 事务数量
+     */
+    private void processStockTransfer(WmMaterialStock stock, WmMaterialStock virtualLocationStock, 
+                                   WmMaterialStock targetLocationStock, BigDecimal transactionQuantity) {
+        Date now = new Date();
+        
+        // 1. 处理虚拟库位出库事务
+        if (virtualLocationStock != null) {
+            // 减少虚拟库位库存数量
+            BigDecimal virtualBeforeQuantity = virtualLocationStock.getStockQuantity();
+            BigDecimal virtualAfterQuantity = virtualBeforeQuantity.subtract(transactionQuantity);
+            
+            // 检查虚拟库位库存是否足够
+            if (virtualAfterQuantity.compareTo(BigDecimal.ZERO) < 0) {
+                throw new RuntimeException("虚拟库位库存不足！");
+            }
+            
+            // 更新虚拟库位库存
+            virtualLocationStock.setStockQuantity(virtualAfterQuantity);
+            virtualLocationStock.setUpdateTime(now);
+            wmMaterialStockService.updateWmMaterialStock(virtualLocationStock);
+            
+            // 记录虚拟库位出库事务
+            recordStockTransaction(stock, -1, transactionQuantity, virtualBeforeQuantity, 
+                                virtualAfterQuantity, virtualLocationStock.getStockId(), "VIRTUAL_OUT");
+        }
+        
+        // 2. 处理目标库位入库事务
+        if (targetLocationStock != null) {
+            // 增加目标库位库存数量
+            BigDecimal targetBeforeQuantity = targetLocationStock.getStockQuantity();
+            BigDecimal targetAfterQuantity = targetBeforeQuantity.add(transactionQuantity);
+            
+            // 更新目标库位库存
+            targetLocationStock.setStockQuantity(targetAfterQuantity);
+            targetLocationStock.setUpdateTime(now);
+            wmMaterialStockService.updateWmMaterialStock(targetLocationStock);
+            
+            // 记录目标库位入库事务
+            recordStockTransaction(stock, 1, transactionQuantity, targetBeforeQuantity, 
+                                targetAfterQuantity, targetLocationStock.getStockId(), "TARGET_IN");
+        } else {
+            // 如果目标库位没有库存记录，则创建新记录
+            WmMaterialStock newStock = new WmMaterialStock();
+            
+            // 使用BeanUtils复制相同属性
+            BeanUtils.copyBeanProp(newStock, stock);
+            
+            newStock.setStockQuantity(transactionQuantity);
+            newStock.setRecptDate(stock.getRecptDate());
+            newStock.setCreateTime(now);
+            newStock.setUpdateTime(now);
+            
+            wmMaterialStockService.insertWmMaterialStock(newStock);
+            
+            // 记录目标库位入库事务
+            recordStockTransaction(stock, 1, transactionQuantity, BigDecimal.ZERO, 
+                                transactionQuantity, newStock.getStockId(), "TARGET_IN");
+        }
+    }
+
+    /**
+     * 记录库存事务
+     * 
+     * @param stock 库存对象
+     * @param transactionFlag 事务标记：1表示增加库存，-1表示减少库存
+     * @param transactionQuantity 事务数量
+     * @param beforeQuantity 变动前数量
+     * @param afterQuantity 变动后数量
+     * @param stockId 库存记录ID
+     * @param txType 事务类型
+     */
+    private void recordStockTransaction(WmMaterialStock stock, int transactionFlag, BigDecimal transactionQuantity, 
+                                 BigDecimal beforeQuantity, BigDecimal afterQuantity, Long stockId, String txType) {
+        WmMaterialStockTx stockTx = new WmMaterialStockTx();
+        
+        // 使用BeanUtils复制相同属性
+        BeanUtils.copyBeanProp(stockTx, stock);
+        
+        // 基本信息
+        stockTx.setTxType(txType); // 事务类型
+        
+        // 事务信息
+        stockTx.setMaterialStockId(stockId);
+        stockTx.setTxFlag(transactionFlag);
+        stockTx.setTxQuantity(transactionQuantity);
+        stockTx.setTxDate(new Date());
+        stockTx.setRecptDate(stock.getRecptDate());
+        
+        // 数量信息
+        stockTx.setBeforeQuantity(beforeQuantity);
+        stockTx.setAfterQuantity(afterQuantity);
+        
+        // 操作信息
+        stockTx.setCreateBy(getUsername());
+        stockTx.setCreateTime(new Date());
+        
+        // 保存事务记录
+        wmMaterialStockTxService.insertWmMaterialStockTx(stockTx);
+    }
+
+    /**
+     * 记录库存事务
+     * 
+     * @param stock 库存对象
+     * @param transactionFlag 事务标记：1表示增加库存，-1表示减少库存
+     * @param transactionQuantity 事务数量
+     * @param beforeQuantity 变动前数量
+     * @param afterQuantity 变动后数量
+     * @param stockId 库存记录ID
+     */
+    private void recordStockTransaction(WmMaterialStock stock, int transactionFlag, BigDecimal transactionQuantity, 
+                                 BigDecimal beforeQuantity, BigDecimal afterQuantity, Long stockId) {
+        recordStockTransaction(stock, transactionFlag, transactionQuantity, beforeQuantity, afterQuantity, stockId, "INVENTORY_UPDATE");
+    }
+
+    /**
+     * 获取当前登录用户名
+     * 
+     * @return 用户名
+     */
+    private String getUsername() {
+        try {
+            return SecurityUtils.getUsername();
+        } catch (Exception e) {
+            return "admin"; // 默认用户名
         }
     }
 }

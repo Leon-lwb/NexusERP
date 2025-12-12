@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.wm.mapper.WmMaterialStockTxMapper">
+
+    <resultMap type="WmMaterialStockTx" id="WmMaterialStockTxResult">
+        <result property="txId" column="tx_id"/>
+        <result property="txType" column="tx_type"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="materialSpec" column="material_spec"/>
+        <result property="baseUomId" column="base_uom_id"/>
+        <result property="baseUomName" column="base_uom_name"/>
+        <result property="batchId" column="batch_id"/>
+        <result property="batchCode" column="batch_code"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="warehouseCode" column="warehouse_code"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="areaId" column="area_id"/>
+        <result property="areaCode" column="area_code"/>
+        <result property="areaName" column="area_name"/>
+        <result property="locationId" column="location_id"/>
+        <result property="locationCode" column="location_code"/>
+        <result property="locationName" column="location_name"/>
+        <result property="packageId" column="package_id"/>
+        <result property="packageCode" column="package_code"/>
+        <result property="sourceDocType" column="source_doc_type"/>
+        <result property="sourceDocId" column="source_doc_id"/>
+        <result property="sourceDocCode" column="source_doc_code"/>
+        <result property="sourceDocLineId" column="source_doc_line_id"/>
+        <result property="materialStockId" column="material_stock_id"/>
+        <result property="txFlag" column="tx_flag"/>
+        <result property="txQuantity" column="tx_quantity"/>
+        <result property="beforeQuantity" column="before_quantity"/>
+        <result property="afterQuantity" column="after_quantity"/>
+        <result property="txDate" column="tx_date"/>
+        <result property="relatedTxId" column="related_tx_id"/>
+        <result property="erpDate" column="erp_date"/>
+        <result property="recptDate" column="recpt_date"/>
+        <result property="attr1" column="attr1"/>
+        <result property="attr2" column="attr2"/>
+        <result property="attr3" column="attr3"/>
+        <result property="attr4" column="attr4"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectWmMaterialStockTxVo">
+        select tx_id, tx_type, material_id, material_code, material_name, material_spec, base_uom_id, base_uom_name, batch_id, batch_code, warehouse_id, warehouse_code, warehouse_name, area_id, area_code, area_name, location_id, location_code, location_name, package_id, package_code, source_doc_type, source_doc_id, source_doc_code, source_doc_line_id, material_stock_id, tx_flag, tx_quantity, before_quantity, after_quantity, tx_date, related_tx_id, erp_date, recpt_date, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time from wm_material_stock_tx
+    </sql>
+
+    <select id="selectWmMaterialStockTxList" parameterType="WmMaterialStockTx" resultMap="WmMaterialStockTxResult">
+        <include refid="selectWmMaterialStockTxVo"/>
+        <where>
+            <if test="txType != null  and txType != ''">and tx_type = #{txType}</if>
+            <if test="materialId != null ">and material_id = #{materialId}</if>
+            <if test="materialCode != null  and materialCode != ''">and material_code = #{materialCode}</if>
+            <if test="materialName != null  and materialName != ''">and material_name like concat('%', #{materialName}, '%')</if>
+            <if test="materialSpec != null  and materialSpec != ''">and material_spec = #{materialSpec}</if>
+            <if test="baseUomId != null  and baseUomId != ''">and base_uom_id = #{baseUomId}</if>
+            <if test="baseUomName != null  and baseUomName != ''">and base_uom_name like concat('%', #{baseUomName}, '%')</if>
+            <if test="batchId != null ">and batch_id = #{batchId}</if>
+            <if test="batchCode != null  and batchCode != ''">and batch_code = #{batchCode}</if>
+            <if test="warehouseId != null ">and warehouse_id = #{warehouseId}</if>
+            <if test="warehouseCode != null  and warehouseCode != ''">and warehouse_code = #{warehouseCode}</if>
+            <if test="warehouseName != null  and warehouseName != ''">and warehouse_name like concat('%', #{warehouseName}, '%')</if>
+            <if test="areaId != null ">and area_id = #{areaId}</if>
+            <if test="areaCode != null  and areaCode != ''">and area_code = #{areaCode}</if>
+            <if test="areaName != null  and areaName != ''">and area_name like concat('%', #{areaName}, '%')</if>
+            <if test="locationId != null ">and location_id = #{locationId}</if>
+            <if test="locationCode != null  and locationCode != ''">and location_code = #{locationCode}</if>
+            <if test="locationName != null  and locationName != ''">and location_name like concat('%', #{locationName}, '%')</if>
+            <if test="packageId != null ">and package_id = #{packageId}</if>
+            <if test="packageCode != null  and packageCode != ''">and package_code = #{packageCode}</if>
+            <if test="sourceDocType != null  and sourceDocType != ''">and source_doc_type = #{sourceDocType}</if>
+            <if test="sourceDocId != null ">and source_doc_id = #{sourceDocId}</if>
+            <if test="sourceDocCode != null  and sourceDocCode != ''">and source_doc_code = #{sourceDocCode}</if>
+            <if test="sourceDocLineId != null ">and source_doc_line_id = #{sourceDocLineId}</if>
+            <if test="materialStockId != null ">and material_stock_id = #{materialStockId}</if>
+            <if test="txFlag != null ">and tx_flag = #{txFlag}</if>
+            <if test="txQuantity != null ">and tx_quantity = #{txQuantity}</if>
+            <if test="beforeQuantity != null ">and before_quantity = #{beforeQuantity}</if>
+            <if test="afterQuantity != null ">and after_quantity = #{afterQuantity}</if>
+            <if test="txDate != null ">and tx_date = #{txDate}</if>
+            <if test="relatedTxId != null ">and related_tx_id = #{relatedTxId}</if>
+            <if test="erpDate != null ">and erp_date = #{erpDate}</if>
+            <if test="recptDate != null ">and recpt_date = #{recptDate}</if>
+        </where>
+    </select>
+
+    <select id="selectWmMaterialStockTxByTxId" parameterType="Long" resultMap="WmMaterialStockTxResult">
+        <include refid="selectWmMaterialStockTxVo"/>
+        where tx_id = #{txId}
+    </select>
+
+    <insert id="insertWmMaterialStockTx" parameterType="WmMaterialStockTx" useGeneratedKeys="true" keyProperty="txId">
+        insert into wm_material_stock_tx
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="txType != null">tx_type,</if>
+            <if test="materialId != null">material_id,</if>
+            <if test="materialCode != null">material_code,</if>
+            <if test="materialName != null">material_name,</if>
+            <if test="materialSpec != null">material_spec,</if>
+            <if test="baseUomId != null">base_uom_id,</if>
+            <if test="baseUomName != null">base_uom_name,</if>
+            <if test="batchId != null">batch_id,</if>
+            <if test="batchCode != null">batch_code,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="warehouseCode != null">warehouse_code,</if>
+            <if test="warehouseName != null">warehouse_name,</if>
+            <if test="areaId != null">area_id,</if>
+            <if test="areaCode != null">area_code,</if>
+            <if test="areaName != null">area_name,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="locationCode != null">location_code,</if>
+            <if test="locationName != null">location_name,</if>
+            <if test="packageId != null">package_id,</if>
+            <if test="packageCode != null">package_code,</if>
+            <if test="sourceDocType != null">source_doc_type,</if>
+            <if test="sourceDocId != null">source_doc_id,</if>
+            <if test="sourceDocCode != null">source_doc_code,</if>
+            <if test="sourceDocLineId != null">source_doc_line_id,</if>
+            <if test="materialStockId != null">material_stock_id,</if>
+            <if test="txFlag != null">tx_flag,</if>
+            <if test="txQuantity != null">tx_quantity,</if>
+            <if test="beforeQuantity != null">before_quantity,</if>
+            <if test="afterQuantity != null">after_quantity,</if>
+            <if test="txDate != null">tx_date,</if>
+            <if test="relatedTxId != null">related_tx_id,</if>
+            <if test="erpDate != null">erp_date,</if>
+            <if test="recptDate != null">recpt_date,</if>
+            <if test="attr1 != null">attr1,</if>
+            <if test="attr2 != null">attr2,</if>
+            <if test="attr3 != null">attr3,</if>
+            <if test="attr4 != null">attr4,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="txType != null">#{txType},</if>
+            <if test="materialId != null">#{materialId},</if>
+            <if test="materialCode != null">#{materialCode},</if>
+            <if test="materialName != null">#{materialName},</if>
+            <if test="materialSpec != null">#{materialSpec},</if>
+            <if test="baseUomId != null">#{baseUomId},</if>
+            <if test="baseUomName != null">#{baseUomName},</if>
+            <if test="batchId != null">#{batchId},</if>
+            <if test="batchCode != null">#{batchCode},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="warehouseCode != null">#{warehouseCode},</if>
+            <if test="warehouseName != null">#{warehouseName},</if>
+            <if test="areaId != null">#{areaId},</if>
+            <if test="areaCode != null">#{areaCode},</if>
+            <if test="areaName != null">#{areaName},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="locationCode != null">#{locationCode},</if>
+            <if test="locationName != null">#{locationName},</if>
+            <if test="packageId != null">#{packageId},</if>
+            <if test="packageCode != null">#{packageCode},</if>
+            <if test="sourceDocType != null">#{sourceDocType},</if>
+            <if test="sourceDocId != null">#{sourceDocId},</if>
+            <if test="sourceDocCode != null">#{sourceDocCode},</if>
+            <if test="sourceDocLineId != null">#{sourceDocLineId},</if>
+            <if test="materialStockId != null">#{materialStockId},</if>
+            <if test="txFlag != null">#{txFlag},</if>
+            <if test="txQuantity != null">#{txQuantity},</if>
+            <if test="beforeQuantity != null">#{beforeQuantity},</if>
+            <if test="afterQuantity != null">#{afterQuantity},</if>
+            <if test="txDate != null">#{txDate},</if>
+            <if test="relatedTxId != null">#{relatedTxId},</if>
+            <if test="erpDate != null">#{erpDate},</if>
+            <if test="recptDate != null">#{recptDate},</if>
+            <if test="attr1 != null">#{attr1},</if>
+            <if test="attr2 != null">#{attr2},</if>
+            <if test="attr3 != null">#{attr3},</if>
+            <if test="attr4 != null">#{attr4},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWmMaterialStockTx" parameterType="WmMaterialStockTx">
+        update wm_material_stock_tx
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="txType != null">tx_type = #{txType},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="materialSpec != null">material_spec = #{materialSpec},</if>
+            <if test="baseUomId != null">base_uom_id = #{baseUomId},</if>
+            <if test="baseUomName != null">base_uom_name = #{baseUomName},</if>
+            <if test="batchId != null">batch_id = #{batchId},</if>
+            <if test="batchCode != null">batch_code = #{batchCode},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="warehouseCode != null">warehouse_code = #{warehouseCode},</if>
+            <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
+            <if test="areaId != null">area_id = #{areaId},</if>
+            <if test="areaCode != null">area_code = #{areaCode},</if>
+            <if test="areaName != null">area_name = #{areaName},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="locationCode != null">location_code = #{locationCode},</if>
+            <if test="locationName != null">location_name = #{locationName},</if>
+            <if test="packageId != null">package_id = #{packageId},</if>
+            <if test="packageCode != null">package_code = #{packageCode},</if>
+            <if test="sourceDocType != null">source_doc_type = #{sourceDocType},</if>
+            <if test="sourceDocId != null">source_doc_id = #{sourceDocId},</if>
+            <if test="sourceDocCode != null">source_doc_code = #{sourceDocCode},</if>
+            <if test="sourceDocLineId != null">source_doc_line_id = #{sourceDocLineId},</if>
+            <if test="materialStockId != null">material_stock_id = #{materialStockId},</if>
+            <if test="txFlag != null">tx_flag = #{txFlag},</if>
+            <if test="txQuantity != null">tx_quantity = #{txQuantity},</if>
+            <if test="beforeQuantity != null">before_quantity = #{beforeQuantity},</if>
+            <if test="afterQuantity != null">after_quantity = #{afterQuantity},</if>
+            <if test="txDate != null">tx_date = #{txDate},</if>
+            <if test="relatedTxId != null">related_tx_id = #{relatedTxId},</if>
+            <if test="erpDate != null">erp_date = #{erpDate},</if>
+            <if test="recptDate != null">recpt_date = #{recptDate},</if>
+            <if test="attr1 != null">attr1 = #{attr1},</if>
+            <if test="attr2 != null">attr2 = #{attr2},</if>
+            <if test="attr3 != null">attr3 = #{attr3},</if>
+            <if test="attr4 != null">attr4 = #{attr4},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where tx_id = #{txId}
+    </update>
+
+    <delete id="deleteWmMaterialStockTxByTxId" parameterType="Long">
+        delete from wm_material_stock_tx where tx_id = #{txId}
+    </delete>
+
+    <delete id="deleteWmMaterialStockTxByTxIds" parameterType="String">
+        delete from wm_material_stock_tx where tx_id in
+        <foreach item="txId" collection="array" open="(" separator="," close=")">
+            #{txId}
+        </foreach>
+    </delete>
+</mapper>
