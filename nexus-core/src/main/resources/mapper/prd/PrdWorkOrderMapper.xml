@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.prd.mapper.PrdWorkOrderMapper">
+
+    <resultMap type="PrdWorkOrder" id="PrdWorkOrderResult">
+            <result property="woId"    column="wo_id"    />
+            <result property="woNo"    column="wo_no"    />
+            <result property="planId"    column="plan_id"    />
+            <result property="planName"    column="plan_name"    />
+            <result property="sourceType"    column="source_type"    />
+            <result property="sourceId"    column="source_id"    />
+            <result property="sourceNo"    column="source_no"    />
+            <result property="sourceLineId"    column="source_line_id"    />
+            <result property="materialId"    column="material_id"    />
+            <result property="materialCode"    column="material_code"    />
+            <result property="materialName"    column="material_name"    />
+            <result property="materialSpec"    column="material_spec"    />
+            <result property="plannedQty"    column="planned_qty"    />
+            <result property="completedQty"    column="completed_qty"    />
+            <result property="scrapQty"    column="scrap_qty"    />
+            <result property="unitId"    column="unit_id"    />
+            <result property="unitName"    column="unit_name"    />
+            <result property="planStartDate"    column="plan_start_date"    />
+            <result property="planEndDate"    column="plan_end_date"    />
+            <result property="actualStartDate"    column="actual_start_date"    />
+            <result property="actualEndDate"    column="actual_end_date"    />
+            <result property="woStatus"    column="wo_status"    />
+            <result property="workshopId"    column="workshop_id"    />
+            <result property="workshopName"    column="workshop_name"    />
+            <result property="workstationId"    column="workstation_id"    />
+            <result property="workstationName"    column="workstation_name"    />
+            <result property="productionLineId"    column="production_line_id"    />
+            <result property="responsibleId"    column="responsible_id"    />
+            <result property="responsibleName"    column="responsible_name"    />
+            <result property="teamId"    column="team_id"    />
+            <result property="teamName"    column="team_name"    />
+            <result property="priority"    column="priority"    />
+            <result property="bomId"    column="bom_id"    />
+            <result property="bomVersion"    column="bom_version"    />
+            <result property="remark"    column="remark"    />
+            <result property="bomName"    column="bom_name"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectPrdWorkOrderVo">
+        select wo_id, wo_no, plan_id, plan_name, source_type, source_id, source_no, source_line_id, material_id, material_code, material_name, material_spec, planned_qty, completed_qty, scrap_qty, unit_id, unit_name, plan_start_date, plan_end_date, actual_start_date, actual_end_date, wo_status, workshop_id, workshop_name, workstation_id, workstation_name, production_line_id, responsible_id, responsible_name, team_id, team_name, priority, bom_id, bom_version, remark, bom_name, attr2, attr3, attr4, create_by, create_time, update_by, update_time from prd_work_order
+    </sql>
+
+    <select id="selectPrdWorkOrderList" parameterType="PrdWorkOrder" resultMap="PrdWorkOrderResult">
+        <include refid="selectPrdWorkOrderVo"/>
+        <where>
+                        <if test="woNo != null  and woNo != ''"> and wo_no = #{woNo}</if>
+                        <if test="planName != null  and planName != ''"> and plan_name like concat('%', #{planName}, '%')</if>
+                        <if test="sourceType != null  and sourceType != ''"> and source_type = #{sourceType}</if>
+                        <if test="sourceId != null "> and source_id = #{sourceId}</if>
+                        <if test="sourceNo != null  and sourceNo != ''"> and source_no = #{sourceNo}</if>
+                        <if test="sourceLineId != null "> and source_line_id = #{sourceLineId}</if>
+                        <if test="materialId != null "> and material_id = #{materialId}</if>
+                        <if test="materialCode != null  and materialCode != ''"> and material_code = #{materialCode}</if>
+                        <if test="materialName != null  and materialName != ''"> and material_name like concat('%', #{materialName}, '%')</if>
+                        <if test="materialSpec != null  and materialSpec != ''"> and material_spec = #{materialSpec}</if>
+                        <if test="plannedQty != null "> and planned_qty = #{plannedQty}</if>
+                        <if test="completedQty != null "> and completed_qty = #{completedQty}</if>
+                        <if test="scrapQty != null "> and scrap_qty = #{scrapQty}</if>
+                        <if test="unitId != null "> and unit_id = #{unitId}</if>
+                        <if test="unitName != null  and unitName != ''"> and unit_name like concat('%', #{unitName}, '%')</if>
+                        <if test="planStartDate != null "> and plan_start_date = #{planStartDate}</if>
+                        <if test="planEndDate != null "> and plan_end_date = #{planEndDate}</if>
+                        <if test="actualStartDate != null "> and actual_start_date = #{actualStartDate}</if>
+                        <if test="actualEndDate != null "> and actual_end_date = #{actualEndDate}</if>
+                        <if test="woStatus != null  and woStatus != ''"> and wo_status = #{woStatus}</if>
+                        <if test="workshopId != null "> and workshop_id = #{workshopId}</if>
+                        <if test="workshopName != null  and workshopName != ''"> and workshop_name like concat('%', #{workshopName}, '%')</if>
+                        <if test="workstationId != null "> and workstation_id = #{workstationId}</if>
+                        <if test="workstationName != null  and workstationName != ''"> and workstation_name like concat('%', #{workstationName}, '%')</if>
+                        <if test="productionLineId != null "> and production_line_id = #{productionLineId}</if>
+                        <if test="responsibleId != null "> and responsible_id = #{responsibleId}</if>
+                        <if test="responsibleName != null  and responsibleName != ''"> and responsible_name like concat('%', #{responsibleName}, '%')</if>
+                        <if test="teamId != null "> and team_id = #{teamId}</if>
+                        <if test="teamName != null  and teamName != ''"> and team_name like concat('%', #{teamName}, '%')</if>
+                        <if test="priority != null "> and priority = #{priority}</if>
+        </where>
+    </select>
+
+    <select id="selectPrdWorkOrderByWoId" parameterType="Long" resultMap="PrdWorkOrderResult">
+    </select>
+
+    <insert id="insertPrdWorkOrder" parameterType="PrdWorkOrder" useGeneratedKeys="true" keyProperty="woId">
+        insert into prd_work_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="woNo != null and woNo != ''">wo_no,</if>
+                    <if test="planId != null">plan_id,</if>
+                    <if test="planName != null">plan_name,</if>
+                    <if test="sourceType != null and sourceType != ''">source_type,</if>
+                    <if test="sourceId != null">source_id,</if>
+                    <if test="sourceNo != null and sourceNo != ''">source_no,</if>
+                    <if test="sourceLineId != null">source_line_id,</if>
+                    <if test="materialId != null">material_id,</if>
+                    <if test="materialCode != null and materialCode != ''">material_code,</if>
+                    <if test="materialName != null and materialName != ''">material_name,</if>
+                    <if test="materialSpec != null">material_spec,</if>
+                    <if test="plannedQty != null">planned_qty,</if>
+                    <if test="completedQty != null">completed_qty,</if>
+                    <if test="scrapQty != null">scrap_qty,</if>
+                    <if test="unitId != null">unit_id,</if>
+                    <if test="unitName != null">unit_name,</if>
+                    <if test="planStartDate != null">plan_start_date,</if>
+                    <if test="planEndDate != null">plan_end_date,</if>
+                    <if test="actualStartDate != null">actual_start_date,</if>
+                    <if test="actualEndDate != null">actual_end_date,</if>
+                    <if test="woStatus != null and woStatus != ''">wo_status,</if>
+                    <if test="workshopId != null">workshop_id,</if>
+                    <if test="workshopName != null">workshop_name,</if>
+                    <if test="workstationId != null">workstation_id,</if>
+                    <if test="workstationName != null">workstation_name,</if>
+                    <if test="productionLineId != null">production_line_id,</if>
+                    <if test="responsibleId != null">responsible_id,</if>
+                    <if test="responsibleName != null">responsible_name,</if>
+                    <if test="teamId != null">team_id,</if>
+                    <if test="teamName != null">team_name,</if>
+                    <if test="priority != null">priority,</if>
+                    <if test="bomId != null">bom_id,</if>
+                    <if test="bomVersion != null">bom_version,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="bomName != null">bom_name,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="woNo != null and woNo != ''">#{woNo},</if>
+                    <if test="planId != null">#{planId},</if>
+                    <if test="planName != null">#{planName},</if>
+                    <if test="sourceType != null and sourceType != ''">#{sourceType},</if>
+                    <if test="sourceId != null">#{sourceId},</if>
+                    <if test="sourceNo != null and sourceNo != ''">#{sourceNo},</if>
+                    <if test="sourceLineId != null">#{sourceLineId},</if>
+                    <if test="materialId != null">#{materialId},</if>
+                    <if test="materialCode != null and materialCode != ''">#{materialCode},</if>
+                    <if test="materialName != null and materialName != ''">#{materialName},</if>
+                    <if test="materialSpec != null">#{materialSpec},</if>
+                    <if test="plannedQty != null">#{plannedQty},</if>
+                    <if test="completedQty != null">#{completedQty},</if>
+                    <if test="scrapQty != null">#{scrapQty},</if>
+                    <if test="unitId != null">#{unitId},</if>
+                    <if test="unitName != null">#{unitName},</if>
+                    <if test="planStartDate != null">#{planStartDate},</if>
+                    <if test="planEndDate != null">#{planEndDate},</if>
+                    <if test="actualStartDate != null">#{actualStartDate},</if>
+                    <if test="actualEndDate != null">#{actualEndDate},</if>
+                    <if test="woStatus != null and woStatus != ''">#{woStatus},</if>
+                    <if test="workshopId != null">#{workshopId},</if>
+                    <if test="workshopName != null">#{workshopName},</if>
+                    <if test="workstationId != null">#{workstationId},</if>
+                    <if test="workstationName != null">#{workstationName},</if>
+                    <if test="productionLineId != null">#{productionLineId},</if>
+                    <if test="responsibleId != null">#{responsibleId},</if>
+                    <if test="responsibleName != null">#{responsibleName},</if>
+                    <if test="teamId != null">#{teamId},</if>
+                    <if test="teamName != null">#{teamName},</if>
+                    <if test="priority != null">#{priority},</if>
+                    <if test="bomId != null">#{bomId},</if>
+                    <if test="bomVersion != null">#{bomVersion},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="bomName != null">#{bomName},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePrdWorkOrder" parameterType="PrdWorkOrder">
+        update prd_work_order
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="woNo != null and woNo != ''">wo_no = #{woNo},</if>
+                    <if test="planId != null">plan_id = #{planId},</if>
+                    <if test="planName != null">plan_name = #{planName},</if>
+                    <if test="sourceType != null and sourceType != ''">source_type = #{sourceType},</if>
+                    <if test="sourceId != null">source_id = #{sourceId},</if>
+                    <if test="sourceNo != null and sourceNo != ''">source_no = #{sourceNo},</if>
+                    <if test="sourceLineId != null">source_line_id = #{sourceLineId},</if>
+                    <if test="materialId != null">material_id = #{materialId},</if>
+                    <if test="materialCode != null and materialCode != ''">material_code = #{materialCode},</if>
+                    <if test="materialName != null and materialName != ''">material_name = #{materialName},</if>
+                    <if test="materialSpec != null">material_spec = #{materialSpec},</if>
+                    <if test="plannedQty != null">planned_qty = #{plannedQty},</if>
+                    <if test="completedQty != null">completed_qty = #{completedQty},</if>
+                    <if test="scrapQty != null">scrap_qty = #{scrapQty},</if>
+                    <if test="unitId != null">unit_id = #{unitId},</if>
+                    <if test="unitName != null">unit_name = #{unitName},</if>
+                    <if test="planStartDate != null">plan_start_date = #{planStartDate},</if>
+                    <if test="planEndDate != null">plan_end_date = #{planEndDate},</if>
+                    <if test="actualStartDate != null">actual_start_date = #{actualStartDate},</if>
+                    <if test="actualEndDate != null">actual_end_date = #{actualEndDate},</if>
+                    <if test="woStatus != null and woStatus != ''">wo_status = #{woStatus},</if>
+                    <if test="workshopId != null">workshop_id = #{workshopId},</if>
+                    <if test="workshopName != null">workshop_name = #{workshopName},</if>
+                    <if test="workstationId != null">workstation_id = #{workstationId},</if>
+                    <if test="workstationName != null">workstation_name = #{workstationName},</if>
+                    <if test="productionLineId != null">production_line_id = #{productionLineId},</if>
+                    <if test="responsibleId != null">responsible_id = #{responsibleId},</if>
+                    <if test="responsibleName != null">responsible_name = #{responsibleName},</if>
+                    <if test="teamId != null">team_id = #{teamId},</if>
+                    <if test="teamName != null">team_name = #{teamName},</if>
+                    <if test="priority != null">priority = #{priority},</if>
+                    <if test="bomId != null">bom_id = #{bomId},</if>
+                    <if test="bomVersion != null">bom_version = #{bomVersion},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="bomName != null">bom_name = #{bomName},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where wo_id = #{woId}
+    </update>
+
+    <delete id="deletePrdWorkOrderByWoId" parameterType="Long">
+        delete from prd_work_order where wo_id = #{woId}
+    </delete>
+
+    <delete id="deletePrdWorkOrderByWoIds" parameterType="String">
+        delete from prd_work_order where wo_id in
+        <foreach item="woId" collection="array" open="(" separator="," close=")">
+            #{woId}
+        </foreach>
+    </delete>
+</mapper>

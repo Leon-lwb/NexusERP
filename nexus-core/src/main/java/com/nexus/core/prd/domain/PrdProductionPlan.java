@@ -2,6 +2,7 @@ package com.nexus.core.prd.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -22,99 +23,156 @@ import com.nexus.common.core.domain.BaseEntity;
 @AllArgsConstructor
 @NoArgsConstructor
 @TableName(resultMap = "com.nexus.core.prd.mapper.PrdProductionPlanMapper.PrdProductionPlanResult")
-public class PrdProductionPlan extends BaseEntity
-        {
-private static final long serialVersionUID = 1L;
+public class PrdProductionPlan extends BaseEntity {
+    private static final long serialVersionUID = 1L;
 
-    /** 生产计划ID */
-    @TableId(value = "plan_id",type = IdType.AUTO)
+    /**
+     * 生产计划ID
+     */
+    @TableId(value = "plan_id", type = IdType.AUTO)
     private Long planId;
-    /** 生产计划编号 */
+    /**
+     * 生产计划编号
+     */
     @Excel(name = "生产计划编号")
     private String planNo;
-    /** 计划名称 */
+    /**
+     * 计划名称
+     */
     @Excel(name = "计划名称")
     private String planName;
-    /** 版本号 */
+    /**
+     * 版本号
+     */
     @Excel(name = "版本号")
     private Long version;
-    /** 原始计划ID */
+    /**
+     * 原始计划ID
+     */
     @Excel(name = "原始计划ID")
     private Long originalPlanId;
-    /** 参考单据号 */
+    /**
+     * 参考单据号
+     */
     @Excel(name = "参考单据号")
     private String referenceNo;
-    /** 计划类型 */
+    /**
+     * 计划类型
+     */
     @Excel(name = "计划类型")
     private String planType;
-    /** 计划日期 */
+    /**
+     * 计划日期
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "计划日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date planDate;
-    /** 计划开始日期 */
+    /**
+     * 计划开始日期
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "计划开始日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date startDate;
-    /** 计划结束日期 */
+    /**
+     * 计划结束日期
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "计划结束日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date endDate;
-    /** 状态 */
+    /**
+     * 状态
+     */
     @Excel(name = "状态")
     private String status;
-    /** 优先级 */
+    /**
+     * 优先级
+     */
     @Excel(name = "优先级")
     private Long priority;
-    /** 计划员ID */
+    /**
+     * 计划员ID
+     */
     private Long plannerId;
-    /** 计划员 */
+    /**
+     * 计划员
+     */
     @Excel(name = "计划员")
     private String plannerName;
-    /** 生产部门ID */
+    /**
+     * 生产部门ID
+     */
     private Long departmentId;
-    /** 生产部门 */
+    /**
+     * 生产部门
+     */
     @Excel(name = "生产部门")
     private String departmentName;
-    /** 计划总数量 */
+    /**
+     * 计划总数量
+     */
     @Excel(name = "计划总数量")
     private BigDecimal totalQuantity;
-    /** 确认时间 */
+    /**
+     * 确认时间
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "确认时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date confirmedTime;
-    /** 下达时间 */
+    /**
+     * 下达时间
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "下达时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date releasedTime;
-    /** 关闭时间 */
+    /**
+     * 关闭时间
+     */
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "关闭时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date closedTime;
-    /** 预留字段1 */
-    @Excel(name = "预留字段1")
+    /**
+     * 预留字段1
+     */
+    @Excel(name = "bomName")
     private String bomName;
-    /** 预留字段2 */
-    @Excel(name = "预留字段2")
-    private String attr2;
-    /** 是否当前版本 */
+    /**
+     * 预留字段2
+     */
+    @Excel(name = "bomVersion")
+    private String bomVersion;
+    /**
+     * 是否当前版本
+     */
     @Excel(name = "是否当前版本")
     private Long isCurrent;
-    /** 预留字段3 */
+    /**
+     * 预留字段3
+     */
     @Excel(name = "预留字段3")
     private Long bomId;
-    /** 预留字段4 */
+    /**
+     * 预留字段4
+     */
     @Excel(name = "预留字段4")
     private Long attr4;
-    /** 物料需求单ID */
+    /**
+     * 物料需求单ID
+     */
     @Excel(name = "物料需求单ID")
     private Long materialRequirementId;
-    /** 物料需求单编号 */
+    /**
+     * 物料需求单编号
+     */
     @Excel(name = "物料需求单编号")
     private String materialRequirementNo;
-    /** 销售订单子表id */
+    /**
+     * 销售订单子表id
+     */
     @Excel(name = "销售订单子表id")
     private Long orderLineId;
-    /** 销售订单子表行号 */
+    /**
+     * 销售订单子表行号
+     */
     @Excel(name = "销售订单子表行号")
     private String orderLineNo;
 }

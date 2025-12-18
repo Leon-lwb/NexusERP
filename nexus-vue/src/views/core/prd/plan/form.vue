@@ -161,8 +161,8 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="预留字段2" prop="attr2">
-              <el-input v-model="form.attr2" placeholder="请输入预留字段2" />
+            <el-form-item label="bomVersion" prop="bomVersion">
+              <el-input v-model="form.bomVersion" placeholder="请输入bomVersion" />
             </el-form-item>
           </el-col>
           <el-col :span="6">
@@ -378,6 +378,7 @@ const bomQueryParams = ref({
   pageNum: 1,
   pageSize: 10,
   bomName: null,
+  bomVersion: null,
   isCurrent: 1,  // 只显示当前版本
   status: 1      // 只显示启用状态
 })
@@ -524,7 +525,7 @@ function reset() {
     releasedTime: null,
     closedTime: null,
     bomName: null,
-    attr2: null,
+    bomVersion: null,
     bomId: null,
     attr4: null,
     remark: null,
@@ -656,6 +657,7 @@ function handleBomQuery() {
 function resetBomQuery() {
   proxy.resetForm("bomQueryRef")
   bomQueryParams.value.bomName = null
+  bomQueryParams.value.bomVersion = null
   handleBomQuery()
 }
 
@@ -663,6 +665,7 @@ function resetBomQuery() {
 function selectBom(row) {
   form.value.bomId = row.bomId
   form.value.bomName = row.bomName
+  form.value.bomVersion = row.bomVersion
   bomSelectOpen.value = false
 }
 

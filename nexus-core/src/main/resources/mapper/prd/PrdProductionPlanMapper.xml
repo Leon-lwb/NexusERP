@@ -26,7 +26,7 @@
             <result property="releasedTime"    column="released_time"    />
             <result property="closedTime"    column="closed_time"    />
             <result property="bomName"    column="bom_name"    />
-            <result property="attr2"    column="attr2"    />
+            <result property="bomVersion"    column="bom_version"    />
             <result property="isCurrent"    column="is_current"    />
             <result property="bomId"    column="bom_id"    />
             <result property="attr4"    column="attr4"    />
@@ -42,7 +42,7 @@
     </resultMap>
 
     <sql id="selectPrdProductionPlanVo">
-        select plan_id, plan_no, plan_name, version, original_plan_id, reference_no, plan_type, plan_date, start_date, end_date, status, priority, planner_id, planner_name, department_id, department_name, total_quantity, confirmed_time, released_time, closed_time, bom_name, attr2, is_current, bom_id, attr4, remark, create_by, create_time, update_by, update_time, material_requirement_id, material_requirement_no, order_line_id, order_line_no from prd_production_plan
+        select plan_id, plan_no, plan_name, version, original_plan_id, reference_no, plan_type, plan_date, start_date, end_date, status, priority, planner_id, planner_name, department_id, department_name, total_quantity, confirmed_time, released_time, closed_time, bom_name, bom_version, is_current, bom_id, attr4, remark, create_by, create_time, update_by, update_time, material_requirement_id, material_requirement_no, order_line_id, order_line_no from prd_production_plan
     </sql>
 
     <select id="selectPrdProductionPlanList" parameterType="PrdProductionPlan" resultMap="PrdProductionPlanResult">
@@ -96,7 +96,7 @@
                     <if test="releasedTime != null">released_time,</if>
                     <if test="closedTime != null">closed_time,</if>
                     <if test="bomName != null">bom_name,</if>
-                    <if test="attr2 != null">attr2,</if>
+                    <if test="bomVersion != null">bom_version,</if>
                     <if test="isCurrent != null">is_current,</if>
                     <if test="bomId != null">bom_id,</if>
                     <if test="attr4 != null">attr4,</if>
@@ -131,7 +131,7 @@
                     <if test="releasedTime != null">#{releasedTime},</if>
                     <if test="closedTime != null">#{closedTime},</if>
                     <if test="bomName != null">#{bomName},</if>
-                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="bomVersion != null">#{bomVersion},</if>
                     <if test="isCurrent != null">#{isCurrent},</if>
                     <if test="bomId != null">#{bomId},</if>
                     <if test="attr4 != null">#{attr4},</if>
@@ -170,7 +170,7 @@
                     <if test="releasedTime != null">released_time = #{releasedTime},</if>
                     <if test="closedTime != null">closed_time = #{closedTime},</if>
                     <if test="bomName != null">bom_name = #{bomName},</if>
-                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="bomVersion != null">bom_version = #{bomVersion},</if>
                     <if test="isCurrent != null">is_current = #{isCurrent},</if>
                     <if test="bomId != null">bom_id = #{bomId},</if>
                     <if test="attr4 != null">attr4 = #{attr4},</if>

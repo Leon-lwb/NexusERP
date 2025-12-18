@@ -144,10 +144,10 @@
               <span v-else>{{ scope.row.baseUomName }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="入库数量" prop="quantityRecived" min-width="120">
+          <el-table-column label="入库数量" prop="quantityReceived" min-width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.quantityRecived" placeholder="请输入入库数量" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.quantityRecived }}</span>
+              <el-input v-model="scope.row.quantityReceived" placeholder="请输入入库数量" v-if="!isViewMode" />
+              <span v-else>{{ scope.row.quantityReceived }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchCode" min-width="120">
@@ -670,7 +670,7 @@ function handleAddWmMaterialReceiveLine() {
   obj.materialSpec = ""
   obj.baseUomId = ""
   obj.baseUomName = ""
-  obj.quantityRecived = ""
+  obj.quantityReceived = ""
   obj.batchId = ""
   obj.batchCode = ""
   obj.warehouseId = ""
@@ -763,7 +763,7 @@ function selectArrivalNoticeLine(row) {
   currentRow.materialSpec = row.materialSpec
   currentRow.baseUomId = row.baseUomId
   currentRow.baseUomName = row.baseUomName
-  currentRow.quantityRecived = row.quantityArrival
+  currentRow.quantityReceived = row.quantityArrival
   currentRow.sourceDocLineId = row.lineId
   
   // 关闭对话框
@@ -787,7 +787,7 @@ function handleShelf(row) {
   shelfForm.value.materialName = row.materialName;
   shelfForm.value.baseUomId = row.baseUomId;
   shelfForm.value.baseUomName = row.baseUomName;
-  shelfForm.value.quantity = row.quantityRecived;
+  shelfForm.value.quantity = row.quantityReceived;
   shelfForm.value.receiveId = form.value.receiveId;
   
   shelfOpen.value = true;

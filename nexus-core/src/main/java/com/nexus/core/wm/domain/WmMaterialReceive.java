@@ -24,7 +24,7 @@ import com.nexus.common.core.domain.BaseEntity;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName(resultMap = "com.nexus.core.wm.mapper.WmMaterialReceiveMapper.WmMaterialReceiveResult")
+@TableName(value = "wm_material_receive", excludeProperty = {"params", "searchValue"})
 public class WmMaterialReceive extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
@@ -168,5 +168,6 @@ public class WmMaterialReceive extends BaseEntity {
     /**
      * 物料入库单行信息
      */
+    @TableField(exist = false)
     private List<WmMaterialReceiveLine> wmMaterialReceiveLineList;
 }

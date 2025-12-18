@@ -166,6 +166,11 @@ public class WmMaterialReceiveServiceImpl extends ServiceImpl<WmMaterialReceiveM
             validateDetailsForApproval(wmMaterialReceive);
         }
         
+        // 处理子表更新
+        wmMaterialReceive.setUpdateTime(DateUtils.getNowDate());
+        wmMaterialReceiveMapper.deleteWmMaterialReceiveLineByReceiveId(wmMaterialReceive.getReceiveId());
+        insertWmMaterialReceiveLine(wmMaterialReceive);
+        
         return this.updateById(wmMaterialReceive);
     }
     

@@ -345,6 +345,20 @@ export const dynamicRoutes = [
         meta: { title: '采购入库详情', activeMenu: '/core/wm/receive' }
       }
     ]
+  },
+  {
+    path: '/core/prd/work/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:work:edit'],
+    children: [
+      {
+        path: '',  // 添加参数定义
+        component: () => import('@/views/core/prd/work//form'),
+        name: 'WorkForm',
+        meta: { title: '生产表单', activeMenu: '/core/prd/work' }
+      }
+    ]
   }
 ]
 

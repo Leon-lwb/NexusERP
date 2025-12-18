@@ -60,4 +60,8 @@ private static final long serialVersionUID = 1L;
     private $column.javaType $column.javaField;
     #end
 #end
+#if($table.sub)
+public List<${subClassName}> get${subClassName}List();
+
+#end
 }

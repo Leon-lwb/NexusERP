@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchHolidayMapper">
+
+    <resultMap type="SchHoliday" id="SchHolidayResult">
+            <result property="holidayId"    column="holiday_id"    />
+            <result property="holidayDate"    column="holiday_date"    />
+            <result property="holidayName"    column="holiday_name"    />
+            <result property="holidayType"    column="holiday_type"    />
+            <result property="year"    column="year"    />
+            <result property="isWorkingDay"    column="is_working_day"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchHolidayVo">
+        select holiday_id, holiday_date, holiday_name, holiday_type, year, is_working_day, remark, create_by, create_time, update_by, update_time from sch_holiday
+    </sql>
+
+    <select id="selectSchHolidayList" parameterType="SchHoliday" resultMap="SchHolidayResult">
+        <include refid="selectSchHolidayVo"/>
+        <where>
+                        <if test="holidayDate != null "> and holiday_date = #{holidayDate}</if>
+                        <if test="holidayName != null  and holidayName != ''"> and holiday_name like concat('%', #{holidayName}, '%')</if>
+                        <if test="holidayType != null  and holidayType != ''"> and holiday_type = #{holidayType}</if>
+                        <if test="year != null "> and year = #{year}</if>
+                        <if test="isWorkingDay != null "> and is_working_day = #{isWorkingDay}</if>
+        </where>
+    </select>
+
+    <select id="selectSchHolidayByHolidayId" parameterType="Long" resultMap="SchHolidayResult">
+            <include refid="selectSchHolidayVo"/>
+            where holiday_id = #{holidayId}
+    </select>
+
+    <insert id="insertSchHoliday" parameterType="SchHoliday" useGeneratedKeys="true" keyProperty="holidayId">
+        insert into sch_holiday
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="holidayDate != null">holiday_date,</if>
+                    <if test="holidayName != null and holidayName != ''">holiday_name,</if>
+                    <if test="holidayType != null">holiday_type,</if>
+                    <if test="year != null">year,</if>
+                    <if test="isWorkingDay != null">is_working_day,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="holidayDate != null">#{holidayDate},</if>
+                    <if test="holidayName != null and holidayName != ''">#{holidayName},</if>
+                    <if test="holidayType != null">#{holidayType},</if>
+                    <if test="year != null">#{year},</if>
+                    <if test="isWorkingDay != null">#{isWorkingDay},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchHoliday" parameterType="SchHoliday">
+        update sch_holiday
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="holidayDate != null">holiday_date = #{holidayDate},</if>
+                    <if test="holidayName != null and holidayName != ''">holiday_name = #{holidayName},</if>
+                    <if test="holidayType != null">holiday_type = #{holidayType},</if>
+                    <if test="year != null">year = #{year},</if>
+                    <if test="isWorkingDay != null">is_working_day = #{isWorkingDay},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where holiday_id = #{holidayId}
+    </update>
+
+    <delete id="deleteSchHolidayByHolidayId" parameterType="Long">
+        delete from sch_holiday where holiday_id = #{holidayId}
+    </delete>
+
+    <delete id="deleteSchHolidayByHolidayIds" parameterType="String">
+        delete from sch_holiday where holiday_id in
+        <foreach item="holidayId" collection="array" open="(" separator="," close=")">
+            #{holidayId}
+        </foreach>
+    </delete>
+</mapper>
