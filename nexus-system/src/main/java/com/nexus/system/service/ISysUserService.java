@@ -1,6 +1,8 @@
 package com.nexus.system.service;
 
 import java.util.List;
+
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.nexus.common.core.domain.entity.SysUser;
 
 /**
@@ -8,7 +10,7 @@ import com.nexus.common.core.domain.entity.SysUser;
  * 
  * @author nexus
  */
-public interface ISysUserService
+public interface ISysUserService extends IService<SysUser>
 {
     /**
      * 根据条件分页查询用户列表

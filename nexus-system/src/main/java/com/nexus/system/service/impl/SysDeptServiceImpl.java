@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.nexus.common.annotation.DataScope;
@@ -27,7 +29,7 @@ import com.nexus.system.service.ISysDeptService;
  * @author nexus
  */
 @Service
-public class SysDeptServiceImpl implements ISysDeptService
+public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> implements ISysDeptService
 {
     @Autowired
     private SysDeptMapper deptMapper;

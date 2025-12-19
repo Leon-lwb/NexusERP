@@ -1,6 +1,8 @@
 package com.nexus.system.mapper;
 
 import java.util.List;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 import com.nexus.common.core.domain.entity.SysUser;
 
@@ -9,7 +11,7 @@ import com.nexus.common.core.domain.entity.SysUser;
  * 
  * @author nexus
  */
-public interface SysUserMapper
+public interface SysUserMapper extends BaseMapper<SysUser>
 {
     /**
      * 根据条件分页查询用户列表
@@ -124,4 +126,13 @@ public interface SysUserMapper
      * @return 结果
      */
     public SysUser checkEmailUnique(String email);
+    
+    /**
+     * 根据父部门ID查询用户列表
+     * 
+     * @param parentDeptId 父部门ID
+     * @param status 用户状态
+     * @return 用户信息集合
+     */
+    public List<SysUser> selectUserListByParentDeptId(@Param("parentDeptId") Integer parentDeptId, @Param("status") String status);
 }

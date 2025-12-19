@@ -1,6 +1,8 @@
 package com.nexus.system.mapper;
 
 import java.util.List;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 import com.nexus.common.core.domain.entity.SysDept;
 
@@ -9,7 +11,7 @@ import com.nexus.common.core.domain.entity.SysDept;
  * 
  * @author nexus
  */
-public interface SysDeptMapper
+public interface SysDeptMapper extends BaseMapper<SysDept>
 {
     /**
      * 查询部门管理数据

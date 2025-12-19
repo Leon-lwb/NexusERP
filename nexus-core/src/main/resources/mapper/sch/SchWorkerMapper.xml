@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchWorkerMapper">
+
+    <resultMap type="SchWorker" id="SchWorkerResult">
+            <result property="workerId"    column="worker_id"    />
+            <result property="userId"    column="user_id"    />
+            <result property="employeeId"    column="employee_id"    />
+            <result property="workCategory"    column="work_category"    />
+            <result property="skillLevel"    column="skill_level"    />
+            <result property="workStatus"    column="work_status"    />
+            <result property="entryDate"    column="entry_date"    />
+            <result property="regularizationDate"    column="regularization_date"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchWorkerVo">
+        select worker_id, user_id, employee_id, work_category, skill_level, work_status, entry_date, regularization_date, create_time, update_time from sch_worker
+    </sql>
+
+    <select id="selectSchWorkerList" parameterType="SchWorker" resultMap="SchWorkerResult">
+        <include refid="selectSchWorkerVo"/>
+        <where>
+                        <if test="userId != null "> and user_id = #{userId}</if>
+                        <if test="employeeId != null  and employeeId != ''"> and employee_id = #{employeeId}</if>
+                        <if test="workCategory != null  and workCategory != ''"> and work_category = #{workCategory}</if>
+                        <if test="skillLevel != null  and skillLevel != ''"> and skill_level = #{skillLevel}</if>
+                        <if test="workStatus != null  and workStatus != ''"> and work_status = #{workStatus}</if>
+                        <if test="entryDate != null "> and entry_date = #{entryDate}</if>
+                        <if test="regularizationDate != null "> and regularization_date = #{regularizationDate}</if>
+        </where>
+    </select>
+
+    <select id="selectSchWorkerByWorkerId" parameterType="Long" resultMap="SchWorkerResult">
+            <include refid="selectSchWorkerVo"/>
+            where worker_id = #{workerId}
+    </select>
+
+    <insert id="insertSchWorker" parameterType="SchWorker" useGeneratedKeys="true" keyProperty="workerId">
+        insert into sch_worker
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="userId != null">user_id,</if>
+                    <if test="employeeId != null and employeeId != ''">employee_id,</if>
+                    <if test="workCategory != null">work_category,</if>
+                    <if test="skillLevel != null">skill_level,</if>
+                    <if test="workStatus != null">work_status,</if>
+                    <if test="entryDate != null">entry_date,</if>
+                    <if test="regularizationDate != null">regularization_date,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="userId != null">#{userId},</if>
+                    <if test="employeeId != null and employeeId != ''">#{employeeId},</if>
+                    <if test="workCategory != null">#{workCategory},</if>
+                    <if test="skillLevel != null">#{skillLevel},</if>
+                    <if test="workStatus != null">#{workStatus},</if>
+                    <if test="entryDate != null">#{entryDate},</if>
+                    <if test="regularizationDate != null">#{regularizationDate},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchWorker" parameterType="SchWorker">
+        update sch_worker
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="userId != null">user_id = #{userId},</if>
+                    <if test="employeeId != null and employeeId != ''">employee_id = #{employeeId},</if>
+                    <if test="workCategory != null">work_category = #{workCategory},</if>
+                    <if test="skillLevel != null">skill_level = #{skillLevel},</if>
+                    <if test="workStatus != null">work_status = #{workStatus},</if>
+                    <if test="entryDate != null">entry_date = #{entryDate},</if>
+                    <if test="regularizationDate != null">regularization_date = #{regularizationDate},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where worker_id = #{workerId}
+    </update>
+
+    <delete id="deleteSchWorkerByWorkerId" parameterType="Long">
+        delete from sch_worker where worker_id = #{workerId}
+    </delete>
+
+    <delete id="deleteSchWorkerByWorkerIds" parameterType="String">
+        delete from sch_worker where worker_id in
+        <foreach item="workerId" collection="array" open="(" separator="," close=")">
+            #{workerId}
+        </foreach>
+    </delete>
+</mapper>

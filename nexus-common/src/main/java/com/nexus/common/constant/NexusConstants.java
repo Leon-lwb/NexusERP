@@ -27,4 +27,9 @@ public class NexusConstants {
     public static final String ORDER_STATUS_APPROVED="APPROVED";
     public static final String ORDER_STATUS_FINISHED="FINISHED";
     public static final String ORDER_STATUS_CANCELED="CANCELED";
+
+    /**
+     * 账户部门在生产中心部门
+     */
+    public static final Integer PRODUCTION_CENTER_DEPT_ID = 111;
 }

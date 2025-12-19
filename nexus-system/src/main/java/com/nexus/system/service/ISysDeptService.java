@@ -1,6 +1,8 @@
 package com.nexus.system.service;
 
 import java.util.List;
+
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.nexus.common.core.domain.TreeSelect;
 import com.nexus.common.core.domain.entity.SysDept;
 
@@ -9,7 +11,7 @@ import com.nexus.common.core.domain.entity.SysDept;
  * 
  * @author nexus
  */
-public interface ISysDeptService
+public interface ISysDeptService extends IService<SysDept>
 {
     /**
      * 查询部门管理数据
