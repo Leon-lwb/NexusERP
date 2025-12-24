@@ -1,5 +1,8 @@
 package com.nexus.common.constant;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @author wanghuan
  * @date 2025/11/18
@@ -32,4 +35,22 @@ public class NexusConstants {
      * 账户部门在生产中心部门
      */
     public static final Integer PRODUCTION_CENTER_DEPT_ID = 111;
+
+    /**
+     * 生产班组类别
+     */
+    public static final String[] TEAM_CATEGORY_PRODUCTION = {"SMT Production Team","Assembly Team","FATP Team","Plastic Molding Team","Metal Stamping Team"};
+    /**
+     * 辅助班组类别
+     */
+    public static final String[] TEAM_CATEGORY_AUXILIARY = {"Equipment Maintenance Team","IQC Team","Warehouse Material Team"};
+    
+    /**
+     * 生产班组类别列表（用于快速查找）
+     */
+    public static final List<String> TEAM_CATEGORY_PRODUCTION_LIST = Arrays.asList(TEAM_CATEGORY_PRODUCTION);
+    /**
+     * 辅助班组类别列表（用于快速查找）
+     */
+    public static final List<String> TEAM_CATEGORY_AUXILIARY_LIST = Arrays.asList(TEAM_CATEGORY_AUXILIARY);
 }

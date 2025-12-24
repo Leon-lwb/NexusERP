@@ -95,7 +95,18 @@ public class LogAspect
             // 请求的地址
             String ip = IpUtils.getIpAddr();
             operLog.setOperIp(ip);
-            operLog.setOperUrl(StringUtils.substring(ServletUtils.getRequest().getRequestURI(), 0, 255));
+            
+            // 添加空值检查以防止在非Web环境(如定时任务)中出现NPE
+            HttpServletRequest request = ServletUtils.getRequest();
+            if (request != null) {
+                operLog.setOperUrl(StringUtils.substring(request.getRequestURI(), 0, 255));
+                // 设置请求方式
+                operLog.setRequestMethod(request.getMethod());
+            } else {
+                operLog.setOperUrl("");
+                operLog.setRequestMethod("");
+            }
+            
             if (loginUser != null)
             {
                 operLog.setOperName(loginUser.getUsername());
@@ -115,8 +126,7 @@ public class LogAspect
             String className = joinPoint.getTarget().getClass().getName();
             String methodName = joinPoint.getSignature().getName();
             operLog.setMethod(className + "." + methodName + "()");
-            // 设置请求方式
-            operLog.setRequestMethod(ServletUtils.getRequest().getMethod());
+            
             // 处理设置注解上的参数
             getControllerMethodDescription(joinPoint, controllerLog, operLog, jsonResult);
             // 设置消耗时间
@@ -177,7 +187,12 @@ public class LogAspect
      */
     private void setRequestValue(JoinPoint joinPoint, SysOperLog operLog, String[] excludeParamNames) throws Exception
     {
-        Map<?, ?> paramsMap = ServletUtils.getParamMap(ServletUtils.getRequest());
+        HttpServletRequest request = ServletUtils.getRequest();
+        if (request == null) {
+            return; // 在非Web环境中直接返回
+        }
+        
+        Map<?, ?> paramsMap = ServletUtils.getParamMap(request);
         String requestMethod = operLog.getRequestMethod();
         if (StringUtils.isEmpty(paramsMap) && StringUtils.equalsAny(requestMethod, HttpMethod.PUT.name(), HttpMethod.POST.name(), HttpMethod.DELETE.name()))
         {

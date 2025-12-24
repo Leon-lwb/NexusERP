@@ -123,18 +123,33 @@ public class AutoCodeUtil {
             rs.setLastInputChar(inputChar);
             iAutoCodeResultService.saveAutoCodeResult(rs);
         }else{
-            //直接更新对应的记录（我们默认非流水号模式下一个RULE_CODE只有一种方式）
+            //直接更新对应的记录（现在根据输入字符区分不同的流水号序列）
             SysAutoCodeResult bo = new SysAutoCodeResult();
             bo.setRuleId(rule.getRuleId());
+            bo.setLastInputChar(inputChar); // 根据输入字符区分流水号
             List<SysAutoCodeResult> results = iAutoCodeResultService.list(bo);
-            Assert.notEmpty(results,"未查询到规则{[]}对应的结果记录",rule.getRuleCode());
-            SysAutoCodeResult rs = results.get(0);
-            rs.setLastResult(autoCode);
-            rs.setGenDate(DateUtil.format(LocalDateTime.now(),"yyyyMMddHHmmss"));
-            rs.setGenIndex(rs.getGenIndex()+1);
-            rs.setLastSerialNo(Integer.parseInt(lastSerialNo));
-            rs.setLastInputChar(inputChar);
-            iAutoCodeResultService.updateAutoCodeResult(rs);
+            
+            SysAutoCodeResult rs;
+            if (results.isEmpty()) {
+                // 如果没有找到对应规则和输入字符的记录，则创建新记录
+                rs = new SysAutoCodeResult();
+                rs.setRuleId(rule.getRuleId());
+                rs.setGenDate(DateUtil.format(LocalDateTime.now(),"yyyyMMddHHmmss"));
+                rs.setLastResult(autoCode);
+                rs.setGenIndex(1);
+                rs.setLastSerialNo(Integer.parseInt(lastSerialNo));
+                rs.setLastInputChar(inputChar);
+                iAutoCodeResultService.saveAutoCodeResult(rs);
+            } else {
+                // 更新现有记录
+                rs = results.get(0);
+                rs.setLastResult(autoCode);
+                rs.setGenDate(DateUtil.format(LocalDateTime.now(),"yyyyMMddHHmmss"));
+                rs.setGenIndex(rs.getGenIndex()+1);
+                rs.setLastSerialNo(Integer.parseInt(lastSerialNo));
+                rs.setLastInputChar(inputChar);
+                iAutoCodeResultService.updateAutoCodeResult(rs);
+            }
         }
 
     }

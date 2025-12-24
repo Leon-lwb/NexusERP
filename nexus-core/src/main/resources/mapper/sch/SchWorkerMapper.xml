@@ -1,82 +1,168 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nexus.core.sch.mapper.SchWorkerMapper">
 
-    <resultMap type="SchWorker" id="SchWorkerResult">
-            <result property="workerId"    column="worker_id"    />
-            <result property="userId"    column="user_id"    />
-            <result property="employeeId"    column="employee_id"    />
-            <result property="workCategory"    column="work_category"    />
-            <result property="skillLevel"    column="skill_level"    />
-            <result property="workStatus"    column="work_status"    />
-            <result property="entryDate"    column="entry_date"    />
-            <result property="regularizationDate"    column="regularization_date"    />
-            <result property="createTime"    column="create_time"    />
-            <result property="updateTime"    column="update_time"    />
+    <resultMap type="com.nexus.core.sch.domain.SchWorker" id="SchWorkerResult">
+        <result property="workerId" column="worker_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="phonenumber" column="phonenumber"/>
+        <result property="sex" column="sex"/>
+        <result property="workCategory" column="work_category"/>
+        <result property="skillLevel" column="skill_level"/>
+        <result property="workStatus" column="work_status"/>
+        <result property="entryDate" column="entry_date"/>
+        <result property="regularizationDate" column="regularization_date"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <resultMap type="com.nexus.core.sch.domain.dto.SchWorkerDTO" id="SchWorkerDTOResult">
+        <result property="workerId" column="worker_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="employeeId" column="employee_id"/>
+        <result property="phonenumber" column="phonenumber"/>
+        <result property="sex" column="sex"/>
+        <result property="workCategory" column="work_category"/>
+        <result property="skillLevel" column="skill_level"/>
+        <result property="workStatus" column="work_status"/>
+        <result property="entryDate" column="entry_date"/>
+        <result property="regularizationDate" column="regularization_date"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
     </resultMap>
 
     <sql id="selectSchWorkerVo">
-        select worker_id, user_id, employee_id, work_category, skill_level, work_status, entry_date, regularization_date, create_time, update_time from sch_worker
+        select worker_id, user_id, user_name, employee_id, phonenumber, sex, work_category, skill_level, work_status, entry_date, regularization_date, create_by, create_time, update_by, update_time, remark from sch_worker
     </sql>
 
-    <select id="selectSchWorkerList" parameterType="SchWorker" resultMap="SchWorkerResult">
+    <select id="selectSchWorkerList" parameterType="com.nexus.core.sch.domain.SchWorker" resultMap="SchWorkerResult">
         <include refid="selectSchWorkerVo"/>
         <where>
-                        <if test="userId != null "> and user_id = #{userId}</if>
-                        <if test="employeeId != null  and employeeId != ''"> and employee_id = #{employeeId}</if>
-                        <if test="workCategory != null  and workCategory != ''"> and work_category = #{workCategory}</if>
-                        <if test="skillLevel != null  and skillLevel != ''"> and skill_level = #{skillLevel}</if>
-                        <if test="workStatus != null  and workStatus != ''"> and work_status = #{workStatus}</if>
-                        <if test="entryDate != null "> and entry_date = #{entryDate}</if>
-                        <if test="regularizationDate != null "> and regularization_date = #{regularizationDate}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="userName != null  and userName != ''"> and user_name = #{userName}</if>
+            <if test="employeeId != null  and employeeId != ''"> and employee_id = #{employeeId}</if>
+            <if test="phonenumber != null  and phonenumber != ''"> and phonenumber = #{phonenumber}</if>
+            <if test="sex != null  and sex != ''"> and sex = #{sex}</if>
+            <if test="workCategory != null  and workCategory != ''"> and work_category = #{workCategory}</if>
+            <if test="skillLevel != null  and skillLevel != ''"> and skill_level = #{skillLevel}</if>
+            <if test="workStatus != null  and workStatus != ''"> and work_status = #{workStatus}</if>
+            <if test="entryDate != null "> and entry_date = #{entryDate}</if>
+            <if test="regularizationDate != null "> and regularization_date = #{regularizationDate}</if>
         </where>
     </select>
 
     <select id="selectSchWorkerByWorkerId" parameterType="Long" resultMap="SchWorkerResult">
-            <include refid="selectSchWorkerVo"/>
-            where worker_id = #{workerId}
+        <include refid="selectSchWorkerVo"/>
+        where worker_id = #{workerId}
     </select>
 
-    <insert id="insertSchWorker" parameterType="SchWorker" useGeneratedKeys="true" keyProperty="workerId">
+    <insert id="insertSchWorker" parameterType="com.nexus.core.sch.domain.SchWorker" useGeneratedKeys="true" keyProperty="workerId">
         insert into sch_worker
         <trim prefix="(" suffix=")" suffixOverrides=",">
-                    <if test="userId != null">user_id,</if>
-                    <if test="employeeId != null and employeeId != ''">employee_id,</if>
-                    <if test="workCategory != null">work_category,</if>
-                    <if test="skillLevel != null">skill_level,</if>
-                    <if test="workStatus != null">work_status,</if>
-                    <if test="entryDate != null">entry_date,</if>
-                    <if test="regularizationDate != null">regularization_date,</if>
-                    <if test="createTime != null">create_time,</if>
-                    <if test="updateTime != null">update_time,</if>
-        </trim>
+            <if test="userId != null">user_id,</if>
+            <if test="userName != null and userName != ''">user_name,</if>
+            <if test="employeeId != null and employeeId != ''">employee_id,</if>
+            <if test="phonenumber != null and phonenumber != ''">phonenumber,</if>
+            <if test="sex != null and sex != ''">sex,</if>
+            <if test="workCategory != null and workCategory != ''">work_category,</if>
+            <if test="skillLevel != null and skillLevel != ''">skill_level,</if>
+            <if test="workStatus != null and workStatus != ''">work_status,</if>
+            <if test="entryDate != null">entry_date,</if>
+            <if test="regularizationDate != null">regularization_date,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-                    <if test="userId != null">#{userId},</if>
-                    <if test="employeeId != null and employeeId != ''">#{employeeId},</if>
-                    <if test="workCategory != null">#{workCategory},</if>
-                    <if test="skillLevel != null">#{skillLevel},</if>
-                    <if test="workStatus != null">#{workStatus},</if>
-                    <if test="entryDate != null">#{entryDate},</if>
-                    <if test="regularizationDate != null">#{regularizationDate},</if>
-                    <if test="createTime != null">#{createTime},</if>
-                    <if test="updateTime != null">#{updateTime},</if>
-        </trim>
+            <if test="userId != null">#{userId},</if>
+            <if test="userName != null and userName != ''">#{userName},</if>
+            <if test="employeeId != null and employeeId != ''">#{employeeId},</if>
+            <if test="phonenumber != null and phonenumber != ''">#{phonenumber},</if>
+            <if test="sex != null and sex != ''">#{sex},</if>
+            <if test="workCategory != null and workCategory != ''">#{workCategory},</if>
+            <if test="skillLevel != null and skillLevel != ''">#{skillLevel},</if>
+            <if test="workStatus != null and workStatus != ''">#{workStatus},</if>
+            <if test="entryDate != null">#{entryDate},</if>
+            <if test="regularizationDate != null">#{regularizationDate},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+         </trim>
     </insert>
 
-    <update id="updateSchWorker" parameterType="SchWorker">
+    <insert id="insertSchWorkerDTO" parameterType="com.nexus.core.sch.domain.dto.SchWorkerDTO" useGeneratedKeys="true" keyProperty="workerId">
+        insert into sch_worker
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="workerId != null">worker_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="userName != null and userName != ''">user_name,</if>
+            <if test="employeeId != null and employeeId != ''">employee_id,</if>
+            <if test="phonenumber != null and phonenumber != ''">phonenumber,</if>
+            <if test="sex != null and sex != ''">sex,</if>
+            <if test="workCategory != null and workCategory != ''">work_category,</if>
+            <if test="skillLevel != null and skillLevel != ''">skill_level,</if>
+            <if test="workStatus != null and workStatus != ''">work_status,</if>
+            <if test="entryDate != null">entry_date,</if>
+            <if test="regularizationDate != null">regularization_date,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="workerId != null">#{workerId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="userName != null and userName != ''">#{userName},</if>
+            <if test="employeeId != null and employeeId != ''">#{employeeId},</if>
+            <if test="phonenumber != null and phonenumber != ''">#{phonenumber},</if>
+            <if test="sex != null and sex != ''">#{sex},</if>
+            <if test="workCategory != null and workCategory != ''">#{workCategory},</if>
+            <if test="skillLevel != null and skillLevel != ''">#{skillLevel},</if>
+            <if test="workStatus != null and workStatus != ''">#{workStatus},</if>
+            <if test="entryDate != null">#{entryDate},</if>
+            <if test="regularizationDate != null">#{regularizationDate},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSchWorker" parameterType="com.nexus.core.sch.domain.SchWorker">
         update sch_worker
         <trim prefix="SET" suffixOverrides=",">
-                    <if test="userId != null">user_id = #{userId},</if>
-                    <if test="employeeId != null and employeeId != ''">employee_id = #{employeeId},</if>
-                    <if test="workCategory != null">work_category = #{workCategory},</if>
-                    <if test="skillLevel != null">skill_level = #{skillLevel},</if>
-                    <if test="workStatus != null">work_status = #{workStatus},</if>
-                    <if test="entryDate != null">entry_date = #{entryDate},</if>
-                    <if test="regularizationDate != null">regularization_date = #{regularizationDate},</if>
-                    <if test="createTime != null">create_time = #{createTime},</if>
-                    <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="userName != null and userName != ''">user_name = #{userName},</if>
+            <if test="employeeId != null and employeeId != ''">employee_id = #{employeeId},</if>
+            <if test="phonenumber != null and phonenumber != ''">phonenumber = #{phonenumber},</if>
+            <if test="sex != null and sex != ''">sex = #{sex},</if>
+            <if test="workCategory != null and workCategory != ''">work_category = #{workCategory},</if>
+            <if test="skillLevel != null and skillLevel != ''">skill_level = #{skillLevel},</if>
+            <if test="workStatus != null and workStatus != ''">work_status = #{workStatus},</if>
+            <if test="entryDate != null">entry_date = #{entryDate},</if>
+            <if test="regularizationDate != null">regularization_date = #{regularizationDate},</if>
+            <if test="createBy != null and createBy != ''">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
         </trim>
         where worker_id = #{workerId}
     </update>
@@ -85,7 +171,7 @@
         delete from sch_worker where worker_id = #{workerId}
     </delete>
 
-    <delete id="deleteSchWorkerByWorkerIds" parameterType="String">
+    <delete id="deleteSchWorkerByWorkerIds" parameterType="Long">
         delete from sch_worker where worker_id in
         <foreach item="workerId" collection="array" open="(" separator="," close=")">
             #{workerId}

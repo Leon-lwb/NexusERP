@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchTeamMemberMapper">
+
+    <resultMap type="SchTeamMember" id="SchTeamMemberResult">
+            <result property="memberId"    column="member_id"    />
+            <result property="teamId"    column="team_id"    />
+            <result property="workerId"    column="worker_id"    />
+            <result property="workerName"    column="worker_name"    />
+            <result property="workerCode"    column="worker_code"    />
+            <result property="role"    column="role"    />
+            <result property="effectiveDate"    column="effective_date"    />
+            <result property="expireDate"    column="expire_date"    />
+            <result property="status"    column="status"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchTeamMemberVo">
+        select member_id, team_id, worker_id, worker_name, worker_code, role, effective_date, expire_date, status, remark, create_by, create_time, update_by, update_time from sch_team_member
+    </sql>
+
+    <select id="selectSchTeamMemberList" parameterType="SchTeamMember" resultMap="SchTeamMemberResult">
+        <include refid="selectSchTeamMemberVo"/>
+        <where>
+                        <if test="teamId != null "> and team_id = #{teamId}</if>
+                        <if test="workerId != null "> and worker_id = #{workerId}</if>
+                        <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
+                        <if test="workerCode != null  and workerCode != ''"> and worker_code = #{workerCode}</if>
+                        <if test="role != null  and role != ''"> and role = #{role}</if>
+                        <if test="effectiveDate != null "> and effective_date = #{effectiveDate}</if>
+                        <if test="expireDate != null "> and expire_date = #{expireDate}</if>
+                        <if test="status != null  and status != ''"> and status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="selectSchTeamMemberByMemberId" parameterType="Long" resultMap="SchTeamMemberResult">
+            <include refid="selectSchTeamMemberVo"/>
+            where member_id = #{memberId}
+    </select>
+
+    <insert id="insertSchTeamMember" parameterType="SchTeamMember" useGeneratedKeys="true" keyProperty="memberId">
+        insert into sch_team_member
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="teamId != null">team_id,</if>
+                    <if test="workerId != null">worker_id,</if>
+                    <if test="workerName != null and workerName != ''">worker_name,</if>
+                    <if test="workerCode != null">worker_code,</if>
+                    <if test="role != null">role,</if>
+                    <if test="effectiveDate != null">effective_date,</if>
+                    <if test="expireDate != null">expire_date,</if>
+                    <if test="status != null">status,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="teamId != null">#{teamId},</if>
+                    <if test="workerId != null">#{workerId},</if>
+                    <if test="workerName != null and workerName != ''">#{workerName},</if>
+                    <if test="workerCode != null">#{workerCode},</if>
+                    <if test="role != null">#{role},</if>
+                    <if test="effectiveDate != null">#{effectiveDate},</if>
+                    <if test="expireDate != null">#{expireDate},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchTeamMember" parameterType="SchTeamMember">
+        update sch_team_member
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="teamId != null">team_id = #{teamId},</if>
+                    <if test="workerId != null">worker_id = #{workerId},</if>
+                    <if test="workerName != null and workerName != ''">worker_name = #{workerName},</if>
+                    <if test="workerCode != null">worker_code = #{workerCode},</if>
+                    <if test="role != null">role = #{role},</if>
+                    <if test="effectiveDate != null">effective_date = #{effectiveDate},</if>
+                    <if test="expireDate != null">expire_date = #{expireDate},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where member_id = #{memberId}
+    </update>
+
+    <delete id="deleteSchTeamMemberByMemberId" parameterType="Long">
+        delete from sch_team_member where member_id = #{memberId}
+    </delete>
+
+    <delete id="deleteSchTeamMemberByMemberIds" parameterType="String">
+        delete from sch_team_member where member_id in
+        <foreach item="memberId" collection="array" open="(" separator="," close=")">
+            #{memberId}
+        </foreach>
+    </delete>
+</mapper>

@@ -82,6 +82,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="deptId != null and deptId != 0">
 			AND (u.dept_id = #{deptId} OR u.dept_id IN ( SELECT t.dept_id FROM sys_dept t WHERE find_in_set(#{deptId}, ancestors) ))
 		</if>
+		<if test="params.deptIds != null and params.deptIds.size() > 0">
+			AND u.dept_id IN
+			<foreach collection="params.deptIds" item="deptId" open="(" separator="," close=")">
+				#{deptId}
+			</foreach>
+		</if>
 		<!-- 数据范围过滤 -->
 		${params.dataScope}
 	</select>
@@ -220,4 +226,4 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach> 
  	</delete>
 	
-</mapper> 
+</mapper>

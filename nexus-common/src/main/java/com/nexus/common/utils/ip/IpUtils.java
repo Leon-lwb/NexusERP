@@ -27,7 +27,11 @@ public class IpUtils
      */
     public static String getIpAddr()
     {
-        return getIpAddr(ServletUtils.getRequest());
+        HttpServletRequest request = ServletUtils.getRequest();
+        if (request == null) {
+            return "127.0.0.1";
+        }
+        return getIpAddr(request);
     }
 
     /**

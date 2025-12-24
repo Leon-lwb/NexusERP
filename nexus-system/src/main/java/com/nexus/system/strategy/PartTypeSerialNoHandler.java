@@ -72,7 +72,8 @@ public class PartTypeSerialNoHandler implements PartTypeTemplate {
 
     //不循环方式
     private String cycleN(SysAutoCodePart sysAutoCodePart){
-        List<SysAutoCodeResult> rs = getAutoCodeResult(sysAutoCodePart.getRuleId(),"","");
+        // 修改：即使在非循环模式下，也根据输入字符来查找记录
+        List<SysAutoCodeResult> rs = getAutoCodeResult(sysAutoCodePart.getRuleId(), sysAutoCodePart.getInputCharacter(), CycleMethodMnum.CYCLE_METHOD_OTHER.getCode());
         if(CollectionUtil.isNotEmpty(rs)){
             //存在记录则在当前记录加上步长
             Integer lastSerialNo = rs.get(0).getLastSerialNo();

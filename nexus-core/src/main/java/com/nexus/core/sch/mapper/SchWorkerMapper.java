@@ -3,6 +3,7 @@ package com.nexus.core.sch.mapper;
 import java.util.List;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nexus.core.sch.domain.SchWorker;
+import com.nexus.core.sch.domain.dto.SchWorkerDTO;
 
 /**
  * 生产工人档案Mapper接口
@@ -58,4 +59,12 @@ public interface SchWorkerMapper extends BaseMapper<SchWorker> {
      * @return 结果
      */
     public int deleteSchWorkerByWorkerIds(Long[] workerIds);
+    
+    /**
+     * 新增生产工人档案(DTO版本)
+     *
+     * @param schWorkerDTO 生产工人档案DTO
+     * @return 结果
+     */
+    public int insertSchWorkerDTO(SchWorkerDTO schWorkerDTO);
 }

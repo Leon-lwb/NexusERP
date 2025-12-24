@@ -1,10 +1,10 @@
 package com.nexus.system.mapper;
 
 import java.util.List;
-
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nexus.common.core.domain.entity.SysUser;
+import com.nexus.common.core.domain.entity.vo.SysUserVo;
 
 /**
  * 用户表 数据层

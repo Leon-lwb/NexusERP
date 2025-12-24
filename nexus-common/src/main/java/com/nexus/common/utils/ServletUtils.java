@@ -105,7 +105,11 @@ public class ServletUtils
      */
     public static HttpServletRequest getRequest()
     {
-        return getRequestAttributes().getRequest();
+        ServletRequestAttributes attributes = getRequestAttributes();
+        if (attributes == null) {
+            return null;
+        }
+        return attributes.getRequest();
     }
 
     /**
@@ -113,7 +117,11 @@ public class ServletUtils
      */
     public static HttpServletResponse getResponse()
     {
-        return getRequestAttributes().getResponse();
+        ServletRequestAttributes attributes = getRequestAttributes();
+        if (attributes == null) {
+            return null;
+        }
+        return attributes.getResponse();
     }
 
     /**
