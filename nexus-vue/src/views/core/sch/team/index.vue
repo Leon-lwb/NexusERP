@@ -272,7 +272,7 @@
       </el-form>
   
       <el-table v-loading="workerLoading" :data="workerList" @row-dblclick="selectWorker" @selection-change="handleWorkerSelectionChange" ref="workerSelectTable">
-        <el-table-column type="selection" width="50" align="center" />
+        <el-table-column type="selection" width="50" align="center" v-if="currentSelectType === 'member'" />
         <el-table-column label="员工工号" align="center" prop="employeeId" />
         <el-table-column label="姓名" align="center" prop="userName" />
         <el-table-column label="手机号码" align="center" prop="phonenumber" />
@@ -291,11 +291,11 @@
             <dict-tag :options="sch_skill_level" :value="scope.row.skillLevel" />
           </template>
         </el-table-column>
-        <!-- <el-table-column label="操作" align="center">
+        <el-table-column label="操作" align="center" v-if="currentSelectType === 'leader'">
           <template #default="scope">
             <el-button link type="primary" @click="selectWorker(scope.row)">选择</el-button>
           </template>
-        </el-table-column> -->
+        </el-table-column>
       </el-table>
   
       <pagination v-show="workerTotal > 0" :total="workerTotal" v-model:page="workerQueryParams.pageNum"
@@ -725,30 +725,54 @@ function handleWorkerSelectionChange(selection) {
 
 // 确认选择多个工人
 function confirmSelectWorkers() {
-  if (selectedWorkers.value.length === 0) {
-    proxy.$modal.msgError("请先选择工人")
-    return
-  }
-
-  // 检查所选工人是否已在成员列表中
-  const newMembers = []
-  selectedWorkers.value.forEach(worker => {
-    const exists = schTeamMemberList.value.some(member => member.workerId === worker.workerId)
+  if (currentSelectType.value === 'leader' && selectedWorkers.value.length > 0) {
+    // 如果当前是在选择班组长，只取第一个选择的工人作为班组长
+    const leader = selectedWorkers.value[0]
+    form.value.leaderId = leader.workerId
+    form.value.leaderName = leader.workerName
+    workerVisible.value = false
+    
+    // 检查班组长是否已经在成员列表中，如果没有则添加
+    const exists = schTeamMemberList.value.some(member => member.workerId === leader.workerId)
     if (!exists) {
-      newMembers.push(worker)
+      // 添加班组长到成员列表中
+      const leaderMember = {
+        workerId: leader.workerId,
+        workerName: leader.workerName,
+        workerCode: leader.workerCode,
+        role: 'leader', // 班组长角色
+        effectiveDate: new Date().toISOString().split('T')[0], // 当前日期
+        expireDate: null,
+        status: '0' // 启用状态，确保使用字符串
+      }
+      schTeamMemberList.value.push(leaderMember)
     }
-  })
-
-  if (newMembers.length === 0) {
-    proxy.$modal.msgWarning("所选工人已在成员列表中")
   } else {
-    schTeamMemberList.value.push(...newMembers)
-    proxy.$modal.msgSuccess(`成功添加了 ${newMembers.length} 名成员`)
-  }
+    if (selectedWorkers.value.length === 0) {
+      proxy.$modal.msgError("请先选择工人")
+      return
+    }
 
-  // 重置选择状态
-  selectedWorkers.value = []
-  workerVisible.value = false
+    // 检查所选工人是否已在成员列表中
+    const newMembers = []
+    selectedWorkers.value.forEach(worker => {
+      const exists = schTeamMemberList.value.some(member => member.workerId === worker.workerId)
+      if (!exists) {
+        newMembers.push(worker)
+      }
+    })
+
+    if (newMembers.length === 0) {
+      proxy.$modal.msgWarning("所选工人已在成员列表中")
+    } else {
+      schTeamMemberList.value.push(...newMembers)
+      proxy.$modal.msgSuccess(`成功添加了 ${newMembers.length} 名成员`)
+    }
+
+    // 重置选择状态
+    selectedWorkers.value = []
+    workerVisible.value = false
+  }
 }
 
 // 重置工人查询

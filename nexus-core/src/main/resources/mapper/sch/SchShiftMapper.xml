@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchShiftMapper">
+
+    <resultMap type="SchShift" id="SchShiftResult">
+            <result property="shiftId"    column="shift_id"    />
+            <result property="shiftCode"    column="shift_code"    />
+            <result property="shiftName"    column="shift_name"    />
+            <result property="planId"    column="plan_id"    />
+            <result property="startTime"    column="start_time"    />
+            <result property="endTime"    column="end_time"    />
+            <result property="workHours"    column="work_hours"    />
+            <result property="isCrossDay"    column="is_cross_day"    />
+            <result property="restStartTime"    column="rest_start_time"    />
+            <result property="restEndTime"    column="rest_end_time"    />
+            <result property="lateThreshold"    column="late_threshold"    />
+            <result property="earlyLeaveThreshold"    column="early_leave_threshold"    />
+            <result property="shiftCategory"    column="shift_category"    />
+            <result property="color"    column="color"    />
+            <result property="sortOrder"    column="sort_order"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchShiftVo">
+        select shift_id, shift_code, shift_name, plan_id, start_time, end_time, work_hours, is_cross_day, rest_start_time, rest_end_time, late_threshold, early_leave_threshold, shift_category, color, sort_order, remark, create_by, create_time, update_by, update_time from sch_shift
+    </sql>
+
+    <select id="selectSchShiftList" parameterType="SchShift" resultMap="SchShiftResult">
+        <include refid="selectSchShiftVo"/>
+        <where>
+                        <if test="shiftCode != null  and shiftCode != ''"> and shift_code = #{shiftCode}</if>
+                        <if test="shiftName != null  and shiftName != ''"> and shift_name like concat('%', #{shiftName}, '%')</if>
+                        <if test="planId != null "> and plan_id = #{planId}</if>
+                        <if test="startTime != null "> and start_time = #{startTime}</if>
+                        <if test="endTime != null "> and end_time = #{endTime}</if>
+                        <if test="workHours != null "> and work_hours = #{workHours}</if>
+                        <if test="isCrossDay != null "> and is_cross_day = #{isCrossDay}</if>
+                        <if test="restStartTime != null "> and rest_start_time = #{restStartTime}</if>
+                        <if test="restEndTime != null "> and rest_end_time = #{restEndTime}</if>
+                        <if test="lateThreshold != null "> and late_threshold = #{lateThreshold}</if>
+                        <if test="earlyLeaveThreshold != null "> and early_leave_threshold = #{earlyLeaveThreshold}</if>
+                        <if test="shiftCategory != null  and shiftCategory != ''"> and shift_category = #{shiftCategory}</if>
+                        <if test="color != null  and color != ''"> and color = #{color}</if>
+                        <if test="sortOrder != null "> and sort_order = #{sortOrder}</if>
+        </where>
+    </select>
+
+    <select id="selectSchShiftByShiftId" parameterType="Long" resultMap="SchShiftResult">
+            <include refid="selectSchShiftVo"/>
+            where shift_id = #{shiftId}
+    </select>
+
+    <insert id="insertSchShift" parameterType="SchShift" useGeneratedKeys="true" keyProperty="shiftId">
+        insert into sch_shift
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="shiftCode != null and shiftCode != ''">shift_code,</if>
+                    <if test="shiftName != null and shiftName != ''">shift_name,</if>
+                    <if test="planId != null">plan_id,</if>
+                    <if test="startTime != null">start_time,</if>
+                    <if test="endTime != null">end_time,</if>
+                    <if test="workHours != null">work_hours,</if>
+                    <if test="isCrossDay != null">is_cross_day,</if>
+                    <if test="restStartTime != null">rest_start_time,</if>
+                    <if test="restEndTime != null">rest_end_time,</if>
+                    <if test="lateThreshold != null">late_threshold,</if>
+                    <if test="earlyLeaveThreshold != null">early_leave_threshold,</if>
+                    <if test="shiftCategory != null">shift_category,</if>
+                    <if test="color != null">color,</if>
+                    <if test="sortOrder != null">sort_order,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="shiftCode != null and shiftCode != ''">#{shiftCode},</if>
+                    <if test="shiftName != null and shiftName != ''">#{shiftName},</if>
+                    <if test="planId != null">#{planId},</if>
+                    <if test="startTime != null">#{startTime},</if>
+                    <if test="endTime != null">#{endTime},</if>
+                    <if test="workHours != null">#{workHours},</if>
+                    <if test="isCrossDay != null">#{isCrossDay},</if>
+                    <if test="restStartTime != null">#{restStartTime},</if>
+                    <if test="restEndTime != null">#{restEndTime},</if>
+                    <if test="lateThreshold != null">#{lateThreshold},</if>
+                    <if test="earlyLeaveThreshold != null">#{earlyLeaveThreshold},</if>
+                    <if test="shiftCategory != null">#{shiftCategory},</if>
+                    <if test="color != null">#{color},</if>
+                    <if test="sortOrder != null">#{sortOrder},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchShift" parameterType="SchShift">
+        update sch_shift
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="shiftCode != null and shiftCode != ''">shift_code = #{shiftCode},</if>
+                    <if test="shiftName != null and shiftName != ''">shift_name = #{shiftName},</if>
+                    <if test="planId != null">plan_id = #{planId},</if>
+                    <if test="startTime != null">start_time = #{startTime},</if>
+                    <if test="endTime != null">end_time = #{endTime},</if>
+                    <if test="workHours != null">work_hours = #{workHours},</if>
+                    <if test="isCrossDay != null">is_cross_day = #{isCrossDay},</if>
+                    <if test="restStartTime != null">rest_start_time = #{restStartTime},</if>
+                    <if test="restEndTime != null">rest_end_time = #{restEndTime},</if>
+                    <if test="lateThreshold != null">late_threshold = #{lateThreshold},</if>
+                    <if test="earlyLeaveThreshold != null">early_leave_threshold = #{earlyLeaveThreshold},</if>
+                    <if test="shiftCategory != null">shift_category = #{shiftCategory},</if>
+                    <if test="color != null">color = #{color},</if>
+                    <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where shift_id = #{shiftId}
+    </update>
+
+    <delete id="deleteSchShiftByShiftId" parameterType="Long">
+        delete from sch_shift where shift_id = #{shiftId}
+    </delete>
+
+    <delete id="deleteSchShiftByShiftIds" parameterType="String">
+        delete from sch_shift where shift_id in
+        <foreach item="shiftId" collection="array" open="(" separator="," close=")">
+            #{shiftId}
+        </foreach>
+    </delete>
+
+    <select id="selectCountByPlanId" parameterType="Long" resultType="java.lang.Integer">
+        select count(1) from sch_shift where plan_id = #{planId}
+    </select>
+</mapper>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchPlanTeamMapper">
+
+    <resultMap type="SchPlanTeam" id="SchPlanTeamResult">
+            <result property="recordId"    column="record_id"    />
+            <result property="planId"    column="plan_id"    />
+            <result property="teamId"    column="team_id"    />
+            <result property="teamName"    column="team_name"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchPlanTeamVo">
+        select record_id, plan_id, team_id, team_name, remark, create_by, create_time, update_by, update_time from sch_plan_team
+    </sql>
+
+    <select id="selectSchPlanTeamList" parameterType="SchPlanTeam" resultMap="SchPlanTeamResult">
+        <include refid="selectSchPlanTeamVo"/>
+        <where>
+                        <if test="planId != null "> and plan_id = #{planId}</if>
+                        <if test="teamId != null "> and team_id = #{teamId}</if>
+                        <if test="teamName != null  and teamName != ''"> and team_name like concat('%', #{teamName}, '%')</if>
+        </where>
+    </select>
+
+    <select id="selectSchPlanTeamByRecordId" parameterType="Long" resultMap="SchPlanTeamResult">
+            <include refid="selectSchPlanTeamVo"/>
+            where record_id = #{recordId}
+    </select>
+
+    <insert id="insertSchPlanTeam" parameterType="SchPlanTeam" useGeneratedKeys="true" keyProperty="recordId">
+        insert into sch_plan_team
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="planId != null">plan_id,</if>
+                    <if test="teamId != null">team_id,</if>
+                    <if test="teamName != null">team_name,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="planId != null">#{planId},</if>
+                    <if test="teamId != null">#{teamId},</if>
+                    <if test="teamName != null">#{teamName},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchPlanTeam" parameterType="SchPlanTeam">
+        update sch_plan_team
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="planId != null">plan_id = #{planId},</if>
+                    <if test="teamId != null">team_id = #{teamId},</if>
+                    <if test="teamName != null">team_name = #{teamName},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where record_id = #{recordId}
+    </update>
+
+    <delete id="deleteSchPlanTeamByRecordId" parameterType="Long">
+        delete from sch_plan_team where record_id = #{recordId}
+    </delete>
+
+    <delete id="deleteSchPlanTeamByRecordIds" parameterType="String">
+        delete from sch_plan_team where record_id in
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">
+            #{recordId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchPlanMapper">
+
+    <resultMap type="SchPlan" id="SchPlanResult">
+            <result property="planId"    column="plan_id"    />
+            <result property="planCode"    column="plan_code"    />
+            <result property="planName"    column="plan_name"    />
+            <result property="startDate"    column="start_date"    />
+            <result property="endDate"    column="end_date"    />
+            <result property="periodType"    column="period_type"    />
+            <result property="rotationType"    column="rotation_type"    />
+            <result property="status"    column="status"    />
+            <result property="publishedBy"    column="published_by"    />
+            <result property="publishedTime"    column="published_time"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchPlanVo">
+        select plan_id, plan_code, plan_name, start_date, end_date, period_type, rotation_type, status, published_by, published_time, remark, create_by, create_time, update_by, update_time from sch_plan
+    </sql>
+
+    <select id="selectSchPlanList" parameterType="SchPlan" resultMap="SchPlanResult">
+        <include refid="selectSchPlanVo"/>
+        <where>
+                        <if test="planCode != null  and planCode != ''"> and plan_code = #{planCode}</if>
+                        <if test="planName != null  and planName != ''"> and plan_name like concat('%', #{planName}, '%')</if>
+                        <if test="startDate != null "> and start_date = #{startDate}</if>
+                        <if test="endDate != null "> and end_date = #{endDate}</if>
+                        <if test="periodType != null  and periodType != ''"> and period_type = #{periodType}</if>
+                        <if test="status != null  and status != ''"> and status = #{status}</if>
+                        <if test="publishedBy != null  and publishedBy != ''"> and published_by = #{publishedBy}</if>
+                        <if test="publishedTime != null "> and published_time = #{publishedTime}</if>
+        </where>
+    </select>
+
+    <select id="selectSchPlanByPlanId" parameterType="Long" resultMap="SchPlanResult">
+            <include refid="selectSchPlanVo"/>
+            where plan_id = #{planId}
+    </select>
+
+    <insert id="insertSchPlan" parameterType="SchPlan" useGeneratedKeys="true" keyProperty="planId">
+        insert into sch_plan
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="planCode != null and planCode != ''">plan_code,</if>
+                    <if test="planName != null and planName != ''">plan_name,</if>
+                    <if test="startDate != null">start_date,</if>
+                    <if test="endDate != null">end_date,</if>
+                    <if test="periodType != null">period_type,</if>
+                    <if test="rotationType != null">rotation_type,</if>
+                    <if test="status != null">status,</if>
+                    <if test="publishedBy != null">published_by,</if>
+                    <if test="publishedTime != null">published_time,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="planCode != null and planCode != ''">#{planCode},</if>
+                    <if test="planName != null and planName != ''">#{planName},</if>
+                    <if test="startDate != null">#{startDate},</if>
+                    <if test="endDate != null">#{endDate},</if>
+                    <if test="periodType != null">#{periodType},</if>
+                    <if test="rotationType != null">#{rotationType},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="publishedBy != null">#{publishedBy},</if>
+                    <if test="publishedTime != null">#{publishedTime},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchPlan" parameterType="SchPlan">
+        update sch_plan
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="planCode != null and planCode != ''">plan_code = #{planCode},</if>
+                    <if test="planName != null and planName != ''">plan_name = #{planName},</if>
+                    <if test="startDate != null">start_date = #{startDate},</if>
+                    <if test="endDate != null">end_date = #{endDate},</if>
+                    <if test="periodType != null">period_type = #{periodType},</if>
+                    <if test="rotationType != null">rotation_type = #{rotationType},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="publishedBy != null">published_by = #{publishedBy},</if>
+                    <if test="publishedTime != null">published_time = #{publishedTime},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where plan_id = #{planId}
+    </update>
+
+    <delete id="deleteSchPlanByPlanId" parameterType="Long">
+        delete from sch_plan where plan_id = #{planId}
+    </delete>
+
+    <delete id="deleteSchPlanByPlanIds" parameterType="String">
+        delete from sch_plan where plan_id in
+        <foreach item="planId" collection="array" open="(" separator="," close=")">
+            #{planId}
+        </foreach>
+    </delete>
+</mapper>
