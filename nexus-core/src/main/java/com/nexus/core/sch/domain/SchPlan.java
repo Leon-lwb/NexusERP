@@ -43,14 +43,14 @@ public class SchPlan extends BaseEntity {
     /**
      * 开始日期
      */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "开始日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "开始日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date startDate;
     /**
      * 结束日期
      */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "结束日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "结束日期", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date endDate;
     /**
      * 周期类型
@@ -75,7 +75,7 @@ public class SchPlan extends BaseEntity {
     /**
      * 发布时间
      */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发布时间", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "发布时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date publishedTime;
 }
