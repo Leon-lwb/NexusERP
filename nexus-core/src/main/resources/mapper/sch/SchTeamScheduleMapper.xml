@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchTeamScheduleMapper">
+
+    <resultMap type="SchTeamSchedule" id="SchTeamScheduleResult">
+        <result property="teamScheduleId" column="team_schedule_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="teamId" column="team_id"/>
+        <result property="shiftId" column="shift_id"/>
+        <result property="scheduledDate" column="scheduled_date"/>
+        <result property="weekDay" column="week_day"/>
+        <result property="isHoliday" column="is_holiday"/>
+        <result property="remark" column="remark"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectSchTeamScheduleVo">
+        select team_schedule_id,
+               plan_id,
+               team_id,
+               shift_id,
+               scheduled_date,
+               week_day,
+               is_holiday,
+               remark,
+               create_by,
+               create_time,
+               update_by,
+               update_time
+        from sch_team_schedule
+    </sql>
+
+    <select id="selectSchTeamScheduleList" parameterType="SchTeamSchedule" resultMap="SchTeamScheduleResult">
+        <include refid="selectSchTeamScheduleVo"/>
+        <where>
+            <if test="planId != null ">and plan_id = #{planId}</if>
+            <if test="teamId != null ">and team_id = #{teamId}</if>
+            <if test="shiftId != null ">and shift_id = #{shiftId}</if>
+            <if test="scheduledDate != null ">and scheduled_date = #{scheduledDate}</if>
+            <if test="weekDay != null ">and week_day = #{weekDay}</if>
+            <if test="isHoliday != null ">and is_holiday = #{isHoliday}</if>
+        </where>
+    </select>
+
+    <select id="selectSchTeamScheduleByTeamScheduleId" parameterType="Long" resultMap="SchTeamScheduleResult">
+        <include refid="selectSchTeamScheduleVo"/>
+        where team_schedule_id = #{teamScheduleId}
+    </select>
+
+    <insert id="insertSchTeamSchedule" parameterType="SchTeamSchedule" useGeneratedKeys="true"
+            keyProperty="teamScheduleId">
+        insert into sch_team_schedule
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="planId != null">plan_id,</if>
+            <if test="teamId != null">team_id,</if>
+            <if test="shiftId != null">shift_id,</if>
+            <if test="scheduledDate != null">scheduled_date,</if>
+            <if test="weekDay != null">week_day,</if>
+            <if test="isHoliday != null">is_holiday,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="planId != null">#{planId},</if>
+            <if test="teamId != null">#{teamId},</if>
+            <if test="shiftId != null">#{shiftId},</if>
+            <if test="scheduledDate != null">#{scheduledDate},</if>
+            <if test="weekDay != null">#{weekDay},</if>
+            <if test="isHoliday != null">#{isHoliday},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchTeamSchedule" parameterType="SchTeamSchedule">
+        update sch_team_schedule
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="teamId != null">team_id = #{teamId},</if>
+            <if test="shiftId != null">shift_id = #{shiftId},</if>
+            <if test="scheduledDate != null">scheduled_date = #{scheduledDate},</if>
+            <if test="weekDay != null">week_day = #{weekDay},</if>
+            <if test="isHoliday != null">is_holiday = #{isHoliday},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where team_schedule_id = #{teamScheduleId}
+    </update>
+
+    <delete id="deleteSchTeamScheduleByTeamScheduleId" parameterType="Long">
+        delete
+        from sch_team_schedule
+        where team_schedule_id = #{teamScheduleId}
+    </delete>
+
+    <delete id="deleteSchTeamScheduleByTeamScheduleIds" parameterType="String">
+        delete from sch_team_schedule where team_schedule_id in
+        <foreach item="teamScheduleId" collection="array" open="(" separator="," close=")">
+            #{teamScheduleId}
+        </foreach>
+    </delete>
+</mapper>

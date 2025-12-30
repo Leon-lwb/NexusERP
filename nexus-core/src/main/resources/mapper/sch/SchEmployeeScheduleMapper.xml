@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchEmployeeScheduleMapper">
+
+    <resultMap type="SchEmployeeSchedule" id="SchEmployeeScheduleResult">
+        <result property="scheduleId" column="schedule_id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="workerId" column="worker_id"/>
+        <result property="workerName" column="worker_name"/>
+        <result property="teamId" column="team_id"/>
+        <result property="teamName" column="team_name"/>
+        <result property="shiftId" column="shift_id"/>
+        <result property="shiftName" column="shift_name"/>
+        <result property="scheduledDate" column="scheduled_date"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="actualShiftId" column="actual_shift_id"/>
+        <result property="scheduleStatus" column="schedule_status"/>
+        <result property="isWorkingDay" column="is_working_day"/>
+        <result property="remark" column="remark"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectSchEmployeeScheduleVo">
+        select schedule_id,
+               plan_id,
+               worker_id,
+               worker_name,
+               team_id,
+               team_name,
+               shift_id,
+               shift_name,
+               scheduled_date,
+               start_time,
+               end_time,
+               actual_shift_id,
+               schedule_status,
+               is_working_day,
+               remark,
+               create_by,
+               create_time,
+               update_by,
+               update_time
+        from sch_employee_schedule
+    </sql>
+
+    <select id="selectSchEmployeeScheduleList" parameterType="SchEmployeeSchedule"
+            resultMap="SchEmployeeScheduleResult">
+        <include refid="selectSchEmployeeScheduleVo"/>
+        <where>
+            <if test="planId != null ">and plan_id = #{planId}</if>
+            <if test="workerId != null ">and worker_id = #{workerId}</if>
+            <if test="workerName != null  and workerName != ''">and worker_name like concat('%', #{workerName}, '%')
+            </if>
+            <if test="teamId != null ">and team_id = #{teamId}</if>
+            <if test="teamName != null  and teamName != ''">and team_name like concat('%', #{teamName}, '%')</if>
+            <if test="shiftId != null ">and shift_id = #{shiftId}</if>
+            <if test="shiftName != null  and shiftName != ''">and shift_name like concat('%', #{shiftName}, '%')</if>
+            <if test="scheduledDate != null ">and scheduled_date = #{scheduledDate}</if>
+            <if test="startTime != null ">and start_time = #{startTime}</if>
+            <if test="endTime != null ">and end_time = #{endTime}</if>
+            <if test="actualShiftId != null ">and actual_shift_id = #{actualShiftId}</if>
+            <if test="scheduleStatus != null  and scheduleStatus != ''">and schedule_status = #{scheduleStatus}</if>
+            <if test="isWorkingDay != null ">and is_working_day = #{isWorkingDay}</if>
+        </where>
+    </select>
+
+    <select id="selectSchEmployeeScheduleByScheduleId" parameterType="Long" resultMap="SchEmployeeScheduleResult">
+        <include refid="selectSchEmployeeScheduleVo"/>
+        where schedule_id = #{scheduleId}
+    </select>
+
+    <insert id="insertSchEmployeeSchedule" parameterType="SchEmployeeSchedule" useGeneratedKeys="true"
+            keyProperty="scheduleId">
+        insert into sch_employee_schedule
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="planId != null">plan_id,</if>
+            <if test="workerId != null">worker_id,</if>
+            <if test="workerName != null">worker_name,</if>
+            <if test="teamId != null">team_id,</if>
+            <if test="teamName != null">team_name,</if>
+            <if test="shiftId != null">shift_id,</if>
+            <if test="shiftName != null">shift_name,</if>
+            <if test="scheduledDate != null">scheduled_date,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="actualShiftId != null">actual_shift_id,</if>
+            <if test="scheduleStatus != null">schedule_status,</if>
+            <if test="isWorkingDay != null">is_working_day,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="planId != null">#{planId},</if>
+            <if test="workerId != null">#{workerId},</if>
+            <if test="workerName != null">#{workerName},</if>
+            <if test="teamId != null">#{teamId},</if>
+            <if test="teamName != null">#{teamName},</if>
+            <if test="shiftId != null">#{shiftId},</if>
+            <if test="shiftName != null">#{shiftName},</if>
+            <if test="scheduledDate != null">#{scheduledDate},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="actualShiftId != null">#{actualShiftId},</if>
+            <if test="scheduleStatus != null">#{scheduleStatus},</if>
+            <if test="isWorkingDay != null">#{isWorkingDay},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchEmployeeSchedule" parameterType="SchEmployeeSchedule">
+        update sch_employee_schedule
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="workerId != null">worker_id = #{workerId},</if>
+            <if test="workerName != null">worker_name = #{workerName},</if>
+            <if test="teamId != null">team_id = #{teamId},</if>
+            <if test="teamName != null">team_name = #{teamName},</if>
+            <if test="shiftId != null">shift_id = #{shiftId},</if>
+            <if test="shiftName != null">shift_name = #{shiftName},</if>
+            <if test="scheduledDate != null">scheduled_date = #{scheduledDate},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="actualShiftId != null">actual_shift_id = #{actualShiftId},</if>
+            <if test="scheduleStatus != null">schedule_status = #{scheduleStatus},</if>
+            <if test="isWorkingDay != null">is_working_day = #{isWorkingDay},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where schedule_id = #{scheduleId}
+    </update>
+
+    <delete id="deleteSchEmployeeScheduleByScheduleId" parameterType="Long">
+        delete
+        from sch_employee_schedule
+        where schedule_id = #{scheduleId}
+    </delete>
+
+    <delete id="deleteSchEmployeeScheduleByScheduleIds" parameterType="String">
+        delete from sch_employee_schedule where schedule_id in
+        <foreach item="scheduleId" collection="array" open="(" separator="," close=")">
+            #{scheduleId}
+        </foreach>
+    </delete>
+</mapper>

@@ -46,6 +46,12 @@
             icon="Delete" 
             @click="handleDeleteShift(scope.row)"
             v-if="!props.disabled">删除</el-button>
+          <el-button 
+            link 
+            type="primary" 
+            icon="Operation" 
+            @click="handleScheduleShift(scope.row)"
+            v-if="props.disabled">排班</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -174,12 +180,16 @@
         </div>
       </template>
     </el-dialog>
+    
+    <!-- 班组排班对话框 -->
+    <TeamScheduleManage ref="teamScheduleDialogRef" />
   </div>
 </template>
 
 <script setup name="ShiftManage">
 import { listShift, getShift, delShift, addShift, updateShift } from "@/api/core/sch/shift"
 import { parseTime } from '@/utils/ruoyi'
+import TeamScheduleManage from './TeamScheduleManage.vue' // 引入TeamScheduleManage组件
 
 const { proxy } = getCurrentInstance()
 const { sys_true_or_false, sch_shift_category } = proxy.useDict('sys_true_or_false', 'sch_shift_category')
@@ -207,6 +217,7 @@ const shiftDialogTitle = ref("")
 const shiftForm = ref({})
 const shiftFormRef = ref(null)
 const isViewMode = ref(false) // 新增：标识是否为查看模式
+const teamScheduleDialogRef = ref(null) // 新增：引用TeamSchedule对话框
 
 const shiftRules = ref({
   shiftCode: [
@@ -258,6 +269,13 @@ function handleAddShift() {
   shiftForm.value.planId = props.planId
   shiftDialogTitle.value = "添加班次"
   shiftDialogVisible.value = true
+}
+
+function handleScheduleShift(row) {
+  // 打开排班对话框
+  const shiftId = row.shiftId;
+  // 打开TeamSchedule对话框
+  teamScheduleDialogRef.value.openScheduleDialog(props.planId, shiftId);
 }
 
 function handleEditShift(row) {

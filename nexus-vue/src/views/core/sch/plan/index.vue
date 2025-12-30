@@ -106,6 +106,8 @@
             v-hasPermi="['sch:plan:edit']" v-if="scope.row.status !== 'published'">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
             v-hasPermi="['sch:plan:remove']">删除</el-button>
+          <el-button link type="primary" icon="Operation" @click="handleSchedule(scope.row)"
+            v-if="scope.row.status === 'published'">排班</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -243,7 +245,6 @@ const title = ref("")
 const isViewMode = ref(false) // 新增：标识是否为查看模式
 const activeTab = ref('shift') // 新增：标签页控制
 const selectedRow = ref({}) // 新增：记录当前选中的行
-
 const data = reactive({
   form: {},
   queryParams: {
@@ -287,6 +288,19 @@ function getList() {
     planList.value = response.rows
     total.value = response.total
     loading.value = false
+  })
+}
+
+/** 排班按钮操作 */
+function handleSchedule(row) {
+  reset()
+  isViewMode.value = true // 设置为只读模式，但允许排班操作
+  const _planId = row.planId || ids.value
+  getPlan(_planId).then(response => {
+    form.value = response.data
+    open.value = true
+    title.value = "排班管理"
+    activeTab.value = 'shift' // 默认打开班次标签页
   })
 }
 
