@@ -105,4 +105,19 @@ public class SchEmployeeScheduleController extends BaseController {
     public AjaxResult remove(@PathVariable Long[] scheduleIds) {
         return toAjax(schEmployeeScheduleService.deleteSchEmployeeScheduleByScheduleIds(scheduleIds));
     }
+
+    /**
+     * 生成员工排班明细 sch_employee_schedule ts 为每个员工、每个排班日期生成一条
+     * sch_team_schedule 关联班组成员 ts.team_id = tm.team_id AND tm.status = 1 -- 仅有效成员
+     * sch_shift 关联班次信息（获取时间）ts.shift_id = s.shift_id
+     * sch_plan 关联计划，确保在有效期内 ts.plan_id = p.plan_id AND ts.scheduled_date BETWEEN p.start_date AND p.end_date
+     */
+    @ApiOperation("生成员工排班明细")
+    @PreAuthorize("@ss.hasPermi('sch:employeeSchedule:add')")
+    @Log(title = "员工排班明细", businessType = BusinessType.INSERT)
+    @PostMapping("/generate")
+    public AjaxResult generate() {
+        return toAjax(schEmployeeScheduleService.generate());
+    }
+
 }

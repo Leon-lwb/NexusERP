@@ -59,4 +59,11 @@ public interface ISchEmployeeScheduleService extends IService<SchEmployeeSchedul
      * @return 结果
      */
     public int deleteSchEmployeeScheduleByScheduleId(Long scheduleId);
+
+    /**
+     * 生成员工排班明细
+     *
+     * @return 结果
+     */
+    public int generate();
 }
