@@ -14,6 +14,8 @@ import com.nexus.common.core.domain.entity.SysMenu;
 import com.nexus.common.core.domain.entity.SysUser;
 import com.nexus.common.core.domain.model.LoginBody;
 import com.nexus.common.core.domain.model.LoginUser;
+import com.nexus.common.core.domain.model.SmsCodeBody;
+import com.nexus.common.core.domain.model.SmsLoginBody;
 import com.nexus.common.core.text.Convert;
 import com.nexus.common.utils.DateUtils;
 import com.nexus.common.utils.SecurityUtils;
@@ -47,6 +49,9 @@ public class SysLoginController
     @Autowired
     private ISysConfigService configService;
 
+    @Autowired
+    private com.nexus.framework.web.service.SmsCodeService smsCodeService;
+
     /**
      * 登录方法
      * 
@@ -62,6 +67,47 @@ public class SysLoginController
                 loginBody.getUuid());
         ajax.put(Constants.TOKEN, token);
         return ajax;
+    }
+
+    /**
+     * 短信验证码登录
+     * 
+     * @param smsLoginBody 短信登录信息
+     * @return 结果
+     */
+    @PostMapping("/auth/smsLogin")
+    public AjaxResult smsLogin(@RequestBody SmsLoginBody smsLoginBody)
+    {
+        String mobile = smsLoginBody.getMobile();
+        String code = smsLoginBody.getCode();
+
+        // 验证短信验证码
+        if (!smsCodeService.validateSmsCode(mobile, code))
+        {
+            return AjaxResult.error(5005, "验证码错误");
+        }
+
+        // 通过手机号获取用户，如果用户不存在则创建新用户
+        SysUser user = loginService.createOrGetUserByMobile(mobile);
+
+        // 生成令牌
+        String token = loginService.loginBySms(user.getUserName());
+        
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put(Constants.TOKEN, token);
+        return ajax;
+    }
+
+    /**
+     * 发送短信验证码
+     * 
+     * @param smsCodeBody 短信验证码请求信息
+     * @return 结果
+     */
+    @PostMapping("/auth/sms")
+    public AjaxResult sendSmsCode(@RequestBody SmsCodeBody smsCodeBody)
+    {
+        return smsCodeService.sendSmsCode(smsCodeBody);
     }
 
     /**

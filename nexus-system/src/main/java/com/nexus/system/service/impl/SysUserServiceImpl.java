@@ -131,6 +131,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     /**
+     * 通过手机号查询用户
+     * 
+     * @param phonenumber 手机号
+     * @return 用户对象信息
+     */
+    @Override
+    public SysUser selectUserByPhonenumber(String phonenumber)
+    {
+        return userMapper.selectUserByPhonenumber(phonenumber);
+    }
+
+    /**
      * 查询用户所属角色组
      * 
      * @param userName 用户名

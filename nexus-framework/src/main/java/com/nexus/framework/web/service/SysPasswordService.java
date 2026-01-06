@@ -44,6 +44,12 @@ public class SysPasswordService
     public void validate(SysUser user)
     {
         Authentication usernamePasswordAuthenticationToken = AuthenticationContextHolder.getContext();
+        // 如果没有认证上下文，则不进行密码验证（例如短信登录场景）
+        if (usernamePasswordAuthenticationToken == null)
+        {
+            return;
+        }
+        
         String username = usernamePasswordAuthenticationToken.getName();
         String password = usernamePasswordAuthenticationToken.getCredentials().toString();
 

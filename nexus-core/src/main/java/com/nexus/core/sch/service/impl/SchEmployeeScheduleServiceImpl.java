@@ -233,7 +233,12 @@ public class SchEmployeeScheduleServiceImpl extends ServiceImpl<SchEmployeeSched
                                         schedule.setStartTime(combineDateAndTime(scheduleDate, shift.getStartTime()));
                                     }
                                     if (shift.getEndTime() != null) {
-                                        schedule.setEndTime(combineDateAndTime(scheduleDate, shift.getEndTime()));
+                                        // 如果班次跨天，则结束时间需要加一天
+                                        if (shift.getIsCrossDay() != null && shift.getIsCrossDay() == 1) {
+                                            schedule.setEndTime(combineDateAndTimeWithDayOffset(scheduleDate, shift.getEndTime(), 1));
+                                        } else {
+                                            schedule.setEndTime(combineDateAndTime(scheduleDate, shift.getEndTime()));
+                                        }
                                     }
                                     
                                     schedule.setScheduleStatus("normal"); // normal-正常
@@ -385,6 +390,32 @@ public class SchEmployeeScheduleServiceImpl extends ServiceImpl<SchEmployeeSched
         
         Calendar dateCal = Calendar.getInstance();
         dateCal.setTime(date);
+        
+        Calendar timeCal = Calendar.getInstance();
+        timeCal.setTime(time);
+        
+        // 设置时间为日期的年月日，但保留时分秒
+        Calendar resultCal = Calendar.getInstance();
+        resultCal.set(Calendar.YEAR, dateCal.get(Calendar.YEAR));
+        resultCal.set(Calendar.MONTH, dateCal.get(Calendar.MONTH));
+        resultCal.set(Calendar.DAY_OF_MONTH, dateCal.get(Calendar.DAY_OF_MONTH));
+        resultCal.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY));
+        resultCal.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE));
+        resultCal.set(Calendar.SECOND, timeCal.get(Calendar.SECOND));
+        resultCal.set(Calendar.MILLISECOND, timeCal.get(Calendar.MILLISECOND));
+        
+        return resultCal.getTime();
+    }
+
+    // 将日期和时间合并成一个Date对象，并加上指定的天数偏移
+    private Date combineDateAndTimeWithDayOffset(Date date, Date time, int dayOffset) {
+        if (date == null || time == null) {
+            return null;
+        }
+        
+        Calendar dateCal = Calendar.getInstance();
+        dateCal.setTime(date);
+        dateCal.add(Calendar.DAY_OF_MONTH, dayOffset);
         
         Calendar timeCal = Calendar.getInstance();
         timeCal.setTime(time);

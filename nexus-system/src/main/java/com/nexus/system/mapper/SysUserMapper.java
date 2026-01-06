@@ -128,6 +128,14 @@ public interface SysUserMapper extends BaseMapper<SysUser>
     public SysUser checkEmailUnique(String email);
     
     /**
+     * 通过手机号查询用户
+     * 
+     * @param phonenumber 手机号
+     * @return 用户对象信息
+     */
+    public SysUser selectUserByPhonenumber(String phonenumber);
+    
+    /**
      * 根据父部门ID查询用户列表
      * 
      * @param parentDeptId 父部门ID

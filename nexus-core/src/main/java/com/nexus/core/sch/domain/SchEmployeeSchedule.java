@@ -70,19 +70,19 @@ public class SchEmployeeSchedule extends BaseEntity {
     /**
      * 排班开始时间
      */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "排班开始时间", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "排班开始时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date startTime;
     /**
      * 排班结束时间
      */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "排班结束时间", width = 30, dateFormat = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "排班结束时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date endTime;
     /**
      * 实际班次ID（用于调班覆盖）
      */
-    @Excel(name = "实际班次ID", readConverterExp = "用=于调班覆盖")
+    @Excel(name = "实际班次ID", readConverterExp = "用于调班覆盖")
     private Long actualShiftId;
     /**
      * 排班状态
