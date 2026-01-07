@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchAttendanceMapper">
+
+    <resultMap type="SchAttendance" id="SchAttendanceResult">
+            <result property="attendanceId"    column="attendance_id"    />
+            <result property="workerId"    column="worker_id"    />
+            <result property="workerName"    column="worker_name"    />
+            <result property="recordDate"    column="record_date"    />
+            <result property="scheduleId"    column="schedule_id"    />
+            <result property="clockInTime"    column="clock_in_time"    />
+            <result property="clockOutTime"    column="clock_out_time"    />
+            <result property="lateMinutes"    column="late_minutes"    />
+            <result property="leaveEarlyMinutes"    column="leave_early_minutes"    />
+            <result property="overtimeHours"    column="overtime_hours"    />
+            <result property="attendanceStatus"    column="attendance_status"    />
+            <result property="sourceType"    column="source_type"    />
+            <result property="deviceId"    column="device_id"    />
+            <result property="deviceName"    column="device_name"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchAttendanceVo">
+        select attendance_id, worker_id, worker_name, record_date, schedule_id, clock_in_time, clock_out_time, late_minutes, leave_early_minutes, overtime_hours, attendance_status, source_type, device_id, device_name, remark, create_by, create_time, update_by, update_time from sch_attendance
+    </sql>
+
+    <select id="selectSchAttendanceList" parameterType="SchAttendance" resultMap="SchAttendanceResult">
+        <include refid="selectSchAttendanceVo"/>
+        <where>
+                        <if test="workerId != null "> and worker_id = #{workerId}</if>
+                        <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
+                        <if test="recordDate != null "> and record_date = #{recordDate}</if>
+                        <if test="scheduleId != null "> and schedule_id = #{scheduleId}</if>
+                        <if test="clockInTime != null "> and clock_in_time = #{clockInTime}</if>
+                        <if test="clockOutTime != null "> and clock_out_time = #{clockOutTime}</if>
+                        <if test="lateMinutes != null "> and late_minutes = #{lateMinutes}</if>
+                        <if test="leaveEarlyMinutes != null "> and leave_early_minutes = #{leaveEarlyMinutes}</if>
+                        <if test="overtimeHours != null "> and overtime_hours = #{overtimeHours}</if>
+                        <if test="attendanceStatus != null  and attendanceStatus != ''"> and attendance_status = #{attendanceStatus}</if>
+                        <if test="sourceType != null  and sourceType != ''"> and source_type = #{sourceType}</if>
+                        <if test="deviceId != null  and deviceId != ''"> and device_id = #{deviceId}</if>
+                        <if test="deviceName != null  and deviceName != ''"> and device_name like concat('%', #{deviceName}, '%')</if>
+        </where>
+    </select>
+
+    <select id="selectSchAttendanceByAttendanceId" parameterType="Long" resultMap="SchAttendanceResult">
+            <include refid="selectSchAttendanceVo"/>
+            where attendance_id = #{attendanceId}
+    </select>
+
+    <insert id="insertSchAttendance" parameterType="SchAttendance" useGeneratedKeys="true" keyProperty="attendanceId">
+        insert into sch_attendance
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="workerId != null">worker_id,</if>
+                    <if test="workerName != null">worker_name,</if>
+                    <if test="recordDate != null">record_date,</if>
+                    <if test="scheduleId != null">schedule_id,</if>
+                    <if test="clockInTime != null">clock_in_time,</if>
+                    <if test="clockOutTime != null">clock_out_time,</if>
+                    <if test="lateMinutes != null">late_minutes,</if>
+                    <if test="leaveEarlyMinutes != null">leave_early_minutes,</if>
+                    <if test="overtimeHours != null">overtime_hours,</if>
+                    <if test="attendanceStatus != null">attendance_status,</if>
+                    <if test="sourceType != null">source_type,</if>
+                    <if test="deviceId != null">device_id,</if>
+                    <if test="deviceName != null">device_name,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="workerId != null">#{workerId},</if>
+                    <if test="workerName != null">#{workerName},</if>
+                    <if test="recordDate != null">#{recordDate},</if>
+                    <if test="scheduleId != null">#{scheduleId},</if>
+                    <if test="clockInTime != null">#{clockInTime},</if>
+                    <if test="clockOutTime != null">#{clockOutTime},</if>
+                    <if test="lateMinutes != null">#{lateMinutes},</if>
+                    <if test="leaveEarlyMinutes != null">#{leaveEarlyMinutes},</if>
+                    <if test="overtimeHours != null">#{overtimeHours},</if>
+                    <if test="attendanceStatus != null">#{attendanceStatus},</if>
+                    <if test="sourceType != null">#{sourceType},</if>
+                    <if test="deviceId != null">#{deviceId},</if>
+                    <if test="deviceName != null">#{deviceName},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchAttendance" parameterType="SchAttendance">
+        update sch_attendance
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="workerId != null">worker_id = #{workerId},</if>
+                    <if test="workerName != null">worker_name = #{workerName},</if>
+                    <if test="recordDate != null">record_date = #{recordDate},</if>
+                    <if test="scheduleId != null">schedule_id = #{scheduleId},</if>
+                    <if test="clockInTime != null">clock_in_time = #{clockInTime},</if>
+                    <if test="clockOutTime != null">clock_out_time = #{clockOutTime},</if>
+                    <if test="lateMinutes != null">late_minutes = #{lateMinutes},</if>
+                    <if test="leaveEarlyMinutes != null">leave_early_minutes = #{leaveEarlyMinutes},</if>
+                    <if test="overtimeHours != null">overtime_hours = #{overtimeHours},</if>
+                    <if test="attendanceStatus != null">attendance_status = #{attendanceStatus},</if>
+                    <if test="sourceType != null">source_type = #{sourceType},</if>
+                    <if test="deviceId != null">device_id = #{deviceId},</if>
+                    <if test="deviceName != null">device_name = #{deviceName},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where attendance_id = #{attendanceId}
+    </update>
+
+    <delete id="deleteSchAttendanceByAttendanceId" parameterType="Long">
+        delete from sch_attendance where attendance_id = #{attendanceId}
+    </delete>
+
+    <delete id="deleteSchAttendanceByAttendanceIds" parameterType="String">
+        delete from sch_attendance where attendance_id in
+        <foreach item="attendanceId" collection="array" open="(" separator="," close=")">
+            #{attendanceId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.sch.mapper.SchPunchRuleMapper">
+
+    <resultMap type="SchPunchRule" id="SchPunchRuleResult">
+            <result property="ruleId"    column="rule_id"    />
+            <result property="ruleName"    column="rule_name"    />
+            <result property="shiftId"    column="shift_id"    />
+            <result property="shiftName"    column="shift_name"    />
+            <result property="workStartTime"    column="work_start_time"    />
+            <result property="workEndTime"    column="work_end_time"    />
+            <result property="allowClockInStart"    column="allow_clock_in_start"    />
+            <result property="allowClockInEnd"    column="allow_clock_in_end"    />
+            <result property="allowClockOutStart"    column="allow_clock_out_start"    />
+            <result property="allowClockOutEnd"    column="allow_clock_out_end"    />
+            <result property="locationLat"    column="location_lat"    />
+            <result property="locationLng"    column="location_lng"    />
+            <result property="locationRadius"    column="location_radius"    />
+            <result property="locationAddress"    column="location_address"    />
+            <result property="allowWifiSsids"    column="allow_wifi_ssids"    />
+            <result property="allowBluetoothDevices"    column="allow_bluetooth_devices"    />
+            <result property="allowOutdoorPunch"    column="allow_outdoor_punch"    />
+            <result property="outdoorRequirePhoto"    column="outdoor_require_photo"    />
+            <result property="allowSupplement"    column="allow_supplement"    />
+            <result property="supplementDeadline"    column="supplement_deadline"    />
+            <result property="lateThreshold"    column="late_threshold"    />
+            <result property="earlyLeaveThreshold"    column="early_leave_threshold"    />
+            <result property="absentThreshold"    column="absent_threshold"    />
+            <result property="isEnabled"    column="is_enabled"    />
+            <result property="remark"    column="remark"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSchPunchRuleVo">
+        select rule_id, rule_name, shift_id, shift_name, work_start_time, work_end_time, allow_clock_in_start, allow_clock_in_end, allow_clock_out_start, allow_clock_out_end, location_lat, location_lng, location_radius, location_address, allow_wifi_ssids, allow_bluetooth_devices, allow_outdoor_punch, outdoor_require_photo, allow_supplement, supplement_deadline, late_threshold, early_leave_threshold, absent_threshold, is_enabled, remark, create_by, create_time, update_by, update_time from sch_punch_rule
+    </sql>
+
+    <select id="selectSchPunchRuleList" parameterType="SchPunchRule" resultMap="SchPunchRuleResult">
+        <include refid="selectSchPunchRuleVo"/>
+        <where>
+                        <if test="ruleName != null  and ruleName != ''"> and rule_name like concat('%', #{ruleName}, '%')</if>
+                        <if test="shiftId != null "> and shift_id = #{shiftId}</if>
+                        <if test="shiftName != null  and shiftName != ''"> and shift_name like concat('%', #{shiftName}, '%')</if>
+                        <if test="workStartTime != null "> and work_start_time = #{workStartTime}</if>
+                        <if test="workEndTime != null "> and work_end_time = #{workEndTime}</if>
+                        <if test="allowClockInStart != null "> and allow_clock_in_start = #{allowClockInStart}</if>
+                        <if test="allowClockInEnd != null "> and allow_clock_in_end = #{allowClockInEnd}</if>
+                        <if test="allowClockOutStart != null "> and allow_clock_out_start = #{allowClockOutStart}</if>
+                        <if test="allowClockOutEnd != null "> and allow_clock_out_end = #{allowClockOutEnd}</if>
+                        <if test="locationLat != null "> and location_lat = #{locationLat}</if>
+                        <if test="locationLng != null "> and location_lng = #{locationLng}</if>
+                        <if test="locationRadius != null "> and location_radius = #{locationRadius}</if>
+                        <if test="locationAddress != null  and locationAddress != ''"> and location_address = #{locationAddress}</if>
+                        <if test="allowWifiSsids != null  and allowWifiSsids != ''"> and allow_wifi_ssids = #{allowWifiSsids}</if>
+                        <if test="allowBluetoothDevices != null  and allowBluetoothDevices != ''"> and allow_bluetooth_devices = #{allowBluetoothDevices}</if>
+                        <if test="allowOutdoorPunch != null "> and allow_outdoor_punch = #{allowOutdoorPunch}</if>
+                        <if test="outdoorRequirePhoto != null "> and outdoor_require_photo = #{outdoorRequirePhoto}</if>
+                        <if test="allowSupplement != null "> and allow_supplement = #{allowSupplement}</if>
+                        <if test="supplementDeadline != null "> and supplement_deadline = #{supplementDeadline}</if>
+                        <if test="lateThreshold != null "> and late_threshold = #{lateThreshold}</if>
+                        <if test="earlyLeaveThreshold != null "> and early_leave_threshold = #{earlyLeaveThreshold}</if>
+                        <if test="absentThreshold != null "> and absent_threshold = #{absentThreshold}</if>
+                        <if test="isEnabled != null "> and is_enabled = #{isEnabled}</if>
+        </where>
+    </select>
+
+    <select id="selectSchPunchRuleByRuleId" parameterType="Long" resultMap="SchPunchRuleResult">
+            <include refid="selectSchPunchRuleVo"/>
+            where rule_id = #{ruleId}
+    </select>
+
+    <insert id="insertSchPunchRule" parameterType="SchPunchRule" useGeneratedKeys="true" keyProperty="ruleId">
+        insert into sch_punch_rule
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="ruleName != null and ruleName != ''">rule_name,</if>
+                    <if test="shiftId != null">shift_id,</if>
+                    <if test="shiftName != null">shift_name,</if>
+                    <if test="workStartTime != null">work_start_time,</if>
+                    <if test="workEndTime != null">work_end_time,</if>
+                    <if test="allowClockInStart != null">allow_clock_in_start,</if>
+                    <if test="allowClockInEnd != null">allow_clock_in_end,</if>
+                    <if test="allowClockOutStart != null">allow_clock_out_start,</if>
+                    <if test="allowClockOutEnd != null">allow_clock_out_end,</if>
+                    <if test="locationLat != null">location_lat,</if>
+                    <if test="locationLng != null">location_lng,</if>
+                    <if test="locationRadius != null">location_radius,</if>
+                    <if test="locationAddress != null">location_address,</if>
+                    <if test="allowWifiSsids != null">allow_wifi_ssids,</if>
+                    <if test="allowBluetoothDevices != null">allow_bluetooth_devices,</if>
+                    <if test="allowOutdoorPunch != null">allow_outdoor_punch,</if>
+                    <if test="outdoorRequirePhoto != null">outdoor_require_photo,</if>
+                    <if test="allowSupplement != null">allow_supplement,</if>
+                    <if test="supplementDeadline != null">supplement_deadline,</if>
+                    <if test="lateThreshold != null">late_threshold,</if>
+                    <if test="earlyLeaveThreshold != null">early_leave_threshold,</if>
+                    <if test="absentThreshold != null">absent_threshold,</if>
+                    <if test="isEnabled != null">is_enabled,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="ruleName != null and ruleName != ''">#{ruleName},</if>
+                    <if test="shiftId != null">#{shiftId},</if>
+                    <if test="shiftName != null">#{shiftName},</if>
+                    <if test="workStartTime != null">#{workStartTime},</if>
+                    <if test="workEndTime != null">#{workEndTime},</if>
+                    <if test="allowClockInStart != null">#{allowClockInStart},</if>
+                    <if test="allowClockInEnd != null">#{allowClockInEnd},</if>
+                    <if test="allowClockOutStart != null">#{allowClockOutStart},</if>
+                    <if test="allowClockOutEnd != null">#{allowClockOutEnd},</if>
+                    <if test="locationLat != null">#{locationLat},</if>
+                    <if test="locationLng != null">#{locationLng},</if>
+                    <if test="locationRadius != null">#{locationRadius},</if>
+                    <if test="locationAddress != null">#{locationAddress},</if>
+                    <if test="allowWifiSsids != null">#{allowWifiSsids},</if>
+                    <if test="allowBluetoothDevices != null">#{allowBluetoothDevices},</if>
+                    <if test="allowOutdoorPunch != null">#{allowOutdoorPunch},</if>
+                    <if test="outdoorRequirePhoto != null">#{outdoorRequirePhoto},</if>
+                    <if test="allowSupplement != null">#{allowSupplement},</if>
+                    <if test="supplementDeadline != null">#{supplementDeadline},</if>
+                    <if test="lateThreshold != null">#{lateThreshold},</if>
+                    <if test="earlyLeaveThreshold != null">#{earlyLeaveThreshold},</if>
+                    <if test="absentThreshold != null">#{absentThreshold},</if>
+                    <if test="isEnabled != null">#{isEnabled},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSchPunchRule" parameterType="SchPunchRule">
+        update sch_punch_rule
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="ruleName != null and ruleName != ''">rule_name = #{ruleName},</if>
+                    <if test="shiftId != null">shift_id = #{shiftId},</if>
+                    <if test="shiftName != null">shift_name = #{shiftName},</if>
+                    <if test="workStartTime != null">work_start_time = #{workStartTime},</if>
+                    <if test="workEndTime != null">work_end_time = #{workEndTime},</if>
+                    <if test="allowClockInStart != null">allow_clock_in_start = #{allowClockInStart},</if>
+                    <if test="allowClockInEnd != null">allow_clock_in_end = #{allowClockInEnd},</if>
+                    <if test="allowClockOutStart != null">allow_clock_out_start = #{allowClockOutStart},</if>
+                    <if test="allowClockOutEnd != null">allow_clock_out_end = #{allowClockOutEnd},</if>
+                    <if test="locationLat != null">location_lat = #{locationLat},</if>
+                    <if test="locationLng != null">location_lng = #{locationLng},</if>
+                    <if test="locationRadius != null">location_radius = #{locationRadius},</if>
+                    <if test="locationAddress != null">location_address = #{locationAddress},</if>
+                    <if test="allowWifiSsids != null">allow_wifi_ssids = #{allowWifiSsids},</if>
+                    <if test="allowBluetoothDevices != null">allow_bluetooth_devices = #{allowBluetoothDevices},</if>
+                    <if test="allowOutdoorPunch != null">allow_outdoor_punch = #{allowOutdoorPunch},</if>
+                    <if test="outdoorRequirePhoto != null">outdoor_require_photo = #{outdoorRequirePhoto},</if>
+                    <if test="allowSupplement != null">allow_supplement = #{allowSupplement},</if>
+                    <if test="supplementDeadline != null">supplement_deadline = #{supplementDeadline},</if>
+                    <if test="lateThreshold != null">late_threshold = #{lateThreshold},</if>
+                    <if test="earlyLeaveThreshold != null">early_leave_threshold = #{earlyLeaveThreshold},</if>
+                    <if test="absentThreshold != null">absent_threshold = #{absentThreshold},</if>
+                    <if test="isEnabled != null">is_enabled = #{isEnabled},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where rule_id = #{ruleId}
+    </update>
+
+    <delete id="deleteSchPunchRuleByRuleId" parameterType="Long">
+        delete from sch_punch_rule where rule_id = #{ruleId}
+    </delete>
+
+    <delete id="deleteSchPunchRuleByRuleIds" parameterType="String">
+        delete from sch_punch_rule where rule_id in
+        <foreach item="ruleId" collection="array" open="(" separator="," close=")">
+            #{ruleId}
+        </foreach>
+    </delete>
+</mapper>

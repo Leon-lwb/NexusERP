@@ -1,0 +1,238 @@
+// ... existing code ...
+
+@Service
+public class SchEmployeeScheduleServiceImpl extends ServiceImpl<SchEmployeeScheduleMapper, SchEmployeeSchedule> implements ISchEmployeeScheduleService {
+
+    // ... existing autowired fields ...
+
+    /**
+     * 生成员工排班明细（支持周期性轮换）
+     * 轮换规则：A班组第一周是早班，第二周是中班，第三周是晚班，第四周再回到早班
+     * 轮换规则根据排班规则中的周期类型，周则是每周轮换，月是每月轮换等
+     */
+    @Override
+    public int generate() {
+        // 清空现有的员工排班明细
+        schEmployeeScheduleMapper.delete(null);
+
+        // 获取所有有效的班组成员（状态为1的员工）
+        List<SchTeamMember> teamMembers = getValidTeamMembers();
+
+        if (teamMembers.isEmpty()) {
+            return 0; // 没有有效班组成员，直接返回
+        }
+
+        // 获取排班计划
+        List<SchPlan> plans = getValidPlans();
+        if (plans.isEmpty()) {
+            return 0; // 没有有效排班计划，直接返回
+        }
+
+        // 遍历每个排班计划
+        int generatedCount = 0;
+        List<SchEmployeeSchedule> schedulesToInsert = new ArrayList<>();
+
+        for (SchPlan plan : plans) {
+            // 获取该计划下参与的班组
+            List<SchPlanTeam> planTeams = getPlanTeamsByPlanId(plan.getPlanId());
+            if (planTeams.isEmpty()) {
+                continue; // 如果该计划下没有参与的班组，跳过
+            }
+
+            // 获取该计划下的所有班组排班配置，按班组分组
+            List<SchTeamSchedule> allTeamSchedules = getTeamSchedulesByPlanId(plan.getPlanId());
+            Map<Long, List<SchTeamSchedule>> teamSchedulesMap = allTeamSchedules.stream()
+                .collect(Collectors.groupingBy(SchTeamSchedule::getTeamId));
+
+            // 根据计划的开始日期、结束日期和周期类型生成排班日期
+            List<Date> scheduleDates = generateScheduleDates(plan.getStartDate(), plan.getEndDate(), plan.getPeriodType());
+
+            // 为每个班组初始化轮换索引
+            Map<Long, Integer> teamRotationIndexMap = new HashMap<>();
+            for (SchPlanTeam planTeam : planTeams) {
+                teamRotationIndexMap.put(planTeam.getTeamId(), 0);
+            }
+
+            // 按日期分组，用于确定周期
+            Map<Integer, List<Date>> periodDatesMap = groupDatesByPeriod(scheduleDates, plan.getStartDate(), plan.getPeriodType());
+
+            // 遍历每个周期
+            for (Map.Entry<Integer, List<Date>> periodEntry : periodDatesMap.entrySet()) {
+                int periodIndex = periodEntry.getKey();
+                List<Date> periodDates = periodEntry.getValue();
+
+                // 为每个排班日期生成员工排班明细
+                for (Date scheduleDate : periodDates) {
+                    // 检查是否为周期的最后一天（休假日）
+                    boolean isHoliday = isPeriodLastDay(scheduleDate, plan.getStartDate(), plan.getPeriodType());
+
+                    if (isHoliday) {
+                        // 为所有成员生成休假记录
+                        for (SchTeamMember member : teamMembers) {
+                            SchEmployeeSchedule schedule = new SchEmployeeSchedule();
+
+                            schedule.setPlanId(plan.getPlanId());
+                            schedule.setWorkerId(member.getWorkerId());
+                            schedule.setWorkerName(member.getWorkerName());
+                            schedule.setTeamId(member.getTeamId());
+                            schedule.setTeamName(getTeamNameById(member.getTeamId()));
+                            schedule.setScheduledDate(scheduleDate);
+                            schedule.setScheduleStatus("rest"); // rest-休假
+                            schedule.setIsWorkingDay(0); // 休假不是工作日
+                            // 设置班次相关字段为null，避免数据库约束错误
+                            schedule.setShiftId(-1L);
+                            schedule.setShiftName(null);
+                            schedule.setStartTime(null);
+                            schedule.setEndTime(null);
+
+                            schedulesToInsert.add(schedule);
+                        }
+                    } else {
+                        // 为每个参与计划的班组生成排班记录
+                        for (SchPlanTeam planTeam : planTeams) {
+                            Long teamId = planTeam.getTeamId();
+
+                            // 获取该班组的排班配置（可轮换的班次列表）
+                            List<SchTeamSchedule> teamSchedulesForTeam = teamSchedulesMap.get(teamId);
+                            if (teamSchedulesForTeam == null || teamSchedulesForTeam.isEmpty()) {
+                                continue; // 该班组没有配置班次，跳过
+                            }
+
+                            // 根据周期索引确定当前应该使用哪个班次
+                            int rotationIndex = teamRotationIndexMap.get(teamId) % teamSchedulesForTeam.size();
+                            SchTeamSchedule currentTeamSchedule = teamSchedulesForTeam.get(rotationIndex);
+
+                            // 获取班次信息
+                            SchShift shift = getShiftById(currentTeamSchedule.getShiftId());
+                            if (shift == null) {
+                                continue; // 班次信息不存在，跳过
+                            }
+
+                            // 获取该班组的所有成员
+                            List<SchTeamMember> membersInTeam = teamMembers.stream()
+                                .filter(member -> member.getTeamId().equals(teamId))
+                                .collect(Collectors.toList());
+
+                            // 为该班组的每个成员生成排班记录
+                            for (SchTeamMember member : membersInTeam) {
+                                SchEmployeeSchedule schedule = new SchEmployeeSchedule();
+
+                                schedule.setPlanId(plan.getPlanId());
+                                schedule.setWorkerId(member.getWorkerId());
+                                schedule.setWorkerName(member.getWorkerName());
+                                schedule.setTeamId(member.getTeamId());
+                                schedule.setTeamName(getTeamNameById(member.getTeamId()));
+                                schedule.setShiftId(shift.getShiftId());
+                                schedule.setActualShiftId(currentTeamSchedule.getShiftId());
+                                schedule.setShiftName(shift.getShiftName());
+                                schedule.setScheduledDate(scheduleDate);
+
+                                // 设置班次时间，需要将班次的开始时间和结束时间与排班日期结合
+                                if (shift.getStartTime() != null) {
+                                    schedule.setStartTime(combineDateAndTime(scheduleDate, shift.getStartTime()));
+                                }
+                                if (shift.getEndTime() != null) {
+                                    // 如果班次跨天，则结束时间需要加一天
+                                    if (shift.getIsCrossDay() != null && shift.getIsCrossDay() == 1) {
+                                        schedule.setEndTime(combineDateAndTimeWithDayOffset(scheduleDate, shift.getEndTime(), 1));
+                                    } else {
+                                        schedule.setEndTime(combineDateAndTime(scheduleDate, shift.getEndTime()));
+                                    }
+                                }
+
+                                schedule.setScheduleStatus("normal"); // normal-正常
+                                schedule.setIsWorkingDay(1); // 正常工作日
+
+                                schedulesToInsert.add(schedule);
+                            }
+                        }
+                    }
+                }
+
+                // 当前周期结束后，更新所有班组的轮换索引（进入下一个周期时轮换）
+                for (SchPlanTeam planTeam : planTeams) {
+                    Long teamId = planTeam.getTeamId();
+                    List<SchTeamSchedule> teamSchedulesForTeam = teamSchedulesMap.get(teamId);
+                    if (teamSchedulesForTeam != null && teamSchedulesForTeam.size() > 1) {
+                        // 只有配置了多个班次才需要轮换
+                        int currentIndex = teamRotationIndexMap.get(teamId);
+                        teamRotationIndexMap.put(teamId, currentIndex + 1);
+                    }
+                }
+            }
+        }
+
+        // 批量插入排班明细
+        for (SchEmployeeSchedule schedule : schedulesToInsert) {
+            int result = insertSchEmployeeSchedule(schedule);
+            if (result > 0) {
+                generatedCount++;
+            }
+        }
+
+        return generatedCount;
+    }
+
+    // ... existing helper methods ...
+
+    /**
+     * 将日期按周期分组
+     * @param dates 所有排班日期
+     * @param startDate 计划开始日期
+     * @param periodType 周期类型（week/month/quarter）
+     * @return 按周期索引分组的日期列表
+     */
+    private Map<Integer, List<Date>> groupDatesByPeriod(List<Date> dates, Date startDate, String periodType) {
+        Map<Integer, List<Date>> periodMap = new HashMap<>();
+
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(startDate);
+        startCal.set(Calendar.HOUR_OF_DAY, 0);
+        startCal.set(Calendar.MINUTE, 0);
+        startCal.set(Calendar.SECOND, 0);
+        startCal.set(Calendar.MILLISECOND, 0);
+
+        for (Date date : dates) {
+            int periodIndex = calculatePeriodIndex(date, startDate, periodType);
+            periodMap.computeIfAbsent(periodIndex, k -> new ArrayList<>()).add(date);
+        }
+
+        return periodMap;
+    }
+
+    /**
+     * 计算日期所属的周期索引
+     * @param date 要计算的日期
+     * @param startDate 计划开始日期
+     * @param periodType 周期类型
+     * @return 周期索引（从0开始）
+     */
+    private int calculatePeriodIndex(Date date, Date startDate, String periodType) {
+        Calendar dateCal = Calendar.getInstance();
+        dateCal.setTime(date);
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(startDate);
+
+        if ("week".equals(periodType)) {
+            // 计算相差的周数
+            long diffInDays = (dateCal.getTimeInMillis() - startCal.getTimeInMillis()) / (24 * 60 * 60 * 1000);
+            return (int) (diffInDays / 7);
+        } else if ("month".equals(periodType)) {
+            // 计算相差的月数
+            int yearDiff = dateCal.get(Calendar.YEAR) - startCal.get(Calendar.YEAR);
+            int monthDiff = dateCal.get(Calendar.MONTH) - startCal.get(Calendar.MONTH);
+            return yearDiff * 12 + monthDiff;
+        } else if ("quarter".equals(periodType)) {
+            // 计算相差的季度数
+            int yearDiff = dateCal.get(Calendar.YEAR) - startCal.get(Calendar.YEAR);
+            int quarterDiff = (dateCal.get(Calendar.MONTH) / 3) - (startCal.get(Calendar.MONTH) / 3);
+            return yearDiff * 4 + quarterDiff;
+        } else {
+            // 默认为周
+            long diffInDays = (dateCal.getTimeInMillis() - startCal.getTimeInMillis()) / (24 * 60 * 60 * 1000);
+            return (int) (diffInDays / 7);
+        }
+    }
+
+    // ... rest of existing code ...
+}

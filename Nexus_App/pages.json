@@ -26,6 +26,26 @@
       "navigationBarTitleText": "工作台"
     }
   }, {
+    "path": "pages/sch/attendance/index",
+    "style": {
+      "navigationBarTitleText": "考勤"
+    }
+  }, {
+    "path": "pages/sch/attendance/punch-card",
+    "style": {
+      "navigationBarTitleText": "打卡"
+    }
+  }, {
+    "path": "pages/sch/attendance/my-attendance",
+    "style": {
+      "navigationBarTitleText": "我的考勤"
+    }
+  }, {
+    "path": "pages/sch/attendance/my-schedule",
+    "style": {
+      "navigationBarTitleText": "我的排班"
+    }
+  }, {
     "path": "pages/bd/vendor/uni-index",
     "style": {
       "navigationBarTitleText": "供应商"
@@ -106,6 +126,11 @@
         "iconPath": "static/images/tabbar/home.png",
         "selectedIconPath": "static/images/tabbar/home_.png",
         "text": "首页"
+      }, {
+        "pagePath": "pages/sch/attendance/index",
+        "iconPath": "static/images/tabbar/work.png",
+        "selectedIconPath": "static/images/tabbar/work_.png",
+        "text": "考勤"
       }, {
         "pagePath": "pages/so/customerOrder/uni-index",
         "iconPath": "static/images/tabbar/work.png",

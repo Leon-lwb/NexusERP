@@ -51,6 +51,9 @@
 				<uni-pagination :total="total" :pageSize="queryParams.pageSize" :current="queryParams.pageNum" @change="pageChange"/>
 			</uni-section>
 		</view>
+		<view class="add-button-container">
+			<button class="add-button" @click="addButton" v-if="checkPermi(['bd:vendor:add'])">添加供应商</button>
+		</view>
 		<view >
 		<uni-fab :horizontal="horizontal" :vertical="vertical"
 		 :popMenu="popMenu" @fabClick="addButton" v-if="checkPermi(['bd:vendor:add'])" ></uni-fab>
@@ -336,6 +339,18 @@ import {getSelectDict} from "@/utils/dict";
 			width: 16rpx;
 			height: 16rpx;
 			margin-left: 10rpx;
+		}
+		
+		.add-button-container {
+			padding: 15px;
+			background-color: #f5f5f5;
+			text-align: center;
+		}
+		
+		.add-button {
+			width: 100%;
+			background-color: #007aff;
+			color: #ffffff;
 		}
 	}
 </style>
