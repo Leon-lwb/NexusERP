@@ -44,148 +44,158 @@
 	</view>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue';
 import { getMonthlyAttendance } from "@/api/sch/attendance";
 
-export default {
-	data() {
-		return {
-			selectedMonth: '',
-			calendarDays: [],
-			attendanceData: {},
-			attendanceDays: 0,
-			lateCount: 0,
-			overtimeHours: 0
-		};
-	},
-	onLoad() {
-		this.initCalendar();
-	},
-	methods: {
-		initCalendar() {
-			const now = new Date();
-			this.selectedMonth = `${now.getFullYear()}年${now.getMonth() + 1}月`;
-			this.generateCalendar(now.getFullYear(), now.getMonth());
-			this.loadAttendanceData(now.getFullYear(), now.getMonth() + 1);
-		},
-		generateCalendar(year, month) {
-			// 获取当月第一天和最后一天
-			const firstDay = new Date(year, month, 1);
-			const lastDay = new Date(year, month + 1, 0);
-			
-			// 获取第一天是星期几
-			const startDay = firstDay.getDay();
-			
-			// 生成日历数组
-			this.calendarDays = [];
-			
-			// 添加上个月的日期
-			const prevMonthLastDay = new Date(year, month, 0).getDate();
-			for (let i = startDay - 1; i >= 0; i--) {
-				const date = new Date(year, month - 1, prevMonthLastDay - i);
-				this.calendarDays.push({ date, isCurrentMonth: false });
-			}
-			
-			// 添加当月日期
-			for (let i = 1; i <= lastDay.getDate(); i++) {
-				const date = new Date(year, month, i);
-				this.calendarDays.push({ date, isCurrentMonth: true });
-			}
-			
-			// 添加下个月的日期
-			const totalCells = 42; // 6行7列
-			const remainingCells = totalCells - this.calendarDays.length;
-			for (let i = 1; i <= remainingCells; i++) {
-				const date = new Date(year, month + 1, i);
-				this.calendarDays.push({ date, isCurrentMonth: false });
-			}
-		},
-		async loadAttendanceData(year, month) {
-			try {
-				const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
-				const response = await getMonthlyAttendance(monthStr);
-				
-				// 处理考勤数据
-				this.attendanceData = response.data.attendanceDays || {};
-				this.attendanceDays = response.data.attendanceDaysCount || 0;
-				this.lateCount = response.data.lateCount || 0;
-				this.overtimeHours = response.data.overtimeHours || 0;
-			} catch (error) {
-				console.error('获取考勤数据失败', error);
-				uni.showToast({
-					title: '获取考勤数据失败',
-					icon: 'none'
-				});
-			}
-		},
-		getDayClass(day) {
-			if (!day.date || !day.isCurrentMonth) {
-				return 'empty-day';
-			}
-			
-			const dateStr = this.formatDate(day.date);
-			const attendance = this.attendanceData[dateStr];
-			
-			if (!attendance) {
-				return 'normal';
-			}
-			
-			// 根据考勤状态返回不同样式
-			switch (attendance.attendanceStatus) {
-				case 'normal':
-					return 'normal';
-				case 'late':
-					return 'late';
-				case 'early_leave':
-					return 'early-leave';
-				case 'absent':
-					return 'absent';
-				case 'leave':
-					return 'leave';
-				default:
-					return 'normal';
-			}
-		},
-		onDayClick(day) {
-			if (!day.date || !day.isCurrentMonth) {
-				return;
-			}
-			
-			const dateStr = this.formatDate(day.date);
-			const attendance = this.attendanceData[dateStr];
-			
-			if (attendance) {
-				uni.showModal({
-					title: '考勤详情',
-					content: `日期：${dateStr}\n状态：${this.getStatusText(attendance.attendanceStatus)}\n上班：${attendance.clockInTime || '未打卡'}\n下班：${attendance.clockOutTime || '未打卡'}`,
-					showCancel: false,
-					confirmText: '确定'
-				});
-			} else {
-				uni.showToast({
-					title: '该日期无考勤记录',
-					icon: 'none'
-				});
-			}
-		},
-		getStatusText(status) {
-			const statusMap = {
-				'normal': '正常',
-				'late': '迟到',
-				'early_leave': '早退',
-				'absent': '旷工',
-				'leave': '请假'
-			};
-			return statusMap[status] || status;
-		},
-		formatDate(date) {
-			const year = date.getFullYear();
-			const month = (date.getMonth() + 1).toString().padStart(2, '0');
-			const day = date.getDate().toString().padStart(2, '0');
-			return `${year}-${month}-${day}`;
-		}
+// 响应式数据
+const selectedMonth = ref('');
+const calendarDays = ref([]);
+const attendanceData = ref({});
+const attendanceDays = ref(0);
+const lateCount = ref(0);
+const overtimeHours = ref(0);
+
+// 初始化日历
+onMounted(() => {
+	initCalendar();
+});
+
+// 初始化日历
+function initCalendar() {
+	const now = new Date();
+	selectedMonth.value = `${now.getFullYear()}年${now.getMonth() + 1}月`;
+	generateCalendar(now.getFullYear(), now.getMonth());
+	loadAttendanceData(now.getFullYear(), now.getMonth() + 1);
+}
+
+// 生成日历
+function generateCalendar(year, month) {
+	// 获取当月第一天和最后一天
+	const firstDay = new Date(year, month, 1);
+	const lastDay = new Date(year, month + 1, 0);
+	
+	// 获取第一天是星期几
+	const startDay = firstDay.getDay();
+	
+	// 生成日历数组
+	calendarDays.value = [];
+	
+	// 添加上个月的日期
+	const prevMonthLastDay = new Date(year, month, 0).getDate();
+	for (let i = startDay - 1; i >= 0; i--) {
+		const date = new Date(year, month - 1, prevMonthLastDay - i);
+		calendarDays.value.push({ date, isCurrentMonth: false });
 	}
-};
+	
+	// 添加当月日期
+	for (let i = 1; i <= lastDay.getDate(); i++) {
+		const date = new Date(year, month, i);
+		calendarDays.value.push({ date, isCurrentMonth: true });
+	}
+	
+	// 添加下个月的日期
+	const totalCells = 42; // 6行7列
+	const remainingCells = totalCells - calendarDays.value.length;
+	for (let i = 1; i <= remainingCells; i++) {
+		const date = new Date(year, month + 1, i);
+		calendarDays.value.push({ date, isCurrentMonth: false });
+	}
+}
+
+// 加载考勤数据
+async function loadAttendanceData(year, month) {
+	try {
+		const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
+		const response = await getMonthlyAttendance(monthStr);
+		
+		// 处理考勤数据
+		attendanceData.value = response.data.attendanceDays || {};
+		attendanceDays.value = response.data.attendanceDaysCount || 0;
+		lateCount.value = response.data.lateCount || 0;
+		overtimeHours.value = response.data.overtimeHours || 0;
+	} catch (error) {
+		console.error('获取考勤数据失败', error);
+		uni.showToast({
+			title: '获取考勤数据失败',
+			icon: 'none'
+		});
+	}
+}
+
+// 获取日期样式类
+function getDayClass(day) {
+	if (!day.date || !day.isCurrentMonth) {
+		return 'empty-day';
+	}
+	
+	const dateStr = formatDate(day.date);
+	const attendance = attendanceData.value[dateStr];
+	
+	if (!attendance) {
+		return 'normal';
+	}
+	
+	// 根据考勤状态返回不同样式
+	switch (attendance.attendanceStatus) {
+		case 'normal':
+			return 'normal';
+		case 'late':
+			return 'late';
+		case 'early_leave':
+			return 'early-leave';
+		case 'absent':
+			return 'absent';
+		case 'leave':
+			return 'leave';
+		default:
+			return 'normal';
+	}
+}
+
+// 点击日期事件
+function onDayClick(day) {
+	if (!day.date || !day.isCurrentMonth) {
+		return;
+	}
+	
+	const dateStr = formatDate(day.date);
+	const attendance = attendanceData.value[dateStr];
+	
+	if (attendance) {
+		uni.showModal({
+			title: '考勤详情',
+			content: `日期：${dateStr}\n状态：${getStatusText(attendance.attendanceStatus)}\n上班：${attendance.clockInTime || '未打卡'}\n下班：${attendance.clockOutTime || '未打卡'}`,
+			showCancel: false,
+			confirmText: '确定'
+		});
+	} else {
+		uni.showToast({
+			title: '该日期无考勤记录',
+			icon: 'none'
+		});
+	}
+}
+
+// 获取状态文本
+function getStatusText(status) {
+	const statusMap = {
+		'normal': '正常',
+		'late': '迟到',
+		'early_leave': '早退',
+		'absent': '旷工',
+		'leave': '请假'
+	};
+	return statusMap[status] || status;
+}
+
+// 格式化日期
+function formatDate(date) {
+	const year = date.getFullYear();
+	const month = (date.getMonth() + 1).toString().padStart(2, '0');
+	const day = date.getDate().toString().padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
 </script>
 
 <style lang="scss">

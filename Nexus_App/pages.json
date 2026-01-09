@@ -131,16 +131,16 @@
         "iconPath": "static/images/tabbar/work.png",
         "selectedIconPath": "static/images/tabbar/work_.png",
         "text": "考勤"
-      }, {
-        "pagePath": "pages/so/customerOrder/uni-index",
-        "iconPath": "static/images/tabbar/work.png",
-        "selectedIconPath": "static/images/tabbar/work_.png",
-        "text": "销售"
-      }, {
-        "pagePath": "pages/bd/vendor/uni-index",
-        "iconPath": "static/images/tabbar/work.png",
-        "selectedIconPath": "static/images/tabbar/work_.png",
-        "text": "供应商"
+      // }, {
+      //   "pagePath": "pages/so/customerOrder/uni-index",
+      //   "iconPath": "static/images/tabbar/work.png",
+      //   "selectedIconPath": "static/images/tabbar/work_.png",
+      //   "text": "销售"
+      // }, {
+      //   "pagePath": "pages/bd/vendor/uni-index",
+      //   "iconPath": "static/images/tabbar/work.png",
+      //   "selectedIconPath": "static/images/tabbar/work_.png",
+      //   "text": "供应商"
       }, {
         "pagePath": "pages/work/index",
         "iconPath": "static/images/tabbar/work.png",

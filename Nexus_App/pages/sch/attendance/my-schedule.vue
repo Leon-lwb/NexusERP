@@ -46,122 +46,127 @@
 	</view>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue';
 import { getMySchedule } from "@/api/sch/attendance";
 
-export default {
-	data() {
-		return {
-			scheduleList: [],
-			totalCount: 0,
-			loading: false,
-			pageNum: 1,
-			pageSize: 20,
-			hasMore: true
-		};
-	},
-	onLoad() {
-		this.loadScheduleList();
-	},
-	methods: {
-		async loadScheduleList() {
-			this.loading = true;
-			try {
-				const response = await getMySchedule({
-					pageNum: this.pageNum,
-					pageSize: this.pageSize
-				});
-				
-				// 处理响应数据
-				if (response.code === 200) {
-					const data = response.data || {};
-					
-					if (this.pageNum === 1) {
-						// 第一页，重置数据
-						this.scheduleList = data.rows || [];
-					} else {
-						// 追加数据
-						this.scheduleList = [...this.scheduleList, ...(data.rows || [])];
-					}
-					
-					this.totalCount = data.total || 0;
-					this.hasMore = this.scheduleList.length < this.totalCount;
-				} else {
-					uni.showToast({
-						title: response.msg || '获取排班列表失败',
-						icon: 'none'
-					});
-				}
-			} catch (error) {
-				console.error('获取排班列表失败', error);
-				uni.showToast({
-					title: '网络错误，请重试',
-					icon: 'none'
-				});
-			} finally {
-				this.loading = false;
-			}
-		},
+// 响应式数据
+const scheduleList = ref([]);
+const totalCount = ref(0);
+const loading = ref(false);
+const pageNum = ref(1);
+const pageSize = ref(20);
+const hasMore = ref(true);
+
+// 页面加载时获取数据
+onMounted(() => {
+	loadScheduleList();
+});
+
+// 加载排班列表
+async function loadScheduleList() {
+	loading.value = true;
+	try {
+		const response = await getMySchedule({
+			pageNum: pageNum.value,
+			pageSize: pageSize.value
+		});
 		
-		async loadMore() {
-			if (this.loading || !this.hasMore) return;
+		// 处理响应数据
+		if (response.code === 200) {
+			const data = response.data || {};
 			
-			this.pageNum++;
-			await this.loadScheduleList();
-		},
-		
-		isToday(dateString) {
-			const today = new Date();
-			const date = new Date(dateString);
-			return today.getFullYear() === date.getFullYear() &&
-				today.getMonth() === date.getMonth() &&
-				today.getDate() === date.getDate();
-		},
-		
-		formatDate(dateString) {
-			const date = new Date(dateString);
-			const month = (date.getMonth() + 1).toString().padStart(2, '0');
-			const day = date.getDate().toString().padStart(2, '0');
-			return `${month}月${day}日`;
-		},
-		
-		getWeekday(dateString) {
-			const date = new Date(dateString);
-			const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-			return weekdays[date.getDay()];
-		},
-		
-		formatTime(dateTimeString) {
-			if (!dateTimeString) return '';
-			const date = new Date(dateTimeString);
-			const hours = date.getHours().toString().padStart(2, '0');
-			const minutes = date.getMinutes().toString().padStart(2, '0');
-			return `${hours}:${minutes}`;
-		},
-		
-		getStatusClass(status) {
-			const statusMap = {
-				'normal': 'status-normal',
-				'swapped': 'status-swapped',
-				'leave': 'status-leave',
-				'absent': 'status-absent',
-				'rest': 'status-rest'
-			};
-			return statusMap[status] || 'status-normal';
-		},
-		
-		getStatusText(status) {
-			const statusTextMap = {
-				'normal': '正常',
-				'swapped': '调班',
-				'leave': '请假',
-				'absent': '缺勤',
-				'rest': '休息'
-			};
-			return statusTextMap[status] || '正常';
+			if (pageNum.value === 1) {
+				// 第一页，重置数据
+				scheduleList.value = data.rows || [];
+			} else {
+				// 追加数据
+				scheduleList.value = [...scheduleList.value, ...(data.rows || [])];
+			}
+			
+			totalCount.value = data.total || 0;
+			hasMore.value = scheduleList.value.length < totalCount.value;
+		} else {
+			uni.showToast({
+				title: response.msg || '获取排班列表失败',
+				icon: 'none'
+			});
 		}
+	} catch (error) {
+		console.error('获取排班列表失败', error);
+		uni.showToast({
+			title: '网络错误，请重试',
+			icon: 'none'
+		});
+	} finally {
+		loading.value = false;
 	}
-};
+}
+
+// 加载更多
+async function loadMore() {
+	if (loading.value || !hasMore.value) return;
+	
+	pageNum.value++;
+	await loadScheduleList();
+}
+
+// 判断是否是今天
+function isToday(dateString) {
+	const today = new Date();
+	const date = new Date(dateString);
+	return today.getFullYear() === date.getFullYear() &&
+		today.getMonth() === date.getMonth() &&
+		today.getDate() === date.getDate();
+}
+
+// 格式化日期
+function formatDate(dateString) {
+	const date = new Date(dateString);
+	const month = (date.getMonth() + 1).toString().padStart(2, '0');
+	const day = date.getDate().toString().padStart(2, '0');
+	return `${month}月${day}日`;
+}
+
+// 获取星期
+function getWeekday(dateString) {
+	const date = new Date(dateString);
+	const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+	return weekdays[date.getDay()];
+}
+
+// 格式化时间
+function formatTime(dateTimeString) {
+	if (!dateTimeString) return '';
+	const date = new Date(dateTimeString);
+	const hours = date.getHours().toString().padStart(2, '0');
+	const minutes = date.getMinutes().toString().padStart(2, '0');
+	return `${hours}:${minutes}`;
+}
+
+// 获取状态类名
+function getStatusClass(status) {
+	const statusMap = {
+		'normal': 'status-normal',
+		'swapped': 'status-swapped',
+		'leave': 'status-leave',
+		'absent': 'status-absent',
+		'rest': 'status-rest'
+	};
+	return statusMap[status] || 'status-normal';
+}
+
+// 获取状态文本
+function getStatusText(status) {
+	const statusTextMap = {
+		'normal': '正常',
+		'swapped': '调班',
+		'leave': '请假',
+		'absent': '缺勤',
+		'rest': '休息'
+	};
+	return statusTextMap[status] || '正常';
+}
 </script>
 
 <style lang="scss">

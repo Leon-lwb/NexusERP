@@ -53,7 +53,7 @@ public class SysLoginController
     private com.nexus.framework.web.service.SmsCodeService smsCodeService;
 
     /**
-     * 登录方法
+     * 登录方法 支持用户名或手机号登录
      * 
      * @param loginBody 登录信息
      * @return 结果

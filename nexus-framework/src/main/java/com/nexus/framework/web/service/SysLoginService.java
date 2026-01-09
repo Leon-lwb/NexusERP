@@ -60,7 +60,7 @@ public class SysLoginService
     /**
      * 登录验证
      * 
-     * @param username 用户名
+     * @param username 用户名或手机号
      * @param password 密码
      * @param code 验证码
      * @param uuid 唯一标识
@@ -72,18 +72,27 @@ public class SysLoginService
         validateCaptcha(username, code, uuid);
         // 登录前置校验
         loginPreCheck(username, password);
-        // 先检查用户是否存在
+        
+        // 首先尝试通过用户名查找用户
         SysUser user = userService.selectUserByUserName(username);
+        
+        // 如果用户名未找到且输入的是手机号格式，则尝试通过手机号查找用户
+        if (user == null && isValidMobile(username))
+        {
+            user = userService.selectUserByPhonenumber(username);
+        }
+        
         if (user == null)
         {
             AsyncManager.me().execute(AsyncFactory.recordLogininfor(username, Constants.LOGIN_FAIL, MessageUtils.message("user.not.exists")));
             throw new UserNotExistsException();
         }
+        
         // 用户验证
         Authentication authentication = null;
         try
         {
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
+            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getUserName(), password);
             AuthenticationContextHolder.setContext(authenticationToken);
             // 该方法会去调用UserDetailsServiceImpl.loadUserByUsername
             authentication = authenticationManager.authenticate(authenticationToken);
@@ -282,5 +291,21 @@ public class SysLoginService
         sysUser.setLoginIp(IpUtils.getIpAddr());
         sysUser.setLoginDate(DateUtils.getNowDate());
         userService.updateUserProfile(sysUser);
+    }
+    
+    /**
+     * 判断是否为有效的手机号格式
+     * 
+     * @param mobile 手机号
+     * @return 结果
+     */
+    private boolean isValidMobile(String mobile)
+    {
+        if (StringUtils.isEmpty(mobile))
+        {
+            return false;
+        }
+        // 手机号正则表达式匹配
+        return mobile.matches("^1[3-9]\\d{9}$");
     }
 }

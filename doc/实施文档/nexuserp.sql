@@ -11,7 +11,7 @@
  Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 06/01/2026 11:38:30
+ Date: 09/01/2026 18:12:52
 */
 
 SET NAMES utf8mb4;
@@ -2470,7 +2470,7 @@ CREATE TABLE `gen_table`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 43 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 46 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2514,6 +2514,8 @@ INSERT INTO `gen_table` VALUES (40, 'sch_plan_team', '计划班组关联表', NU
 INSERT INTO `gen_table` VALUES (41, 'sch_shift', '班次定义表', NULL, NULL, 'SchShift', 'crud', 'element-plus', 'com.nexus.core.sch', 'sch', 'shift', '班次定义', 'nexus', '0', '/', '{\"parentMenuId\":2219}', 'admin', '2025-12-25 10:38:33', '', '2025-12-25 17:15:04', NULL);
 INSERT INTO `gen_table` VALUES (42, 'sch_employee_schedule', '员工排班明细表', NULL, NULL, 'SchEmployeeSchedule', 'crud', 'element-plus', 'com.nexus.core.sch', 'sch', 'employeeSchedule', '员工排班明细', 'nexus', '0', '/', '{\"parentMenuId\":2219}', 'admin', '2025-12-30 14:27:43', '', '2025-12-30 14:36:56', NULL);
 INSERT INTO `gen_table` VALUES (43, 'sch_team_schedule', '班组排班表（模板）', NULL, NULL, 'SchTeamSchedule', 'crud', 'element-plus', 'com.nexus.core.sch', 'sch', 'teamSchedule', '班组排班（模板）', 'nexus', '0', '/', '{\"parentMenuId\":2219}', 'admin', '2025-12-30 14:49:36', '', '2025-12-30 14:51:20', NULL);
+INSERT INTO `gen_table` VALUES (44, 'sch_attendance', '考勤记录表', NULL, NULL, 'SchAttendance', 'crud', 'element-plus', 'com.nexus.core.sch', 'sch', 'attendance', '考勤记录', 'nexus', '0', '/', '{\"parentMenuId\":2220}', 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18', NULL);
+INSERT INTO `gen_table` VALUES (46, 'sch_punch_rule', '打卡规则表', NULL, NULL, 'SchPunchRule', 'crud', 'element-plus', 'com.nexus.core.sch', 'sch', 'punchRule', '打卡规则', 'nexus', '0', '/', '{\"parentMenuId\":2220}', 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40', NULL);
 
 -- ----------------------------
 -- Table structure for gen_table_column
@@ -2543,7 +2545,7 @@ CREATE TABLE `gen_table_column`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1007 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1084 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3448,6 +3450,54 @@ INSERT INTO `gen_table_column` VALUES (1004, 43, 'create_by', '创建人', 'varc
 INSERT INTO `gen_table_column` VALUES (1005, 43, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 10, 'admin', '2025-12-30 14:49:36', '', '2025-12-30 14:51:20');
 INSERT INTO `gen_table_column` VALUES (1006, 43, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 11, 'admin', '2025-12-30 14:49:36', '', '2025-12-30 14:51:20');
 INSERT INTO `gen_table_column` VALUES (1007, 43, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 12, 'admin', '2025-12-30 14:49:36', '', '2025-12-30 14:51:20');
+INSERT INTO `gen_table_column` VALUES (1008, 44, 'attendance_id', '考勤记录ID', 'bigint', 'Long', 'attendanceId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1009, 44, 'worker_id', '人员ID', 'bigint', 'Long', 'workerId', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'input', '', 2, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1010, 44, 'worker_name', '人员姓名', 'varchar(255)', 'String', 'workerName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 3, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1011, 44, 'record_date', '考勤日期', 'date', 'Date', 'recordDate', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 4, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1012, 44, 'schedule_id', '关联排班ID', 'bigint', 'Long', 'scheduleId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 5, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1013, 44, 'clock_in_time', '上班打卡时间', 'datetime', 'Date', 'clockInTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 6, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1014, 44, 'clock_out_time', '下班打卡时间', 'datetime', 'Date', 'clockOutTime', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', 7, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1015, 44, 'late_minutes', '迟到分钟数', 'int', 'Long', 'lateMinutes', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 8, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1016, 44, 'leave_early_minutes', '早退分钟数', 'int', 'Long', 'leaveEarlyMinutes', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 9, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1017, 44, 'overtime_hours', '加班时长', 'decimal(5,2)', 'BigDecimal', 'overtimeHours', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 10, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1018, 44, 'attendance_status', '考勤结果: normal正常, late迟到, early_leave早退, absent旷工, leave请假', 'varchar(64)', 'String', 'attendanceStatus', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sch_attendance_status', 11, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1019, 44, 'source_type', '数据来源: manual手动, device设备同步', 'varchar(64)', 'String', 'sourceType', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'select', 'sch_source_type', 12, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1020, 44, 'device_id', '打卡设备ID', 'varchar(128)', 'String', 'deviceId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1021, 44, 'device_name', '设备名称', 'varchar(255)', 'String', 'deviceName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 14, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18');
+INSERT INTO `gen_table_column` VALUES (1022, 44, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'textarea', '', 15, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:19');
+INSERT INTO `gen_table_column` VALUES (1023, 44, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 16, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:19');
+INSERT INTO `gen_table_column` VALUES (1024, 44, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 17, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:19');
+INSERT INTO `gen_table_column` VALUES (1025, 44, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 18, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:19');
+INSERT INTO `gen_table_column` VALUES (1026, 44, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 19, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:19');
+INSERT INTO `gen_table_column` VALUES (1056, 46, 'rule_id', '规则ID', 'bigint', 'Long', 'ruleId', '1', '1', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', 1, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1057, 46, 'rule_name', '规则名称', 'varchar(255)', 'String', 'ruleName', '0', '0', '1', '1', '1', '1', '1', 'LIKE', 'input', '', 2, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1058, 46, 'shift_id', '适用班次ID（NULL表示所有班次）', 'bigint', 'Long', 'shiftId', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 3, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1059, 46, 'shift_name', '班次名称', 'varchar(255)', 'String', 'shiftName', '0', '0', '0', '1', '1', '1', '1', 'LIKE', 'input', '', 4, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1060, 46, 'work_start_time', '上班时间', 'time', 'Date', 'workStartTime', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 5, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1061, 46, 'work_end_time', '下班时间', 'time', 'Date', 'workEndTime', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 6, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1062, 46, 'allow_clock_in_start', '允许上班打卡开始时间', 'time', 'Date', 'allowClockInStart', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 7, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1063, 46, 'allow_clock_in_end', '允许上班打卡结束时间', 'time', 'Date', 'allowClockInEnd', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 8, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1064, 46, 'allow_clock_out_start', '允许下班打卡开始时间', 'time', 'Date', 'allowClockOutStart', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 9, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1065, 46, 'allow_clock_out_end', '允许下班打卡结束时间', 'time', 'Date', 'allowClockOutEnd', '0', '0', '1', '1', '1', '1', '1', 'EQ', 'datetime', '', 10, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1066, 46, 'location_lat', '打卡中心点纬度', 'decimal(10,8)', 'BigDecimal', 'locationLat', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 11, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1067, 46, 'location_lng', '打卡中心点经度', 'decimal(11,8)', 'BigDecimal', 'locationLng', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 12, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1068, 46, 'location_radius', '打卡半径（米）', 'int', 'Long', 'locationRadius', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 13, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1069, 46, 'location_address', '打卡地点描述', 'varchar(500)', 'String', 'locationAddress', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 14, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1070, 46, 'allow_wifi_ssids', '允许的Wi-Fi网络SSID列表（JSON数组）', 'text', 'String', 'allowWifiSsids', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 15, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1071, 46, 'allow_bluetooth_devices', '允许的蓝牙设备列表（JSON数组）', 'text', 'String', 'allowBluetoothDevices', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'textarea', '', 16, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1072, 46, 'allow_outdoor_punch', '是否允许外勤打卡', 'tinyint(1)', 'Integer', 'allowOutdoorPunch', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 17, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1073, 46, 'outdoor_require_photo', '外勤打卡是否要求拍照', 'tinyint(1)', 'Integer', 'outdoorRequirePhoto', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 18, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1074, 46, 'allow_supplement', '是否允许补卡', 'tinyint(1)', 'Integer', 'allowSupplement', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 19, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1075, 46, 'supplement_deadline', '补卡申请截止天数', 'int', 'Long', 'supplementDeadline', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 20, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1076, 46, 'late_threshold', '迟到阈值（分钟）', 'int', 'Long', 'lateThreshold', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 21, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1077, 46, 'early_leave_threshold', '早退阈值（分钟）', 'int', 'Long', 'earlyLeaveThreshold', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 22, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1078, 46, 'absent_threshold', '旷工阈值（分钟）', 'int', 'Long', 'absentThreshold', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', 23, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1079, 46, 'is_enabled', '是否启用', 'tinyint(1)', 'Integer', 'isEnabled', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'radio', 'sys_true_or_false', 24, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1080, 46, 'remark', '备注', 'varchar(500)', 'String', 'remark', '0', '0', '0', '1', '1', '0', NULL, 'EQ', 'textarea', '', 25, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1081, 46, 'create_by', '创建人', 'varchar(64)', 'String', 'createBy', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'input', '', 26, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1082, 46, 'create_time', '创建时间', 'datetime', 'Date', 'createTime', '0', '0', '0', '0', NULL, NULL, NULL, 'EQ', 'datetime', '', 27, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1083, 46, 'update_by', '更新人', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'input', '', 28, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
+INSERT INTO `gen_table_column` VALUES (1084, 46, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '0', '0', NULL, NULL, 'EQ', 'datetime', '', 29, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40');
 
 -- ----------------------------
 -- Table structure for prd_material_request
@@ -3931,6 +3981,19 @@ CREATE TABLE `sch_attendance`  (
   `source_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'manual' COMMENT '数据来源: manual手动, device设备同步',
   `device_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '打卡设备ID',
   `device_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '设备名称',
+  `location_lat` decimal(10, 8) NULL DEFAULT NULL COMMENT '打卡位置纬度',
+  `location_lng` decimal(11, 8) NULL DEFAULT NULL COMMENT '打卡位置经度',
+  `location_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '打卡位置地址',
+  `punch_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'normal' COMMENT '打卡类型: normal正常打卡, outdoor外勤打卡, supplement补卡, remote远程打卡',
+  `photo_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '外勤打卡照片URL',
+  `wifi_ssid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'Wi-Fi网络SSID（用于Wi-Fi打卡）',
+  `wifi_bssid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT 'Wi-Fi网络BSSID',
+  `bluetooth_device` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '蓝牙设备标识',
+  `accuracy` decimal(5, 2) NULL DEFAULT NULL COMMENT '定位精度（米）',
+  `is_valid_location` tinyint(1) NULL DEFAULT 1 COMMENT '是否有效定位（在打卡范围内）',
+  `punch_status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'success' COMMENT '打卡状态: success成功, failed失败, pending待审核',
+  `leave_id` bigint(0) NULL DEFAULT NULL COMMENT '关联请假ID',
+  `overtime_id` bigint(0) NULL DEFAULT NULL COMMENT '关联加班ID',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -3940,8 +4003,18 @@ CREATE TABLE `sch_attendance`  (
   UNIQUE INDEX `uk_worker_date`(`worker_id`, `record_date`) USING BTREE,
   INDEX `idx_record_date`(`record_date`) USING BTREE,
   INDEX `idx_schedule_id`(`schedule_id`) USING BTREE,
-  INDEX `idx_attendance_status`(`attendance_status`) USING BTREE
+  INDEX `idx_attendance_status`(`attendance_status`) USING BTREE,
+  INDEX `idx_punch_type`(`punch_type`) USING BTREE,
+  INDEX `idx_punch_status`(`punch_status`) USING BTREE,
+  INDEX `idx_record_date_type`(`record_date`, `punch_type`) USING BTREE,
+  INDEX `idx_leave_id`(`leave_id`) USING BTREE,
+  INDEX `idx_overtime_id`(`overtime_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '考勤记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sch_attendance
+-- ----------------------------
+INSERT INTO `sch_attendance` VALUES (1, 19, NULL, '2026-01-09', NULL, '2026-01-09 10:44:37', '2026-01-09 19:46:15', 0, 0, 0.00, 'normal', 'manual', NULL, NULL, NULL, NULL, NULL, 'normal', NULL, NULL, NULL, NULL, NULL, 1, 'success', NULL, NULL, NULL, NULL, '2026-01-09 10:44:37', NULL, '2026-01-09 17:06:23');
 
 -- ----------------------------
 -- Table structure for sch_attendance_summary
@@ -4000,203 +4073,389 @@ CREATE TABLE `sch_employee_schedule`  (
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_team_date`(`team_id`, `scheduled_date`) USING BTREE,
   INDEX `idx_date_status`(`scheduled_date`, `schedule_status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1066 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工排班明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5248 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '员工排班明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sch_employee_schedule
 -- ----------------------------
-INSERT INTO `sch_employee_schedule` VALUES (875, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-01', '2025-12-01 01:00:00', '2025-12-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (876, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-01', '2025-12-01 01:00:00', '2025-12-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (877, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-01', '2025-12-01 01:00:00', '2025-12-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (878, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-01', '2025-12-01 17:00:00', '2025-12-02 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (879, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-01', '2025-12-01 17:00:00', '2025-12-02 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (880, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-01', '2025-12-01 09:00:00', '2025-12-01 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (881, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-02', '2025-12-02 01:00:00', '2025-12-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (882, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-02', '2025-12-02 01:00:00', '2025-12-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:53', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (883, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-02', '2025-12-02 01:00:00', '2025-12-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (884, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-02', '2025-12-02 17:00:00', '2025-12-03 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (885, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-02', '2025-12-02 17:00:00', '2025-12-03 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (886, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-02', '2025-12-02 09:00:00', '2025-12-02 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (887, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-03', '2025-12-03 01:00:00', '2025-12-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (888, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-03', '2025-12-03 01:00:00', '2025-12-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (889, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-03', '2025-12-03 01:00:00', '2025-12-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (890, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-03', '2025-12-03 17:00:00', '2025-12-04 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (891, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-03', '2025-12-03 17:00:00', '2025-12-04 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (892, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-03', '2025-12-03 09:00:00', '2025-12-03 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (893, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-04', '2025-12-04 01:00:00', '2025-12-04 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (894, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-04', '2025-12-04 01:00:00', '2025-12-04 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (895, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-04', '2025-12-04 01:00:00', '2025-12-04 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (896, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-04', '2025-12-04 17:00:00', '2025-12-05 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (897, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-04', '2025-12-04 17:00:00', '2025-12-05 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (898, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-04', '2025-12-04 09:00:00', '2025-12-04 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (899, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-05', '2025-12-05 01:00:00', '2025-12-05 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (900, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-05', '2025-12-05 01:00:00', '2025-12-05 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (901, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-05', '2025-12-05 01:00:00', '2025-12-05 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (902, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-05', '2025-12-05 17:00:00', '2025-12-06 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (903, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-05', '2025-12-05 17:00:00', '2025-12-06 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (904, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-05', '2025-12-05 09:00:00', '2025-12-05 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (905, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-06', '2025-12-06 01:00:00', '2025-12-06 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (906, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-06', '2025-12-06 01:00:00', '2025-12-06 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (907, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-06', '2025-12-06 01:00:00', '2025-12-06 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (908, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-06', '2025-12-06 17:00:00', '2025-12-07 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (909, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-06', '2025-12-06 17:00:00', '2025-12-07 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (910, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-06', '2025-12-06 09:00:00', '2025-12-06 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (911, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (912, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (913, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (914, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (915, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (916, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (917, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-08', '2025-12-08 01:00:00', '2025-12-08 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (918, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-08', '2025-12-08 01:00:00', '2025-12-08 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (919, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-08', '2025-12-08 01:00:00', '2025-12-08 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (920, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-08', '2025-12-08 17:00:00', '2025-12-09 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (921, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-08', '2025-12-08 17:00:00', '2025-12-09 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (922, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-08', '2025-12-08 09:00:00', '2025-12-08 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (923, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-09', '2025-12-09 01:00:00', '2025-12-09 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (924, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-09', '2025-12-09 01:00:00', '2025-12-09 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (925, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-09', '2025-12-09 01:00:00', '2025-12-09 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (926, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-09', '2025-12-09 17:00:00', '2025-12-10 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (927, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-09', '2025-12-09 17:00:00', '2025-12-10 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (928, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-09', '2025-12-09 09:00:00', '2025-12-09 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (929, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-10', '2025-12-10 01:00:00', '2025-12-10 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (930, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-10', '2025-12-10 01:00:00', '2025-12-10 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (931, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-10', '2025-12-10 01:00:00', '2025-12-10 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (932, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-10', '2025-12-10 17:00:00', '2025-12-11 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (933, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-10', '2025-12-10 17:00:00', '2025-12-11 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (934, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-10', '2025-12-10 09:00:00', '2025-12-10 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (935, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-11', '2025-12-11 01:00:00', '2025-12-11 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (936, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-11', '2025-12-11 01:00:00', '2025-12-11 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (937, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-11', '2025-12-11 01:00:00', '2025-12-11 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (938, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-11', '2025-12-11 17:00:00', '2025-12-12 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (939, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-11', '2025-12-11 17:00:00', '2025-12-12 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (940, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-11', '2025-12-11 09:00:00', '2025-12-11 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (941, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-12', '2025-12-12 01:00:00', '2025-12-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (942, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-12', '2025-12-12 01:00:00', '2025-12-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (943, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-12', '2025-12-12 01:00:00', '2025-12-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (944, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-12', '2025-12-12 17:00:00', '2025-12-13 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (945, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-12', '2025-12-12 17:00:00', '2025-12-13 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (946, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-12', '2025-12-12 09:00:00', '2025-12-12 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (947, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-13', '2025-12-13 01:00:00', '2025-12-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (948, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-13', '2025-12-13 01:00:00', '2025-12-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (949, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-13', '2025-12-13 01:00:00', '2025-12-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (950, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-13', '2025-12-13 17:00:00', '2025-12-14 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (951, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-13', '2025-12-13 17:00:00', '2025-12-14 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (952, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-13', '2025-12-13 09:00:00', '2025-12-13 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (953, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (954, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (955, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (956, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (957, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (958, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (959, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-15', '2025-12-15 01:00:00', '2025-12-15 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (960, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-15', '2025-12-15 01:00:00', '2025-12-15 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (961, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-15', '2025-12-15 01:00:00', '2025-12-15 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (962, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-15', '2025-12-15 17:00:00', '2025-12-16 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (963, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-15', '2025-12-15 17:00:00', '2025-12-16 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (964, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-15', '2025-12-15 09:00:00', '2025-12-15 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (965, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-16', '2025-12-16 01:00:00', '2025-12-16 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (966, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-16', '2025-12-16 01:00:00', '2025-12-16 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (967, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-16', '2025-12-16 01:00:00', '2025-12-16 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (968, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-16', '2025-12-16 17:00:00', '2025-12-17 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (969, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-16', '2025-12-16 17:00:00', '2025-12-17 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (970, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-16', '2025-12-16 09:00:00', '2025-12-16 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (971, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-17', '2025-12-17 01:00:00', '2025-12-17 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (972, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-17', '2025-12-17 01:00:00', '2025-12-17 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (973, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-17', '2025-12-17 01:00:00', '2025-12-17 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (974, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-17', '2025-12-17 17:00:00', '2025-12-18 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (975, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-17', '2025-12-17 17:00:00', '2025-12-18 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (976, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-17', '2025-12-17 09:00:00', '2025-12-17 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (977, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-18', '2025-12-18 01:00:00', '2025-12-18 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (978, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-18', '2025-12-18 01:00:00', '2025-12-18 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (979, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-18', '2025-12-18 01:00:00', '2025-12-18 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (980, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-18', '2025-12-18 17:00:00', '2025-12-19 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (981, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-18', '2025-12-18 17:00:00', '2025-12-19 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (982, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-18', '2025-12-18 09:00:00', '2025-12-18 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (983, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-19', '2025-12-19 01:00:00', '2025-12-19 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (984, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-19', '2025-12-19 01:00:00', '2025-12-19 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (985, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-19', '2025-12-19 01:00:00', '2025-12-19 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (986, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-19', '2025-12-19 17:00:00', '2025-12-20 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (987, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-19', '2025-12-19 17:00:00', '2025-12-20 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (988, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-19', '2025-12-19 09:00:00', '2025-12-19 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (989, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-20', '2025-12-20 01:00:00', '2025-12-20 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (990, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-20', '2025-12-20 01:00:00', '2025-12-20 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (991, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-20', '2025-12-20 01:00:00', '2025-12-20 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (992, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-20', '2025-12-20 17:00:00', '2025-12-21 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (993, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-20', '2025-12-20 17:00:00', '2025-12-21 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (994, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-20', '2025-12-20 09:00:00', '2025-12-20 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (995, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (996, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (997, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (998, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (999, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1000, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1001, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-22', '2025-12-22 01:00:00', '2025-12-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1002, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-22', '2025-12-22 01:00:00', '2025-12-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1003, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-22', '2025-12-22 01:00:00', '2025-12-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1004, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-22', '2025-12-22 17:00:00', '2025-12-23 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1005, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-22', '2025-12-22 17:00:00', '2025-12-23 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1006, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-22', '2025-12-22 09:00:00', '2025-12-22 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1007, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-23', '2025-12-23 01:00:00', '2025-12-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1008, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-23', '2025-12-23 01:00:00', '2025-12-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1009, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-23', '2025-12-23 01:00:00', '2025-12-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1010, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-23', '2025-12-23 17:00:00', '2025-12-24 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1011, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-23', '2025-12-23 17:00:00', '2025-12-24 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1012, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-23', '2025-12-23 09:00:00', '2025-12-23 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1013, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-24', '2025-12-24 01:00:00', '2025-12-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1014, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-24', '2025-12-24 01:00:00', '2025-12-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1015, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-24', '2025-12-24 01:00:00', '2025-12-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1016, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-24', '2025-12-24 17:00:00', '2025-12-25 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1017, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-24', '2025-12-24 17:00:00', '2025-12-25 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1018, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-24', '2025-12-24 09:00:00', '2025-12-24 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1019, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-25', '2025-12-25 01:00:00', '2025-12-25 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1020, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-25', '2025-12-25 01:00:00', '2025-12-25 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1021, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-25', '2025-12-25 01:00:00', '2025-12-25 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1022, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-25', '2025-12-25 17:00:00', '2025-12-26 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1023, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-25', '2025-12-25 17:00:00', '2025-12-26 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1024, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-25', '2025-12-25 09:00:00', '2025-12-25 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1025, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-26', '2025-12-26 01:00:00', '2025-12-26 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1026, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-26', '2025-12-26 01:00:00', '2025-12-26 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1027, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-26', '2025-12-26 01:00:00', '2025-12-26 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1028, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-26', '2025-12-26 17:00:00', '2025-12-27 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1029, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-26', '2025-12-26 17:00:00', '2025-12-27 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1030, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-26', '2025-12-26 09:00:00', '2025-12-26 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1031, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-27', '2025-12-27 01:00:00', '2025-12-27 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1032, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-27', '2025-12-27 01:00:00', '2025-12-27 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1033, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-27', '2025-12-27 01:00:00', '2025-12-27 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1034, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-27', '2025-12-27 17:00:00', '2025-12-28 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1035, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-27', '2025-12-27 17:00:00', '2025-12-28 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1036, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-27', '2025-12-27 09:00:00', '2025-12-27 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1037, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1038, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1039, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1040, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1041, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1042, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1043, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-29', '2025-12-29 01:00:00', '2025-12-29 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1044, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-29', '2025-12-29 01:00:00', '2025-12-29 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1045, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-29', '2025-12-29 01:00:00', '2025-12-29 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1046, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-29', '2025-12-29 17:00:00', '2025-12-30 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1047, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-29', '2025-12-29 17:00:00', '2025-12-30 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1048, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-29', '2025-12-29 09:00:00', '2025-12-29 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1049, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-30', '2025-12-30 01:00:00', '2025-12-30 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1050, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-30', '2025-12-30 01:00:00', '2025-12-30 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1051, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-30', '2025-12-30 01:00:00', '2025-12-30 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1052, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-30', '2025-12-30 17:00:00', '2025-12-31 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1053, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-30', '2025-12-30 17:00:00', '2025-12-31 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1054, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-30', '2025-12-30 09:00:00', '2025-12-30 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1055, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-31', '2025-12-31 01:00:00', '2025-12-31 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1056, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-31', '2025-12-31 01:00:00', '2025-12-31 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1057, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-31', '2025-12-31 01:00:00', '2025-12-31 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1058, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-31', '2025-12-31 17:00:00', '2026-01-01 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1059, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-31', '2025-12-31 17:00:00', '2026-01-01 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1060, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-31', '2025-12-31 09:00:00', '2025-12-31 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1061, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2026-01-01', '2026-01-01 01:00:00', '2026-01-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:53');
-INSERT INTO `sch_employee_schedule` VALUES (1062, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2026-01-01', '2026-01-01 01:00:00', '2026-01-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:54');
-INSERT INTO `sch_employee_schedule` VALUES (1063, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-01', '2026-01-01 01:00:00', '2026-01-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:54');
-INSERT INTO `sch_employee_schedule` VALUES (1064, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2026-01-01', '2026-01-01 17:00:00', '2026-01-02 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:54');
-INSERT INTO `sch_employee_schedule` VALUES (1065, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2026-01-01', '2026-01-01 17:00:00', '2026-01-02 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:54');
-INSERT INTO `sch_employee_schedule` VALUES (1066, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-01', '2026-01-01 09:00:00', '2026-01-01 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-04 10:03:54', NULL, '2026-01-04 10:03:54');
+INSERT INTO `sch_employee_schedule` VALUES (4871, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-01', '2025-12-01 01:00:00', '2025-12-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:52', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4872, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-01', '2025-12-01 01:00:00', '2025-12-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4873, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-01', '2025-12-01 09:00:00', '2025-12-01 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4874, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-01', '2025-12-01 17:00:00', '2025-12-02 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4875, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-01', '2025-12-01 17:00:00', '2025-12-02 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4876, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-01', '2025-12-01 01:00:00', '2025-12-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4877, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-02', '2025-12-02 01:00:00', '2025-12-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4878, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-02', '2025-12-02 01:00:00', '2025-12-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4879, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-02', '2025-12-02 09:00:00', '2025-12-02 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4880, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-02', '2025-12-02 17:00:00', '2025-12-03 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4881, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-02', '2025-12-02 17:00:00', '2025-12-03 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4882, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-02', '2025-12-02 01:00:00', '2025-12-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4883, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-03', '2025-12-03 01:00:00', '2025-12-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4884, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-03', '2025-12-03 01:00:00', '2025-12-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4885, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-03', '2025-12-03 09:00:00', '2025-12-03 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4886, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-03', '2025-12-03 17:00:00', '2025-12-04 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4887, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-03', '2025-12-03 17:00:00', '2025-12-04 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4888, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-03', '2025-12-03 01:00:00', '2025-12-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4889, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-04', '2025-12-04 01:00:00', '2025-12-04 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4890, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-04', '2025-12-04 01:00:00', '2025-12-04 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4891, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-04', '2025-12-04 09:00:00', '2025-12-04 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4892, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-04', '2025-12-04 17:00:00', '2025-12-05 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4893, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-04', '2025-12-04 17:00:00', '2025-12-05 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4894, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-04', '2025-12-04 01:00:00', '2025-12-04 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4895, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-05', '2025-12-05 01:00:00', '2025-12-05 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4896, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-05', '2025-12-05 01:00:00', '2025-12-05 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4897, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-05', '2025-12-05 09:00:00', '2025-12-05 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4898, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-05', '2025-12-05 17:00:00', '2025-12-06 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4899, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-05', '2025-12-05 17:00:00', '2025-12-06 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4900, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-05', '2025-12-05 01:00:00', '2025-12-05 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4901, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-06', '2025-12-06 01:00:00', '2025-12-06 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4902, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-06', '2025-12-06 01:00:00', '2025-12-06 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4903, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-06', '2025-12-06 09:00:00', '2025-12-06 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4904, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-06', '2025-12-06 17:00:00', '2025-12-07 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4905, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-06', '2025-12-06 17:00:00', '2025-12-07 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4906, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-06', '2025-12-06 01:00:00', '2025-12-06 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4907, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4908, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4909, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4910, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4911, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4912, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-07', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4913, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-08', '2025-12-08 09:00:00', '2025-12-08 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4914, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-08', '2025-12-08 09:00:00', '2025-12-08 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4915, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-08', '2025-12-08 17:00:00', '2025-12-09 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4916, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-08', '2025-12-08 01:00:00', '2025-12-08 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4917, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-08', '2025-12-08 01:00:00', '2025-12-08 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4918, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-08', '2025-12-08 09:00:00', '2025-12-08 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4919, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-09', '2025-12-09 09:00:00', '2025-12-09 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4920, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-09', '2025-12-09 09:00:00', '2025-12-09 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4921, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-09', '2025-12-09 17:00:00', '2025-12-10 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4922, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-09', '2025-12-09 01:00:00', '2025-12-09 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4923, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-09', '2025-12-09 01:00:00', '2025-12-09 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4924, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-09', '2025-12-09 09:00:00', '2025-12-09 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4925, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-10', '2025-12-10 09:00:00', '2025-12-10 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4926, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-10', '2025-12-10 09:00:00', '2025-12-10 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4927, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-10', '2025-12-10 17:00:00', '2025-12-11 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4928, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-10', '2025-12-10 01:00:00', '2025-12-10 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4929, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-10', '2025-12-10 01:00:00', '2025-12-10 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4930, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-10', '2025-12-10 09:00:00', '2025-12-10 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4931, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-11', '2025-12-11 09:00:00', '2025-12-11 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4932, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-11', '2025-12-11 09:00:00', '2025-12-11 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4933, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-11', '2025-12-11 17:00:00', '2025-12-12 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4934, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-11', '2025-12-11 01:00:00', '2025-12-11 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4935, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-11', '2025-12-11 01:00:00', '2025-12-11 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4936, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-11', '2025-12-11 09:00:00', '2025-12-11 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4937, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-12', '2025-12-12 09:00:00', '2025-12-12 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4938, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-12', '2025-12-12 09:00:00', '2025-12-12 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4939, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-12', '2025-12-12 17:00:00', '2025-12-13 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4940, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-12', '2025-12-12 01:00:00', '2025-12-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4941, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-12', '2025-12-12 01:00:00', '2025-12-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4942, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-12', '2025-12-12 09:00:00', '2025-12-12 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4943, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-13', '2025-12-13 09:00:00', '2025-12-13 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4944, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-13', '2025-12-13 09:00:00', '2025-12-13 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4945, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-13', '2025-12-13 17:00:00', '2025-12-14 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4946, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-13', '2025-12-13 01:00:00', '2025-12-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4947, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-13', '2025-12-13 01:00:00', '2025-12-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4948, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-13', '2025-12-13 09:00:00', '2025-12-13 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4949, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4950, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4951, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4952, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4953, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4954, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-14', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4955, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2025-12-15', '2025-12-15 17:00:00', '2025-12-16 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4956, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2025-12-15', '2025-12-15 17:00:00', '2025-12-16 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4957, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-15', '2025-12-15 01:00:00', '2025-12-15 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4958, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2025-12-15', '2025-12-15 09:00:00', '2025-12-15 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4959, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2025-12-15', '2025-12-15 09:00:00', '2025-12-15 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4960, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2025-12-15', '2025-12-15 17:00:00', '2025-12-16 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4961, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2025-12-16', '2025-12-16 17:00:00', '2025-12-17 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4962, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2025-12-16', '2025-12-16 17:00:00', '2025-12-17 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4963, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-16', '2025-12-16 01:00:00', '2025-12-16 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4964, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2025-12-16', '2025-12-16 09:00:00', '2025-12-16 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4965, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2025-12-16', '2025-12-16 09:00:00', '2025-12-16 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4966, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2025-12-16', '2025-12-16 17:00:00', '2025-12-17 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4967, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2025-12-17', '2025-12-17 17:00:00', '2025-12-18 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4968, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2025-12-17', '2025-12-17 17:00:00', '2025-12-18 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4969, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-17', '2025-12-17 01:00:00', '2025-12-17 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:52');
+INSERT INTO `sch_employee_schedule` VALUES (4970, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2025-12-17', '2025-12-17 09:00:00', '2025-12-17 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4971, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2025-12-17', '2025-12-17 09:00:00', '2025-12-17 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4972, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2025-12-17', '2025-12-17 17:00:00', '2025-12-18 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4973, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2025-12-18', '2025-12-18 17:00:00', '2025-12-19 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4974, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2025-12-18', '2025-12-18 17:00:00', '2025-12-19 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4975, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-18', '2025-12-18 01:00:00', '2025-12-18 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4976, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2025-12-18', '2025-12-18 09:00:00', '2025-12-18 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4977, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2025-12-18', '2025-12-18 09:00:00', '2025-12-18 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4978, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2025-12-18', '2025-12-18 17:00:00', '2025-12-19 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4979, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2025-12-19', '2025-12-19 17:00:00', '2025-12-20 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4980, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2025-12-19', '2025-12-19 17:00:00', '2025-12-20 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4981, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-19', '2025-12-19 01:00:00', '2025-12-19 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4982, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2025-12-19', '2025-12-19 09:00:00', '2025-12-19 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4983, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2025-12-19', '2025-12-19 09:00:00', '2025-12-19 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4984, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2025-12-19', '2025-12-19 17:00:00', '2025-12-20 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4985, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2025-12-20', '2025-12-20 17:00:00', '2025-12-21 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4986, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2025-12-20', '2025-12-20 17:00:00', '2025-12-21 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4987, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2025-12-20', '2025-12-20 01:00:00', '2025-12-20 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4988, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2025-12-20', '2025-12-20 09:00:00', '2025-12-20 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4989, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2025-12-20', '2025-12-20 09:00:00', '2025-12-20 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4990, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2025-12-20', '2025-12-20 17:00:00', '2025-12-21 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4991, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4992, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4993, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4994, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4995, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4996, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-21', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4997, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-22', '2025-12-22 01:00:00', '2025-12-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4998, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-22', '2025-12-22 01:00:00', '2025-12-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (4999, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-22', '2025-12-22 09:00:00', '2025-12-22 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5000, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-22', '2025-12-22 17:00:00', '2025-12-23 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5001, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-22', '2025-12-22 17:00:00', '2025-12-23 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5002, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-22', '2025-12-22 01:00:00', '2025-12-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5003, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-23', '2025-12-23 01:00:00', '2025-12-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5004, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-23', '2025-12-23 01:00:00', '2025-12-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5005, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-23', '2025-12-23 09:00:00', '2025-12-23 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5006, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-23', '2025-12-23 17:00:00', '2025-12-24 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5007, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-23', '2025-12-23 17:00:00', '2025-12-24 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5008, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-23', '2025-12-23 01:00:00', '2025-12-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5009, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-24', '2025-12-24 01:00:00', '2025-12-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5010, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-24', '2025-12-24 01:00:00', '2025-12-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5011, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-24', '2025-12-24 09:00:00', '2025-12-24 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5012, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-24', '2025-12-24 17:00:00', '2025-12-25 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5013, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-24', '2025-12-24 17:00:00', '2025-12-25 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5014, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-24', '2025-12-24 01:00:00', '2025-12-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5015, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-25', '2025-12-25 01:00:00', '2025-12-25 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5016, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-25', '2025-12-25 01:00:00', '2025-12-25 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5017, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-25', '2025-12-25 09:00:00', '2025-12-25 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5018, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-25', '2025-12-25 17:00:00', '2025-12-26 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5019, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-25', '2025-12-25 17:00:00', '2025-12-26 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5020, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-25', '2025-12-25 01:00:00', '2025-12-25 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5021, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-26', '2025-12-26 01:00:00', '2025-12-26 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5022, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-26', '2025-12-26 01:00:00', '2025-12-26 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5023, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-26', '2025-12-26 09:00:00', '2025-12-26 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5024, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-26', '2025-12-26 17:00:00', '2025-12-27 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5025, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-26', '2025-12-26 17:00:00', '2025-12-27 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5026, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-26', '2025-12-26 01:00:00', '2025-12-26 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5027, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2025-12-27', '2025-12-27 01:00:00', '2025-12-27 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5028, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2025-12-27', '2025-12-27 01:00:00', '2025-12-27 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5029, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2025-12-27', '2025-12-27 09:00:00', '2025-12-27 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5030, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2025-12-27', '2025-12-27 17:00:00', '2025-12-28 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5031, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2025-12-27', '2025-12-27 17:00:00', '2025-12-28 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5032, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2025-12-27', '2025-12-27 01:00:00', '2025-12-27 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5033, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5034, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5035, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5036, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5037, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5038, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2025-12-28', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5039, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-29', '2025-12-29 09:00:00', '2025-12-29 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5040, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-29', '2025-12-29 09:00:00', '2025-12-29 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5041, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-29', '2025-12-29 17:00:00', '2025-12-30 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:53', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5042, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-29', '2025-12-29 01:00:00', '2025-12-29 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5043, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-29', '2025-12-29 01:00:00', '2025-12-29 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5044, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-29', '2025-12-29 09:00:00', '2025-12-29 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5045, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-30', '2025-12-30 09:00:00', '2025-12-30 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5046, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-30', '2025-12-30 09:00:00', '2025-12-30 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5047, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-30', '2025-12-30 17:00:00', '2025-12-31 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5048, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-30', '2025-12-30 01:00:00', '2025-12-30 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5049, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-30', '2025-12-30 01:00:00', '2025-12-30 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5050, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-30', '2025-12-30 09:00:00', '2025-12-30 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5051, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2025-12-31', '2025-12-31 09:00:00', '2025-12-31 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5052, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2025-12-31', '2025-12-31 09:00:00', '2025-12-31 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5053, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2025-12-31', '2025-12-31 17:00:00', '2026-01-01 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5054, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2025-12-31', '2025-12-31 01:00:00', '2025-12-31 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5055, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2025-12-31', '2025-12-31 01:00:00', '2025-12-31 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5056, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2025-12-31', '2025-12-31 09:00:00', '2025-12-31 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5057, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-01', '2026-01-01 09:00:00', '2026-01-01 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5058, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-01', '2026-01-01 09:00:00', '2026-01-01 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5059, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-01', '2026-01-01 17:00:00', '2026-01-02 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5060, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-01', '2026-01-01 01:00:00', '2026-01-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5061, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-01', '2026-01-01 01:00:00', '2026-01-01 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5062, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-01', '2026-01-01 09:00:00', '2026-01-01 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5063, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-02', '2026-01-02 09:00:00', '2026-01-02 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5064, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-02', '2026-01-02 09:00:00', '2026-01-02 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5065, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-02', '2026-01-02 17:00:00', '2026-01-03 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5066, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-02', '2026-01-02 01:00:00', '2026-01-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5067, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-02', '2026-01-02 01:00:00', '2026-01-02 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5068, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-02', '2026-01-02 09:00:00', '2026-01-02 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5069, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-03', '2026-01-03 09:00:00', '2026-01-03 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5070, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-03', '2026-01-03 09:00:00', '2026-01-03 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5071, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-03', '2026-01-03 17:00:00', '2026-01-04 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5072, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-03', '2026-01-03 01:00:00', '2026-01-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5073, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-03', '2026-01-03 01:00:00', '2026-01-03 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5074, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-03', '2026-01-03 09:00:00', '2026-01-03 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5075, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2026-01-04', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5076, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2026-01-04', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5077, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2026-01-04', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5078, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2026-01-04', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5079, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2026-01-04', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5080, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2026-01-04', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5081, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-05', '2026-01-05 17:00:00', '2026-01-06 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5082, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-05', '2026-01-05 17:00:00', '2026-01-06 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5083, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-05', '2026-01-05 01:00:00', '2026-01-05 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5084, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-05', '2026-01-05 09:00:00', '2026-01-05 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5085, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-05', '2026-01-05 09:00:00', '2026-01-05 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5086, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-05', '2026-01-05 17:00:00', '2026-01-06 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5087, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-06', '2026-01-06 17:00:00', '2026-01-07 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5088, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-06', '2026-01-06 17:00:00', '2026-01-07 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5089, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-06', '2026-01-06 01:00:00', '2026-01-06 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5090, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-06', '2026-01-06 09:00:00', '2026-01-06 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5091, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-06', '2026-01-06 09:00:00', '2026-01-06 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5092, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-06', '2026-01-06 17:00:00', '2026-01-07 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5093, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-07', '2026-01-07 17:00:00', '2026-01-08 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5094, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-07', '2026-01-07 17:00:00', '2026-01-08 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5095, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-07', '2026-01-07 01:00:00', '2026-01-07 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5096, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-07', '2026-01-07 09:00:00', '2026-01-07 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5097, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-07', '2026-01-07 09:00:00', '2026-01-07 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5098, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-07', '2026-01-07 17:00:00', '2026-01-08 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5099, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-08', '2026-01-08 17:00:00', '2026-01-09 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5100, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-08', '2026-01-08 17:00:00', '2026-01-09 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5101, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-08', '2026-01-08 01:00:00', '2026-01-08 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5102, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-08', '2026-01-08 09:00:00', '2026-01-08 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5103, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-08', '2026-01-08 09:00:00', '2026-01-08 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5104, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-08', '2026-01-08 17:00:00', '2026-01-09 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5105, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-09', '2026-01-09 17:00:00', '2026-01-10 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5106, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-09', '2026-01-09 17:00:00', '2026-01-10 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5107, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-09', '2026-01-09 01:00:00', '2026-01-09 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5108, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-09', '2026-01-09 09:00:00', '2026-01-09 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5109, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-09', '2026-01-09 09:00:00', '2026-01-09 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5110, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-09', '2026-01-09 17:00:00', '2026-01-10 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5111, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-10', '2026-01-10 17:00:00', '2026-01-11 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5112, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-10', '2026-01-10 17:00:00', '2026-01-11 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5113, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-10', '2026-01-10 01:00:00', '2026-01-10 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5114, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-10', '2026-01-10 09:00:00', '2026-01-10 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5115, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-10', '2026-01-10 09:00:00', '2026-01-10 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5116, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-10', '2026-01-10 17:00:00', '2026-01-11 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5117, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2026-01-11', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5118, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2026-01-11', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5119, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2026-01-11', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5120, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2026-01-11', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5121, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2026-01-11', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5122, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2026-01-11', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5123, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2026-01-12', '2026-01-12 01:00:00', '2026-01-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5124, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2026-01-12', '2026-01-12 01:00:00', '2026-01-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5125, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2026-01-12', '2026-01-12 09:00:00', '2026-01-12 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5126, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2026-01-12', '2026-01-12 17:00:00', '2026-01-13 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5127, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2026-01-12', '2026-01-12 17:00:00', '2026-01-13 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5128, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2026-01-12', '2026-01-12 01:00:00', '2026-01-12 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5129, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2026-01-13', '2026-01-13 01:00:00', '2026-01-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5130, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2026-01-13', '2026-01-13 01:00:00', '2026-01-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5131, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2026-01-13', '2026-01-13 09:00:00', '2026-01-13 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5132, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2026-01-13', '2026-01-13 17:00:00', '2026-01-14 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5133, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2026-01-13', '2026-01-13 17:00:00', '2026-01-14 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5134, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2026-01-13', '2026-01-13 01:00:00', '2026-01-13 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5135, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2026-01-14', '2026-01-14 01:00:00', '2026-01-14 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5136, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2026-01-14', '2026-01-14 01:00:00', '2026-01-14 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5137, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2026-01-14', '2026-01-14 09:00:00', '2026-01-14 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5138, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2026-01-14', '2026-01-14 17:00:00', '2026-01-15 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5139, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2026-01-14', '2026-01-14 17:00:00', '2026-01-15 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5140, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2026-01-14', '2026-01-14 01:00:00', '2026-01-14 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5141, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2026-01-15', '2026-01-15 01:00:00', '2026-01-15 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5142, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2026-01-15', '2026-01-15 01:00:00', '2026-01-15 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5143, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2026-01-15', '2026-01-15 09:00:00', '2026-01-15 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5144, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2026-01-15', '2026-01-15 17:00:00', '2026-01-16 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5145, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2026-01-15', '2026-01-15 17:00:00', '2026-01-16 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5146, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2026-01-15', '2026-01-15 01:00:00', '2026-01-15 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5147, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2026-01-16', '2026-01-16 01:00:00', '2026-01-16 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5148, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2026-01-16', '2026-01-16 01:00:00', '2026-01-16 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5149, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2026-01-16', '2026-01-16 09:00:00', '2026-01-16 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5150, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2026-01-16', '2026-01-16 17:00:00', '2026-01-17 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5151, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2026-01-16', '2026-01-16 17:00:00', '2026-01-17 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5152, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2026-01-16', '2026-01-16 01:00:00', '2026-01-16 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5153, 1, 13, '李芳华', 8, '组装一组', 1, '早班', '2026-01-17', '2026-01-17 01:00:00', '2026-01-17 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5154, 1, 17, '赵琳', 8, '组装一组', 1, '早班', '2026-01-17', '2026-01-17 01:00:00', '2026-01-17 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5155, 1, 14, '王思远', 9, '设备维护一组', 2, '中班', '2026-01-17', '2026-01-17 09:00:00', '2026-01-17 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:53');
+INSERT INTO `sch_employee_schedule` VALUES (5156, 1, 16, '陈志强', 10, '组装测试一组', 3, '晚班', '2026-01-17', '2026-01-17 17:00:00', '2026-01-18 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5157, 1, 15, '刘薇薇', 10, '组装测试一组', 3, '晚班', '2026-01-17', '2026-01-17 17:00:00', '2026-01-18 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5158, 1, 19, '吴静', 11, '注塑一组', 1, '早班', '2026-01-17', '2026-01-17 01:00:00', '2026-01-17 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5159, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2026-01-18', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5160, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2026-01-18', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5161, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2026-01-18', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5162, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2026-01-18', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5163, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2026-01-18', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5164, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2026-01-18', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5165, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-19', '2026-01-19 09:00:00', '2026-01-19 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5166, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-19', '2026-01-19 09:00:00', '2026-01-19 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5167, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-19', '2026-01-19 17:00:00', '2026-01-20 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5168, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-19', '2026-01-19 01:00:00', '2026-01-19 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5169, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-19', '2026-01-19 01:00:00', '2026-01-19 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5170, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-19', '2026-01-19 09:00:00', '2026-01-19 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5171, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-20', '2026-01-20 09:00:00', '2026-01-20 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5172, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-20', '2026-01-20 09:00:00', '2026-01-20 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5173, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-20', '2026-01-20 17:00:00', '2026-01-21 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5174, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-20', '2026-01-20 01:00:00', '2026-01-20 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5175, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-20', '2026-01-20 01:00:00', '2026-01-20 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5176, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-20', '2026-01-20 09:00:00', '2026-01-20 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5177, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-21', '2026-01-21 09:00:00', '2026-01-21 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5178, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-21', '2026-01-21 09:00:00', '2026-01-21 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5179, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-21', '2026-01-21 17:00:00', '2026-01-22 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5180, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-21', '2026-01-21 01:00:00', '2026-01-21 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5181, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-21', '2026-01-21 01:00:00', '2026-01-21 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5182, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-21', '2026-01-21 09:00:00', '2026-01-21 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5183, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-22', '2026-01-22 09:00:00', '2026-01-22 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5184, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-22', '2026-01-22 09:00:00', '2026-01-22 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5185, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-22', '2026-01-22 17:00:00', '2026-01-23 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5186, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-22', '2026-01-22 01:00:00', '2026-01-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5187, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-22', '2026-01-22 01:00:00', '2026-01-22 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5188, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-22', '2026-01-22 09:00:00', '2026-01-22 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5189, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-23', '2026-01-23 09:00:00', '2026-01-23 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5190, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-23', '2026-01-23 09:00:00', '2026-01-23 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5191, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-23', '2026-01-23 17:00:00', '2026-01-24 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5192, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-23', '2026-01-23 01:00:00', '2026-01-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5193, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-23', '2026-01-23 01:00:00', '2026-01-23 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5194, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-23', '2026-01-23 09:00:00', '2026-01-23 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5195, 1, 13, '李芳华', 8, '组装一组', 2, '中班', '2026-01-24', '2026-01-24 09:00:00', '2026-01-24 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5196, 1, 17, '赵琳', 8, '组装一组', 2, '中班', '2026-01-24', '2026-01-24 09:00:00', '2026-01-24 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5197, 1, 14, '王思远', 9, '设备维护一组', 3, '晚班', '2026-01-24', '2026-01-24 17:00:00', '2026-01-25 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5198, 1, 16, '陈志强', 10, '组装测试一组', 1, '早班', '2026-01-24', '2026-01-24 01:00:00', '2026-01-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5199, 1, 15, '刘薇薇', 10, '组装测试一组', 1, '早班', '2026-01-24', '2026-01-24 01:00:00', '2026-01-24 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5200, 1, 19, '吴静', 11, '注塑一组', 2, '中班', '2026-01-24', '2026-01-24 09:00:00', '2026-01-24 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5201, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2026-01-25', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5202, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2026-01-25', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5203, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2026-01-25', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5204, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2026-01-25', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5205, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2026-01-25', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5206, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2026-01-25', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5207, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-26', '2026-01-26 17:00:00', '2026-01-27 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5208, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-26', '2026-01-26 17:00:00', '2026-01-27 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5209, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-26', '2026-01-26 01:00:00', '2026-01-26 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5210, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-26', '2026-01-26 09:00:00', '2026-01-26 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5211, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-26', '2026-01-26 09:00:00', '2026-01-26 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5212, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-26', '2026-01-26 17:00:00', '2026-01-27 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5213, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-27', '2026-01-27 17:00:00', '2026-01-28 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5214, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-27', '2026-01-27 17:00:00', '2026-01-28 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5215, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-27', '2026-01-27 01:00:00', '2026-01-27 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5216, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-27', '2026-01-27 09:00:00', '2026-01-27 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5217, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-27', '2026-01-27 09:00:00', '2026-01-27 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5218, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-27', '2026-01-27 17:00:00', '2026-01-28 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5219, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-28', '2026-01-28 17:00:00', '2026-01-29 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5220, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-28', '2026-01-28 17:00:00', '2026-01-29 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5221, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-28', '2026-01-28 01:00:00', '2026-01-28 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5222, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-28', '2026-01-28 09:00:00', '2026-01-28 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5223, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-28', '2026-01-28 09:00:00', '2026-01-28 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5224, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-28', '2026-01-28 17:00:00', '2026-01-29 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5225, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-29', '2026-01-29 17:00:00', '2026-01-30 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5226, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-29', '2026-01-29 17:00:00', '2026-01-30 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5227, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-29', '2026-01-29 01:00:00', '2026-01-29 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5228, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-29', '2026-01-29 09:00:00', '2026-01-29 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5229, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-29', '2026-01-29 09:00:00', '2026-01-29 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5230, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-29', '2026-01-29 17:00:00', '2026-01-30 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5231, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-30', '2026-01-30 17:00:00', '2026-01-31 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5232, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-30', '2026-01-30 17:00:00', '2026-01-31 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5233, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-30', '2026-01-30 01:00:00', '2026-01-30 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5234, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-30', '2026-01-30 09:00:00', '2026-01-30 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5235, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-30', '2026-01-30 09:00:00', '2026-01-30 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5236, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-30', '2026-01-30 17:00:00', '2026-01-31 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5237, 1, 13, '李芳华', 8, '组装一组', 3, '晚班', '2026-01-31', '2026-01-31 17:00:00', '2026-02-01 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5238, 1, 17, '赵琳', 8, '组装一组', 3, '晚班', '2026-01-31', '2026-01-31 17:00:00', '2026-02-01 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5239, 1, 14, '王思远', 9, '设备维护一组', 1, '早班', '2026-01-31', '2026-01-31 01:00:00', '2026-01-31 09:00:00', 1, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5240, 1, 16, '陈志强', 10, '组装测试一组', 2, '中班', '2026-01-31', '2026-01-31 09:00:00', '2026-01-31 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5241, 1, 15, '刘薇薇', 10, '组装测试一组', 2, '中班', '2026-01-31', '2026-01-31 09:00:00', '2026-01-31 17:00:00', 2, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5242, 1, 19, '吴静', 11, '注塑一组', 3, '晚班', '2026-01-31', '2026-01-31 17:00:00', '2026-02-01 01:00:00', 3, 'normal', 1, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5243, 1, 13, '李芳华', 8, '组装一组', -1, NULL, '2026-02-01', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5244, 1, 17, '赵琳', 8, '组装一组', -1, NULL, '2026-02-01', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5245, 1, 14, '王思远', 9, '设备维护一组', -1, NULL, '2026-02-01', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5246, 1, 16, '陈志强', 10, '组装测试一组', -1, NULL, '2026-02-01', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5247, 1, 15, '刘薇薇', 10, '组装测试一组', -1, NULL, '2026-02-01', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
+INSERT INTO `sch_employee_schedule` VALUES (5248, 1, 19, '吴静', 11, '注塑一组', -1, NULL, '2026-02-01', NULL, NULL, NULL, 'rest', 0, NULL, NULL, '2026-01-07 17:54:54', NULL, '2026-01-07 17:54:54');
 
 -- ----------------------------
 -- Table structure for sch_holiday
@@ -4245,6 +4504,7 @@ CREATE TABLE `sch_leave`  (
   `approver_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '审批人姓名',
   `approve_time` datetime(0) NULL DEFAULT NULL COMMENT '审批时间',
   `approve_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '审批备注',
+  `attendance_updated` tinyint(1) NULL DEFAULT 0 COMMENT '考勤状态是否已更新',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -4286,6 +4546,30 @@ CREATE TABLE `sch_operation_log`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '排班操作日志表-三阶段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Table structure for sch_outdoor_punch
+-- ----------------------------
+DROP TABLE IF EXISTS `sch_outdoor_punch`;
+CREATE TABLE `sch_outdoor_punch`  (
+  `outdoor_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '外勤打卡ID',
+  `attendance_id` bigint(0) NOT NULL COMMENT '关联考勤记录ID',
+  `worker_id` bigint(0) NOT NULL COMMENT '人员ID',
+  `punch_time` datetime(0) NOT NULL COMMENT '打卡时间',
+  `punch_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '打卡类型: clock_in上班, clock_out下班',
+  `location_lat` decimal(10, 8) NOT NULL COMMENT '打卡纬度',
+  `location_lng` decimal(11, 8) NOT NULL COMMENT '打卡经度',
+  `location_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '打卡地址',
+  `photo_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '现场照片URL',
+  `customer_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '客户名称（如有）',
+  `business_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '外勤事由',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`outdoor_id`) USING BTREE,
+  INDEX `idx_attendance_id`(`attendance_id`) USING BTREE,
+  INDEX `idx_worker_id`(`worker_id`) USING BTREE,
+  INDEX `idx_punch_time`(`punch_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '外勤打卡记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
 -- Table structure for sch_overtime
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_overtime`;
@@ -4306,6 +4590,8 @@ CREATE TABLE `sch_overtime`  (
   `actual_start_time` datetime(0) NULL DEFAULT NULL COMMENT '实际开始时间',
   `actual_end_time` datetime(0) NULL DEFAULT NULL COMMENT '实际结束时间',
   `actual_hours` decimal(5, 2) NULL DEFAULT NULL COMMENT '实际加班时长',
+  `attendance_updated` tinyint(1) NULL DEFAULT 0 COMMENT '考勤状态是否已更新',
+  `attendance_id` bigint(0) NULL DEFAULT NULL COMMENT '关联考勤记录ID',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -4346,7 +4632,7 @@ CREATE TABLE `sch_plan`  (
 -- ----------------------------
 -- Records of sch_plan
 -- ----------------------------
-INSERT INTO `sch_plan` VALUES (1, 'PBJH2025001', '12月组装三班倒', '2025-12-01 00:00:00', '2025-12-31 23:59:59', 'week', 3, 'published', 'admin', '2025-12-30 15:16:09', NULL, NULL, '2025-12-26 11:10:18', NULL, '2025-12-30 16:16:54');
+INSERT INTO `sch_plan` VALUES (1, 'PBJH2025001', '12月组装三班倒', '2025-12-01 00:00:00', '2026-01-31 23:59:59', 'week', 3, 'published', 'admin', '2025-12-30 15:16:09', NULL, NULL, '2025-12-26 11:10:18', NULL, '2026-01-07 16:18:39');
 INSERT INTO `sch_plan` VALUES (2, 'PBJH2025002', '测试', '2026-01-01 00:00:00', '2026-01-31 23:59:59', 'week', 1, 'draft', NULL, NULL, NULL, NULL, '2025-12-30 15:35:38', NULL, '2025-12-30 15:44:51');
 
 -- ----------------------------
@@ -4376,6 +4662,51 @@ INSERT INTO `sch_plan_team` VALUES (1, 1, 8, '组装一组', NULL, NULL, '2025-1
 INSERT INTO `sch_plan_team` VALUES (3, 1, 9, '设备维护一组', NULL, NULL, '2025-12-29 17:59:20', NULL, '2025-12-29 17:59:19');
 INSERT INTO `sch_plan_team` VALUES (4, 1, 10, '组装测试一组', NULL, NULL, '2025-12-29 17:59:20', NULL, '2025-12-29 17:59:19');
 INSERT INTO `sch_plan_team` VALUES (5, 1, 11, '注塑一组', NULL, NULL, '2025-12-30 15:15:53', NULL, '2025-12-30 15:15:53');
+
+-- ----------------------------
+-- Table structure for sch_punch_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `sch_punch_rule`;
+CREATE TABLE `sch_punch_rule`  (
+  `rule_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `rule_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '规则名称',
+  `shift_id` bigint(0) NULL DEFAULT NULL COMMENT '适用班次ID（NULL表示所有班次）',
+  `shift_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '班次名称',
+  `work_start_time` time(0) NOT NULL COMMENT '上班时间',
+  `work_end_time` time(0) NOT NULL COMMENT '下班时间',
+  `allow_clock_in_start` time(0) NOT NULL COMMENT '允许上班打卡开始时间',
+  `allow_clock_in_end` time(0) NOT NULL COMMENT '允许上班打卡结束时间',
+  `allow_clock_out_start` time(0) NOT NULL COMMENT '允许下班打卡开始时间',
+  `allow_clock_out_end` time(0) NOT NULL COMMENT '允许下班打卡结束时间',
+  `location_lat` decimal(10, 8) NULL DEFAULT NULL COMMENT '打卡中心点纬度',
+  `location_lng` decimal(11, 8) NULL DEFAULT NULL COMMENT '打卡中心点经度',
+  `location_radius` int(0) NULL DEFAULT 100 COMMENT '打卡半径（米）',
+  `location_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '打卡地点描述',
+  `allow_wifi_ssids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '允许的Wi-Fi网络SSID列表（JSON数组）',
+  `allow_bluetooth_devices` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '允许的蓝牙设备列表（JSON数组）',
+  `allow_outdoor_punch` tinyint(1) NULL DEFAULT 0 COMMENT '是否允许外勤打卡',
+  `outdoor_require_photo` tinyint(1) NULL DEFAULT 1 COMMENT '外勤打卡是否要求拍照',
+  `allow_supplement` tinyint(1) NULL DEFAULT 1 COMMENT '是否允许补卡',
+  `supplement_deadline` int(0) NULL DEFAULT 3 COMMENT '补卡申请截止天数',
+  `late_threshold` int(0) NULL DEFAULT 5 COMMENT '迟到阈值（分钟）',
+  `early_leave_threshold` int(0) NULL DEFAULT 5 COMMENT '早退阈值（分钟）',
+  `absent_threshold` int(0) NULL DEFAULT 60 COMMENT '旷工阈值（分钟）',
+  `is_enabled` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`rule_id`) USING BTREE,
+  INDEX `idx_shift_id`(`shift_id`) USING BTREE,
+  INDEX `idx_is_enabled`(`is_enabled`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '打卡规则表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sch_punch_rule
+-- ----------------------------
+INSERT INTO `sch_punch_rule` VALUES (1, '默认打卡规则', NULL, '所有班次', '09:00:00', '18:00:00', '08:00:00', '10:00:00', '17:00:00', '20:00:00', 29.60501700, 105.03659600, 50000, '内江市规展馆', NULL, NULL, 1, 1, 1, 3, 5, 5, 60, 1, '系统默认打卡规则，适用于所有班次', NULL, '2026-01-06 17:53:10', NULL, '2026-01-08 09:34:35');
+INSERT INTO `sch_punch_rule` VALUES (2, '早班打卡规则', 1, '早班', '08:00:00', '17:00:00', '07:00:00', '09:00:00', '16:00:00', '19:00:00', 31.23041600, 121.47370100, 500, '上海市黄浦区', NULL, NULL, 1, 1, 1, 3, 5, 5, 60, 1, '早班专用打卡规则', NULL, '2026-01-06 17:53:10', NULL, '2026-01-06 17:53:10');
 
 -- ----------------------------
 -- Table structure for sch_rule
@@ -4471,6 +4802,35 @@ CREATE TABLE `sch_shift_swap`  (
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_target_date`(`target_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '调班申请表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for sch_supplement_apply
+-- ----------------------------
+DROP TABLE IF EXISTS `sch_supplement_apply`;
+CREATE TABLE `sch_supplement_apply`  (
+  `apply_id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '申请ID',
+  `worker_id` bigint(0) NOT NULL COMMENT '人员ID',
+  `worker_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '人员姓名',
+  `apply_date` date NOT NULL COMMENT '申请补卡日期',
+  `apply_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '申请类型: clock_in上班补卡, clock_out下班补卡, both上下班补卡',
+  `reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '补卡原因',
+  `proof_photos` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '证明材料照片URL列表（JSON数组）',
+  `apply_status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'pending' COMMENT '申请状态: pending待审核, approved通过, rejected驳回',
+  `review_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '审核人',
+  `review_time` datetime(0) NULL DEFAULT NULL COMMENT '审核时间',
+  `review_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '审核备注',
+  `attendance_id` bigint(0) NULL DEFAULT NULL COMMENT '关联考勤记录ID（补卡成功后更新）',
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`apply_id`) USING BTREE,
+  INDEX `idx_worker_id`(`worker_id`) USING BTREE,
+  INDEX `idx_apply_date`(`apply_date`) USING BTREE,
+  INDEX `idx_apply_status`(`apply_status`) USING BTREE,
+  INDEX `idx_worker_date`(`worker_id`, `apply_date`) USING BTREE,
+  INDEX `idx_attendance_id`(`attendance_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '补卡申请记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sch_team
@@ -7395,7 +7755,7 @@ CREATE TABLE `sys_dict_data`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 300 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 307 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -7627,6 +7987,13 @@ INSERT INTO `sys_dict_data` VALUES (296, 2, '调班', 'swapped', 'sch_schedule_s
 INSERT INTO `sys_dict_data` VALUES (297, 3, '请假', 'leave', 'sch_schedule_status', NULL, 'danger', 'N', '0', 'admin', '2025-12-30 14:32:49', 'admin', '2025-12-30 14:33:52', NULL);
 INSERT INTO `sys_dict_data` VALUES (298, 4, '缺勤', 'absent', 'sch_schedule_status', NULL, 'warning', 'N', '0', 'admin', '2025-12-30 14:33:05', '', NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (299, 5, '休息', 'rest', 'sch_schedule_status', NULL, 'info', 'N', '0', 'admin', '2025-12-30 14:33:21', 'admin', '2025-12-30 14:33:36', NULL);
+INSERT INTO `sys_dict_data` VALUES (300, 1, '正常', 'normal', 'sch_attendance_status', NULL, 'primary', 'N', '0', 'admin', '2026-01-06 15:50:32', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (301, 2, '迟到', 'late', 'sch_attendance_status', NULL, 'warning', 'N', '0', 'admin', '2026-01-06 15:50:51', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (302, 3, '早退', 'early', 'sch_attendance_status', NULL, 'warning', 'N', '0', 'admin', '2026-01-06 15:51:10', 'admin', '2026-01-06 15:52:02', NULL);
+INSERT INTO `sys_dict_data` VALUES (303, 4, '旷工', 'absent', 'sch_attendance_status', NULL, 'danger', 'N', '0', 'admin', '2026-01-06 15:51:33', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (304, 5, '请假', 'leave', 'sch_attendance_status', NULL, 'success', 'N', '0', 'admin', '2026-01-06 15:51:48', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (305, 1, '手动', 'manual', 'sch_source_type', NULL, 'primary', 'N', '0', 'admin', '2026-01-06 15:52:53', '', NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (306, 2, '设备同步', 'device', 'sch_source_type', NULL, 'success', 'N', '0', 'admin', '2026-01-06 15:53:07', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -7644,7 +8011,7 @@ CREATE TABLE `sys_dict_type`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `dict_type`(`dict_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 147 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 149 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -7707,6 +8074,8 @@ INSERT INTO `sys_dict_type` VALUES (144, '排班计划状态', 'sch_plan_status'
 INSERT INTO `sys_dict_type` VALUES (145, '排班班次类别', 'sch_shift_category', '0', 'admin', '2025-12-25 16:30:36', '', NULL, NULL);
 INSERT INTO `sys_dict_type` VALUES (146, '排班轮班方式', 'sch_rotation_type', '0', 'admin', '2025-12-26 11:49:48', '', NULL, NULL);
 INSERT INTO `sys_dict_type` VALUES (147, '排班状态', 'sch_schedule_status', '0', 'admin', '2025-12-30 14:31:50', '', NULL, NULL);
+INSERT INTO `sys_dict_type` VALUES (148, '考勤结果状态', 'sch_attendance_status', '0', 'admin', '2026-01-06 15:50:16', '', NULL, NULL);
+INSERT INTO `sys_dict_type` VALUES (149, '考勤数据来源', 'sch_source_type', '0', 'admin', '2026-01-06 15:52:36', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_expression
@@ -7859,7 +8228,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 482 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 517 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -8250,6 +8619,40 @@ INSERT INTO `sys_logininfor` VALUES (482, 'mobile_15388485360', '127.0.0.1', '�
 INSERT INTO `sys_logininfor` VALUES (483, 'mobile_15388485360', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '退出成功', '2026-01-06 11:07:57');
 INSERT INTO `sys_logininfor` VALUES (484, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-06 11:08:06');
 INSERT INTO `sys_logininfor` VALUES (485, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-06 11:09:35');
+INSERT INTO `sys_logininfor` VALUES (486, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-06 16:09:35');
+INSERT INTO `sys_logininfor` VALUES (487, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-06 17:36:27');
+INSERT INTO `sys_logininfor` VALUES (488, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-07 09:33:09');
+INSERT INTO `sys_logininfor` VALUES (489, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-07 11:00:39');
+INSERT INTO `sys_logininfor` VALUES (490, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '退出成功', '2026-01-07 11:50:10');
+INSERT INTO `sys_logininfor` VALUES (491, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-07 11:50:44');
+INSERT INTO `sys_logininfor` VALUES (492, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-07 14:15:08');
+INSERT INTO `sys_logininfor` VALUES (493, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-07 16:18:18');
+INSERT INTO `sys_logininfor` VALUES (494, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-07 16:19:39');
+INSERT INTO `sys_logininfor` VALUES (495, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-07 16:20:15');
+INSERT INTO `sys_logininfor` VALUES (496, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-08 09:28:46');
+INSERT INTO `sys_logininfor` VALUES (497, '18255443322', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '1', '用户不存在/密码错误', '2026-01-08 09:29:23');
+INSERT INTO `sys_logininfor` VALUES (498, '18255443322', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '1', '用户不存在/密码错误', '2026-01-08 09:29:29');
+INSERT INTO `sys_logininfor` VALUES (499, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-08 09:29:40');
+INSERT INTO `sys_logininfor` VALUES (500, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-08 11:46:55');
+INSERT INTO `sys_logininfor` VALUES (501, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-08 11:58:29');
+INSERT INTO `sys_logininfor` VALUES (502, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-08 14:33:21');
+INSERT INTO `sys_logininfor` VALUES (503, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-08 14:33:49');
+INSERT INTO `sys_logininfor` VALUES (504, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-08 14:37:05');
+INSERT INTO `sys_logininfor` VALUES (505, '吴静', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-08 16:18:29');
+INSERT INTO `sys_logininfor` VALUES (506, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-09 09:14:10');
+INSERT INTO `sys_logininfor` VALUES (507, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2026-01-09 09:14:22');
+INSERT INTO `sys_logininfor` VALUES (508, '18255443322', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '用户不存在/密码错误', '2026-01-09 09:14:27');
+INSERT INTO `sys_logininfor` VALUES (509, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-09 09:14:34');
+INSERT INTO `sys_logininfor` VALUES (510, '吴静', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '用户不存在/密码错误', '2026-01-09 09:14:59');
+INSERT INTO `sys_logininfor` VALUES (511, '吴静', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-09 09:15:03');
+INSERT INTO `sys_logininfor` VALUES (512, '吴静', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2026-01-09 09:35:38');
+INSERT INTO `sys_logininfor` VALUES (513, '18255443322', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-09 09:35:48');
+INSERT INTO `sys_logininfor` VALUES (514, '吴静', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '退出成功', '2026-01-09 09:35:53');
+INSERT INTO `sys_logininfor` VALUES (515, '45', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '1', '用户不存在/密码错误', '2026-01-09 09:36:08');
+INSERT INTO `sys_logininfor` VALUES (516, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-09 09:38:23');
+INSERT INTO `sys_logininfor` VALUES (517, '18255443322', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-09 10:54:53');
+INSERT INTO `sys_logininfor` VALUES (518, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-01-09 15:03:31');
+INSERT INTO `sys_logininfor` VALUES (519, '18255443322', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-01-09 17:01:07');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -8277,7 +8680,7 @@ CREATE TABLE `sys_menu`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2292 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2305 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -8567,6 +8970,18 @@ INSERT INTO `sys_menu` VALUES (2283, '员工排班明细新增', 2281, 2, '#', '
 INSERT INTO `sys_menu` VALUES (2284, '员工排班明细修改', 2281, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:employeeSchedule:edit', '#', 'admin', '2025-12-30 14:37:43', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2285, '员工排班明细删除', 2281, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:employeeSchedule:remove', '#', 'admin', '2025-12-30 14:37:43', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2286, '员工排班明细导出', 2281, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:employeeSchedule:export', '#', 'admin', '2025-12-30 14:37:43', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2293, '考勤记录', 2220, 1, 'attendance', 'core/sch/attendance/index', NULL, '', 1, 0, 'C', '0', '0', 'sch:attendance:list', '#', 'admin', '2026-01-06 16:03:45', '', NULL, '考勤记录菜单');
+INSERT INTO `sys_menu` VALUES (2294, '考勤记录查询', 2293, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:attendance:query', '#', 'admin', '2026-01-06 16:03:45', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2295, '考勤记录新增', 2293, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:attendance:add', '#', 'admin', '2026-01-06 16:03:45', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2296, '考勤记录修改', 2293, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:attendance:edit', '#', 'admin', '2026-01-06 16:03:45', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2297, '考勤记录删除', 2293, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:attendance:remove', '#', 'admin', '2026-01-06 16:03:45', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2298, '考勤记录导出', 2293, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:attendance:export', '#', 'admin', '2026-01-06 16:03:45', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2299, '打卡规则', 2220, 1, 'punchRule', 'core/sch/punchRule/index', NULL, '', 1, 0, 'C', '0', '0', 'sch:punchRule:list', '#', 'admin', '2026-01-07 11:18:22', '', NULL, '打卡规则菜单');
+INSERT INTO `sys_menu` VALUES (2300, '打卡规则查询', 2299, 1, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:punchRule:query', '#', 'admin', '2026-01-07 11:18:22', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2301, '打卡规则新增', 2299, 2, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:punchRule:add', '#', 'admin', '2026-01-07 11:18:22', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2302, '打卡规则修改', 2299, 3, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:punchRule:edit', '#', 'admin', '2026-01-07 11:18:22', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2303, '打卡规则删除', 2299, 4, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:punchRule:remove', '#', 'admin', '2026-01-07 11:18:22', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2304, '打卡规则导出', 2299, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:punchRule:export', '#', 'admin', '2026-01-07 11:18:22', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -8618,7 +9033,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1836 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1866 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -10360,6 +10775,36 @@ INSERT INTO `sys_oper_log` VALUES (1833, '员工排班明细', 1, 'com.nexus.cor
 INSERT INTO `sys_oper_log` VALUES (1834, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-04 10:03:54', 1344);
 INSERT INTO `sys_oper_log` VALUES (1835, '参数管理', 2, 'com.nexus.web.controller.system.SysConfigController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/config', '127.0.0.1', '内网IP', '{\"configId\":4,\"configKey\":\"sys.account.captchaEnabled\",\"configName\":\"账号自助-验证码开关\",\"configType\":\"Y\",\"configValue\":\"false\",\"createBy\":\"admin\",\"createTime\":\"2025-08-29 16:28:04\",\"params\":{},\"remark\":\"是否开启验证码功能（true开启，false关闭）\",\"updateBy\":\"admin\",\"updateTime\":\"2025-12-19 10:57:49\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-05 16:46:28', 16);
 INSERT INTO `sys_oper_log` VALUES (1836, '参数管理', 9, 'com.nexus.web.controller.system.SysConfigController.refreshCache()', 'DELETE', 1, 'admin', '研发部门', '/system/config/refreshCache', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-05 16:46:33', 9);
+INSERT INTO `sys_oper_log` VALUES (1837, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"sch_attendance\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:48:08', 149);
+INSERT INTO `sys_oper_log` VALUES (1838, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"attendance\",\"className\":\"SchAttendance\",\"columns\":[{\"capJavaField\":\"AttendanceId\",\"columnComment\":\"考勤记录ID\",\"columnId\":1008,\"columnName\":\"attendance_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"attendanceId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":44,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"WorkerId\",\"columnComment\":\"人员ID\",\"columnId\":1009,\"columnName\":\"worker_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"workerId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":44,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"WorkerName\",\"columnComment\":\"人员姓名\",\"columnId\":1010,\"columnName\":\"worker_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"workerName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":44,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RecordDate\",\"columnComment\":\"考勤日期\",\"columnId\":1011,\"columnName\":\"record_date\",\"columnType\":\"date\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"datetime\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:49:03', 45);
+INSERT INTO `sys_oper_log` VALUES (1839, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"考勤结果状态\",\"dictType\":\"sch_attendance_status\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:50:16', 8);
+INSERT INTO `sys_oper_log` VALUES (1840, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"正常\",\"dictSort\":1,\"dictType\":\"sch_attendance_status\",\"dictValue\":\"normal\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:50:32', 17);
+INSERT INTO `sys_oper_log` VALUES (1841, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"迟到\",\"dictSort\":2,\"dictType\":\"sch_attendance_status\",\"dictValue\":\"late\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:50:51', 16);
+INSERT INTO `sys_oper_log` VALUES (1842, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"早退\",\"dictSort\":3,\"dictType\":\"sch_attendance_status\",\"dictValue\":\"early_leave\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:51:10', 18);
+INSERT INTO `sys_oper_log` VALUES (1843, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"旷工\",\"dictSort\":4,\"dictType\":\"sch_attendance_status\",\"dictValue\":\"absent\",\"listClass\":\"danger\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:51:33', 6);
+INSERT INTO `sys_oper_log` VALUES (1844, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"请假\",\"dictSort\":5,\"dictType\":\"sch_attendance_status\",\"dictValue\":\"leave\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:51:48', 7);
+INSERT INTO `sys_oper_log` VALUES (1845, '字典数据', 2, 'com.nexus.web.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:51:10\",\"default\":false,\"dictCode\":302,\"dictLabel\":\"早退\",\"dictSort\":3,\"dictType\":\"sch_attendance_status\",\"dictValue\":\"early\",\"isDefault\":\"N\",\"listClass\":\"warning\",\"params\":{},\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:52:02', 18);
+INSERT INTO `sys_oper_log` VALUES (1846, '字典类型', 1, 'com.nexus.web.controller.system.SysDictTypeController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/type', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"dictName\":\"考勤数据来源\",\"dictType\":\"sch_source_type\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:52:36', 21);
+INSERT INTO `sys_oper_log` VALUES (1847, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"手动\",\"dictSort\":1,\"dictType\":\"sch_source_type\",\"dictValue\":\"manual\",\"listClass\":\"primary\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:52:53', 17);
+INSERT INTO `sys_oper_log` VALUES (1848, '字典数据', 1, 'com.nexus.web.controller.system.SysDictDataController.add()', 'POST', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createBy\":\"admin\",\"default\":false,\"dictLabel\":\"设备同步\",\"dictSort\":2,\"dictType\":\"sch_source_type\",\"dictValue\":\"device\",\"listClass\":\"success\",\"params\":{},\"status\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:53:07', 16);
+INSERT INTO `sys_oper_log` VALUES (1849, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"attendance\",\"className\":\"SchAttendance\",\"columns\":[{\"capJavaField\":\"AttendanceId\",\"columnComment\":\"考勤记录ID\",\"columnId\":1008,\"columnName\":\"attendance_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"attendanceId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":44,\"updateBy\":\"\",\"updateTime\":\"2026-01-06 15:49:03\",\"usableColumn\":false},{\"capJavaField\":\"WorkerId\",\"columnComment\":\"人员ID\",\"columnId\":1009,\"columnName\":\"worker_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"workerId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":44,\"updateBy\":\"\",\"updateTime\":\"2026-01-06 15:49:03\",\"usableColumn\":false},{\"capJavaField\":\"WorkerName\",\"columnComment\":\"人员姓名\",\"columnId\":1010,\"columnName\":\"worker_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"workerName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":44,\"updateBy\":\"\",\"updateTime\":\"2026-01-06 15:49:03\",\"usableColumn\":false},{\"capJavaField\":\"RecordDate\",\"columnComment\":\"考勤日期\",\"columnId\":1011,\"columnName\":\"record_date\",\"columnType\":\"date\",\"createBy\":\"admin\",\"createTime\":\"2026-01-06 15:48:08\",\"dictType\":\"\",\"edit\":true,\"htm', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-06 15:55:19', 30);
+INSERT INTO `sys_oper_log` VALUES (1850, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"sch_attendance\"}', NULL, 0, NULL, '2026-01-06 15:59:08', 246);
+INSERT INTO `sys_oper_log` VALUES (1851, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"sch_punch_rule\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 11:03:40', 110);
+INSERT INTO `sys_oper_log` VALUES (1852, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"rule\",\"className\":\"SchPunchRule\",\"columns\":[{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":1027,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:03:40\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":45,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RuleName\",\"columnComment\":\"规则名称\",\"columnId\":1028,\"columnName\":\"rule_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:03:40\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":45,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ShiftId\",\"columnComment\":\"适用班次ID（NULL表示所有班次）\",\"columnId\":1029,\"columnName\":\"shift_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:03:40\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"shiftId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":45,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ShiftName\",\"columnComment\":\"班次名称\",\"columnId\":1030,\"columnName\":\"shift_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:03:40\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQ', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 11:06:18', 57);
+INSERT INTO `sys_oper_log` VALUES (1853, '代码生成', 3, 'com.nexus.generator.controller.GenController.remove()', 'DELETE', 1, 'admin', '研发部门', '/tool/gen/45', '127.0.0.1', '内网IP', '[45]', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 11:14:03', 11);
+INSERT INTO `sys_oper_log` VALUES (1854, '代码生成', 6, 'com.nexus.generator.controller.GenController.importTableSave()', 'POST', 1, 'admin', '研发部门', '/tool/gen/importTable', '127.0.0.1', '内网IP', '{\"tables\":\"sch_punch_rule\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 11:14:18', 48);
+INSERT INTO `sys_oper_log` VALUES (1855, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"punchrule\",\"className\":\"SchPunchRule\",\"columns\":[{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":1056,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":46,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"RuleName\",\"columnComment\":\"规则名称\",\"columnId\":1057,\"columnName\":\"rule_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":46,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ShiftId\",\"columnComment\":\"适用班次ID（NULL表示所有班次）\",\"columnId\":1058,\"columnName\":\"shift_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"shiftId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":46,\"updateBy\":\"\",\"usableColumn\":false},{\"capJavaField\":\"ShiftName\",\"columnComment\":\"班次名称\",\"columnId\":1059,\"columnName\":\"shift_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\"', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 11:16:43', 50);
+INSERT INTO `sys_oper_log` VALUES (1856, '代码生成', 2, 'com.nexus.generator.controller.GenController.editSave()', 'PUT', 1, 'admin', '研发部门', '/tool/gen', '127.0.0.1', '内网IP', '{\"businessName\":\"punchRule\",\"className\":\"SchPunchRule\",\"columns\":[{\"capJavaField\":\"RuleId\",\"columnComment\":\"规则ID\",\"columnId\":1056,\"columnName\":\"rule_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":false,\"htmlType\":\"input\",\"increment\":true,\"insert\":true,\"isIncrement\":\"1\",\"isInsert\":\"1\",\"isPk\":\"1\",\"isRequired\":\"0\",\"javaField\":\"ruleId\",\"javaType\":\"Long\",\"list\":false,\"params\":{},\"pk\":true,\"query\":false,\"queryType\":\"EQ\",\"required\":false,\"sort\":1,\"superColumn\":false,\"tableId\":46,\"updateBy\":\"\",\"updateTime\":\"2026-01-07 11:16:43\",\"usableColumn\":false},{\"capJavaField\":\"RuleName\",\"columnComment\":\"规则名称\",\"columnId\":1057,\"columnName\":\"rule_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"1\",\"javaField\":\"ruleName\",\"javaType\":\"String\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"LIKE\",\"required\":true,\"sort\":2,\"superColumn\":false,\"tableId\":46,\"updateBy\":\"\",\"updateTime\":\"2026-01-07 11:16:43\",\"usableColumn\":false},{\"capJavaField\":\"ShiftId\",\"columnComment\":\"适用班次ID（NULL表示所有班次）\",\"columnId\":1058,\"columnName\":\"shift_id\",\"columnType\":\"bigint\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"input\",\"increment\":false,\"insert\":true,\"isEdit\":\"1\",\"isIncrement\":\"0\",\"isInsert\":\"1\",\"isList\":\"1\",\"isPk\":\"0\",\"isQuery\":\"1\",\"isRequired\":\"0\",\"javaField\":\"shiftId\",\"javaType\":\"Long\",\"list\":true,\"params\":{},\"pk\":false,\"query\":true,\"queryType\":\"EQ\",\"required\":false,\"sort\":3,\"superColumn\":false,\"tableId\":46,\"updateBy\":\"\",\"updateTime\":\"2026-01-07 11:16:43\",\"usableColumn\":false},{\"capJavaField\":\"ShiftName\",\"columnComment\":\"班次名称\",\"columnId\":1059,\"columnName\":\"shift_name\",\"columnType\":\"varchar(255)\",\"createBy\":\"admin\",\"createTime\":\"2026-01-07 11:14:18\",\"dictType\":\"\",\"edit\":true,\"htmlType\":\"inp', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 11:17:40', 35);
+INSERT INTO `sys_oper_log` VALUES (1857, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tables\":\"sch_punch_rule\"}', NULL, 0, NULL, '2026-01-07 11:17:42', 254);
+INSERT INTO `sys_oper_log` VALUES (1858, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 11:46:17', 11418);
+INSERT INTO `sys_oper_log` VALUES (1859, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 16:19:12', 2220);
+INSERT INTO `sys_oper_log` VALUES (1860, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 16:40:05', 1287);
+INSERT INTO `sys_oper_log` VALUES (1861, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', NULL, 1, 'date', '2026-01-07 16:51:12', 73);
+INSERT INTO `sys_oper_log` VALUES (1862, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 16:52:29', 1227);
+INSERT INTO `sys_oper_log` VALUES (1863, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 17:36:09', 2883);
+INSERT INTO `sys_oper_log` VALUES (1864, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 17:42:40', 2738);
+INSERT INTO `sys_oper_log` VALUES (1865, '员工排班明细', 1, 'com.nexus.core.sch.controller.SchEmployeeScheduleController.generate()', 'POST', 1, 'admin', '研发部门', '/sch/employeeSchedule/generate', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-07 17:54:54', 3261);
+INSERT INTO `sys_oper_log` VALUES (1866, '用户管理', 2, 'com.nexus.web.controller.system.SysUserController.resetPwd()', 'PUT', 1, 'admin', '研发部门', '/system/user/resetPwd', '127.0.0.1', '内网IP', '{\"admin\":false,\"params\":{},\"updateBy\":\"admin\",\"userId\":112}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-01-08 09:39:08', 75);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -11040,7 +11485,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-01-06 11:09:36', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2026-01-06 11:09:35', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-01-09 15:03:32', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2026-01-09 15:03:31', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员');
 INSERT INTO `sys_user` VALUES (100, 123, 'xiaowang', '小王', '00', '', '12', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-12-17 15:51:33', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '1', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', 'admin', '2025-12-17 15:40:54', '耳朵聋');
@@ -11054,7 +11499,7 @@ INSERT INTO `sys_user` VALUES (108, 129, '刘薇薇', '刘薇薇', '00', '', '13
 INSERT INTO `sys_user` VALUES (109, 130, '陈志强', '陈志强', '00', '12369@qq.com', '15199887766', '0', '', '$2a$10$XbdlsKJJ6eqyCEsgdl1UkOYk2zat3XkeV0/bKxAfdWklEwCf.qVw6', '0', '0', '', NULL, NULL, 'admin', '2025-12-17 16:08:34', 'admin', '2025-12-19 11:16:04', NULL);
 INSERT INTO `sys_user` VALUES (110, 130, '赵琳', '赵琳', '00', '', '13711223344', '0', '', '$2a$10$zL0Ex2g4sAsDarSygiLek.OZrhugSPOCszJi3EuTdBbc48sSROZ/i', '0', '0', '', NULL, NULL, 'admin', '2025-12-17 16:09:06', '', NULL, NULL);
 INSERT INTO `sys_user` VALUES (111, 130, '周涛', '周涛', '00', '', '15800998877', '0', '', '$2a$10$bNPfNFj5epKWvB2hqtKd5.jC3VaxFC25d1oGQInxF6eY4YAvrnIZW', '0', '0', '', NULL, NULL, 'admin', '2025-12-17 16:09:34', '', NULL, NULL);
-INSERT INTO `sys_user` VALUES (112, 131, '吴静', '吴静', '00', '', '18255443322', '1', '', '$2a$10$TaiRNa1xRjIRBmx13bYn5uGT/7qipxzgWUprG2bJf7n0aMtmmhsaG', '0', '0', '', NULL, NULL, 'admin', '2025-12-17 16:09:59', '', NULL, NULL);
+INSERT INTO `sys_user` VALUES (112, 131, '吴静', '吴静', '00', '', '18255443322', '1', '', '$2a$10$aAEenJC3kiGCUzvgcieufOVdZ..W6iRCsQFt1uHefqACfwl/bIXku', '0', '0', '127.0.0.1', '2026-01-09 17:01:07', NULL, 'admin', '2025-12-17 16:09:59', 'admin', '2026-01-09 17:01:07', NULL);
 INSERT INTO `sys_user` VALUES (113, 131, '黄俊杰', '黄俊杰', '00', '', '13366778899', '0', '', '$2a$10$tKpbMhi4w1HbW0GG8Xg9YOl8Ef8t1SiBgVSzW8AIPDG6SuNRM2uYe', '0', '0', '', NULL, NULL, 'admin', '2025-12-17 16:10:35', '', NULL, NULL);
 INSERT INTO `sys_user` VALUES (114, 132, '林小雨', '林小雨', '00', '', '45', '1', '', '$2a$10$cE0YbKtvckG369DpSyQ6o.nqofMpWaUL1lRSoLR51F/uUmqBkZ9Oy', '0', '0', '', NULL, NULL, 'admin', '2025-12-17 16:11:06', '', NULL, NULL);
 INSERT INTO `sys_user` VALUES (115, NULL, 'mobile_15388485360', '手机号用户_15388485360', '00', '', '15388485360', '0', '', '$2a$10$ZWWcYKmGWGpaW5/oghJ8xuNoPo/ZNKMAoqL7lDjF0RzXQIubfVkJq', '0', '0', '127.0.0.1', '2026-01-06 10:42:59', NULL, '', '2026-01-06 10:13:44', '', '2026-01-06 10:42:58', NULL);
