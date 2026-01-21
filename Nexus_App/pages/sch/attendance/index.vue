@@ -122,6 +122,8 @@ const statusText = computed(() => {
 	const statusMap = {
 		normal: '正常',
 		late: '迟到',
+		early_leave:'早退',
+		late_early_leave:'迟到早退',
 		absent: '缺勤',
 		leave: '请假'
 	};

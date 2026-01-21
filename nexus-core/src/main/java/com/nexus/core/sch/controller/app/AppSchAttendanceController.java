@@ -505,21 +505,98 @@ public class AppSchAttendanceController {
     @ApiOperation("验证位置")
     @PostMapping("/attendance/validate-location")
     public R<?> validateLocation(@RequestBody Map<String, Object> params) {
-        // 构建返回数据
-        Map<String, Object> data = new HashMap<>();
-        data.put("isValid", true); // 暂时默认位置有效
-        data.put("distance", 45); // 暂时返回默认距离
-        data.put("radius", 100); // 暂时返回默认半径
-        data.put("message", "在打卡范围内（距离45米）"); // 暂时返回默认消息
-
-        Map<String, Object> punchRule = new HashMap<>();
-        punchRule.put("locationLat", params.get("latitude"));
-        punchRule.put("locationLng", params.get("longitude"));
-        punchRule.put("locationRadius", 100);
-        punchRule.put("locationAddress", "默认打卡地点");
-        data.put("punchRule", punchRule);
-
-        return R.ok(data);
+        try {
+            // 获取用户提交的经纬度
+            Object latitudeObj = params.get("latitude");
+            Object longitudeObj = params.get("longitude");
+            
+            if (latitudeObj == null || longitudeObj == null) {
+                return R.fail("缺少经纬度参数");
+            }
+            
+            double userLat = Double.parseDouble(latitudeObj.toString());
+            double userLng = Double.parseDouble(longitudeObj.toString());
+            
+            // 查询打卡规则（暂时使用rule_id=1的数据）
+            SchPunchRule punchRule = schPunchRuleService.selectSchPunchRuleByRuleId(1L);
+            if (punchRule == null) {
+                return R.fail("未找到打卡规则");
+            }
+            
+            // 检查打卡规则是否启用
+            if (punchRule.getIsEnabled() != null && punchRule.getIsEnabled() == 0) {
+                return R.fail("打卡规则已禁用");
+            }
+            
+            // 获取预设的打卡地点坐标
+            java.math.BigDecimal ruleLat = punchRule.getLocationLat();
+            java.math.BigDecimal ruleLng = punchRule.getLocationLng();
+            Long ruleRadius = punchRule.getLocationRadius();
+            
+            if (ruleLat == null || ruleLng == null || ruleRadius == null) {
+                return R.fail("打卡规则配置不完整");
+            }
+            
+            double centerLat = ruleLat.doubleValue();
+            double centerLng = ruleLng.doubleValue();
+            long radius = ruleRadius; // 半径（米）
+            
+            // 计算用户位置与预设打卡地点的距离
+            double distance = calculateDistance(userLat, userLng, centerLat, centerLng);
+            
+            // 验证位置是否在允许范围内
+            boolean isValid = distance <= radius;
+            
+            // 构建返回数据
+            Map<String, Object> data = new HashMap<>();
+            data.put("isValid", isValid);
+            data.put("distance", Math.round(distance)); // 距离（米），四舍五入
+            data.put("radius", radius); // 允许的半径范围（米）
+            
+            String message;
+            if (isValid) {
+                message = String.format("在打卡范围内（距离%.0f米，允许范围%d米）", distance, radius);
+            } else {
+                message = String.format("超出打卡范围（距离%.0f米，超过允许范围%.0f米）", distance, distance - radius);
+            }
+            data.put("message", message);
+            
+            // 返回打卡规则信息
+            Map<String, Object> ruleInfo = new HashMap<>();
+            ruleInfo.put("locationLat", centerLat);
+            ruleInfo.put("locationLng", centerLng);
+            ruleInfo.put("locationRadius", radius);
+            ruleInfo.put("locationAddress", punchRule.getLocationAddress());
+            data.put("punchRule", ruleInfo);
+            
+            return R.ok(data);
+        } catch (NumberFormatException e) {
+            return R.fail("经纬度参数格式错误");
+        } catch (Exception e) {
+            return R.fail("位置验证失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 计算两个经纬度坐标之间的距离（使用Haversine公式）
+     * @param lat1 纬度1
+     * @param lng1 经度1
+     * @param lat2 纬度2
+     * @param lng2 经度2
+     * @return 距离（米）
+     */
+    private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+        final double EARTH_RADIUS = 6371000; // 地球半径（米）
+        
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                   Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        
+        return EARTH_RADIUS * c;
     }
 
     /**
