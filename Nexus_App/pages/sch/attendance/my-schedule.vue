@@ -1,8 +1,13 @@
 <template>
-	<view class="my-schedule-container">
+	<view class="my-schedule-container" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
 		<view class="schedule-header">
 			<text>我的排班</text>
 			<text class="total-count" v-if="totalCount > 0">共{{totalCount}}条</text>
+		</view>
+		
+		<!-- 下拉刷新提示 -->
+		<view v-if="pullDownRefresh" class="pull-down-refresh">
+			<text>松开刷新显示历史排班</text>
 		</view>
 		
 		<!-- 加载状态 -->
@@ -11,14 +16,14 @@
 		</view>
 		
 		<!-- 空状态 -->
-		<view v-else-if="scheduleList.length === 0" class="empty-container">
+		<view v-else-if="displayList.length === 0" class="empty-container">
 			<text>暂无排班数据</text>
 		</view>
 		
 		<!-- 排班列表 -->
 		<view v-else class="schedule-list">
 			<view 
-				v-for="schedule in scheduleList" 
+				v-for="schedule in displayList" 
 				:key="schedule.scheduleId" 
 				class="schedule-item"
 				:class="{ 'today': isToday(schedule.scheduledDate) }"
@@ -47,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { getMySchedule } from "@/api/sch/attendance";
 
 // 响应式数据
@@ -57,6 +62,24 @@ const loading = ref(false);
 const pageNum = ref(1);
 const pageSize = ref(20);
 const hasMore = ref(true);
+const showHistory = ref(false);
+const pullDownRefresh = ref(false);
+const startY = ref(0);
+const currentDate = ref(new Date().setHours(0, 0, 0, 0));
+
+// 计算当前及未来的排班列表
+const displayList = computed(() => {
+	if (showHistory.value) {
+		// 显示所有排班
+		return scheduleList.value;
+	} else {
+		// 只显示当前及未来的排班
+		return scheduleList.value.filter(item => {
+			const scheduledDate = new Date(item.scheduledDate).setHours(0, 0, 0, 0);
+			return scheduledDate >= currentDate.value;
+		});
+	}
+});
 
 // 页面加载时获取数据
 onMounted(() => {
@@ -100,6 +123,7 @@ async function loadScheduleList() {
 		});
 	} finally {
 		loading.value = false;
+		pullDownRefresh.value = false;
 	}
 }
 
@@ -109,6 +133,33 @@ async function loadMore() {
 	
 	pageNum.value++;
 	await loadScheduleList();
+}
+
+// 下拉刷新开始
+function onTouchStart(e) {
+	startY.value = e.touches[0].clientY;
+}
+
+// 下拉刷新中
+function onTouchMove(e) {
+	const touchY = e.touches[0].clientY;
+	const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+	
+	// 只有当页面滚动到顶部时才触发下拉刷新
+	if (scrollTop === 0 && touchY - startY.value > 50) {
+		pullDownRefresh.value = true;
+	}
+}
+
+// 下拉刷新结束
+async function onTouchEnd() {
+	if (pullDownRefresh.value) {
+		// 显示历史排班
+		showHistory.value = true;
+		// 重新加载数据，确保获取完整的排班列表
+		pageNum.value = 1;
+		await loadScheduleList();
+	}
 }
 
 // 判断是否是今天
@@ -174,6 +225,32 @@ function getStatusText(status) {
 	padding: 30rpx;
 	height: 100%;
 	background-color: #f5f5f5;
+	
+	.pull-down-refresh {
+		text-align: center;
+		padding: 20rpx;
+		color: #4d7bfe;
+		font-size: 28rpx;
+		background-color: white;
+		border-radius: 20rpx;
+		margin-bottom: 20rpx;
+		animation: bounce 0.5s ease-in-out;
+	}
+	
+	@keyframes bounce {
+		0% {
+			transform: translateY(-10rpx);
+			opacity: 0;
+		}
+		50% {
+			transform: translateY(0);
+			opacity: 1;
+		}
+		100% {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
 	
 	.schedule-header {
 		text-align: center;

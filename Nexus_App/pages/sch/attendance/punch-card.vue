@@ -161,6 +161,11 @@
 					<view class="punch-detail" v-if="overtimeHours > 0">
 						<text class="overtime-tag">加班 {{ overtimeHours }} 小时</text>
 					</view>
+					<view class="punch-refresh">
+						<view class="refresh-btn" @click="handleRefreshClockOut">
+							<text class="btn-text">刷新打卡</text>
+						</view>
+					</view>
 				</view>
 			</view>
 			
@@ -659,6 +664,49 @@ async function handleClockOut() {
 		});
 	}
 }
+
+// 处理刷新下班打卡
+async function handleRefreshClockOut() {
+	if (!locationInfo.isValid || locationError.value) {
+		uni.showToast({
+			title: locationError.value || '请在打卡范围内打卡',
+			icon: 'none'
+		});
+		return;
+	}
+	
+	try {
+		uni.showLoading({ title: '刷新打卡中...' });
+		
+		// 调用带位置的打卡接口（后端会更新打卡时间）
+		await clockOut({
+			latitude: locationInfo.latitude,
+			longitude: locationInfo.longitude,
+			address: locationInfo.address,
+			accuracy: locationInfo.accuracy
+		});
+		
+		uni.hideLoading();
+		uni.showToast({
+			title: '刷新打卡成功',
+			icon: 'success'
+		});
+		
+		// 更新状态
+		const now = new Date();
+		clockOutTime.value = formatTime(now);
+		
+		// 重新获取状态以更新加班信息和验证早退状态
+		await getCurrentStatus();
+	} catch (error) {
+		uni.hideLoading();
+		console.error('刷新打卡失败', error);
+		uni.showToast({
+			title: error.message || '刷新失败',
+			icon: 'none'
+		});
+	}
+}
 </script>
 
 <style lang="scss">
@@ -1001,6 +1049,27 @@ async function handleClockOut() {
 					.overtime-tag {
 						background-color: #e3f2fd;
 						color: #2196f3;
+					}
+				}
+				
+				.punch-refresh {
+					text-align: center;
+					margin-top: 25rpx;
+					
+					.refresh-btn {
+						display: inline-block;
+						background-color: #f0f4ff;
+						color: #4d7bfe;
+						font-size: 28rpx;
+						font-weight: bold;
+						padding: 15rpx 40rpx;
+						border-radius: 50rpx;
+						transition: all 0.3s ease;
+						
+						&:hover {
+							background-color: #e0e8ff;
+							transform: translateY(-2rpx);
+						}
 					}
 				}
 			}

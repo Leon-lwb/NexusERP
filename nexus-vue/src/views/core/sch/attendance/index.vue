@@ -12,44 +12,15 @@
           placeholder="请选择考勤日期">
         </el-date-picker>
       </el-form-item>
-      <el-form-item label="关联排班ID" prop="scheduleId">
-        <el-input v-model="queryParams.scheduleId" placeholder="请输入关联排班ID" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="上班打卡时间" prop="clockInTime">
-        <el-date-picker clearable v-model="queryParams.clockInTime" type="date" value-format="YYYY-MM-DD"
-          placeholder="请选择上班打卡时间">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="下班打卡时间" prop="clockOutTime">
-        <el-date-picker clearable v-model="queryParams.clockOutTime" type="date" value-format="YYYY-MM-DD"
-          placeholder="请选择下班打卡时间">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="迟到分钟数" prop="lateMinutes">
-        <el-input v-model="queryParams.lateMinutes" placeholder="请输入迟到分钟数" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="早退分钟数" prop="leaveEarlyMinutes">
-        <el-input v-model="queryParams.leaveEarlyMinutes" placeholder="请输入早退分钟数" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="加班时长" prop="overtimeHours">
-        <el-input v-model="queryParams.overtimeHours" placeholder="请输入加班时长" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="考勤结果: normal正常, late迟到, early_leave早退, absent旷工, leave请假" prop="attendanceStatus">
-        <el-select v-model="queryParams.attendanceStatus"
-          placeholder="请选择考勤结果: normal正常, late迟到, early_leave早退, absent旷工, leave请假" clearable>
+      <el-form-item label="考勤结果" prop="attendanceStatus">
+        <el-select v-model="queryParams.attendanceStatus" placeholder="请选择考勤结果" clearable>
           <el-option v-for="dict in sch_attendance_status" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="数据来源: manual手动, device设备同步" prop="sourceType">
-        <el-select v-model="queryParams.sourceType" placeholder="请选择数据来源: manual手动, device设备同步" clearable>
+      <el-form-item label="数据来源" prop="sourceType">
+        <el-select v-model="queryParams.sourceType" placeholder="请选择数据来源" clearable>
           <el-option v-for="dict in sch_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
-      </el-form-item>
-      <el-form-item label="打卡设备ID" prop="deviceId">
-        <el-input v-model="queryParams.deviceId" placeholder="请输入打卡设备ID" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="设备名称" prop="deviceName">
-        <el-input v-model="queryParams.deviceName" placeholder="请输入设备名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -91,33 +62,29 @@
           <span>{{ parseTime(scope.row.recordDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="关联排班ID" align="center" prop="scheduleId" />
-      <el-table-column label="上班打卡时间" align="center" prop="clockInTime" width="180">
+      <el-table-column label="上班打卡时间" align="center" prop="clockInTime" width="200">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.clockInTime, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.clockInTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="下班打卡时间" align="center" prop="clockOutTime" width="180">
+      <el-table-column label="下班打卡时间" align="center" prop="clockOutTime" width="200">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.clockOutTime, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.clockOutTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="迟到分钟数" align="center" prop="lateMinutes" />
       <el-table-column label="早退分钟数" align="center" prop="leaveEarlyMinutes" />
       <el-table-column label="加班时长" align="center" prop="overtimeHours" />
-      <el-table-column label="考勤结果: normal正常, late迟到, early_leave早退, absent旷工, leave请假" align="center"
-        prop="attendanceStatus">
+      <el-table-column label="考勤结果" align="center" prop="attendanceStatus">
         <template #default="scope">
           <dict-tag :options="sch_attendance_status" :value="scope.row.attendanceStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="数据来源: manual手动, device设备同步" align="center" prop="sourceType">
+      <el-table-column label="数据来源" align="center" prop="sourceType">
         <template #default="scope">
           <dict-tag :options="sch_source_type" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="打卡设备ID" align="center" prop="deviceId" />
-      <el-table-column label="设备名称" align="center" prop="deviceName" />
       <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
@@ -136,60 +103,90 @@
     <!-- 添加或修改考勤记录对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form ref="attendanceRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
-        <el-form-item label="人员ID" prop="workerId">
-          <el-input v-model="form.workerId" placeholder="请输入人员ID" />
-        </el-form-item>
-        <el-form-item label="人员姓名" prop="workerName">
-          <el-input v-model="form.workerName" placeholder="请输入人员姓名" />
-        </el-form-item>
-        <el-form-item label="考勤日期" prop="recordDate">
-          <el-date-picker clearable v-model="form.recordDate" type="date" value-format="YYYY-MM-DD"
-            placeholder="请选择考勤日期">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="关联排班ID" prop="scheduleId">
-          <el-input v-model="form.scheduleId" placeholder="请输入关联排班ID" />
-        </el-form-item>
-        <el-form-item label="上班打卡时间" prop="clockInTime">
-          <el-date-picker clearable v-model="form.clockInTime" type="date" value-format="YYYY-MM-DD"
-            placeholder="请选择上班打卡时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="下班打卡时间" prop="clockOutTime">
-          <el-date-picker clearable v-model="form.clockOutTime" type="date" value-format="YYYY-MM-DD"
-            placeholder="请选择下班打卡时间">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="迟到分钟数" prop="lateMinutes">
-          <el-input v-model="form.lateMinutes" placeholder="请输入迟到分钟数" />
-        </el-form-item>
-        <el-form-item label="早退分钟数" prop="leaveEarlyMinutes">
-          <el-input v-model="form.leaveEarlyMinutes" placeholder="请输入早退分钟数" />
-        </el-form-item>
-        <el-form-item label="加班时长" prop="overtimeHours">
-          <el-input v-model="form.overtimeHours" placeholder="请输入加班时长" />
-        </el-form-item>
-        <el-form-item label="考勤结果: normal正常, late迟到, early_leave早退, absent旷工, leave请假" prop="attendanceStatus">
-          <el-radio-group v-model="form.attendanceStatus">
-            <el-radio v-for="dict in sch_attendance_status" :key="dict.value"
-              :label="dict.value">{{ dict.label }}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="数据来源: manual手动, device设备同步" prop="sourceType">
-          <el-select v-model="form.sourceType" placeholder="请选择数据来源: manual手动, device设备同步">
-            <el-option v-for="dict in sch_source_type" :key="dict.value" :label="dict.label"
-              :value="dict.value"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="打卡设备ID" prop="deviceId">
-          <el-input v-model="form.deviceId" placeholder="请输入打卡设备ID" />
-        </el-form-item>
-        <el-form-item label="设备名称" prop="deviceName">
-          <el-input v-model="form.deviceName" placeholder="请输入设备名称" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="人员ID" prop="workerId">
+              <el-input v-model="form.workerId" placeholder="请输入人员ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="人员姓名" prop="workerName">
+              <el-input v-model="form.workerName" placeholder="请输入人员姓名" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="考勤日期" prop="recordDate">
+              <el-date-picker clearable v-model="form.recordDate" type="date" value-format="YYYY-MM-DD"
+                placeholder="请选择考勤日期">
+              </el-date-picker>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="关联排班ID" prop="scheduleId">
+              <el-input v-model="form.scheduleId" placeholder="请输入关联排班ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="上班打卡时间" prop="clockInTime">
+              <el-date-picker clearable v-model="form.clockInTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="请选择上班打卡时间">
+              </el-date-picker>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="下班打卡时间" prop="clockOutTime">
+              <el-date-picker clearable v-model="form.clockOutTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="请选择下班打卡时间">
+              </el-date-picker>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="迟到分钟数" prop="lateMinutes">
+              <el-input v-model="form.lateMinutes" placeholder="请输入迟到分钟数" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="早退分钟数" prop="leaveEarlyMinutes">
+              <el-input v-model="form.leaveEarlyMinutes" placeholder="请输入早退分钟数" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="加班时长" prop="overtimeHours">
+              <el-input v-model="form.overtimeHours" placeholder="请输入加班时长" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="考勤结果" prop="attendanceStatus">
+              <el-radio-group v-model="form.attendanceStatus">
+                <el-radio v-for="dict in sch_attendance_status" :key="dict.value"
+                  :label="dict.value">{{ dict.label }}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="数据来源" prop="sourceType">
+              <el-select v-model="form.sourceType" placeholder="请选择数据来源">
+                <el-option v-for="dict in sch_source_type" :key="dict.value" :label="dict.label"
+                  :value="dict.value"></el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="打卡设备ID" prop="deviceId">
+              <el-input v-model="form.deviceId" placeholder="请输入打卡设备ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="设备名称" prop="deviceName">
+              <el-input v-model="form.deviceName" placeholder="请输入设备名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <div class="dialog-footer">

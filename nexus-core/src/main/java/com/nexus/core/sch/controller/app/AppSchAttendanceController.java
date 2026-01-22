@@ -124,67 +124,12 @@ public class AppSchAttendanceController {
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
-        // 获取当前日期，格式为 yyyy-MM-dd
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String todayStr = sdf.format(new Date());
-        Date today = null;
         try {
-            today = sdf.parse(todayStr);
+            Map<String, Object> data = schAttendanceService.getTodayAttendanceStatus(workerId);
+            return R.ok(data);
         } catch (Exception e) {
-            return R.fail("日期格式错误");
+            return R.fail(e.getMessage());
         }
-
-        // 查询今日考勤记录
-        SchAttendance attendance = new SchAttendance();
-        attendance.setWorkerId(workerId);
-        attendance.setRecordDate(today);
-        List<SchAttendance> attendanceList = schAttendanceService.selectSchAttendanceList(attendance);
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("date", today);
-
-        if (!attendanceList.isEmpty()) {
-            SchAttendance todayAttendance = attendanceList.get(0);
-            data.put("clockInTime", todayAttendance.getClockInTime());
-            data.put("clockOutTime", todayAttendance.getClockOutTime());
-
-            // 设置打卡次数
-            Long punchCount = 0L;
-
-            // 设置打卡状态
-            if (todayAttendance.getClockInTime() != null) {
-                data.put("clockInStatus", "success");
-                punchCount += 1L;
-            } else {
-                data.put("clockInStatus", "pending");
-            }
-
-            if (todayAttendance.getClockOutTime() != null) {
-                data.put("clockOutStatus", "success");
-                punchCount += 1L;
-            } else {
-                data.put("clockOutStatus", "pending");
-            }
-
-            data.put("attendanceStatus", todayAttendance.getAttendanceStatus());
-            data.put("lateMinutes", todayAttendance.getLateMinutes() != null ? todayAttendance.getLateMinutes() : 0);
-            data.put("leaveEarlyMinutes", todayAttendance.getLeaveEarlyMinutes() != null ? todayAttendance.getLeaveEarlyMinutes() : 0);
-            data.put("overtimeHours", todayAttendance.getOvertimeHours() != null ? todayAttendance.getOvertimeHours() : 0.0);
-            data.put("punchCount", punchCount);
-        } else {
-            // 如果没有打卡记录，设置默认值
-            data.put("clockInTime", null);
-            data.put("clockOutTime", null);
-            data.put("clockInStatus", "pending");
-            data.put("clockOutStatus", "pending");
-            data.put("attendanceStatus", "normal");
-            data.put("lateMinutes", 0);
-            data.put("leaveEarlyMinutes", 0);
-            data.put("overtimeHours", 0.0);
-            data.put("punchCount", 0);
-        }
-
-        return R.ok(data);
     }
 
     /**
@@ -206,62 +151,19 @@ public class AppSchAttendanceController {
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
-        Date now = new Date();
-
-        // 获取当前日期，格式为 yyyy-MM-dd
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String todayStr = sdf.format(new Date());
-        Date today = null;
         try {
-            today = sdf.parse(todayStr);
+            Date now = new Date();
+            Map<String, Object> data = schAttendanceService.performClockIn(
+                    workerId,
+                    currentWorker.getUserName(),
+                    now,
+                    (String) params.get("deviceId"),
+                    (String) params.get("deviceName")
+            );
+            return R.ok(data, "打卡成功");
         } catch (Exception e) {
-            return R.fail("日期格式错误");
+            return R.fail(e.getMessage());
         }
-
-        // 创建考勤记录
-        SchAttendance attendance = new SchAttendance();
-        attendance.setWorkerId(workerId);
-        attendance.setRecordDate(today);
-        attendance.setClockInTime(now);
-        attendance.setSourceType("manual"); // 手动打卡
-        attendance.setDeviceId((String) params.get("deviceId"));
-        attendance.setDeviceName((String) params.get("deviceName"));
-
-        // 获取员工排班信息来确定打卡状态
-        String attendanceStatus = determineAttendanceStatus(now, workerId, today, true);
-        attendance.setAttendanceStatus(attendanceStatus);
-
-        // 检查是否已有今日记录，如果没有则新增，否则更新
-        SchAttendance existingAttendance = new SchAttendance();
-        existingAttendance.setWorkerId(workerId);
-        existingAttendance.setRecordDate(today);
-        List<SchAttendance> attendanceList = schAttendanceService.selectSchAttendanceList(existingAttendance);
-
-        if (attendanceList.isEmpty()) {
-            // 新增考勤记录
-            schAttendanceService.insertSchAttendance(attendance);
-        } else {
-            // 更新考勤记录
-            SchAttendance existing = attendanceList.get(0);
-            existing.setClockInTime(now);
-            existing.setDeviceId((String) params.get("deviceId"));
-            existing.setDeviceName((String) params.get("deviceName"));
-            existing.setAttendanceStatus(attendanceStatus); // 同样更新现有记录的状态
-            schAttendanceService.updateSchAttendance(existing);
-            attendance = existing;
-        }
-
-        // 构建返回数据
-        Map<String, Object> data = new HashMap<>();
-        data.put("attendanceId", attendance.getAttendanceId());
-        data.put("clockInTime", now);
-        data.put("locationValid", true); // 暂时默认位置有效
-        data.put("distance", 0); // 暂时默认距离
-        data.put("isLate", "late".equals(attendance.getAttendanceStatus())); // 根据考勤状态判断是否迟到
-        data.put("lateMinutes", 0); // 暂时默认迟到分钟为0
-        data.put("nextClockOutTime", null); // 暂时返回空
-
-        return R.ok(data, "打卡成功");
     }
 
     /**
@@ -283,129 +185,20 @@ public class AppSchAttendanceController {
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
-        Date now = new Date();
-
-        // 获取当前日期，格式为 yyyy-MM-dd
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String todayStr = sdf.format(new Date());
-        Date today = null;
         try {
-            today = sdf.parse(todayStr);
+            Date now = new Date();
+            Double overtimeHours = params.get("overtimeHours") != null ? Double.parseDouble(params.get("overtimeHours").toString()) : 0.0;
+            Map<String, Object> data = schAttendanceService.performClockOut(
+                    workerId,
+                    currentWorker.getUserName(),
+                    now,
+                    (String) params.get("deviceId"),
+                    (String) params.get("deviceName"),
+                    overtimeHours
+            );
+            return R.ok(data, "打卡成功");
         } catch (Exception e) {
-            return R.fail("日期格式错误");
-        }
-
-        // 查找今日考勤记录
-        SchAttendance attendance = new SchAttendance();
-        attendance.setWorkerId(workerId);
-        attendance.setRecordDate(today);
-        List<SchAttendance> attendanceList = schAttendanceService.selectSchAttendanceList(attendance);
-
-        if (!attendanceList.isEmpty()) {
-            SchAttendance existing = attendanceList.get(0);
-            existing.setClockOutTime(now);
-            existing.setDeviceId((String) params.get("deviceId"));
-            existing.setDeviceName((String) params.get("deviceName"));
-
-            // 使用通用方法确定考勤状态
-            String clockOutAttendanceStatus = determineAttendanceStatus(now, workerId, today, false);
-
-            // 计算早退分钟数
-            // 查询员工当天的排班信息
-            SchEmployeeSchedule schedule = new SchEmployeeSchedule();
-            schedule.setWorkerId(workerId);
-            schedule.setScheduledDate(today);
-            List<SchEmployeeSchedule> scheduleList = schEmployeeScheduleService.selectSchEmployeeScheduleList(schedule);
-
-            long leaveEarlyMinutes = 0;
-            if (!scheduleList.isEmpty()) {
-                SchEmployeeSchedule employeeSchedule = scheduleList.get(0);
-                Date endTime = employeeSchedule.getEndTime();
-
-                if (endTime != null) {
-                    // 计算早退分钟数
-                    long diff = endTime.getTime() - now.getTime();
-                    leaveEarlyMinutes = Math.max(0, diff / (1000 * 60));
-                }
-            }
-
-            existing.setLeaveEarlyMinutes(leaveEarlyMinutes);
-
-            // 如果之前是迟到状态，且现在也是早退，则设置为迟到早退复合状态
-            String attendanceStatus;
-            if ("late".equals(existing.getAttendanceStatus()) && "early_leave".equals(clockOutAttendanceStatus)) {
-                attendanceStatus = "late_early_leave";
-            } else if ("early_leave".equals(clockOutAttendanceStatus)) {
-                attendanceStatus = "early_leave";
-            } else {
-                attendanceStatus = clockOutAttendanceStatus;
-            }
-
-            existing.setAttendanceStatus(attendanceStatus);
-
-            schAttendanceService.updateSchAttendance(existing);
-
-            // 构建返回数据
-            Map<String, Object> data = new HashMap<>();
-            data.put("attendanceId", existing.getAttendanceId());
-            data.put("clockOutTime", now);
-            data.put("locationValid", true); // 暂时默认位置有效
-            data.put("distance", 0); // 暂时默认距离
-            data.put("isEarlyLeave", "early_leave".equals(existing.getAttendanceStatus()) || "late_early_leave".equals(existing.getAttendanceStatus()));
-            data.put("leaveEarlyMinutes", existing.getLeaveEarlyMinutes() != null ? existing.getLeaveEarlyMinutes() : 0);
-            data.put("overtimeHours", params.get("overtimeHours") != null ? params.get("overtimeHours") : 0.0);
-            data.put("attendanceStatus", existing.getAttendanceStatus() != null ? existing.getAttendanceStatus() : "normal");
-
-            return R.ok(data, "打卡成功");
-        } else {
-            // 如果没有找到今日的考勤记录，创建一条新的记录并设置下班时间
-            SchAttendance newAttendance = new SchAttendance();
-            newAttendance.setWorkerId(workerId);
-            newAttendance.setRecordDate(today);
-            newAttendance.setClockOutTime(now);
-            newAttendance.setSourceType("manual");
-            newAttendance.setDeviceId((String) params.get("deviceId"));
-            newAttendance.setDeviceName((String) params.get("deviceName"));
-
-            // 使用通用方法确定考勤状态
-            String clockOutAttendanceStatus = determineAttendanceStatus(now, workerId, today, false);
-
-            // 计算早退分钟数
-            // 查询员工当天的排班信息
-            SchEmployeeSchedule schedule = new SchEmployeeSchedule();
-            schedule.setWorkerId(workerId);
-            schedule.setScheduledDate(today);
-            List<SchEmployeeSchedule> scheduleList = schEmployeeScheduleService.selectSchEmployeeScheduleList(schedule);
-
-            long leaveEarlyMinutes = 0;
-            if (!scheduleList.isEmpty()) {
-                SchEmployeeSchedule employeeSchedule = scheduleList.get(0);
-                Date endTime = employeeSchedule.getEndTime();
-
-                if (endTime != null) {
-                    // 计算早退分钟数
-                    long diff = endTime.getTime() - now.getTime();
-                    leaveEarlyMinutes = Math.max(0, diff / (1000 * 60));
-                }
-            }
-
-            newAttendance.setLeaveEarlyMinutes(leaveEarlyMinutes);
-            newAttendance.setAttendanceStatus(clockOutAttendanceStatus);
-
-            schAttendanceService.insertSchAttendance(newAttendance);
-
-            // 构建返回数据
-            Map<String, Object> data = new HashMap<>();
-            data.put("attendanceId", newAttendance.getAttendanceId());
-            data.put("clockOutTime", now);
-            data.put("locationValid", true); // 暂时默认位置有效
-            data.put("distance", 0); // 暂时默认距离
-            data.put("isEarlyLeave", "early_leave".equals(newAttendance.getAttendanceStatus()));
-            data.put("leaveEarlyMinutes", newAttendance.getLeaveEarlyMinutes() != null ? newAttendance.getLeaveEarlyMinutes() : 0);
-            data.put("overtimeHours", params.get("overtimeHours") != null ? params.get("overtimeHours") : 0.0);
-            data.put("attendanceStatus", newAttendance.getAttendanceStatus() != null ? newAttendance.getAttendanceStatus() : "normal");
-
-            return R.ok(data, "打卡成功");
+            return R.fail(e.getMessage());
         }
     }
 
@@ -517,86 +310,13 @@ public class AppSchAttendanceController {
             double userLat = Double.parseDouble(latitudeObj.toString());
             double userLng = Double.parseDouble(longitudeObj.toString());
             
-            // 查询打卡规则（暂时使用rule_id=1的数据）
-            SchPunchRule punchRule = schPunchRuleService.selectSchPunchRuleByRuleId(1L);
-            if (punchRule == null) {
-                return R.fail("未找到打卡规则");
-            }
-            
-            // 检查打卡规则是否启用
-            if (punchRule.getIsEnabled() != null && punchRule.getIsEnabled() == 0) {
-                return R.fail("打卡规则已禁用");
-            }
-            
-            // 获取预设的打卡地点坐标
-            java.math.BigDecimal ruleLat = punchRule.getLocationLat();
-            java.math.BigDecimal ruleLng = punchRule.getLocationLng();
-            Long ruleRadius = punchRule.getLocationRadius();
-            
-            if (ruleLat == null || ruleLng == null || ruleRadius == null) {
-                return R.fail("打卡规则配置不完整");
-            }
-            
-            double centerLat = ruleLat.doubleValue();
-            double centerLng = ruleLng.doubleValue();
-            long radius = ruleRadius; // 半径（米）
-            
-            // 计算用户位置与预设打卡地点的距离
-            double distance = calculateDistance(userLat, userLng, centerLat, centerLng);
-            
-            // 验证位置是否在允许范围内
-            boolean isValid = distance <= radius;
-            
-            // 构建返回数据
-            Map<String, Object> data = new HashMap<>();
-            data.put("isValid", isValid);
-            data.put("distance", Math.round(distance)); // 距离（米），四舍五入
-            data.put("radius", radius); // 允许的半径范围（米）
-            
-            String message;
-            if (isValid) {
-                message = String.format("在打卡范围内（距离%.0f米，允许范围%d米）", distance, radius);
-            } else {
-                message = String.format("超出打卡范围（距离%.0f米，超过允许范围%.0f米）", distance, distance - radius);
-            }
-            data.put("message", message);
-            
-            // 返回打卡规则信息
-            Map<String, Object> ruleInfo = new HashMap<>();
-            ruleInfo.put("locationLat", centerLat);
-            ruleInfo.put("locationLng", centerLng);
-            ruleInfo.put("locationRadius", radius);
-            ruleInfo.put("locationAddress", punchRule.getLocationAddress());
-            data.put("punchRule", ruleInfo);
-            
+            Map<String, Object> data = schAttendanceService.validatePunchLocation(userLat, userLng);
             return R.ok(data);
         } catch (NumberFormatException e) {
             return R.fail("经纬度参数格式错误");
         } catch (Exception e) {
-            return R.fail("位置验证失败：" + e.getMessage());
+            return R.fail(e.getMessage());
         }
-    }
-    
-    /**
-     * 计算两个经纬度坐标之间的距离（使用Haversine公式）
-     * @param lat1 纬度1
-     * @param lng1 经度1
-     * @param lat2 纬度2
-     * @param lng2 经度2
-     * @return 距离（米）
-     */
-    private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
-        final double EARTH_RADIUS = 6371000; // 地球半径（米）
-        
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLng = Math.toRadians(lng2 - lng1);
-        
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                   Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        
-        return EARTH_RADIUS * c;
     }
 
     /**
@@ -741,84 +461,5 @@ public class AppSchAttendanceController {
         data.put("rows", attendanceList);
 
         return R.ok(data);
-    }
-
-    /**
-     * 根据打卡时间和排班时间确定考勤状态
-     */
-    private String determineAttendanceStatus(Date clockTime, Long workerId, Date recordDate, boolean isClockIn) {
-        // 查询员工当天的排班信息
-        SchEmployeeSchedule schedule = new SchEmployeeSchedule();
-        schedule.setWorkerId(workerId);
-        schedule.setScheduledDate(recordDate);
-        List<SchEmployeeSchedule> scheduleList = schEmployeeScheduleService.selectSchEmployeeScheduleList(schedule);
-
-        if (scheduleList.isEmpty()) {
-            // 如果没有排班信息，默认为正常
-            return "normal";
-        }
-
-        SchEmployeeSchedule employeeSchedule = scheduleList.get(0);
-        SchShift schShift = schShiftService.selectSchShiftByShiftId(employeeSchedule.getActualShiftId() != null ?
-                employeeSchedule.getActualShiftId() : employeeSchedule.getShiftId());
-
-        if (isClockIn) {
-            // 上班打卡逻辑
-            Date startTime = employeeSchedule.getStartTime();
-            if (startTime == null) {
-                // 如果排班开始时间为空，默认为正常
-                return "normal";
-            }
-
-            Long lateThreshold = schShift != null ? schShift.getLateThreshold() : 0L;
-            Date adjustedStartTime = DateUtils.addMinutes(startTime, lateThreshold.intValue());
-
-            // 比较打卡时间与排班开始时间，精确到分钟
-            Calendar clockCal = Calendar.getInstance();
-            clockCal.setTime(clockTime);
-            clockCal.set(Calendar.SECOND, 0); // 将秒数设为0
-            clockCal.set(Calendar.MILLISECOND, 0); // 将毫秒设为0
-
-            Calendar startCal = Calendar.getInstance();
-            startCal.setTime(adjustedStartTime);
-            startCal.set(Calendar.SECOND, 0); // 将秒数设为0
-            startCal.set(Calendar.MILLISECOND, 0); // 将毫秒设为0
-
-            // 如果打卡时间小于等于排班开始时间，则为正常，否则为迟到
-            if (clockCal.compareTo(startCal) <= 0) {
-                return "normal"; // 在规定时间前或相同时打卡为正常
-            } else {
-                return "late"; // 迟到
-            }
-        } else {
-            // 下班打卡逻辑
-            Date endTime = employeeSchedule.getEndTime();
-            if (endTime == null) {
-                // 如果排班结束时间为空，默认为正常
-                return "normal";
-            }
-
-            Long earlyLeaveThreshold = schShift != null ? schShift.getEarlyLeaveThreshold() : 0L;
-            // 计算实际允许的最早下班时间 = 排班结束时间 - 早退阈值
-            Date earliestAllowedClockOutTime = DateUtils.addMinutes(endTime, -earlyLeaveThreshold.intValue());
-
-            // 比较打卡时间与允许的最早下班时间，精确到分钟
-            Calendar clockCal = Calendar.getInstance();
-            clockCal.setTime(clockTime);
-            clockCal.set(Calendar.SECOND, 0); // 将秒数设为0
-            clockCal.set(Calendar.MILLISECOND, 0); // 将毫秒设为0
-
-            Calendar earliestCal = Calendar.getInstance();
-            earliestCal.setTime(earliestAllowedClockOutTime);
-            earliestCal.set(Calendar.SECOND, 0); // 将秒数设为0
-            earliestCal.set(Calendar.MILLISECOND, 0); // 将毫秒设为0
-
-            // 如果打卡时间小于允许的最早下班时间，则为早退，否则为正常
-            if (clockCal.before(earliestCal)) {
-                return "early_leave"; // 早退
-            } else {
-                return "normal"; // 正常下班
-            }
-        }
     }
 }
