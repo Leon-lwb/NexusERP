@@ -47,6 +47,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { getMonthlyAttendance } from "@/api/sch/attendance";
+import { useDict } from "@/utils/dict";
 
 // 响应式数据
 const selectedMonth = ref('');
@@ -55,6 +56,10 @@ const attendanceData = ref({});
 const attendanceDays = ref(0);
 const lateCount = ref(0);
 const overtimeHours = ref(0);
+const dictData = ref({});
+
+// 获取考勤状态字典
+const { sch_attendance_status } = useDict('sch_attendance_status');
 
 // 初始化日历
 onMounted(() => {
@@ -67,6 +72,11 @@ function initCalendar() {
 	selectedMonth.value = `${now.getFullYear()}年${now.getMonth() + 1}月`;
 	generateCalendar(now.getFullYear(), now.getMonth());
 	loadAttendanceData(now.getFullYear(), now.getMonth() + 1);
+	
+	// 初始化字典数据
+	dictData.value = {
+		sch_attendance_status: sch_attendance_status.value || []
+	};
 }
 
 // 生成日历
@@ -110,8 +120,8 @@ async function loadAttendanceData(year, month) {
 		const response = await getMonthlyAttendance(monthStr);
 		
 		// 处理考勤数据
-		attendanceData.value = response.data.attendanceDays || {};
-		attendanceDays.value = response.data.attendanceDaysCount || 0;
+		attendanceData.value = response.data.attendanceData || {};
+		attendanceDays.value = response.data.attendanceDays || 0;
 		lateCount.value = response.data.lateCount || 0;
 		overtimeHours.value = response.data.overtimeHours || 0;
 	} catch (error) {
@@ -133,7 +143,7 @@ function getDayClass(day) {
 	const attendance = attendanceData.value[dateStr];
 	
 	if (!attendance) {
-		return 'normal';
+		return 'no-attendance';
 	}
 	
 	// 根据考勤状态返回不同样式
@@ -165,7 +175,7 @@ function onDayClick(day) {
 	if (attendance) {
 		uni.showModal({
 			title: '考勤详情',
-			content: `日期：${dateStr}\n状态：${getStatusText(attendance.attendanceStatus)}\n上班：${attendance.clockInTime || '未打卡'}\n下班：${attendance.clockOutTime || '未打卡'}`,
+			content: `日期：${dateStr}\n状态：${getStatusText(attendance.attendanceStatus)}\n上班：${formatDateTime(attendance.clockInTime)}\n下班：${formatDateTime(attendance.clockOutTime)}`,
 			showCancel: false,
 			confirmText: '确定'
 		});
@@ -179,6 +189,15 @@ function onDayClick(day) {
 
 // 获取状态文本
 function getStatusText(status) {
+	// 从字典表中获取状态名称
+	const statusDict = dictData.value.sch_attendance_status;
+	if (statusDict && statusDict.length > 0) {
+		const statusItem = statusDict.find(item => item.value === status);
+		if (statusItem) {
+			return statusItem.label;
+		}
+	}
+	// fallback到硬编码映射
 	const statusMap = {
 		'normal': '正常',
 		'late': '迟到',
@@ -195,6 +214,27 @@ function formatDate(date) {
 	const month = (date.getMonth() + 1).toString().padStart(2, '0');
 	const day = date.getDate().toString().padStart(2, '0');
 	return `${year}-${month}-${day}`;
+}
+
+// 格式化日期时间
+function formatDateTime(dateTime) {
+	if (!dateTime) return '未打卡';
+	// 处理字符串格式的日期时间
+	if (typeof dateTime === 'string') {
+		// 尝试解析字符串
+		const date = new Date(dateTime);
+		if (isNaN(date.getTime())) {
+			return dateTime;
+		}
+		dateTime = date;
+	}
+	const year = dateTime.getFullYear();
+	const month = (dateTime.getMonth() + 1).toString().padStart(2, '0');
+	const day = dateTime.getDate().toString().padStart(2, '0');
+	const hours = dateTime.getHours().toString().padStart(2, '0');
+	const minutes = dateTime.getMinutes().toString().padStart(2, '0');
+	const seconds = dateTime.getSeconds().toString().padStart(2, '0');
+	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 </script>
 
@@ -275,6 +315,11 @@ function formatDate(date) {
 				
 				&.leave {
 					background-color: #e8f5e9;
+					border-radius: 50%;
+				}
+				
+				&.no-attendance {
+					background-color: #f5f5f5;
 					border-radius: 50%;
 				}
 			}

@@ -10,7 +10,9 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -208,6 +210,11 @@ public class AppSchAttendanceController {
     @ApiOperation("获取月度考勤统计")
     @GetMapping("/attendance/monthly/{month}")
     public R<?> getMonthlyAttendance(@PathVariable String month) {
+        // 验证月份格式
+        if (!month.matches("\\d{4}-\\d{2}")) {
+            return R.fail("月份格式错误，应为YYYY-MM");
+        }
+
         Long userId = SecurityUtils.getUserId();
 
         // 通过系统用户ID查询工人信息
@@ -227,27 +234,155 @@ public class AppSchAttendanceController {
             data.put("absentCount", 0);
             data.put("overtimeHours", 0.0);
             data.put("attendanceRate", "0%");
-            data.put("details", java.util.Collections.emptyList());
+            data.put("attendanceData", new HashMap<>());
             return R.ok(data);
         }
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
+        // 解析月份
+        String[] parts = month.split("-");
+        int year = Integer.parseInt(parts[0]);
+        int monthInt = Integer.parseInt(parts[1]) - 1; // Calendar月份从0开始
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(year, monthInt, 1);
+        Date startDate = calendar.getTime();
+
+        // 获取当月最后一天
+        int lastDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+        calendar.set(year, monthInt, lastDay);
+        Date endDate = calendar.getTime();
+
+        // 计算总天数
+        int totalDays = lastDay;
+
+        // 计算工作日数
+        int workDays = calculateWorkDays(startDate, endDate);
+
+        // 查询当月考勤记录
+        SchAttendance attendanceQuery = new SchAttendance();
+        attendanceQuery.setWorkerId(workerId);
+        // 注意：这里需要根据实际的查询方法调整，可能需要修改SchAttendance实体类或Mapper
+        List<SchAttendance> attendanceList = schAttendanceService.selectSchAttendanceList(attendanceQuery);
+
+        // 过滤出当月的考勤记录
+        List<SchAttendance> monthlyAttendanceList = new ArrayList<>();
+        for (SchAttendance attendance : attendanceList) {
+            if (attendance.getRecordDate() != null) {
+                Calendar attendanceCal = Calendar.getInstance();
+                attendanceCal.setTime(attendance.getRecordDate());
+                if (attendanceCal.get(Calendar.YEAR) == year && attendanceCal.get(Calendar.MONTH) == monthInt) {
+                    monthlyAttendanceList.add(attendance);
+                }
+            }
+        }
+
+        // 统计各项指标
+        int attendanceDays = 0;
+        int leaveDays = 0;
+        int lateCount = 0;
+        int earlyLeaveCount = 0;
+        int absentCount = 0;
+        BigDecimal totalOvertimeHours = BigDecimal.ZERO;
+
+        // 构建每日考勤详情映射
+        Map<String, Map<String, Object>> attendanceData = new HashMap<>();
+
+        for (SchAttendance attendance : monthlyAttendanceList) {
+            String status = attendance.getAttendanceStatus();
+            
+            // 统计出勤天数
+            if (attendance.getClockInTime() != null || attendance.getClockOutTime() != null) {
+                attendanceDays++;
+            }
+            
+            // 统计请假天数
+            if ("leave".equals(status)) {
+                leaveDays++;
+            }
+            
+            // 统计迟到次数
+            if ("late".equals(status) || "late_early_leave".equals(status)) {
+                lateCount++;
+            }
+            
+            // 统计早退次数
+            if ("early_leave".equals(status) || "late_early_leave".equals(status)) {
+                earlyLeaveCount++;
+            }
+            
+            // 统计旷工次数
+            if ("absent".equals(status)) {
+                absentCount++;
+            }
+            
+            // 累计加班时长
+            if (attendance.getOvertimeHours() != null) {
+                totalOvertimeHours = totalOvertimeHours.add(attendance.getOvertimeHours());
+            }
+            
+            // 构建每日考勤详情
+            if (attendance.getRecordDate() != null) {
+                String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(attendance.getRecordDate());
+                Map<String, Object> dayDetail = new HashMap<>();
+                dayDetail.put("attendanceStatus", status);
+                dayDetail.put("clockInTime", attendance.getClockInTime());
+                dayDetail.put("clockOutTime", attendance.getClockOutTime());
+                dayDetail.put("lateMinutes", attendance.getLateMinutes());
+                dayDetail.put("leaveEarlyMinutes", attendance.getLeaveEarlyMinutes());
+                dayDetail.put("overtimeHours", attendance.getOvertimeHours());
+                attendanceData.put(dateStr, dayDetail);
+            }
+        }
+
+        // 计算出勤率
+        String attendanceRate;
+        if (workDays > 0) {
+            double rate = (double) attendanceDays / workDays * 100;
+            attendanceRate = String.format("%.1f%%", rate);
+        } else {
+            attendanceRate = "0%";
+        }
+
         // 构建返回数据
         Map<String, Object> data = new HashMap<>();
         data.put("month", month);
-        data.put("totalDays", 30); // 暂时返回默认值
-        data.put("workDays", 22); // 暂时返回默认值
-        data.put("attendanceDays", 20); // 暂时返回默认值
-        data.put("leaveDays", 2); // 暂时返回默认值
-        data.put("lateCount", 1); // 暂时返回默认值
-        data.put("earlyLeaveCount", 0); // 暂时返回默认值
-        data.put("absentCount", 0); // 暂时返回默认值
-        data.put("overtimeHours", 12.5); // 暂时返回默认值
-        data.put("attendanceRate", "90.0%"); // 暂时返回默认值
-        data.put("details", java.util.Collections.emptyList()); // 暂时返回空列表
+        data.put("totalDays", totalDays);
+        data.put("workDays", workDays);
+        data.put("attendanceDays", attendanceDays);
+        data.put("leaveDays", leaveDays);
+        data.put("lateCount", lateCount);
+        data.put("earlyLeaveCount", earlyLeaveCount);
+        data.put("absentCount", absentCount);
+        data.put("overtimeHours", totalOvertimeHours.doubleValue());
+        data.put("attendanceRate", attendanceRate);
+        data.put("attendanceData", attendanceData);
 
         return R.ok(data);
+    }
+
+    /**
+     * 计算工作日数（排除周末和节假日）
+     */
+    private int calculateWorkDays(Date startDate, Date endDate) {
+        int count = 0;
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(startDate);
+        
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(endDate);
+        endCal.add(Calendar.DAY_OF_MONTH, 1); // 包含结束日期
+        
+        while (calendar.before(endCal)) {
+            int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+            // 排除周六和周日
+            if (dayOfWeek != Calendar.SATURDAY && dayOfWeek != Calendar.SUNDAY) {
+                count++;
+            }
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        return count;
     }
 
     /**
