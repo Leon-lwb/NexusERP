@@ -198,10 +198,28 @@
                 <version>${nexus.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-core</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-flowable</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
             <!-- 核心业务模块-->
             <dependency>
                 <groupId>com.nexus</groupId>
                 <artifactId>nexus-core</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-flowable</artifactId>
                 <version>${nexus.version}</version>
             </dependency>
 
@@ -217,12 +235,7 @@
                 <scope>compile</scope>
             </dependency>
 
-            <!-- 流程模块-->
-            <dependency>
-                <groupId>com.nexus</groupId>
-                <artifactId>nexus-flowable</artifactId>
-                <version>${nexus.version}</version>
-            </dependency>
+
             
             <!-- Mockito测试框架 -->
             <dependency>
