@@ -74,8 +74,6 @@ spring:
       port: 6379
       # 数据库索引
       database: 9
-      # 密码
-      password:
       # 连接超时时间
       timeout: 10s
       lettuce:
@@ -101,7 +99,7 @@ token:
 # mybatis-plus 配置
 mybatis-plus:
   # 指定实体类所在包的路径，MyBatis-Plus 会自动扫描该路径下的实体类
-  typeAliasesPackage: com.nexus.**.domain
+  typeAliasesPackage: com.nexus.common.core.domain.entity,com.nexus.system.domain,com.nexus.flowable.domain,com.nexus.generator.domain,com.nexus.quartz.domain,com.nexus.core.bd.domain,com.nexus.core.**.domain
   # 指定 Mapper 接口所在包的路径，MyBatis-Plus 会自动扫描该路径下的 Mapper 接口
   mapperLocations: classpath*:mapper/**/*Mapper.xml
   # 指定 MyBatis 全局配置文件的位置
@@ -143,3 +141,21 @@ flowable:
   database-schema-update: true
   # 关闭定时任务JOB
   async-executor-activate: false
+  # 流程历史级别
+  history-level: full
+  # 流程定义缓存大小
+  process-definition-cache-limit: 100
+  # 任务分配器
+  idm-engine-configurator:
+    enabled: true
+  # 表单引擎配置
+  form:
+    enabled: true
+  # DMN引擎配置
+  dmn:
+    enabled: true
+  # CMMN引擎配置
+  cmmn:
+    enabled: true
+  # 消息基础URL
+  message-base-url: http://localhost:8080

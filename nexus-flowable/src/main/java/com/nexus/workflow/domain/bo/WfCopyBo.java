@@ -1,0 +1,84 @@
+package com.nexus.workflow.domain.bo;
+
+import com.nexus.common.core.validate.AddGroup;
+import com.nexus.common.core.validate.EditGroup;
+import com.nexus.common.core.domain.BaseEntity;
+import com.nexus.workflow.domain.WfCopy;
+import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * 流程抄送业务对象 wf_copy
+ *
+ * @author nbacheng
+ * @date 2022-05-19
+ */
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@AutoMapper(target = WfCopy.class, reverseConvertGenerate = false)
+public class WfCopyBo extends BaseEntity {
+
+    /**
+     * 抄送主键
+     */
+    @NotNull(message = "抄送主键不能为空", groups = { EditGroup.class })
+    private Long copyId;
+
+    /**
+     * 抄送标题
+     */
+    @NotNull(message = "抄送标题不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String title;
+
+    /**
+     * 流程主键
+     */
+    @NotBlank(message = "流程主键不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String processId;
+
+    /**
+     * 流程名称
+     */
+    @NotBlank(message = "流程名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String processName;
+
+    /**
+     * 流程分类主键
+     */
+    @NotBlank(message = "流程分类主键不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String categoryId;
+
+    /**
+     * 任务主键
+     */
+    @NotBlank(message = "任务主键不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String taskId;
+
+    /**
+     * 用户主键
+     */
+    @NotNull(message = "用户主键不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Long userId;
+
+    /**
+     * 发起人Id
+     */
+    @NotNull(message = "发起人主键不能为空", groups = { AddGroup.class, EditGroup.class })
+    private Long originatorId;
+    /**
+     * 发起人名称
+     */
+    @NotNull(message = "发起人名称不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String originatorName;
+    
+    /**
+     * 状态
+     */
+    @NotNull(message = "状态不能为空", groups = { AddGroup.class, EditGroup.class })
+    private String state;
+    
+}

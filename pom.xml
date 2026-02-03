@@ -39,6 +39,9 @@
         <nexus.common.version>3.9.0</nexus.common.version>
         <flowable.version>7.0.0</flowable.version>
         <mockito.version>4.6.1</mockito.version>
+        <mapstruct-plus.version>1.4.8</mapstruct-plus.version>
+        <redisson.version>3.37.0</redisson.version>
+        <commons-beanutils.version>1.9.4</commons-beanutils.version>
     </properties>
 
     <!-- 依赖声明 -->
@@ -206,6 +209,18 @@
 
             <dependency>
                 <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-json</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-websocket</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nexus</groupId>
                 <artifactId>nexus-common-flowable</artifactId>
                 <version>${nexus.version}</version>
             </dependency>
@@ -245,6 +260,26 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>io.github.linpeilie</groupId>
+                <artifactId>mapstruct-plus-spring-boot-starter</artifactId>
+                <version>${mapstruct-plus.version}</version>
+            </dependency>
+
+            <!--redisson-->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+
+            <!--加载beanutils-->
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version> ${commons-beanutils.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -271,6 +306,18 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.github.linpeilie</groupId>
+                            <artifactId>mapstruct-plus-processor</artifactId>
+                            <version>${mapstruct-plus.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.30</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>

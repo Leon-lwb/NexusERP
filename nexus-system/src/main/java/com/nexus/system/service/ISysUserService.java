@@ -213,4 +213,12 @@ public interface ISysUserService extends IService<SysUser>
      * @return 结果
      */
     public String importUser(List<SysUser> userList, Boolean isUpdateSupport, String operName);
+
+    /**
+     * 根据用户编号查询用户账号列表,目前用在流程角色或部门选择时使用
+     *
+     * @param userIds 用户编号
+     * @return 用户账号列表
+     */
+    public List<String> selectUserNames(List<Long> userIds);
 }

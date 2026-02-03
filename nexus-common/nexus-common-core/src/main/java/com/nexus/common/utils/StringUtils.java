@@ -26,6 +26,9 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
     /** 星号 */
     private static final char ASTERISK = '*';
 
+    /** 逗号 */
+    public static final String COMMA = ",";
+
     /**
      * 获取参数不为空值
      * 
@@ -718,5 +721,26 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * 将驼峰命名转化成下划线
+     * @param para
+     * @return
+     */
+    public static String camelToUnderline(String para){
+        if(para.length()<3){
+            return para.toLowerCase();
+        }
+        StringBuilder sb=new StringBuilder(para);
+        int temp=0;//定位
+        //从第三个字符开始 避免命名不规范
+        for(int i=2;i<para.length();i++){
+            if(Character.isUpperCase(para.charAt(i))){
+                sb.insert(i+temp, "_");
+                temp+=1;
+            }
+        }
+        return sb.toString().toLowerCase();
     }
 }

@@ -170,4 +170,11 @@ public class Constants
      */
     public static final String[] JOB_ERROR_STR = { "java.net.URL", "javax.naming.InitialContext", "org.yaml.snakeyaml",
             "org.springframework", "org.apache", "com.nexus.common.utils.file", "com.nexus.common.config", "com.nexus.generator" };
+
+    /**
+     * 消息类型1:通知公告2:系统消息3:待办
+     */
+    public static final String MSG_CATEGORY_1 = "1";
+    public static final String MSG_CATEGORY_2 = "2";
+    public static final String MSG_CATEGORY_3 = "3";
 }

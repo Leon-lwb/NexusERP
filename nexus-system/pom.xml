@@ -23,6 +23,16 @@
             <artifactId>nexus-common-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-common-flowable</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-common-websocket</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

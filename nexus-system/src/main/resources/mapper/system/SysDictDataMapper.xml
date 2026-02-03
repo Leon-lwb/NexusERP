@@ -25,7 +25,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		from sys_dict_data
     </sql>
 
-	<select id="selectDictDataList" parameterType="SysDictData" resultMap="SysDictDataResult">
+	<select id="selectDictDataList" parameterType="SysDictData2" resultMap="SysDictDataResult">
 	    <include refid="selectDictDataVo"/>
 		<where>
 		    <if test="dictType != null and dictType != ''">
@@ -71,7 +71,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach> 
  	</delete>
 	
-	<update id="updateDictData" parameterType="SysDictData">
+	<update id="updateDictData" parameterType="SysDictData2">
  		update sys_dict_data
  		<set>
  			<if test="dictSort != null">dict_sort = #{dictSort},</if>

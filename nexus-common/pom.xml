@@ -11,6 +11,8 @@
     <modules>
         <module>nexus-common-core</module>
         <module>nexus-common-flowable</module>
+        <module>nexus-common-websocket</module>
+        <module>nexus-common-json</module>
     </modules>
     <modelVersion>4.0.0</modelVersion>
 
@@ -20,6 +22,30 @@
         common通用工具
     </description>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-json</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-websocket</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-common-flowable</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 
 </project>

@@ -5,6 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.nexus.common.core.domain.ExtensionElementInfo;
 import com.nexus.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
+import org.flowable.bpmn.model.*;
 import org.flowable.engine.impl.bpmn.behavior.ParallelMultiInstanceBehavior;
 import org.flowable.engine.impl.bpmn.behavior.SequentialMultiInstanceBehavior;
 import org.flowable.task.api.history.HistoricTaskInstance;

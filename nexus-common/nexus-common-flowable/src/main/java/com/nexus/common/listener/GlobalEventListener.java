@@ -2,8 +2,8 @@ package com.nexus.common.listener;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
-import com.nexus.common.common.constant.ProcessConstants;
-import com.nexus.common.common.enums.ProcessStatus;
+import com.nexus.common.constant.ProcessConstants;
+import com.nexus.common.enums.ProcessStatus;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEntityEvent;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;

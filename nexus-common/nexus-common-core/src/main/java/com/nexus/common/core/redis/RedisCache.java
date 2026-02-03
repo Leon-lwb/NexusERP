@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import com.nexus.common.utils.spring.SpringUtils;
+import org.redisson.api.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.HashOperations;
@@ -24,6 +29,8 @@ public class RedisCache
 {
     @Autowired
     public RedisTemplate redisTemplate;
+
+    private static final RedissonClient CLIENT = SpringUtils.getBean(RedissonClient.class);
 
     /**
      * 缓存基本的对象，Integer、String、实体类等
@@ -264,5 +271,35 @@ public class RedisCache
     public Collection<String> keys(final String pattern)
     {
         return redisTemplate.keys(pattern);
+    }
+
+    /**
+     * 订阅通道接收消息
+     *
+     * @param channelKey 通道key
+     * @param clazz      消息类型
+     * @param consumer   自定义处理
+     */
+    public static <T> void subscribe(String channelKey, Class<T> clazz, Consumer<T> consumer) {
+        RTopic topic = CLIENT.getTopic(channelKey);
+        topic.addListener(clazz, (channel, msg) -> consumer.accept(msg));
+    }
+
+    /**
+     * 发布通道消息
+     *
+     * @param channelKey 通道key
+     * @param msg        发送数据
+     * @param consumer   自定义处理
+     */
+    public static <T> void publish(String channelKey, T msg, Consumer<T> consumer) {
+        RTopic topic = CLIENT.getTopic(channelKey);
+        topic.publish(msg);
+        consumer.accept(msg);
+    }
+
+    public static <T> void publish(String channelKey, T msg) {
+        RTopic topic = CLIENT.getTopic(channelKey);
+        topic.publish(msg);
     }
 }

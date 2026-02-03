@@ -82,4 +82,9 @@ public class UserConstants
      */
     public static final int PASSWORD_MIN_LENGTH = 5;
     public static final int PASSWORD_MAX_LENGTH = 20;
+
+    /**
+     * 用户正常状态
+     */
+    public static final String USER_NORMAL = "0";
 }

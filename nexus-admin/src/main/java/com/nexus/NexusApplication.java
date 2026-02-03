@@ -3,6 +3,8 @@ package com.nexus;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 
 /**
  * 启动程序
@@ -10,6 +12,12 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
  * @author nexus
  */
 @SpringBootApplication
+@ComponentScan(excludeFilters = {
+    @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.nexus\\.common\\.flow\\.FlowableConfig"),
+    @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.nexus\\.flowable\\.config\\.FlowableConfig"),
+    @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.nexus\\.common\\.factory\\.FlowServiceFactory"),
+    @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.nexus\\.flowable\\.factory\\.FlowServiceFactory")
+})
 public class NexusApplication
 {
     public static void main(String[] args)

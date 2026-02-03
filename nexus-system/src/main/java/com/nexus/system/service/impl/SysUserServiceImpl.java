@@ -561,4 +561,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
         return successMsg.toString();
     }
+
+    @Override
+    public List<String> selectUserNames(List<Long> userIds) {
+        List<SysUser> listuser =  baseMapper.selectBatchIds(userIds);
+        List<String> userNames = new ArrayList<>();
+        for(SysUser sysuser: listuser) {
+            userNames.add(sysuser.getUserName());
+        }
+        return userNames;
+
+    }
 }

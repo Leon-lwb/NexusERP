@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.workflow.mapper.WfFlowConfigMapper">
+
+    <resultMap type="com.nexus.workflow.domain.WfFlowConfig" id="WfFlowConfigResult">
+        <result property="id" column="id"/>
+        <result property="modelId" column="model_id"/>
+        <result property="nodeKey" column="node_key"/>
+        <result property="nodeName" column="node_name"/>
+        <result property="formKey" column="form_key"/>
+        <result property="appType" column="app_type"/>
+    </resultMap>
+
+    <select id="selectByModelIdAndNodeKey" parameterType="Object" resultType="com.nexus.workflow.domain.WfFlowConfig">
+         select id, model_id, node_key, node_name,form_key,app_type 
+         from wf_flow_config where model_id = #{flowConfigVo.modelId} and node_key = #{flowConfigVo.nodeKey}
+    </select>
+
+    <update id="updateFlowConfig" parameterType="Object">
+         update wf_flow_config set node_name= #{flowConfigVo.nodeName}, form_key=#{flowConfigVo.formKey}, app_type=#{flowConfigVo.appType}
+         where model_id = #{flowConfigVo.modelId} and node_key = #{flowConfigVo.nodeKey}
+    </update>
+
+</mapper>
