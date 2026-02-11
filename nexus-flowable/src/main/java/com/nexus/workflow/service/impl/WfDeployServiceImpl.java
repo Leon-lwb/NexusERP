@@ -62,7 +62,7 @@ public class WfDeployServiceImpl implements IWfDeployService {
         List<WfDeployVo> deployVoList = new ArrayList<>(definitionList.size());
         for (ProcessDefinition processDefinition : definitionList) {
         	if( StringUtils.isNotBlank(processQuery.getAppType())) {
-        		if ( processQuery.getAppType().equalsIgnoreCase(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(),""))) {
+        		if ( processQuery.getAppType().equalsIgnoreCase(categoryMapper.selectAppTypeByCode(processDefinition.getCategory()))) {
 	        		String deploymentId = processDefinition.getDeploymentId();
 		            Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
 		            WfDeployVo vo = new WfDeployVo();

@@ -262,7 +262,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         if (ObjectUtil.isNull(startEvent)) {
             throw new RuntimeException("开始节点不存在，请检查流程设计是否有误！");
         }
-        WfAppTypeVo appTypeVo = categoryMapper.selectAppTypeVoByCode(model.getCategory(), "1");//,TenantHelper.getTenantId());
+        WfAppTypeVo appTypeVo = categoryMapper.selectAppTypeVoByCode(model.getCategory());//,TenantHelper.getTenantId());
         String appType = "";
         if(ObjectUtil.isNotEmpty(appTypeVo)) {
         	appType =  appTypeVo.getId();
@@ -337,7 +337,6 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         newModel.setCategory(model.getCategory());
         newModel.setMetaInfo(model.getMetaInfo());
         newModel.setVersion(latestVersion + 1);
-        newModel.setTenantId(model.getTenantId());
         // 保存流程模型
         repositoryService.saveModel(newModel);
         // 保存 BPMN XML
@@ -386,7 +385,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         // 修改流程定义的分类，便于搜索流程
         repositoryService.setProcessDefinitionCategory(procDef.getId(), model.getCategory());
         // 保存部署表单
-        WfAppTypeVo appTypeVo = categoryMapper.selectAppTypeVoByCode(model.getCategory(), "1");//,TenantHelper.getTenantId());
+        WfAppTypeVo appTypeVo = categoryMapper.selectAppTypeVoByCode(model.getCategory());//,TenantHelper.getTenantId());
         String appType = "";
         if(ObjectUtil.isNotEmpty(appTypeVo)) {
         	appType =  appTypeVo.getId();

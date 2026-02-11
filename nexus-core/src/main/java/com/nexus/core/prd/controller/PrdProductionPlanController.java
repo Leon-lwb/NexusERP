@@ -70,7 +70,7 @@ public class PrdProductionPlanController extends BaseController
     @ApiOperation("获取生产计划列表")
     @PreAuthorize("@ss.hasPermi('prd:plan:query')")
     @GetMapping(value = "/{planId}")
-    public AjaxResult getInfo(@PathVariable("planId") Long planId)
+    public AjaxResult getInfo(@PathVariable Long planId)
     {
         return success(prdProductionPlanService.selectPrdProductionPlanByPlanId(planId));
     }

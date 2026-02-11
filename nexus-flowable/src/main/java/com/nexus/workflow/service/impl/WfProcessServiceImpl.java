@@ -159,7 +159,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             String deploymentId = processDefinition.getDeploymentId();
             Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
            // 检查流程是否是OA流程
-            WfAppTypeVo appTypeVo = categoryMapper.selectAppTypeVoByCode(deployment.getCategory(),"");
+            WfAppTypeVo appTypeVo = categoryMapper.selectAppTypeVoByCode(deployment.getCategory());
             String appType = "";
             if(ObjectUtil.isNotEmpty(appTypeVo)) {
             	appType =  appTypeVo.getId();

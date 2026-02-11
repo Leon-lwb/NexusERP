@@ -50,10 +50,6 @@ public class WfForm extends BaseEntity {
      */
     private String delFlag;
     /**
-     * 租户编号
-     */
-    private String tenantId;
-    /**
      * 关联生成的数据库表名
      */
     private String tableName;

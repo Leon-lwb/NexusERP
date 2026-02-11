@@ -17,7 +17,7 @@ import java.util.Date;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = SysRole.class)
+@AutoMapper(target = SysRole.class, reverseConvertGenerate = false)
 public class SysRoleVo implements Serializable {
 
     @Serial

@@ -80,7 +80,7 @@ public class WmMaterialReceiveController extends BaseController
     @ApiOperation("获取物料入库单列表")
     @PreAuthorize("@ss.hasPermi('wm:receive:query')")
     @GetMapping(value = "/{receiveId}")
-    public AjaxResult getInfo(@PathVariable("receiveId") Long receiveId)
+    public AjaxResult getInfo(@PathVariable Long receiveId)
     {
         return success(wmMaterialReceiveService.selectWmMaterialReceiveByReceiveId(receiveId));
     }

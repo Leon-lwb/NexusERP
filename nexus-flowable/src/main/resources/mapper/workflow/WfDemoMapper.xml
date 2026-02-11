@@ -17,7 +17,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
         <result property="remark" column="remark"/>
-        <result property="tenantId" column="tenant_id"/>
     </resultMap>
     
     <select id="myPage" resultType="com.nexus.workflow.domain.vo.WfDemoVo">

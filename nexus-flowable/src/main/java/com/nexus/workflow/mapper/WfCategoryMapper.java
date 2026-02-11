@@ -13,6 +13,6 @@ import org.apache.ibatis.annotations.Param;
  * @date 2022-01-15
  */
 public interface WfCategoryMapper extends BaseMapperPlus<WfCategory, WfCategoryVo> {
-   String selectAppTypeByCode(@Param("code") String code, @Param("tenantId") String tenantId);
-   WfAppTypeVo selectAppTypeVoByCode(@Param("code") String code, @Param("tenantId") String tenantId);
+   String selectAppTypeByCode(@Param("code") String code);
+   WfAppTypeVo selectAppTypeVoByCode(@Param("code") String code);
 }

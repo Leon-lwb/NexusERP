@@ -17,7 +17,7 @@ import java.util.Date;
  * @author Michelle.Chung
  */
 @Data
-@AutoMapper(target = SysUser.class)
+@AutoMapper(target = SysUser.class, reverseConvertGenerate = false)
 public class SystemSysUserVo implements Serializable {
 
     @Serial

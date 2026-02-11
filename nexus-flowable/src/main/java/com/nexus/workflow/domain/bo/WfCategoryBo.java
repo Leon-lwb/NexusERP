@@ -54,9 +54,5 @@ public class WfCategoryBo extends BaseEntity {
      * 备注
      */
     private String remark;
-    /**
-     * 租户编号
-     */
-    private String tenantId;
 
 }

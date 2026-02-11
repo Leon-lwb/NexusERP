@@ -52,8 +52,4 @@ public class WfFormVo implements Serializable {
      * 删除标志
      */
     private String delFlag;
-    /**
-     * 租户编号
-     */
-    //private String tenantId;
 }

@@ -52,6 +52,5 @@ public class WfFormBo extends BaseEntity {
      * 是否保存到数据库
      */
     private Boolean db;
-    private String tenantId;
     private String tableName;
 }

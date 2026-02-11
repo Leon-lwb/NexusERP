@@ -134,3 +134,10 @@ export function deptTreeSelect() {
     method: 'get'
   })
 }
+
+export function selectUser(userId) {
+  return request({
+    url: '/system/user/' + userId,
+    method: 'get'
+  })
+}

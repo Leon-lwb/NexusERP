@@ -92,3 +92,10 @@ export function genValue(data) {
     data: data
   })
 }
+
+export function getTableColumns(tableId) {
+  return request({
+    url: '/tool/gen/column/' + tableId,
+    method: 'get'
+  })
+}
