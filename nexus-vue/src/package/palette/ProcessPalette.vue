@@ -59,6 +59,7 @@
 
   const bpmnInstances = () => (window as any)?.bpmnInstances
   const createElement = (event, type, options = {}) => {
+    if (!bpmnInstances() || !bpmnInstances().modeler) return
     const ElementFactory = bpmnInstances().elementFactory;
     const create = bpmnInstances().modeler.get('create');
     const shape = ElementFactory.createShape(assign({ type: `bpmn:${type}` }, options));
@@ -68,6 +69,7 @@
     create.start(event, shape);
   }
   const startTool = (event, type) => {
+    if (!bpmnInstances() || !bpmnInstances().modeler) return
     if (type === 'handTool') {
       bpmnInstances().modeler.get('handTool').activateHand(event);
     }

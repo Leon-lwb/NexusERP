@@ -2,6 +2,8 @@ package com.nexus.workflow.controller;
 
 import com.nexus.common.core.page.WFTableDataInfo;
 import com.nexus.common.utils.MapstructUtils;
+import com.nexus.common.utils.poi.ExcelUtil;
+import com.nexus.workflow.domain.WfCategory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.validate.AddGroup;
@@ -66,8 +68,10 @@ public class WfCategoryController extends BaseController {
     @PostMapping("/export")
     public void export(WfCategoryBo categoryBo, HttpServletResponse response) {
         List<WfCategoryVo> list = categoryService.queryList(categoryBo);
-        List<WfCategoryExportVo> listVo = MapstructUtils.convert(list, WfCategoryExportVo.class);
+        // List<WfCategoryExportVo> listVo = MapstructUtils.convert(list, WfCategoryExportVo.class);
         //ExcelUtil.exportExcel(listVo, "流程分类", WfCategoryExportVo.class, response);
+        ExcelUtil<WfCategoryVo> util = new ExcelUtil<>(WfCategoryVo.class);
+        util.exportExcel(response, list, "流程分类", "流程分类");
     }
 
     /**
