@@ -238,6 +238,13 @@
                 <version>${nexus.version}</version>
             </dependency>
 
+
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-form</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.flowable</groupId>
                 <artifactId>flowable-spring-boot-starter</artifactId>
@@ -292,6 +299,7 @@
         <module>nexus-common</module>
         <module>nexus-core</module>
         <module>nexus-flowable</module>
+        <module>nexus-form</module>
     </modules>
     <packaging>pom</packaging>
 

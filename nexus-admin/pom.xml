@@ -66,6 +66,12 @@
             <artifactId>nexus-flowable</artifactId>
         </dependency>
 
+        <!-- 表单模块-->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-form</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

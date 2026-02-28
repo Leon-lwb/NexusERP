@@ -108,6 +108,7 @@ public class WfCategoryServiceImpl implements IWfCategoryService {
 	public List<WfAppTypeVo> queryInfoByCode(@NotNull(message = "主键不能为空") String code) {
 		WfAppTypeVo wfAppTypeVo = new WfAppTypeVo();
 		//wfAppTypeVo = baseMapper.selectAppTypeVoByCode(code,TenantHelper.getTenantId());
+        wfAppTypeVo = baseMapper.selectAppTypeVoByCode(code);
 		ArrayList<WfAppTypeVo> wfAppTypeVoList = new ArrayList<WfAppTypeVo>();
 		wfAppTypeVoList.add(wfAppTypeVo);
 		return wfAppTypeVoList;

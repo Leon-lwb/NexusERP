@@ -91,7 +91,7 @@ public class WfModelController extends BaseController {
     @PreAuthorize("@ss.hasPermi('workflow:model:query')")
     @GetMapping(value = "/bpmnXml/{modelId}")
     public R<String> getBpmnXml(@NotNull(message = "主键不能为空") @PathVariable("modelId") String modelId) {
-        return R.ok("操作成功", modelService.queryBpmnXmlById(modelId));
+        return R.ok(modelService.queryBpmnXmlById(modelId),"操作成功");
     }
 
     /**
