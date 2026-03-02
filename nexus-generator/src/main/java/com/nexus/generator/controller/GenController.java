@@ -95,7 +95,7 @@ public class GenController extends BaseController
     }
 
     /**
-     * 查询数据表字段列表
+     * 根据tableId查询数据表字段列表
      */
     @PreAuthorize("@ss.hasPermi('tool:gen:list')")
     @GetMapping(value = "/column/{tableId}")
@@ -109,16 +109,31 @@ public class GenController extends BaseController
     }
 
     /**
+     * 根据tableName查询数据表字段列表
+     */
+    @PreAuthorize("@ss.hasPermi('tool:gen:list')")
+    @GetMapping(value = "/columns/{tableName}")
+    public List<GenTableColumn> getColums(@PathVariable("tableName") String tableName){
+        return genTableColumnService.selectGenTableColumnListByTablName(tableName);
+    }
+
+    /**
      * 导入表结构（保存）
      */
     @PreAuthorize("@ss.hasPermi('tool:gen:import')")
     @Log(title = "代码生成", businessType = BusinessType.IMPORT)
     @PostMapping("/importTable")
-    public AjaxResult importTableSave(String tables)
+    public AjaxResult importTableSave(String tables, String dataName)
     {
         String[] tableNames = Convert.toStrArray(tables);
         // 查询表信息
         List<GenTable> tableList = genTableService.selectDbTableListByNames(tableNames);
+        // 设置数据源名称
+        if (dataName != null && !dataName.isEmpty()) {
+            for (GenTable table : tableList) {
+                table.setDataName(dataName);
+            }
+        }
         genTableService.importGenTable(tableList, SecurityUtils.getUsername());
         return success();
     }

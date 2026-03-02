@@ -300,6 +300,7 @@
         <module>nexus-core</module>
         <module>nexus-flowable</module>
         <module>nexus-form</module>
+        <module>nexus-online</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -308,7 +309,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.8.1</version>
                 <configuration>
                     <parameters>true</parameters>
                     <source>${java.version}</source>

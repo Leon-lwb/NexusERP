@@ -41,4 +41,11 @@ public interface IGenTableColumnService
      * @return 结果
      */
     public int deleteGenTableColumnByIds(String ids);
+
+    /**
+     * 根据表名查询业务字段列表
+     * @param tableName
+     * @return
+     */
+    List<GenTableColumn> selectGenTableColumnListByTablName(String tableName);
 }

@@ -6,6 +6,7 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import locale from 'element-plus/es/locale/lang/zh-cn'
+import 'animate.css'
 
 import '@/assets/styles/index.scss'
 
@@ -36,6 +37,7 @@ import ImagePreview from "@/components/ImagePreview"
 import DictTag from '@/components/DictTag'
 
 import '@/package/theme/index.scss'
+import animate from './animated'
 
 const app = createApp(App)
 
@@ -48,6 +50,9 @@ app.config.globalProperties.addDateRange = addDateRange
 app.config.globalProperties.getConfigKey = getConfigKey
 app.config.globalProperties.selectDictLabel = selectDictLabel
 app.config.globalProperties.selectDictLabels = selectDictLabels
+
+// 添加动画配置
+app.config.globalProperties.animate = animate
 
 app.component('DictTag', DictTag)
 app.component('Pagination', Pagination)

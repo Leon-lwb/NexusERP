@@ -1,6 +1,15 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
+      <el-form-item label="数据源名称" prop="dataName">
+        <el-input
+          v-model="queryParams.dataName"
+          placeholder="请输入数据源名称"
+          clearable
+          style="width: 200px"
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="表名称" prop="tableName">
         <el-input
           v-model="queryParams.tableName"
@@ -173,6 +182,7 @@ const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
+    dataName: undefined,
     tableName: undefined,
     tableComment: undefined,
     orderByColumn: defaultSort.value.prop,

@@ -176,12 +176,13 @@ public class GenTableServiceImpl implements IGenTableService
             for (GenTable table : tableList)
             {
                 String tableName = table.getTableName();
+                String dataName = table.getDataName();
                 GenUtils.initTable(table, operName);
                 int row = genTableMapper.insertGenTable(table);
                 if (row > 0)
                 {
                     // 保存列信息
-                    List<GenTableColumn> genTableColumns = genTableColumnMapper.selectDbTableColumnsByName(tableName);
+                    List<GenTableColumn> genTableColumns = genTableColumnMapper.selectDbTableColumnsByName(tableName, dataName);
                     for (GenTableColumn column : genTableColumns)
                     {
                         GenUtils.initColumnField(column, table);
@@ -300,7 +301,7 @@ public class GenTableServiceImpl implements IGenTableService
         List<GenTableColumn> tableColumns = table.getColumns();
         Map<String, GenTableColumn> tableColumnMap = tableColumns.stream().collect(Collectors.toMap(GenTableColumn::getColumnName, Function.identity()));
 
-        List<GenTableColumn> dbTableColumns = genTableColumnMapper.selectDbTableColumnsByName(tableName);
+        List<GenTableColumn> dbTableColumns = genTableColumnMapper.selectDbTableColumnsByName(table.getTableName(), table.getDataName());
         if (StringUtils.isEmpty(dbTableColumns))
         {
             throw new ServiceException("同步数据失败，原表结构不存在");

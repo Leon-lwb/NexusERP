@@ -93,9 +93,18 @@ export function genValue(data) {
   })
 }
 
-export function getTableColumns(tableId) {
+// export function getTableColumns(tableId) {
+//   return request({
+//     url: '/tool/gen/column/' + tableId,
+//     method: 'get'
+//   })
+// }
+
+// 获取表的列信息
+export function getTableColumns(tableName) {
   return request({
-    url: '/tool/gen/column/' + tableId,
+    url: '/tool/gen/columns/' + tableName,
     method: 'get'
   })
 }
+

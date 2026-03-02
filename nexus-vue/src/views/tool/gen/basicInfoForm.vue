@@ -2,6 +2,11 @@
   <el-form ref="basicInfoForm" :model="info" :rules="rules" label-width="150px">
     <el-row>
       <el-col :span="12">
+        <el-form-item label="数据源名称" prop="dataName">
+          <el-input placeholder="请输入数据源名称" v-model="info.dataName" />
+        </el-form-item>
+      </el-col>
+      <el-col :span="12">
         <el-form-item label="表名称" prop="tableName">
           <el-input placeholder="请输入仓库名称" v-model="info.tableName" />
         </el-form-item>
@@ -40,6 +45,7 @@ defineProps({
 
 // 表单校验
 const rules = ref({
+  dataName: [{ required: true, message: "请输入数据源名称", trigger: "blur" }],
   tableName: [{ required: true, message: "请输入表名称", trigger: "blur" }],
   tableComment: [{ required: true, message: "请输入表描述", trigger: "blur" }],
   className: [{ required: true, message: "请输入实体类名称", trigger: "blur" }],

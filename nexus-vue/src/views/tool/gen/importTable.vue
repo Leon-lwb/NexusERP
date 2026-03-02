@@ -2,6 +2,15 @@
   <!-- 导入表 -->
   <el-dialog title="导入表" v-model="visible" width="800px" top="5vh" append-to-body>
     <el-form :model="queryParams" ref="queryRef" :inline="true">
+      <el-form-item label="数据源名称" prop="dataName">
+        <el-input
+          v-model="queryParams.dataName"
+          placeholder="请输入数据源名称"
+          clearable
+          style="width: 180px"
+          @keyup.enter="handleQuery"
+        />
+      </el-form-item>
       <el-form-item label="表名称" prop="tableName">
         <el-input
           v-model="queryParams.tableName"
@@ -62,6 +71,7 @@ const { proxy } = getCurrentInstance()
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
+  dataName: undefined,
   tableName: undefined,
   tableComment: undefined
 })

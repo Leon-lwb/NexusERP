@@ -2,6 +2,7 @@ package com.nexus.generator.mapper;
 
 import java.util.List;
 import com.nexus.generator.domain.GenTable;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 业务 数据层
@@ -88,4 +89,12 @@ public interface GenTableMapper
      * @return 结果
      */
     public int createTable(String sql);
+
+    /**
+     * 查询表名称列表
+     *
+     * @param dataName 数据源名称
+     * @return 表名称列表
+     */
+    List<String> selectTableNameList(@Param("dataName") String dataName);
 }

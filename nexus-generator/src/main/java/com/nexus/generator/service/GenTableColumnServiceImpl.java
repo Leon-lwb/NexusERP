@@ -65,4 +65,15 @@ public class GenTableColumnServiceImpl implements IGenTableColumnService
 	{
 		return genTableColumnMapper.deleteGenTableColumnByIds(Convert.toLongArray(ids));
 	}
+
+	/**
+	 * 根据表名查询业务字段列表
+	 * @param tableName
+	 * @return
+	 */
+	@Override
+	public List<GenTableColumn> selectGenTableColumnListByTablName(String tableName) {
+		List<GenTableColumn> genTableColumns = genTableColumnMapper.selectGenTableByName(tableName);
+		return genTableColumns;
+	}
 }

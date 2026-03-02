@@ -2,6 +2,7 @@ package com.nexus.generator.mapper;
 
 import java.util.List;
 import com.nexus.generator.domain.GenTableColumn;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 业务字段 数据层
@@ -14,9 +15,10 @@ public interface GenTableColumnMapper
      * 根据表名称查询列信息
      * 
      * @param tableName 表名称
+     * @param dataName  数据源名称
      * @return 列信息
      */
-    public List<GenTableColumn> selectDbTableColumnsByName(String tableName);
+    public List<GenTableColumn> selectDbTableColumnsByName(@Param("tableName") String tableName, @Param("dataName") String dataName);
 
     /**
      * 查询业务字段列表
@@ -57,4 +59,11 @@ public interface GenTableColumnMapper
      * @return 结果
      */
     public int deleteGenTableColumnByIds(Long[] ids);
+
+    /**
+     * 根据表名查询业务字段列表
+     * @param tableName
+     * @return
+     */
+    List<GenTableColumn> selectGenTableByName(String tableName);
 }
