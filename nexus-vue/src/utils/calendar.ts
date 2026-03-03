@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @1900-2100区间内的公历、农历互转
  * @charset UTF-8
  * @Author  Jea杨(JJonline@JJonline.Cn)
@@ -10,7 +10,70 @@
  * @公历转农历：calendar.solar2lunar(1987,11,01); //[you can ignore params of prefix 0]
  * @农历转公历：calendar.lunar2solar(1987,09,10); //[you can ignore params of prefix 0]
  */
-const calendar = {
+interface FestivalItem {
+    title: string;
+}
+
+interface CalendarResult {
+    date: string;
+    lunarDate: string;
+    festival: string | null;
+    lunarFestival: string | null;
+    lYear: number;
+    lMonth: number;
+    lDay: number;
+    Animal: string;
+    IMonthCn: string;
+    IDayCn: string;
+    cYear: number;
+    cMonth: number;
+    cDay: number;
+    gzYear: string;
+    gzMonth: string;
+    gzDay: string;
+    isToday: boolean;
+    isLeap: boolean;
+    nWeek: number;
+    ncWeek: string;
+    isTerm: boolean;
+    Term: string | null;
+    astro: string;
+}
+
+interface Calendar {
+    lunarInfo: number[];
+    solarMonth: number[];
+    Gan: string[];
+    Zhi: string[];
+    Animals: string[];
+    festival: Record<string, FestivalItem>;
+    lFestival: Record<string, FestivalItem>;
+    solarTerm: string[];
+    sTermInfo: string[];
+    nStr1: string[];
+    nStr2: string[];
+    nStr3: string[];
+    lYearDays(y: number): number;
+    leapMonth(y: number): number;
+    leapDays(y: number): number;
+    monthDays(y: number, m: number): number;
+    solarDays(y: number, m: number): number;
+    toGanZhiYear(lYear: number): string;
+    toAstro(cMonth: number, cDay: number): string;
+    toGanZhi(offset: number): string;
+    getTerm(y: number, n: number): number;
+    toChinaMonth(m: number): string;
+    toChinaDay(d: number): string;
+    getAnimal(y: number): string;
+    solar2lunar(yPara: number, mPara: number, dPara: number): CalendarResult;
+    lunar2solar(y: number, m: number, d: number, isLeapMonth?: boolean): CalendarResult;
+    getFestival(): Record<string, FestivalItem>;
+    getLunarFestival(): Record<string, FestivalItem>;
+    setFestival(param: Record<string, FestivalItem>): void;
+    setLunarFestival(param: Record<string, FestivalItem>): void;
+}
+
+const calendar: Calendar = {
 
     /**
      * 农历1900-2100的润大小信息表
@@ -265,7 +328,7 @@ const calendar = {
      * @return Number
      * @eg:var count = calendar.lYearDays(1987) ;//count=387
      */
-    lYearDays: function (y) {
+    lYearDays(y: number): number {
         let i, sum = 348;
         for (i = 0x8000; i > 0x8; i >>= 1) {
             sum += (this.lunarInfo[y - 1900] & i) ? 1 : 0;
@@ -279,99 +342,56 @@ const calendar = {
      * @return Number (0-12)
      * @eg:var leapMonth = calendar.leapMonth(1987) ;//leapMonth=6
      */
-    leapMonth: function (y) { //闰字编码 \u95f0
+    leapMonth(y: number): number {
         return (this.lunarInfo[y - 1900] & 0xf);
     },
 
-    /**
-     * 返回农历y年闰月的天数 若该年没有闰月则返回0
-     * @param y lunar Year
-     * @return Number (0、29、30)
-     * @eg:var leapMonthDay = calendar.leapDays(1987) ;//leapMonthDay=29
-     */
-    leapDays: function (y) {
+    leapDays(y: number): number {
         if (this.leapMonth(y)) {
             return ((this.lunarInfo[y - 1900] & 0x10000) ? 30 : 29);
         }
         return (0);
     },
 
-    /**
-     * 返回农历y年m月（非闰月）的总天数，计算m为闰月时的天数请使用leapDays方法
-     * @param y lunar Year
-     * @param m lunar Month
-     * @return Number (-1、29、30)
-     * @eg:var MonthDay = calendar.monthDays(1987,9) ;//MonthDay=29
-     */
-    monthDays: function (y, m) {
+    monthDays(y: number, m: number): number {
         if (m > 12 || m < 1) {
             return -1
-        }//月份参数从1至12，参数错误返回-1
+        }
         return ((this.lunarInfo[y - 1900] & (0x10000 >> m)) ? 30 : 29);
     },
 
-    /**
-     * 返回公历(!)y年m月的天数
-     * @param y solar Year
-     * @param m solar Month
-     * @return Number (-1、28、29、30、31)
-     * @eg:var solarMonthDay = calendar.leapDays(1987) ;//solarMonthDay=30
-     */
-    solarDays: function (y, m) {
+    solarDays(y: number, m: number): number {
         if (m > 12 || m < 1) {
             return -1
-        } //若参数错误 返回-1
+        }
         const ms = m - 1;
-        if (ms === 1) { //2月份的闰平规律测算后确认返回28或29
+        if (ms === 1) {
             return (((y % 4 === 0) && (y % 100 !== 0) || (y % 400 === 0)) ? 29 : 28);
         } else {
             return (this.solarMonth[ms]);
         }
     },
 
-    /**
-     * 农历年份转换为干支纪年
-     * @param  lYear 农历年的年份数
-     * @return Cn string
-     */
-    toGanZhiYear: function (lYear) {
+    toGanZhiYear(lYear: number): string {
         var ganKey = (lYear - 3) % 10;
         var zhiKey = (lYear - 3) % 12;
-        if (ganKey === 0) ganKey = 10;//如果余数为0则为最后一个天干
-        if (zhiKey === 0) zhiKey = 12;//如果余数为0则为最后一个地支
+        if (ganKey === 0) ganKey = 10;
+        if (zhiKey === 0) zhiKey = 12;
         return this.Gan[ganKey - 1] + this.Zhi[zhiKey - 1];
 
     },
 
-    /**
-     * 公历月、日判断所属星座
-     * @param  cMonth [description]
-     * @param  cDay [description]
-     * @return Cn string
-     */
-    toAstro: function (cMonth, cDay) {
+    toAstro(cMonth: number, cDay: number): string {
         const s = "\u9b54\u7faf\u6c34\u74f6\u53cc\u9c7c\u767d\u7f8a\u91d1\u725b\u53cc\u5b50\u5de8\u87f9\u72ee\u5b50\u5904\u5973\u5929\u79e4\u5929\u874e\u5c04\u624b\u9b54\u7faf";
         const arr = [20, 19, 21, 21, 21, 22, 23, 23, 23, 23, 22, 22];
-        return s.substr(cMonth * 2 - (cDay < arr[cMonth - 1] ? 2 : 0), 2) + "\u5ea7";//座
+        return s.substr(cMonth * 2 - (cDay < arr[cMonth - 1] ? 2 : 0), 2) + "\u5ea7";
     },
 
-    /**
-     * 传入offset偏移量返回干支
-     * @param offset 相对甲子的偏移量
-     * @return Cn string
-     */
-    toGanZhi: function (offset) {
+    toGanZhi(offset: number): string {
         return this.Gan[offset % 10] + this.Zhi[offset % 12];
     },
 
-    /**
-     * 传入公历(!)y年获得该年第n个节气的公历日期
-     * @param y y公历年(1900-2100)
-     * @param n n二十四节气中的第几个节气(1~24)；从n=1(小寒)算起
-     * @return day Number
-     * @eg:var _24 = calendar.getTerm(1987,3) ;//_24=4;意即1987年2月4日立春
-     */
-    getTerm: function (y, n) {
+    getTerm(y: number, n: number): number {
         if( y < 1900 || y > 2100 || n < 1 || n > 24) {
             return -1;
         }
@@ -395,12 +415,12 @@ const calendar = {
      * @return Cn string
      * @eg:var cnMonth = calendar.toChinaMonth(12) ;//cnMonth='腊月'
      */
-    toChinaMonth: function (m) { // 月 => \u6708
+    toChinaMonth(m: number): string {
         if (m > 12 || m < 1) {
-            return -1
-        } //若参数错误 返回-1
+            return '-1'
+        }
         let s = this.nStr3[m - 1];
-        s += "\u6708";//加上月字
+        s += "\u6708";
         return s;
     },
 
@@ -410,7 +430,7 @@ const calendar = {
      * @return Cn string
      * @eg:var cnDay = calendar.toChinaDay(21) ;//cnMonth='廿一'
      */
-    toChinaDay: function (d) { //日 => \u65e5
+    toChinaDay(d: number): string { //日 => \u65e5
         let s;
         switch (d) {
             case 10:
@@ -435,7 +455,7 @@ const calendar = {
      * @return Cn string
      * @eg:var animal = calendar.getAnimal(1987) ;//animal='兔'
      */
-    getAnimal: function (y) {
+    getAnimal(y: number): string {
         return this.Animals[(y - 4) % 12]
     },
 
@@ -448,7 +468,7 @@ const calendar = {
      * @return JSON object
      * @eg:console.log(calendar.solar2lunar(1987,11,01));
      */
-    solar2lunar: function (yPara, mPara, dPara) {
+    solar2lunar(yPara: number, mPara: number, dPara: number): CalendarResult {
         let y = parseInt(yPara);
         let m = parseInt(mPara);
         let d = parseInt(dPara);
@@ -620,7 +640,7 @@ const calendar = {
      * @return JSON object
      * @eg:console.log(calendar.lunar2solar(1987,9,10));
      */
-    lunar2solar: function (y, m, d, isLeapMonth) {
+    lunar2solar(y: number, m: number, d: number, isLeapMonth: boolean): CalendarResult {
         y = parseInt(y)
         m = parseInt(m)
         d = parseInt(d)

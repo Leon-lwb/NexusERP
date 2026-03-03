@@ -1,6 +1,6 @@
 'use strict';
 
-import { some } from '@/utils/min-dash.js';
+import { some } from '@/utils/min-dash';
 
 var ALLOWED_TYPES = {
   FailedJobRetryTimeCycle: ['bpmn:StartEvent', 'bpmn:BoundaryEvent', 'bpmn:IntermediateCatchEvent', 'bpmn:Activity'],

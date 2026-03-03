@@ -1,10 +1,10 @@
 /* eslint-disable max-len */
 import { trigger } from './config'
 
-let confGlobal
-let someSpanIsNot24
+let confGlobal: any
+let someSpanIsNot24: boolean
 
-export function dialogWrapper(str) {
+export function dialogWrapper(str: string): string {
   return `<el-dialog v-model="dialogVisible"  @open="onOpen" @close="onClose" title="Dialog Titile">
     ${str}
     <template #footer>
@@ -14,7 +14,7 @@ export function dialogWrapper(str) {
   </el-dialog>`
 }
 
-export function vueTemplate(str) {
+export function vueTemplate(str: string): string {
   return `<template>
     <div class="app-container">
       ${str}
@@ -22,19 +22,19 @@ export function vueTemplate(str) {
   </template>`
 }
 
-export function vueScript(str) {
+export function vueScript(str: string): string {
   return `<script setup>
     ${str}
   </script>`
 }
 
-export function cssStyle(cssStr) {
+export function cssStyle(cssStr: string): string {
   return `<style>
     ${cssStr}
   </style>`
 }
 
-function buildFormTemplate(conf, child, type) {
+function buildFormTemplate(conf: any, child: string, type: string): string {
   let labelPosition = ''
   if (conf.labelPosition !== 'right') {
     labelPosition = `label-position="${conf.labelPosition}"`
@@ -52,7 +52,7 @@ function buildFormTemplate(conf, child, type) {
   return str
 }
 
-function buildFromBtns(conf, type) {
+function buildFromBtns(conf: any, type: string): string {
   let str = ''
   if (conf.formBtns && type === 'file') {
     str = `<el-form-item>
@@ -69,7 +69,7 @@ function buildFromBtns(conf, type) {
 }
 
 // span不为24的用el-col包裹
-function colWrapper(element, str) {
+function colWrapper(element: any, str: string): string {
   if (someSpanIsNot24 || element.span !== 24) {
     return `<el-col :span="${element.span}">
       ${str}
@@ -78,7 +78,7 @@ function colWrapper(element, str) {
   return str
 }
 
-const layouts = {
+const layouts: Record<string, (element: any) => string> = {
   colFormItem(element) {
     let labelWidth = ''
     if (element.labelWidth && element.labelWidth !== confGlobal.labelWidth) {
@@ -97,7 +97,7 @@ const layouts = {
     const justify = element.type === 'default' ? '' : `justify="${element.justify}"`
     const align = element.type === 'default' ? '' : `align="${element.align}"`
     const gutter = element.gutter ? `gutter="${element.gutter}"` : ''
-    const children = element.children.map(el => layouts[el.layout](el))
+    const children = element.children.map((el: any) => layouts[el.layout](el))
     let str = `<el-row ${type} ${justify} ${align} ${gutter}>
       ${children.join('\n')}
     </el-row>`
@@ -106,7 +106,7 @@ const layouts = {
   }
 }
 
-const tags = {
+const tags: Record<string, (el: any) => string> = {
   'el-button': el => {
     const {
       tag, disabled
@@ -274,7 +274,7 @@ const tags = {
   }
 }
 
-function attrBuilder(el) {
+function attrBuilder(el: any): any {
   return {
     vModel: `v-model="${confGlobal.formModel}.${el.vModel}"`,
     clearable: el.clearable ? 'clearable' : '',
@@ -285,8 +285,8 @@ function attrBuilder(el) {
 }
 
 // el-buttin 子级
-function buildElButtonChild(conf) {
-  const children = []
+function buildElButtonChild(conf: any): string {
+  const children: string[] = []
   if (conf.default) {
     children.push(conf.default)
   }
@@ -294,8 +294,8 @@ function buildElButtonChild(conf) {
 }
 
 // el-input innerHTML
-function buildElInputChild(conf) {
-  const children = []
+function buildElInputChild(conf: any): string {
+  const children: string[] = []
   if (conf.prepend) {
     children.push(`<template slot="prepend">${conf.prepend}</template>`)
   }
@@ -305,16 +305,16 @@ function buildElInputChild(conf) {
   return children.join('\n')
 }
 
-function buildElSelectChild(conf) {
-  const children = []
+function buildElSelectChild(conf: any): string {
+  const children: string[] = []
   if (conf.options && conf.options.length) {
     children.push(`<el-option v-for="(item, index) in ${conf.vModel}Options" :key="index" :label="item.label" :value="item.value" :disabled="item.disabled"></el-option>`)
   }
   return children.join('\n')
 }
 
-function buildElRadioGroupChild(conf) {
-  const children = []
+function buildElRadioGroupChild(conf: any): string {
+  const children: string[] = []
   if (conf.options && conf.options.length) {
     const tag = conf.optionType === 'button' ? 'el-radio-button' : 'el-radio'
     const border = conf.border ? 'border' : ''
@@ -323,8 +323,8 @@ function buildElRadioGroupChild(conf) {
   return children.join('\n')
 }
 
-function buildElCheckboxGroupChild(conf) {
-  const children = []
+function buildElCheckboxGroupChild(conf: any): string {
+  const children: string[] = []
   if (conf.options && conf.options.length) {
     const tag = conf.optionType === 'button' ? 'el-checkbox-button' : 'el-checkbox'
     const border = conf.border ? 'border' : ''
@@ -333,19 +333,19 @@ function buildElCheckboxGroupChild(conf) {
   return children.join('\n')
 }
 
-function buildElUploadChild(conf) {
-  const list = []
+function buildElUploadChild(conf: any): string {
+  const list: string[] = []
   if (conf['list-type'] === 'picture-card') list.push('<i class="el-icon-plus"></i>')
   else list.push(`<el-button size="small" type="primary" icon="el-icon-upload">${conf.buttonText}</el-button>`)
   if (conf.showTip) list.push(`<div slot="tip" class="el-upload__tip">只能上传不超过 ${conf.fileSize}${conf.sizeUnit} 的${conf.accept}文件</div>`)
   return list.join('\n')
 }
 
-export function makeUpHtml(conf, type) {
-  const htmlList = []
+export function makeUpHtml(conf: any, type: string): string {
+  const htmlList: string[] = []
   confGlobal = conf
-  someSpanIsNot24 = conf.fields.some(item => item.span !== 24)
-  conf.fields.forEach(el => {
+  someSpanIsNot24 = conf.fields.some((item: any) => item.span !== 24)
+  conf.fields.forEach((el: any) => {
     htmlList.push(layouts[el.layout](el))
   })
   const htmlStr = htmlList.join('\n')

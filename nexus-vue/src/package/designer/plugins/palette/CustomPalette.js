@@ -1,5 +1,5 @@
 import PaletteProvider from 'bpmn-js/lib/features/palette/PaletteProvider';
-import { assign } from '@/utils/min-dash.js';
+import { assign } from '@/utils/min-dash';
 
 export default function CustomPalette(palette, create, elementFactory, spaceTool, lassoTool, handTool, globalConnect, translate) {
   PaletteProvider.call(this, palette, create, elementFactory, spaceTool, lassoTool, handTool, globalConnect, translate, 2000);

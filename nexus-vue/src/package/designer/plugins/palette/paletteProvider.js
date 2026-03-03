@@ -1,4 +1,4 @@
-import { assign } from '@/utils/min-dash.js';
+import { assign } from '@/utils/min-dash';
 
 /**
  * A palette provider for BPMN 2.0 elements.

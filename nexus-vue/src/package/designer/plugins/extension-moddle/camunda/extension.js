@@ -1,6 +1,6 @@
 'use strict';
 
-import { some, isObject, isFunction } from '@/utils/min-dash.js';
+import { some, isObject, isFunction } from '@/utils/min-dash';
 
 var WILDCARD = '*';
 

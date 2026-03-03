@@ -246,6 +246,12 @@
             </dependency>
 
             <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-online</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.flowable</groupId>
                 <artifactId>flowable-spring-boot-starter</artifactId>
                 <version>${flowable.version}</version>

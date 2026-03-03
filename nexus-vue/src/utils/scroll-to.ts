@@ -1,4 +1,10 @@
-Math.easeInOutQuad = function(t, b, c, d) {
+declare global {
+  interface Math {
+    easeInOutQuad(t: number, b: number, c: number, d: number): number
+  }
+}
+
+Math.easeInOutQuad = function(t: number, b: number, c: number, d: number): number {
   t /= d / 2
   if (t < 1) {
     return c / 2 * t * t + b
@@ -8,22 +14,26 @@ Math.easeInOutQuad = function(t, b, c, d) {
 }
 
 // requestAnimationFrame for Smart Animating http://goo.gl/sx5sts
-var requestAnimFrame = (function() {
-  return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) { window.setTimeout(callback, 1000 / 60) }
+const requestAnimFrame = (function() {
+  return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback: FrameRequestCallback) { return window.setTimeout(callback, 1000 / 60) }
 })()
 
 /**
  * Because it's so fucking difficult to detect the scrolling element, just move them all
  * @param {number} amount
  */
-function move(amount) {
+function move(amount: number): void {
   document.documentElement.scrollTop = amount
-  document.body.parentNode.scrollTop = amount
+  const bodyParent = document.body.parentNode as HTMLElement
+  if (bodyParent) {
+    bodyParent.scrollTop = amount
+  }
   document.body.scrollTop = amount
 }
 
-function position() {
-  return document.documentElement.scrollTop || document.body.parentNode.scrollTop || document.body.scrollTop
+function position(): number {
+  const bodyParent = document.body.parentNode as HTMLElement
+  return document.documentElement.scrollTop || (bodyParent ? bodyParent.scrollTop : 0) || document.body.scrollTop
 }
 
 /**
@@ -31,17 +41,17 @@ function position() {
  * @param {number} duration
  * @param {Function} callback
  */
-export function scrollTo(to, duration, callback) {
+export function scrollTo(to: number, duration?: number, callback?: () => void): void {
   const start = position()
   const change = to - start
   const increment = 20
   let currentTime = 0
   duration = (typeof (duration) === 'undefined') ? 500 : duration
-  var animateScroll = function() {
+  const animateScroll = function(): void {
     // increment the time
     currentTime += increment
     // find the value with the quadratic in-out easing function
-    var val = Math.easeInOutQuad(currentTime, start, change, duration)
+    const val = Math.easeInOutQuad(currentTime, start, change, duration)
     // move the document.body
     move(val)
     // do the animation unless its over

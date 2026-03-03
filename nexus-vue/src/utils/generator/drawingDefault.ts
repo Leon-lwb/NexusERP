@@ -1,3 +1,5 @@
+import { FormComponent } from './config'
+
 export default [
   {
     layout: 'colFormItem',
@@ -26,4 +28,4 @@ export default [
       message: '手机号格式错误'
     }]
   }
-]
+] as FormComponent[]

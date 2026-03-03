@@ -106,6 +106,48 @@
               </el-select>
             </template>
           </el-table-column>
+          <el-table-column label="字典字段" min-width="12%">
+            <template #default="scope">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <el-input v-model="scope.row.dictFields" readonly placeholder="点击配置按钮进行设置" />
+                <el-button 
+                  size="small" 
+                  type="primary" 
+                  @click="openFieldConfig('dictFields', scope.row)"
+                >
+                  配置
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="字段映射" min-width="12%">
+            <template #default="scope">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <el-input v-model="scope.row.mapping" readonly placeholder="点击配置按钮进行设置" />
+                <el-button 
+                  size="small" 
+                  type="primary" 
+                  @click="openFieldConfig('mapping', scope.row)"
+                >
+                  配置
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="联动规则" min-width="12%">
+            <template #default="scope">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <el-input v-model="scope.row.onChange" readonly placeholder="点击配置按钮进行设置" />
+                <el-button 
+                  size="small" 
+                  type="primary" 
+                  @click="openFieldConfig('onChange', scope.row)"
+                >
+                  配置
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
         </el-table>
       </el-tab-pane>
       <el-tab-pane label="生成信息" name="genInfo">
@@ -118,6 +160,15 @@
         <el-button @click="close()">返回</el-button>
       </div>
     </el-form>
+
+    <FieldConfigDialog
+      v-model:visible="fieldConfigVisible"
+      :config-type="currentConfigType"
+      :current-row="currentRow"
+      :tables="tables"
+      :columns="columns"
+      @update:config="handleConfigUpdate"
+    />
   </el-card>
 </template>
 
@@ -126,6 +177,7 @@ import { getGenTable, updateGenTable } from "@/api/tool/gen"
 import { optionselect as getDictOptionselect } from "@/api/system/dict/type"
 import basicInfoForm from "./basicInfoForm"
 import genInfoForm from "./genInfoForm"
+import FieldConfigDialog from "./components/FieldConfigDialog.vue"
 import Sortable from 'sortablejs'
 
 const route = useRoute()
@@ -137,6 +189,9 @@ const tables = ref([])
 const columns = ref([])
 const dictOptions = ref([])
 const info = ref({})
+const fieldConfigVisible = ref(false)
+const currentConfigType = ref("")
+const currentRow = ref(null)
 
 /** 提交按钮 */
 function submitForm() {
@@ -176,6 +231,31 @@ function getFormPromise(form) {
 function close() {
   const obj = { path: "/tool/gen", query: { t: Date.now(), pageNum: route.query.pageNum } }
   proxy.$tab.closeOpenPage(obj)
+}
+
+function openFieldConfig(type, row) {
+  currentConfigType.value = type
+  currentRow.value = row
+  fieldConfigVisible.value = true
+}
+
+function handleConfigUpdate({ type, data }) {
+  if (type === 'dictFields') {
+    const index = columns.value.findIndex(c => c.columnId === data.columnId)
+    if (index !== -1) {
+      columns.value[index].dictFields = data.dictFields
+    }
+  } else if (type === 'mapping') {
+    const index = columns.value.findIndex(c => c.columnId === data.columnId)
+    if (index !== -1) {
+      columns.value[index].mapping = data.mapping
+    }
+  } else if (type === 'onChange') {
+    const index = columns.value.findIndex(c => c.columnId === data.columnId)
+    if (index !== -1) {
+      columns.value[index].onChange = data.onChange
+    }
+  }
 }
 
 (() => {

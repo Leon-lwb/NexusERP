@@ -9,9 +9,104 @@ export const formConf = {
   disabled: false,
   span: 24,
   formBtns: true,
+} as const
+
+export interface FormComponent {
+  label: string
+  tag: string
+  tagIcon: string
+  type?: string
+  placeholder?: string
+  defaultValue?: any
+  span: number
+  labelWidth: number | null
+  style?: Record<string, any>
+  clearable?: boolean
+  prepend?: string
+  append?: string
+  'prefix-icon'?: string
+  'suffix-icon'?: string
+  maxlength?: number | null
+  'show-word-limit'?: boolean
+  readonly?: boolean
+  disabled?: boolean
+  required?: boolean
+  regList?: RegListItem[]
+  changeTag?: boolean
+  document?: string
+  'show-password'?: boolean
+  min?: number
+  max?: number
+  step?: number
+  'step-strictly'?: boolean
+  precision?: number
+  'controls-position'?: string
+  filterable?: boolean
+  multiple?: boolean
+  options?: OptionItem[]
+  optionType?: string
+  border?: boolean
+  size?: string
+  'active-text'?: string
+  'inactive-text'?: string
+  'active-color'?: string | null
+  'inactive-color'?: string | null
+  'active-value'?: any
+  'inactive-value'?: any
+  'show-stops'?: boolean
+  range?: boolean
+  format?: string
+  'value-format'?: string
+  'is-range'?: boolean
+  'range-separator'?: string
+  'start-placeholder'?: string
+  'end-placeholder'?: string
+  'allow-half'?: boolean
+  'show-text'?: boolean
+  'show-score'?: boolean
+  'show-alpha'?: boolean
+  'color-format'?: string
+  action?: string
+  accept?: string
+  name?: string
+  'auto-upload'?: boolean
+  showTip?: boolean
+  buttonText?: string
+  fileSize?: number
+  sizeUnit?: string
+  'list-type'?: string
+  tip?: string
+  autosize?: {
+    minRows: number
+    maxRows: number
+  }
+  props?: {
+    props: {
+      multiple?: boolean
+    }
+  }
+  'show-all-levels'?: boolean
+  dataType?: string
+  labelKey?: string
+  valueKey?: string
+  childrenKey?: string
+  separator?: string
 }
 
-export const inputComponents = [
+export interface RegListItem {
+  pattern: string
+  message: string
+}
+
+export interface OptionItem {
+  label: string
+  value: any
+  disabled?: boolean
+  children?: OptionItem[]
+  id?: number
+}
+
+export const inputComponents: FormComponent[] = [
   {
     label: '单行文本',
     tag: 'el-input',
@@ -106,7 +201,7 @@ export const inputComponents = [
   },
 ]
 
-export const selectComponents = [
+export const selectComponents: FormComponent[] = [
   {
     label: '下拉选择',
     tag: 'el-select',
@@ -409,7 +504,27 @@ export const selectComponents = [
   },
 ]
 
-export const layoutComponents = [
+export interface LayoutComponent {
+  layout: string
+  tagIcon: string
+  type?: string
+  justify?: string
+  align?: string
+  label?: string
+  layoutTree?: boolean
+  children?: any[]
+  document?: string
+  changeTag?: boolean
+  labelWidth?: number | null
+  tag?: string
+  span?: number
+  default?: string
+  icon?: string
+  size?: string
+  disabled?: boolean
+}
+
+export const layoutComponents: LayoutComponent[] = [
   {
     layout: 'rowFormItem',
     tagIcon: 'row',
@@ -439,7 +554,7 @@ export const layoutComponents = [
 ]
 
 // 组件rule的触发方式，无触发方式的组件不生成rule
-export const trigger = {
+export const trigger: Record<string, string> = {
   'el-input': 'blur',
   'el-input-number': 'blur',
   'el-select': 'change',

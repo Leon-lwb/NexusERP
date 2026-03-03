@@ -65,6 +65,15 @@ public class GenTableColumn extends BaseEntity
     /** 字典类型 */
     private String dictType;
 
+    /** 字典字段 */
+    private String dictFields;
+
+    /** 字段映射 */
+    private String mapping;
+
+    /** 联动规则 */
+    private String onChange;
+
     /** 排序 */
     private Integer sort;
 
@@ -311,6 +320,36 @@ public class GenTableColumn extends BaseEntity
     public String getDictType()
     {
         return dictType;
+    }
+
+    public void setDictFields(String dictFields)
+    {
+        this.dictFields = dictFields;
+    }
+
+    public String getDictFields()
+    {
+        return dictFields;
+    }
+
+    public void setMapping(String mapping)
+    {
+        this.mapping = mapping;
+    }
+
+    public String getMapping()
+    {
+        return mapping;
+    }
+
+    public void setOnChange(String onChange)
+    {
+        this.onChange = onChange;
+    }
+
+    public String getOnChange()
+    {
+        return onChange;
     }
 
     public void setSort(Integer sort)

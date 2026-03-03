@@ -6,50 +6,58 @@
  *
  * @return {Array<?>}
  */
-function flatten(arr) {
+export function flatten<T>(arr: T[][]): T[] {
   return Array.prototype.concat.apply([], arr);
 }
 
-var nativeToString = Object.prototype.toString;
-var nativeHasOwnProperty = Object.prototype.hasOwnProperty;
-function isUndefined(obj) {
+const nativeToString = Object.prototype.toString;
+const nativeHasOwnProperty = Object.prototype.hasOwnProperty;
+
+export function isUndefined(obj: any): obj is undefined {
   return obj === undefined;
 }
-function isDefined(obj) {
+
+export function isDefined(obj: any): boolean {
   return obj !== undefined;
 }
-function isNil(obj) {
+
+export function isNil(obj: any): obj is null | undefined {
   return obj == null;
 }
-function isArray(obj) {
+
+export function isArray(obj: any): obj is any[] {
   return nativeToString.call(obj) === '[object Array]';
 }
-function isObject(obj) {
+
+export function isObject(obj: any): obj is Record<string, any> {
   return nativeToString.call(obj) === '[object Object]';
 }
-function isNumber(obj) {
+
+export function isNumber(obj: any): obj is number {
   return nativeToString.call(obj) === '[object Number]';
 }
-function isFunction(obj) {
-  var tag = nativeToString.call(obj);
+
+export function isFunction(obj: any): obj is Function {
+  const tag = nativeToString.call(obj);
   return tag === '[object Function]' || tag === '[object AsyncFunction]' || tag === '[object GeneratorFunction]' || tag === '[object AsyncGeneratorFunction]' || tag === '[object Proxy]';
 }
-function isString(obj) {
+
+export function isString(obj: any): obj is string {
   return nativeToString.call(obj) === '[object String]';
 }
+
 /**
  * Ensure collection is an array.
  *
  * @param {Object} obj
  */
-
-function ensureArray(obj) {
+export function ensureArray(obj: any): void {
   if (isArray(obj)) {
     return;
   }
-
   throw new Error('must supply array');
 }
+
 /**
  * Return true, if target owns a property with the given key.
  *
@@ -58,8 +66,7 @@ function ensureArray(obj) {
  *
  * @return {Boolean}
  */
-
-function has(target, key) {
+export function has(target: any, key: string | number): boolean {
   return nativeHasOwnProperty.call(target, key);
 }
 
@@ -71,10 +78,9 @@ function has(target, key) {
  *
  * @return {Object}
  */
-
-function find(collection, matcher) {
+export function find<T>(collection: T[] | Record<string, T>, matcher: ((val: T, key: string | number) => boolean) | T): T | undefined {
   matcher = toMatcher(matcher);
-  var match;
+  let match: T | undefined;
   forEach(collection, function(val, key) {
     if (matcher(val, key)) {
       match = val;
@@ -83,6 +89,7 @@ function find(collection, matcher) {
   });
   return match;
 }
+
 /**
  * Find element index in collection.
  *
@@ -91,18 +98,18 @@ function find(collection, matcher) {
  *
  * @return {Object}
  */
-
-function findIndex(collection, matcher) {
+export function findIndex<T>(collection: T[], matcher: ((val: T, key: number) => boolean) | T): number {
   matcher = toMatcher(matcher);
-  var idx = isArray(collection) ? -1 : undefined;
+  let idx = -1;
   forEach(collection, function(val, key) {
     if (matcher(val, key)) {
-      idx = key;
+      idx = key as number;
       return false;
     }
   });
   return idx;
 }
+
 /**
  * Find element in collection.
  *
@@ -111,9 +118,8 @@ function findIndex(collection, matcher) {
  *
  * @return {Array} result
  */
-
-function filter(collection, matcher) {
-  var result = [];
+export function filter<T>(collection: T[] | Record<string, T>, matcher: ((val: T, key: string | number) => boolean) | T): T[] {
+  const result: T[] = [];
   forEach(collection, function(val, key) {
     if (matcher(val, key)) {
       result.push(val);
@@ -121,6 +127,7 @@ function filter(collection, matcher) {
   });
   return result;
 }
+
 /**
  * Iterate over collection; returning something
  * (non-undefined) will stop iteration.
@@ -130,17 +137,17 @@ function filter(collection, matcher) {
  *
  * @return {Object} return result that stopped the iteration
  */
-
-function forEach(collection, iterator) {
-  var val, result;
+export function forEach<T, R>(collection: T[] | Record<string, T>, iterator: (val: T, key: string | number) => R | false): R | undefined {
+  let val: T;
+  let result: R | undefined;
 
   if (isUndefined(collection)) {
     return;
   }
 
-  var convertKey = isArray(collection) ? toNum : identity;
+  const convertKey = isArray(collection) ? toNum : identity;
 
-  for (var key in collection) {
+  for (const key in collection) {
     if (has(collection, key)) {
       val = collection[key];
       result = iterator(val, convertKey(key));
@@ -151,6 +158,7 @@ function forEach(collection, iterator) {
     }
   }
 }
+
 /**
  * Return collection without element.
  *
@@ -159,18 +167,18 @@ function forEach(collection, iterator) {
  *
  * @return {Array}
  */
-
-function without(arr, matcher) {
+export function without<T>(arr: T[], matcher: ((el: T, idx: number) => boolean) | T): T[] {
   if (isUndefined(arr)) {
     return [];
   }
 
   ensureArray(arr);
-  matcher = toMatcher(matcher);
+  const matcherFn = toMatcher(matcher);
   return arr.filter(function(el, idx) {
-    return !matcher(el, idx);
+    return !matcherFn(el, idx);
   });
 }
+
 /**
  * Reduce collection, returning a single result.
  *
@@ -180,13 +188,13 @@ function without(arr, matcher) {
  *
  * @return {Any} result returned from last iterator
  */
-
-function reduce(collection, iterator, result) {
+export function reduce<T, R>(collection: T[] | Record<string, T>, iterator: (result: R, value: T, idx: string | number) => R, result: R): R {
   forEach(collection, function(value, idx) {
     result = iterator(result, value, idx);
   });
   return result;
 }
+
 /**
  * Return true if every element in the collection
  * matches the criteria.
@@ -196,12 +204,12 @@ function reduce(collection, iterator, result) {
  *
  * @return {Boolean}
  */
-
-function every(collection, matcher) {
+export function every<T>(collection: T[] | Record<string, T>, matcher: ((val: T, key: string | number) => boolean) | T): boolean {
   return !!reduce(collection, function(matches, val, key) {
     return matches && matcher(val, key);
   }, true);
 }
+
 /**
  * Return true if some elements in the collection
  * match the criteria.
@@ -211,10 +219,10 @@ function every(collection, matcher) {
  *
  * @return {Boolean}
  */
-
-function some(collection, matcher) {
+export function some<T>(collection: T[] | Record<string, T>, matcher: ((val: T, key: string | number) => boolean) | T): boolean {
   return !!find(collection, matcher);
 }
+
 /**
  * Transform a collection into another collection
  * by piping each member through the given fn.
@@ -224,14 +232,14 @@ function some(collection, matcher) {
  *
  * @return {Array} transformed collection
  */
-
-function map(collection, fn) {
-  var result = [];
+export function map<T, R>(collection: T[] | Record<string, T>, fn: (val: T, key: string | number) => R): R[] {
+  const result: R[] = [];
   forEach(collection, function(val, key) {
     result.push(fn(val, key));
   });
   return result;
 }
+
 /**
  * Get the collections keys.
  *
@@ -239,10 +247,10 @@ function map(collection, fn) {
  *
  * @return {Array}
  */
-
-function keys(collection) {
+export function keys(collection: any): string[] {
   return collection && Object.keys(collection) || [];
 }
+
 /**
  * Shorthand for `keys(o).length`.
  *
@@ -250,10 +258,10 @@ function keys(collection) {
  *
  * @return {Number}
  */
-
-function size(collection) {
+export function size(collection: any): number {
   return keys(collection).length;
 }
+
 /**
  * Get the values in the collection.
  *
@@ -261,12 +269,12 @@ function size(collection) {
  *
  * @return {Array}
  */
-
-function values(collection) {
+export function values<T>(collection: T[] | Record<string, T>): T[] {
   return map(collection, function(val) {
     return val;
   });
 }
+
 /**
  * Group collection members by attribute.
  *
@@ -275,13 +283,12 @@ function values(collection) {
  *
  * @return {Object} map with { attrValue => [ a, b, c ] }
  */
-
-function groupBy(collection, extractor) {
-  var grouped = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-  extractor = toExtractor(extractor);
+export function groupBy<T>(collection: T[], extractor: ((val: T) => any) | string, grouped?: Record<string, T[]>): Record<string, T[]> {
+  grouped = grouped || {};
+  const extractorFn = toExtractor(extractor);
   forEach(collection, function(val) {
-    var discriminator = extractor(val) || '_';
-    var group = grouped[discriminator];
+    const discriminator = extractorFn(val) || '_';
+    let group = grouped[discriminator];
 
     if (!group) {
       group = grouped[discriminator] = [];
@@ -291,23 +298,23 @@ function groupBy(collection, extractor) {
   });
   return grouped;
 }
-function uniqueBy(extractor) {
-  extractor = toExtractor(extractor);
-  var grouped = {};
 
-  for (var _len = arguments.length, collections = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    collections[_key - 1] = arguments[_key];
-  }
+export function uniqueBy<T>(extractor: ((val: T) => any) | string, ...collections: T[][]): T[] {
+  const extractorFn = toExtractor(extractor);
+  const grouped: Record<string, T[]> = {};
 
   forEach(collections, function(c) {
-    return groupBy(c, extractor, grouped);
+    return groupBy(c, extractorFn, grouped);
   });
-  var result = map(grouped, function(val, key) {
+
+  const result = map(grouped, function(val) {
     return val[0];
   });
   return result;
 }
-var unionBy = uniqueBy;
+
+export const unionBy = uniqueBy;
+
 /**
  * Sort collection by criteria.
  *
@@ -316,32 +323,34 @@ var unionBy = uniqueBy;
  *
  * @return {Array}
  */
+export function sortBy<T>(collection: T[], extractor: ((val: T, key: number) => any) | string): T[] {
+  const extractorFn = toExtractor(extractor);
+  const sorted: Array<{ d: any; v: T }> = [];
 
-function sortBy(collection, extractor) {
-  extractor = toExtractor(extractor);
-  var sorted = [];
   forEach(collection, function(value, key) {
-    var disc = extractor(value, key);
-    var entry = {
+    const disc = extractorFn(value, key as number);
+    const entry = {
       d: disc,
       v: value
     };
 
-    for (var idx = 0; idx < sorted.length; idx++) {
-      var d = sorted[idx].d;
+    for (let idx = 0; idx < sorted.length; idx++) {
+      const d = sorted[idx].d;
 
       if (disc < d) {
         sorted.splice(idx, 0, entry);
         return;
       }
-    } // not inserted, append (!)
+    }
 
     sorted.push(entry);
   });
+
   return map(sorted, function(e) {
     return e.v;
   });
 }
+
 /**
  * Create an object pattern matcher.
  *
@@ -355,32 +364,31 @@ function sortBy(collection, extractor) {
  *
  * @return {Function} matcherFn
  */
-
-function matchPattern(pattern) {
+export function matchPattern<T>(pattern: Partial<T>): (el: T) => boolean {
   return function(el) {
     return every(pattern, function(val, key) {
-      return el[key] === val;
+      return el[key as keyof T] === val;
     });
   };
 }
 
-function toExtractor(extractor) {
+function toExtractor<T>(extractor: ((val: T) => any) | string): (val: T) => any {
   return isFunction(extractor) ? extractor : function(e) {
-    return e[extractor];
+    return e[extractor as keyof T];
   };
 }
 
-function toMatcher(matcher) {
+function toMatcher<T>(matcher: ((val: T, key: string | number) => boolean) | T): (val: T, key: string | number) => boolean {
   return isFunction(matcher) ? matcher : function(e) {
     return e === matcher;
   };
 }
 
-function identity(arg) {
+function identity<T>(arg: T): T {
   return arg;
 }
 
-function toNum(arg) {
+function toNum(arg: string | number): number {
   return Number(arg);
 }
 
@@ -396,29 +404,35 @@ function toNum(arg) {
  *
  * @return {Function} debounced function
  */
-function debounce(fn, timeout) {
-  var timer;
-  var lastArgs;
-  var lastThis;
-  var lastNow;
+export interface DebouncedFunction<T extends (...args: any[]) => any> extends Function {
+  (...args: Parameters<T>): void;
+  flush(): void;
+  cancel(): void;
+}
 
-  function fire(force) {
-    var now = Date.now();
-    var scheduledDiff = force ? 0 : lastNow + timeout - now;
+export function debounce<T extends (...args: any[]) => any>(fn: T, timeout: number): DebouncedFunction<T> {
+  let timer: number | undefined;
+  let lastArgs: Parameters<T> | undefined;
+  let lastThis: any;
+  let lastNow: number | undefined;
+
+  function fire(force: boolean): void {
+    const now = Date.now();
+    const scheduledDiff = force ? 0 : (lastNow! + timeout) - now;
 
     if (scheduledDiff > 0) {
       return schedule(scheduledDiff);
     }
 
-    fn.apply(lastThis, lastArgs);
+    fn.apply(lastThis, lastArgs!);
     clear();
   }
 
-  function schedule(timeout) {
-    timer = setTimeout(fire, timeout);
+  function schedule(timeout: number): void {
+    timer = setTimeout(fire, timeout) as unknown as number;
   }
 
-  function clear() {
+  function clear(): void {
     if (timer) {
       clearTimeout(timer);
     }
@@ -426,7 +440,7 @@ function debounce(fn, timeout) {
     timer = lastNow = lastArgs = lastThis = undefined;
   }
 
-  function flush() {
+  function flush(): void {
     if (timer) {
       fire(true);
     }
@@ -434,25 +448,21 @@ function debounce(fn, timeout) {
     clear();
   }
 
-  function callback() {
+  const callback = function(this: any, ...args: Parameters<T>): void {
     lastNow = Date.now();
-
-    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
     lastArgs = args;
-    lastThis = this; // ensure an execution is scheduled
+    lastThis = this;
 
     if (!timer) {
       schedule(timeout);
     }
-  }
+  } as DebouncedFunction<T>;
 
   callback.flush = flush;
   callback.cancel = clear;
   return callback;
 }
+
 /**
  * Throttle fn, calling at most once
  * in the given interval.
@@ -462,21 +472,21 @@ function debounce(fn, timeout) {
  *
  * @return {Function} throttled function
  */
-
-function throttle(fn, interval) {
-  var throttling = false;
-  return function() {
+export function throttle<T extends (...args: any[]) => any>(fn: T, interval: number): (...args: Parameters<T>) => void {
+  let throttling = false;
+  return function(this: any, ...args: Parameters<T>) {
     if (throttling) {
       return;
     }
 
-    fn.apply(void 0, arguments);
+    fn.apply(this, args);
     throttling = true;
     setTimeout(function() {
       throttling = false;
     }, interval);
   };
 }
+
 /**
  * Bind function against target <this>.
  *
@@ -485,43 +495,8 @@ function throttle(fn, interval) {
  *
  * @return {Function} bound function
  */
-
-function bind(fn, target) {
+export function bind<T extends (...args: any[]) => any>(fn: T, target: any): T {
   return fn.bind(target);
-}
-
-function _typeof(obj) {
-  '@babel/helpers - typeof';
-
-  if (typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol') {
-    _typeof = function(obj) {
-      return typeof obj;
-    };
-  } else {
-    _typeof = function(obj) {
-      return obj && typeof Symbol === 'function' && obj.constructor === Symbol && obj !== Symbol.prototype ? 'symbol' : typeof obj;
-    };
-  }
-
-  return _typeof(obj);
-}
-
-function _extends() {
-  _extends = Object.assign || function(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-
-      for (var key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-          target[key] = source[key];
-        }
-      }
-    }
-
-    return target;
-  };
-
-  return _extends.apply(this, arguments);
 }
 
 /**
@@ -532,14 +507,10 @@ function _extends() {
  *
  * @return {Object} the target
  */
-
-function assign(target) {
-  for (var _len = arguments.length, others = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    others[_key - 1] = arguments[_key];
-  }
-
-  return _extends.apply(void 0, [target].concat(others));
+export function assign<T extends Record<string, any>>(target: T, ...others: Partial<T>[]): T {
+  return Object.assign(target, ...others);
 }
+
 /**
  * Sets a nested property of a given object to the specified value.
  *
@@ -549,12 +520,11 @@ function assign(target) {
  * @param {(string|number)[]} path The path to the nested value.
  * @param {any} value The value to set.
  */
-
-function set(target, path, value) {
-  var currentTarget = target;
+export function set<T>(target: T, path: (string | number)[], value: any): T {
+  let currentTarget: any = target;
   forEach(path, function(key, idx) {
     if (typeof key !== 'number' && typeof key !== 'string') {
-      throw new Error('illegal key type: ' + _typeof(key) + '. Key should be of type number or string.');
+      throw new Error('illegal key type: ' + typeof key + '. Key should be of type number or string.');
     }
 
     if (key === 'constructor') {
@@ -565,8 +535,8 @@ function set(target, path, value) {
       throw new Error('illegal key: __proto__');
     }
 
-    var nextKey = path[idx + 1];
-    var nextTarget = currentTarget[key];
+    const nextKey = path[idx + 1];
+    let nextTarget = currentTarget[key];
 
     if (isDefined(nextKey) && isNil(nextTarget)) {
       nextTarget = currentTarget[key] = isNaN(+nextKey) ? {} : [];
@@ -584,6 +554,7 @@ function set(target, path, value) {
   });
   return target;
 }
+
 /**
  * Gets a nested property of a given object.
  *
@@ -591,11 +562,9 @@ function set(target, path, value) {
  * @param {(string|number)[]} path The path to the nested value.
  * @param {any} [defaultValue] The value to return if no value exists.
  */
-
-function get(target, path, defaultValue) {
-  var currentTarget = target;
+export function get<T = any>(target: any, path: (string | number)[], defaultValue?: T): T {
+  let currentTarget: any = target;
   forEach(path, function(key) {
-    // accessing nil property yields <undefined>
     if (isNil(currentTarget)) {
       currentTarget = undefined;
       return false;
@@ -603,8 +572,9 @@ function get(target, path, defaultValue) {
 
     currentTarget = currentTarget[key];
   });
-  return isUndefined(currentTarget) ? defaultValue : currentTarget;
+  return isUndefined(currentTarget) ? defaultValue! : currentTarget;
 }
+
 /**
  * Pick given properties from the target object.
  *
@@ -613,17 +583,17 @@ function get(target, path, defaultValue) {
  *
  * @return {Object} target
  */
-
-function pick(target, properties) {
-  var result = {};
-  var obj = Object(target);
+export function pick<T extends Record<string, any>, K extends keyof T>(target: T, properties: K[]): Pick<T, K> {
+  const result: Partial<Pick<T, K>> = {};
+  const obj = Object(target);
   forEach(properties, function(prop) {
     if (prop in obj) {
       result[prop] = target[prop];
     }
   });
-  return result;
+  return result as Pick<T, K>;
 }
+
 /**
  * Pick all target properties, excluding the given ones.
  *
@@ -632,17 +602,17 @@ function pick(target, properties) {
  *
  * @return {Object} target
  */
-
-function omit(target, properties) {
-  var result = {};
-  var obj = Object(target);
+export function omit<T extends Record<string, any>, K extends keyof T>(target: T, properties: K[]): Omit<T, K> {
+  const result: Partial<Omit<T, K>> = {};
+  const obj = Object(target);
   forEach(obj, function(prop, key) {
-    if (properties.indexOf(key) === -1) {
-      result[key] = prop;
+    if (properties.indexOf(key as K) === -1) {
+      result[key as string] = prop;
     }
   });
-  return result;
+  return result as Omit<T, K>;
 }
+
 /**
  * Recursively merge `...sources` into given target.
  *
@@ -653,18 +623,12 @@ function omit(target, properties) {
  *
  * @return {Object} the target
  */
-
-function merge(target) {
-  for (var _len2 = arguments.length, sources = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-    sources[_key2 - 1] = arguments[_key2];
-  }
-
+export function merge<T extends Record<string, any>>(target: T, ...sources: Partial<T>[]): T {
   if (!sources.length) {
     return target;
   }
 
   forEach(sources, function(source) {
-    // skip non-obj sources, i.e. null
     if (!source || !isObject(source)) {
       return;
     }
@@ -674,12 +638,11 @@ function merge(target) {
         return;
       }
 
-      var targetVal = target[key];
+      const targetVal = target[key];
 
       if (isObject(sourceVal)) {
         if (!isObject(targetVal)) {
-          // override target[key] with object
-          targetVal = {};
+          targetVal = {} as any;
         }
 
         target[key] = merge(targetVal, sourceVal);
@@ -688,7 +651,6 @@ function merge(target) {
       }
     });
   });
+
   return target;
 }
-
-export { assign, bind, debounce, ensureArray, every, filter, find, findIndex, flatten, forEach, get, groupBy, has, isArray, isDefined, isFunction, isNil, isNumber, isObject, isString, isUndefined, keys, map, matchPattern, merge, omit, pick, reduce, set, size, some, sortBy, throttle, unionBy, uniqueBy, values, without };

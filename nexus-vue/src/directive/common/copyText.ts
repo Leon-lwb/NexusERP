@@ -1,17 +1,41 @@
+function getRealElement(el: any): HTMLElement | null {
+  if (!el) return null
+  if (typeof el.addEventListener === 'function') return el
+  if (el.$el) return getRealElement(el.$el)
+  if (el.children && el.children.length > 0) {
+    for (let child of el.children) {
+      const realEl = getRealElement(child)
+      if (realEl) return realEl
+    }
+  }
+  return null
+}
+
 export default {
-  beforeMount(el: HTMLElement, { value, arg }: any) {
+  mounted(el: any, { value, arg }: any) {
+    const targetEl = getRealElement(el)
+    if (!targetEl || typeof targetEl.addEventListener !== 'function') {
+      console.error('copyText directive: Cannot find valid DOM element', el)
+      return
+    }
     if (arg === "callback") {
-      (el as any).$copyCallback = value
+      (targetEl as any).$copyCallback = value
     } else {
-      (el as any).$copyValue = value
+      (targetEl as any).$copyValue = value
       const handler = () => {
-        copyTextToClipboard((el as any).$copyValue)
-        if ((el as any).$copyCallback) {
-          (el as any).$copyCallback((el as any).$copyValue)
+        copyTextToClipboard((targetEl as any).$copyValue)
+        if ((targetEl as any).$copyCallback) {
+          (targetEl as any).$copyCallback((targetEl as any).$copyValue)
         }
       }
-      el.addEventListener("click", handler)
-      (el as any).$destroyCopy = () => el.removeEventListener("click", handler)
+      targetEl.addEventListener("click", handler)
+      (targetEl as any).$destroyCopy = () => targetEl.removeEventListener("click", handler)
+    }
+  },
+  beforeUnmount(el: any) {
+    const targetEl = getRealElement(el)
+    if (targetEl && (targetEl as any).$destroyCopy) {
+      (targetEl as any).$destroyCopy()
     }
   }
 }

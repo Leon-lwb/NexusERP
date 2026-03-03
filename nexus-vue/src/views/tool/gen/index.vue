@@ -147,7 +147,9 @@
           :name="key.substring(key.lastIndexOf('/')+1,key.indexOf('.vm'))"
           :key="value"
         >
-          <el-link :underline="false" icon="DocumentCopy" v-copyText="value" v-copyText:callback="copyTextSuccess" style="float:right">&nbsp;复制</el-link>
+          <a :underline="false" style="float:right; cursor: pointer; color: var(--el-color-primary);" @click="handleCopy(value)">
+            <el-icon><DocumentCopy /></el-icon>&nbsp;复制
+          </a>
           <pre>{{ value }}</pre>
         </el-tab-pane>
       </el-tabs>
@@ -159,6 +161,7 @@
 
 <script setup name="Gen">
 import { listTable, previewTable, delTable, genCode, synchDb } from "@/api/tool/gen"
+import { DocumentCopy } from "@element-plus/icons-vue"
 import router from "@/router"
 import importTable from "./importTable"
 import createTable from "./createTable"
@@ -281,6 +284,17 @@ function handlePreview(row) {
 /** 复制代码成功 */
 function copyTextSuccess() {
   proxy.$modal.msgSuccess("复制成功")
+}
+
+/** 复制文本 */
+async function handleCopy(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    copyTextSuccess()
+  } catch (err) {
+    console.error('复制失败:', err)
+    proxy.$modal.msgError("复制失败")
+  }
 }
 
 // 多选框选中数据
