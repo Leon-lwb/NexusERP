@@ -38,7 +38,9 @@
 </template>
 
 <script setup lang="ts">
-import { listDbTable, importTable, getDataNames } from '@/api/tool/gen';
+//import { listDbTable, importTable, getDataNames } from '@/api/tool/gen';
+import { listDbTable, importTable } from '@/api/tool/gen';
+import { getDataNames } from '@/api/online';
 import { DbTableQuery, DbTableVO } from '@/api/tool/gen/types';
 import { ComponentInternalInstance } from 'vue';
 import { ElTable, ElForm } from 'element-plus';

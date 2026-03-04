@@ -103,6 +103,26 @@ export const dynamicRoutes: CustomRouteRecordRaw[] = [
     ]
   },
   {
+    path: '/online',
+    component: Layout,
+    hidden: true,
+    permissions: ['online:test:list'],
+    children: [
+      {
+        path: 'edit/:tableId(\\d+)',
+        component: () => import('@/views/online/edit/index.vue'),
+        name: 'OnlineEdit',
+        meta: { title: '修改配置', activeMenu: '/online/edit', icon: '' }
+      },
+      {
+        path: 'db',
+        component: () => import('@/views/online/db/index.vue'),
+        name: 'TableDesigner',
+        meta: { title: '表设计器', activeMenu: '/online/db', icon: '' }
+      }
+    ]
+  },
+  {
     path: '/core/bd/bom/form',
     component: Layout,
     hidden: true,

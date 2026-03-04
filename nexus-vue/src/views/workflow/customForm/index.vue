@@ -1,6 +1,6 @@
 <template>
   <div class="p-2">
-    <transition :enter-active-class="proxy?.animate?.searchAnimate?.enter" :leave-active-class="proxy?.animate?.searchAnimate?.leave">
+    <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
       <div class="search" v-show="showSearch">
         <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="68px">
           <el-form-item label="业务表单名称" prop="businessName">
@@ -48,7 +48,11 @@
         <el-table-column label="关联流程发布主键" align="center" prop="deployId" />
         <el-table-column label="前端路由地址" align="center" prop="routeName" />
         <el-table-column label="组件注入方法" align="center" prop="component" />
-        <el-table-column label="业务主表ID" align="center" prop="tableId" />
+        <el-table-column label="业务主表" align="center" prop="tableId">
+          <template #default="scope">
+            <span>{{ getGenTableLabel(scope.row.tableId) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="关联流程" placement="top">
@@ -93,8 +97,25 @@
         <el-form-item label="组件注入方法" prop="component">
             <el-input v-model="form.component" type="textarea" placeholder="请输入内容" />
         </el-form-item>
-        <el-form-item label="业务主表ID" prop="tableId">
-          <el-input v-model="form.tableId" placeholder="请输入业务主表ID" />
+        <el-form-item label="业务主表" prop="tableId">
+          <el-select
+            v-model="form.tableId"
+            filterable
+            remote
+            reserve-keyword
+            clearable
+            :remote-method="remoteGenTable"
+            :loading="loadingGenTable"
+            placeholder="输入表名/描述搜索（来源：gen_table）"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="t in genTableOptions"
+              :key="t.tableId"
+              :label="`${t.tableName}${t.tableComment ? ' | ' + t.tableComment : ''}`"
+              :value="t.tableId"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -105,7 +126,7 @@
       </template>
     </el-dialog>
     <!--挂载布置流程-->
-    <a-modal @cancel="flowOpen = false" :title="flowTitle" v-model:visible="flowOpen" width="70%" append-to-body>
+    <el-dialog :title="flowTitle" v-model="flowOpen" width="70%" append-to-body>
       <el-row :gutter="64">
         <el-form :model="queryFlowParams" ref="queryFlowFormRef" :inline="true" label-width="100px">
           <el-form-item label="流程名称" prop="processName">
@@ -124,7 +145,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="激活" prop="active">
-            <el-switch v-model="queryFlowParams.active" active-color="#13ce66" inactive-color="#ff4949" @change="handleQuery">
+            <el-switch v-model="queryFlowParams.active" active-color="#13ce66" inactive-color="#ff4949" @change="handleFlowQuery">
             </el-switch>
           </el-form-item>
           <el-form-item>
@@ -180,7 +201,7 @@
 
         </el-col>
       </el-row>
-    </a-modal>
+    </el-dialog>
     <!-- 流程图 -->
     <el-dialog :title="processView.title" v-model="processView.open" width="70%" append-to-body>
       <process-viewer :key="`designer-${processView.index}`" :xml="processView.xmlData" :style="{height: '400px'}" />
@@ -189,13 +210,12 @@
 </template>
 
 <script setup name="CustomForm" lang="ts">
-import type { FormInstance } from "element-plus";
-import type { ComponentInternalInstance } from "vue";
   import { listCustomForm, getCustomForm, delCustomForm, addCustomForm, updateCustomForm, updateCustom } from '@/api/workflow/customForm';
   import { WfCustomFormVO, WfCustomFormQuery, WfCustomForm, CustomFormVO } from '@/api/workflow/customForm/types';
   import { listAllCategory } from '@/api/workflow/category'
   import { listDeploy, getBpmnXml } from '@/api/workflow/deploy'
   import { DeployVO } from "@/api/workflow/deploy/types";
+  import { listTable, getGenTable } from '@/api/tool/gen'
 
   const { proxy } = getCurrentInstance() as ComponentInternalInstance;
   const { wf_app_type } = toRefs<any>(proxy?.useDict("wf_app_type"));
@@ -237,9 +257,67 @@ import type { ComponentInternalInstance } from "vue";
     xmlData:"",
   })
 
-  const queryFormRef = ref<FormInstance>();
-  const customFormFormRef = ref<FormInstance>();
-  const queryFlowFormRef = ref<FormInstance>();
+  const queryFormRef = ref<ElFormInstance>();
+  const customFormFormRef = ref<ElFormInstance>();
+  const queryFlowFormRef = ref<ElFormInstance>();
+
+  const genTableOptions = ref<any[]>([])
+  const loadingGenTable = ref(false)
+  const genTableLabelMap = reactive<Record<string, string>>({})
+  const getGenTableLabel = (tableId: any) => {
+    if (tableId == null || tableId === '') return ''
+    return genTableLabelMap[String(tableId)] || String(tableId)
+  }
+  const ensureGenTableCached = async (tableId: any) => {
+    if (tableId == null || tableId === '') return
+    const key = String(tableId)
+    if (genTableLabelMap[key]) return
+    try {
+      const res: any = await getGenTable(tableId)
+      const info = res?.data?.info || {}
+      const tn = info?.tableName
+      const tc = info?.tableComment
+      genTableLabelMap[key] = tn ? `${tn}${tc ? ' | ' + tc : ''}` : key
+    } catch {
+      genTableLabelMap[key] = key
+    }
+  }
+  const ensureGenTableOption = async (tableId: any) => {
+    if (tableId == null || tableId === '') return
+    const exists = (genTableOptions.value || []).some((t: any) => String(t?.tableId) === String(tableId))
+    if (exists) return
+    try {
+      const res: any = await getGenTable(tableId)
+      const info = res?.data?.info
+      if (info?.tableId != null) {
+        genTableOptions.value = [{ ...info }, ...(genTableOptions.value || [])]
+      }
+    } catch {
+    }
+  }
+  const remoteGenTable = async (query: string) => {
+    loadingGenTable.value = true
+    try {
+      const res: any = await listTable({
+        pageNum: 1,
+        pageSize: 50,
+        tableName: query || '',
+        tableComment: query || '',
+        dataName: ''
+      } as any)
+      genTableOptions.value = res?.rows || []
+      genTableOptions.value.forEach((t: any) => {
+        if (t?.tableId != null) {
+          const key = String(t.tableId)
+          if (!genTableLabelMap[key]) {
+            genTableLabelMap[key] = `${t.tableName || key}${t.tableComment ? ' | ' + t.tableComment : ''}`
+          }
+        }
+      })
+    } finally {
+      loadingGenTable.value = false
+    }
+  }
 
   const dialog = reactive<DialogOption>({
     visible: false,
@@ -293,9 +371,7 @@ import type { ComponentInternalInstance } from "vue";
       component: [
         { required: true, message: "组件注入方法不能为空", trigger: "blur" }
       ],
-      tableId: [
-        { required: true, message: "业务主表ID不能为空", trigger: "blur" }
-      ],
+      tableId: [],
     }
   });
 
@@ -377,6 +453,8 @@ import type { ComponentInternalInstance } from "vue";
     customFormList.value = res.rows;
     total.value = res.total;
     loading.value = false;
+    const ids = Array.from(new Set((customFormList.value || []).map((it: any) => it?.tableId).filter((x: any) => x != null && x !== '')))
+    await Promise.all(ids.map((id: any) => ensureGenTableCached(id)))
   }
 
   /** 取消按钮 */
@@ -415,6 +493,7 @@ import type { ComponentInternalInstance } from "vue";
     reset();
     dialog.visible = true;
     dialog.title = "添加流程业务单";
+    genTableOptions.value = []
   }
 
   /** 修改按钮操作 */
@@ -423,6 +502,7 @@ import type { ComponentInternalInstance } from "vue";
     const _id = row?.id || ids.value[0]
     const res = await getCustomForm(_id);
     Object.assign(form.value, res.data);
+    await ensureGenTableOption(form.value.tableId)
     dialog.visible = true;
     dialog.title = "修改流程业务单";
   }
