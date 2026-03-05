@@ -20,6 +20,10 @@
             <groupId>com.nexus</groupId>
             <artifactId>nexus-framework</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-flowable</artifactId>
+        </dependency>
     </dependencies>
 
 

@@ -52,6 +52,7 @@
 </template>
 
 <script>
+import { toRaw } from 'vue';
 import '@/package/theme/index.scss';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import MoveCanvasModule from 'diagram-js/lib/navigation/movecanvas';

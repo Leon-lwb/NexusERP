@@ -203,4 +203,8 @@
 	    delete from sys_menu where menu_id = #{menuId}
 	</delete>
 
+	<select id="selectMaxId" resultType="Long">
+	    select max(menu_id) from sys_menu
+	</select>
+
 </mapper> 

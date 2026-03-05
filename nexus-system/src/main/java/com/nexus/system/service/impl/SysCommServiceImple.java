@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nexus.common.constant.Constants;
 import com.nexus.common.constant.WebsocketConst;
+import com.nexus.common.core.domain.entity.SysUser;
 import com.nexus.common.core.domain.entity.dto.MessageDTO;
 import com.nexus.common.core.domain.entity.vo.SysUserVo;
 import com.nexus.common.core.domain.model.LoginUser;
@@ -126,9 +127,7 @@ public class SysCommServiceImple extends ServiceImpl<CommonMapper, Object> imple
 
 	@Override
 	public LoginUser getLoginUser() {
-//		LoginUser user = LoginHelper.getLoginUser();
-//		return user;
-		return null;
+		return com.nexus.common.utils.SecurityUtils.getLoginUser();
 	}
 
 	@Override
@@ -152,36 +151,62 @@ public class SysCommServiceImple extends ServiceImpl<CommonMapper, Object> imple
 
 	@Override
 	public SysUserVo getSysUserByUserId(Long UserId) {
-		
-		//return sysUserService.selectUserById(UserId);
-		return null;
+		SysUser user = sysUserService.selectUserById(UserId);
+		return convertToSysUserVo(user);
 	}
 
 	@Override
 	public SysUserVo getSysUserByUserName(String userName) {
-		
-		//return sysUserService.selectUserByUserName(userName);
-		return null;
+		SysUser user = sysUserService.selectUserByUserName(userName);
+		return convertToSysUserVo(user);
 	}
 
 	@Override
 	public String getDepLeaderByUserName(String userName) {
-		
-		//return sysDeptService.getDepLeaderByUserName(userName);
-		return null;
+		return sysDeptService.getDepLeaderByUserName(userName);
 	}
 
 	@Override
 	public Long selectMaxId() {
-		//return sysMenuMapper.selectMaxId();
-		return null;
+		return sysMenuMapper.selectMaxId();
 	}
 
 	@Override
 	public List<SysUserVo> getAllUser() {
-		//List<SysUserVo> userList = sysUserServiceImpl.list();
-		//return userList;
-		return null;
+		List<SysUser> userList = sysUserService.selectUserList(new SysUser());
+		List<SysUserVo> result = new ArrayList<>();
+		if (userList != null) {
+			for (SysUser user : userList) {
+				result.add(convertToSysUserVo(user));
+			}
+		}
+		return result;
+	}
+
+	private SysUserVo convertToSysUserVo(SysUser user) {
+		if (user == null) {
+			return null;
+		}
+		SysUserVo vo = new SysUserVo();
+		vo.setUserId(user.getUserId());
+		vo.setUserName(user.getUserName());
+		vo.setNickName(user.getNickName());
+		vo.setEmail(user.getEmail());
+		vo.setPhonenumber(user.getPhonenumber());
+		vo.setSex(user.getSex());
+		vo.setAvatar(user.getAvatar());
+		vo.setStatus(user.getStatus());
+		vo.setDeptId(user.getDeptId());
+		vo.setDelFlag(user.getDelFlag());
+		vo.setLoginIp(user.getLoginIp());
+		vo.setLoginDate(user.getLoginDate());
+		vo.setPwdUpdateDate(user.getPwdUpdateDate());
+		vo.setCreateBy(user.getCreateBy());
+		vo.setCreateTime(user.getCreateTime());
+		vo.setUpdateBy(user.getUpdateBy());
+		vo.setUpdateTime(user.getUpdateTime());
+		vo.setRemark(user.getRemark());
+		return vo;
 	}
 	
 }

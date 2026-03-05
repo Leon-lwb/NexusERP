@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+  import { toRaw } from 'vue';
   import {detailProcessByDataId} from "@/api/workflow/process";
   import ProcessViewer from '@/components/ProcessViewer'
   import {
@@ -232,8 +233,18 @@
       }
     })
   }
+  
+  watch(() => props.dataId, (newVal) => {
+    if (newVal) {
+      console.log("HistoricDetail watch dataId:", newVal);
+      init();
+    }
+  }, { immediate: true });
+  
   onMounted(() => {
-    init();
+    if (props.dataId) {
+      init();
+    }
   });
 
 </script>

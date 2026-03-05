@@ -163,6 +163,24 @@ $cancel-color: #909399;
       fill-opacity: 0.15!important;
     }
   }
+
+  .current.djs-shape {
+    .djs-visual rect {
+      stroke: $primary-color!important;
+      fill: $primary-color!important;
+      fill-opacity: 0.15!important;
+    }
+
+    .djs-visual polygon {
+      stroke: $primary-color!important;
+    }
+
+    .djs-visual circle {
+      stroke: $primary-color!important;
+      fill: $primary-color!important;
+      fill-opacity: 0.15!important;
+    }
+  }
 }
 
 .process-viewer .djs-tooltip-container, .process-viewer .djs-overlay-container, .process-viewer .djs-palette {

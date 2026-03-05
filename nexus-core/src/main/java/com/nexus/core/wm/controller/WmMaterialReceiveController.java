@@ -5,10 +5,16 @@ import com.nexus.common.constant.NexusConstants;
 import com.nexus.common.utils.StringUtils;
 import com.nexus.core.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.core.wm.domain.WmMaterialReceiveLine;
+import com.nexus.workflow.domain.WfMyBusiness;
+import com.nexus.workflow.service.IWfMyBusinessService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.nexus.common.annotation.Log;
 import com.nexus.common.core.controller.BaseController;
@@ -46,6 +53,15 @@ public class WmMaterialReceiveController extends BaseController
     
     @Autowired
     private IWmInventoryCoreService wmInventoryCoreService;
+    
+    @Autowired
+    private IWfMyBusinessService wfMyBusinessService;
+    
+    @Autowired
+    private RuntimeService runtimeService;
+    
+    @Autowired
+    private HistoryService historyService;
 
     /**
      * 查询物料入库单列表
@@ -136,5 +152,49 @@ public class WmMaterialReceiveController extends BaseController
     @PostMapping("/execute/{receiveId}")
     public AjaxResult executeReceive(@PathVariable Long receiveId) {
         return wmInventoryCoreService.executeReceive(receiveId);
+    }
+    
+    /**
+     * 提交物料入库单并启动流程
+     * @param receiveId 入库单ID
+     * @param selectFlowId 选择的流程模板ID
+     * @return 结果
+     */
+    @ApiOperation("提交物料入库单并启动流程")
+    @PreAuthorize("@ss.hasPermi('wm:receive:submit')")
+    @Log(title = "物料入库单", businessType = BusinessType.UPDATE)
+    @PostMapping("/{receiveId}/submit")
+    public AjaxResult submit(@PathVariable("receiveId") String receiveId,
+                            @RequestParam(value = "selectFlowId", required = false) String selectFlowId) {
+        try {
+            return toAjax(wmMaterialReceiveService.submit(receiveId, selectFlowId));
+        } catch (ServiceException e) {
+            return AjaxResult.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取流程实例ID
+     * @param receiveId 入库单ID
+     * @return 结果
+     */
+    @ApiOperation("获取流程实例ID")
+    @PreAuthorize("@ss.hasPermi('wm:receive:query')")
+    @GetMapping("/{receiveId}/proc")
+    public AjaxResult getProcInsId(@PathVariable("receiveId") String receiveId) {
+        try {
+            WfMyBusiness biz = wfMyBusinessService.lambdaQuery()
+                .eq(WfMyBusiness::getDataId, receiveId)
+                .one();
+            if (biz != null && biz.getProcessInstanceId() != null && !biz.getProcessInstanceId().isEmpty()) {
+                return AjaxResult.success("操作成功", biz.getProcessInstanceId());
+            }
+        } catch (Exception ignore) {
+        }
+
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery().processInstanceBusinessKey(receiveId).singleResult();
+        if (runtime != null) return AjaxResult.success("操作成功", runtime.getId());
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery().processInstanceBusinessKey(receiveId).singleResult();
+        return AjaxResult.success("操作成功", hist == null ? null : hist.getId());
     }
 }

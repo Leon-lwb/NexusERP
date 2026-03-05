@@ -154,6 +154,8 @@
             v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVING'">上架</el-button>
           <el-button link type="primary" icon="Finished" @click="handleExecuteRow(scope.row)"
             v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVED'">入库</el-button>
+          <el-button link type="primary" icon="View" @click="handleViewFlow(scope.row)"
+            v-hasPermi="['wm:receive:query']" v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'">查看流程</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
             v-hasPermi="['wm:receive:remove']">删除</el-button>
         </template>
@@ -341,7 +343,7 @@
 </template>
 
 <script setup name="Receive">
-import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute } from "@/api/core/wm/receive"
+import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute, getReceiveProcId } from "@/api/core/wm/receive"
 import { listArrivalnotice } from "@/api/core/wm/arrivalnotice"
 import { useRouter } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
@@ -647,6 +649,19 @@ function handleExport() {
   proxy.download('wm/receive/export', {
     ...queryParams.value
   }, `receive_${new Date().getTime()}.xlsx`)
+}
+
+/** 查看流程按钮操作 */
+function handleViewFlow(row) {
+  getReceiveProcId(String(row.receiveId)).then(res => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
 }
 
 // 自动生成编码

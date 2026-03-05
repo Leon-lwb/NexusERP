@@ -51,3 +51,20 @@ export function execute(receiveId, data) {
     data: data
   })
 }
+
+// 提交物料入库单并启动流程
+export function submitReceive(receiveId, selectFlowId) {
+  return request({
+    url: '/wm/receive/' + receiveId + '/submit',
+    method: 'post',
+    params: selectFlowId ? { selectFlowId } : {}
+  })
+}
+
+// 获取流程实例ID
+export function getReceiveProcId(receiveId) {
+  return request({
+    url: '/wm/receive/' + receiveId + '/proc',
+    method: 'get'
+  })
+}

@@ -123,4 +123,12 @@ public interface ISysDeptService extends IService<SysDept>
      * @return 结果
      */
     public int deleteDeptById(Long deptId);
+
+    /**
+     * 根据用户名获取部门负责人
+     * 
+     * @param userName 用户名
+     * @return 部门负责人用户名
+     */
+    public String getDepLeaderByUserName(String userName);
 }

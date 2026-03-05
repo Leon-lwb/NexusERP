@@ -6,7 +6,8 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="submitApprovingForm" v-if="!isViewMode && form.status === 'PREPARE'">审核</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'PREPARE'">提交审批</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
@@ -66,6 +67,26 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
+            <el-form-item label="审批流程" prop="selectFlowId">
+              <el-select
+                v-model="form.selectFlowId"
+                clearable
+                filterable
+                :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'PREPARE'"
+                placeholder="请选择审批流程"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="f in flowOptions"
+                  :key="f.id"
+                  :label="f.flowName || f.businessName || ('流程#' + f.id)"
+                  :value="f.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
             <el-form-item label="单据状态" prop="status">
               <el-radio-group v-model="form.status">
                 <el-radio v-for="dict in wm_material_receive_status" :key="dict.value"
@@ -79,6 +100,16 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <!-- 流程选择警告 -->
+        <el-alert
+          v-if="!isViewMode && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+          type="warning"
+          show-icon
+          :closable="false"
+          title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmMaterialReceiveService。"
+          style="margin-bottom: 12px;"
+        />>
 
         <!-- 子表部分开始 -->
         <el-divider content-position="center">物料入库单信息</el-divider>
@@ -366,10 +397,11 @@
 </template>
 
 <script setup name="ReceiveForm">
-import { getReceive, addReceive, updateReceive } from "@/api/core/wm/receive"
+import { getReceive, addReceive, updateReceive, submitReceive, getReceiveProcId } from "@/api/core/wm/receive"
 import { getArrivalnotice } from "@/api/core/wm/arrivalnotice"
 import { addDetail, updateDetail, delDetail, listDetail } from "@/api/core/wm/detail"
 import { getWareHouseTree } from "@/api/core/wm/warehouse"
+import { getProcesss } from "@/api/workflow/process"
 
 const { proxy } = getCurrentInstance()
 const { wm_material_receive_status } = proxy.useDict('wm_material_receive_status')
@@ -378,6 +410,10 @@ const router = useRouter()
 
 const wmMaterialReceiveLineList = ref([])
 const checkedWmMaterialReceiveLine = ref([])
+
+// 流程相关状态
+const loadingFlow = ref(false)
+const flowOptions = ref([])
 
 // 上架弹窗相关变量
 const shelfOpen = ref(false)
@@ -513,26 +549,24 @@ function initPage(id) {
   const action = route.query.action
 
   if (action === 'view') {
-    // 查看模式
     isViewMode.value = true
     title.value = "查看物料入库单"
     if (id) {
       getInfo(id)
     }
   } else if (action === 'edit') {
-    // 编辑模式
     isViewMode.value = false
-    // 根据路由参数确定标题
     const pageType = route.query.pageType
     title.value = pageType === 'shelf' ? "采购单上架" : "修改物料入库单"
     if (id) {
       getInfo(id)
     }
+    loadFlows()
   } else if (action === 'add') {
-    // 新增模式
     isViewMode.value = false
     title.value = "新增物料入库单"
     reset()
+    loadFlows()
   }
 }
 
@@ -593,6 +627,7 @@ function reset() {
     locationName: null,
     receiveDate: null,
     status: null,
+    selectFlowId: null,
     remark: null,
     attr1: null,
     attr2: null,
@@ -605,6 +640,58 @@ function reset() {
   }
   wmMaterialReceiveLineList.value = []
   proxy.resetForm("receiveRef")
+}
+
+// 加载流程列表
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'wmMaterialReceiveService' }).then(response => {
+    flowOptions.value = response?.data || []
+    if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+      form.value.selectFlowId = flowOptions.value[0].id
+    }
+    loadingFlow.value = false
+  }).catch(() => {
+    loadingFlow.value = false
+  })
+}
+
+// 提交审批
+function handleSubmitFlow() {
+  proxy.$refs["receiveRef"].validate(valid => {
+    if (valid) {
+      form.value.wmMaterialReceiveLineList = wmMaterialReceiveLineList.value
+      if (form.value.receiveId != null) {
+        updateReceive(form.value).then(response => {
+          submitReceive(String(form.value.receiveId), form.value.selectFlowId ? String(form.value.selectFlowId) : undefined).then(res => {
+            if (res.code === 200) {
+              proxy.$modal.msgSuccess("提交审批成功")
+              router.push('/core/wm/receive')
+            } else {
+              proxy.$modal.msgError(res.msg || '提交审批失败')
+            }
+          }).catch(error => {
+            proxy.$modal.msgError('提交审批失败：' + error)
+          })
+        })
+      } else {
+        proxy.$modal.msgWarning("请先保存单据后再提交审批")
+      }
+    }
+  })
+}
+
+// 查看流程
+function onViewFlow() {
+  getReceiveProcId(String(form.value.receiveId)).then(res => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
 }
 
 /** 提交按钮 */

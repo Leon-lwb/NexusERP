@@ -2,12 +2,12 @@
 </style>
 <template>
   <span>
-      <a-button :type="btnType"  @click="history()" >{{text}}</a-button>
-      <a-modal title="审批历史" v-model:visible="modalLsVisible" :mask-closable="true" :width="'70%'" :footer="null">
+      <el-button :type="btnType"  @click="history()" >{{text}}</el-button>
+      <el-dialog title="审批历史" v-model="modalLsVisible" :close-on-click-modal="true" width="70%">
           <div v-if="modalLsVisible" style="max-height: 550px; overflow-y: scroll;">
-              <HistoricDetail ref="historicDetail" :data-id="dataId"></HistoricDetail>
+              <HistoricDetail ref="historicDetail" :dataId="dataId"></HistoricDetail>
           </div>
-      </a-modal>
+      </el-dialog>
   </span>
 </template>
 

@@ -1,14 +1,23 @@
 package com.nexus.core.wm.service.impl;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.constant.NexusConstants;
+import com.nexus.common.core.domain.ActStatus;
+import com.nexus.common.core.domain.R;
 import com.nexus.common.exception.ServiceException;
 import com.nexus.common.utils.DateUtils;
 import com.nexus.common.utils.StringUtils;
 import com.nexus.core.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.core.wm.domain.WmMaterialReceiveLine;
+import com.nexus.workflow.domain.WfMyBusiness;
+import com.nexus.workflow.service.IWfMyBusinessService;
+import com.nexus.workflow.service.IWfProcessService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +32,17 @@ import com.nexus.core.wm.service.IWmMaterialReceiveService;
  * @author nexus
  * @date 2025-12-08
  */
-@Service
+@Service("wmMaterialReceiveService")
 public class WmMaterialReceiveServiceImpl extends ServiceImpl<WmMaterialReceiveMapper, WmMaterialReceive> implements IWmMaterialReceiveService {
 
     @Autowired
     private WmMaterialReceiveMapper wmMaterialReceiveMapper;
+    
+    @Autowired
+    private IWfProcessService wfProcessService;
+    
+    @Autowired
+    private IWfMyBusinessService wfMyBusinessService;
 
     /**
      * 查询物料入库单
@@ -211,5 +226,102 @@ public class WmMaterialReceiveServiceImpl extends ServiceImpl<WmMaterialReceiveM
         if (!isValid) {
             throw new ServiceException(errorMsg.toString());
         }
+    }
+    
+    /**
+     * 提交物料入库单并启动流程
+     * 
+     * @param receiveIdStr 物料入库单ID字符串
+     * @param selectFlowId 选择的流程模板ID
+     * @return 结果
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submit(String receiveIdStr, String selectFlowId) {
+        Long receiveId = Long.parseLong(receiveIdStr);
+        WmMaterialReceive receive = this.getById(receiveId);
+        if (receive == null) {
+            throw new ServiceException("入库单不存在");
+        }
+
+        if (selectFlowId == null || selectFlowId.isBlank()) {
+            if (receive.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(receive.getSelectFlowId());
+            } else {
+                throw new ServiceException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        receive.setStatus(NexusConstants.ORDER_STATUS_APPROVING);
+        this.updateById(receive);
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("dataId", receiveIdStr);
+        vars.put("requireTaskOnStart", true);
+        vars.put("receiveId", receive.getReceiveId());
+        vars.put("receiveCode", receive.getReceiveCode());
+        vars.put("receiveName", receive.getReceiveName());
+        vars.put("vendorId", receive.getVendorId());
+        vars.put("vendorName", receive.getVendorName());
+        vars.put("receiveDate", receive.getReceiveDate());
+
+        R<Void> result = wfProcessService.startProcessByDataId(receiveIdStr, selectFlowId, "wmMaterialReceiveService", vars);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+
+        throw new ServiceException(result.getMsg());
+    }
+
+    @Override
+    public void afterFlowHandle(WfMyBusiness business) {
+        if (business == null) return;
+
+        String dataId = business.getDataId();
+        String actStatus = business.getActStatus();
+        if (dataId == null || dataId.isEmpty()) return;
+
+        Long receiveId;
+        try {
+            receiveId = Long.parseLong(dataId);
+        } catch (Exception ignore) {
+            return;
+        }
+
+        WmMaterialReceive receive = this.getById(receiveId);
+        if (receive == null) return;
+
+        if (ActStatus.doing.equals(actStatus)) {
+            receive.setStatus(NexusConstants.ORDER_STATUS_APPROVING);
+        } else if (ActStatus.pass.equals(actStatus)) {
+            receive.setStatus(NexusConstants.ORDER_STATUS_APPROVED);
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            receive.setStatus("REJECTED");
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            receive.setStatus(NexusConstants.ORDER_STATUS_PREPARE);
+        }
+        
+        this.updateById(receive);
+    }
+
+    @Override
+    public Object getBusinessDataById(String dataId) {
+        if (dataId == null || dataId.isEmpty()) return null;
+        try {
+            Long receiveId = Long.parseLong(dataId);
+            return this.selectWmMaterialReceiveByReceiveId(receiveId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return new HashMap<>();
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return new ArrayList<>();
     }
 }

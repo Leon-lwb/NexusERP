@@ -296,6 +296,18 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
     }
 
     /**
+     * 根据用户名获取部门负责人
+     * 
+     * @param userName 用户名
+     * @return 部门负责人用户名
+     */
+    @Override
+    public String getDepLeaderByUserName(String userName)
+    {
+        return userName;
+    }
+
+    /**
      * 递归列表
      */
     private void recursionFn(List<SysDept> list, SysDept t)

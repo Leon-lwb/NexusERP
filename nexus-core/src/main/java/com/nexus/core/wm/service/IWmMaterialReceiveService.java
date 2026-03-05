@@ -1,8 +1,12 @@
 package com.nexus.core.wm.service;
 
 import java.util.List;
+import java.util.Map;
+
 import com.nexus.core.wm.domain.WmMaterialReceive;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nexus.workflow.domain.WfMyBusiness;
+import com.nexus.workflow.service.WfCallBackServiceI;
 
 /**
  * 物料入库单Service接口
@@ -10,7 +14,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author nexus
  * @date 2025-12-08
  */
-public interface IWmMaterialReceiveService extends IService<WmMaterialReceive> {
+public interface IWmMaterialReceiveService extends IService<WmMaterialReceive>, WfCallBackServiceI {
     /**
      * 查询物料入库单
      *
@@ -66,4 +70,13 @@ public interface IWmMaterialReceiveService extends IService<WmMaterialReceive> {
      * @return 结果
      */
     public boolean updateWithValidation(WmMaterialReceive wmMaterialReceive);
+    
+    /**
+     * 提交物料入库单并启动流程
+     * 
+     * @param receiveIdStr 物料入库单ID字符串
+     * @param selectFlowId 选择的流程模板ID
+     * @return 结果
+     */
+    public boolean submit(String receiveIdStr, String selectFlowId);
 }

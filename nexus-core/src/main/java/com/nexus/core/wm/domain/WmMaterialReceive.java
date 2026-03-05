@@ -150,6 +150,11 @@ public class WmMaterialReceive extends BaseEntity {
     @Excel(name = "单据状态")
     private String status;
     /**
+     * 已选审批流程模板（wf_custom_form.id）
+     */
+    @Excel(name = "已选审批流程模板")
+    private Long selectFlowId;
+    /**
      * 预留字段1
      */
     private String attr1;
