@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form v-model="queryParams" ref="queryFormRef" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form v-model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch" label-width="90px">
       <el-form-item label="用户账号" prop="userName">
         <el-input
           v-model="queryParams.userName"
@@ -34,8 +34,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" icon="el-icon-search" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -45,7 +45,6 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
           @click="handleAdd"
           v-hasPermi="['workflow:demo:add']"
         >新增</el-button>
@@ -55,7 +54,6 @@
           type="success"
           plain
           icon="el-icon-edit"
-          size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['workflow:demo:edit']"
@@ -66,7 +64,6 @@
           type="danger"
           plain
           icon="el-icon-delete"
-          size="small"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['workflow:demo:remove']"
@@ -77,12 +74,11 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
           @click="handleExport"
           v-hasPermi="['workflow:demo:export']"
         >导出</el-button>
       </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
     <el-table v-loading="loading" :data="demoList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="20" align="center" />

@@ -36,7 +36,7 @@
              <el-table-column label="组件注入方法" align="center" prop="component" />
              <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
                <template #default="scope">
-                 <el-button size="small" type="primary" @click="selectProcess(scope.row)">确定</el-button>
+                 <el-button type="primary" @click="selectProcess(scope.row)">确定</el-button>
                </template>
              </el-table-column>
             </el-table>

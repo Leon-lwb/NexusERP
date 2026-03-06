@@ -35,8 +35,8 @@
                     <div v-if="item.commentList && item.commentList.length > 0">
                       <div v-for="(comment, index) in item.commentList" :key="index">
                         <el-divider content-position="left">
-                          <el-tag :type="approveTypeTag(comment.type)" size="small">{{ commentType(comment.type) }}</el-tag>
-                          <el-tag type="info" effect="plain" size="small">{{ comment.time }}</el-tag>
+                          <el-tag :type="approveTypeTag(comment.type)">{{ commentType(comment.type) }}</el-tag>
+                          <el-tag type="info" effect="plain">{{ comment.time }}</el-tag>
                         </el-divider>
                         <span>{{ comment.fullMessage }}</span>
                       </div>

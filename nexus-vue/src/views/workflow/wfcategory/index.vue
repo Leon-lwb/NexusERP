@@ -1,8 +1,7 @@
 <template>
-  <div class="p-2">
-    <transition :enter-active-class="proxy?.animate?.searchAnimate?.enter" :leave-active-class="proxy?.animate?.searchAnimate?.leave">
-      <div class="search" v-show="showSearch">
-        <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="68px">
+  <div class="app-container">
+    <div class="search" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="90px">
           <el-form-item label="分类名称" prop="categoryName">
             <el-input v-model="queryParams.categoryName" placeholder="请输入分类名称" clearable @keyup.enter="handleQuery" />
           </el-form-item>
@@ -15,7 +14,6 @@
           </el-form-item>
         </el-form>
       </div>
-    </transition>
     <el-card shadow="never">
       <template #header>
         <el-row :gutter="10" class="mb8">

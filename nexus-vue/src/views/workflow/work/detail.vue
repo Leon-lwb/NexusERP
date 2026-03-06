@@ -26,7 +26,7 @@
           </template>
           <el-row>
             <el-col :span="20" :offset="2">
-              <el-form ref="taskFormRef" :model="taskForm" :rules="rules" label-width="120px">
+              <el-form ref="taskFormRef" :model="taskForm" :rules="rules" label-width="90px">
                 <el-form-item label="审批意见" prop="comment">
                   <el-input type="textarea" :rows="5" v-model="taskForm.comment" placeholder="请输入 审批意见" />
                 </el-form-item>
@@ -110,28 +110,28 @@
                 <el-timeline-item v-for="(item, index) in historyProcNodeList" :key="index" :type="tagType(item.endTime)">
                   <p style="font-weight: 700">{{ item.activityName }}</p>
                   <el-card v-if="item.activityType === 'startEvent'" class="box-card" shadow="hover">
-                    {{ item.assigneeName }} 在 {{ item.createTime }} 发起流程
+                    {{ item.assigneeName }} 在 {{ formatDate(item.createTime) }} 发起流程
                   </el-card>
                   <el-card v-if="item.activityType === 'userTask'" class="box-card" shadow="hover">
                     <el-descriptions :column="5" :labelStyle="{'font-weight': 'bold'}">
                       <el-descriptions-item label="实际办理">{{ item.assigneeName || '-'}}</el-descriptions-item>
                       <el-descriptions-item label="候选办理">{{ item.candidate || '-'}}</el-descriptions-item>
-                      <el-descriptions-item label="接收时间">{{ item.createTime || '-'}}</el-descriptions-item>
-                      <el-descriptions-item label="办结时间">{{ item.endTime || '-' }}</el-descriptions-item>
+                      <el-descriptions-item label="接收时间">{{ formatDate(item.createTime) || '-'}}</el-descriptions-item>
+                      <el-descriptions-item label="办结时间">{{ formatDate(item.endTime) || '-' }}</el-descriptions-item>
                       <el-descriptions-item label="耗时">{{ item.duration || '-'}}</el-descriptions-item>
                     </el-descriptions>
                     <div v-if="item.commentList && item.commentList.length > 0">
                       <div v-for="(comment, index) in item.commentList" :key="index">
                         <el-divider content-position="left">
                           <el-tag :type="approveTypeTag(comment.type)">{{ commentType(comment.type) }}</el-tag>
-                          <el-tag type="info" effect="plain">{{ comment.time }}</el-tag>
+                          <el-tag type="info" effect="plain">{{ formatDate(comment.time) }}</el-tag>
                         </el-divider>
                         <span>{{ comment.fullMessage }}</span>
                       </div>
                     </div>
                   </el-card>
                   <el-card v-if="item.activityType === 'endEvent'" class="box-card" shadow="hover">
-                    {{ item.createTime }} 结束流程
+                    {{ formatDate(item.createTime) }} 结束流程
                   </el-card>
                 </el-timeline-item>
               </el-timeline>
@@ -242,7 +242,7 @@
                 @close="handleClose('next', item)">
                 {{ item.nickName }}
               </el-tag>
-              <el-button class="button-new-tag" type="primary" icon="el-icon-plus" size="small" circle @click="onSelectAddSignUsers" />
+              <el-button class="button-new-tag" type="primary" icon="el-icon-plus" circle @click="onSelectAddSignUsers" />
             </el-form-item>
           </el-form>
           <template #footer>
@@ -300,6 +300,8 @@ import type { ComponentInternalInstance } from "vue";
     } from '@/views/workflow/hooks/useFlowable'
   import FormRender from '@/components/DesignerForm/FormRender.vue'
   import { getDicts } from '@/api/system/dict/data'
+  import ProcessViewer from '@/components/ProcessViewer'
+  import { formatDate } from '@/utils/index'
 
   const route = useRoute();
   const router = useRouter();

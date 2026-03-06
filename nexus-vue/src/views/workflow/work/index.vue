@@ -1,12 +1,11 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="90px">
       <el-form-item label="流程标识" prop="processKey">
         <el-input
           v-model="queryParams.processKey"
           placeholder="请输入流程标识"
           clearable
-          size="small"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
@@ -15,12 +14,11 @@
           v-model="queryParams.processName"
           placeholder="请输入流程名称"
           clearable
-          size="small"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
       <el-form-item label="流程分类" prop="category">
-        <el-select v-model="queryParams.category" clearable placeholder="请选择" size="small">
+        <el-select v-model="queryParams.category" clearable placeholder="请选择">
           <el-option
             v-for="item in categoryOptions"
             :key="item.categoryId"
@@ -30,8 +28,14 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" @click="handleQuery">
+          <el-icon><Search /></el-icon>
+          搜索
+        </el-button>
+        <el-button @click="resetQuery">
+          <el-icon><Refresh /></el-icon>
+          重置
+        </el-button>
       </el-form-item>
     </el-form>
     <el-row :gutter="10" class="mb8">
@@ -39,13 +43,14 @@
         <el-button
           type="warning"
           plain
-          icon="el-icon-download"
-          size="small"
           v-hasPermi="['workflow:process:startExport']"
           @click="handleExport"
-        >导出</el-button>
+        >
+          <el-icon><Download /></el-icon>
+          导出
+        </el-button>
       </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
     <el-table v-loading="loading" fit :data="processList">
       <el-table-column label="序号" type="index" width="50"></el-table-column>
@@ -69,16 +74,22 @@
           <el-tag type="warning" v-if="scope.row.suspended">挂起</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180"/>
+      <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180">
+        <template #default="scope">
+          {{ formatDate(scope.row.deploymentTime) }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button
             type="primary"
             size="default"
-            icon="el-icon-video-play"
             @click="handleStart(scope.row)"
             v-hasPermi="['workflow:process:start']"
-          >发起</el-button>
+          >
+            <el-icon><VideoPlay /></el-icon>
+            发起
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -103,6 +114,8 @@ import { listAllCategory } from '@/api/workflow/category'
 import ProcessViewer from '@/components/ProcessViewer'
 import type { FormInstance } from "element-plus";
 import type { ComponentInternalInstance } from "vue";
+import { formatDate } from '@/utils/index'
+import { Search, Refresh, Download, VideoPlay } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;

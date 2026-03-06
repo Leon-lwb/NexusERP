@@ -1,8 +1,7 @@
 <template>
-  <div class="p-2">
-    <transition :enter-active-class="proxy?.animate?.searchAnimate?.enter" :leave-active-class="proxy?.animate?.searchAnimate?.leave">
-      <div class="search" v-show="showSearch">
-        <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="70">
+  <div class="app-container">
+    <div class="search" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="90px">
           <el-form-item label="模型标识" prop="modelKey">
             <el-input v-model="queryParams.modelKey" placeholder="请输入模型标识" clearable style="width: 200px" @keyup.enter="handleQuery" />
           </el-form-item>
@@ -15,7 +14,6 @@
           </el-form-item>
         </el-form>
       </div>
-    </transition>
     <el-card shadow="never">
       <template #header>
         <el-row :gutter="10" class="mb8">
@@ -46,7 +44,7 @@
         <el-table-column label="流程分类" align="center" prop="categoryName" :formatter="categoryFormat" />
         <el-table-column label="模型版本" align="center">
           <template #default="scope">
-            <el-tag size="small">v{{ scope.row.version }}</el-tag>
+            <el-tag>v{{ scope.row.version }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="描述" align="center" prop="description" :show-overflow-tooltip="true" />

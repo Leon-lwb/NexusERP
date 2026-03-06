@@ -1,8 +1,7 @@
 <template>
-  <div class="p-2">
-    <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
-      <div class="search" v-show="showSearch">
-        <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="68px">
+  <div class="app-container">
+    <div class="search" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="90px">
           <el-form-item label="业务表单名称" prop="businessName">
             <el-input v-model="queryParams.businessName" placeholder="请输入业务表单名称" clearable style="width: 240px" @keyup.enter="handleQuery" />
           </el-form-item>
@@ -18,7 +17,6 @@
           </el-form-item>
         </el-form>
       </div>
-    </transition>
 
     <el-card shadow="never">
       <template #header>
@@ -128,9 +126,9 @@
     <!--挂载布置流程-->
     <el-dialog :title="flowTitle" v-model="flowOpen" width="70%" append-to-body>
       <el-row :gutter="64">
-        <el-form :model="queryFlowParams" ref="queryFlowFormRef" :inline="true" label-width="100px">
+        <el-form :model="queryFlowParams" ref="queryFlowFormRef" :inline="true" label-width="90px">
           <el-form-item label="流程名称" prop="processName">
-            <el-input v-model="queryFlowParams.processName" placeholder="请输入名称" clearable size="small"
+            <el-input v-model="queryFlowParams.processName" placeholder="请输入名称" clearable
               @keyup.enter.native="handleFlowQuery" />
           </el-form-item>
           <el-form-item label="流程应用类型" prop="appType">
@@ -149,8 +147,8 @@
             </el-switch>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleFlowQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetFlowQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" @click="handleFlowQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" @click="resetFlowQuery">重置</el-button>
           </el-form-item>
         </el-form>
       </el-row>
@@ -187,7 +185,7 @@
              <el-table-column label="部署时间" align="center" prop="deploymentTime" width="180"/>
              <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
                <template #default="scope">
-                 <el-button size="small" type="primary" @click="submitCustom(scope.row)">确定</el-button>
+                 <el-button type="primary" @click="submitCustom(scope.row)">确定</el-button>
                </template>
              </el-table-column>
             </el-table>
