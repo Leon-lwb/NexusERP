@@ -101,5 +101,33 @@ export const constantRoutes: CustomRouteRecordRaw[] = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  {
+    path: '/online',
+    component: Layout,
+    children: [
+      {
+        path: 'test/:tableId(\\d+)/:tableName(.*)',
+        component: () => import('@/views/online/test/index.vue'),
+        name: 'OnlineTest',
+        props: true,
+        meta: { title: '功能测试', icon: '', noCache: true },
+        hidden: true
+      },
+      {
+        path: 'db',
+        component: () => import('@/views/online/db/index.vue'),
+        name: 'TableDesigner',
+        meta: { title: '表设计器', icon: '', noCache: true },
+        hidden: true
+      },
+      {
+        path: 'db/list',
+        component: () => import('@/views/online/db/list.vue'),
+        name: 'TableDesignList',
+        meta: { title: '表设计列表', icon: '', noCache: true },
+        hidden: true
+      }
+    ]
   }
 ]

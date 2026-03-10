@@ -12,9 +12,6 @@ import { ref, watch, onMounted } from 'vue';
 
 export default {
   name: "nmCheckbox",
-  components: {
-    ElCheckbox,
-  },
   props: {
     nm: {
       type: Object,

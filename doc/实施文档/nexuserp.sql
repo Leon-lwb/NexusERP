@@ -11,7 +11,7 @@
  Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 06/03/2026 17:53:23
+ Date: 10/03/2026 11:28:23
 */
 
 SET NAMES utf8mb4;
@@ -1871,7 +1871,7 @@ CREATE TABLE `bd_bom`  (
   INDEX `idx_parent_material`(`parent_material_id`) USING BTREE,
   INDEX `idx_current`(`is_current`) USING BTREE,
   CONSTRAINT `fk_bom_parent_material` FOREIGN KEY (`parent_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom
@@ -1917,7 +1917,7 @@ CREATE TABLE `bd_bom_detail`  (
   INDEX `idx_operation_step`(`operation_step`) USING BTREE,
   CONSTRAINT `fk_bom_detail_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_bom_detail_child` FOREIGN KEY (`child_material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 38 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 37 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_bom_detail
@@ -2045,7 +2045,7 @@ CREATE TABLE `bd_client_credit`  (
   INDEX `idx_client_id`(`client_id`) USING BTREE,
   INDEX `idx_client_code`(`client_code`) USING BTREE,
   CONSTRAINT `bd_client_credit_bd_client__fk` FOREIGN KEY (`client_id`) REFERENCES `bd_client` (`client_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户信用表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '客户信用表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for bd_material
@@ -2094,7 +2094,7 @@ CREATE TABLE `bd_material`  (
   INDEX `fk_material_base_uom`(`base_uom_id`) USING BTREE,
   CONSTRAINT `fk_material_base_uom` FOREIGN KEY (`base_uom_id`) REFERENCES `bd_unit_of_measure` (`uom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_material_category` FOREIGN KEY (`category_id`) REFERENCES `bd_material_category` (`category_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 3006 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3005 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_material
@@ -2212,7 +2212,7 @@ CREATE TABLE `bd_material_vendor`  (
   INDEX `idx_supplier_id`(`vendor_id`) USING BTREE,
   INDEX `idx_default`(`is_default`) USING BTREE,
   CONSTRAINT `fk_ms_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for bd_unit_of_measure
@@ -2239,7 +2239,7 @@ CREATE TABLE `bd_unit_of_measure`  (
   UNIQUE INDEX `uk_uom_code`(`uom_code`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_unit_of_measure
@@ -2333,7 +2333,7 @@ CREATE TABLE `bd_vendor`  (
   `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '地址经度',
   PRIMARY KEY (`vendor_id`) USING BTREE,
   UNIQUE INDEX `uk_vendor_code`(`vendor_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '供应商表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '供应商表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_vendor
@@ -2705,6 +2705,7 @@ INSERT INTO `gen_table` VALUES (43, NULL, 'sch_team_schedule', '班组排班表�
 INSERT INTO `gen_table` VALUES (44, NULL, 'sch_attendance', '考勤记录表', NULL, NULL, 'SchAttendance', 'crud', 'element-plus', 'com.nexus.core.sch', 'sch', 'attendance', '考勤记录', 'nexus', '0', '/', '{\"parentMenuId\":2220}', NULL, 'admin', '2026-01-06 15:48:08', '', '2026-01-06 15:55:18', NULL);
 INSERT INTO `gen_table` VALUES (46, NULL, 'sch_punch_rule', '打卡规则表', NULL, NULL, 'SchPunchRule', 'crud', 'element-plus', 'com.nexus.core.sch', 'sch', 'punchRule', '打卡规则', 'nexus', '0', '/', '{\"parentMenuId\":2220}', NULL, 'admin', '2026-01-07 11:14:18', '', '2026-01-07 11:17:40', NULL);
 INSERT INTO `gen_table` VALUES (49, 'master', 'sys_notice', '通知公告表', NULL, NULL, 'SysNotice', 'crud', '', 'com.nexus.core', 'core', 'notice', '通知公告', 'nexus', '0', '/', '{}', NULL, 'admin', '2026-03-03 10:43:19', '', '2026-03-04 15:25:18', NULL);
+INSERT INTO `gen_table` VALUES (50, 'master', 'table_1', 'table_1', NULL, NULL, 'Table1', 'crud', '', 'com.nexus.core', 'core', '1', 'table_1', 'nexus', '0', '/', NULL, NULL, 'master', '2026-03-10 10:42:56', '', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for gen_table_column
@@ -3701,6 +3702,12 @@ INSERT INTO `gen_table_column` VALUES (1132, 49, 'create_time', '创建时间', 
 INSERT INTO `gen_table_column` VALUES (1133, 49, 'update_by', '更新者', 'varchar(64)', 'String', 'updateBy', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'input', '', NULL, NULL, NULL, 8, NULL, 'admin', '2026-03-03 10:43:19', '', '2026-03-04 15:25:18');
 INSERT INTO `gen_table_column` VALUES (1134, 49, 'update_time', '更新时间', 'datetime', 'Date', 'updateTime', '0', '0', '0', '1', '1', NULL, NULL, 'EQ', 'datetime', '', NULL, NULL, NULL, 9, NULL, 'admin', '2026-03-03 10:43:19', '', '2026-03-04 15:25:18');
 INSERT INTO `gen_table_column` VALUES (1135, 49, 'remark', '备注', 'varchar(255)', 'String', 'remark', '0', '0', '0', '1', '1', '1', NULL, 'EQ', 'input', '', NULL, NULL, NULL, 10, NULL, 'admin', '2026-03-03 10:43:19', '', '2026-03-04 15:25:18');
+INSERT INTO `gen_table_column` VALUES (1136, 50, 'id', '主键', 'bigint', 'Long', 'id', '1', '0', '0', '1', NULL, NULL, NULL, 'EQ', 'input', '', NULL, NULL, NULL, 1, NULL, 'master', '2026-03-10 10:42:57', '', '2026-03-10 10:43:17');
+INSERT INTO `gen_table_column` VALUES (1137, 50, 'field_2', '', 'varchar(255)', 'String', 'field2', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', NULL, NULL, NULL, 2, NULL, 'master', '2026-03-10 10:42:57', '', '2026-03-10 10:43:17');
+INSERT INTO `gen_table_column` VALUES (1138, 50, 'field_3', '', 'int', 'Long', 'field3', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', NULL, NULL, NULL, 3, NULL, 'master', '2026-03-10 10:42:57', '', '2026-03-10 10:43:17');
+INSERT INTO `gen_table_column` VALUES (1139, 50, 'field_4', '', 'bigint', 'Long', 'field4', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', NULL, NULL, NULL, 4, NULL, 'master', '2026-03-10 10:42:57', '', '2026-03-10 10:43:17');
+INSERT INTO `gen_table_column` VALUES (1140, 50, 'field_5', '', 'decimal(10,0)', 'Long', 'field5', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'input', '', NULL, NULL, NULL, 5, NULL, 'master', '2026-03-10 10:42:57', '', '2026-03-10 10:43:17');
+INSERT INTO `gen_table_column` VALUES (1141, 50, 'field_6', '', 'datetime', 'Date', 'field6', '0', '0', '0', '1', '1', '1', '1', 'EQ', 'datetime', '', NULL, NULL, NULL, 6, NULL, 'master', '2026-03-10 10:42:57', '', '2026-03-10 10:43:17');
 
 -- ----------------------------
 -- Table structure for gen_table_design
@@ -3720,6 +3727,11 @@ CREATE TABLE `gen_table_design`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`design_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '表设计器-设计保存表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of gen_table_design
+-- ----------------------------
+INSERT INTO `gen_table_design` VALUES (1, '测试', 'table_1,table_2', '', '{\"designName\":\"测试\",\"tableName\":\"table_1\",\"tableComment\":\"\",\"tables\":[{\"id\":\"table_1773110545655\",\"name\":\"table_1\",\"comment\":\"\",\"engine\":\"InnoDB\",\"charset\":\"utf8mb4\",\"fields\":[{\"id\":\"field_1773110545655_id\",\"name\":\"id\",\"type\":\"bigint\",\"comment\":\"主键\",\"isPrimaryKey\":true,\"isNotNull\":true,\"isUnique\":true},{\"id\":\"field_1773110555425\",\"name\":\"field_2\",\"type\":\"varchar\",\"comment\":\"\",\"isPrimaryKey\":false,\"isNotNull\":false,\"isUnique\":false},{\"id\":\"field_1773110558029\",\"name\":\"field_3\",\"type\":\"int\",\"comment\":\"\",\"isPrimaryKey\":false,\"isNotNull\":false,\"isUnique\":false},{\"id\":\"field_1773110559293\",\"name\":\"field_4\",\"type\":\"bigint\",\"comment\":\"\",\"isPrimaryKey\":false,\"isNotNull\":false,\"isUnique\":false},{\"id\":\"field_1773110560907\",\"name\":\"field_5\",\"type\":\"decimal\",\"comment\":\"\",\"isPrimaryKey\":false,\"isNotNull\":false,\"isUnique\":false},{\"id\":\"field_1773110561844\",\"name\":\"field_6\",\"type\":\"datetime\",\"comment\":\"\",\"isPrimaryKey\":false,\"isNotNull\":false,\"isUnique\":false}]},{\"id\":\"table_1773110651042\",\"name\":\"table_2\",\"comment\":\"\",\"engine\":\"InnoDB\",\"charset\":\"utf8mb4\",\"fields\":[{\"id\":\"field_1773110651042_id\",\"name\":\"id\",\"type\":\"bigint\",\"comment\":\"主键\",\"isPrimaryKey\":true,\"isNotNull\":true,\"isUnique\":true},{\"id\":\"field_1773110658660\",\"name\":\"field_2\",\"type\":\"varchar\",\"comment\":\"\",\"isPrimaryKey\":false,\"isNotNull\":false,\"isUnique\":false},{\"id\":\"field_1773110663647\",\"name\":\"field_3\",\"type\":\"int\",\"comment\":\"\",\"isPrimaryKey\":false,\"isNotNull\":false,\"isUnique\":false}]}],\"relations\":[{\"id\":\"relation_1773110670701\",\"fromTable\":\"table_1773110545655\",\"fromField\":\"field_1773110545655_id\",\"toTable\":\"table_1773110651042\",\"toField\":\"field_1773110663647\"}],\"createTime\":\"2026-03-10T02:42:22.216Z\",\"designId\":1,\"id\":1}', '', NULL, NULL, '2026-03-10 10:42:52', NULL, '2026-03-10 10:44:37');
 
 -- ----------------------------
 -- Table structure for prd_material_request
@@ -3762,7 +3774,7 @@ CREATE TABLE `prd_material_request`  (
   INDEX `idx_request_status`(`request_status`) USING BTREE,
   INDEX `idx_warehouse_id`(`warehouse_id`) USING BTREE,
   CONSTRAINT `fk_material_request_wo` FOREIGN KEY (`wo_id`) REFERENCES `prd_work_order` (`wo_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for prd_material_requirement
@@ -3802,7 +3814,7 @@ CREATE TABLE `prd_material_requirement`  (
   INDEX `fk_requirement_bom`(`bom_id`) USING BTREE,
   CONSTRAINT `fk_requirement_bom` FOREIGN KEY (`bom_id`) REFERENCES `bd_bom` (`bom_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_plan` FOREIGN KEY (`plan_id`) REFERENCES `prd_production_plan` (`plan_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 55 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 54 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_material_requirement
@@ -3847,7 +3859,7 @@ CREATE TABLE `prd_material_requirement_detail`  (
   INDEX `idx_required_date`(`required_date`) USING BTREE,
   CONSTRAINT `fk_requirement_detail` FOREIGN KEY (`requirement_id`) REFERENCES `prd_material_requirement` (`requirement_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_requirement_material` FOREIGN KEY (`material_id`) REFERENCES `bd_material` (`material_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 88 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_material_requirement_detail
@@ -3905,7 +3917,7 @@ CREATE TABLE `prd_production_plan`  (
   INDEX `idx_planner_id`(`planner_id`) USING BTREE,
   INDEX `uk_plan_no`(`plan_no`) USING BTREE,
   INDEX `idx_material_requirement`(`material_requirement_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of prd_production_plan
@@ -3969,7 +3981,7 @@ CREATE TABLE `prd_work_order`  (
   INDEX `idx_wo_status`(`wo_status`) USING BTREE,
   INDEX `idx_plan_dates`(`plan_start_date`, `plan_end_date`) USING BTREE,
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for prd_work_report
@@ -4009,7 +4021,7 @@ CREATE TABLE `prd_work_report`  (
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
   INDEX `idx_quality_status`(`quality_status`) USING BTREE,
   CONSTRAINT `fk_work_report_wo` FOREIGN KEY (`wo_id`) REFERENCES `prd_work_order` (`wo_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产报工记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产报工记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for qrtz_blob_triggers
@@ -4231,7 +4243,7 @@ CREATE TABLE `sch_attendance`  (
   INDEX `idx_record_date_type`(`record_date`, `punch_type`) USING BTREE,
   INDEX `idx_leave_id`(`leave_id`) USING BTREE,
   INDEX `idx_overtime_id`(`overtime_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '考勤记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '考勤记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sch_attendance
@@ -5235,7 +5247,7 @@ CREATE TABLE `so_customer_order`  (
   INDEX `idx_order_date`(`order_date`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_requested_date`(`requested_date`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单（外部原始需求）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单（外部原始需求）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_customer_order
@@ -5310,7 +5322,7 @@ CREATE TABLE `so_sales_order_header`  (
   INDEX `idx_co_id`(`co_id`) USING BTREE,
   INDEX `idx_sales_rep_id`(`sales_rep_id`) USING BTREE,
   CONSTRAINT `fk_so_header_co` FOREIGN KEY (`co_id`) REFERENCES `so_customer_order` (`co_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单头表（内部执行单）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_sales_order_header
@@ -5376,7 +5388,7 @@ CREATE TABLE `so_sales_order_line`  (
   INDEX `idx_linked_po_id`(`linked_po_id`) USING BTREE,
   INDEX `idx_pa_group_id`(`pa_group_id`) USING BTREE,
   CONSTRAINT `fk_so_line_header` FOREIGN KEY (`so_id`) REFERENCES `so_sales_order_header` (`so_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表（支持分批履约）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_sales_order_line
@@ -8462,7 +8474,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 621 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 622 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -8988,6 +9000,8 @@ INSERT INTO `sys_logininfor` VALUES (617, 'admin', '127.0.0.1', '内网IP', 'Chr
 INSERT INTO `sys_logininfor` VALUES (618, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-05 09:59:55');
 INSERT INTO `sys_logininfor` VALUES (619, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-05 15:20:19');
 INSERT INTO `sys_logininfor` VALUES (620, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-06 09:53:39');
+INSERT INTO `sys_logininfor` VALUES (621, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-09 09:49:02');
+INSERT INTO `sys_logininfor` VALUES (622, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-10 09:37:01');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -9038,9 +9052,9 @@ INSERT INTO `sys_menu` VALUES (111, '数据监控', 2, 3, 'druid', 'monitor/drui
 INSERT INTO `sys_menu` VALUES (112, '服务监控', 2, 4, 'server', 'monitor/server/index', '', '', 1, 0, 'C', '0', '0', 'monitor:server:list', 'server', 'admin', '2025-08-29 16:28:04', '', NULL, '服务监控菜单');
 INSERT INTO `sys_menu` VALUES (113, '缓存监控', 2, 5, 'cache', 'monitor/cache/index', '', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis', 'admin', '2025-08-29 16:28:04', '', NULL, '缓存监控菜单');
 INSERT INTO `sys_menu` VALUES (114, '缓存列表', 2, 6, 'cacheList', 'monitor/cache/list', '', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis-list', 'admin', '2025-08-29 16:28:04', '', NULL, '缓存列表菜单');
-INSERT INTO `sys_menu` VALUES (115, '表单构建', 3, 1, 'build', 'tool/build/index', '', '', 1, 0, 'C', '0', '0', 'tool:build:list', 'build', 'admin', '2025-08-29 16:28:04', '', NULL, '表单构建菜单');
+INSERT INTO `sys_menu` VALUES (115, '表单构建', 3, 3, 'build', 'tool/build/index', '', '', 1, 0, 'C', '0', '0', 'tool:build:list', 'build', 'admin', '2025-08-29 16:28:04', 'admin', '2026-03-10 10:20:59', '表单构建菜单');
 INSERT INTO `sys_menu` VALUES (116, '代码生成', 3, 2, 'gen', 'tool/gen/index', '', '', 1, 0, 'C', '0', '0', 'tool:gen:list', 'code', 'admin', '2025-08-29 16:28:04', '', NULL, '代码生成菜单');
-INSERT INTO `sys_menu` VALUES (117, '系统接口', 3, 3, 'swagger', 'tool/swagger/index', '', '', 1, 0, 'C', '0', '0', 'tool:swagger:list', 'swagger', 'admin', '2025-08-29 16:28:04', '', NULL, '系统接口菜单');
+INSERT INTO `sys_menu` VALUES (117, '系统接口', 3, 4, 'swagger', 'tool/swagger/index', '', '', 1, 0, 'C', '0', '0', 'tool:swagger:list', 'swagger', 'admin', '2025-08-29 16:28:04', 'admin', '2026-03-10 10:21:03', '系统接口菜单');
 INSERT INTO `sys_menu` VALUES (500, '操作日志', 108, 1, 'operlog', 'monitor/operlog/index', '', '', 1, 0, 'C', '0', '0', 'monitor:operlog:list', 'form', 'admin', '2025-08-29 16:28:04', '', NULL, '操作日志菜单');
 INSERT INTO `sys_menu` VALUES (501, '登录日志', 108, 2, 'logininfor', 'monitor/logininfor/index', '', '', 1, 0, 'C', '0', '0', 'monitor:logininfor:list', 'logininfor', 'admin', '2025-08-29 16:28:04', '', NULL, '登录日志菜单');
 INSERT INTO `sys_menu` VALUES (1000, '用户查询', 100, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:query', '#', 'admin', '2025-08-29 16:28:04', '', NULL, '');
@@ -9307,9 +9321,10 @@ INSERT INTO `sys_menu` VALUES (2303, '打卡规则删除', 2299, 4, '#', '', NUL
 INSERT INTO `sys_menu` VALUES (2304, '打卡规则导出', 2299, 5, '#', '', NULL, '', 1, 0, 'F', '0', '0', 'sch:punchRule:export', '#', 'admin', '2026-01-07 11:18:22', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2305, '表单设计', 2100, 2, 'designer', 'workflow/nform/index', NULL, '', 1, 0, 'C', '0', '0', 'workflow:nform:list', 'form', 'admin', '2026-02-12 15:41:51', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2306, '业务表单', 2100, 5, 'customForm', 'workflow/customForm/index', NULL, '', 1, 0, 'C', '0', '0', 'workflow:customForm:list', 'documentation', 'admin', '2026-02-12 15:53:56', 'admin', '2026-02-12 15:54:05', '');
-INSERT INTO `sys_menu` VALUES (2307, '在线开发', 0, 13, 'onlineform', NULL, NULL, '', 1, 0, 'M', '0', '0', NULL, '#', 'admin', '2026-02-26 18:07:33', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2307, '在线开发', 0, 13, 'onlineform', NULL, NULL, '', 1, 0, 'M', '1', '1', '', '#', 'admin', '2026-02-26 18:07:33', 'admin', '2026-03-10 10:41:57', '');
 INSERT INTO `sys_menu` VALUES (2308, '表设计器', 2307, 1, 'table', 'online/db/list', NULL, '', 1, 0, 'C', '0', '0', NULL, '#', 'admin', '2026-02-26 18:08:10', '', NULL, '');
 INSERT INTO `sys_menu` VALUES (2309, 'online设计', 2307, 2, 'design', 'online/design/index', NULL, '', 1, 0, 'C', '0', '0', NULL, '#', 'admin', '2026-02-26 18:08:41', '', NULL, '');
+INSERT INTO `sys_menu` VALUES (2310, '表设计器', 3, 1, 'table', 'online/db/list', NULL, '', 1, 0, 'C', '0', '0', 'workflow:nform:edit', 'table', 'admin', '2026-03-10 10:22:03', 'admin', '2026-03-10 10:24:51', '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -9337,6 +9352,7 @@ INSERT INTO `sys_notice` VALUES (2, '维护通知：2018-07-01 若依系统凌�
 INSERT INTO `sys_notice` VALUES (3, '测试', '1', 0x3C703E3132333132333C2F703E, '0', '', NULL, NULL, '2026-03-04 15:39:20', '12323');
 INSERT INTO `sys_notice` VALUES (4, '', '', '', '', '', NULL, NULL, NULL, '');
 INSERT INTO `sys_notice` VALUES (5, '测试', '', 0x3C703EE6B58BE8AF953C2F703E, '', '', NULL, '1', '2026-03-05 11:12:38', '1');
+INSERT INTO `sys_notice` VALUES (6, '测试0310', '1', 0x3C703E3C62723E3C2F703E, '0', '', NULL, '', NULL, '测试');
 
 -- ----------------------------
 -- Table structure for sys_notice_send
@@ -9382,7 +9398,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1960 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1962 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -11248,6 +11264,14 @@ INSERT INTO `sys_oper_log` VALUES (1957, '流程模型', 1, 'com.nexus.workflow.
 INSERT INTO `sys_oper_log` VALUES (1958, '保存流程模型', 1, 'com.nexus.workflow.controller.WfModelController.save()', 'POST', 1, 'admin', '研发部门', '/workflow/model/save', '127.0.0.1', '内网IP', '{\"bpmnXml\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>\\n<bpmn2:definitions xmlns:xsi=\\\"http://www.w3.org/2001/XMLSchema-instance\\\" xmlns:bpmn2=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL\\\" xmlns:bpmndi=\\\"http://www.omg.org/spec/BPMN/20100524/DI\\\" xmlns:dc=\\\"http://www.omg.org/spec/DD/20100524/DC\\\" xmlns:di=\\\"http://www.omg.org/spec/DD/20100524/DI\\\" xmlns:flowable=\\\"http://flowable.org/bpmn\\\" id=\\\"diagram_Process_1772680234252\\\" targetNamespace=\\\"http://flowable.org/bpmn\\\" xsi:schemaLocation=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd\\\">\\n  <bpmn2:process id=\\\"Process_1772680234252\\\" name=\\\"业务流程_通知公告\\\" isExecutable=\\\"true\\\">\\n    <bpmn2:startEvent id=\\\"Event_02hj0hy\\\" flowable:formKey=\\\"key_1\\\">\\n      <bpmn2:outgoing>Flow_1t0ckig</bpmn2:outgoing>\\n    </bpmn2:startEvent>\\n    <bpmn2:userTask id=\\\"Activity_0zwwgcb\\\" flowable:formKey=\\\"key_1\\\" flowable:localScope=\\\"true\\\" flowable:dataType=\\\"USERS\\\" flowable:assignee=\\\"admin\\\" flowable:text=\\\"若依\\\">\\n      <bpmn2:incoming>Flow_1t0ckig</bpmn2:incoming>\\n      <bpmn2:outgoing>Flow_0s7gkkz</bpmn2:outgoing>\\n    </bpmn2:userTask>\\n    <bpmn2:sequenceFlow id=\\\"Flow_1t0ckig\\\" sourceRef=\\\"Event_02hj0hy\\\" targetRef=\\\"Activity_0zwwgcb\\\" />\\n    <bpmn2:userTask id=\\\"Activity_13ppi6d\\\" flowable:formKey=\\\"key_1\\\" flowable:localScope=\\\"true\\\" flowable:dataType=\\\"USERS\\\" flowable:assignee=\\\"admin\\\" flowable:text=\\\"若依\\\">\\n      <bpmn2:incoming>Flow_0s7gkkz</bpmn2:incoming>\\n      <bpmn2:outgoing>Flow_1kbttn7</bpmn2:outgoing>\\n    </bpmn2:userTask>\\n    <bpmn2:sequenceFlow id=\\\"Flow_0s7gkkz\\\" sourceRef=\\\"Activity_0zwwgcb\\\" targetRef=\\\"Activity_13ppi6d\\\" />\\n    <bpmn2:endEvent id=\\\"Event_0pnicpg\\\">\\n      <bpmn2:incoming>Flow_1kbttn7</bpmn2:incoming>\\n    </bpmn2:endEvent>\\n    <bpmn2:sequenceFlow id=\\\"Flow_1kbttn7\\\" sourceRef=\\\"Activity_13ppi6d\\\" targetRef=\\\"Event_0pnicpg\\\" />\\n  </bpmn2:process>\\n  <bpmndi:BPMNDiagram id=\\\"BPMNDiagram_1\\\">\\n    <bpmndi:BPMNPlane id=\\\"BPMNPlane_1\\\" bpmnElement=\\\"Process_1772680234252\\\"', NULL, 1, '导入失败，流程第一个用户任务节点必须是发起人节点', '2026-03-05 11:12:02', 12);
 INSERT INTO `sys_oper_log` VALUES (1959, '保存流程模型', 1, 'com.nexus.workflow.controller.WfModelController.save()', 'POST', 1, 'admin', '研发部门', '/workflow/model/save', '127.0.0.1', '内网IP', '{\"bpmnXml\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>\\n<bpmn2:definitions xmlns:xsi=\\\"http://www.w3.org/2001/XMLSchema-instance\\\" xmlns:bpmn2=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL\\\" xmlns:bpmndi=\\\"http://www.omg.org/spec/BPMN/20100524/DI\\\" xmlns:dc=\\\"http://www.omg.org/spec/DD/20100524/DC\\\" xmlns:di=\\\"http://www.omg.org/spec/DD/20100524/DI\\\" xmlns:flowable=\\\"http://flowable.org/bpmn\\\" id=\\\"diagram_Process_1772680234252\\\" targetNamespace=\\\"http://flowable.org/bpmn\\\" xsi:schemaLocation=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd\\\">\\n  <bpmn2:process id=\\\"Process_1772680234252\\\" name=\\\"业务流程_通知公告\\\" isExecutable=\\\"true\\\">\\n    <bpmn2:startEvent id=\\\"Event_02hj0hy\\\" flowable:formKey=\\\"key_1\\\">\\n      <bpmn2:outgoing>Flow_1t0ckig</bpmn2:outgoing>\\n    </bpmn2:startEvent>\\n    <bpmn2:userTask id=\\\"Activity_0zwwgcb\\\" flowable:formKey=\\\"key_1\\\" flowable:localScope=\\\"true\\\" flowable:dataType=\\\"INITIATOR\\\" flowable:assignee=\\\"${initiator}\\\" flowable:text=\\\"流程发起人\\\">\\n      <bpmn2:incoming>Flow_1t0ckig</bpmn2:incoming>\\n      <bpmn2:outgoing>Flow_0s7gkkz</bpmn2:outgoing>\\n    </bpmn2:userTask>\\n    <bpmn2:sequenceFlow id=\\\"Flow_1t0ckig\\\" sourceRef=\\\"Event_02hj0hy\\\" targetRef=\\\"Activity_0zwwgcb\\\" />\\n    <bpmn2:userTask id=\\\"Activity_13ppi6d\\\" flowable:formKey=\\\"key_1\\\" flowable:localScope=\\\"true\\\" flowable:dataType=\\\"USERS\\\" flowable:assignee=\\\"admin\\\" flowable:text=\\\"若依\\\">\\n      <bpmn2:incoming>Flow_0s7gkkz</bpmn2:incoming>\\n      <bpmn2:outgoing>Flow_1kbttn7</bpmn2:outgoing>\\n    </bpmn2:userTask>\\n    <bpmn2:sequenceFlow id=\\\"Flow_0s7gkkz\\\" sourceRef=\\\"Activity_0zwwgcb\\\" targetRef=\\\"Activity_13ppi6d\\\" />\\n    <bpmn2:endEvent id=\\\"Event_0pnicpg\\\">\\n      <bpmn2:incoming>Flow_1kbttn7</bpmn2:incoming>\\n    </bpmn2:endEvent>\\n    <bpmn2:sequenceFlow id=\\\"Flow_1kbttn7\\\" sourceRef=\\\"Activity_13ppi6d\\\" targetRef=\\\"Event_0pnicpg\\\" />\\n  </bpmn2:process>\\n  <bpmndi:BPMNDiagram id=\\\"BPMNDiagram_1\\\">\\n    <bpmndi:BPMNPlane id=\\\"BPMNPlane_1\\\" bpmnElement=\\\"Process_1', '{\"code\":200,\"msg\":\"操作成功\"}', 0, NULL, '2026-03-05 11:12:11', 24);
 INSERT INTO `sys_oper_log` VALUES (1960, '部署流程模型', 1, 'com.nexus.workflow.controller.WfModelController.deployModel()', 'POST', 1, 'admin', '研发部门', '/workflow/model/deploy', '127.0.0.1', '内网IP', '{\"modelId\":\"1a0ebc19-1841-11f1-9cf5-00ffaabbccdd\"}', '{\"code\":200,\"msg\":\"操作成功\"}', 0, NULL, '2026-03-05 11:12:14', 645);
+INSERT INTO `sys_oper_log` VALUES (1961, '代码生成', 8, 'com.nexus.generator.controller.GenController.batchGenCode()', 'GET', 1, 'admin', '研发部门', '/tool/gen/batchGenCode', '127.0.0.1', '内网IP', '{\"tableIdStr\":\"4\"}', NULL, 0, NULL, '2026-03-09 14:43:16', 34);
+INSERT INTO `sys_oper_log` VALUES (1962, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"tool/build/index\",\"createTime\":\"2025-08-29 16:28:04\",\"icon\":\"build\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":115,\"menuName\":\"表单构建\",\"menuType\":\"C\",\"orderNum\":2,\"params\":{},\"parentId\":3,\"path\":\"build\",\"perms\":\"tool:build:list\",\"query\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-10 10:20:55', 21);
+INSERT INTO `sys_oper_log` VALUES (1963, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"tool/build/index\",\"createTime\":\"2025-08-29 16:28:04\",\"icon\":\"build\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":115,\"menuName\":\"表单构建\",\"menuType\":\"C\",\"orderNum\":3,\"params\":{},\"parentId\":3,\"path\":\"build\",\"perms\":\"tool:build:list\",\"query\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-10 10:20:59', 5);
+INSERT INTO `sys_oper_log` VALUES (1964, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"tool/swagger/index\",\"createTime\":\"2025-08-29 16:28:04\",\"icon\":\"swagger\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":117,\"menuName\":\"系统接口\",\"menuType\":\"C\",\"orderNum\":4,\"params\":{},\"parentId\":3,\"path\":\"swagger\",\"perms\":\"tool:swagger:list\",\"query\":\"\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-10 10:21:03', 16);
+INSERT INTO `sys_oper_log` VALUES (1965, '菜单管理', 1, 'com.nexus.web.controller.system.SysMenuController.add()', 'POST', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"online/db/list\",\"createBy\":\"admin\",\"icon\":\"table\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuName\":\"表设计器\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":3,\"path\":\"table\",\"status\":\"0\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-10 10:22:03', 7);
+INSERT INTO `sys_oper_log` VALUES (1966, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"component\":\"online/db/list\",\"createTime\":\"2026-03-10 10:22:03\",\"icon\":\"table\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2310,\"menuName\":\"表设计器\",\"menuType\":\"C\",\"orderNum\":1,\"params\":{},\"parentId\":3,\"path\":\"table\",\"perms\":\"workflow:nform:edit\",\"routeName\":\"\",\"status\":\"0\",\"updateBy\":\"admin\",\"visible\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-10 10:24:51', 7);
+INSERT INTO `sys_oper_log` VALUES (1967, '菜单管理', 2, 'com.nexus.web.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"children\":[],\"createTime\":\"2026-02-26 18:07:33\",\"icon\":\"#\",\"isCache\":\"0\",\"isFrame\":\"1\",\"menuId\":2307,\"menuName\":\"在线开发\",\"menuType\":\"M\",\"orderNum\":13,\"params\":{},\"parentId\":0,\"path\":\"onlineform\",\"perms\":\"\",\"routeName\":\"\",\"status\":\"1\",\"updateBy\":\"admin\",\"visible\":\"1\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-10 10:41:57', 7);
+INSERT INTO `sys_oper_log` VALUES (1968, '代码生成', 2, 'com.nexus.generator.controller.GenController.synchDb()', 'GET', 1, 'admin', '研发部门', '/tool/gen/synchDb/table_1', '127.0.0.1', '内网IP', '{}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-10 10:43:17', 30);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -11939,7 +11963,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-06 09:53:40', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2026-03-06 09:53:39', '管理员');
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-10 09:37:02', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2026-03-10 09:37:01', '管理员');
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员');
 INSERT INTO `sys_user` VALUES (100, 123, 'xiaowang', '小王', '00', '', '12', '0', '', '$2a$10$uo3P.kW3Qzrd.oEST8ht1OG2CPr1kStHirypPHqIe96npCqNLt21K', '0', '0', '', NULL, NULL, 'ry', '2025-09-19 11:44:44', 'admin', '2025-12-17 15:51:33', NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '1', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', 'admin', '2025-12-17 15:40:54', '耳朵聋');
@@ -12021,6 +12045,20 @@ INSERT INTO `sys_user_role` VALUES (113, 4);
 INSERT INTO `sys_user_role` VALUES (114, 4);
 
 -- ----------------------------
+-- Table structure for table_1
+-- ----------------------------
+DROP TABLE IF EXISTS `table_1`;
+CREATE TABLE `table_1`  (
+  `id` bigint(0) NOT NULL COMMENT '主键',
+  `field_2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `field_3` int(0) NULL DEFAULT NULL,
+  `field_4` bigint(0) NULL DEFAULT NULL,
+  `field_5` decimal(10, 0) NULL DEFAULT NULL,
+  `field_6` datetime(0) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
 -- Table structure for wf_category
 -- ----------------------------
 DROP TABLE IF EXISTS `wf_category`;
@@ -12038,7 +12076,7 @@ CREATE TABLE `wf_category`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`category_id`) USING BTREE,
   UNIQUE INDEX `codeIndex`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '流程分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '流程分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_category
@@ -12070,7 +12108,7 @@ CREATE TABLE `wf_copy`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`copy_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wf_custom_form
@@ -12290,7 +12328,7 @@ CREATE TABLE `wf_nform`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_nform

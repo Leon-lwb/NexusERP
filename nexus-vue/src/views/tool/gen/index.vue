@@ -1,14 +1,11 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
-      <el-form-item label="数据源名称" prop="dataName">
-        <el-input
-          v-model="queryParams.dataName"
-          placeholder="请输入数据源名称"
-          clearable
-          style="width: 200px"
-          @keyup.enter="handleQuery"
-        />
+      <el-form-item label="数据源" prop="dataName">
+        <el-select v-model="queryParams.dataName" filterable clearable placeholder="请选择/输入数据源名称" style="width: 200px">
+          <el-option key="" label="全部" value="" />
+          <el-option v-for="item in dataNameList" :key="item" :label="item" :value="item" />
+        </el-select>
       </el-form-item>
       <el-form-item label="表名称" prop="tableName">
         <el-input
@@ -108,10 +105,10 @@
       <el-table-column label="实体" align="center" prop="className" :show-overflow-tooltip="true" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="160" sortable="custom" :sort-orders="['descending', 'ascending']" />
       <el-table-column label="更新时间" align="center" prop="updateTime" width="160" sortable="custom" :sort-orders="['descending', 'ascending']" />
-      <el-table-column label="操作" align="center" width="330" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="360" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-tooltip content="预览" placement="top">
-            <el-button link type="primary" icon="View" @click="handlePreview(scope.row)" v-hasPermi="['tool:gen:preview']"></el-button>
+          <el-tooltip content="界面预览" placement="top">
+            <el-button link type="primary" icon="View" @click="handleOnlinePreview(scope.row)" v-hasPermi="['tool:gen:preview']"></el-button>
           </el-tooltip>
           <el-tooltip content="生成数据" placement="top">
             <el-button link type="primary" icon="DocumentAdd" @click="handleGenValue(scope.row)" v-hasPermi="['tool:gen:code']"></el-button>
@@ -122,8 +119,14 @@
           <el-tooltip content="删除" placement="top">
             <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['tool:gen:remove']"></el-button>
           </el-tooltip>
+          <el-tooltip content="测试" placement="top">
+            <el-button link type="primary" icon="Open" @click="handleTest(scope.row)" v-hasPermi="['tool:gen:test']"></el-button>
+          </el-tooltip>
           <el-tooltip content="同步" placement="top">
             <el-button link type="primary" icon="Refresh" @click="handleSynchDb(scope.row)" v-hasPermi="['tool:gen:edit']"></el-button>
+          </el-tooltip>
+          <el-tooltip content="代码预览" placement="top">
+            <el-button link type="primary" icon="Document" @click="handlePreview(scope.row)" v-hasPermi="['tool:gen:preview']"></el-button>
           </el-tooltip>
           <el-tooltip content="生成代码" placement="top">
             <el-button link type="primary" icon="Download" @click="handleGenTable(scope.row)" v-hasPermi="['tool:gen:code']"></el-button>
@@ -156,15 +159,27 @@
     </el-dialog>
     <import-table ref="importRef" @ok="handleQuery" />
     <create-table ref="createRef" @ok="handleQuery" />
+    
+    <!-- 在线表单预览 -->
+    <online-form-preview
+      v-model="onlinePreviewVisible"
+      :title="onlinePreviewTitle"
+      :table-id="onlinePreviewData.tableId"
+      :table-name="onlinePreviewData.tableName"
+      :form-data="onlinePreviewData.formData"
+      @success="handleQuery"
+    />
   </div>
 </template>
 
 <script setup name="Gen">
 import { listTable, previewTable, delTable, genCode, synchDb } from "@/api/tool/gen"
+import { getOnlineForm, getDataNames } from "@/api/online"
 import { DocumentCopy } from "@element-plus/icons-vue"
 import router from "@/router"
 import importTable from "./importTable"
 import createTable from "./createTable"
+import OnlineFormPreview from "@/components/OnlineFormPreview"
 
 const route = useRoute()
 const { proxy } = getCurrentInstance()
@@ -180,6 +195,7 @@ const tableNames = ref([])
 const dateRange = ref([])
 const uniqueId = ref("")
 const defaultSort = ref({ prop: "createTime", order: "descending" })
+const dataNameList = ref([])
 
 const data = reactive({
   queryParams: {
@@ -201,6 +217,15 @@ const data = reactive({
 
 const { queryParams, preview } = toRefs(data)
 
+// 在线表单预览相关
+const onlinePreviewVisible = ref(false)
+const onlinePreviewTitle = ref('界面预览')
+const onlinePreviewData = reactive({
+  tableId: null,
+  tableName: '',
+  formData: null
+})
+
 onActivated(() => {
   const time = route.query.t
   if (time != null && time != uniqueId.value) {
@@ -219,6 +244,13 @@ function getList() {
     tableList.value = response.rows
     total.value = response.total
     loading.value = false
+  })
+}
+
+/** 查询多数据源名称 */
+function getDataNameList() {
+  getDataNames().then(response => {
+    dataNameList.value = response.data
   })
 }
 
@@ -272,12 +304,52 @@ function resetQuery() {
   proxy.$refs["genRef"].sort(defaultSort.value.prop, defaultSort.value.order)
 }
 
-/** 预览按钮 */
+/** 代码预览按钮 */
 function handlePreview(row) {
   previewTable(row.tableId).then(response => {
     preview.value.data = response.data
     preview.value.open = true
     preview.value.activeName = "domain.java"
+  })
+}
+
+/** 界面预览按钮 */
+async function handleOnlinePreview(row) {
+  if (row.tplCategory === 'sub') {
+    proxy.$modal.msgError('附子表不支持界面预览！')
+    return
+  }
+  try {
+    const res = await getOnlineForm(row.tableId)
+    onlinePreviewData.tableId = row.tableId
+    onlinePreviewData.tableName = row.tableName
+    onlinePreviewData.formData = res.data
+    onlinePreviewTitle.value = `界面预览 - ${row.tableName}`
+    onlinePreviewVisible.value = true
+  } catch (error) {
+    proxy.$modal.msgError('获取表单数据失败')
+  }
+}
+
+/** 测试按钮 */
+function handleTest(row) {
+  if (row.tplCategory === 'sub') {
+    proxy.$modal.msgError('附子表不支持在线表单功能测试！')
+    return
+  }
+  const tableId = row.tableId
+  const tableName = row.tableName
+  const pathTarget = {
+    path: `/online/test/${String(tableId || '')}/${encodeURIComponent(String(tableName || ''))}`,
+    query: { t: Date.now() }
+  }
+  router.push({
+    path: `/redirect${pathTarget.path}`,
+    query: pathTarget.query
+  }).catch(e => {
+    console.error('redirect 跳转失败:', e)
+    const href = router.resolve(pathTarget).href
+    window.location.href = href
   })
 }
 
@@ -340,4 +412,5 @@ function handleGenValue(row) {
 }
 
 getList()
+getDataNameList()
 </script>

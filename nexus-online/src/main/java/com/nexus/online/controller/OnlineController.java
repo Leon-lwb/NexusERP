@@ -24,9 +24,16 @@ public class OnlineController extends BaseController {
     @Autowired
     private IOnlineService onlineService;
 
-    /**
-     * 查询数据表清单（代理至生成器 DB 表列表）
-     */
+    @PreAuthorize("@ss.hasPermi('workflow:nform:list')")
+    @GetMapping("/{tableId}")
+    public AjaxResult getOnlineForm(@PathVariable("tableId") Long tableId) {
+        Map<String, Object> formData = onlineService.getOnlineFormData(tableId);
+        if (formData == null || formData.isEmpty()) {
+            return error("表单数据不存在");
+        }
+        return success(formData);
+    }
+
     @PreAuthorize("@ss.hasPermi('workflow:nform:list')")
     @GetMapping("/list")
     public TableDataInfo list(GenTable query) {
@@ -41,18 +48,12 @@ public class OnlineController extends BaseController {
         return getDataTable(list);
     }
 
-    /**
-     * 获取数据源名称（预留，返回空列表）
-     */
     @PreAuthorize("@ss.hasPermi('workflow:nform:list')")
     @GetMapping("/getDataNames")
     public AjaxResult getDataNames() {
         return success(Collections.emptyList());
     }
 
-    /**
-     * 查询字典/关联表数据（占位实现，返回空集以保障前端不报错）
-     */
     @PreAuthorize("@ss.hasPermi('workflow:nform:list')")
     @GetMapping("/getTableData/{tableName}")
     public TableDataInfo getTableData(@PathVariable String tableName,
@@ -61,21 +62,15 @@ public class OnlineController extends BaseController {
         return onlineService.listTableData(tableName, pageNum, pageSize);
     }
 
-    /**
-     * 查询 online 表数据（占位实现）
-     */
     @PreAuthorize("@ss.hasPermi('workflow:nform:list')")
     @GetMapping("/getData/{tableId}/{tableName}")
-    public TableDataInfo getData(@PathVariable String tableId,
+    public TableDataInfo getData(@PathVariable Long tableId,
                                  @PathVariable String tableName,
                                  @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
                                  @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) {
-        return onlineService.listTableData(tableName, pageNum, pageSize);
+        return onlineService.listOnlineData(tableId, tableName, pageNum, pageSize);
     }
 
-    /**
-     * 新增或更新数据（占位实现）
-     */
     @PreAuthorize("@ss.hasPermi('workflow:nform:edit')")
     @PostMapping("/addOrUpdateDataByName/{tableName}")
     public AjaxResult addOrUpdateByName(@PathVariable String tableName, @RequestBody Map<String, Object> body) {
@@ -83,9 +78,6 @@ public class OnlineController extends BaseController {
         return toAjax(rows);
     }
 
-    /**
-     * 新增或更新数据（占位实现）
-     */
     @PreAuthorize("@ss.hasPermi('workflow:nform:edit')")
     @PostMapping("/addOrUpdateData/{tableId}/{tableName}")
     public AjaxResult addOrUpdate(@PathVariable String tableId, @PathVariable String tableName, @RequestBody Map<String, Object> body) {
@@ -93,9 +85,6 @@ public class OnlineController extends BaseController {
         return toAjax(rows);
     }
 
-    /**
-     * 删除数据（占位实现）
-     */
     @PreAuthorize("@ss.hasPermi('workflow:nform:remove')")
     @DeleteMapping("/delOnlineData/{tableId}/{tableName}")
     public AjaxResult delete(@PathVariable String tableId, @PathVariable String tableName, @RequestBody String ids) {
@@ -104,12 +93,21 @@ public class OnlineController extends BaseController {
         return toAjax(rows);
     }
 
-    /**
-     * 行详情（占位实现）
-     */
     @PreAuthorize("@ss.hasPermi('workflow:nform:list')")
     @GetMapping("/detail/{tableId}/{tableName}/{id}")
     public AjaxResult detail(@PathVariable String tableId, @PathVariable String tableName, @PathVariable String id) {
         return success(onlineService.getDetail(tableName, id));
+    }
+
+    @PreAuthorize("@ss.hasPermi('workflow:nform:list')")
+    @PostMapping("/getOnlineData/{tableId}/{tableName}")
+    public AjaxResult getOnlineData(@PathVariable Long tableId,
+                                    @PathVariable String tableName,
+                                    @RequestBody Long id) {
+        Map<String, Object> data = onlineService.getOnlineData(tableId, tableName, id);
+        if (data == null || data.isEmpty()) {
+            return error("数据不存在");
+        }
+        return success(data);
     }
 }

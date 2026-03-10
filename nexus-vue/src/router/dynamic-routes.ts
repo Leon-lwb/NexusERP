@@ -122,6 +122,21 @@ export const dynamicRoutes: CustomRouteRecordRaw[] = [
       }
     ]
   },
+  // 表设计器 - 系统工具菜单入口
+  {
+    path: '/tool/table',
+    component: Layout,
+    hidden: true,
+    permissions: ['tool:gen:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/online/db/list.vue'),
+        name: 'ToolTableList',
+        meta: { title: '表设计器', activeMenu: '/tool/table', icon: '' }
+      }
+    ]
+  },
   {
     path: '/core/bd/bom/form',
     component: Layout,
