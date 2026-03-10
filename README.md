@@ -99,6 +99,6 @@ NEXUS-ERP是一套全部开源的ERP企业管理平台，毫无保留给个人�
         <td><img src="https://oscimg.oschina.net/oscnet/up-5e4daac0bb59612c5038448acbcef235e3a.png"/></td>
     </tr>
 -aaaa
-    ![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E4%B8%BB%E6%95%B0%E6%8D%AE-%E8%AE%A1%E9%87%8F%E5%8D%95%E4%BD%8D.png)
+    ![image](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E4%B8%BB%E6%95%B0%E6%8D%AE-%E8%AE%A1%E9%87%8F%E5%8D%95%E4%BD%8D.png)
 
 </table>
