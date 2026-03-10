@@ -98,21 +98,13 @@ NEXUS-ERP是一套全部开源的ERP企业管理平台，毫无保留给个人�
         <td><img src="https://oscimg.oschina.net/oscnet/b6115bc8c31de52951982e509930b20684a.jpg"/></td>
         <td><img src="https://oscimg.oschina.net/oscnet/up-5e4daac0bb59612c5038448acbcef235e3a.png"/></td>
     </tr>
-	<tr>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/raw/master/doc/image/%E4%B8%BB%E6%95%B0%E6%8D%AE-%E8%AE%A1%E9%87%8F%E5%8D%95%E4%BD%8D.png)</td>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/raw/master/doc/image/%E9%94%80%E5%94%AE%E7%AE%A1%E7%90%86-%E5%AE%A2%E6%88%B7%E8%AE%A2%E5%8D%95.png)</td>
-    </tr>
-	<tr>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E5%BA%93%E6%88%BF%E7%AE%A1%E7%90%86-%E9%87%87%E8%B4%AD%E5%85%A5%E5%BA%93.png)</td>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E7%94%9F%E4%BA%A7%E7%AE%A1%E7%90%86-%E7%94%9F%E4%BA%A7%E8%AE%A1%E5%88%92.png)</td>
-    </tr>
-    <tr>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E8%80%83%E5%8B%A4%E7%AE%A1%E7%90%86-%E8%80%83%E5%8B%A4%E8%AE%B0%E5%BD%95.png)</td>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E7%94%9F%E4%BA%A7%E6%8E%92%E7%8F%AD-%E8%8A%82%E5%81%87%E6%97%A5%E8%AE%BE%E7%BD%AE.png)</td>
-    </tr>
-    <tr>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E6%B5%81%E7%A8%8B%E7%AE%A1%E7%90%86-%E6%B5%81%E7%A8%8B%E6%A8%A1%E5%9E%8B.png)</td>
-        <td>![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E4%BB%BB%E5%8A%A1%E7%AE%A1%E7%90%86-%E5%B7%B2%E5%8A%9E%E4%BB%BB%E5%8A%A1.png)</td>
-    </tr>
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/raw/master/doc/image/%E4%B8%BB%E6%95%B0%E6%8D%AE-%E8%AE%A1%E9%87%8F%E5%8D%95%E4%BD%8D.png)
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/raw/master/doc/image/%E9%94%80%E5%94%AE%E7%AE%A1%E7%90%86-%E5%AE%A2%E6%88%B7%E8%AE%A2%E5%8D%95.png)
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E5%BA%93%E6%88%BF%E7%AE%A1%E7%90%86-%E9%87%87%E8%B4%AD%E5%85%A5%E5%BA%93.png)
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E7%94%9F%E4%BA%A7%E7%AE%A1%E7%90%86-%E7%94%9F%E4%BA%A7%E8%AE%A1%E5%88%92.png)
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E8%80%83%E5%8B%A4%E7%AE%A1%E7%90%86-%E8%80%83%E5%8B%A4%E8%AE%B0%E5%BD%95.png)
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E7%94%9F%E4%BA%A7%E6%8E%92%E7%8F%AD-%E8%8A%82%E5%81%87%E6%97%A5%E8%AE%BE%E7%BD%AE.png)
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E6%B5%81%E7%A8%8B%E7%AE%A1%E7%90%86-%E6%B5%81%E7%A8%8B%E6%A8%A1%E5%9E%8B.png)
+    ![](https://gitee.com/helloworld_wh18/nexus-erp/blob/master/doc/image/%E4%BB%BB%E5%8A%A1%E7%AE%A1%E7%90%86-%E5%B7%B2%E5%8A%9E%E4%BB%BB%E5%8A%A1.png)
 
 </table>
