@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.nexus.im.core.mapper.ImMessageMapper">
+<mapper namespace="com.nexus.im.mapper.ImMessageMapper">
     
-    <resultMap type="com.nexus.im.core.ImMessage" id="ImMessageResult">
+    <resultMap type="com.nexus.im.domain.ImMessage" id="ImMessageResult">
         <id property="messageId" column="message_id"/>
         <result property="fromUserId" column="from_user_id"/>
         <result property="toUserId" column="to_user_id"/>

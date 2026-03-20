@@ -115,6 +115,53 @@
     "style": {
       "navigationBarTitleText": "浏览文本"
     }
+  }, {
+    "path": "pages/im/conversation/index",
+    "style": {
+      "navigationBarTitleText": "消息",
+      "navigationStyle": "custom"
+    }
+  }, {
+    "path": "pages/im/chat/index",
+    "style": {
+      "navigationBarTitleText": "聊天",
+      "navigationStyle": "custom"
+    }
+  }, {
+    "path": "pages/im/user-search/index",
+    "style": {
+      "navigationBarTitleText": "搜索用户",
+      "navigationStyle": "custom"
+    }
+  }, {
+    "path": "pages/im/user-detail/index",
+    "style": {
+      "navigationBarTitleText": "用户详情"
+    }
+  }, {
+    "path": "pages/im/contact/index",
+    "style": {
+      "navigationBarTitleText": "通讯录",
+      "navigationStyle": "custom"
+    }
+  }, {
+    "path": "pages/im/group-list/index",
+    "style": {
+      "navigationBarTitleText": "群聊",
+      "navigationStyle": "custom"
+    }
+  }, {
+    "path": "pages/im/group-create/index",
+    "style": {
+      "navigationBarTitleText": "创建群聊",
+      "navigationStyle": "custom"
+    }
+  }, {
+    "path": "pages/im/group-detail/index",
+    "style": {
+      "navigationBarTitleText": "群详情",
+      "navigationStyle": "custom"
+    }
   }],
   "tabBar": {
     "color": "#000000",
@@ -131,16 +178,11 @@
         "iconPath": "static/images/tabbar/work.png",
         "selectedIconPath": "static/images/tabbar/work_.png",
         "text": "考勤"
-      // }, {
-      //   "pagePath": "pages/so/customerOrder/uni-index",
-      //   "iconPath": "static/images/tabbar/work.png",
-      //   "selectedIconPath": "static/images/tabbar/work_.png",
-      //   "text": "销售"
-      // }, {
-      //   "pagePath": "pages/bd/vendor/uni-index",
-      //   "iconPath": "static/images/tabbar/work.png",
-      //   "selectedIconPath": "static/images/tabbar/work_.png",
-      //   "text": "供应商"
+      }, {
+        "pagePath": "pages/im/conversation/index",
+        "iconPath": "static/images/tabbar/work.png",
+        "selectedIconPath": "static/images/tabbar/work_.png",
+        "text": "消息"
       }, {
         "pagePath": "pages/work/index",
         "iconPath": "static/images/tabbar/work.png",

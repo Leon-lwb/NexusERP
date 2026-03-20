@@ -1,6 +1,15 @@
 import upload from '@/utils/upload'
 import request from '@/utils/request'
 
+// 用户列表查询
+export function listUser(params) {
+  return request({
+    url: '/system/user/list',
+    method: 'get',
+    params
+  })
+}
+
 // 用户密码重置
 export function updateUserPwd(oldPassword, newPassword) {
   const data = {

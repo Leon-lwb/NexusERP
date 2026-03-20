@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.nexus.im.core.mapper.ImFriendMapper">
+<mapper namespace="com.nexus.im.mapper.ImFriendMapper">
     
-    <resultMap type="com.nexus.im.core.ImFriend" id="ImFriendResult">
+    <resultMap type="com.nexus.im.domain.ImFriend" id="ImFriendResult">
         <id property="id" column="id"/>
         <result property="userId" column="user_id"/>
         <result property="friendUserId" column="friend_user_id"/>
