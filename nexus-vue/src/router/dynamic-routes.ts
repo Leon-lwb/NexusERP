@@ -296,5 +296,31 @@ export const dynamicRoutes: CustomRouteRecordRaw[] = [
         meta: { title: '表单设计器测试', activeMenu: '/workflow/nform', icon: '' }
       }
     ]
+  },
+  {
+    path: '/im',
+    component: Layout,
+    hidden: true,
+    permissions: ['im:chat:list'],
+    children: [
+      {
+        path: 'chat',
+        component: () => import('@/views/im/chat/index.vue'),
+        name: 'ImChat',
+        meta: { title: '即时通讯', activeMenu: '/im/chat', icon: 'message' }
+      },
+      {
+        path: 'contact',
+        component: () => import('@/views/im/contact/index.vue'),
+        name: 'ImContact',
+        meta: { title: '通讯录', activeMenu: '/im/contact', icon: 'user' }
+      },
+      {
+        path: 'group',
+        component: () => import('@/views/im/group/index.vue'),
+        name: 'ImGroup',
+        meta: { title: '群组管理', activeMenu: '/im/group', icon: 'peoples' }
+      }
+    ]
   }
 ]

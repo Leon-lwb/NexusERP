@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nexus</artifactId>
+        <groupId>com.nexus</groupId>
+        <version>3.9.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nexus-im</artifactId>
+
+    <description>
+        即时通讯模块
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-common-websocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-system</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

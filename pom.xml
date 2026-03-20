@@ -194,6 +194,13 @@
                 <version>${nexus.version}</version>
             </dependency>
 
+            <!-- IM模块-->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>nexus-im</artifactId>
+                <version>${nexus.version}</version>
+            </dependency>
+
             <!-- 通用工具-->
             <dependency>
                 <groupId>com.nexus</groupId>
@@ -307,6 +314,7 @@
         <module>nexus-flowable</module>
         <module>nexus-form</module>
         <module>nexus-online</module>
+        <module>nexus-im</module>
     </modules>
     <packaging>pom</packaging>
 

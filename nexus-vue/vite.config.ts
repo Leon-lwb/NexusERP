@@ -44,6 +44,11 @@ export default defineConfig(({ mode, command }: { mode: string, command: string 
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/dev-api/, '')
         },
+        '/websocket': {
+          target: baseUrl,
+          ws: true,
+          changeOrigin: true
+        },
         '^/v3/api-docs/(.*)': {
           target: baseUrl,
           changeOrigin: true,

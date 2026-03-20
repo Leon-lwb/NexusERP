@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.im.core.mapper.ImMessageMapper">
+    
+    <resultMap type="com.nexus.im.core.ImMessage" id="ImMessageResult">
+        <id property="messageId" column="message_id"/>
+        <result property="fromUserId" column="from_user_id"/>
+        <result property="toUserId" column="to_user_id"/>
+        <result property="groupId" column="group_id"/>
+        <result property="content" column="content"/>
+        <result property="messageType" column="message_type"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="isRead" column="is_read"/>
+        <result property="extra" column="extra"/>
+        <result property="source" column="source"/>
+        <result property="isRevoked" column="is_revoked"/>
+        <result property="revokeTime" column="revoke_time"/>
+    </resultMap>
+    
+    <sql id="selectImMessageVo">
+        select message_id, from_user_id, to_user_id, group_id, content, message_type, status, create_time, is_read, extra, source, is_revoked, revoke_time from im_message
+    </sql>
+    
+    <select id="selectPrivateMessageHistory" parameterType="map" resultMap="ImMessageResult">
+        <include refid="selectImMessageVo"/>
+        where ((from_user_id = #{userId1} and to_user_id = #{userId2})
+           or (from_user_id = #{userId2} and to_user_id = #{userId1}))
+        and group_id is null
+        order by create_time desc
+        limit #{offset}, #{limit}
+    </select>
+    
+    <select id="selectGroupMessageHistory" parameterType="map" resultMap="ImMessageResult">
+        <include refid="selectImMessageVo"/>
+        where group_id = #{groupId}
+        order by create_time desc
+        limit #{offset}, #{limit}
+    </select>
+    
+    <select id="selectUnreadCount" parameterType="Long" resultType="Integer">
+        select count(*) from im_message where to_user_id = #{userId} and is_read = 0
+    </select>
+    
+    <select id="selectUnreadCountByUser" parameterType="map" resultType="Integer">
+        select count(*) from im_message 
+        where to_user_id = #{userId} and from_user_id = #{targetUserId} and is_read = 0
+    </select>
+    
+    <select id="selectGroupUnreadCount" parameterType="map" resultType="Integer">
+        select count(*) from im_message 
+        where group_id = #{groupId} and create_time > #{joinTime} and is_read = 0
+    </select>
+    
+</mapper>

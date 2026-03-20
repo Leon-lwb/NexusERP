@@ -159,3 +159,8 @@ flowable:
     enabled: true
   # 消息基础URL
   message-base-url: http://localhost:8080
+
+# WebSocket配置
+websocket:
+  # 启用WebSocket
+  enabled: true

@@ -78,6 +78,18 @@
             <artifactId>nexus-online</artifactId>
         </dependency>
 
+        <!--IM通讯模块-->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-im</artifactId>
+        </dependency>
+
+        <!--WebSocket模块-->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>nexus-common-websocket</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

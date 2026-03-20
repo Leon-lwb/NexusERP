@@ -15,8 +15,10 @@ import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 // @ServerEndpoint 声明并创建了webSocket端点, 并且指明了请求路径
@@ -43,11 +45,8 @@ public class WebSocketServer {
     @Resource
     private NbcioRedisClient nbcioRedisClient;
 
-    /**
-     * 缓存 webSocket连接到单机服务class中（整体方案支持集群）
-     */
-    private static CopyOnWriteArraySet<WebSocketServer> webSockets = new CopyOnWriteArraySet<>();
-    private static Map<String, Session> sessionPool = new HashMap<String, Session>();
+    private static final CopyOnWriteArraySet<WebSocketServer> webSockets = new CopyOnWriteArraySet<>();
+    private static final Map<String, Set<Session>> sessionPool = new ConcurrentHashMap<>();
 
 
     @OnOpen
@@ -56,7 +55,7 @@ public class WebSocketServer {
             this.session = session;
             this.userName = userName;
             webSockets.add(this);
-            sessionPool.put(userName, session);
+            sessionPool.computeIfAbsent(userName, key -> ConcurrentHashMap.newKeySet()).add(session);
             log.info("【websocket消息】有新的连接，总数为:" + webSockets.size());
         } catch (Exception e) {
         }
@@ -66,7 +65,13 @@ public class WebSocketServer {
     public void onClose() {
         try {
             webSockets.remove(this);
-            sessionPool.remove(this.userName);
+            Set<Session> sessions = sessionPool.get(this.userName);
+            if (sessions != null) {
+                sessions.remove(this.session);
+                if (sessions.isEmpty()) {
+                    sessionPool.remove(this.userName);
+                }
+            }
             log.info("【websocket消息】连接断开，总数为:" + webSockets.size());
         } catch (Exception e) {
         }
@@ -80,15 +85,20 @@ public class WebSocketServer {
      * @param message
      */
     public void pushMessage(String userId, String message) {
-        Session session = sessionPool.get(userId);
-        if (session != null && session.isOpen()) {
-            try {
-                synchronized (session){
-                    log.info("【websocket消息】 单点消息:" + message);
-                    session.getBasicRemote().sendText(message);
+        Set<Session> sessions = sessionPool.get(userId);
+        if (sessions == null || sessions.isEmpty()) {
+            return;
+        }
+        for (Session session : sessions) {
+            if (session != null && session.isOpen()) {
+                try {
+                    synchronized (session) {
+                        log.info("【websocket消息】 单点消息:" + message);
+                        session.getBasicRemote().sendText(message);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
     }
@@ -98,7 +108,11 @@ public class WebSocketServer {
      */
     public void pushMessage(String message) {
         try {
-            webSockets.forEach(ws -> ws.session.getAsyncRemote().sendText(message));
+            sessionPool.values().forEach(sessions -> sessions.forEach(session -> {
+                if (session != null && session.isOpen()) {
+                    session.getAsyncRemote().sendText(message);
+                }
+            }));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -106,16 +120,30 @@ public class WebSocketServer {
 
 
     @OnMessage
-    public void onMessage(String message) {
-        //todo 现在有个定时任务刷，应该去掉
+    public void onMessage(String message, Session session) {
         log.debug("【websocket消息】收到客户端消息:" + message);
-        JSONObject obj = new JSONObject();
-        //业务类型
-        obj.put(WebsocketConst.MSG_CMD, WebsocketConst.CMD_CHECK);
-        //消息内容
-        obj.put(WebsocketConst.MSG_TXT, "心跳响应");
-        for (WebSocketServer webSocket : webSockets) {
-            webSocket.pushMessage(message);
+        if (message == null) {
+            return;
+        }
+        try {
+            if ("ping".equalsIgnoreCase(message)) {
+                session.getBasicRemote().sendText("{\"type\":\"pong\"}");
+                return;
+            }
+            JSONObject obj = JSONObject.parseObject(message);
+            if (obj != null && WebsocketConst.CMD_CHECK.equals(obj.getString(WebsocketConst.MSG_CMD))) {
+                session.getBasicRemote().sendText("{\"type\":\"pong\"}");
+                return;
+            }
+            if ("ping".equalsIgnoreCase(obj.getString("type"))) {
+                session.getBasicRemote().sendText("{\"type\":\"pong\"}");
+                return;
+            }
+        } catch (Exception e) {
+            try {
+                session.getBasicRemote().sendText("{\"type\":\"pong\"}");
+            } catch (IOException ioException) {
+            }
         }
     }
 
@@ -126,6 +154,7 @@ public class WebSocketServer {
      */
     public void sendMessage(String message) {
         log.info("【websocket消息】广播消息:" + message);
+        pushMessage(message);
         BaseMap baseMap = new BaseMap();
         baseMap.put("userName", "");
         baseMap.put("message", message);
@@ -144,6 +173,7 @@ public class WebSocketServer {
      * @param message
      */
     public void sendMessage(String userName, String message) {
+        pushMessage(userName, message);
         BaseMap baseMap = new BaseMap();
         baseMap.put("userName", userName);
         baseMap.put("message", message);

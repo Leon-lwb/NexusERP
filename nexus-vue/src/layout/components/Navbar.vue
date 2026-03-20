@@ -28,6 +28,14 @@
         <el-tooltip content="布局大小" effect="dark" placement="bottom">
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
+
+        <el-tooltip content="即时通讯" effect="dark" placement="bottom">
+          <div class="right-menu-item hover-effect im-btn" @click="openChatDialog">
+            <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99">
+              <el-icon :size="18"><ChatDotRound /></el-icon>
+            </el-badge>
+          </div>
+        </el-tooltip>
       </template>
 
       <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover">
@@ -40,6 +48,9 @@
             <router-link to="/user/profile">
               <el-dropdown-item>个人中心</el-dropdown-item>
             </router-link>
+            <el-dropdown-item @click="openChatDialog">
+              <span>我的消息</span>
+            </el-dropdown-item>
             <el-dropdown-item command="setLayout" v-if="settingsStore.showSettings">
                 <span>布局设置</span>
               </el-dropdown-item>
@@ -50,11 +61,15 @@
         </template>
       </el-dropdown>
     </div>
+
+    <ChatDialog v-model="showChatDialog" />
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
+import { ChatDotRound } from '@element-plus/icons-vue'
 import Breadcrumb from '@/components/Breadcrumb'
 import TopNav from '@/components/TopNav'
 import Hamburger from '@/components/Hamburger'
@@ -63,13 +78,20 @@ import SizeSelect from '@/components/SizeSelect'
 import HeaderSearch from '@/components/HeaderSearch'
 import RuoYiGit from '@/components/RuoYi/Git'
 import RuoYiDoc from '@/components/RuoYi/Doc'
+import ChatDialog from '@/components/ChatDialog/index.vue'
 import useAppStore from '@/store/modules/app'
 import useUserStore from '@/store/modules/user'
 import useSettingsStore from '@/store/modules/settings'
+import { useImStore } from '@/store/modules/im'
+import { loginToIm, getUnreadCount } from '@/api/im'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const imStore = useImStore()
+
+const showChatDialog = ref(false)
+const unreadCount = ref(0)
 
 function toggleSideBar() {
   appStore.toggleSideBar()
@@ -108,6 +130,32 @@ function setLayout() {
 function toggleTheme() {
   settingsStore.toggleTheme()
 }
+
+async function openChatDialog() {
+  if (!imStore.isConnected) {
+    try {
+      await imStore.login()
+    } catch (error) {
+      console.error('IM登录失败:', error)
+    }
+  }
+  showChatDialog.value = true
+}
+
+async function fetchUnreadCount() {
+  try {
+    const res = await getUnreadCount()
+    if (res.code === 200) {
+      unreadCount.value = res.data || 0
+    }
+  } catch (error) {
+    console.error('获取未读消息数失败:', error)
+  }
+}
+
+onMounted(() => {
+  fetchUnreadCount()
+})
 </script>
 
 <style lang='scss' scoped>
@@ -183,6 +231,11 @@ function toggleTheme() {
             transform: scale(1.15);
           }
         }
+      }
+
+      &.im-btn {
+        display: flex;
+        align-items: center;
       }
     }
 
