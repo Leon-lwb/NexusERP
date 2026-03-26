@@ -31,6 +31,14 @@ export function getUserProfile() {
   })
 }
 
+// 根据用户ID查询用户信息
+export function getUserById(userId) {
+  return request({
+    url: `/im/user/${userId}`,
+    method: 'get'
+  })
+}
+
 // 修改用户个人信息
 export function updateUserProfile(data) {
   return request({

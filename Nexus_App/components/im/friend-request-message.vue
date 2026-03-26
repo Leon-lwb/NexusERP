@@ -1,7 +1,7 @@
 <template>
   <view class="friend-request-message">
     <view class="request-header">
-      <image class="user-avatar" :src="fromUserInfo.avatar || defaultAvatar" mode="aspectFill" />
+      <image class="user-avatar" :src="getAvatarUrl(fromUserInfo.avatar)" mode="aspectFill" />
       <view class="user-info">
         <text class="user-name">{{ fromUserInfo.nickName || fromUserInfo.userName }}</text>
         <text class="request-tip">请求添加你为好友</text>
@@ -37,6 +37,7 @@
 <script>
 import { ref, computed } from 'vue'
 import { handleFriendRequest } from '@/api/im/friend-request'
+import { getAvatarUrl, defaultAvatar } from '@/utils/avatar'
 
 export default {
   name: 'FriendRequestMessage',
@@ -48,7 +49,6 @@ export default {
   },
   emits: ['accept', 'reject', 'refresh'],
   setup(props, { emit }) {
-    const defaultAvatar = '/static/images/profile.jpg'
     const processing = ref(false)
 
     const extraData = computed(() => {
@@ -180,6 +180,7 @@ export default {
 
     return {
       defaultAvatar,
+      getAvatarUrl,
       processing,
       fromUserInfo,
       requestMessage,
@@ -196,8 +197,8 @@ export default {
 .friend-request-message {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16rpx;
-  padding: 32rpx;
-  margin: 16rpx 0;
+  padding: 24rpx;
+  min-width: 480rpx;
   box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.3);
 }
 

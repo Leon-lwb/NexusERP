@@ -8,9 +8,9 @@
       @click="handleSelect(conv)"
     >
       <view class="avatar-wrapper">
-        <image 
-          class="avatar" 
-          :src="conv.avatar || defaultAvatar" 
+        <image
+          class="avatar"
+          :src="getAvatarUrl(conv.avatar)"
           mode="aspectFill"
         />
         <view v-if="conv.unreadCount > 0" class="unread-badge">
@@ -37,6 +37,7 @@
 
 <script>
 import { ref, computed } from 'vue'
+import { getAvatarUrl, defaultAvatar } from '@/utils/avatar'
 
 export default {
   name: 'ConversationList',
@@ -52,7 +53,6 @@ export default {
   },
   emits: ['select'],
   setup(props, { emit }) {
-    const defaultAvatar = '/static/images/profile.jpg'
 
     const handleSelect = (conv) => {
       emit('select', conv)
@@ -77,6 +77,7 @@ export default {
 
     return {
       defaultAvatar,
+      getAvatarUrl,
       handleSelect,
       formatTime
     }

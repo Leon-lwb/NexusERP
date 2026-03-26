@@ -1,5 +1,7 @@
 <template>
   <view class="bd_vendor_edit_container">
+    <!-- 状态栏占位 -->
+    <view class="status-bar-placeholder"></view>
     <view class="example">
       <uni-forms ref="form" :model="form" labelWidth="80px">
             <uni-forms-item label="供应商编码" name="vendorCode" required >
@@ -131,6 +133,11 @@ cancel(){
   }
 
   .bd_vendor_edit_container {
+    // 状态栏占位
+    .status-bar-placeholder {
+      height: var(--status-bar-height);
+    }
+
     .example {
       padding: 15px;
       background-color: #fff;

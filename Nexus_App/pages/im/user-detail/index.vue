@@ -1,7 +1,9 @@
 <template>
   <view class="user-detail-page">
+    <!-- 状态栏占位 -->
+    <view class="status-bar-placeholder"></view>
     <view class="user-header">
-      <image class="user-avatar" :src="userInfo.avatar || defaultAvatar" mode="aspectFill" />
+      <image class="user-avatar" :src="getAvatarUrl(userInfo.avatar)" mode="aspectFill" />
       <text class="user-name">{{ userInfo.nickName || userInfo.userName }}</text>
       <text class="user-dept">{{ userInfo.dept?.deptName || '暂无部门' }}</text>
     </view>
@@ -51,21 +53,23 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import { getUserProfile } from '@/api/system/user'
+import { getUserProfile, getUserById } from '@/api/system/user'
 import { addFriend, removeFriend, getFriendList } from '@/api/im/user'
+import { getAvatarUrl, defaultAvatar } from '@/utils/avatar'
 
 export default {
   setup() {
     const userId = ref(null)
     const userInfo = ref({})
     const isFriend = ref(false)
-    const defaultAvatar = '/static/images/profile.jpg'
 
     const loadUserInfo = async () => {
       try {
-        const res = await getUserProfile()
+        // 如果查看的是当前登录用户，获取个人资料
+        // 否则获取指定用户信息
+        const res = await getUserById(userId.value)
         if (res.code === 200) {
-          userInfo.value = res.data || res.user || {}
+          userInfo.value = res.data || {}
         }
       } catch (error) {
         console.error('Load user info failed:', error)
@@ -98,21 +102,21 @@ export default {
     const handleAddFriend = async () => {
       try {
         const res = await addFriend({
-          friendUserId: userId.value,
+          toUserId: userId.value,
+          requestMessage: '你好，我想添加你为好友',
           remark: userInfo.value.nickName || userInfo.value.userName
         })
         
         if (res.code === 200) {
           uni.showToast({
-            title: '添加好友成功',
+            title: '好友申请已发送',
             icon: 'success'
           })
-          isFriend.value = true
         }
       } catch (error) {
         console.error('Add friend failed:', error)
         uni.showToast({
-          title: '添加好友失败',
+          title: '发送好友申请失败',
           icon: 'none'
         })
       }
@@ -163,6 +167,7 @@ export default {
       userInfo,
       isFriend,
       defaultAvatar,
+      getAvatarUrl,
       handleStartChat,
       handleAddFriend,
       handleRemoveFriend
@@ -175,6 +180,11 @@ export default {
 .user-detail-page {
   min-height: 100vh;
   background-color: #f5f5f5;
+
+  // 状态栏占位
+  .status-bar-placeholder {
+    height: var(--status-bar-height);
+  }
 }
 
 .user-header {

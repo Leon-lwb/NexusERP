@@ -1,5 +1,7 @@
 <template>
 	<view class="bd_vendor_container">
+		<!-- 状态栏占位 -->
+		<view class="status-bar-placeholder"></view>
 		<view >
 		<!-- 筛选弹框 -->
 		<fjj-condition ref='condition' @touchmove.stop :color="conditionColor" :list="screenList" :defaultValue="defaultValue" @result="resultConditon" />
@@ -296,6 +298,11 @@ import {getSelectDict} from "@/utils/dict";
 		height: 100%;
 		display: flex; 
 		flex-direction: column;
+
+		// 状态栏占位
+		.status-bar-placeholder {
+			height: var(--status-bar-height);
+		}
 
 		/* 筛选栏样式开始 */
 		.filter-bar{

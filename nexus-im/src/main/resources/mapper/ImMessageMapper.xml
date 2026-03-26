@@ -15,13 +15,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime" column="create_time"/>
         <result property="isRead" column="is_read"/>
         <result property="extra" column="extra"/>
+        <result property="extraData" column="extra_data"/>
         <result property="source" column="source"/>
         <result property="isRevoked" column="is_revoked"/>
         <result property="revokeTime" column="revoke_time"/>
     </resultMap>
     
     <sql id="selectImMessageVo">
-        select message_id, from_user_id, to_user_id, group_id, content, message_type, status, create_time, is_read, extra, source, is_revoked, revoke_time from im_message
+        select message_id, from_user_id, to_user_id, group_id, content, message_type, status, create_time, is_read, extra, extra_data, source, is_revoked, revoke_time from im_message
     </sql>
     
     <select id="selectPrivateMessageHistory" parameterType="map" resultMap="ImMessageResult">

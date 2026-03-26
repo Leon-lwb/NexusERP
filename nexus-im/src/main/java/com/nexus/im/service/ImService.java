@@ -29,6 +29,8 @@ public interface ImService {
 
     AjaxResult getImUserList();
 
+    AjaxResult getUserById(Long userId);
+
     AjaxResult getMessageHistory(Long userId, String targetId, Integer pageNum, Integer pageSize);
     
     String getMessageId(Long fromUserId, Long toUserId, String content, String messageType);

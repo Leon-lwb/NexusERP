@@ -22,12 +22,13 @@ class ImWebSocket {
   getWsUrl() {
     const protocol = this.baseUrl.includes('https') ? 'wss:' : 'ws:'
     const host = this.baseUrl.replace(/https?:\/\//, '')
-    return `${protocol}//${host}/websocket/${this.userName}`
+    return `${protocol}//${host}/im/websocket/${this.userId}`
   }
 
-  connect(userName) {
-    if (!userName) {
-      console.error('WebSocket: username is required')
+  connect(userId) {
+    console.log('WebSocket connect called, userId:', userId)
+    if (!userId) {
+      console.error('WebSocket: userId is required')
       return
     }
 
@@ -36,7 +37,7 @@ class ImWebSocket {
       return
     }
 
-    this.userName = userName
+    this.userId = userId
     this.isManualClose = false
 
     const wsUrl = this.getWsUrl()
@@ -116,9 +117,9 @@ class ImWebSocket {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
-      if (!this.isManualClose && this.userName) {
+      if (!this.isManualClose && this.userId) {
         console.log('Attempting to reconnect WebSocket...')
-        this.connect(this.userName)
+        this.connect(this.userId)
       }
     }, this.reconnectInterval)
   }

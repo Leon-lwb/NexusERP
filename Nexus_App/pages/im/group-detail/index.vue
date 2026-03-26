@@ -1,5 +1,7 @@
 <template>
   <view class="group-detail-page">
+    <!-- 状态栏占位 -->
+    <view class="status-bar-placeholder"></view>
     <view class="page-header">
       <view class="header-left" @click="handleBack">
         <text class="back-icon">←</text>
@@ -285,6 +287,11 @@ export default {
 .group-detail-page {
   min-height: 100vh;
   background-color: #f5f5f5;
+
+  // 状态栏占位
+  .status-bar-placeholder {
+    height: var(--status-bar-height);
+  }
 }
 
 .page-header {

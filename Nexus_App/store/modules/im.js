@@ -33,17 +33,21 @@ export const useImStore = defineStore('im', () => {
   async function login() {
     try {
       loading.value = true
+      console.log('IM登录开始...')
       const res = await loginToIm()
+      console.log('IM登录响应:', res)
       if (res.code === 200) {
         currentUser.value = res.data
         storage.set(constant.imUser, res.data)
-        
-        initWebSocket(res.data.username)
+        console.log('IM登录成功，准备连接WebSocket, userId:', res.data.userId)
+
+        initWebSocket(res.data.userId)
         await loadConversations()
         await syncUnreadMessages()
-        
+
         return true
       }
+      console.error('IM登录失败:', res.msg)
       return false
     } catch (error) {
       console.error('IM login failed:', error)
@@ -68,7 +72,7 @@ export const useImStore = defineStore('im', () => {
     }
   }
 
-  function initWebSocket(username) {
+  function initWebSocket(userId) {
     imWebSocket.on('connected', () => {
       isConnected.value = true
       console.log('IM WebSocket connected')
@@ -103,7 +107,7 @@ export const useImStore = defineStore('im', () => {
       })
     })
 
-    imWebSocket.connect(username)
+    imWebSocket.connect(userId)
   }
 
   function disconnectWebSocket() {

@@ -1,5 +1,7 @@
 <template>
 	<view class="my-attendance-container">
+		<!-- 状态栏占位 -->
+		<view class="status-bar-placeholder"></view>
 		<view class="month-selector">
 			<text>{{ selectedMonth }}</text>
 		</view>
@@ -240,9 +242,14 @@ function formatDateTime(dateTime) {
 
 <style lang="scss">
 .my-attendance-container {
-	padding: 30rpx;
+	padding: 0 30rpx 30rpx;
 	height: 100%;
 	background-color: #f5f5f5;
+
+	// 状态栏占位
+	.status-bar-placeholder {
+		height: var(--status-bar-height);
+	}
 	
 	.month-selector {
 		text-align: center;

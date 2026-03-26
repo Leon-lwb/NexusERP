@@ -10,6 +10,8 @@ import com.nexus.im.domain.ImMessage;
 import com.nexus.im.dto.ImFriendRequestDTO;
 import com.nexus.im.dto.HandleFriendRequestDTO;
 import com.nexus.im.service.ImFriendRequestService;
+import com.nexus.im.service.ImFriendService;
+import com.nexus.im.service.impl.ImFriendServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +21,29 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Slf4j
-@Tag(name = "IM好友申请", description = "IM好友申请接口")
+@Tag(name = "IM好友管理", description = "IM好友管理接口")
 @RestController
 @RequestMapping("/im/friend")
 public class ImFriendController extends BaseController
 {
     @Autowired
     private ImFriendRequestService friendRequestService;
+    
+    @Autowired
+    private ImFriendService imFriendService;
+
+    /**
+     * 获取好友列表
+     */
+    @Operation(summary = "获取好友列表", description = "获取当前用户的好友列表")
+    @GetMapping("/list")
+    public AjaxResult getFriendList()
+    {
+        Long userId = SecurityUtils.getUserId();
+        log.info("获取好友列表: userId={}", userId);
+        List<java.util.Map<String, Object>> list = ((ImFriendServiceImpl) imFriendService).getFriendListWithInfo(userId);
+        return AjaxResult.success(list);
+    }
 
     /**
      * 发送好友申请
@@ -125,5 +143,25 @@ public class ImFriendController extends BaseController
         Long fromUserId = SecurityUtils.getUserId();
         boolean hasPending = friendRequestService.hasPendingRequest(fromUserId, toUserId);
         return AjaxResult.success("查询成功", hasPending);
+    }
+
+    /**
+     * 删除好友
+     */
+    @Operation(summary = "删除好友", description = "删除指定好友")
+    @Log(title = "IM好友管理", businessType = BusinessType.DELETE)
+    @PostMapping("/remove")
+    public AjaxResult removeFriend(@RequestBody java.util.Map<String, Object> params)
+    {
+        Long userId = SecurityUtils.getUserId();
+        Long friendUserId = Long.valueOf(params.get("friendUserId").toString());
+        log.info("删除好友: userId={}, friendUserId={}", userId, friendUserId);
+        
+        boolean success = imFriendService.removeFriend(userId, friendUserId);
+        if (success)
+        {
+            return AjaxResult.success("删除好友成功");
+        }
+        return AjaxResult.error("删除好友失败");
     }
 }

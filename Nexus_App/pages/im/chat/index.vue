@@ -1,5 +1,7 @@
 <template>
   <view class="chat-page">
+    <!-- 状态栏占位 -->
+    <view class="status-bar-placeholder"></view>
     <view class="chat-header">
       <view class="header-left" @click="handleBack">
         <text class="back-icon">←</text>
@@ -31,6 +33,9 @@
         :message="msg"
         :current-user-id="currentUserId"
         :current-user-avatar="currentUserAvatar"
+        @accept-friend-request="handleAcceptFriendRequest"
+        @reject-friend-request="handleRejectFriendRequest"
+        @refresh-messages="loadMessages"
       />
       
       <view v-if="messageList.length === 0 && !loading" class="empty-tip">
@@ -165,6 +170,22 @@ export default {
       }
     }
 
+    const handleAcceptFriendRequest = (message) => {
+      console.log('同意好友申请:', message)
+      uni.showToast({
+        title: '已同意好友申请',
+        icon: 'success'
+      })
+    }
+
+    const handleRejectFriendRequest = (message) => {
+      console.log('拒绝好友申请:', message)
+      uni.showToast({
+        title: '已拒绝好友申请',
+        icon: 'none'
+      })
+    }
+
     onMounted(() => {
       loadConversationInfo()
       loadMessages()
@@ -194,7 +215,9 @@ export default {
       handleInputFocus,
       handleInputBlur,
       handleBack,
-      handleShowInfo
+      handleShowInfo,
+      handleAcceptFriendRequest,
+      handleRejectFriendRequest
     }
   }
 }
@@ -206,6 +229,11 @@ export default {
   flex-direction: column;
   height: 100vh;
   background-color: #f5f5f5;
+
+  // 状态栏占位
+  .status-bar-placeholder {
+    height: var(--status-bar-height);
+  }
 }
 
 .chat-header {

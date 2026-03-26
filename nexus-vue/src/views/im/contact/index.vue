@@ -47,7 +47,7 @@
         
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
-            <!-- <el-button
+            <el-button
               v-if="!isFriend(row.userId)"
               type="primary"
               link
@@ -57,13 +57,6 @@
             </el-button>
             <el-button
               v-else
-              type="success"
-              link
-              @click="startChat(row)"
-            >
-              发消息
-            </el-button> -->
-            <el-button
               type="success"
               link
               @click="startChat(row)"

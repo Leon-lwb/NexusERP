@@ -3,6 +3,7 @@ package com.nexus.im.service.impl;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.core.domain.AjaxResult;
+import com.nexus.common.core.domain.entity.SysDept;
 import com.nexus.common.core.domain.entity.SysUser;
 import com.nexus.common.utils.StringUtils;
 import com.nexus.im.config.ImProperties;
@@ -262,6 +263,45 @@ public class ImServiceImpl implements ImService {
     }
 
     @Override
+    public AjaxResult getUserById(Long userId) {
+        try {
+            if (!imProperties.isEnabled()) {
+                return AjaxResult.error("IM功能未启用");
+            }
+
+            SysUser sysUser = imUserService.getSysUser(userId);
+            if (sysUser == null) {
+                return AjaxResult.error("用户不存在");
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("userId", sysUser.getUserId());
+            result.put("userName", sysUser.getUserName());
+            result.put("nickName", sysUser.getNickName());
+            result.put("avatar", sysUser.getAvatar());
+            result.put("email", sysUser.getEmail());
+            result.put("phonenumber", sysUser.getPhonenumber());
+            result.put("status", sysUser.getStatus());
+            result.put("dept", buildDeptInfo(sysUser.getDept()));
+
+            return AjaxResult.success(result);
+        } catch (Exception e) {
+            log.error("获取用户信息失败: {}", e.getMessage(), e);
+            return AjaxResult.error("获取用户信息失败: " + e.getMessage());
+        }
+    }
+
+    private Map<String, Object> buildDeptInfo(SysDept dept) {
+        if (dept == null) {
+            return null;
+        }
+        Map<String, Object> deptInfo = new HashMap<>();
+        deptInfo.put("deptId", dept.getDeptId());
+        deptInfo.put("deptName", dept.getDeptName());
+        return deptInfo;
+    }
+
+    @Override
     public AjaxResult getMessageHistory(Long userId, String targetId, Integer pageNum, Integer pageSize) {
         try {
             if (!imProperties.isEnabled()) {
@@ -297,6 +337,7 @@ public class ImServiceImpl implements ImService {
                 messageMap.put("createTime", msg.getCreateTime());
                 messageMap.put("isRead", msg.getIsRead());
                 messageMap.put("status", msg.getStatus());
+                messageMap.put("extraData", msg.getExtraData());
                 
                 if (msg.getFromUserId().equals(userId)) {
                     messageMap.put("senderName", currentUser != null ? currentUser.getNickName() : "我");

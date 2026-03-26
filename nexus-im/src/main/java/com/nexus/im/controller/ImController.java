@@ -187,6 +187,17 @@ public class ImController {
         }
     }
 
+    @Operation(summary = "获取指定用户信息", description = "根据用户ID获取用户基本信息")
+    @GetMapping("/user/{userId}")
+    public AjaxResult getUserById(@PathVariable Long userId) {
+        try {
+            return imService.getUserById(userId);
+        } catch (Exception e) {
+            log.error("获取用户信息失败: {}", e.getMessage(), e);
+            return AjaxResult.error("获取用户信息失败: " + e.getMessage());
+        }
+    }
+
     @Operation(summary = "获取未读消息数", description = "获取用户的未读消息总数")
     @GetMapping("/message/unread-count")
     public AjaxResult getUnreadCount() {

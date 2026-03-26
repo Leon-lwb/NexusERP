@@ -1,7 +1,7 @@
 <template>
   <view class="message-bubble" :class="isSelf ? 'self' : 'other'">
     <view v-if="!isSelf" class="avatar-wrapper">
-      <image class="avatar" :src="message.senderAvatar || defaultAvatar" mode="aspectFill" />
+      <image class="avatar" :src="getAvatarUrl(message.senderAvatar)" mode="aspectFill" />
     </view>
     
     <view class="message-content">
@@ -10,7 +10,17 @@
       </view>
       
       <view class="bubble-wrapper">
-        <view class="bubble" :class="messageType">
+        <!-- 好友申请消息 -->
+        <friend-request-message
+          v-if="message.messageType === 'friend_request'"
+          :message="message"
+          @accept="$emit('acceptFriendRequest', $event)"
+          @reject="$emit('rejectFriendRequest', $event)"
+          @refresh="$emit('refreshMessages')"
+        />
+        
+        <!-- 普通消息 -->
+        <view v-else class="bubble" :class="messageType">
           <text v-if="message.messageType === 'text'" class="text-content">
             {{ message.content }}
           </text>
@@ -29,23 +39,28 @@
           </view>
         </view>
         
-        <view class="message-time">
+        <view v-if="message.messageType !== 'friend_request'" class="message-time">
           {{ formatTime(message.createTime) }}
         </view>
       </view>
     </view>
     
     <view v-if="isSelf" class="avatar-wrapper">
-      <image class="avatar" :src="currentUserAvatar || defaultAvatar" mode="aspectFill" />
+      <image class="avatar" :src="getAvatarUrl(currentUserAvatar)" mode="aspectFill" />
     </view>
   </view>
 </template>
 
 <script>
 import { computed } from 'vue'
+import FriendRequestMessage from './friend-request-message.vue'
+import { getAvatarUrl, defaultAvatar } from '@/utils/avatar'
 
 export default {
   name: 'MessageBubble',
+  components: {
+    FriendRequestMessage
+  },
   props: {
     message: {
       type: Object,
@@ -60,8 +75,8 @@ export default {
       default: ''
     }
   },
+  emits: ['acceptFriendRequest', 'rejectFriendRequest', 'refreshMessages'],
   setup(props) {
-    const defaultAvatar = '/static/images/profile.jpg'
 
     const isSelf = computed(() => {
       return props.message.fromUserId === props.currentUserId
@@ -96,6 +111,7 @@ export default {
 
     return {
       defaultAvatar,
+      getAvatarUrl,
       isSelf,
       messageType,
       formatTime,
@@ -159,6 +175,7 @@ export default {
 .bubble-wrapper {
   display: flex;
   flex-direction: column;
+  max-width: 600rpx;
 }
 
 .bubble {
@@ -171,6 +188,12 @@ export default {
     padding: 8rpx;
     background-color: transparent !important;
   }
+}
+
+/* 好友申请消息样式 */
+.friend-request-message {
+  margin: 0 !important;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
 }
 
 .text-content {

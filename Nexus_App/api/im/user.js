@@ -30,7 +30,7 @@ export function getImUserList() {
 
 export function addFriend(data) {
   return request({
-    url: '/im/friend/add',
+    url: '/im/friend/request/send',
     method: 'post',
     data
   })

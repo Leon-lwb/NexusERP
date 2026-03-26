@@ -1,6 +1,8 @@
 package com.nexus.framework.config;
 
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +25,8 @@ import com.nexus.framework.interceptor.RepeatSubmitInterceptor;
 @Configuration
 public class ResourcesConfig implements WebMvcConfigurer
 {
+    private static final Logger log = LoggerFactory.getLogger(ResourcesConfig.class);
+
     @Autowired
     private RepeatSubmitInterceptor repeatSubmitInterceptor;
 
@@ -30,8 +34,11 @@ public class ResourcesConfig implements WebMvcConfigurer
     public void addResourceHandlers(ResourceHandlerRegistry registry)
     {
         /** 本地文件上传路径 */
-        registry.addResourceHandler(Constants.RESOURCE_PREFIX + "/**")
-                .addResourceLocations("file:" + RuoYiConfig.getProfile() + "/");
+        String resourceHandler = Constants.RESOURCE_PREFIX + "/**";
+        String resourceLocation = "file:" + RuoYiConfig.getProfile() + "/";
+        log.info("配置静态资源映射: {} -> {}", resourceHandler, resourceLocation);
+        registry.addResourceHandler(resourceHandler)
+                .addResourceLocations(resourceLocation);
 
         /** swagger配置 */
         registry.addResourceHandler("/swagger-ui/**")

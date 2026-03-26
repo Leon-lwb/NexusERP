@@ -1,5 +1,7 @@
 <template>
   <view class="conversation-page">
+    <!-- 状态栏占位 -->
+    <view class="status-bar-placeholder"></view>
     <view class="page-header">
       <text class="header-title">消息</text>
       <view class="header-right">
@@ -107,6 +109,11 @@ export default {
 .conversation-page {
   min-height: 100vh;
   background-color: #f5f5f5;
+
+  // 状态栏占位
+  .status-bar-placeholder {
+    height: var(--status-bar-height);
+  }
 }
 
 .page-header {

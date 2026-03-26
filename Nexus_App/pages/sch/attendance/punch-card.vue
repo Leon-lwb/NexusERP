@@ -1,5 +1,7 @@
 <template>
 	<view class="punch-card-container">
+		<!-- 状态栏占位 -->
+		<view class="status-bar-placeholder"></view>
 		<!-- 顶部时间显示 -->
 		<view class="time-section">
 			<view class="current-time">{{ currentTime }}</view>
@@ -711,9 +713,14 @@ async function handleRefreshClockOut() {
 
 <style lang="scss">
 .punch-card-container {
-	padding: 30rpx;
+	padding: 0 30rpx 30rpx;
 	height: 100%;
 	background: linear-gradient(to bottom, #f0f4ff, #ffffff);
+
+	// 状态栏占位
+	.status-bar-placeholder {
+		height: var(--status-bar-height);
+	}
 	
 	.time-section {
 		text-align: center;

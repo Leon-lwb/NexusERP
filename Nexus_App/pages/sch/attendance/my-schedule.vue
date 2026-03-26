@@ -1,5 +1,7 @@
 <template>
 	<view class="my-schedule-container" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
+		<!-- 状态栏占位 -->
+		<view class="status-bar-placeholder"></view>
 		<view class="schedule-header">
 			<text>我的排班</text>
 			<text class="total-count" v-if="totalCount > 0">共{{totalCount}}条</text>
@@ -222,9 +224,14 @@ function getStatusText(status) {
 
 <style lang="scss">
 .my-schedule-container {
-	padding: 30rpx;
+	padding: 0 30rpx 30rpx;
 	height: 100%;
 	background-color: #f5f5f5;
+
+	// 状态栏占位
+	.status-bar-placeholder {
+		height: var(--status-bar-height);
+	}
 	
 	.pull-down-refresh {
 		text-align: center;

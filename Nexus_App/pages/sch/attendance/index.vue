@@ -1,5 +1,7 @@
 <template>
 	<view class="attendance-main-container">
+		<!-- 状态栏占位 -->
+		<view class="status-bar-placeholder"></view>
 		<!-- 顶部状态栏 -->
 		<view class="status-bar">
 			<view class="current-time">
@@ -263,10 +265,15 @@ onUnmounted(() => {
 
 <style lang="scss">
 .attendance-main-container {
-	padding: 20rpx;
+	padding: 0 20rpx 20rpx;
 	height: 100%;
 	background: linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100%);
 	min-height: 100vh;
+
+	// 状态栏占位
+	.status-bar-placeholder {
+		height: var(--status-bar-height);
+	}
 
 	// 状态栏
 	.status-bar {

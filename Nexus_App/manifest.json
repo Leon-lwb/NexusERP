@@ -2,8 +2,8 @@
     "name" : "NexusERP移动端",
     "appid" : "__UNI__99F949F",
     "description" : "",
-    "versionName" : "0.1.1",
-    "versionCode" : 1,
+    "versionName" : "0.1.2",
+    "versionCode" : 2,
     "transformPx" : false,
     "app-plus" : {
         "usingComponents" : true,

@@ -11,7 +11,7 @@
  Target Server Version : 80039
  File Encoding         : 65001
 
- Date: 20/03/2026 18:02:39
+ Date: 25/03/2026 16:59:13
 */
 
 SET NAMES utf8mb4;
@@ -2658,7 +2658,7 @@ CREATE TABLE `gen_table`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 51 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 50 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2739,7 +2739,7 @@ CREATE TABLE `gen_table_column`  (
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1142 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1141 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3726,7 +3726,7 @@ CREATE TABLE `gen_table_design`  (
   `update_by` bigint(0) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`design_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '表设计器-设计保存表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '表设计器-设计保存表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_design
@@ -3753,7 +3753,13 @@ CREATE TABLE `im_friend`  (
   INDEX `idx_user`(`user_id`) USING BTREE,
   INDEX `idx_friend`(`friend_user_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM好友表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM好友表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of im_friend
+-- ----------------------------
+INSERT INTO `im_friend` VALUES (4, 1, 100, '', '默认分组', '2026-03-25 10:58:09', 'accepted', 0, 0, NULL);
+INSERT INTO `im_friend` VALUES (5, 100, 1, NULL, '默认分组', '2026-03-25 10:58:09', 'accepted', 0, 0, NULL);
 
 -- ----------------------------
 -- Table structure for im_group
@@ -3835,6 +3841,7 @@ CREATE TABLE `im_message`  (
   `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '扩展数据',
   `extra_data` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '扩展数据（JSON格式，用于存储好友申请等特殊消息的附加信息）',
   `source` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'user' COMMENT '消息来源：user, system, bot',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `is_revoked` tinyint(1) NULL DEFAULT 0 COMMENT '是否撤回',
   `revoke_time` datetime(0) NULL DEFAULT NULL COMMENT '撤回时间',
   PRIMARY KEY (`message_id`) USING BTREE,
@@ -3849,70 +3856,77 @@ CREATE TABLE `im_message`  (
 -- ----------------------------
 -- Records of im_message
 -- ----------------------------
-INSERT INTO `im_message` VALUES ('012479d9-cf7a-4949-854a-2373a8b56e86', 1, 100, NULL, '666', 'text', 'sent', '2026-03-11 19:32:34', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('02162a56-b1b5-4ffd-9865-17e7a0065289', 100, 1, NULL, '11', 'text', 'sent', '2026-03-12 13:27:38', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('06a967ad-674d-4f41-b49d-38e4b81b3bfc', 100, 1, NULL, '356', 'text', 'sent', '2026-03-11 19:14:29', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('0973ab99-298f-4fd4-bb6a-d22aa9ec2bb8', 1, 100, NULL, '😀', 'text', 'sent', '2026-03-11 19:03:06', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('0aecf3ce-6315-4231-94a9-849cdbecc0b3', 100, NULL, 'group_1773224691300_1', '6', 'text', 'sent', '2026-03-12 15:29:25', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('0cee0351-1818-478a-8a14-6d656d45042c', 100, 1, NULL, '55', 'text', 'sent', '2026-03-12 14:18:20', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('0fd9853e-4cb2-4b17-88ec-f8ffd3f38c29', 100, 1, NULL, '正常', 'text', 'sent', '2026-03-12 15:14:30', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('11ba9fa3-c47c-4b22-bab0-6eed2fa2987a', 1, 100, NULL, '嘟嘟', 'text', 'sent', '2026-03-20 16:44:05', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('13a60406-0cd2-4efb-be5a-6ddfd0a5a61d', 100, 1, NULL, '10', 'text', 'sent', '2026-03-12 15:11:09', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('16f48935-1455-425d-a209-dd5da22aab7a', 100, 1, NULL, '11', 'text', 'sent', '2026-03-12 13:58:39', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('1d106c91-0abb-47c1-b996-af7f1089f23c', 100, 1, NULL, '999', 'text', 'sent', '2026-03-12 13:48:02', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('1f1be501-5b92-41b8-908c-c34c008b84f2', 100, 1, NULL, '333', 'text', 'sent', '2026-03-12 14:09:12', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('26c3d74c-56ff-45eb-8334-934662ec917f', 1, NULL, 'group_1773224691300_1', '111', 'text', 'sent', '2026-03-11 18:29:33', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('26f76085-aa34-4fc7-acc5-c8109418abbb', 100, 1, NULL, '888', 'text', 'sent', '2026-03-11 19:04:09', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('28f8dce7-3888-4c20-bc3a-e215b549abdf', 100, 1, NULL, '444', 'text', 'sent', '2026-03-11 19:27:20', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('3014544d-408a-4119-86ed-685e2e05a40c', 1, NULL, 'group_1773224691300_1', '3344', 'text', 'sent', '2026-03-11 19:00:00', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('3bf6b8a5-69ba-4ee6-83cf-c6f02043f814', 100, 1, NULL, '44', 'text', 'sent', '2026-03-12 14:11:00', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('3c5337e9-3d49-45a5-894e-28dd4d004078', 100, 1, NULL, '1010', 'text', 'sent', '2026-03-11 19:13:50', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('491f6550-11f8-4f77-945c-939c44306208', 1, 100, NULL, '555', 'text', 'sent', '2026-03-11 19:31:42', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('50a64c34-8a22-4446-b4de-8303ee17edbd', 100, 1, NULL, '测试', 'text', 'sent', '2026-03-12 15:13:56', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('50d50393-a966-478f-b5df-8bb422a0e931', 115, 1, NULL, '233', 'text', 'sent', '2026-03-20 16:13:37', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('56bd566e-2259-430b-9854-1aba2534f7d9', 100, 1, NULL, '1111', 'text', 'sent', '2026-03-12 12:50:47', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('594fa0d5-d3e9-4180-8829-b90dfef65159', 100, NULL, 'group_1773224691300_1', '哈哈哈', 'text', 'sent', '2026-03-12 15:41:03', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('59528ad2-8ac5-42b3-9e39-bf26d9449c0b', 100, 1, NULL, '1010', 'text', 'sent', '2026-03-11 20:01:08', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('5a771ce7-939d-44b6-b65a-49fa6af8efdb', 100, 1, NULL, '24123132', 'text', 'sent', '2026-03-12 15:27:02', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('61d61a46-b254-4298-b013-536f3ebfd661', 100, 1, NULL, '567', 'text', 'sent', '2026-03-11 19:23:28', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('625c990e-3075-4be5-a8e4-5171fcc4aa0d', 100, 1, NULL, '456', 'text', 'sent', '2026-03-12 12:52:00', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('6bc79a1e-d921-4a5b-ae00-99cd702e0845', 100, 1, NULL, '333456', 'text', 'sent', '2026-03-12 15:27:31', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('7cb4ed88-4338-4803-9e9d-166237eaa1f9', 1, NULL, 'group_1773224691300_1', '测试123', 'text', 'sent', '2026-03-11 18:26:41', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('7e505798-3409-4353-a2fe-3d8b92cfd958', 100, 1, NULL, '999', 'text', 'sent', '2026-03-11 19:43:02', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('806bb363-b73f-453c-9704-d08fc1c3dc9e', 100, 1, NULL, '77', 'text', 'sent', '2026-03-12 14:51:22', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('87a83aef-c319-4b79-9f89-2dc65d84ace2', 1, NULL, 'group_1773144509792_1', '测试', 'text', 'sent', '2026-03-10 20:09:21', 0, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('89109c3a-9493-4ada-a69a-84d7b93e648a', 100, 1, NULL, '777', 'text', 'sent', '2026-03-12 13:15:54', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('898de89f-716c-4be7-bddf-77b821ef7efa', 100, NULL, 'group_1773224691300_1', '222', 'text', 'sent', '2026-03-11 18:49:45', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('8dd88c20-2865-4636-adc0-379950beb364', 1, NULL, 'group_1773224691300_1', '好好好', 'text', 'sent', '2026-03-12 15:35:54', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('905c61e0-fc2f-4ab5-bca4-bb370f9f4ad4', 100, NULL, 'group_1773224691300_1', '群', 'text', 'sent', '2026-03-12 15:28:38', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('91e25995-628d-41a0-b51e-d3d04c8b52f0', 100, 1, NULL, '10', 'text', 'sent', '2026-03-12 13:56:07', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('932fedea-6820-4149-b49c-0e4c512fad4f', 100, 1, NULL, '999', 'text', 'sent', '2026-03-11 19:13:32', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('95a8f101-7d05-421b-bb00-a41746a85e60', 100, 1, NULL, '12', 'text', 'sent', '2026-03-12 13:28:03', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('96e3f73f-8ada-48a7-a695-ec6b136f1311', 100, 1, NULL, '321', 'text', 'sent', '2026-03-11 19:01:05', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('9b47502c-632a-4b7a-b455-fbdc088d1ae6', 100, 1, NULL, '10', 'text', 'sent', '2026-03-12 13:26:31', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('9c413f89-04be-4631-8dce-4e0c327a1e29', 1, 115, NULL, '111', 'text', 'sent', '2026-03-20 16:13:31', 0, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('a177fe42-9eb5-4c66-8393-17f163880d03', 1, NULL, 'group_1773224691300_1', '😀', 'text', 'sent', '2026-03-11 18:50:23', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('a2ab1c8d-1de5-4691-80e0-f1c06226f30b', 100, 1, NULL, '333', 'text', 'sent', '2026-03-12 15:27:16', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('a51b8574-133e-45b1-8b6a-3ee140ea7fd6', 100, 1, NULL, '999', 'text', 'sent', '2026-03-12 13:26:05', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('abd7a718-5742-4e4e-ba6f-fe4da8fd52f4', 100, 1, NULL, '33333555', 'text', 'sent', '2026-03-11 19:02:20', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('b2702309-59fc-4ad7-add4-f25573f46087', 100, 1, NULL, '888', 'text', 'sent', '2026-03-12 13:25:25', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('b3554b97-72e7-4ad3-a1c7-d8391dfdc311', 100, 1, NULL, '22', 'text', 'sent', '2026-03-12 14:01:10', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('ba881d17-7a21-4d1e-98a1-fd7c68a8cb94', 100, 1, NULL, '555', 'text', 'sent', '2026-03-12 13:09:08', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('bf1cd078-eedb-46c7-967b-3f13a4b6f05f', 100, 1, NULL, '777', 'text', 'sent', '2026-03-11 19:38:15', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('c043c89f-a6b5-44c1-9e88-b26aa2c5a4eb', 1, 100, NULL, '我的', 'text', 'sent', '2026-03-12 15:22:29', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('c0d7931b-68ca-4dc6-90b2-0548c081c386', 100, 1, NULL, '88', 'text', 'sent', '2026-03-12 14:51:41', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('c2f09950-9edd-4104-bccd-15541c5809cc', 100, 1, NULL, '5666', 'text', 'sent', '2026-03-12 13:09:35', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('c3d9514c-0343-4f2c-b1bd-99030b89f67c', 100, 1, NULL, '666', 'text', 'sent', '2026-03-12 15:20:58', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('c93f4c67-859a-4d19-8c61-7d13739f1532', 100, 1, NULL, '888', 'text', 'sent', '2026-03-11 19:42:19', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('cc78d51f-e68d-4a0d-8808-162497aedc08', 100, 1, NULL, '366', 'text', 'sent', '2026-03-12 12:51:22', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('cd2c3e97-b581-434f-a432-96d92d5674b7', 1, 100, NULL, '123', 'text', 'sent', '2026-03-11 19:00:50', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('ce85a021-9db3-4e16-af42-5c4715aa8832', 100, NULL, 'group_1773224691300_1', '测试456', 'text', 'sent', '2026-03-11 18:26:54', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('cf14420f-d35e-4268-91b4-e9ece4832350', 100, NULL, 'group_1773224691300_1', '213', 'text', 'sent', '2026-03-11 19:00:19', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('d3d96640-53b9-43b3-82b1-fb3ccb57b4d0', 100, 1, NULL, '66', 'text', 'sent', '2026-03-12 14:27:32', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('dc07bbdc-cbbf-4efc-a85c-ff60894cf665', 100, 1, NULL, '99', 'text', 'sent', '2026-03-12 15:10:53', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('e5989dab-1b28-4ae2-a2cc-065d753c132a', 100, 1, NULL, '投降', 'text', 'sent', '2026-03-20 15:38:12', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('e68a05ca-46aa-4602-8c5e-34f47b191830', 100, 1, NULL, '6534', 'text', 'sent', '2026-03-12 13:33:28', 1, NULL, NULL, 'user', 0, NULL);
-INSERT INTO `im_message` VALUES ('e899db14-7009-423b-8083-e967cdecf65f', 100, NULL, 'group_1773224691300_1', '233', 'text', 'sent', '2026-03-11 18:59:52', 1, NULL, NULL, 'user', 0, NULL);
+INSERT INTO `im_message` VALUES ('012479d9-cf7a-4949-854a-2373a8b56e86', 1, 100, NULL, '666', 'text', 'sent', '2026-03-11 19:32:34', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('02162a56-b1b5-4ffd-9865-17e7a0065289', 100, 1, NULL, '11', 'text', 'sent', '2026-03-12 13:27:38', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('06a967ad-674d-4f41-b49d-38e4b81b3bfc', 100, 1, NULL, '356', 'text', 'sent', '2026-03-11 19:14:29', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('0973ab99-298f-4fd4-bb6a-d22aa9ec2bb8', 1, 100, NULL, '😀', 'text', 'sent', '2026-03-11 19:03:06', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('0aecf3ce-6315-4231-94a9-849cdbecc0b3', 100, NULL, 'group_1773224691300_1', '6', 'text', 'sent', '2026-03-12 15:29:25', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('0cee0351-1818-478a-8a14-6d656d45042c', 100, 1, NULL, '55', 'text', 'sent', '2026-03-12 14:18:20', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('0fd9853e-4cb2-4b17-88ec-f8ffd3f38c29', 100, 1, NULL, '正常', 'text', 'sent', '2026-03-12 15:14:30', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('11ba9fa3-c47c-4b22-bab0-6eed2fa2987a', 1, 100, NULL, '嘟嘟', 'text', 'sent', '2026-03-20 16:44:05', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('13a60406-0cd2-4efb-be5a-6ddfd0a5a61d', 100, 1, NULL, '10', 'text', 'sent', '2026-03-12 15:11:09', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('16f48935-1455-425d-a209-dd5da22aab7a', 100, 1, NULL, '11', 'text', 'sent', '2026-03-12 13:58:39', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('1d106c91-0abb-47c1-b996-af7f1089f23c', 100, 1, NULL, '999', 'text', 'sent', '2026-03-12 13:48:02', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('1f1be501-5b92-41b8-908c-c34c008b84f2', 100, 1, NULL, '333', 'text', 'sent', '2026-03-12 14:09:12', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('26c3d74c-56ff-45eb-8334-934662ec917f', 1, NULL, 'group_1773224691300_1', '111', 'text', 'sent', '2026-03-11 18:29:33', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('26f76085-aa34-4fc7-acc5-c8109418abbb', 100, 1, NULL, '888', 'text', 'sent', '2026-03-11 19:04:09', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('28f8dce7-3888-4c20-bc3a-e215b549abdf', 100, 1, NULL, '444', 'text', 'sent', '2026-03-11 19:27:20', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('2ca39ab2-5375-4b05-b69e-1d1d7c6d5eb4', 1, 100, NULL, '444', 'text', 'sent', '2026-03-25 14:33:42', 0, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('3014544d-408a-4119-86ed-685e2e05a40c', 1, NULL, 'group_1773224691300_1', '3344', 'text', 'sent', '2026-03-11 19:00:00', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('38bdb374-d4d2-44d1-a9fd-d88b106e91f8', 1, 100, NULL, '你好，我想添加你为好友', 'friend_request', 'accepted', '2026-03-24 16:36:06', 1, NULL, '{\"requestMessage\":\"你好，我想添加你为好友\",\"requestTime\":\"2026-03-24 16:36:06.105410500\",\"toUserInfo\":{\"nickName\":\"小王\",\"avatar\":\"/profile/avatar/2026/03/24/42ecca31160a497a92ddd293083a4c9e.jpg\",\"userName\":\"xiaowang\",\"userId\":100},\"handleTime\":\"2026-03-24 16:52:29.298861600\",\"remark\":\"\",\"fromUserInfo\":{\"nickName\":\"若依\",\"avatar\":\"\",\"userName\":\"admin\",\"userId\":1}}', 'user', '2026-03-24 16:52:29', 0, NULL);
+INSERT INTO `im_message` VALUES ('3bf6b8a5-69ba-4ee6-83cf-c6f02043f814', 100, 1, NULL, '44', 'text', 'sent', '2026-03-12 14:11:00', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('3c5337e9-3d49-45a5-894e-28dd4d004078', 100, 1, NULL, '1010', 'text', 'sent', '2026-03-11 19:13:50', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('491f6550-11f8-4f77-945c-939c44306208', 1, 100, NULL, '555', 'text', 'sent', '2026-03-11 19:31:42', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('50a64c34-8a22-4446-b4de-8303ee17edbd', 100, 1, NULL, '测试', 'text', 'sent', '2026-03-12 15:13:56', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('50d50393-a966-478f-b5df-8bb422a0e931', 115, 1, NULL, '233', 'text', 'sent', '2026-03-20 16:13:37', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('56bd566e-2259-430b-9854-1aba2534f7d9', 100, 1, NULL, '1111', 'text', 'sent', '2026-03-12 12:50:47', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('594fa0d5-d3e9-4180-8829-b90dfef65159', 100, NULL, 'group_1773224691300_1', '哈哈哈', 'text', 'sent', '2026-03-12 15:41:03', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('59528ad2-8ac5-42b3-9e39-bf26d9449c0b', 100, 1, NULL, '1010', 'text', 'sent', '2026-03-11 20:01:08', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('5a771ce7-939d-44b6-b65a-49fa6af8efdb', 100, 1, NULL, '24123132', 'text', 'sent', '2026-03-12 15:27:02', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('61d61a46-b254-4298-b013-536f3ebfd661', 100, 1, NULL, '567', 'text', 'sent', '2026-03-11 19:23:28', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('625c990e-3075-4be5-a8e4-5171fcc4aa0d', 100, 1, NULL, '456', 'text', 'sent', '2026-03-12 12:52:00', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('6bc79a1e-d921-4a5b-ae00-99cd702e0845', 100, 1, NULL, '333456', 'text', 'sent', '2026-03-12 15:27:31', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('7080fe71-e449-4501-a3b1-beb60acb0074', 1, 1, NULL, '你好，我想添加你为好友', 'friend_request', 'accepted', '2026-03-25 10:31:14', 1, NULL, '{\"requestMessage\":\"你好，我想添加你为好友\",\"requestTime\":\"2026-03-25 10:31:14.056321\",\"toUserInfo\":{\"nickName\":\"若依\",\"avatar\":\"\",\"userName\":\"admin\",\"userId\":1},\"handleTime\":\"2026-03-25 10:32:02.323696700\",\"remark\":\"\",\"fromUserInfo\":{\"nickName\":\"若依\",\"avatar\":\"\",\"userName\":\"admin\",\"userId\":1}}', 'user', '2026-03-25 10:32:02', 0, NULL);
+INSERT INTO `im_message` VALUES ('7cb4ed88-4338-4803-9e9d-166237eaa1f9', 1, NULL, 'group_1773224691300_1', '测试123', 'text', 'sent', '2026-03-11 18:26:41', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('7cf8218c-7b47-4b83-bb52-aaa078cd12e3', 1, 100, NULL, '你好，我想添加你为好友', 'friend_request', 'accepted', '2026-03-25 10:57:58', 1, NULL, '{\"requestMessage\":\"你好，我想添加你为好友\",\"requestTime\":\"2026-03-25 10:57:58.304165800\",\"toUserInfo\":{\"nickName\":\"小王\",\"avatar\":\"/profile/avatar/2026/03/24/42ecca31160a497a92ddd293083a4c9e.jpg\",\"userName\":\"xiaowang\",\"userId\":100},\"handleTime\":\"2026-03-25 10:58:08.727234600\",\"remark\":\"\",\"fromUserInfo\":{\"nickName\":\"若依\",\"avatar\":\"\",\"userName\":\"admin\",\"userId\":1}}', 'user', '2026-03-25 10:58:09', 0, NULL);
+INSERT INTO `im_message` VALUES ('7e505798-3409-4353-a2fe-3d8b92cfd958', 100, 1, NULL, '999', 'text', 'sent', '2026-03-11 19:43:02', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('806bb363-b73f-453c-9704-d08fc1c3dc9e', 100, 1, NULL, '77', 'text', 'sent', '2026-03-12 14:51:22', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('87a83aef-c319-4b79-9f89-2dc65d84ace2', 1, NULL, 'group_1773144509792_1', '测试', 'text', 'sent', '2026-03-10 20:09:21', 0, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('89109c3a-9493-4ada-a69a-84d7b93e648a', 100, 1, NULL, '777', 'text', 'sent', '2026-03-12 13:15:54', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('898de89f-716c-4be7-bddf-77b821ef7efa', 100, NULL, 'group_1773224691300_1', '222', 'text', 'sent', '2026-03-11 18:49:45', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('8dd88c20-2865-4636-adc0-379950beb364', 1, NULL, 'group_1773224691300_1', '好好好', 'text', 'sent', '2026-03-12 15:35:54', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('905c61e0-fc2f-4ab5-bca4-bb370f9f4ad4', 100, NULL, 'group_1773224691300_1', '群', 'text', 'sent', '2026-03-12 15:28:38', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('908f1530-d3cf-4117-910f-7bca7c2d3400', 100, 1, NULL, '333', 'text', 'sent', '2026-03-25 14:33:22', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('91e25995-628d-41a0-b51e-d3d04c8b52f0', 100, 1, NULL, '10', 'text', 'sent', '2026-03-12 13:56:07', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('932fedea-6820-4149-b49c-0e4c512fad4f', 100, 1, NULL, '999', 'text', 'sent', '2026-03-11 19:13:32', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('95a8f101-7d05-421b-bb00-a41746a85e60', 100, 1, NULL, '12', 'text', 'sent', '2026-03-12 13:28:03', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('96e3f73f-8ada-48a7-a695-ec6b136f1311', 100, 1, NULL, '321', 'text', 'sent', '2026-03-11 19:01:05', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('9b47502c-632a-4b7a-b455-fbdc088d1ae6', 100, 1, NULL, '10', 'text', 'sent', '2026-03-12 13:26:31', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('9c413f89-04be-4631-8dce-4e0c327a1e29', 1, 115, NULL, '111', 'text', 'sent', '2026-03-20 16:13:31', 0, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('a177fe42-9eb5-4c66-8393-17f163880d03', 1, NULL, 'group_1773224691300_1', '😀', 'text', 'sent', '2026-03-11 18:50:23', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('a2ab1c8d-1de5-4691-80e0-f1c06226f30b', 100, 1, NULL, '333', 'text', 'sent', '2026-03-12 15:27:16', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('a51b8574-133e-45b1-8b6a-3ee140ea7fd6', 100, 1, NULL, '999', 'text', 'sent', '2026-03-12 13:26:05', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('abd7a718-5742-4e4e-ba6f-fe4da8fd52f4', 100, 1, NULL, '33333555', 'text', 'sent', '2026-03-11 19:02:20', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('b2702309-59fc-4ad7-add4-f25573f46087', 100, 1, NULL, '888', 'text', 'sent', '2026-03-12 13:25:25', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('b3554b97-72e7-4ad3-a1c7-d8391dfdc311', 100, 1, NULL, '22', 'text', 'sent', '2026-03-12 14:01:10', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('ba881d17-7a21-4d1e-98a1-fd7c68a8cb94', 100, 1, NULL, '555', 'text', 'sent', '2026-03-12 13:09:08', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('bf1cd078-eedb-46c7-967b-3f13a4b6f05f', 100, 1, NULL, '777', 'text', 'sent', '2026-03-11 19:38:15', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('c043c89f-a6b5-44c1-9e88-b26aa2c5a4eb', 1, 100, NULL, '我的', 'text', 'sent', '2026-03-12 15:22:29', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('c0d7931b-68ca-4dc6-90b2-0548c081c386', 100, 1, NULL, '88', 'text', 'sent', '2026-03-12 14:51:41', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('c2f09950-9edd-4104-bccd-15541c5809cc', 100, 1, NULL, '5666', 'text', 'sent', '2026-03-12 13:09:35', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('c3d9514c-0343-4f2c-b1bd-99030b89f67c', 100, 1, NULL, '666', 'text', 'sent', '2026-03-12 15:20:58', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('c93f4c67-859a-4d19-8c61-7d13739f1532', 100, 1, NULL, '888', 'text', 'sent', '2026-03-11 19:42:19', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('cc78d51f-e68d-4a0d-8808-162497aedc08', 100, 1, NULL, '366', 'text', 'sent', '2026-03-12 12:51:22', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('cd2c3e97-b581-434f-a432-96d92d5674b7', 1, 100, NULL, '123', 'text', 'sent', '2026-03-11 19:00:50', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('ce85a021-9db3-4e16-af42-5c4715aa8832', 100, NULL, 'group_1773224691300_1', '测试456', 'text', 'sent', '2026-03-11 18:26:54', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('cf14420f-d35e-4268-91b4-e9ece4832350', 100, NULL, 'group_1773224691300_1', '213', 'text', 'sent', '2026-03-11 19:00:19', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('d3d96640-53b9-43b3-82b1-fb3ccb57b4d0', 100, 1, NULL, '66', 'text', 'sent', '2026-03-12 14:27:32', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('d4c1cd77-1924-472d-969c-bf03c8048bc1', 100, 1, NULL, 'http://localhost:8080/profile/upload/2026/03/24/P001_20260324144853A001.jpg', 'file', 'sent', '2026-03-24 14:48:54', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('dc07bbdc-cbbf-4efc-a85c-ff60894cf665', 100, 1, NULL, '99', 'text', 'sent', '2026-03-12 15:10:53', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('e5989dab-1b28-4ae2-a2cc-065d753c132a', 100, 1, NULL, '投降', 'text', 'sent', '2026-03-20 15:38:12', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('e68a05ca-46aa-4602-8c5e-34f47b191830', 100, 1, NULL, '6534', 'text', 'sent', '2026-03-12 13:33:28', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('e899db14-7009-423b-8083-e967cdecf65f', 100, NULL, 'group_1773224691300_1', '233', 'text', 'sent', '2026-03-11 18:59:52', 1, NULL, NULL, 'user', NULL, 0, NULL);
+INSERT INTO `im_message` VALUES ('f42b953c-0336-4b40-99dc-7e66359e7a0d', 100, 1, NULL, '123', 'text', 'sent', '2026-03-25 09:49:12', 1, NULL, NULL, 'user', NULL, 0, NULL);
 
 -- ----------------------------
 -- Table structure for prd_material_request
@@ -5378,7 +5392,7 @@ CREATE TABLE `sch_worker`  (
   PRIMARY KEY (`worker_id`) USING BTREE,
   UNIQUE INDEX `uk_user_id`(`user_id`) USING BTREE,
   UNIQUE INDEX `uk_employee_id`(`employee_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '生产工人档案表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '生产工人档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sch_worker
@@ -8655,7 +8669,7 @@ CREATE TABLE `sys_logininfor`  (
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 647 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 662 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -9207,6 +9221,32 @@ INSERT INTO `sys_logininfor` VALUES (643, 'mobile_15388485360', '127.0.0.1', '�
 INSERT INTO `sys_logininfor` VALUES (644, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-20 16:34:15');
 INSERT INTO `sys_logininfor` VALUES (645, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '退出成功', '2026-03-20 16:34:46');
 INSERT INTO `sys_logininfor` VALUES (646, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-20 16:34:54');
+INSERT INTO `sys_logininfor` VALUES (647, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-23 14:48:13');
+INSERT INTO `sys_logininfor` VALUES (648, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-24 09:36:42');
+INSERT INTO `sys_logininfor` VALUES (649, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-24 09:49:20');
+INSERT INTO `sys_logininfor` VALUES (650, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-24 14:47:46');
+INSERT INTO `sys_logininfor` VALUES (651, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-24 16:15:29');
+INSERT INTO `sys_logininfor` VALUES (652, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-24 16:35:50');
+INSERT INTO `sys_logininfor` VALUES (653, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-25 09:08:58');
+INSERT INTO `sys_logininfor` VALUES (654, '小王', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '1', '用户不存在/密码错误', '2026-03-25 09:25:16');
+INSERT INTO `sys_logininfor` VALUES (655, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 09:25:27');
+INSERT INTO `sys_logininfor` VALUES (656, 'ruoyi', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '1', '用户不存在/密码错误', '2026-03-25 09:26:41');
+INSERT INTO `sys_logininfor` VALUES (657, '若依', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '1', '用户不存在/密码错误', '2026-03-25 09:26:56');
+INSERT INTO `sys_logininfor` VALUES (658, 'ruoyi', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '1', '用户不存在/密码错误', '2026-03-25 09:27:09');
+INSERT INTO `sys_logininfor` VALUES (659, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 09:27:19');
+INSERT INTO `sys_logininfor` VALUES (660, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 09:39:00');
+INSERT INTO `sys_logininfor` VALUES (661, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 09:49:28');
+INSERT INTO `sys_logininfor` VALUES (662, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '退出成功', '2026-03-25 10:39:31');
+INSERT INTO `sys_logininfor` VALUES (663, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 10:39:40');
+INSERT INTO `sys_logininfor` VALUES (664, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '退出成功', '2026-03-25 10:39:54');
+INSERT INTO `sys_logininfor` VALUES (665, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 10:40:03');
+INSERT INTO `sys_logininfor` VALUES (666, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '退出成功', '2026-03-25 14:37:14');
+INSERT INTO `sys_logininfor` VALUES (667, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 14:45:28');
+INSERT INTO `sys_logininfor` VALUES (668, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 14:47:06');
+INSERT INTO `sys_logininfor` VALUES (669, 'admin', '127.0.0.1', '内网IP', 'Chrome 13', 'Windows 10', '0', '登录成功', '2026-03-25 15:02:19');
+INSERT INTO `sys_logininfor` VALUES (670, 'admin', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 15:05:04');
+INSERT INTO `sys_logininfor` VALUES (671, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '退出成功', '2026-03-25 15:06:15');
+INSERT INTO `sys_logininfor` VALUES (672, 'xiaowang', '127.0.0.1', '内网IP', 'Mobile Safari', 'Mac OS X (iPhone)', '0', '登录成功', '2026-03-25 15:06:30');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -9558,7 +9598,7 @@ CREATE TABLE `sys_notice`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -9614,7 +9654,7 @@ CREATE TABLE `sys_oper_log`  (
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1976 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1982 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -11495,6 +11535,17 @@ INSERT INTO `sys_oper_log` VALUES (1972, '个人信息', 2, 'com.nexus.web.contr
 INSERT INTO `sys_oper_log` VALUES (1973, '用户头像', 2, 'com.nexus.web.controller.system.SysProfileController.avatar()', 'POST', 1, 'xiaowang', '开发组', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"imgUrl\":\"/profile/avatar/2026/03/20/5c9543db57f74adbba36a1d4037ebe10.jpg\",\"code\":200}', 0, NULL, '2026-03-20 15:37:07', 97);
 INSERT INTO `sys_oper_log` VALUES (1974, '个人信息', 2, 'com.nexus.web.controller.system.SysProfileController.updateProfile()', 'PUT', 1, 'xiaowang', '开发组', '/system/user/profile', '127.0.0.1', '内网IP', '{\"admin\":false,\"email\":\"123@qq.com\",\"nickName\":\"小王\",\"params\":{},\"phonenumber\":\"15388888899\",\"sex\":\"0\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-20 15:37:38', 11);
 INSERT INTO `sys_oper_log` VALUES (1975, '通知公告', 2, 'com.nexus.web.controller.system.SysNoticeController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/notice', '127.0.0.1', '内网IP', '{\"createBy\":\"\",\"noticeContent\":\"<p>通知</p>\",\"noticeId\":6,\"noticeTitle\":\"测试0320\",\"noticeType\":\"1\",\"params\":{},\"remark\":\"测试\",\"status\":\"0\",\"updateBy\":\"admin\"}', '{\"msg\":\"操作成功\",\"code\":200}', 0, NULL, '2026-03-20 15:46:36', 6);
+INSERT INTO `sys_oper_log` VALUES (1976, '用户头像', 2, 'com.nexus.web.controller.system.SysProfileController.avatar()', 'POST', 1, 'xiaowang', '开发组', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"imgUrl\":\"/profile/avatar/2026/03/24/418f428f507545b0abe49783aee5e39f.jpg\",\"code\":200}', 0, NULL, '2026-03-24 14:48:44', 197);
+INSERT INTO `sys_oper_log` VALUES (1977, '用户头像', 2, 'com.nexus.web.controller.system.SysProfileController.avatar()', 'POST', 1, 'xiaowang', '开发组', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"imgUrl\":\"/profile/avatar/2026/03/24/a44f94c0095e44b6a736452dbf5b92c6.jpg\",\"code\":200}', 0, NULL, '2026-03-24 14:52:49', 28);
+INSERT INTO `sys_oper_log` VALUES (1978, '用户头像', 2, 'com.nexus.web.controller.system.SysProfileController.avatar()', 'POST', 1, 'xiaowang', '开发组', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"imgUrl\":\"/profile/avatar/2026/03/24/42ecca31160a497a92ddd293083a4c9e.jpg\",\"code\":200}', 0, NULL, '2026-03-24 14:53:00', 26);
+INSERT INTO `sys_oper_log` VALUES (1979, 'IM好友申请', 1, 'com.nexus.im.controller.ImFriendController.sendFriendRequest()', 'POST', 1, 'admin', '研发部门', '/im/friend/request/send', '127.0.0.1', '内网IP', '{\"remark\":\"若依\",\"requestMessage\":\"你好，我想添加你为好友\",\"toUserId\":100}', '{\"msg\":\"好友申请已发送\",\"code\":200,\"data\":{\"content\":\"你好，我想添加你为好友\",\"createTime\":\"2026-03-24 16:36:06\",\"extraData\":\"{\\\"requestMessage\\\":\\\"你好，我想添加你为好友\\\",\\\"requestTime\\\":\\\"2026-03-24 16:36:06.105410500\\\",\\\"toUserInfo\\\":{\\\"nickName\\\":\\\"小王\\\",\\\"avatar\\\":\\\"/profile/avatar/2026/03/24/42ecca31160a497a92ddd293083a4c9e.jpg\\\",\\\"userName\\\":\\\"xiaowang\\\",\\\"userId\\\":100},\\\"remark\\\":\\\"若依\\\",\\\"fromUserInfo\\\":{\\\"nickName\\\":\\\"若依\\\",\\\"avatar\\\":\\\"\\\",\\\"userName\\\":\\\"admin\\\",\\\"userId\\\":1}}\",\"fromUserId\":1,\"messageId\":\"38bdb374-d4d2-44d1-a9fd-d88b106e91f8\",\"messageType\":\"friend_request\",\"status\":\"pending\",\"toUserId\":100}}', 0, NULL, '2026-03-24 16:36:06', 65);
+INSERT INTO `sys_oper_log` VALUES (1980, 'IM好友申请', 2, 'com.nexus.im.controller.ImFriendController.handleFriendRequest()', 'POST', 1, 'xiaowang', '开发组', '/im/friend/request/handle', '127.0.0.1', '内网IP', '{\"accept\":true,\"messageId\":\"38bdb374-d4d2-44d1-a9fd-d88b106e91f8\",\"remark\":\"\"}', '{\"msg\":\"已同意好友申请\",\"code\":200}', 0, NULL, '2026-03-24 16:52:29', 45);
+INSERT INTO `sys_oper_log` VALUES (1981, 'IM好友管理', 3, 'com.nexus.im.controller.ImFriendController.removeFriend()', 'POST', 1, 'admin', '研发部门', '/im/friend/remove', '127.0.0.1', '内网IP', '{\"friendUserId\":100}', '{\"msg\":\"删除好友成功\",\"code\":200}', 0, NULL, '2026-03-25 09:50:45', 21);
+INSERT INTO `sys_oper_log` VALUES (1982, 'IM好友申请', 1, 'com.nexus.im.controller.ImFriendController.sendFriendRequest()', 'POST', 1, 'admin', '研发部门', '/im/friend/request/send', '127.0.0.1', '内网IP', '{\"remark\":\"若依\",\"requestMessage\":\"你好，我想添加你为好友\",\"toUserId\":1}', '{\"msg\":\"好友申请已发送\",\"code\":200,\"data\":{\"content\":\"你好，我想添加你为好友\",\"createTime\":\"2026-03-25 10:31:14\",\"extraData\":\"{\\\"requestMessage\\\":\\\"你好，我想添加你为好友\\\",\\\"requestTime\\\":\\\"2026-03-25 10:31:14.056321\\\",\\\"toUserInfo\\\":{\\\"nickName\\\":\\\"若依\\\",\\\"avatar\\\":\\\"\\\",\\\"userName\\\":\\\"admin\\\",\\\"userId\\\":1},\\\"remark\\\":\\\"若依\\\",\\\"fromUserInfo\\\":{\\\"nickName\\\":\\\"若依\\\",\\\"avatar\\\":\\\"\\\",\\\"userName\\\":\\\"admin\\\",\\\"userId\\\":1}}\",\"fromUserId\":1,\"messageId\":\"7080fe71-e449-4501-a3b1-beb60acb0074\",\"messageType\":\"friend_request\",\"status\":\"pending\",\"toUserId\":1}}', 0, NULL, '2026-03-25 10:31:14', 27);
+INSERT INTO `sys_oper_log` VALUES (1983, 'IM好友申请', 2, 'com.nexus.im.controller.ImFriendController.handleFriendRequest()', 'POST', 1, 'admin', '研发部门', '/im/friend/request/handle', '127.0.0.1', '内网IP', '{\"accept\":true,\"messageId\":\"7080fe71-e449-4501-a3b1-beb60acb0074\",\"remark\":\"\"}', '{\"msg\":\"已同意好友申请\",\"code\":200}', 0, NULL, '2026-03-25 10:32:02', 24);
+INSERT INTO `sys_oper_log` VALUES (1984, 'IM好友申请', 1, 'com.nexus.im.controller.ImFriendController.sendFriendRequest()', 'POST', 1, 'admin', '研发部门', '/im/friend/request/send', '127.0.0.1', '内网IP', '{\"remark\":\"小王\",\"requestMessage\":\"你好，我想添加你为好友\",\"toUserId\":100}', '{\"msg\":\"好友申请已发送\",\"code\":200,\"data\":{\"content\":\"你好，我想添加你为好友\",\"createTime\":\"2026-03-25 10:57:58\",\"extraData\":\"{\\\"requestMessage\\\":\\\"你好，我想添加你为好友\\\",\\\"requestTime\\\":\\\"2026-03-25 10:57:58.304165800\\\",\\\"toUserInfo\\\":{\\\"nickName\\\":\\\"小王\\\",\\\"avatar\\\":\\\"/profile/avatar/2026/03/24/42ecca31160a497a92ddd293083a4c9e.jpg\\\",\\\"userName\\\":\\\"xiaowang\\\",\\\"userId\\\":100},\\\"remark\\\":\\\"小王\\\",\\\"fromUserInfo\\\":{\\\"nickName\\\":\\\"若依\\\",\\\"avatar\\\":\\\"\\\",\\\"userName\\\":\\\"admin\\\",\\\"userId\\\":1}}\",\"fromUserId\":1,\"messageId\":\"7cf8218c-7b47-4b83-bb52-aaa078cd12e3\",\"messageType\":\"friend_request\",\"status\":\"pending\",\"toUserId\":100}}', 0, NULL, '2026-03-25 10:57:58', 35);
+INSERT INTO `sys_oper_log` VALUES (1985, 'IM好友申请', 2, 'com.nexus.im.controller.ImFriendController.handleFriendRequest()', 'POST', 1, 'xiaowang', '开发组', '/im/friend/request/handle', '127.0.0.1', '内网IP', '{\"accept\":true,\"messageId\":\"7cf8218c-7b47-4b83-bb52-aaa078cd12e3\",\"remark\":\"\"}', '{\"msg\":\"已同意好友申请\",\"code\":200}', 0, NULL, '2026-03-25 10:58:08', 26);
+INSERT INTO `sys_oper_log` VALUES (1986, '用户头像', 2, 'com.nexus.web.controller.system.SysProfileController.avatar()', 'POST', 1, 'xiaowang', '开发组', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '{\"msg\":\"操作成功\",\"imgUrl\":\"/profile/avatar/2026/03/25/43c8ce353ef34a34a1516a329c438a0b.png\",\"code\":200}', 0, NULL, '2026-03-25 14:47:24', 112);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -12193,9 +12244,9 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-20 16:34:55', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2026-03-20 16:34:54', '管理员', 'offline', NULL, NULL, 'unknown', NULL, NULL);
+INSERT INTO `sys_user` VALUES (1, 103, 'admin', '若依', '00', 'ry@163.com', '15888888888', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-03-25 15:05:05', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2026-03-25 15:05:04', '管理员', 'offline', NULL, NULL, 'unknown', NULL, NULL);
 INSERT INTO `sys_user` VALUES (2, 105, 'ry', '若依', '00', 'ry@qq.com', '15666666666', '1', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2025-11-07 13:40:18', '2025-08-29 16:28:04', 'admin', '2025-08-29 16:28:04', '', '2025-11-07 13:40:18', '测试员', 'offline', NULL, NULL, 'unknown', NULL, NULL);
-INSERT INTO `sys_user` VALUES (100, 123, 'xiaowang', '小王', '00', '123@qq.com', '15388888899', '0', '/profile/avatar/2026/03/20/5c9543db57f74adbba36a1d4037ebe10.jpg', '$2a$10$QcTEyjfakzGztOg7gswB1ua0/66bP1.a1kS2owhGgQiUZ/xh.VDsa', '0', '0', '127.0.0.1', '2026-03-20 16:34:15', '2026-03-20 15:35:48', 'ry', '2025-09-19 11:44:44', 'admin', '2026-03-20 16:34:14', NULL, 'offline', NULL, NULL, 'unknown', NULL, NULL);
+INSERT INTO `sys_user` VALUES (100, 123, 'xiaowang', '小王', '00', '123@qq.com', '15388888899', '0', '/profile/avatar/2026/03/25/43c8ce353ef34a34a1516a329c438a0b.png', '$2a$10$QcTEyjfakzGztOg7gswB1ua0/66bP1.a1kS2owhGgQiUZ/xh.VDsa', '0', '0', '127.0.0.1', '2026-03-25 15:06:30', '2026-03-20 15:35:48', 'ry', '2025-09-19 11:44:44', 'admin', '2026-03-25 15:06:30', NULL, 'offline', NULL, NULL, 'unknown', NULL, NULL);
 INSERT INTO `sys_user` VALUES (101, 115, '麦得朶', '麦得朶', '00', '', '1', '0', '', '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 'admin', '2025-10-23 17:03:16', 'admin', '2025-12-17 15:40:54', '耳朵聋', 'offline', NULL, NULL, 'unknown', NULL, NULL);
 INSERT INTO `sys_user` VALUES (102, 115, '麦得邵', '麦得邵', '00', '', '23', '0', '', '$2a$10$NDKFI8ezk4pCXp.TMTQWZu4thUF.035lFpWbDE.KdRTZTicynbdda', '0', '0', '127.0.0.1', '2025-10-23 18:54:16', NULL, 'admin', '2025-10-23 17:06:17', 'admin', '2025-12-17 15:41:21', '盐浸虾', 'offline', NULL, NULL, 'unknown', NULL, NULL);
 INSERT INTO `sys_user` VALUES (103, 115, '麦痕邵', '麦痕邵', '00', '', '32', '0', '', '$2a$10$N5tqnOCN9FmoPCpy5CWbYOYRORMPZ/GpH26uMFo3KfWrGJRNMvEeK', '0', '0', '', NULL, NULL, '麦得朶', '2025-10-23 19:03:36', '', NULL, NULL, 'offline', NULL, NULL, 'unknown', NULL, NULL);
@@ -12360,7 +12411,7 @@ CREATE TABLE `wf_custom_form`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `create_dept` bigint(0) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1002 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1001 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_custom_form
