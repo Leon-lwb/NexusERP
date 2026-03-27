@@ -75,7 +75,7 @@ private static final long serialVersionUID = 1L;
     private Long status;
     /** 质量状态 */
     @Excel(name = "质量状态")
-    private Long qualityStatus;
+    private String qualityStatus;
     /** 保质期(天) */
     private Long shelfLife;
     /** 重量(kg) */

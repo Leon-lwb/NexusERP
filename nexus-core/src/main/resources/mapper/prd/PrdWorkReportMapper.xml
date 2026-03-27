@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.prd.mapper.PrdWorkReportMapper">
+
+    <resultMap type="PrdWorkReport" id="PrdWorkReportResult">
+            <result property="reportId"    column="report_id"    />
+            <result property="reportNo"    column="report_no"    />
+            <result property="reportType"    column="report_type"    />
+            <result property="reportStatus"    column="report_status"    />
+            <result property="woId"    column="wo_id"    />
+            <result property="woNo"    column="wo_no"    />
+            <result property="woName"    column="wo_name"    />
+            <result property="materialId"    column="material_id"    />
+            <result property="materialCode"    column="material_code"    />
+            <result property="materialName"    column="material_name"    />
+            <result property="specification"    column="specification"    />
+            <result property="unitId"    column="unit_id"    />
+            <result property="unitCode"    column="unit_code"    />
+            <result property="unitName"    column="unit_name"    />
+            <result property="routeId"    column="route_id"    />
+            <result property="routeCode"    column="route_code"    />
+            <result property="routeName"    column="route_name"    />
+            <result property="processId"    column="process_id"    />
+            <result property="processCode"    column="process_code"    />
+            <result property="processName"    column="process_name"    />
+            <result property="operationStep"    column="operation_step"    />
+            <result property="operationSeq"    column="operation_seq"    />
+            <result property="taskId"    column="task_id"    />
+            <result property="taskNo"    column="task_no"    />
+            <result property="workstationId"    column="workstation_id"    />
+            <result property="workstationCode"    column="workstation_code"    />
+            <result property="workstationName"    column="workstation_name"    />
+            <result property="workshopId"    column="workshop_id"    />
+            <result property="workshopName"    column="workshop_name"    />
+            <result property="equipmentId"    column="equipment_id"    />
+            <result property="equipmentCode"    column="equipment_code"    />
+            <result property="equipmentName"    column="equipment_name"    />
+            <result property="lotNumber"    column="lot_number"    />
+            <result property="batchNo"    column="batch_no"    />
+            <result property="expireDate"    column="expire_date"    />
+            <result property="shiftId"    column="shift_id"    />
+            <result property="shiftName"    column="shift_name"    />
+            <result property="plannedQty"    column="planned_qty"    />
+            <result property="reportedQty"    column="reported_qty"    />
+            <result property="goodQty"    column="good_qty"    />
+            <result property="scrapQty"    column="scrap_qty"    />
+            <result property="defectQty"    column="defect_qty"    />
+            <result property="laborScrapQty"    column="labor_scrap_qty"    />
+            <result property="materialScrapQty"    column="material_scrap_qty"    />
+            <result property="otherScrapQty"    column="other_scrap_qty"    />
+            <result property="uncheckQty"    column="uncheck_qty"    />
+            <result property="cumulativeQty"    column="cumulative_qty"    />
+            <result property="remainingQty"    column="remaining_qty"    />
+            <result property="reportDate"    column="report_date"    />
+            <result property="startTime"    column="start_time"    />
+            <result property="endTime"    column="end_time"    />
+            <result property="laborHours"    column="labor_hours"    />
+            <result property="machineHours"    column="machine_hours"    />
+            <result property="setupHours"    column="setup_hours"    />
+            <result property="waitHours"    column="wait_hours"    />
+            <result property="pauseHours"    column="pause_hours"    />
+            <result property="workerId"    column="worker_id"    />
+            <result property="workerCode"    column="worker_code"    />
+            <result property="workerName"    column="worker_name"    />
+            <result property="teamId"    column="team_id"    />
+            <result property="teamCode"    column="team_code"    />
+            <result property="teamName"    column="team_name"    />
+            <result property="helperIds"    column="helper_ids"    />
+            <result property="helperNames"    column="helper_names"    />
+            <result property="qualityStatus"    column="quality_status"    />
+            <result property="qualityCheckId"    column="quality_check_id"    />
+            <result property="qualityCheckNo"    column="quality_check_no"    />
+            <result property="inspectorId"    column="inspector_id"    />
+            <result property="inspectorName"    column="inspector_name"    />
+            <result property="inspectTime"    column="inspect_time"    />
+            <result property="reportChannel"    column="report_channel"    />
+            <result property="sourceType"    column="source_type"    />
+            <result property="sourceId"    column="source_id"    />
+            <result property="sourceNo"    column="source_no"    />
+            <result property="barcode"    column="barcode"    />
+            <result property="submitBy"    column="submit_by"    />
+            <result property="submitTime"    column="submit_time"    />
+            <result property="auditBy"    column="audit_by"    />
+            <result property="auditTime"    column="audit_time"    />
+            <result property="auditRemark"    column="audit_remark"    />
+            <result property="remark"    column="remark"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+            <result property="deleted"    column="deleted"    />
+    </resultMap>
+
+    <sql id="selectPrdWorkReportVo">
+        select report_id, report_no, report_type, report_status, wo_id, wo_no, wo_name, material_id, material_code, material_name, specification, unit_id, unit_code, unit_name, route_id, route_code, route_name, process_id, process_code, process_name, operation_step, operation_seq, task_id, task_no, workstation_id, workstation_code, workstation_name, workshop_id, workshop_name, equipment_id, equipment_code, equipment_name, lot_number, batch_no, expire_date, shift_id, shift_name, planned_qty, reported_qty, good_qty, scrap_qty, defect_qty, labor_scrap_qty, material_scrap_qty, other_scrap_qty, uncheck_qty, cumulative_qty, remaining_qty, report_date, start_time, end_time, labor_hours, machine_hours, setup_hours, wait_hours, pause_hours, worker_id, worker_code, worker_name, team_id, team_code, team_name, helper_ids, helper_names, quality_status, quality_check_id, quality_check_no, inspector_id, inspector_name, inspect_time, report_channel, source_type, source_id, source_no, barcode, submit_by, submit_time, audit_by, audit_time, audit_remark, remark, attr1, attr2, attr3, attr4, create_by, create_time, update_by, update_time, deleted from prd_work_report
+    </sql>
+
+    <select id="selectPrdWorkReportList" parameterType="PrdWorkReport" resultMap="PrdWorkReportResult">
+        <include refid="selectPrdWorkReportVo"/>
+        <where>
+                        <if test="reportNo != null  and reportNo != ''"> and report_no = #{reportNo}</if>
+                        <if test="reportType != null  and reportType != ''"> and report_type = #{reportType}</if>
+                        <if test="reportStatus != null  and reportStatus != ''"> and report_status = #{reportStatus}</if>
+                        <if test="woNo != null  and woNo != ''"> and wo_no = #{woNo}</if>
+                        <if test="woName != null  and woName != ''"> and wo_name like concat('%', #{woName}, '%')</if>
+                        <if test="materialCode != null  and materialCode != ''"> and material_code = #{materialCode}</if>
+                        <if test="materialName != null  and materialName != ''"> and material_name like concat('%', #{materialName}, '%')</if>
+                        <if test="routeCode != null  and routeCode != ''"> and route_code = #{routeCode}</if>
+                        <if test="routeName != null  and routeName != ''"> and route_name like concat('%', #{routeName}, '%')</if>
+                        <if test="processCode != null  and processCode != ''"> and process_code = #{processCode}</if>
+                        <if test="processName != null  and processName != ''"> and process_name like concat('%', #{processName}, '%')</if>
+                        <if test="operationStep != null "> and operation_step = #{operationStep}</if>
+                        <if test="operationSeq != null "> and operation_seq = #{operationSeq}</if>
+                        <if test="taskNo != null  and taskNo != ''"> and task_no = #{taskNo}</if>
+                        <if test="workstationCode != null  and workstationCode != ''"> and workstation_code = #{workstationCode}</if>
+                        <if test="workstationName != null  and workstationName != ''"> and workstation_name like concat('%', #{workstationName}, '%')</if>
+                        <if test="workshopName != null  and workshopName != ''"> and workshop_name like concat('%', #{workshopName}, '%')</if>
+                        <if test="equipmentCode != null  and equipmentCode != ''"> and equipment_code = #{equipmentCode}</if>
+                        <if test="equipmentName != null  and equipmentName != ''"> and equipment_name like concat('%', #{equipmentName}, '%')</if>
+                        <if test="lotNumber != null  and lotNumber != ''"> and lot_number = #{lotNumber}</if>
+                        <if test="batchNo != null  and batchNo != ''"> and batch_no = #{batchNo}</if>
+                        <if test="expireDate != null "> and expire_date = #{expireDate}</if>
+                        <if test="shiftName != null  and shiftName != ''"> and shift_name like concat('%', #{shiftName}, '%')</if>
+                        <if test="plannedQty != null "> and planned_qty = #{plannedQty}</if>
+                        <if test="reportDate != null "> and report_date = #{reportDate}</if>
+                        <if test="startTime != null "> and start_time = #{startTime}</if>
+                        <if test="endTime != null "> and end_time = #{endTime}</if>
+                        <if test="laborHours != null "> and labor_hours = #{laborHours}</if>
+                        <if test="machineHours != null "> and machine_hours = #{machineHours}</if>
+                        <if test="setupHours != null "> and setup_hours = #{setupHours}</if>
+                        <if test="waitHours != null "> and wait_hours = #{waitHours}</if>
+                        <if test="pauseHours != null "> and pause_hours = #{pauseHours}</if>
+                        <if test="workerId != null "> and worker_id = #{workerId}</if>
+                        <if test="workerCode != null  and workerCode != ''"> and worker_code = #{workerCode}</if>
+                        <if test="workerName != null  and workerName != ''"> and worker_name like concat('%', #{workerName}, '%')</if>
+                        <if test="teamCode != null  and teamCode != ''"> and team_code = #{teamCode}</if>
+                        <if test="teamName != null  and teamName != ''"> and team_name like concat('%', #{teamName}, '%')</if>
+                        <if test="helperNames != null  and helperNames != ''"> and helper_names = #{helperNames}</if>
+                        <if test="qualityStatus != null  and qualityStatus != ''"> and quality_status = #{qualityStatus}</if>
+                        <if test="qualityCheckNo != null  and qualityCheckNo != ''"> and quality_check_no = #{qualityCheckNo}</if>
+                        <if test="inspectorName != null  and inspectorName != ''"> and inspector_name like concat('%', #{inspectorName}, '%')</if>
+                        <if test="inspectTime != null "> and inspect_time = #{inspectTime}</if>
+                        <if test="reportChannel != null  and reportChannel != ''"> and report_channel = #{reportChannel}</if>
+                        <if test="sourceType != null  and sourceType != ''"> and source_type = #{sourceType}</if>
+                        <if test="sourceId != null "> and source_id = #{sourceId}</if>
+                        <if test="sourceNo != null  and sourceNo != ''"> and source_no = #{sourceNo}</if>
+                        <if test="barcode != null  and barcode != ''"> and barcode = #{barcode}</if>
+                        <if test="submitBy != null  and submitBy != ''"> and submit_by = #{submitBy}</if>
+                        <if test="submitTime != null "> and submit_time = #{submitTime}</if>
+                        <if test="auditBy != null  and auditBy != ''"> and audit_by = #{auditBy}</if>
+                        <if test="auditTime != null "> and audit_time = #{auditTime}</if>
+                        <if test="auditRemark != null  and auditRemark != ''"> and audit_remark = #{auditRemark}</if>
+                        <if test="attr1 != null  and attr1 != ''"> and attr1 = #{attr1}</if>
+                        <if test="attr2 != null  and attr2 != ''"> and attr2 = #{attr2}</if>
+                        <if test="attr3 != null "> and attr3 = #{attr3}</if>
+                        <if test="attr4 != null "> and attr4 = #{attr4}</if>
+        </where>
+    </select>
+
+    <select id="selectPrdWorkReportByReportId" parameterType="Long" resultMap="PrdWorkReportResult">
+            <include refid="selectPrdWorkReportVo"/>
+            where report_id = #{reportId}
+    </select>
+
+    <insert id="insertPrdWorkReport" parameterType="PrdWorkReport" useGeneratedKeys="true" keyProperty="reportId">
+        insert into prd_work_report
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="reportNo != null and reportNo != ''">report_no,</if>
+                    <if test="reportType != null">report_type,</if>
+                    <if test="reportStatus != null">report_status,</if>
+                    <if test="woId != null">wo_id,</if>
+                    <if test="woNo != null and woNo != ''">wo_no,</if>
+                    <if test="woName != null">wo_name,</if>
+                    <if test="materialId != null">material_id,</if>
+                    <if test="materialCode != null and materialCode != ''">material_code,</if>
+                    <if test="materialName != null">material_name,</if>
+                    <if test="specification != null">specification,</if>
+                    <if test="unitId != null">unit_id,</if>
+                    <if test="unitCode != null">unit_code,</if>
+                    <if test="unitName != null">unit_name,</if>
+                    <if test="routeId != null">route_id,</if>
+                    <if test="routeCode != null">route_code,</if>
+                    <if test="routeName != null">route_name,</if>
+                    <if test="processId != null">process_id,</if>
+                    <if test="processCode != null">process_code,</if>
+                    <if test="processName != null">process_name,</if>
+                    <if test="operationStep != null">operation_step,</if>
+                    <if test="operationSeq != null">operation_seq,</if>
+                    <if test="taskId != null">task_id,</if>
+                    <if test="taskNo != null">task_no,</if>
+                    <if test="workstationId != null">workstation_id,</if>
+                    <if test="workstationCode != null">workstation_code,</if>
+                    <if test="workstationName != null">workstation_name,</if>
+                    <if test="workshopId != null">workshop_id,</if>
+                    <if test="workshopName != null">workshop_name,</if>
+                    <if test="equipmentId != null">equipment_id,</if>
+                    <if test="equipmentCode != null">equipment_code,</if>
+                    <if test="equipmentName != null">equipment_name,</if>
+                    <if test="lotNumber != null">lot_number,</if>
+                    <if test="batchNo != null">batch_no,</if>
+                    <if test="expireDate != null">expire_date,</if>
+                    <if test="shiftId != null">shift_id,</if>
+                    <if test="shiftName != null">shift_name,</if>
+                    <if test="plannedQty != null">planned_qty,</if>
+                    <if test="reportedQty != null">reported_qty,</if>
+                    <if test="goodQty != null">good_qty,</if>
+                    <if test="scrapQty != null">scrap_qty,</if>
+                    <if test="defectQty != null">defect_qty,</if>
+                    <if test="laborScrapQty != null">labor_scrap_qty,</if>
+                    <if test="materialScrapQty != null">material_scrap_qty,</if>
+                    <if test="otherScrapQty != null">other_scrap_qty,</if>
+                    <if test="uncheckQty != null">uncheck_qty,</if>
+                    <if test="cumulativeQty != null">cumulative_qty,</if>
+                    <if test="remainingQty != null">remaining_qty,</if>
+                    <if test="reportDate != null">report_date,</if>
+                    <if test="startTime != null">start_time,</if>
+                    <if test="endTime != null">end_time,</if>
+                    <if test="laborHours != null">labor_hours,</if>
+                    <if test="machineHours != null">machine_hours,</if>
+                    <if test="setupHours != null">setup_hours,</if>
+                    <if test="waitHours != null">wait_hours,</if>
+                    <if test="pauseHours != null">pause_hours,</if>
+                    <if test="workerId != null">worker_id,</if>
+                    <if test="workerCode != null">worker_code,</if>
+                    <if test="workerName != null">worker_name,</if>
+                    <if test="teamId != null">team_id,</if>
+                    <if test="teamCode != null">team_code,</if>
+                    <if test="teamName != null">team_name,</if>
+                    <if test="helperIds != null">helper_ids,</if>
+                    <if test="helperNames != null">helper_names,</if>
+                    <if test="qualityStatus != null">quality_status,</if>
+                    <if test="qualityCheckId != null">quality_check_id,</if>
+                    <if test="qualityCheckNo != null">quality_check_no,</if>
+                    <if test="inspectorId != null">inspector_id,</if>
+                    <if test="inspectorName != null">inspector_name,</if>
+                    <if test="inspectTime != null">inspect_time,</if>
+                    <if test="reportChannel != null">report_channel,</if>
+                    <if test="sourceType != null">source_type,</if>
+                    <if test="sourceId != null">source_id,</if>
+                    <if test="sourceNo != null">source_no,</if>
+                    <if test="barcode != null">barcode,</if>
+                    <if test="submitBy != null">submit_by,</if>
+                    <if test="submitTime != null">submit_time,</if>
+                    <if test="auditBy != null">audit_by,</if>
+                    <if test="auditTime != null">audit_time,</if>
+                    <if test="auditRemark != null">audit_remark,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+                    <if test="deleted != null">deleted,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="reportNo != null and reportNo != ''">#{reportNo},</if>
+                    <if test="reportType != null">#{reportType},</if>
+                    <if test="reportStatus != null">#{reportStatus},</if>
+                    <if test="woId != null">#{woId},</if>
+                    <if test="woNo != null and woNo != ''">#{woNo},</if>
+                    <if test="woName != null">#{woName},</if>
+                    <if test="materialId != null">#{materialId},</if>
+                    <if test="materialCode != null and materialCode != ''">#{materialCode},</if>
+                    <if test="materialName != null">#{materialName},</if>
+                    <if test="specification != null">#{specification},</if>
+                    <if test="unitId != null">#{unitId},</if>
+                    <if test="unitCode != null">#{unitCode},</if>
+                    <if test="unitName != null">#{unitName},</if>
+                    <if test="routeId != null">#{routeId},</if>
+                    <if test="routeCode != null">#{routeCode},</if>
+                    <if test="routeName != null">#{routeName},</if>
+                    <if test="processId != null">#{processId},</if>
+                    <if test="processCode != null">#{processCode},</if>
+                    <if test="processName != null">#{processName},</if>
+                    <if test="operationStep != null">#{operationStep},</if>
+                    <if test="operationSeq != null">#{operationSeq},</if>
+                    <if test="taskId != null">#{taskId},</if>
+                    <if test="taskNo != null">#{taskNo},</if>
+                    <if test="workstationId != null">#{workstationId},</if>
+                    <if test="workstationCode != null">#{workstationCode},</if>
+                    <if test="workstationName != null">#{workstationName},</if>
+                    <if test="workshopId != null">#{workshopId},</if>
+                    <if test="workshopName != null">#{workshopName},</if>
+                    <if test="equipmentId != null">#{equipmentId},</if>
+                    <if test="equipmentCode != null">#{equipmentCode},</if>
+                    <if test="equipmentName != null">#{equipmentName},</if>
+                    <if test="lotNumber != null">#{lotNumber},</if>
+                    <if test="batchNo != null">#{batchNo},</if>
+                    <if test="expireDate != null">#{expireDate},</if>
+                    <if test="shiftId != null">#{shiftId},</if>
+                    <if test="shiftName != null">#{shiftName},</if>
+                    <if test="plannedQty != null">#{plannedQty},</if>
+                    <if test="reportedQty != null">#{reportedQty},</if>
+                    <if test="goodQty != null">#{goodQty},</if>
+                    <if test="scrapQty != null">#{scrapQty},</if>
+                    <if test="defectQty != null">#{defectQty},</if>
+                    <if test="laborScrapQty != null">#{laborScrapQty},</if>
+                    <if test="materialScrapQty != null">#{materialScrapQty},</if>
+                    <if test="otherScrapQty != null">#{otherScrapQty},</if>
+                    <if test="uncheckQty != null">#{uncheckQty},</if>
+                    <if test="cumulativeQty != null">#{cumulativeQty},</if>
+                    <if test="remainingQty != null">#{remainingQty},</if>
+                    <if test="reportDate != null">#{reportDate},</if>
+                    <if test="startTime != null">#{startTime},</if>
+                    <if test="endTime != null">#{endTime},</if>
+                    <if test="laborHours != null">#{laborHours},</if>
+                    <if test="machineHours != null">#{machineHours},</if>
+                    <if test="setupHours != null">#{setupHours},</if>
+                    <if test="waitHours != null">#{waitHours},</if>
+                    <if test="pauseHours != null">#{pauseHours},</if>
+                    <if test="workerId != null">#{workerId},</if>
+                    <if test="workerCode != null">#{workerCode},</if>
+                    <if test="workerName != null">#{workerName},</if>
+                    <if test="teamId != null">#{teamId},</if>
+                    <if test="teamCode != null">#{teamCode},</if>
+                    <if test="teamName != null">#{teamName},</if>
+                    <if test="helperIds != null">#{helperIds},</if>
+                    <if test="helperNames != null">#{helperNames},</if>
+                    <if test="qualityStatus != null">#{qualityStatus},</if>
+                    <if test="qualityCheckId != null">#{qualityCheckId},</if>
+                    <if test="qualityCheckNo != null">#{qualityCheckNo},</if>
+                    <if test="inspectorId != null">#{inspectorId},</if>
+                    <if test="inspectorName != null">#{inspectorName},</if>
+                    <if test="inspectTime != null">#{inspectTime},</if>
+                    <if test="reportChannel != null">#{reportChannel},</if>
+                    <if test="sourceType != null">#{sourceType},</if>
+                    <if test="sourceId != null">#{sourceId},</if>
+                    <if test="sourceNo != null">#{sourceNo},</if>
+                    <if test="barcode != null">#{barcode},</if>
+                    <if test="submitBy != null">#{submitBy},</if>
+                    <if test="submitTime != null">#{submitTime},</if>
+                    <if test="auditBy != null">#{auditBy},</if>
+                    <if test="auditTime != null">#{auditTime},</if>
+                    <if test="auditRemark != null">#{auditRemark},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+                    <if test="deleted != null">#{deleted},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePrdWorkReport" parameterType="PrdWorkReport">
+        update prd_work_report
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="reportNo != null and reportNo != ''">report_no = #{reportNo},</if>
+                    <if test="reportType != null">report_type = #{reportType},</if>
+                    <if test="reportStatus != null">report_status = #{reportStatus},</if>
+                    <if test="woId != null">wo_id = #{woId},</if>
+                    <if test="woNo != null and woNo != ''">wo_no = #{woNo},</if>
+                    <if test="woName != null">wo_name = #{woName},</if>
+                    <if test="materialId != null">material_id = #{materialId},</if>
+                    <if test="materialCode != null and materialCode != ''">material_code = #{materialCode},</if>
+                    <if test="materialName != null">material_name = #{materialName},</if>
+                    <if test="specification != null">specification = #{specification},</if>
+                    <if test="unitId != null">unit_id = #{unitId},</if>
+                    <if test="unitCode != null">unit_code = #{unitCode},</if>
+                    <if test="unitName != null">unit_name = #{unitName},</if>
+                    <if test="routeId != null">route_id = #{routeId},</if>
+                    <if test="routeCode != null">route_code = #{routeCode},</if>
+                    <if test="routeName != null">route_name = #{routeName},</if>
+                    <if test="processId != null">process_id = #{processId},</if>
+                    <if test="processCode != null">process_code = #{processCode},</if>
+                    <if test="processName != null">process_name = #{processName},</if>
+                    <if test="operationStep != null">operation_step = #{operationStep},</if>
+                    <if test="operationSeq != null">operation_seq = #{operationSeq},</if>
+                    <if test="taskId != null">task_id = #{taskId},</if>
+                    <if test="taskNo != null">task_no = #{taskNo},</if>
+                    <if test="workstationId != null">workstation_id = #{workstationId},</if>
+                    <if test="workstationCode != null">workstation_code = #{workstationCode},</if>
+                    <if test="workstationName != null">workstation_name = #{workstationName},</if>
+                    <if test="workshopId != null">workshop_id = #{workshopId},</if>
+                    <if test="workshopName != null">workshop_name = #{workshopName},</if>
+                    <if test="equipmentId != null">equipment_id = #{equipmentId},</if>
+                    <if test="equipmentCode != null">equipment_code = #{equipmentCode},</if>
+                    <if test="equipmentName != null">equipment_name = #{equipmentName},</if>
+                    <if test="lotNumber != null">lot_number = #{lotNumber},</if>
+                    <if test="batchNo != null">batch_no = #{batchNo},</if>
+                    <if test="expireDate != null">expire_date = #{expireDate},</if>
+                    <if test="shiftId != null">shift_id = #{shiftId},</if>
+                    <if test="shiftName != null">shift_name = #{shiftName},</if>
+                    <if test="plannedQty != null">planned_qty = #{plannedQty},</if>
+                    <if test="reportedQty != null">reported_qty = #{reportedQty},</if>
+                    <if test="goodQty != null">good_qty = #{goodQty},</if>
+                    <if test="scrapQty != null">scrap_qty = #{scrapQty},</if>
+                    <if test="defectQty != null">defect_qty = #{defectQty},</if>
+                    <if test="laborScrapQty != null">labor_scrap_qty = #{laborScrapQty},</if>
+                    <if test="materialScrapQty != null">material_scrap_qty = #{materialScrapQty},</if>
+                    <if test="otherScrapQty != null">other_scrap_qty = #{otherScrapQty},</if>
+                    <if test="uncheckQty != null">uncheck_qty = #{uncheckQty},</if>
+                    <if test="cumulativeQty != null">cumulative_qty = #{cumulativeQty},</if>
+                    <if test="remainingQty != null">remaining_qty = #{remainingQty},</if>
+                    <if test="reportDate != null">report_date = #{reportDate},</if>
+                    <if test="startTime != null">start_time = #{startTime},</if>
+                    <if test="endTime != null">end_time = #{endTime},</if>
+                    <if test="laborHours != null">labor_hours = #{laborHours},</if>
+                    <if test="machineHours != null">machine_hours = #{machineHours},</if>
+                    <if test="setupHours != null">setup_hours = #{setupHours},</if>
+                    <if test="waitHours != null">wait_hours = #{waitHours},</if>
+                    <if test="pauseHours != null">pause_hours = #{pauseHours},</if>
+                    <if test="workerId != null">worker_id = #{workerId},</if>
+                    <if test="workerCode != null">worker_code = #{workerCode},</if>
+                    <if test="workerName != null">worker_name = #{workerName},</if>
+                    <if test="teamId != null">team_id = #{teamId},</if>
+                    <if test="teamCode != null">team_code = #{teamCode},</if>
+                    <if test="teamName != null">team_name = #{teamName},</if>
+                    <if test="helperIds != null">helper_ids = #{helperIds},</if>
+                    <if test="helperNames != null">helper_names = #{helperNames},</if>
+                    <if test="qualityStatus != null">quality_status = #{qualityStatus},</if>
+                    <if test="qualityCheckId != null">quality_check_id = #{qualityCheckId},</if>
+                    <if test="qualityCheckNo != null">quality_check_no = #{qualityCheckNo},</if>
+                    <if test="inspectorId != null">inspector_id = #{inspectorId},</if>
+                    <if test="inspectorName != null">inspector_name = #{inspectorName},</if>
+                    <if test="inspectTime != null">inspect_time = #{inspectTime},</if>
+                    <if test="reportChannel != null">report_channel = #{reportChannel},</if>
+                    <if test="sourceType != null">source_type = #{sourceType},</if>
+                    <if test="sourceId != null">source_id = #{sourceId},</if>
+                    <if test="sourceNo != null">source_no = #{sourceNo},</if>
+                    <if test="barcode != null">barcode = #{barcode},</if>
+                    <if test="submitBy != null">submit_by = #{submitBy},</if>
+                    <if test="submitTime != null">submit_time = #{submitTime},</if>
+                    <if test="auditBy != null">audit_by = #{auditBy},</if>
+                    <if test="auditTime != null">audit_time = #{auditTime},</if>
+                    <if test="auditRemark != null">audit_remark = #{auditRemark},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+                    <if test="deleted != null">deleted = #{deleted},</if>
+        </trim>
+        where report_id = #{reportId}
+    </update>
+
+    <delete id="deletePrdWorkReportByReportId" parameterType="Long">
+        delete from prd_work_report where report_id = #{reportId}
+    </delete>
+
+    <delete id="deletePrdWorkReportByReportIds" parameterType="String">
+        delete from prd_work_report where report_id in
+        <foreach item="reportId" collection="array" open="(" separator="," close=")">
+            #{reportId}
+        </foreach>
+    </delete>
+</mapper>

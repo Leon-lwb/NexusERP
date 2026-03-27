@@ -16,7 +16,11 @@
         <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="工单编号" prop="woNo">
-              <el-input v-model="form.woNo" placeholder="请输入工单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.woNo" placeholder="请输入工单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="6">
@@ -330,6 +334,7 @@
 <script setup name="WorkForm">
 import { getWork, addWork, updateWork } from "@/api/core/prd/work"
 import { listPlan } from "@/api/core/prd/plan"
+import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
 const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status } = proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status')
@@ -339,6 +344,7 @@ const router = useRouter()
 const form = ref({})
 const isViewMode = ref(false)
 const title = ref("")
+const autoGenFlag = ref(false)
 
 // 添加表单验证规则
 const rules = ref({
@@ -407,6 +413,7 @@ function getInfo(id) {
 
 // 表单重置
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     woId: null,
     woNo: null,
@@ -513,29 +520,58 @@ function resetPlanQuery() {
 
 // 选择生产计划
 function selectPlan(row) {
+  // 计划基本信息
   form.value.planId = row.planId
   form.value.planName = row.planName
-  // 自动填充其他相关字段
+  
+  // 来源信息
   form.value.sourceType = 'PLAN' // 设置来源类型为计划
-  form.value.sourceId = row.orderLineId // 来源单据ID
-  form.value.sourceNo = row.referenceNo // 销售订单编号
-  form.value.sourceLineId = row.orderLineId // 来源单据行ID
-  // 注意：物料相关信息可能需要从其他地方获取，因为计划表中不直接包含这些字段
-  // form.value.materialId = row.materialId // 产品物料ID
-  // form.value.materialCode = row.materialCode // 产品编码
-  // form.value.materialName = row.materialName // 产品名称
-  form.value.plannedQty = row.totalQuantity // 计划数量
-  // form.value.unitId = row.unitId // 单位ID
-  // form.value.unitName = row.unitName // 单位名称
+  form.value.sourceId = row.planId // 来源单据ID（使用计划ID）
+  form.value.sourceNo = row.referenceNo // 销售订单编号/参考单据号
+  
+  // 数量信息
+  form.value.plannedQty = row.totalQuantity // 计划总数量
+  
+  // 日期信息
   form.value.planStartDate = row.startDate // 计划开始日期
   form.value.planEndDate = row.endDate // 计划结束日期
+  
+  // 其他信息
   form.value.priority = row.priority // 优先级
-  form.value.bomId = row.bomId // BOM ID
-  form.value.bomVersion = row.bomVersion // BOM版本
-  form.value.bomName = row.bomName // BOM名称
   form.value.remark = row.remark // 备注
   
+  // BOM信息（如果计划中有）
+  if (row.bomId) {
+    form.value.bomId = row.bomId
+  }
+  if (row.bomVersion) {
+    form.value.bomVersion = row.bomVersion
+  }
+  if (row.bomName) {
+    form.value.bomName = row.bomName
+  }
+  
+  // TODO: 以下字段需要从其他途径获取
+  // 1. 物料信息（materialId, materialCode, materialName, unitId, unitName）
+  //    建议方案：根据referenceNo查询销售订单获取物料信息，或根据bomId查询BOM获取物料
+  // 2. 车间/工作站信息（workshopId, workshopName, workstationId, workstationName）
+  //    建议方案：根据departmentId查询部门信息映射到车间
+  
   planSelectOpen.value = false
+  
+  // 提示用户需要补充的信息
+  proxy.$modal.msgInfo("已选择计划，请补充完善物料、车间等信息")
+}
+
+// 自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('PRD_WORK_ORDER_CODE').then(response => {
+      form.value.woNo = response;
+    });
+  } else {
+    form.value.woNo = null;
+  }
 }
 
 // 解析时间格式

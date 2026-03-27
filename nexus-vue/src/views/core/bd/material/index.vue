@@ -63,8 +63,18 @@
             </el-select>
           </el-form-item>
           <el-form-item label="质量状态" prop="qualityStatus">
-            <el-select v-model="queryParams.qualityStatus" placeholder="请选择" clearable  style="width: 120px;">
-              <el-option v-for="dict in bd_quality_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            <el-select 
+              v-model="queryParams.qualityStatus" 
+              placeholder="请选择" 
+              clearable 
+              style="width: 120px;"
+            >
+              <el-option 
+                v-for="dict in bd_quality_status" 
+                :key="dict.value" 
+                :label="dict.label" 
+                :value="dict.value" 
+              />
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -365,9 +375,18 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="质量状态" prop="qualityStatus">
-              <el-select v-model="form.qualityStatus" placeholder="请选择质量状态">
-                <el-option v-for="dict in bd_quality_status" :key="dict.value" :label="dict.label"
-                  :value="parseInt(dict.value)"></el-option>
+              <el-select 
+                v-model="form.qualityStatus" 
+                placeholder="请选择质量状态"
+                clearable
+                style="width: 100%"
+              >
+                <el-option 
+                  v-for="dict in bd_quality_status" 
+                  :key="dict.value" 
+                  :label="dict.label"
+                  :value="dict.value"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -588,7 +607,7 @@ function reset() {
     standardCost: 0,
     referencePrice: 0,
     status: 1,
-    qualityStatus: 1,
+    qualityStatus: "PENDING",
     shelfLife: 0,
     weight: 0,
     volume: 0,
