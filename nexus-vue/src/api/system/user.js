@@ -10,6 +10,16 @@ export function listUser(query) {
   })
 }
 
+// 根据岗位ID查询用户列表 - 用于生产工单负责人选择（车间主任）
+// 硬编码：post_id = 2003 表示车间主任岗位
+export function listUserByPostId(postId, query) {
+  return request({
+    url: '/system/user/listByPost/' + postId,
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询用户详细
 export function getUser(userId) {
   return request({

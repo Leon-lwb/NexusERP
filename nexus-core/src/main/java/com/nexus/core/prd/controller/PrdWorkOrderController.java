@@ -82,7 +82,8 @@ public class PrdWorkOrderController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody PrdWorkOrder prdWorkOrder)
     {
-        return toAjax(prdWorkOrderService.insertPrdWorkOrder(prdWorkOrder));
+        prdWorkOrderService.insertPrdWorkOrder(prdWorkOrder);
+        return success(prdWorkOrder);
     }
 
     /**

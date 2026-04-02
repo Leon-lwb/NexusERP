@@ -91,6 +91,8 @@
     </select>
 
     <select id="selectPrdWorkOrderByWoId" parameterType="Long" resultMap="PrdWorkOrderResult">
+        <include refid="selectPrdWorkOrderVo"/>
+        where wo_id = #{woId}
     </select>
 
     <insert id="insertPrdWorkOrder" parameterType="PrdWorkOrder" useGeneratedKeys="true" keyProperty="woId">

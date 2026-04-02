@@ -572,4 +572,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         return userNames;
 
     }
+
+    /**
+     * 根据岗位ID查询用户列表 - 用于生产工单负责人选择（车间主任）
+     *
+     * @param postId 岗位ID
+     * @param user 用户查询条件
+     * @return 用户信息集合
+     */
+    @Override
+    public List<SysUser> selectUsersByPostId(Long postId, SysUser user) {
+        return userMapper.selectUsersByPostId(postId, user);
+    }
 }

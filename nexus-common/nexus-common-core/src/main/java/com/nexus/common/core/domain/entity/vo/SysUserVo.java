@@ -18,6 +18,9 @@ public class SysUserVo {
     /** 部门ID */
     private Long deptId;
 
+    /** 岗位ID */
+    private Long postId;
+
     /** 用户账号 */
     private String userName;
 

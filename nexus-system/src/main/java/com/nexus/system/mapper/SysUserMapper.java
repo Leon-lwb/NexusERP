@@ -143,4 +143,13 @@ public interface SysUserMapper extends BaseMapper<SysUser>
      * @return 用户信息集合
      */
     public List<SysUser> selectUserListByParentDeptId(@Param("parentDeptId") Integer parentDeptId, @Param("status") String status);
+
+    /**
+     * 根据岗位ID查询用户列表 - 用于生产工单负责人选择（车间主任）
+     * 
+     * @param postId 岗位ID
+     * @param user 用户查询条件
+     * @return 用户信息集合
+     */
+    public List<SysUser> selectUsersByPostId(@Param("postId") Long postId, @Param("user") SysUser user);
 }

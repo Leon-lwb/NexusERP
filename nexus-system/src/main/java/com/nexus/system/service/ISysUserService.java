@@ -221,4 +221,13 @@ public interface ISysUserService extends IService<SysUser>
      * @return 用户账号列表
      */
     public List<String> selectUserNames(List<Long> userIds);
+
+    /**
+     * 根据岗位ID查询用户列表 - 用于生产工单负责人选择（车间主任）
+     *
+     * @param postId 岗位ID
+     * @param user 用户查询条件
+     * @return 用户信息集合
+     */
+    public List<SysUser> selectUsersByPostId(Long postId, SysUser user);
 }

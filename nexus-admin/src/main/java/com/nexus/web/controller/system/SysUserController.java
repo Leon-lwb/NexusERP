@@ -34,7 +34,7 @@ import com.nexus.system.service.ISysUserService;
 
 /**
  * 用户信息
- * 
+ *
  * @author nexus
  */
 @RestController
@@ -62,6 +62,19 @@ public class SysUserController extends BaseController
     {
         startPage();
         List<SysUser> list = userService.selectUserList(user);
+        return getDataTable(list);
+    }
+
+    /**
+     * 根据岗位ID查询用户列表 - 用于生产工单负责人选择（车间主任）
+     * 硬编码：post_id = 2003 表示车间主任岗位
+     */
+    @PreAuthorize("@ss.hasPermi('system:user:list')")
+    @GetMapping("/listByPost/{postId}")
+    public TableDataInfo listByPostId(@PathVariable("postId") Long postId, SysUser user)
+    {
+        startPage();
+        List<SysUser> list = userService.selectUsersByPostId(postId, user);
         return getDataTable(list);
     }
 

@@ -231,8 +231,12 @@ const { queryParams } = toRefs(data)
 function getList() {
   loading.value = true
   listWork(queryParams.value).then(response => {
-    workList.value = response.rows
-    total.value = response.total
+    // 兼容后端返回格式：直接返回data数组或使用PageHelper的rows/total格式
+    workList.value = response.rows || response.data || []
+    total.value = response.total || (response.data ? response.data.length : 0)
+    loading.value = false
+  }).catch(error => {
+    console.error('获取列表失败:', error)
     loading.value = false
   })
 }

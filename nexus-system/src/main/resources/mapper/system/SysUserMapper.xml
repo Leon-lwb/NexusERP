@@ -230,5 +230,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			#{userId}
         </foreach> 
  	</delete>
+
+	<!-- 根据岗位ID查询用户列表 - 用于生产工单负责人选择（车间主任） -->
+	<select id="selectUsersByPostId" resultMap="SysUserResult">
+		select distinct u.user_id, u.dept_id, u.user_name, u.nick_name, u.email, u.phonenumber, u.status, u.create_time, d.dept_name
+		from sys_user u
+		left join sys_dept d on u.dept_id = d.dept_id
+		inner join sys_user_post up on u.user_id = up.user_id
+		where u.del_flag = '0'
+		and up.post_id = #{postId}
+		<if test="user != null and user.userName != null and user.userName != ''">
+			AND u.user_name like concat('%', #{user.userName}, '%')
+		</if>
+		<if test="user != null and user.nickName != null and user.nickName != ''">
+			AND u.nick_name like concat('%', #{user.nickName}, '%')
+		</if>
+		order by u.create_time desc
+	</select>
 	
 </mapper>
