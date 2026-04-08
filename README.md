@@ -52,6 +52,26 @@ NEXUS-ERP是一套全部开源的ERP企业管理平台，毫无保留给个人�
 28. 流程管理：流程分类、流程设计、流程模型、部署管理、业务表单等
 29. 任务管理：新建流程、我的流程、代办任务、代签任务、已办任务、抄送我的等
 
+## 积木报表（JimuReport）集成说明
+
+本项目已通过Maven完成积木报表（JimuReport）与BI大屏组件的集成。
+
+### 1. 模块集成方式
+- 在`pom.xml`中引入了`jimureport-spring-boot3-starter`及`jimubi-spring-boot3-starter`，统一版本为`2.3.0`。
+- 在`ApplicationConfig`或`NexusApplication`启动类中配置了`@MapperScan("org.jeecg.modules.jmreport.desreport.dao")`。
+- 静态资源访问已在`JimuReportResourceConfig`和`JimuReportExceptionHandler`中进行配置拦截。
+
+### 2. 数据源配置注意事项
+- 若使用多数据源配置（如`@DS`注解），请确保报表相关接口（例如`JimuReportServiceImpl.pageList`）或数据源配置中已指定正确的数据源名称。
+- 在本项目的单数据源环境下，MyBatis-Plus已默认使用系统主数据源。
+
+### 3. 常见500错误排错步骤
+如果在访问报表设计器或BI大屏时遇到 `Invalid bound statement (not found)` 500错误，请按照以下步骤排查：
+1. **检查扫描路径**：确保启动类或配置类上包含了`@MapperScan("org.jeecg.modules.jmreport.desreport.dao")`。
+2. **检查XML映射文件**：确认`application.yml`中`mybatis-plus.mapper-locations`配置包含了`classpath*:mapper/**/*JimuReport*.xml`。
+3. **补充XML文件**：如因打包问题导致原生SQL执行失败，可在`src/main/resources/mapper/jmreport`目录下补充`JimuReportDao.xml`。
+4. **依赖冲突排查**：使用Maven Enforcer插件检查`jeecg-boot-starter-jimureport`等依赖是否存在版本冲突，确保统一版本号。
+
 ## 在线体验
 
 - admin/admin123  

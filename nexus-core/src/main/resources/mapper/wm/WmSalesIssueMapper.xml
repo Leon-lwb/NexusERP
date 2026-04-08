@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.core.wm.mapper.WmSalesIssueMapper">
+
+    <resultMap type="WmSalesIssue" id="WmSalesIssueResult">
+            <result property="issueId"    column="issue_id"    />
+            <result property="issueCode"    column="issue_code"    />
+            <result property="issueName"    column="issue_name"    />
+            <result property="soId"    column="so_id"    />
+            <result property="soNo"    column="so_no"    />
+            <result property="clientId"    column="client_id"    />
+            <result property="clientCode"    column="client_code"    />
+            <result property="clientName"    column="client_name"    />
+            <result property="warehouseId"    column="warehouse_id"    />
+            <result property="warehouseCode"    column="warehouse_code"    />
+            <result property="warehouseName"    column="warehouse_name"    />
+            <result property="issueDate"    column="issue_date"    />
+            <result property="totalQuantity"    column="total_quantity"    />
+            <result property="totalAmount"    column="total_amount"    />
+            <result property="status"    column="status"    />
+            <result property="remark"    column="remark"    />
+            <result property="selectFlowId"    column="select_flow_id"    />
+            <result property="createBy"    column="create_by"    />
+            <result property="createTime"    column="create_time"    />
+            <result property="updateBy"    column="update_by"    />
+            <result property="updateTime"    column="update_time"    />
+            <result property="attr1"    column="attr1"    />
+            <result property="attr2"    column="attr2"    />
+            <result property="attr3"    column="attr3"    />
+            <result property="attr4"    column="attr4"    />
+    </resultMap>
+
+        <resultMap id="WmSalesIssueWmSalesIssueLineResult" type="WmSalesIssue" extends="WmSalesIssueResult">
+            <collection property="wmSalesIssueLineList" ofType="WmSalesIssueLine" column="issue_id" select="selectWmSalesIssueLineList" />
+        </resultMap>
+
+        <resultMap type="WmSalesIssueLine" id="WmSalesIssueLineResult">
+                <result property="lineId"    column="line_id"    />
+                <result property="issueId"    column="issue_id"    />
+                <result property="sourceDocLineId"    column="source_doc_line_id"    />
+                <result property="lineNo"    column="line_no"    />
+                <result property="materialId"    column="material_id"    />
+                <result property="materialCode"    column="material_code"    />
+                <result property="materialName"    column="material_name"    />
+                <result property="materialSpec"    column="material_spec"    />
+                <result property="baseUomId"    column="base_uom_id"    />
+                <result property="baseUomName"    column="base_uom_name"    />
+                <result property="batchId"    column="batch_id"    />
+                <result property="batchCode"    column="batch_code"    />
+                <result property="locationId"    column="location_id"    />
+                <result property="locationCode"    column="location_code"    />
+                <result property="locationName"    column="location_name"    />
+                <result property="quantityIssue"    column="quantity_issue"    />
+                <result property="quantityOrdered"    column="quantity_ordered"    />
+                <result property="quantityDelivered"    column="quantity_delivered"    />
+                <result property="unitPrice"    column="unit_price"    />
+                <result property="lineAmount"    column="line_amount"    />
+                <result property="remark"    column="remark"    />
+                <result property="createBy"    column="create_by"    />
+                <result property="createTime"    column="create_time"    />
+                <result property="updateBy"    column="update_by"    />
+                <result property="updateTime"    column="update_time"    />
+        </resultMap>
+
+    <sql id="selectWmSalesIssueVo">
+        select issue_id, issue_code, issue_name, so_id, so_no, client_id, client_code, client_name, warehouse_id, warehouse_code, warehouse_name, issue_date, total_quantity, total_amount, status, remark, select_flow_id, create_by, create_time, update_by, update_time, attr1, attr2, attr3, attr4 from wm_sales_issue
+    </sql>
+
+    <select id="selectWmSalesIssueList" parameterType="WmSalesIssue" resultMap="WmSalesIssueResult">
+        <include refid="selectWmSalesIssueVo"/>
+        <where>
+                        <if test="issueCode != null  and issueCode != ''"> and issue_code = #{issueCode}</if>
+                        <if test="issueName != null  and issueName != ''"> and issue_name like concat('%', #{issueName}, '%')</if>
+                        <if test="soId != null "> and so_id = #{soId}</if>
+                        <if test="soNo != null  and soNo != ''"> and so_no = #{soNo}</if>
+                        <if test="clientId != null "> and client_id = #{clientId}</if>
+                        <if test="clientCode != null  and clientCode != ''"> and client_code = #{clientCode}</if>
+                        <if test="clientName != null  and clientName != ''"> and client_name like concat('%', #{clientName}, '%')</if>
+                        <if test="warehouseId != null "> and warehouse_id = #{warehouseId}</if>
+                        <if test="warehouseCode != null  and warehouseCode != ''"> and warehouse_code = #{warehouseCode}</if>
+                        <if test="warehouseName != null  and warehouseName != ''"> and warehouse_name like concat('%', #{warehouseName}, '%')</if>
+                        <if test="issueDate != null "> and issue_date = #{issueDate}</if>
+                        <if test="totalQuantity != null "> and total_quantity = #{totalQuantity}</if>
+                        <if test="totalAmount != null "> and total_amount = #{totalAmount}</if>
+                        <if test="status != null  and status != ''"> and status = #{status}</if>
+                        <if test="attr1 != null  and attr1 != ''"> and attr1 = #{attr1}</if>
+                        <if test="attr2 != null  and attr2 != ''"> and attr2 = #{attr2}</if>
+                        <if test="attr3 != null "> and attr3 = #{attr3}</if>
+                        <if test="attr4 != null "> and attr4 = #{attr4}</if>
+        </where>
+    </select>
+
+    <select id="selectWmSalesIssueByIssueId" parameterType="Long" resultMap="WmSalesIssueWmSalesIssueLineResult">
+            select issue_id, issue_code, issue_name, so_id, so_no, client_id, client_code, client_name, warehouse_id, warehouse_code, warehouse_name, issue_date, total_quantity, total_amount, status, remark, select_flow_id, create_by, create_time, update_by, update_time, attr1, attr2, attr3, attr4
+            from wm_sales_issue
+            where issue_id = #{issueId}
+    </select>
+
+        <select id="selectWmSalesIssueLineList" resultMap="WmSalesIssueLineResult">
+            select line_id, issue_id, source_doc_line_id, line_no, material_id, material_code, material_name, material_spec, base_uom_id, base_uom_name, batch_id, batch_code, location_id, location_code, location_name, quantity_issue, quantity_ordered, quantity_delivered, unit_price, line_amount, remark, create_by, create_time, update_by, update_time
+            from wm_sales_issue_line
+            where issue_id = #{issue_id}
+        </select>
+
+    <insert id="insertWmSalesIssue" parameterType="WmSalesIssue" useGeneratedKeys="true" keyProperty="issueId">
+        insert into wm_sales_issue
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                    <if test="issueCode != null and issueCode != ''">issue_code,</if>
+                    <if test="issueName != null">issue_name,</if>
+                    <if test="soId != null">so_id,</if>
+                    <if test="soNo != null">so_no,</if>
+                    <if test="clientId != null">client_id,</if>
+                    <if test="clientCode != null">client_code,</if>
+                    <if test="clientName != null">client_name,</if>
+                    <if test="warehouseId != null">warehouse_id,</if>
+                    <if test="warehouseCode != null">warehouse_code,</if>
+                    <if test="warehouseName != null">warehouse_name,</if>
+                    <if test="issueDate != null">issue_date,</if>
+                    <if test="totalQuantity != null">total_quantity,</if>
+                    <if test="totalAmount != null">total_amount,</if>
+                    <if test="status != null">status,</if>
+                    <if test="remark != null">remark,</if>
+                    <if test="selectFlowId != null">select_flow_id,</if>
+                    <if test="createBy != null">create_by,</if>
+                    <if test="createTime != null">create_time,</if>
+                    <if test="updateBy != null">update_by,</if>
+                    <if test="updateTime != null">update_time,</if>
+                    <if test="attr1 != null">attr1,</if>
+                    <if test="attr2 != null">attr2,</if>
+                    <if test="attr3 != null">attr3,</if>
+                    <if test="attr4 != null">attr4,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                    <if test="issueCode != null and issueCode != ''">#{issueCode},</if>
+                    <if test="issueName != null">#{issueName},</if>
+                    <if test="soId != null">#{soId},</if>
+                    <if test="soNo != null">#{soNo},</if>
+                    <if test="clientId != null">#{clientId},</if>
+                    <if test="clientCode != null">#{clientCode},</if>
+                    <if test="clientName != null">#{clientName},</if>
+                    <if test="warehouseId != null">#{warehouseId},</if>
+                    <if test="warehouseCode != null">#{warehouseCode},</if>
+                    <if test="warehouseName != null">#{warehouseName},</if>
+                    <if test="issueDate != null">#{issueDate},</if>
+                    <if test="totalQuantity != null">#{totalQuantity},</if>
+                    <if test="totalAmount != null">#{totalAmount},</if>
+                    <if test="status != null">#{status},</if>
+                    <if test="remark != null">#{remark},</if>
+                    <if test="selectFlowId != null">#{selectFlowId},</if>
+                    <if test="createBy != null">#{createBy},</if>
+                    <if test="createTime != null">#{createTime},</if>
+                    <if test="updateBy != null">#{updateBy},</if>
+                    <if test="updateTime != null">#{updateTime},</if>
+                    <if test="attr1 != null">#{attr1},</if>
+                    <if test="attr2 != null">#{attr2},</if>
+                    <if test="attr3 != null">#{attr3},</if>
+                    <if test="attr4 != null">#{attr4},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWmSalesIssue" parameterType="WmSalesIssue">
+        update wm_sales_issue
+        <trim prefix="SET" suffixOverrides=",">
+                    <if test="issueCode != null and issueCode != ''">issue_code = #{issueCode},</if>
+                    <if test="issueName != null">issue_name = #{issueName},</if>
+                    <if test="soId != null">so_id = #{soId},</if>
+                    <if test="soNo != null">so_no = #{soNo},</if>
+                    <if test="clientId != null">client_id = #{clientId},</if>
+                    <if test="clientCode != null">client_code = #{clientCode},</if>
+                    <if test="clientName != null">client_name = #{clientName},</if>
+                    <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+                    <if test="warehouseCode != null">warehouse_code = #{warehouseCode},</if>
+                    <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
+                    <if test="issueDate != null">issue_date = #{issueDate},</if>
+                    <if test="totalQuantity != null">total_quantity = #{totalQuantity},</if>
+                    <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+                    <if test="status != null">status = #{status},</if>
+                    <if test="remark != null">remark = #{remark},</if>
+                    <if test="selectFlowId != null">select_flow_id = #{selectFlowId},</if>
+                    <if test="createBy != null">create_by = #{createBy},</if>
+                    <if test="createTime != null">create_time = #{createTime},</if>
+                    <if test="updateBy != null">update_by = #{updateBy},</if>
+                    <if test="updateTime != null">update_time = #{updateTime},</if>
+                    <if test="attr1 != null">attr1 = #{attr1},</if>
+                    <if test="attr2 != null">attr2 = #{attr2},</if>
+                    <if test="attr3 != null">attr3 = #{attr3},</if>
+                    <if test="attr4 != null">attr4 = #{attr4},</if>
+        </trim>
+        where issue_id = #{issueId}
+    </update>
+
+    <delete id="deleteWmSalesIssueByIssueId" parameterType="Long">
+        delete from wm_sales_issue where issue_id = #{issueId}
+    </delete>
+
+    <delete id="deleteWmSalesIssueByIssueIds" parameterType="String">
+        delete from wm_sales_issue where issue_id in
+        <foreach item="issueId" collection="array" open="(" separator="," close=")">
+            #{issueId}
+        </foreach>
+    </delete>
+
+        <delete id="deleteWmSalesIssueLineByIssueIds" parameterType="String">
+            delete from wm_sales_issue_line where issue_id in
+            <foreach item="issueId" collection="array" open="(" separator="," close=")">
+                #{issueId}
+            </foreach>
+        </delete>
+
+        <delete id="deleteWmSalesIssueLineByIssueId" parameterType="Long">
+            delete from wm_sales_issue_line where issue_id = #{issueId}
+        </delete>
+
+        <insert id="batchWmSalesIssueLine">
+            insert into wm_sales_issue_line( line_id, issue_id, source_doc_line_id, line_no, material_id, material_code, material_name, material_spec, base_uom_id, base_uom_name, batch_id, batch_code, location_id, location_code, location_name, quantity_issue, quantity_ordered, quantity_delivered, unit_price, line_amount, remark, create_by, create_time, update_by, update_time) values
+            <foreach item="item" index="index" collection="list" separator=",">
+                ( #{item.lineId}, #{item.issueId}, #{item.sourceDocLineId}, #{item.lineNo}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, #{item.baseUomId}, #{item.baseUomName}, #{item.batchId}, #{item.batchCode}, #{item.locationId}, #{item.locationCode}, #{item.locationName}, #{item.quantityIssue}, #{item.quantityOrdered}, #{item.quantityDelivered}, #{item.unitPrice}, #{item.lineAmount}, #{item.remark}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
+            </foreach>
+        </insert>
+</mapper>

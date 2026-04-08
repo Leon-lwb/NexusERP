@@ -1,5 +1,6 @@
 package com.nexus;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -11,7 +12,7 @@ import org.springframework.context.annotation.FilterType;
  * 
  * @author nexus
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class },scanBasePackages = {"com.nexus","org.jeecg"})
 @ComponentScan(excludeFilters = {
     @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.nexus\\.common\\.flow\\.FlowableConfig"),
     @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.nexus\\.flowable\\.config\\.FlowableConfig"),

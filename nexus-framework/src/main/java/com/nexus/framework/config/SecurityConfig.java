@@ -101,7 +101,7 @@ public class SecurityConfig
             .csrf(csrf -> csrf.disable())
             // 禁用HTTP响应标头
             .headers((headersCustomizer) -> {
-                headersCustomizer.cacheControl(cache -> cache.disable()).frameOptions(options -> options.sameOrigin());
+                headersCustomizer.cacheControl(cache -> cache.disable()).frameOptions(options -> options.disable());
             })
             // 认证失败处理类
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
@@ -117,6 +117,10 @@ public class SecurityConfig
                     .requestMatchers("/swagger-ui.html", "/v3/api-docs/**", "/swagger-ui/**", "/druid/**").permitAll()
                     // WebSocket端点，允许匿名访问
                     .requestMatchers("/websocket/**", "/im/websocket/**").permitAll()
+                    // 积木报表相关接口,允许匿名访问
+                    .requestMatchers("/jmreport/**", "/drag/**", "/jimubi/**").permitAll()
+                    // 积木报表静态资源
+                    .requestMatchers("/static/**", "/webjars/**").permitAll()
                     // 除上面外的所有请求全部需要鉴权认证
                     .anyRequest().authenticated();
             })

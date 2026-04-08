@@ -3,7 +3,7 @@ import Layout from '@/layout'
 import type { CustomRouteRecordRaw } from './constant-routes'
 
 // 动态路由，基于用户权限动态去加载
-export const dynamicRoutes: CustomRouteRecordRaw[] = [
+export const dynamicRoutes: (CustomRouteRecordRaw | RouteRecordRaw)[] = [
   {
     path: '/system/user-auth',
     component: Layout,
@@ -249,6 +249,20 @@ export const dynamicRoutes: CustomRouteRecordRaw[] = [
       }
     ]
   },
+    {
+    path: '/core/wm/salesIssue/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['core:wm:salesIssue:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/core/wm/salesIssue/form'),
+        name: 'SalesIssueForm',
+        meta: { title: '销售出库详情', activeMenu: '/core/wm/salesIssue' }
+      }
+    ]
+  },
   {
     path: '/core/prd/prdwork/form',
     component: Layout,
@@ -320,6 +334,32 @@ export const dynamicRoutes: CustomRouteRecordRaw[] = [
         component: () => import('@/views/im/group/index.vue'),
         name: 'ImGroup',
         meta: { title: '群组管理', activeMenu: '/im/group', icon: 'peoples' }
+      }
+    ]
+  },
+  {
+    path: '/jimureport',
+    component: Layout,
+    hidden: true,
+    permissions: ['jimureport:list'],
+    children: [
+      {
+        path: 'report',
+        component: () => import('@/views/jimureport/report/index.vue'),
+        name: 'JimuReport',
+        meta: { title: '报表设计', activeMenu: '/jimureport/report', icon: 'chart' }
+      },
+      {
+        path: 'bi',
+        component: () => import('@/views/jimureport/bi/index.vue'),
+        name: 'JimuBI',
+        meta: { title: 'BI大屏', activeMenu: '/jimureport/bi', icon: 'chart' }
+      },
+      {
+        path: 'dashboard',
+        component: () => import('@/views/jimureport/dashboard/index.vue'),
+        name: 'JimuDashboard',
+        meta: { title: '仪表盘', activeMenu: '/jimureport/dashboard', icon: 'chart' }
       }
     ]
   }

@@ -90,6 +90,28 @@
             <artifactId>nexus-common-websocket</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimureport-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- mongo、redis和文件数据集支持包，按需引入 -->
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimureport-nosql-starter</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        <!-- 后台导出接口Echart图表支持包，按需引入 -->
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimureport-echarts-starter</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimubi-spring-boot3-starter</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

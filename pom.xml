@@ -42,6 +42,7 @@
         <mapstruct-plus.version>1.4.8</mapstruct-plus.version>
         <redisson.version>3.37.0</redisson.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
+        <jimureport.version>2.3.0</jimureport.version>
     </properties>
 
     <!-- 依赖声明 -->
@@ -298,6 +299,18 @@
                 <groupId>commons-beanutils</groupId>
                 <artifactId>commons-beanutils</artifactId>
                 <version> ${commons-beanutils.version}</version>
+            </dependency>
+
+            <!-- 统一积木报表版本，排除低版本传递依赖 -->
+            <dependency>
+                <groupId>org.jeecgframework.jimureport</groupId>
+                <artifactId>jimureport-spring-boot3-starter</artifactId>
+                <version>${jimureport.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jeecgframework.jimureport</groupId>
+                <artifactId>jimubi-spring-boot3-starter</artifactId>
+                <version>${jimureport.version}</version>
             </dependency>
 
         </dependencies>
