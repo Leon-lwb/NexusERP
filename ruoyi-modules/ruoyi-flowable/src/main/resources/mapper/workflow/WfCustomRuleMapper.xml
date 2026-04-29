@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.workflow.mapper.WfCustomRuleMapper">
+
+    <resultMap type="org.dromara.workflow.domain.WfCustomRule" id="WfCustomRuleResult">
+        <result property="id" column="id"/>
+        <result property="configId" column="config_id"/>
+        <result property="colCode" column="col_code"/>
+        <result property="colName" column="col_name"/>
+        <result property="javaType" column="java_type"/>
+        <result property="javaField" column="java_field"/>
+        <result property="attribute" column="attribute"/>
+        <result property="sort" column="sort"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+
+</mapper>

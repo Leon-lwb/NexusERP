@@ -1,0 +1,72 @@
+package org.dromara.workflow.domain.vo;
+
+import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
+import cn.idev.excel.annotation.ExcelProperty;
+import org.dromara.common.excel.annotation.ExcelDictFormat;
+import org.dromara.common.excel.convert.ExcelDictConvert;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.domain.WfDemo;
+
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
+
+
+
+/**
+ * DEMO视图对象 wf_demo
+ *
+ * @author nbacheng
+ * @date 2023-10-12
+ */
+@Data
+@ExcelIgnoreUnannotated
+@AutoMapper(target = WfDemo.class)
+public class WfDemoVo  extends WfMyBusiness {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * DEMO-ID
+     */
+    @ExcelProperty(value = "DEMO-ID")
+    private Long demoId;
+
+    /**
+     * 用户账号
+     */
+    @ExcelProperty(value = "用户账号")
+    private String userName;
+
+    /**
+     * 用户昵称
+     */
+    @ExcelProperty(value = "用户昵称")
+    private String nickName;
+
+    /**
+     * 用户邮箱
+     */
+    @ExcelProperty(value = "用户邮箱")
+    private String email;
+
+    /**
+     * 头像地址
+     */
+    @ExcelProperty(value = "头像地址")
+    private String avatar;
+
+    /**
+     * 帐号状态（0正常 1停用）
+     */
+    @ExcelProperty(value = "帐号状态", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(readConverterExp = "0=正常,1=停用")
+    private String status;
+
+    /**
+     * 备注
+     */
+    @ExcelProperty(value = "备注")
+    private String remark;
+
+
+}
