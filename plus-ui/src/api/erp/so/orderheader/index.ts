@@ -1,0 +1,55 @@
+import request from '@/utils/request';
+import { AxiosPromise } from 'axios';
+import { OrderheaderQuery, OrderheaderVO, OrderheaderForm, OrderLineVO } from './types';
+
+export const listOrderheader = (query: OrderheaderQuery): AxiosPromise<OrderheaderVO[]> => {
+  return request({
+    url: '/erp/so/orderheader/list',
+    method: 'get',
+    params: query
+  });
+};
+
+export const getOrderheader = (soId: string | number): AxiosPromise<OrderheaderVO> => {
+  return request({
+    url: '/erp/so/orderheader/' + soId,
+    method: 'get'
+  });
+};
+
+export const addOrderheader = (data: OrderheaderForm) => {
+  return request({
+    url: '/erp/so/orderheader',
+    method: 'post',
+    data
+  });
+};
+
+export const updateOrderheader = (data: OrderheaderForm) => {
+  return request({
+    url: '/erp/so/orderheader',
+    method: 'put',
+    data
+  });
+};
+
+export const delOrderheader = (soId: string | number | (string | number)[]) => {
+  return request({
+    url: '/erp/so/orderheader/' + soId,
+    method: 'delete'
+  });
+};
+
+export const getOrderLine = (soNo: string): AxiosPromise<OrderLineVO[]> => {
+  return request({
+    url: '/erp/so/orderheader/listLine/' + soNo,
+    method: 'get'
+  });
+};
+
+export const getOrderLineById = (soLineId: string | number): AxiosPromise<OrderLineVO> => {
+  return request({
+    url: '/erp/so/orderheader/listLineById/' + soLineId,
+    method: 'get'
+  });
+};

@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-const url = ref('https://gitee.com/dromara/RuoYi-Vue-Plus');
+const url = ref('https://gitee.com/helloworld_wh18/nexus-erp');
 
 function goto() {
   window.open(url.value);

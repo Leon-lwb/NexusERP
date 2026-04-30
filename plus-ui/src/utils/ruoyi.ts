@@ -226,6 +226,13 @@ export const getNormalPath = (p: string): string => {
   return res;
 };
 
+// 重置表单
+export function resetForm(refName: string) {
+  if ((this as any).$refs[refName]) {
+    (this as any).$refs[refName].resetFields();
+  }
+}
+
 // 验证是否为blob格式
 export const blobValidate = (data: any) => {
   return data.type !== 'application/json';

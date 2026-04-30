@@ -162,6 +162,132 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '测试表单', activeMenu: '/tool/gen' }
       }
     ]
+  },
+  {
+    path: '/system/autocodePart',
+    component: Layout,
+    hidden: true,
+    permissions: ['system:autocode:part:list'],
+    children: [
+      {
+        path: 'index/:ruleId(\\d+)',
+        component: () => import('@/views/system/autocode/part.vue'),
+        name: 'AutoCodePart',
+        meta: { title: '规则组成', activeMenu: '/system/autocode' }
+      }
+    ]
+  },
+  {
+    path: '/erp/so/orderheader/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['so:orderheader:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/so/orderheader/form.vue'),
+        name: 'OrderHeaderForm',
+        meta: { title: '销售订单表单', activeMenu: '/erp/so/orderheader' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/arrivalnotice/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:arrivalnotice:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/arrivalnotice/form.vue'),
+        name: 'ArrivalNoticeForm',
+        meta: { title: '到货通知单表单', activeMenu: '/erp/wm/arrivalnotice' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/receive/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:receive:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/receive/form.vue'),
+        name: 'ReceiveForm',
+        meta: { title: '物料入库单表单', activeMenu: '/erp/wm/receive' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/salesIssue/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:salesIssue:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/salesIssue/form.vue'),
+        name: 'SalesIssueForm',
+        meta: { title: '销售出库单表单', activeMenu: '/erp/wm/salesIssue' }
+      }
+    ]
+  },
+  {
+    path: '/erp/bd/bom/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['bd:bom:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/bd/bom/form.vue'),
+        name: 'BomForm',
+        meta: { title: 'BOM表单', activeMenu: '/erp/bd/bom' }
+      }
+    ]
+  },
+  {
+    path: '/erp/prd/requirement/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:requirement:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/prd/requirement/form.vue'),
+        name: 'RequirementForm',
+        meta: { title: '物料需求表单', activeMenu: '/erp/prd/requirement' }
+      }
+    ]
+  },
+  {
+    path: '/erp/prd/prdplan/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:plan:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/prd/prdplan/form.vue'),
+        name: 'PrdPlanForm',
+        meta: { title: '生产计划表单', activeMenu: '/erp/prd/plan' }
+      }
+    ]
+  },
+  {
+    path: '/erp/prd/prdwork/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:work:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/prd/prdwork/form.vue'),
+        name: 'PrdWorkForm',
+        meta: { title: '生产工单表单', activeMenu: '/erp/prd/work' }
+      }
+    ]
   }
 ];
 
