@@ -99,6 +99,12 @@
             <artifactId>ruoyi-flowable</artifactId>
         </dependency>
 
+        <!--  ERP业务核心模块  -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-erp</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>de.codecentric</groupId>
             <artifactId>spring-boot-admin-starter-client</artifactId>

@@ -378,6 +378,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!--  ERP业务核心模块  -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-erp</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

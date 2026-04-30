@@ -16,6 +16,7 @@
         <module>ruoyi-system</module>
         <module>ruoyi-online</module>
         <module>ruoyi-flowable</module>
+        <module>ruoyi-erp</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>
