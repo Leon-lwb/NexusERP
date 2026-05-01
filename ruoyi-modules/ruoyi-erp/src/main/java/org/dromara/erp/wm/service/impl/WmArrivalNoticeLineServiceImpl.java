@@ -16,6 +16,7 @@ import org.dromara.erp.wm.service.IWmArrivalNoticeLineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
@@ -24,6 +25,7 @@ import java.util.List;
  * @author ruoyi
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class WmArrivalNoticeLineServiceImpl implements IWmArrivalNoticeLineService {
 

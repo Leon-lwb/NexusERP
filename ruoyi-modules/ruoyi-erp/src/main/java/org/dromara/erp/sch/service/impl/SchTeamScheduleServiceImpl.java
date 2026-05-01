@@ -15,6 +15,7 @@ import org.dromara.erp.sch.service.ISchTeamScheduleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
@@ -24,6 +25,7 @@ import java.util.List;
  * @date 2025-12-30
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class SchTeamScheduleServiceImpl implements ISchTeamScheduleService {
 

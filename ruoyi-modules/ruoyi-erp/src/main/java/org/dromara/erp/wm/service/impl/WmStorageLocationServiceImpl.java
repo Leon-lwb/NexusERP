@@ -16,6 +16,7 @@ import org.dromara.erp.wm.service.IWmStorageLocationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
@@ -25,6 +26,7 @@ import java.util.List;
  * @date 2025-12-02
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
 

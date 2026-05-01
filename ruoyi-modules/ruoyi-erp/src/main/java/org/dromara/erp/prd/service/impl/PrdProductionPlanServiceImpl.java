@@ -35,6 +35,7 @@ import org.dromara.erp.prd.service.IPrdProductionPlanService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -46,6 +47,7 @@ import java.util.*;
  */
 @Slf4j
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 

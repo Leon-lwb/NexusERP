@@ -18,6 +18,7 @@ import org.dromara.erp.sch.service.ISchShiftService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
@@ -27,6 +28,7 @@ import java.util.List;
  * @date 2025-12-25
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class SchShiftServiceImpl implements ISchShiftService {
 

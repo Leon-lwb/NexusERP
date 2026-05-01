@@ -24,6 +24,7 @@ import org.dromara.erp.wm.service.IWmMaterialReceiveService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
@@ -32,6 +33,7 @@ import java.util.List;
  * @author ruoyi
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service("wmMaterialReceiveService")
 public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
 

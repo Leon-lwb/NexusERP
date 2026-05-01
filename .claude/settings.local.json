@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed 's/.*for //')",
+      "Bash(sed 's/ --.*//')",
+      "Bash(mvn compile *)",
+      "Read(//usr/local/bin/**)",
+      "Read(//usr/share/maven/bin/**)",
+      "Read(//d//**)",
+      "mcp__ide__getDiagnostics",
+      "Bash(xargs grep *)"
+    ]
+  }
+}

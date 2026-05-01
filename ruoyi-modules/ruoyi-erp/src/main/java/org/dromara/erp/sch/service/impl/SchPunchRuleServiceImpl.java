@@ -16,6 +16,7 @@ import org.dromara.erp.sch.service.ISchPunchRuleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
@@ -25,6 +26,7 @@ import java.util.List;
  * @date 2026-01-07
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class SchPunchRuleServiceImpl implements ISchPunchRuleService {
 

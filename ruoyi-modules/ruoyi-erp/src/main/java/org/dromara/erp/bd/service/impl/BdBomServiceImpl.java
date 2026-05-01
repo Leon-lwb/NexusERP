@@ -16,9 +16,11 @@ import org.dromara.erp.bd.service.IBdBomService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class BdBomServiceImpl implements IBdBomService {
 

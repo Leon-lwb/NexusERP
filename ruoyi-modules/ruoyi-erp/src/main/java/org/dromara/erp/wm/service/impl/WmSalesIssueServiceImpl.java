@@ -21,6 +21,7 @@ import org.dromara.erp.wm.service.IWmSalesIssueService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -31,6 +32,7 @@ import java.util.List;
  * @date 2026-04-03
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 

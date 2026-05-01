@@ -20,6 +20,7 @@ import org.dromara.erp.wm.service.IWmWarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
  * @date 2025-09-30
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class WmWarehouseServiceImpl implements IWmWarehouseService {
 

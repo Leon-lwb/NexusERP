@@ -24,6 +24,7 @@ import org.dromara.erp.sch.service.ISchPunchRuleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -35,6 +36,7 @@ import java.util.*;
  * @date 2026-01-06
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class SchAttendanceServiceImpl implements ISchAttendanceService {
 

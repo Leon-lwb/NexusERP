@@ -18,6 +18,7 @@ import org.dromara.erp.prd.service.IPrdMaterialRequirementService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +29,7 @@ import java.util.List;
  */
 @Slf4j
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequirementService {
 
