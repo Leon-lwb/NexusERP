@@ -277,3 +277,33 @@ justauth:
       client-id: 10**********6
       client-secret: 1f7d08**********5b7**********29e
       redirect-uri: ${justauth.address}/social-callback?source=gitea
+
+--- # 支付配置
+pay:
+  alipay:
+    enabled: true
+    appId: 9021000163621746
+    appPrivateKey: xx
+    alipayPublicKey: xx
+    notifyUrl: http://59e5381d.r23.cpolar.top/pay/alipay/notify
+    signType: RSA2
+    gatewayHost: openapi-sandbox.dl.alipaydev.com
+    protocol: https
+  wechat:
+    enabled: false
+    merchantId: your_merchant_id
+    merchantSerialNumber: your_merchant_serial_number
+    apiV3Key: your_api_v3_key
+    privateKeyPath: classpath:cert/wechat/apiclient_key.pem
+    appId: your_wechat_app_id
+    notifyUrl: http://your-domain/pay/wechat/notify
+  sqb:
+    enabled: false
+    apiDomain: https://api.shouqianba.com
+    terminalSn: your_terminal_sn
+    terminalKey: your_terminal_key
+    appId: your_sqb_app_id
+    vendorSn: your_vendor_sn
+    vendorKey: your_vendor_key
+    notifyUrl: http://your-domain/pay/sqb/notify
+    publicKey: classpath:cert/sqb/public_key.pem

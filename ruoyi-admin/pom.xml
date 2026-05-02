@@ -105,6 +105,12 @@
             <artifactId>ruoyi-erp</artifactId>
         </dependency>
 
+        <!--  支付业务模块  -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-pay</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>de.codecentric</groupId>
             <artifactId>spring-boot-admin-starter-client</artifactId>

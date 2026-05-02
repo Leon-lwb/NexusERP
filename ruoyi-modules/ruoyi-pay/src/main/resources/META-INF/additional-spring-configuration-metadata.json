@@ -1,0 +1,109 @@
+{
+    "properties": [
+        {
+            "name": "pay.alipay.enabled",
+            "type": "java.lang.Boolean",
+            "description": "是否启用支付宝支付"
+        },
+        {
+            "name": "pay.alipay.appId",
+            "type": "java.lang.String",
+            "description": "支付宝appId"
+        },
+        {
+            "name": "pay.alipay.appPrivateKey",
+            "type": "java.lang.String",
+            "description": "支付宝应用私钥，可以直接用字符串，也可以是基于classpath的文件路径"
+        },
+        {
+            "name": "pay.alipay.alipayPublicKey",
+            "type": "java.lang.String",
+            "description": "支付宝应用公钥，可以直接用字符串，也可以是基于classpath的文件路径"
+        },
+        {
+            "name": "pay.alipay.notifyUrl",
+            "type": "java.lang.String",
+            "description": "支付宝支付回调地址"
+        },
+        {
+            "name": "pay.wechat.enabled",
+            "type": "java.lang.Boolean",
+            "description": "是否启用微信支付"
+        },
+        {
+            "name": "pay.wechat.merchantId",
+            "type": "java.lang.String",
+            "description": "微信支付商户号"
+        },
+        {
+            "name": "pay.wechat.merchantSerialNumber",
+            "type": "java.lang.String",
+            "description": "微信支付商户证书序列号"
+        },
+        {
+            "name": "pay.wechat.apiV3Key",
+            "type": "java.lang.String",
+            "description": "微信支付APIv3密钥"
+        },
+        {
+            "name": "pay.wechat.privateKeyPath",
+            "type": "java.lang.String",
+            "description": "微信支付商户私钥路径"
+        },
+        {
+            "name": "pay.wechat.appId",
+            "type": "java.lang.String",
+            "description": "微信支付应用appId"
+        },
+        {
+            "name": "pay.wechat.notifyUrl",
+            "type": "java.lang.String",
+            "description": "微信支付回调地址"
+        },
+        {
+            "name": "pay.sqb.enabled",
+            "type": "java.lang.Boolean",
+            "description": "是否启用收钱吧支付"
+        },
+        {
+            "name": "pay.sqb.apiDomain",
+            "type": "java.lang.String",
+            "description": "收钱吧API域名"
+        },
+        {
+            "name": "pay.sqb.terminalSn",
+            "type": "java.lang.String",
+            "description": "收钱吧终端号"
+        },
+        {
+            "name": "pay.sqb.terminalKey",
+            "type": "java.lang.String",
+            "description": "收钱吧终端密钥"
+        },
+        {
+            "name": "pay.sqb.appId",
+            "type": "java.lang.String",
+            "description": "收钱吧应用appId"
+        },
+        {
+            "name": "pay.sqb.vendorSn",
+            "type": "java.lang.String",
+            "description": "收钱吧服务商序列号"
+        },
+        {
+            "name": "pay.sqb.vendorKey",
+            "type": "java.lang.String",
+            "description": "收钱吧服务商密钥"
+        },
+        {
+            "name": "pay.sqb.notifyUrl",
+            "type": "java.lang.String",
+            "description": "收钱吧支付回调地址"
+        },
+        {
+            "name": "pay.sqb.publicKey",
+            "type": "java.lang.String",
+            "description": "收钱吧公钥，可以直接用字符串，也可以是基于classpath的文件路径"
+        }
+    ]
+}

@@ -385,6 +385,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!--  支付业务模块  -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-pay</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
