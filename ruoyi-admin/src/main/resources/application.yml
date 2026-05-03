@@ -51,6 +51,9 @@ user:
 spring:
   application:
     name: RuoYi-Vue-Plus
+  # 强制 CGLIB 代理
+  aop:
+    proxy-target-class: true
   threads:
     # 开启虚拟线程 仅jdk21可用
     virtual:
@@ -119,6 +122,11 @@ security:
     # 支付回调（无需登录验证）
     - /pay/*/notify
     - /pay/*/notify/**
+    # 积木报表（内部自行鉴权）
+    - /jmreport/**
+    - /drag/**
+    - /jmreport-designer/**
+    - /jmubi/**
 
 # 多租户配置
 tenant:
@@ -136,6 +144,21 @@ tenant:
     - sys_client
     - sys_oss_config
     - flow_spel
+    # 积木报表表（无 tenant_id 字段）
+    - jm_report
+    - jm_report_db_param
+    - jm_report_db_source
+    - jm_report_link
+    - jm_report_map
+    - jm_report_share
+    - jm_report_tree
+    - jm_report_collect
+    - jm_report_page
+    - jm_report_datasource
+    - jm_report_template
+    - jm_report_data
+    - jm_drag_page
+    - jm_drag_component
 
 # MyBatisPlus配置
 # https://baomidou.com/config/

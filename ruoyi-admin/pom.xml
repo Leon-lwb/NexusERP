@@ -111,6 +111,12 @@
             <artifactId>ruoyi-pay</artifactId>
         </dependency>
 
+        <!--  积木报表模块  -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-report</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>de.codecentric</groupId>
             <artifactId>spring-boot-admin-starter-client</artifactId>

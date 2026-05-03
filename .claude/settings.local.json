@@ -42,7 +42,31 @@
       "Bash(cmd.exe /c \"cd /d D:\\\\workspace\\\\nexus-erp && mvn clean compile -DskipTests\")",
       "Bash(jar tf *)",
       "Bash(cmd.exe /c \"D:\\\\workspace\\\\nexus-erp\\\\build_all.bat\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git log *)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(mkdir -p ruoyi-modules/ruoyi-report/src/main/java/org/dromara/report/config)",
+      "Bash(mkdir -p ruoyi-modules/ruoyi-report/src/main/resources)",
+      "Read(//d/Program Files/**)",
+      "Bash(find /d -maxdepth 4 -name \"mvn*\" -type f)",
+      "Bash(cd /tmp)",
+      "Bash(jar xf *)",
+      "Bash(xargs cat *)",
+      "Bash(javap -c -p org/jeecg/modules/jmreport/config/init/JimuReportConfiguration.class)",
+      "Bash(javap -verbose -p org/jeecg/modules/jmreport/config/init/JimuReportConfiguration.class)",
+      "Bash(javap -c -p org/jeecg/modules/jmreport/config/JmReportBaseConfig.class)",
+      "Bash(rm -rf META-INF org jeecg)",
+      "Bash(cat META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports)",
+      "Bash(javap -verbose -p org/jeecgframework/minidao/auto/MinidaoAutoConfiguration.class)",
+      "Bash(javap -verbose -p /d/workspace/nexus-erp/ruoyi-common/ruoyi-common-core/target/classes/org/dromara/common/core/config/ApplicationConfig.class)",
+      "Bash(javap -c -p org/jeecgframework/minidao/auto/MinidaoAutoConfiguration.class)",
+      "Bash(rm -rf * .*)",
+      "WebFetch(domain:help.jimureport.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(rm -rf org META-INF)",
+      "Bash(javap -c -p org/jeecgframework/minidao/factory/MiniDaoBeanScannerConfigurer.class)",
+      "Bash(javap -c -p org/jeecgframework/minidao/aop/MiniDaoHandler.class)",
+      "Bash(rm -rf *)"
     ]
   }
 }

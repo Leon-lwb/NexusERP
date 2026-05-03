@@ -134,7 +134,15 @@
 import { listPayInvoice, getPayInvoice, delPayInvoice, addPayInvoice, updatePayInvoice } from "@/api/pay/invoice"
 
 const { proxy } = getCurrentInstance()
-const { pay_invoice_type } = proxy.useDict('pay_invoice_type')
+
+// 使用ref包装字典数据，确保响应式更新
+const pay_invoice_type = ref<DictDataOption[]>([]);
+
+// 初始化字典数据
+onMounted(async () => {
+  const dictData = proxy.useDict('pay_invoice_type');
+  pay_invoice_type.value = dictData.pay_invoice_type;
+});
 
 const invoiceList = ref([])
 const open = ref(false)
