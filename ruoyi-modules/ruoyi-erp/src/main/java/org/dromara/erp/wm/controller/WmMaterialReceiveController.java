@@ -136,7 +136,6 @@ public class WmMaterialReceiveController extends BaseController {
     @SaCheckPermission("wm:receive:query")
     @GetMapping("/{receiveId}/proc")
     public R<String> getProcInsId(@PathVariable("receiveId") String receiveId) {
-        // Workflow integration placeholder
-        return R.ok("操作成功", null);
+        return R.ok(wmMaterialReceiveService.getProcInsId(receiveId));
     }
 }

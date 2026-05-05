@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.wm.domain.WmMaterialReceive;
@@ -21,11 +22,21 @@ import org.dromara.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import org.dromara.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import org.dromara.erp.wm.mapper.WmMaterialReceiveMapper;
 import org.dromara.erp.wm.service.IWmMaterialReceiveService;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.service.IWfProcessService;
+import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 物料入库单Service业务层处理
@@ -40,6 +51,10 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private final WmMaterialReceiveMapper baseMapper;
     private final WmMaterialReceiveLineMapper receiveLineMapper;
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
+    private final IWfProcessService processService;
+    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final RuntimeService runtimeService;
+    private final HistoryService historyService;
 
     @Override
     public TableDataInfo<WmMaterialReceiveVo> selectPageList(WmMaterialReceiveBo bo, PageQuery pageQuery) {
@@ -155,9 +170,93 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             throw new RuntimeException("入库单不存在");
         }
 
-        // selectFlowId handling will be integrated with workflow service
+        // 如果前端没传 selectFlowId，从数据库已保存记录中读取
+        if (StringUtils.isBlank(selectFlowId)) {
+            if (receive.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(receive.getSelectFlowId());
+            } else {
+                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        // 保存 selectFlowId 并更新状态
+        receive.setSelectFlowId(Long.parseLong(selectFlowId));
         receive.setStatus("APPROVING");
-        return baseMapper.updateById(receive) > 0;
+        baseMapper.updateById(receive);
+
+        // 发起 Flowable 流程
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("dataId", receiveIdStr);
+        variables.put("requireTaskOnStart", true);
+        variables.put("receiveId", receive.getReceiveId());
+        variables.put("receiveCode", receive.getReceiveCode());
+        variables.put("receiveName", receive.getReceiveName());
+        variables.put("vendorId", receive.getVendorId());
+        variables.put("vendorName", receive.getVendorName());
+        variables.put("receiveDate", receive.getReceiveDate());
+        processService.startProcessByDataId(receiveIdStr, selectFlowId, "wmMaterialReceiveService", variables);
+
+        return true;
+    }
+
+    @Override
+    public String getProcInsId(String receiveIdStr) {
+        // 第一级：查 wf_my_business 表
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(receiveIdStr);
+            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
+                return business.getProcessInstanceId();
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 第二级：查运行中的流程实例
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+            .processInstanceBusinessKey(receiveIdStr).singleResult();
+        if (runtime != null) {
+            return runtime.getId();
+        }
+
+        // 第三级：查历史流程实例
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceBusinessKey(receiveIdStr).singleResult();
+        return hist != null ? hist.getId() : null;
+    }
+
+    @Override
+    public void afterFlowHandle(WfMyBusiness business) {
+        Long receiveId = Long.parseLong(business.getDataId());
+        WmMaterialReceive receive = baseMapper.selectById(receiveId);
+        if (receive == null) {
+            return;
+        }
+        String actStatus = business.getActStatus();
+        // 根据流程状态同步到单据状态
+        if (ActStatus.doing.equals(actStatus)) {
+            receive.setStatus("APPROVING");
+        } else if (ActStatus.pass.equals(actStatus)) {
+            receive.setStatus("APPROVED");
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            receive.setStatus("REJECTED");
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            receive.setStatus("PREPARE");
+        }
+        baseMapper.updateById(receive);
+    }
+
+    @Override
+    public Object getBusinessDataById(String dataId) {
+        return selectById(Long.parseLong(dataId));
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
     }
 
     /**

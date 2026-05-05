@@ -4,6 +4,7 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.wm.domain.bo.WmMaterialReceiveBo;
 import org.dromara.erp.wm.domain.vo.WmMaterialReceiveVo;
+import org.dromara.workflow.service.WfCallBackServiceI;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
  *
  * @author ruoyi
  */
-public interface IWmMaterialReceiveService {
+public interface IWmMaterialReceiveService extends WfCallBackServiceI {
 
     TableDataInfo<WmMaterialReceiveVo> selectPageList(WmMaterialReceiveBo bo, PageQuery pageQuery);
 
@@ -35,4 +36,9 @@ public interface IWmMaterialReceiveService {
      * 提交物料入库单并启动流程
      */
     boolean submit(String receiveIdStr, String selectFlowId);
+
+    /**
+     * 获取流程实例ID
+     */
+    String getProcInsId(String receiveIdStr);
 }

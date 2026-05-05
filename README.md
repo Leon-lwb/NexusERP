@@ -99,12 +99,8 @@ git clone https://gitee.com/helloworld_wh18/nexus-erp.git
 cd nexus-erp
 
 # 执行初始化 SQL (按顺序)
-# 1. script/sql/ry_vue_5.X.sql
-# 2. script/sql/ry_job.sql
-# 3. script/sql/ry_workflow.sql
-# 4. script/sql/ry-vue-erp.sql
-# 5. script/sql/ry-vue-pay.sql
-# 6. script/sql/ry-vue-pay-menu.sql
+# 1. script/sql/ry_vue.sql
+# 2. script/sql/ry-vue-erp.sql
 
 # 启动后端
 mvn spring-boot:run -P dev
