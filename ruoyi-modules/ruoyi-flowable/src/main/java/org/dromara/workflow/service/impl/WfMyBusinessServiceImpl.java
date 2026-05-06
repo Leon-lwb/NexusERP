@@ -1,6 +1,7 @@
 package org.dromara.workflow.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -26,6 +27,7 @@ import java.util.Collection;
  * @Date:   2021-11-25
  * @Version: V1.0
  */
+@DS("master")
 @RequiredArgsConstructor
 @Service
 public class WfMyBusinessServiceImpl extends ServiceImpl<WfMyBusinessMapper, WfMyBusiness> implements IWfMyBusinessService {

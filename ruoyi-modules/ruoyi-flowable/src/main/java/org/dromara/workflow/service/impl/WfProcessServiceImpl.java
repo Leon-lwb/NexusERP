@@ -12,6 +12,7 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.collect.Lists;
@@ -91,6 +92,7 @@ import org.flowable.task.api.history.HistoricTaskInstance;
 import org.flowable.task.api.history.HistoricTaskInstanceQuery;
 import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
@@ -107,6 +109,7 @@ import javax.sql.DataSource;
  * @author nbacheng
  * @createTime 2023-09-25
  */
+@DS("master")
 @RequiredArgsConstructor
 @Service
 @Slf4j
@@ -751,7 +754,12 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .processInstanceId(procInsId)
             .includeProcessVariables()
             .singleResult();
-        
+
+        // 提前加载 BPMN 模型，以便 currTaskFormData 获取自定义表单的 formKey
+        InputStream inputStream = repositoryService.getProcessModel(historicProcIns.getProcessDefinitionId());
+        String bpmnXmlStr = StrUtil.utf8Str(IoUtil.readBytes(inputStream, false));
+        BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXmlStr);
+
         if (StringUtils.isNotBlank(taskId)) {
             HistoricTaskInstance taskIns = historyService.createHistoricTaskInstanceQuery()
                 .taskId(taskId)
@@ -762,7 +770,20 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (taskIns == null) {
                 throw new ServiceException("没有可办理的任务！");
             }
-            detailVo.setTaskFormData(currTaskFormData(historicProcIns.getDeploymentId(), taskIns));
+            // 从 BPMN 模型获取当前任务节点的 formKey（自定义表单的 key 格式为 "key_<id>"）
+            String formKey = null;
+            FlowElement flowElement = ModelUtils.getFlowElementById(bpmnModel, taskIns.getTaskDefinitionKey());
+            if (flowElement != null) {
+                formKey = ModelUtils.getFormKey(flowElement);
+            }
+            // 当前节点没有 formKey 时，尝试从开始节点获取（自定义表单可能配置在开始节点上）
+            if (StringUtils.isBlank(formKey)) {
+                StartEvent startEvent = ModelUtils.getStartEvent(bpmnModel);
+                if (startEvent != null) {
+                    formKey = ModelUtils.getFormKey(startEvent);
+                }
+            }
+            detailVo.setTaskFormData(currTaskFormData(historicProcIns.getDeploymentId(), taskIns, formKey, dataId));
         }
         //当前任务信息
         List<Task> listtask = taskService.createTaskQuery().processInstanceId(procInsId).list();
@@ -779,10 +800,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 listCurNodeInfo.add(curNodeInfo);
         	}
         }
-        // 获取Bpmn模型信息
-        InputStream inputStream = repositoryService.getProcessModel(historicProcIns.getProcessDefinitionId());
-        String bpmnXmlStr = StrUtil.utf8Str(IoUtil.readBytes(inputStream, false));
-        BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXmlStr);
         detailVo.setListCurNodeInfo(listCurNodeInfo);
         detailVo.setBpmnXml(bpmnXmlStr);
         detailVo.setHistoryProcNodeList(historyProcNodeList(historicProcIns));
@@ -855,6 +872,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .processInstanceId(procInsId)
             .includeProcessVariables()
             .singleResult();
+        // 提前加载 BPMN 模型
+        InputStream inputStream = repositoryService.getProcessModel(historicProcIns.getProcessDefinitionId());
+        String bpmnXmlStr = StrUtil.utf8Str(IoUtil.readBytes(inputStream, false));
+        BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXmlStr);
+
         if (StringUtils.isNotBlank(taskId)) {
             HistoricTaskInstance taskIns = historyService.createHistoricTaskInstanceQuery()
                 .taskId(taskId)
@@ -865,12 +887,24 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (taskIns == null) {
                 throw new ServiceException("没有可办理的任务！");
             }
-            detailVo.setTaskFormData(currTaskFormData(historicProcIns.getDeploymentId(), taskIns));
+            String formKey = null;
+            FlowElement flowElement = ModelUtils.getFlowElementById(bpmnModel, taskIns.getTaskDefinitionKey());
+            if (flowElement != null) {
+                formKey = ModelUtils.getFormKey(flowElement);
+            }
+            // 当前节点没有 formKey 时，尝试从开始节点获取（自定义表单可能配置在开始节点上）
+            if (StringUtils.isBlank(formKey)) {
+                StartEvent startEvent = ModelUtils.getStartEvent(bpmnModel);
+                if (startEvent != null) {
+                    formKey = ModelUtils.getFormKey(startEvent);
+                }
+            }
+            detailVo.setTaskFormData(currTaskFormData(historicProcIns.getDeploymentId(), taskIns, formKey, dataId));
         }
 
         //当前任务信息
         List<Task> listtask = taskService.createTaskQuery().processInstanceId(procInsId).list();
-        
+
         if(listtask != null && listtask.size() > 0) {
         	for(Task task: listtask) {
         		CurNodeInfoVo curNodeInfo = new CurNodeInfoVo();
@@ -883,10 +917,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 listCurNodeInfo.add(curNodeInfo);
         	}
         }
-        // 获取Bpmn模型信息
-        InputStream inputStream = repositoryService.getProcessModel(historicProcIns.getProcessDefinitionId());
-        String bpmnXmlStr = StrUtil.utf8Str(IoUtil.readBytes(inputStream, false));
-        BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXmlStr);
         detailVo.setListCurNodeInfo(listCurNodeInfo);
         detailVo.setBpmnXml(bpmnXmlStr);
         detailVo.setHistoryProcNodeList(historyProcNodeList(historicProcIns));
@@ -1537,22 +1567,97 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     /**
      * 获取当前任务流程表单信息
      */
-    private FormConf currTaskFormData(String deployId, HistoricTaskInstance taskIns) {
-        WfDeployFormVo deployFormVo = deployFormMapper.selectVoOne(new LambdaQueryWrapper<WfDeployForm>()
-            .eq(WfDeployForm::getDeployId, deployId)
-            .eq(WfDeployForm::getFormKey, taskIns.getFormKey())
-            .eq(WfDeployForm::getNodeKey, taskIns.getTaskDefinitionKey()));
+    private FormConf currTaskFormData(String deployId, HistoricTaskInstance taskIns, String formKey, String dataId) {
+        LambdaQueryWrapper<WfDeployForm> lqw = new LambdaQueryWrapper<WfDeployForm>()
+            .eq(WfDeployForm::getDeployId, deployId);
+        if (StringUtils.isNotBlank(formKey)) {
+            lqw.eq(WfDeployForm::getFormKey, formKey);
+        } else {
+            lqw.eq(WfDeployForm::getNodeKey, taskIns.getTaskDefinitionKey());
+        }
+        List<WfDeployFormVo> formList = deployFormMapper.selectVoList(lqw);
+        WfDeployFormVo deployFormVo = formList.stream().findFirst().orElse(null);
         if (ObjectUtil.isNotEmpty(deployFormVo)) {
-            // 支持 NForm 结构：将表单内容解析为 Map 作为 formModel
             Map<String, Object> formModel = JsonUtils.parseObject(deployFormVo.getContent(), Map.class);
             if (null != formModel && !formModel.isEmpty()) {
                 FormConf currTaskFormData = new FormConf();
                 currTaskFormData.setFormBtns(false);
                 currTaskFormData.setFormModel(formModel);
-                // 填充表单数据（从任务本地变量获取）
-                currTaskFormData.setFormData(taskIns.getTaskLocalVariables());
+                Map<String, Object> formData = taskIns.getTaskLocalVariables();
+                if (formData == null || formData.isEmpty()) {
+                    Map<String, Object> procVars = taskIns.getProcessVariables();
+                    if (procVars != null) {
+                        Object fd = procVars.get("formData");
+                        if (fd instanceof Map) {
+                            formData = (Map<String, Object>) fd;
+                        } else {
+                            Object bizData = loadBusinessData(dataId);
+                            if (bizData instanceof Map) {
+                                formData = (Map<String, Object>) bizData;
+                            } else {
+                                formData = procVars;
+                            }
+                        }
+                    }
+                }
+                currTaskFormData.setFormData(formData);
                 return currTaskFormData;
+            } else {
+                // content 为空时，按自定义业务表单处理：通过 routeName 匹配前端 Vue 组件
+                Object bizFormData = loadBusinessData(dataId);
+                if (bizFormData != null) {
+                    try {
+                        WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+                        if (business != null && StringUtils.isNotBlank(business.getRouteName())) {
+                            FormConf formConf = new FormConf();
+                            formConf.setFormBtns(false);
+                            Map<String, Object> formValues = new HashMap<>();
+                            formValues.put("formData", bizFormData);
+                            formValues.put("routeName", business.getRouteName());
+                            formConf.setFormValues(formValues);
+                            return formConf;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
             }
+        }
+        // 未命中 wf_deploy_form 时仍按 dataId 构造自定义业务表单，与 processFormList 尾部逻辑对齐，避免 existTaskForm 恒为 false
+        if (StringUtils.isNotBlank(dataId)) {
+            try {
+                Object bizFormData = loadBusinessData(dataId);
+                if (bizFormData != null) {
+                    WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+                    if (business != null && StringUtils.isNotBlank(business.getRouteName())) {
+                        FormConf formConf = new FormConf();
+                        formConf.setFormBtns(false);
+                        Map<String, Object> formValues = new HashMap<>();
+                        formValues.put("formData", bizFormData);
+                        formValues.put("routeName", business.getRouteName());
+                        formConf.setFormValues(formValues);
+                        return formConf;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    private Object loadBusinessData(String dataId) {
+        if (StringUtils.isEmpty(dataId)) {
+            return null;
+        }
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+            if (business != null) {
+                String serviceImplName = business.getServiceImplName();
+                WfCallBackServiceI callBackService = (WfCallBackServiceI) SpringContextHolder.getBean(serviceImplName);
+                if (callBackService != null) {
+                    return callBackService.getBusinessDataById(dataId);
+                }
+            }
+        } catch (Exception ignored) {
         }
         return null;
     }
@@ -1886,7 +1991,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 	 * @return
 	 */
 	@Override
-	@Transactional(rollbackFor = Exception.class)
+	@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
 	public R<Void> startProcessByDataId(String dataId, String selectFlowId, String serviceName, Map<String, Object> variables) {
         //提交审批的时候进行流程实例关联初始化
     	

@@ -13,7 +13,7 @@
         </div>
       </template>
 
-      <el-form ref="receiveRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-form ref="receiveRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="入库单编号" prop="receiveCode">
@@ -382,6 +382,14 @@ import { getWareHouseTree } from "@/api/erp/wm/warehouse"
 import { getProcesss } from "@/api/workflow/process"
 import { useRoute, useRouter } from 'vue-router'
 
+/** 流程详情 / HistoricDetail 嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+})
+
 const { proxy } = getCurrentInstance() as any
 const { wm_material_receive_status } = proxy.useDict('wm_material_receive_status')
 const route = useRoute()
@@ -513,11 +521,50 @@ const isViewMode = ref(false)
 const title = ref("")
 const pageType = ref("")
 
+const formDisabled = computed(() => isViewMode.value || props.disabled)
+
+function normalizeReceiveDate(raw: any) {
+  if (raw == null || raw === '') return raw
+  const s = String(raw)
+  return s.length >= 10 ? s.substring(0, 10) : s
+}
+
+/** 将流程下发的业务主表 + 行表写入本地状态（与 getReceive 结构一致） */
+function applyWorkflowFormPayload(payload: Record<string, any>) {
+  if (!payload || typeof payload !== 'object') return
+  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>
+  if (merged.receiveDate) {
+    merged.receiveDate = normalizeReceiveDate(merged.receiveDate)
+  }
+  form.value = merged
+  wmMaterialReceiveLineList.value = Array.isArray(merged.wmMaterialReceiveLineList)
+    ? merged.wmMaterialReceiveLineList.map((line: any) => ({ ...line, detailList: line.detailList || [] }))
+    : []
+  wmMaterialReceiveLineList.value.forEach((line: any, index: number) => {
+    if (line.lineId) {
+      loadDetailList(line.lineId, index)
+    }
+  })
+  tryAutoSelect()
+}
+
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).receiveId != null) {
+      applyWorkflowFormPayload(val as Record<string, any>)
+      isViewMode.value = props.disabled
+      title.value = props.disabled ? '物料入库单（流程）' : '物料入库单'
+      loadFlows()
+    }
+  },
+  { deep: true, immediate: true }
+)
+
 onMounted(() => {
-  const id = route.query.id
+  const id = (route.query.id || route.query.dataId) as string | undefined
   const action = route.query.action
-  pageType.value = route.query.pageType || ""
-  // 设置查看模式
+  pageType.value = (route.query.pageType as string) || ''
   isViewMode.value = action === 'view'
 
   if (id) {
@@ -547,6 +594,18 @@ function initPage(id: any) {
     title.value = "新增物料入库单"
     reset()
     loadFlows()
+  } else if (id) {
+    // 已由流程父组件注入 customFormData 时不再重复请求
+    const injectedId = (props.customFormData as any)?.receiveId
+    if (injectedId != null && String(injectedId) === String(id)) {
+      return
+    }
+    // 仅有 id/dataId、无 action 时从接口拉全量（含子表明细）
+    const inWorkflowDetail = (route.path || '').includes('/workflow/process/detail')
+    isViewMode.value = true
+    title.value = inWorkflowDetail ? '物料入库单（流程）' : '查看物料入库单'
+    getInfo(id)
+    loadFlows()
   }
 }
 
@@ -566,6 +625,9 @@ function getInfo(id: any) {
         loadDetailList(line.lineId, index)
       }
     })
+
+    // 表单数据加载完成后，重新尝试自动选择流程（解决与 loadFlows 的竞态问题）
+    tryAutoSelect()
   })
 }
 
@@ -627,23 +689,32 @@ function loadFlows() {
   loadingFlow.value = true
   getProcesss({ serviceName: 'wmMaterialReceiveService' }).then((response: any) => {
     flowOptions.value = response?.data || []
-    if (!form.value.selectFlowId && flowOptions.value.length === 1) {
-      form.value.selectFlowId = flowOptions.value[0].id
-    }
+    tryAutoSelect()
     loadingFlow.value = false
   }).catch(() => {
     loadingFlow.value = false
   })
 }
 
+// 尝试自动选择流程（仅当未选择且只有一个可用流程时）
+function tryAutoSelect() {
+  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
 // 提交审批
 function handleSubmitFlow() {
   proxy.$refs["receiveRef"].validate((valid: boolean) => {
     if (valid) {
+      if (!form.value.selectFlowId) {
+        proxy.$modal.msgWarning("请先选择审批流程")
+        return
+      }
       form.value.wmMaterialReceiveLineList = wmMaterialReceiveLineList.value
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
-          submitReceive(String(form.value.receiveId), form.value.selectFlowId ? String(form.value.selectFlowId) : undefined).then((res: any) => {
+          submitReceive(String(form.value.receiveId), String(form.value.selectFlowId)).then((res: any) => {
             if (res.code === 200) {
               proxy.$modal.msgSuccess("提交审批成功")
               router.push('/erp/wm/receive')

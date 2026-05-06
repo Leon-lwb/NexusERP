@@ -3,15 +3,26 @@
     <el-tabs tab-position="top" v-model="activeName" :model-value="processed === true ? 'approval' : 'form'" @tab-click="changeTab">
       <el-tab-pane label="任务办理" name="approval" v-if="processed === true">
         
-        <el-card class="box-card" shadow="hover" v-if="taskFormVisible">
+        <!-- 自定义路由业务表单在「表单信息」展示；任务办理仅保留审批操作 -->
+        <el-card class="box-card" shadow="hover" v-if="taskFormVisible && !taskFormCustom.visible">
           <template #header>
             <span>填写表单</span>
           </template>
           <div class="cu-content">
-            <!-- 添加自定义样式来改善表单显示 -->
-            <div class="form-container" style="max-width: 100%;">
-              <FormRender 
-                :form-content="JSON.stringify(getFormContentWithWiderLabels())" 
+            <!-- 自定义业务表单（基于路由组件） -->
+            <component v-if="taskFormCustom.visible"
+              ref="taskCustomFormRef"
+              :disabled="taskFormCustom.disabled"
+              :is="taskFormCustom.formComponent"
+              :model="taskFormCustom.model"
+              :customFormData="taskFormCustom.customFormData"
+              :isNew="taskFormCustom.isNew"
+            />
+            <!-- 表单设计器 / OA 表单 -->
+            <div class="form-container" v-else style="max-width: 100%;">
+              <FormRender
+                :form-content="JSON.stringify(getFormContentWithWiderLabels())"
+                :initial-data="getInitialMainData(taskFormData.value)"
                 :dict-options="dictOptions"
                 ref="taskFormRenderRef"
                 label-position="right"
@@ -80,21 +91,24 @@
             :customFormData="customForm.customFormData" :isNew = "customForm.isNew"></component>
         </div>
         <div v-if="formVisible">
-          <el-card class="box-card" shadow="never" v-for="(item, index) in processFormList" :key="index">
-            <template #header>
-              <span>{{ item.title?.replace(/\(null\)/g, '') || '' }}</span>
-            </template>
-            <!--流程处理表单模块-->
-            <div class="cu-content">
-              <!-- 发起人节点 OA 且可编辑时渲染第一张表单 -->
-              <FormRender v-if = "dictReady && startUserForm.isStartUserNode && startUserForm.editFormType === 'OA' && processed === true && index === 0"
-                 :form-content="getEditableFormContent(item)" :initial-data="getInitialMainData(item)" :dict-options="dictOptions" label-width="200px" label-position="right" :ref="setFormRef">
-              </FormRender>
-              <!-- 其他节点：根据 disabled 决定是否只读，否则可编辑 -->
-              <FormRender v-else-if="dictReady && item.disabled && !startUserForm.isStartUserNode" :form-content="getReadonlyFormContent(item)" :initial-data="getInitialMainData(item)" :dict-options="dictOptions" label-width="200px" label-position="right" :ref="setFormRef" />
-              <FormRender v-else-if="dictReady" :form-content="getEditableFormContent(item)" :initial-data="getInitialMainData(item)" :dict-options="dictOptions" label-width="200px" label-position="right" :ref="setFormRef" />
-            </div>
-          </el-card>
+          <!-- 纯自定义路由表单仅由上方 dynamic 组件展示，避免再渲染空 FormRender -->
+          <template v-for="(item, index) in processFormList" :key="index">
+            <el-card v-if="!item.formValues?.routeName" class="box-card" shadow="never">
+              <template #header>
+                <span>{{ item.title?.replace(/\(null\)/g, '') || '' }}</span>
+              </template>
+              <!--流程处理表单模块-->
+              <div class="cu-content">
+                <!-- 发起人节点 OA 且可编辑时渲染第一张表单 -->
+                <FormRender v-if = "dictReady && startUserForm.isStartUserNode && startUserForm.editFormType === 'OA' && processed === true && index === 0"
+                   :form-content="getEditableFormContent(item)" :initial-data="getInitialMainData(item)" :dict-options="dictOptions" label-width="200px" label-position="right" :ref="setFormRef">
+                </FormRender>
+                <!-- 其他节点：根据 disabled 决定是否只读，否则可编辑 -->
+                <FormRender v-else-if="dictReady && item.disabled && !startUserForm.isStartUserNode" :form-content="getReadonlyFormContent(item)" :initial-data="getInitialMainData(item)" :dict-options="dictOptions" label-width="200px" label-position="right" :ref="setFormRef" />
+                <FormRender v-else-if="dictReady" :form-content="getEditableFormContent(item)" :initial-data="getInitialMainData(item)" :dict-options="dictOptions" label-width="200px" label-position="right" :ref="setFormRef" />
+              </div>
+            </el-card>
+          </template>
         </div>
         <div style="margin-left:10%;margin-bottom: 30px">
            <!--对上传文件进行显示处理，临时方案 add by nbacheng 2022-07-27 -->
@@ -387,6 +401,15 @@
     customFormData: {},
     isNew: false,
     disableSubmit: true
+  })
+
+  const taskFormCustom = reactive({ //任务办理中的自定义业务表单
+    visible: false,
+    disabled: true,
+    formComponent: null,
+    model: {},
+    customFormData: {},
+    isNew: false
   })
 
   const deptName = ref('');
@@ -683,7 +706,14 @@
     const params = {procInsId: procInsId, taskId: taskId, dataId: dataId}
     const res = await detailProcess(params);
     const data = res.data;
-    
+
+    // 避免从其它任务/流程带过来的「任务办理」自定义表单状态
+    taskFormCustom.visible = false;
+    taskFormCustom.formComponent = null;
+    taskFormCustom.model = {};
+    taskFormCustom.customFormData = {};
+    taskFormCustom.isNew = false;
+
     processXml.value = data.bpmnXml;
     processFormList.value = data.processFormList;
     
@@ -698,7 +728,8 @@
     }
     dictReady.value = true
     
-    if(processFormList.value.length == 1 &&processFormList.value[0]?.formValues?.hasOwnProperty('routeName')) {
+    // Tab 2 "表单信息": 自定义业务表单初始化
+    if(processFormList.value.length == 1 && processFormList.value[0]?.formValues?.hasOwnProperty('routeName')) {
       customForm.disabled = true;
       customForm.visible = true;
       customForm.formComponent = getFormComponent(processFormList.value[0].formValues.routeName).component;
@@ -708,28 +739,40 @@
         customForm.isNew = true;
         customForm.disabled = false;
       }
-      
     }
-    else {
-      taskFormVisible.value = data.existTaskForm;
-      
-      if (taskFormVisible.value) {
-        taskFormData.value = data.taskFormData;
-        
-        // 加载字典数据
+
+    // Tab 1 "任务办理": 任务表单初始化
+    taskFormVisible.value = data.existTaskForm;
+    console.log('[Detail] taskFormVisible:', taskFormVisible.value, 'existTaskForm:', data.existTaskForm);
+    if (taskFormVisible.value) {
+      taskFormData.value = data.taskFormData;
+      console.log('[Detail] taskFormData:', JSON.stringify(taskFormData.value, null, 2));
+      console.log('[Detail] taskFormData.formValues?.routeName:', taskFormData.value?.formValues?.routeName);
+
+      // 自定义业务表单：仍填充 model 供 complete 提交 variables，不在本 Tab 渲染「填写表单」卡片
+      if (taskFormData.value?.formValues?.routeName) {
+        console.log('[Detail] 进入自定义业务表单分支');
+        taskFormCustom.visible = true;
+        taskFormCustom.disabled = true;
+        taskFormCustom.formComponent = getFormComponent(taskFormData.value.formValues.routeName).component;
+        console.log('[Detail] taskFormCustom.formComponent:', taskFormCustom.formComponent);
+        taskFormCustom.model = taskFormData.value.formValues.formData;
+        taskFormCustom.customFormData = taskFormData.value.formValues.formData;
+        if (data.startUserNode) {
+          taskFormCustom.isNew = true;
+          taskFormCustom.disabled = false;
+        }
+      } else {
+        // OA 表单：加载字典数据
         if (taskFormData.value?.formModel?.formComponents) {
           await loadAllDictData(taskFormData.value.formModel.formComponents);
         }
-        
-        // 检查传递给 FormRender 的数据
-        
       }
-      if(data.startUserNode) {
-        startUserForm.value.isStartUserNode = true;
-      }
-      formVisible.value = true;
-      // NForm 的 FormRender 目前无 disableForm 方法，后续如需禁用可在 FormRender 增加 disabled 支持
     }
+    if(data.startUserNode) {
+      startUserForm.value.isStartUserNode = true;
+    }
+    formVisible.value = true;
     historyProcNodeList.value = data.historyProcNodeList;
     finishedInfo.value = data.flowViewer;
   }
@@ -757,42 +800,46 @@
 
   /** 通过任务 */
   const handleComplete = () => {
-    
-    const isExistTaskForm = toRaw(taskFormRenderRef.value) !== null || formRenderRefs.value.length > 0;
-    
+
+    const isExistTaskForm = taskFormCustom.visible || toRaw(taskFormRenderRef.value) !== null || formRenderRefs.value.length > 0;
+
     // 校验表单
     taskFormRef.value?.validate(async (valid: boolean) => {
       if (valid) {
         let payload: any = { ...toRaw(taskForm) }
-        
+
         if (isExistTaskForm) {
-          
+
           try {
+            // 自定义业务表单：直接从 model 读取（v-model 双向绑定已更新）
+            if (taskFormCustom.visible) {
+              payload.variables = { formData: toRaw(taskFormCustom.model) };
+            }
             // 优先检查 taskFormRenderRef（节点表单）
-            if (taskFormRenderRef.value && taskFormRenderRef.value.getFormData) {
-              
+            else if (taskFormRenderRef.value && taskFormRenderRef.value.getFormData) {
+
               const dataObj = await taskFormRenderRef.value.getFormData()
-              
+
               if (dataObj) {
                 const mainData = dataObj?.main || {}
                 const subData = dataObj?.sub || null
-                
+
                 const variables: any = { ...toRaw(mainData) }
                 if (subData) variables.sub = toRaw(subData)
-                
+
                 payload.variables = variables
               }
             } else if (formRenderRefs.value && formRenderRefs.value.length > 0) {
-              
+
               const dataObj = await formRenderRefs.value[0]?.getFormData?.()
-              
+
               if (dataObj) {
                 const mainData = dataObj?.main || {}
                 const subData = dataObj?.sub || null
-                
+
                 const variables: any = { ...toRaw(mainData) }
                 if (subData) variables.sub = toRaw(subData)
-                
+
                 payload.variables = variables
               } else {
                 console.warn("🔍 [WARN] handleComplete - 流程表单获取到的数据为空");
@@ -1137,21 +1184,41 @@
   return content
 }
 
-// 获取调整标签宽度后的表单内容
+// 获取调整标签宽度后的表单内容（含子表数据）
 const getFormContentWithWiderLabels = () => {
   if (!taskFormData.value?.formModel) return {};
-  
-  const formContent = { ...taskFormData.value.formModel };
-  
+
+  const formModel = typeof taskFormData.value.formModel === 'string'
+    ? JSON.parse(taskFormData.value.formModel)
+    : taskFormData.value.formModel;
+  const cloned = JSON.parse(JSON.stringify(formModel || {}));
+
   // 不设置 labelWidth 和 labelPosition，让CSS来控制布局
-  if (formContent.formConfig) {
-    formContent.formConfig = {
-      ...formContent.formConfig,
-      // 移除所有标签相关的配置，完全由CSS控制
-    };
+  if (cloned.formConfig) {
+    cloned.formConfig = { ...cloned.formConfig };
   }
-  
-  return formContent;
+
+  // 注入子表数据，与 getEditableFormContent 逻辑一致
+  const comps = cloned.formComponents || cloned.widgetList || cloned.components || cloned.fields || [];
+  const fd = taskFormData.value?.formData || {};
+  const masterSubTableData: Record<string, any[]> = {};
+  const subComp = Array.isArray(comps) ? comps.find((c: any) => c.type === 'subtable') : null;
+  const subFieldFromModel = subComp?.field || '';
+  if (Array.isArray(comps)) {
+    comps.forEach((c: any) => {
+      if (c.type === 'subtable' && c.field && Array.isArray(fd?.[c.field])) {
+        masterSubTableData[c.field] = fd[c.field];
+      }
+    });
+  }
+  if (!Object.keys(masterSubTableData).length && fd?.sub?.data && Array.isArray(fd.sub.data) && subFieldFromModel) {
+    masterSubTableData[subFieldFromModel] = fd.sub.data;
+  }
+  if (Object.keys(masterSubTableData).length > 0) {
+    cloned.masterSubTableData = masterSubTableData;
+  }
+
+  return cloned;
 };
 
 // 可编辑展示用：仅注入子表数据，不禁用字段

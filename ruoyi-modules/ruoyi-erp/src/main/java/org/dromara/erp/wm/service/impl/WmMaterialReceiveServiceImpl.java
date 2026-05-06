@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.flowable.core.domain.ActStatus;
@@ -30,6 +31,7 @@ import org.flowable.engine.RuntimeService;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
@@ -179,10 +181,8 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             }
         }
 
-        // 保存 selectFlowId 并更新状态
-        receive.setSelectFlowId(Long.parseLong(selectFlowId));
-        receive.setStatus("APPROVING");
-        baseMapper.updateById(receive);
+        // selectFlowId 已在编辑时存入数据库，此处不重复 update 以免持有行锁
+        // 导致 afterFlowHandle 回调死锁（submit TX on erp vs afterFlowHandle REQUIRES_NEW on erp）
 
         // 发起 Flowable 流程
         Map<String, Object> variables = new HashMap<>();
@@ -194,9 +194,11 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         variables.put("vendorId", receive.getVendorId());
         variables.put("vendorName", receive.getVendorName());
         variables.put("receiveDate", receive.getReceiveDate());
-        processService.startProcessByDataId(receiveIdStr, selectFlowId, "wmMaterialReceiveService", variables);
-
-        return true;
+    R<Void> result = processService.startProcessByDataId(receiveIdStr, selectFlowId, "wmMaterialReceiveService", variables);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+        throw new RuntimeException(result.getMsg());
     }
 
     @Override
@@ -224,6 +226,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
         Long receiveId = Long.parseLong(business.getDataId());
         WmMaterialReceive receive = baseMapper.selectById(receiveId);
@@ -245,6 +248,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
