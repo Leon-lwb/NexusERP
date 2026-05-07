@@ -67,7 +67,9 @@
       "Bash(javap -c -p org/jeecgframework/minidao/factory/MiniDaoBeanScannerConfigurer.class)",
       "Bash(javap -c -p org/jeecgframework/minidao/aop/MiniDaoHandler.class)",
       "Bash(rm -rf *)",
-      "Bash(mysql *)"
+      "Bash(mysql *)",
+      "Read(//d/workspace/Nexus_App/**)",
+      "Bash(sed -i \"s/const user = res.user/const d = res.data || res\\\\n\\\\t        const user = d.user/\" store/modules/user.js)"
     ]
   }
 }

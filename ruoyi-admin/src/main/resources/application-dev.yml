@@ -1,3 +1,7 @@
+--- # 验证码配置 (App移动端无需验证码)
+captcha:
+  enable: false
+
 --- # 监控中心配置
 spring.boot.admin.client:
   # 增加客户端开关
