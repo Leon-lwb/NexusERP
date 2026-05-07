@@ -19,13 +19,13 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class WfCommonService {
-    
+
 	@Autowired
     WfMyBusinessServiceImpl wfMyBusinessService;
-    
+
 	@Autowired
 	WfInstanceServiceImpl wfInstanceService;
-    
+
     /**
      * 初始生成或修改业务与流程的关联信息<br/>
      * 当业务模块新增一条数据后调用，此时业务数据关联一个流程定义，以备后续流程使用
@@ -46,7 +46,7 @@ public class WfCommonService {
         WfMyBusiness business = wfMyBusinessService.getOne(flowMyBusinessLambdaQueryWrapper);
         if (business!=null){
         	wfMyBusiness = business;
-        } 
+        }
         if (processDefinitionId==null){
             // 以便更新流程
             processDefinitionId = "";

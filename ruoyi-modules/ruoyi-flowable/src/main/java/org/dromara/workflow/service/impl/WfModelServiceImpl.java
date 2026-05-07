@@ -303,7 +303,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
             FlowElement targetFlowElement = outgoingFlow.getTargetFlowElement();
             //下个是节点
            if(targetFlowElement instanceof UserTask){// 下个出口是用户任务，而且是要发起人节点才让保存
-        	   
+
         	   if(StringUtils.equals(((UserTask) targetFlowElement).getAssignee(), "${initiator}"))
         	   {
         		   break;

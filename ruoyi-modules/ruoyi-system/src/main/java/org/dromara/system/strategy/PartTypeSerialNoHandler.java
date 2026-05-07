@@ -13,6 +13,11 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 序列号处理器
+ *
+ * @author wanghuan
+ */
 @Component
 @Order(3)
 public class PartTypeSerialNoHandler implements PartTypeTemplate {

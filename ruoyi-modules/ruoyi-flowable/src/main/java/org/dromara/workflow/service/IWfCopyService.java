@@ -56,7 +56,7 @@ public interface IWfCopyService {
 	 * @return 流程抄送
 	 */
 	TableDataInfo<WfCopyVo> selectMyPageList(WfCopyBo bo, PageQuery pageQuery);
-	
+
 	 /**
      * 更新为已读状态
      * @param id

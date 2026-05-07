@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 供应商信息Controller
+ *
+ * @author wanghuan
+ */
 @Validated
 @RequiredArgsConstructor
 @RestController

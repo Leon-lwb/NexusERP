@@ -1,7 +1,5 @@
 package org.dromara.generator.service.impl;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -12,11 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.dromara.common.core.exception.ServiceException;
-import org.dromara.common.core.utils.SpringUtils;
-import org.dromara.common.json.utils.JsonUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
-import org.dromara.common.tenant.helper.TenantHelper;
 import org.dromara.generator.domain.GenTable;
 import org.dromara.generator.domain.GenTableColumn;
 import org.dromara.generator.domain.GenTableDesign;
@@ -25,12 +20,10 @@ import org.dromara.generator.mapper.GenTableDesignMapper;
 import org.dromara.generator.mapper.GenTableMapper;
 import org.dromara.generator.service.IGenTableService;
 import org.dromara.generator.service.IUnifiedGenService;
-import org.dromara.generator.util.GenUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;

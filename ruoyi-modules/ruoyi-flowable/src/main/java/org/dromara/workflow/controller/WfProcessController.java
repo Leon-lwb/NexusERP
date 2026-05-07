@@ -107,7 +107,7 @@ public class WfProcessController extends BaseController {
         copyBo.setUserId(LoginHelper.getUserId());
         return copyService.selectPageList(copyBo, pageQuery);
     }
-    
+
     /**
      * 获取我的抄送列表
      *
@@ -124,16 +124,16 @@ public class WfProcessController extends BaseController {
     /**
      *更新抄送状态为已读
      *
-     * @param id 
-     * 
+     * @param id
+     *
      */
     @GetMapping(value = "/updateViewStatust")
     public R<Object> updateViewStatus(@RequestParam(name = "id",required = false) String id) {
     	copyService.updateStatus(id);
         return R.ok("更新成功!");
     }
-    
-    
+
+
     /**
      * 导出可发起流程列表
      */
@@ -236,7 +236,7 @@ public class WfProcessController extends BaseController {
     	return processService.startProcessByDefId(processDefId, variables);
 
     }
-    
+
     /**
      * 根据业务数据Id和服务名启动流程实例
      *
@@ -286,7 +286,7 @@ public class WfProcessController extends BaseController {
     public R detail(String procInsId, String taskId, String dataId) {
         return R.ok(processService.queryProcessDetail(procInsId, taskId, dataId));
     }
-    
+
     /**
      * 查询流程详情信息
      *
@@ -296,35 +296,35 @@ public class WfProcessController extends BaseController {
     public R detail(String dataId) {
         return R.ok(processService.queryProcessDetailByDataId(dataId));
     }
-    
+
     /**
      * 查询流程是否结束
      *
      * @param procInsId
-     * @param 
+     * @param
      */
     @GetMapping("/iscompleted")
     public R processIscompleted(String procInsId) {
         return R.ok(processService.processIscompleted(procInsId));
     }
-    
+
     /**
      * 根据钉钉流程json转flowable的bpmn的xml格式
      *
      * @param ddjson json对象
-     * 
+     *
      */
     @PostMapping("/ddtobpmn")
     public R<Void> ddToBpmn(@RequestBody String ddjson) {
     	return processService.dingdingToBpmn(ddjson);
 
     }
-	
+
 	/**
      * 根据当前服务名,组织与站点查询关联流程信息
      *
      * @param serviceName
-     * @param 
+     * @param
      */
     @GetMapping("/getProcesss")
     public R getProcesss(String serviceName) {

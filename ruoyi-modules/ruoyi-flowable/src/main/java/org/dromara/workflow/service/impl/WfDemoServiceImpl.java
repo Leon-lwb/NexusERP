@@ -4,7 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.dromara.common.core.constant.UserConstants;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
@@ -122,7 +121,7 @@ public class WfDemoServiceImpl extends ServiceImpl<WfDemoMapper, WfDemo> impleme
     public Page<WfDemoVo> myPage(Page<WfDemoVo> page, QueryWrapper<WfDemoVo> queryWrapper) {
         return baseMapper.myPage(page, queryWrapper);
     }
-    
+
 	@Override
 	public void afterFlowHandle(WfMyBusiness business) {
 		//流程操作后做些什么
@@ -130,7 +129,7 @@ public class WfDemoServiceImpl extends ServiceImpl<WfDemoMapper, WfDemo> impleme
         business.getValues();//前端传进来的参数
         business.getActStatus();//流程状态 ActStatus.java
         //....其他
-		
+
 	}
 
 	@Override

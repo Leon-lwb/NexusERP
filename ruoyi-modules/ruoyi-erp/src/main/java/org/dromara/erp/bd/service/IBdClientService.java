@@ -7,6 +7,11 @@ import org.dromara.erp.bd.domain.vo.BdClientVo;
 
 import java.util.List;
 
+/**
+ * 客户信息Service接口
+ *
+ * @author wanghuan
+ */
 public interface IBdClientService {
     TableDataInfo<BdClientVo> selectPageList(BdClientBo bo, PageQuery pageQuery);
     List<BdClientVo> selectList(BdClientBo bo);

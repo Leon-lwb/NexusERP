@@ -6,7 +6,9 @@ import com.aizuda.snailjob.model.dto.ExecuteResult;
 import org.springframework.stereotype.Component;
 
 /**
- * @author opensnail
+ * 测试类任务执行器
+ *
+ * @author wanghuan
  * @date 2024-05-17
  */
 @Component

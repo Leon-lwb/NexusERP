@@ -47,7 +47,7 @@ public class WfDeployForm implements Serializable {
      * 表单内容
      */
     private String content;
-    
+
     /**
      * 表单数据库表名
      */

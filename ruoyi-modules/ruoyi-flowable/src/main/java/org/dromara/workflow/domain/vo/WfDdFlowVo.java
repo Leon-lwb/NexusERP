@@ -3,8 +3,6 @@ package org.dromara.workflow.domain.vo;
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import lombok.Data;
-import java.util.Date;
-
 
 
 /**

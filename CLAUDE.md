@@ -28,10 +28,8 @@ RuoYi-Vue-Plus v5.6.0 — 一个多租户企业管理系统 (ERP)。基于 RuoYi
 ### 数据库
 
 初始化 SQL 脚本位于 `script/sql/` 目录:
-- `ry_vue_5.X.sql` — 基础系统表
-- `ry_job.sql` — 分布式任务调度表
-- `ry_workflow.sql` — Flowable 工作流表
-- `ry-vue-erp.sql` — ERP 业务表
+- `ry_vue.sql` — 基础系统表
+- `ry-erp.sql` — ERP 业务表
 - 同时包含 Oracle、PostgreSQL 和 SQLServer 版本
 
 ## 架构

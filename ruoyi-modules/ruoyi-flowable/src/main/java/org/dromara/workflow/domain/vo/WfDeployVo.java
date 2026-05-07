@@ -50,7 +50,7 @@ public class WfDeployVo {
      */
     @ExcelProperty(value = "应用类型")
     private String appType;
-    
+
     /**
      * 版本
      */

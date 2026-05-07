@@ -86,11 +86,11 @@ public class WfMyBusiness extends BaseEntity {
      * 前端页面显示的路由地址
      */
     private String routeName;
-    
+
     /**流程变量*/
 	@TableField(exist = false)
     private Map<String,Object> values;
-	
+
     /**
      * 流程实例主键
      */

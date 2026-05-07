@@ -1,13 +1,11 @@
 package org.dromara.erp.sch.controller.app;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
 import org.dromara.erp.sch.domain.SchAttendance;
 import org.dromara.erp.sch.domain.SchEmployeeSchedule;
-import org.dromara.erp.sch.domain.SchPunchRule;
 import org.dromara.erp.sch.domain.SchWorker;
 import org.dromara.erp.sch.domain.bo.SchPunchRuleBo;
 import org.dromara.erp.sch.domain.vo.SchPunchRuleVo;

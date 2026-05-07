@@ -8,6 +8,11 @@ import org.dromara.erp.bd.domain.vo.BdMaterialCategoryVo;
 
 import java.util.List;
 
+/**
+ * 物料产品分类Service接口
+ *
+ * @author wanghuan
+ */
 public interface IBdMaterialCategoryService {
     TableDataInfo<BdMaterialCategoryVo> selectPageList(BdMaterialCategoryBo bo, PageQuery pageQuery);
     List<BdMaterialCategoryVo> selectList(BdMaterialCategoryBo bo);

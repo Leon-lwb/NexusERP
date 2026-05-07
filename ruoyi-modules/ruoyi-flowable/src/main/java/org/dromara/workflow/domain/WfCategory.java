@@ -53,7 +53,7 @@ public class WfCategory extends BaseEntity {
      */
     @TableLogic
     private String delFlag;
-    
+
     /**
      * 租户编号
      */

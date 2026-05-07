@@ -68,5 +68,5 @@ public class WfDefinitionVo {
      * 部署时间
      */
     private Date deploymentTime;
-    
+
 }

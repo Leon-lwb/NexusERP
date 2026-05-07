@@ -4,5 +4,10 @@ import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 import org.dromara.erp.bd.domain.BdBom;
 import org.dromara.erp.bd.domain.vo.BdBomVo;
 
+/**
+ * BOMMapper接口
+ *
+ * @author wanghuan
+ */
 public interface BdBomMapper extends BaseMapperPlus<BdBom, BdBomVo> {
 }

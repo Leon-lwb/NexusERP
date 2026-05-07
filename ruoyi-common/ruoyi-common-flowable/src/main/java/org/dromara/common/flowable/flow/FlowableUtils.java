@@ -20,7 +20,7 @@ import java.util.*;
  */
 @Slf4j
 public class FlowableUtils {
-	
+
 	private static final String ATTRIBUTE_NAME = "name";
     private static final String ATTRIBUTE_VALUE = "stringValue";
     private static final String ATTRIBUTE_EXPRESSION = "expression";
@@ -708,7 +708,7 @@ public class FlowableUtils {
         }
         return rejectedList;
     }
-    
+
     /**
      * 获取扩展元素
      *

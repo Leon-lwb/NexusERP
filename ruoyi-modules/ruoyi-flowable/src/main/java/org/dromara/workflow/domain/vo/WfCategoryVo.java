@@ -35,7 +35,7 @@ public class WfCategoryVo implements Serializable {
      * 分类编码
      */
     private String code;
-    
+
     /**
      * 应用类型
      */

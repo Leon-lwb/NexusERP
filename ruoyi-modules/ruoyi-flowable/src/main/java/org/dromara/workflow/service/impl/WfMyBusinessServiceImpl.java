@@ -42,7 +42,7 @@ public class WfMyBusinessServiceImpl extends ServiceImpl<WfMyBusinessMapper, WfM
         WfMyBusiness business = this.getOne(flowMyBusinessLambdaQueryWrapper);
         return business;
     }
-    
+
     /**
      * 查询流程业务扩展
      */

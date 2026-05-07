@@ -19,6 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
+/**
+ * 工作中心Service业务层处理
+ *
+ * @author wanghuan
+ */
 @RequiredArgsConstructor
 @DS("erp")
 @Service

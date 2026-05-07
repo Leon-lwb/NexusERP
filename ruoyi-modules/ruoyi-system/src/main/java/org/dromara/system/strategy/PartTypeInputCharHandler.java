@@ -5,6 +5,11 @@ import org.dromara.system.domain.SysAutoCodePart;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+/**
+ * 输入字符处理器
+ *
+ * @author wanghuan
+ */
 @Component
 @Order(0)
 public class PartTypeInputCharHandler implements PartTypeTemplate {

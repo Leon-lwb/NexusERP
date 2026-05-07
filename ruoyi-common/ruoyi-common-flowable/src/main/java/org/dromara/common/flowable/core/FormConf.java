@@ -37,19 +37,19 @@ public class FormConf {
      * 表单数据
      */
     private Map<String, Object> formData;
-	
+
 	 /**
      * 表单列表
      */
-    
+
     private List<Map<String, Object>> list;
 
     /**
      * 表单配置名
      */
-    
+
     private Map<String, Object> config;
-    
+
     /**
      * 表单列表实际值
      */

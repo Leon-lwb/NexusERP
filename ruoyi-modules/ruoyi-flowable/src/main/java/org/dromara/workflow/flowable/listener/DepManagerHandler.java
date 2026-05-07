@@ -45,7 +45,7 @@ public class DepManagerHandler {
                     assignUserName = commonService.getDepLeaderByUserName(startUserId);
             	}
             }
-        }    
+        }
         return assignUserName;
 	}
 }

@@ -7,6 +7,11 @@ import org.dromara.erp.bd.domain.vo.BdWorkshopVo;
 
 import java.util.List;
 
+/**
+ * 车间信息Service接口
+ *
+ * @author wanghuan
+ */
 public interface IBdWorkshopService {
     TableDataInfo<BdWorkshopVo> selectPageList(BdWorkshopBo bo, PageQuery pageQuery);
     List<BdWorkshopVo> selectList(BdWorkshopBo bo);

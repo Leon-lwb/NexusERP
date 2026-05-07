@@ -4,14 +4,17 @@ import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.common.core.constant.Constants;
 import org.dromara.common.core.domain.model.LoginUser;
+import org.dromara.common.core.event.UserNotificationEvent;
+import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.satoken.utils.LoginHelper;
-import org.dromara.system.domain.SysUser;
+import org.dromara.common.tenant.helper.TenantHelper;
 import org.dromara.system.domain.vo.SysUserVo;
 import org.dromara.system.mapper.CommonMapper;
-import org.dromara.system.mapper.SysUserMapper;
 import org.dromara.system.service.CommonService;
 import org.dromara.system.service.ISysUserService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -28,6 +31,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> implements CommonService {
 
     private final ISysUserService userService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void sendSysNotice(String message) {
@@ -37,8 +41,31 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
 
     @Override
     public void sendSysNotice(String fromUser, String toUser, String title, String msgContent, String setMsgCategory) {
-        // TODO: 实现系统消息发送
         log.info("发送系统消息 fromUser: {}, toUser: {}, title: {}", fromUser, toUser, title);
+        if (StringUtils.isBlank(toUser)) {
+            return;
+        }
+        SysUserVo target = userService.selectUserByUserName(toUser);
+        if (target == null) {
+            log.warn("接收用户不存在: {}", toUser);
+            return;
+        }
+        String tenantId = TenantHelper.getTenantId();
+        String category = "system";
+        if (Constants.MSG_CATEGORY_3.equals(setMsgCategory)) {
+            category = "workflow_todo";
+        } else if (Constants.MSG_CATEGORY_1.equals(setMsgCategory)) {
+            category = "workflow_notice";
+        }
+        eventPublisher.publishEvent(new UserNotificationEvent(
+            tenantId,
+            target.getUserId(),
+            category,
+            "workflow",
+            null,
+            title,
+            msgContent,
+            null));
     }
 
     @Override

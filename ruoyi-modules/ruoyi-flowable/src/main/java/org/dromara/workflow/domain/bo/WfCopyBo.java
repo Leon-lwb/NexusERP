@@ -75,11 +75,11 @@ public class WfCopyBo extends BaseEntity {
      */
     @NotNull(message = "发起人名称不能为空", groups = { AddGroup.class, EditGroup.class })
     private String originatorName;
-    
+
     /**
      * 状态
      */
     @NotNull(message = "状态不能为空", groups = { AddGroup.class, EditGroup.class })
     private String state;
-    
+
 }

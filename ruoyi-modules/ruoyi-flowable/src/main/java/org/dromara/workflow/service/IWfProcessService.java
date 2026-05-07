@@ -120,7 +120,7 @@ public interface IWfProcessService {
     /**
      * 查询流程是否结束
      * @param procInsId 流程实例ID
-     * 
+     *
      */
 	boolean processIscompleted(String procInsId);
 

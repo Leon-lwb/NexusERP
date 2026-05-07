@@ -94,6 +94,20 @@ export const constantRoutes: RouteRecordRaw[] = [
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes: RouteRecordRaw[] = [
   {
+    path: '/im',
+    component: Layout,
+    hidden: true,
+    permissions: ['im:chat:list'],
+    children: [
+      {
+        path: 'chat',
+        component: () => import('@/views/im/chat/index.vue'),
+        name: 'ImChat',
+        meta: { title: '即时通讯', icon: 'message' }
+      }
+    ]
+  },
+  {
     path: '/workflow/process/start/:deployId',
     component: Layout,
     hidden: true,

@@ -35,7 +35,7 @@ public class WfFormVo implements Serializable {
      * 表单内容
      */
     private String content;
-    
+
     /**
      * 关联生成的数据库表名
      */

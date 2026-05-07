@@ -7,7 +7,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import org.dromara.common.flowable.utils.TaskUtils;
-import org.dromara.system.domain.SysUser;
 import org.dromara.system.domain.vo.SysUserVo;
 import org.dromara.system.service.CommonService;
 
@@ -25,12 +24,12 @@ import jakarta.annotation.Resource;
 public class flowExp {
 	@Resource
 	private CommonService commonService;
-	
+
 	public  String getDynamicAssignee() {//动态单个用户例子
 		SysUserVo loginUser = commonService.getSysUserByUserName(TaskUtils.getUserName());
 		return loginUser.getUserName();
 	}
-	
+
 	public  List<String> getDynamicList() {//动态多个用户例子
 		List<String> userlist = new ArrayList<String>();
 		List<SysUserVo> list = new ArrayList<SysUserVo>();
@@ -40,14 +39,14 @@ public class flowExp {
 		}
 		return userlist;
 	}
-	
+
 	//根据用户获取部门经理
 	public  String getDynamicManager(String userName) { //动态部门经理例子
-		// 获取部门负责人列表 		
+		// 获取部门负责人列表
   		return commonService.getDepLeaderByUserName(userName);
 	}
-	
-	
+
+
 	/**
 	* 反射调用方法
 	* @param newObj 实例化的一个对象

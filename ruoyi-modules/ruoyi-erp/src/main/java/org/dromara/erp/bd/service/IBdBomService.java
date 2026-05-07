@@ -7,6 +7,11 @@ import org.dromara.erp.bd.domain.vo.BdBomVo;
 
 import java.util.List;
 
+/**
+ * BOMService接口
+ *
+ * @author wanghuan
+ */
 public interface IBdBomService {
     TableDataInfo<BdBomVo> selectPageList(BdBomBo bo, PageQuery pageQuery);
     List<BdBomVo> selectList(BdBomBo bo);

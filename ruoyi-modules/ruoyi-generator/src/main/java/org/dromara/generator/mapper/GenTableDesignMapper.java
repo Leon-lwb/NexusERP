@@ -1,6 +1,5 @@
 package org.dromara.generator.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 import org.dromara.generator.domain.GenTableDesign;
 

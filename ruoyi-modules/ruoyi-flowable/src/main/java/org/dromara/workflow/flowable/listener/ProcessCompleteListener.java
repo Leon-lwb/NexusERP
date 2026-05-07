@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import org.dromara.common.core.constant.Constants;
 import org.dromara.common.core.domain.model.LoginUser;
-import org.dromara.system.domain.vo.SysUserVo;
 import org.dromara.system.service.CommonService;
 
 import jakarta.annotation.Resource;
@@ -36,13 +35,13 @@ import lombok.RequiredArgsConstructor;
 public class ProcessCompleteListener extends AbstractFlowableEngineEventListener {
 
 	private final TaskService taskService;
-	
+
     @Resource
     private CommonService commonService;
-    
+
     @Autowired
     protected HistoryService historyService;
-    
+
     @Resource
 	protected RepositoryService repositoryService;
 
@@ -54,7 +53,7 @@ public class ProcessCompleteListener extends AbstractFlowableEngineEventListener
         HistoricProcessInstance hi = historyService.createHistoricProcessInstanceQuery()
                 .processInstanceId(procInsId)
                 .singleResult();
-        
+
         List<Task> listtask = taskService.createTaskQuery().processInstanceId(procInsId).active().list();
         String taskId = "";
         if(listtask !=null) {
@@ -64,24 +63,24 @@ public class ProcessCompleteListener extends AbstractFlowableEngineEventListener
 		String businessKey =  hi.getBusinessKey();
 		String deployId = hi.getDeploymentId();
 		String category =  "";
-        
+
         if (StringUtils.isNotEmpty(startUserId)) {
             // TODO:  发送提醒消息
         	if(((ExecutionEntityImpl)event.getEntity()).getVariableInstances().get("category") !=null) {
         		category = ((VariableInstance)((ExecutionEntityImpl)event.getEntity()).getVariableInstances().get("category")).getTextValue();
         	}
-        	
+
         	LoginUser loginUser = commonService.getLoginUser();
         	String taskMessageUrl;
         	if(StringUtils.isNotBlank(businessKey)) {
-    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId 
+    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId
     				              + "?taskId=" + taskId + "&processed=false" + ">点击这个进行查看</a>" ;
     		}
     		else {
-    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId 
+    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId
     					+ "?taskId=" + taskId + "&processed=false" + ">点击这个进行查看</a>" ;
     		}
-        	String msgContent = "流程任务结束通知" + taskMessageUrl; 
+        	String msgContent = "流程任务结束通知" + taskMessageUrl;
         	commonService.sendSysNotice(loginUser.getUserId().toString(), startUserId, "流程任务结束通知", msgContent, Constants.MSG_CATEGORY_1);//setMsgCategory=1是通知
         }
 

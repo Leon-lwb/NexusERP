@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * 当前日期处理器
+ *
+ * @author wanghuan
+ */
 @Component
 @Order(1)
 public class PartTypeNowDateHandler implements PartTypeTemplate {

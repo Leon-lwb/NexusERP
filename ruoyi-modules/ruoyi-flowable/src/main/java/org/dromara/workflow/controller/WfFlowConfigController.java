@@ -72,7 +72,7 @@ public class WfFlowConfigController extends BaseController {
                                      @PathVariable Long id) {
         return R.ok(iWfFlowConfigService.queryById(id));
     }
-    
+
     /**
      * 根据configId获取流程配置两个子表
      *
@@ -83,7 +83,7 @@ public class WfFlowConfigController extends BaseController {
     public R<WfRuleVo> getConfigRule(WfFlowConfigBo bo) {
         return R.ok(iWfFlowConfigService.queryConfigRule(bo));
     }
-    
+
     /**
      * 修改流程配置两个子表
      */

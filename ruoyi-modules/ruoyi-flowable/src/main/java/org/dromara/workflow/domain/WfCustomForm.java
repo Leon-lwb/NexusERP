@@ -34,7 +34,7 @@ public class WfCustomForm extends BaseEntity {
      */
     private String businessService;
     /**
-     * 
+     *
      */
     private String flowName;
     /**
@@ -52,6 +52,6 @@ public class WfCustomForm extends BaseEntity {
     /**
      * 关联业务主表id
      */
-    private Long tableId;    
+    private Long tableId;
 
 }

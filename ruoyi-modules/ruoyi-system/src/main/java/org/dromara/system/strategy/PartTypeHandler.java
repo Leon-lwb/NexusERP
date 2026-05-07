@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * 编码规则片段类型处理器
+ *
+ * @author wanghuan
+ */
 @Component
 public class PartTypeHandler {
 

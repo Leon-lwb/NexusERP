@@ -1,6 +1,5 @@
 package org.dromara.erp.prd.domain.bo;
 
-import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

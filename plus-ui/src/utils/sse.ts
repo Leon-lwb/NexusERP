@@ -26,14 +26,52 @@ export const initSSE = (url: any) => {
 
   watch(data, () => {
     if (!data.value) return;
+    const raw = data.value;
+    if (typeof raw === 'string') {
+      try {
+        const obj = JSON.parse(raw);
+        if (obj && obj.v === 1 && obj.type && obj.payload) {
+          if (obj.type === 'USER_NOTIFICATION') {
+            const p = obj.payload;
+            useNoticeStore().addNotice({
+              message: p.title || '通知',
+              read: false,
+              time: new Date().toLocaleString()
+            });
+            ElNotification({
+              title: p.title || '站内通知',
+              message: p.contentPreview || '',
+              type: 'info',
+              duration: 4500
+            });
+            data.value = null;
+            return;
+          }
+          if (obj.type === 'IM_MESSAGE') {
+            window.dispatchEvent(new CustomEvent('im-realtime', { detail: obj.payload }));
+            const c = obj.payload?.content || '';
+            ElNotification({
+              title: '即时消息',
+              message: c.length > 120 ? c.slice(0, 120) + '…' : c,
+              type: 'success',
+              duration: 3500
+            });
+            data.value = null;
+            return;
+          }
+        }
+      } catch {
+        /* 非 JSON */
+      }
+    }
     useNoticeStore().addNotice({
-      message: data.value,
+      message: raw,
       read: false,
       time: new Date().toLocaleString()
     });
     ElNotification({
       title: '消息',
-      message: data.value,
+      message: raw,
       type: 'success',
       duration: 3000
     });

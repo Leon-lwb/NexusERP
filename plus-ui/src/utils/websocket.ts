@@ -32,8 +32,43 @@ export const initWebSocket = (url: any) => {
       console.log('websocket已经断开');
     },
     onMessage: (_, e) => {
-      if (e.data.indexOf('ping') > 0) {
+      if (typeof e.data === 'string' && e.data.trim() === 'ping') {
         return;
+      }
+      if (typeof e.data === 'string') {
+        try {
+          const obj = JSON.parse(e.data);
+          if (obj && obj.v === 1 && obj.type && obj.payload) {
+            if (obj.type === 'USER_NOTIFICATION') {
+              const p = obj.payload;
+              useNoticeStore().addNotice({
+                message: p.title || '通知',
+                read: false,
+                time: new Date().toLocaleString()
+              });
+              ElNotification({
+                title: p.title || '站内通知',
+                message: p.contentPreview || '',
+                type: 'info',
+                duration: 4500
+              });
+              return;
+            }
+            if (obj.type === 'IM_MESSAGE') {
+              window.dispatchEvent(new CustomEvent('im-realtime', { detail: obj.payload }));
+              const c = obj.payload?.content || '';
+              ElNotification({
+                title: '即时消息',
+                message: c.length > 120 ? c.slice(0, 120) + '…' : c,
+                type: 'success',
+                duration: 3500
+              });
+              return;
+            }
+          }
+        } catch {
+          /* 非 JSON 走旧逻辑 */
+        }
       }
       useNoticeStore().addNotice({
         message: e.data,

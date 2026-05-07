@@ -95,7 +95,7 @@ public class WfCustomFormController extends BaseController {
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody WfCustomFormBo bo) {
         return toAjax(iWfCustomFormService.updateByBo(bo));
     }
-    
+
     /**
      * 关联流程业务单
      */

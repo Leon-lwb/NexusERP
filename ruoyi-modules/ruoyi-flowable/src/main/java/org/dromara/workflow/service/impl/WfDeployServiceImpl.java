@@ -79,7 +79,7 @@ public class WfDeployServiceImpl implements IWfDeployService {
 		            vo.setCategory(deployment.getCategory());
 		            vo.setDeploymentTime(deployment.getDeploymentTime());
 		            deployVoList.add(vo);
-        		}	
+        		}
         	}
         	else {
 	            String deploymentId = processDefinition.getDeploymentId();
@@ -98,7 +98,7 @@ public class WfDeployServiceImpl implements IWfDeployService {
 	            vo.setDeploymentTime(deployment.getDeploymentTime());
 	            deployVoList.add(vo);
         	}
-            
+
         }
         Page<WfDeployVo> page = new Page<>();
         page.setRecords(deployVoList);

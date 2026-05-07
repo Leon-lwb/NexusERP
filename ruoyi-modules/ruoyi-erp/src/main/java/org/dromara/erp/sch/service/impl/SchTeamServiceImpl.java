@@ -4,13 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.sch.domain.SchTeam;
-import org.dromara.erp.sch.domain.SchTeamMember;
 import org.dromara.erp.sch.domain.bo.SchTeamBo;
 import org.dromara.erp.sch.domain.vo.SchTeamVo;
 import org.dromara.erp.sch.mapper.SchTeamMapper;
@@ -20,7 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import java.util.ArrayList;
+
 import java.util.List;
 
 /**

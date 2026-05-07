@@ -17,6 +17,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 自动编码工具类
+ *
+ * @author wanghuan
+ */
 @Service
 public class AutoCodeUtil {
     public static ThreadLocal<Boolean> threadLocal = new ThreadLocal<>();

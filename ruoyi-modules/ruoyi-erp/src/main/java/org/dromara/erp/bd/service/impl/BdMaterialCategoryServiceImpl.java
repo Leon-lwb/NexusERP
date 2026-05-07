@@ -21,6 +21,11 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 物料产品分类Service业务层处理
+ *
+ * @author wanghuan
+ */
 @RequiredArgsConstructor
 @DS("erp")
 @Service

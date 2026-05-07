@@ -16,7 +16,7 @@ public class WfRuleVo {
      * 流程节点自定义表单信息
      */
 	 private List<WfCustomRuleVo> customRuleVoList;
-	 
+
 	/**
      * 流程节点操作信息
      */

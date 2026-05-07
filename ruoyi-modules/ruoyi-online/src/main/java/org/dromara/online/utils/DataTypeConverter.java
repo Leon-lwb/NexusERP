@@ -6,6 +6,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * 数据类型转换器
+ *
+ * @author wanghuan
+ */
 public class DataTypeConverter {
     private static final DateTimeFormatter DATETIME_FORMAT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

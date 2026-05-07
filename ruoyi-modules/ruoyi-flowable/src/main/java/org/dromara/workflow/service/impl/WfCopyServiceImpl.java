@@ -39,7 +39,7 @@ public class WfCopyServiceImpl implements IWfCopyService {
     private final WfCopyMapper baseMapper;
 
     private final HistoryService historyService;
-    
+
     private final CommonService commonService;
 
     /**
@@ -66,7 +66,7 @@ public class WfCopyServiceImpl implements IWfCopyService {
         Page<WfCopyVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(result);
     }
-    
+
     /**
      * 查询我的流程抄送列表
      *
@@ -101,7 +101,7 @@ public class WfCopyServiceImpl implements IWfCopyService {
         lqw.like(StringUtils.isNotBlank(bo.getOriginatorName()), WfCopy::getOriginatorName, bo.getOriginatorName());
         return lqw;
     }
-    
+
     private LambdaQueryWrapper<WfCopy> buildMyQueryWrapper(WfCopyBo bo) {
         Map<String, Object> params = bo.getParams();
         LoginUser sysUser = commonService.getLoginUser();

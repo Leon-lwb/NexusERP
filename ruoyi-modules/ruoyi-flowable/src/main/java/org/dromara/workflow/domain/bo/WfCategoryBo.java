@@ -44,7 +44,7 @@ public class WfCategoryBo extends BaseEntity {
      */
     @NotBlank(message = "分类编码不能为空", groups = { AddGroup.class, EditGroup.class })
     private String code;
-    
+
     /**
      * 应用类型
      */

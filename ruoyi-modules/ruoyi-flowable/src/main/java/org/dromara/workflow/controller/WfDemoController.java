@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,12 +62,12 @@ public class WfDemoController extends BaseController {
 			column[0] = ParameterMap.get("column")[0];
 			column[0] = "t."+ column[0];
 			ParameterMap.replace("column", column);
-			log.info("修改的排序规则>>列:" + ParameterMap.get("column")[0]);			
+			log.info("修改的排序规则>>列:" + ParameterMap.get("column")[0]);
 		}
 		QueryWrapper<WfDemoVo> queryWrapper = QueryGenerator.initQueryWrapper(vo, ParameterMap);
 		queryWrapper.eq("t.del_flag", UserConstants.USER_NORMAL);
 		queryWrapper.orderByDesc("t.create_time");
-		
+
 		Page<WfDemoVo> page = new Page<WfDemoVo>(pageQuery.getPageNum(), pageQuery.getPageSize());
 	    Page<WfDemoVo> result = iWfDemoService.myPage(page, queryWrapper);
 	    return TableDataInfo.build(result);

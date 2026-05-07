@@ -1,7 +1,6 @@
 package org.dromara.workflow.service;
 
 import org.flowable.bpmn.model.ExtensionElement;
-import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.task.service.impl.persistence.entity.TaskEntityImpl;
@@ -28,7 +27,7 @@ public interface IWfTaskService {
      * @param task 请求实体参数
      */
     void complete(WfTaskBo task);
-    
+
     /**
      * 驳回任务
      *
@@ -56,7 +55,7 @@ public interface IWfTaskService {
      * @param bo 请求实体参数
      */
     void taskJump(WfTaskBo bo);
-    
+
     /**
      * 获取所有可回退的节点
      *
@@ -135,7 +134,7 @@ public interface IWfTaskService {
      * @param variables 流程参数
      */
     void startFirstTask(ProcessInstance processInstance, Map<String, Object> variables);
-    
+
     /**
      * 获取下一节点
      * @param WfTaskBo 任务
@@ -168,17 +167,17 @@ public interface IWfTaskService {
      * 获取序列流扩展节点
      *
      * @param taskId 任务ID
-     * @return 
+     * @return
      */
     Map<String, List<ExtensionElement>> getSequenceFlowExtensionElement(String taskId);
 	/**
      * 获取扩展属性值
      *
      * @param taskId 任务ID
-     * @return 
+     * @return
      */
     List<ExtensionElementInfo> getExtensionElement(String taskId);
-    
+
     Map<String, Object> getFlowProperties(String procInsId);
     /**
      * 获取流程执行过程
@@ -191,7 +190,7 @@ public interface IWfTaskService {
      * 用户任务列表,作为跳转任务使用
      *
      * @param WfTaskBo
-     * @return 
+     * @return
      */
 	R userTaskList(WfTaskBo bo);
 
@@ -199,18 +198,18 @@ public interface IWfTaskService {
      * 加签任务
      *
      * @param WfTaskBo
-     * @return 
+     * @return
      */
 	void addSignTask(WfTaskBo bo);
- 
+
 	/**
      * 多实例加签任务
      *
      * @param WfTaskBo
-     * @return 
+     * @return
      */
 	void multiInstanceAddSign(WfTaskBo bo);
-	
+
 	/**
      * 任务前加签 （如果多次加签只能显示第一次前加签的处理人来处理任务）
      * 多个加签人处理完毕任务之后又流到自己这里

@@ -7,6 +7,11 @@ import org.dromara.erp.bd.domain.vo.BdUnitOfMeasureVo;
 
 import java.util.List;
 
+/**
+ * 计量单位Service接口
+ *
+ * @author wanghuan
+ */
 public interface IBdUnitOfMeasureService {
     TableDataInfo<BdUnitOfMeasureVo> selectPageList(BdUnitOfMeasureBo bo, PageQuery pageQuery);
     List<BdUnitOfMeasureVo> selectList(BdUnitOfMeasureBo bo);

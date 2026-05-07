@@ -7,6 +7,11 @@ import org.dromara.erp.bd.domain.vo.BdWorkstationVo;
 
 import java.util.List;
 
+/**
+ * 工作中心Service接口
+ *
+ * @author wanghuan
+ */
 public interface IBdWorkstationService {
     TableDataInfo<BdWorkstationVo> selectPageList(BdWorkstationBo bo, PageQuery pageQuery);
     List<BdWorkstationVo> selectList(BdWorkstationBo bo);

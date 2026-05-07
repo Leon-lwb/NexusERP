@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import org.dromara.generator.domain.GenTable;
-import org.dromara.generator.domain.GenTableColumn;
 
 import jakarta.validation.Valid;
 import lombok.Data;

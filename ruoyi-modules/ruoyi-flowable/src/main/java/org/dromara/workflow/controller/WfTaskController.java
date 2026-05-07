@@ -43,7 +43,7 @@ public class WfTaskController {
         flowTaskService.stopProcess(bo);
         return R.ok();
     }
-    
+
     /**
      * 收回流程
      */
@@ -92,7 +92,7 @@ public class WfTaskController {
         flowTaskService.taskReject(taskBo);
         return R.ok();
     }
-    
+
     /**
      * 拒绝任务
      */
@@ -112,8 +112,8 @@ public class WfTaskController {
         flowTaskService.taskReturn(bo);
         return R.ok();
     }
-    
-    
+
+
     /**
      * 加签任务
      */
@@ -123,7 +123,7 @@ public class WfTaskController {
         flowTaskService.addSignTask(bo);
         return R.ok("加签任务成功");
     }
-    
+
     /**
      * 多实例加签任务
      */
@@ -133,7 +133,7 @@ public class WfTaskController {
         flowTaskService.multiInstanceAddSign(bo);
         return R.ok("多实例加签任务成功");
     }
-    
+
     /**
      * 任务跳转
      */
@@ -143,7 +143,7 @@ public class WfTaskController {
         flowTaskService.taskJump(bo);
         return R.ok();
     }
-    
+
     /**
      * 获取用户任务节点,作为跳转任务使用
      */
@@ -227,12 +227,12 @@ public class WfTaskController {
     @PostMapping(value = "/isFirstInitiator/{dataId}")
     public R isFirstInitiator(@PathVariable(value = "dataId") String dataId,
             @RequestBody Map<String, Object> variables) {
-        
+
     	String sRevokeOrReject = (String) variables.get("actStatus");
     	String processInstanceId = (String) variables.get("processInstanceId");
     	return R.ok(flowTaskService.isFirstInitiator(processInstanceId, sRevokeOrReject));
-    }	
-    
+    }
+
     /**
      * 自定义业务使用
      *  删除自定义业务任务关联表与流程历史表，以便可以重新发起流程。
@@ -245,8 +245,8 @@ public class WfTaskController {
     	String sRevokeOrReject = (String) variables.get("actStatus");
     	String processInstanceId = (String) variables.get("processInstanceId");
     	return R.ok(flowTaskService.deleteActivityAndJoin(dataId, processInstanceId, sRevokeOrReject));
-    }	
-    
+    }
+
     /**
      * 生成流程图
      *

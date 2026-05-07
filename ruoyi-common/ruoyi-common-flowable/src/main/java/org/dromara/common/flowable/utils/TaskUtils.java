@@ -24,7 +24,7 @@ public class TaskUtils {
     public static String getUserName() {
         return LoginHelper.getUsername();
     }
-    
+
     /**
      * 获取用户组信息
      *

@@ -108,7 +108,7 @@ public class WfFormServiceImpl implements IWfFormService {
 				throw new RuntimeException(e.getMessage());
 			}
         }
-        
+
         return baseMapper.insert(wfForm);
     }
 
@@ -147,7 +147,7 @@ public class WfFormServiceImpl implements IWfFormService {
         		}
         	}
     	}
-    		
+
         return baseMapper.update(new WfForm(), new LambdaUpdateWrapper<WfForm>()
             .set(StrUtil.isNotBlank(bo.getFormName()), WfForm::getFormName, bo.getFormName())
             .set(StrUtil.isNotBlank(bo.getContent()), WfForm::getContent, bo.getContent())
@@ -185,7 +185,7 @@ public class WfFormServiceImpl implements IWfFormService {
 					}
     	        }
     		}
-    		
+
     	});
         return baseMapper.deleteBatchIds(ids) > 0;
     }
@@ -196,16 +196,16 @@ public class WfFormServiceImpl implements IWfFormService {
         lqw.like(StringUtils.isNotBlank(bo.getFormName()), WfForm::getFormName, bo.getFormName());
         return lqw;
     }
-    
+
     /**
      * 建VForm3表单表
      *
      * @param content 表单内容
-     * @return 
+     * @return
      * @return 结果
-     * @throws SQLException 
+     * @throws SQLException
      */
-    
+
     private void saveVForm3ToDb(String content , String formName, String tableName) throws SQLException {
     	JSONObject formObject = JSON.parseObject(content);
 		JSONArray fieldArray = formObject.getJSONArray("widgetList");
@@ -215,11 +215,11 @@ public class WfFormServiceImpl implements IWfFormService {
 			String fieldSqlType = getFieldSqlType(fieldObject);
 			if(StringUtils.isNotEmpty(fieldSqlType)) {
 				fieldSqlList.add(fieldSqlType);
-			}	
+			}
 		}
-		String createTableQuery = "CREATE TABLE IF NOT EXISTS " + tableName 				
-				+ " (id bigint(20) NOT NULL COMMENT '编号'," 
-				+ " tenant_id varchar(20) DEFAULT '000000' COMMENT '租户编号'," 
+		String createTableQuery = "CREATE TABLE IF NOT EXISTS " + tableName
+				+ " (id bigint(20) NOT NULL COMMENT '编号',"
+				+ " tenant_id varchar(20) DEFAULT '000000' COMMENT '租户编号',"
 				+ String.join(", ", fieldSqlList) + ", PRIMARY KEY (id)) COMMENT='" + formName +"'";
 		DataSource dataSource = SpringContextHolder.getApplicationContext().getBean(DataSource.class);
 		Connection connection = dataSource.getConnection();
@@ -232,108 +232,108 @@ public class WfFormServiceImpl implements IWfFormService {
             connection.close();
         }
     }
-    
+
     /**
      * 获取VForm3字段的sql信息
      *
-     * @param type VForm3字段类型
+     * @param vformField VForm3字段
      * @return 结果
      */
     private  String getFieldSqlType(JSONObject vformField) {
     	String fieldSqlType = "";
     	String type = vformField.getString("type");
     	JSONObject optionsObj = vformField.getJSONObject("options");
-    	
+
         switch (type) {
             case "input":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " "
                                + "DEFAULT" + " '" + optionsObj.get("defaultValue") + "' "
                                + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "textarea":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "text" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "text" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "number":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "int" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "int" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "date":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "date" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "date" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "date-range":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(30)" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(30)" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;	
+            	break;
             case "datetime":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "datetime" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "datetime" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "time":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "time" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "time" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "time-range":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(20)" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(20)" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;	
+            	break;
             case "radio":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;	
+            	break;
             case "checkbox":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "select":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "switch":
             	short defaultValue =  (short) ((boolean) optionsObj.get("defaultValue")?1:0);
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
                         + "DEFAULT" + " " + defaultValue + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;	
+            	break;
             case "rate":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "color":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(10)" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(10)" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;	
+            	break;
             case "slider":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
                         + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "picture-upload":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(255)" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(255)" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;	
+            	break;
             case "file-upload":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(255)" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(255)" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;	
+            	break;
             case "rich-editor":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "longtext" + " " 
+            	fieldSqlType = optionsObj.getString("name") + " "  + "longtext" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
             	break;
             case "cascader":
             	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " "
                         + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;		
+            	break;
         }
         return fieldSqlType;
     }
-    
+
 }

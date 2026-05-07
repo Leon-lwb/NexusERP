@@ -83,7 +83,7 @@ public class WfCategoryController extends BaseController {
     public R<WfCategoryVo> getInfo(@NotNull(message = "主键不能为空") @PathVariable("categoryId") Long categoryId) {
         return R.ok(categoryService.queryById(categoryId));
     }
-    
+
     /**
      * 获取流程APP分类详细信息
      * @param code 分类编码

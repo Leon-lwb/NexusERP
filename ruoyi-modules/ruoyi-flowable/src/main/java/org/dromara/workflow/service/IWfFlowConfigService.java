@@ -49,9 +49,9 @@ public interface IWfFlowConfigService {
      * 校验并批量删除流程配置主信息
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
-    
+
     void updateFlowConfig(WfFlowConfigVo flowConfigVo);
-    
+
 	WfFlowConfig selectByModelIdAndNodeKey(WfFlowConfigVo flowConfigVo);
 
 	/**

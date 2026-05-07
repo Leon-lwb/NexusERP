@@ -31,23 +31,23 @@ import jakarta.annotation.Resource;
 @Component
 @RequiredArgsConstructor
 public class TaskCreateListener implements FlowableEventListener {
-	
+
     private final TaskService taskService;
-    
+
     @Resource
     private CommonService commonService;
-    
+
     @Resource
 	protected RepositoryService repositoryService;
-	
+
 	@Resource
     protected HistoryService historyService;
-	   
+
 
     @Override
     public void onEvent(FlowableEvent flowableEvent) {
     	FlowableEventType type = flowableEvent.getType();
-    	if (type == FlowableEngineEventType.TASK_ASSIGNED) { 
+    	if (type == FlowableEngineEventType.TASK_ASSIGNED) {
     		if(flowableEvent instanceof org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl ) {
     			TaskEntity taskEntity = (TaskEntity) ((org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl) flowableEvent).getEntity();
     			String taskId = taskEntity.getId();
@@ -66,17 +66,17 @@ public class TaskCreateListener implements FlowableEventListener {
     	        	if(taskService.getVariables(taskId).get("category") != null) {
     	        		category = taskService.getVariables(taskId).get("category").toString();
     	        	}
-    	      
+
     	        	LoginUser loginUser = commonService.getLoginUser();
     	        	String taskMessageUrl;
     	        	if(StringUtils.isNotBlank(businessKey)) {
     	    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId + "?taskId="
-    	    					          + taskId + "&businessKey=" + businessKey + "&category=" 
+    	    					          + taskId + "&businessKey=" + businessKey + "&category="
     	    					          + category + "&processed=true"  + ">点击这个进行处理</a>" ;
     	    		}
     	    		else {
     	    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId + "?taskId="
-    	    					         + taskId + "&businessKey" + "&category=" 
+    	    					         + taskId + "&businessKey" + "&category="
     	    					         + category + "&processed=true" + ">点击这个进行处理</a>" ;
     	    		}
     	        	String msgContent ="流程待办通知" + taskMessageUrl;
@@ -86,7 +86,7 @@ public class TaskCreateListener implements FlowableEventListener {
     	        	}
     	        }
     		}
-    	}	
+    	}
     }
 
     @Override

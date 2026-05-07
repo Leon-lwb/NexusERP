@@ -50,7 +50,7 @@ public interface IWfInstanceService {
      * @param deployId 流程部署ID
      */
     Map<String, Object> queryDetailProcess(String procInsId, String deployId);
-    
+
     /**
      * 删除流程实例ID
      *

@@ -2,7 +2,6 @@ package org.dromara.pay.service.sqb;
 
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;

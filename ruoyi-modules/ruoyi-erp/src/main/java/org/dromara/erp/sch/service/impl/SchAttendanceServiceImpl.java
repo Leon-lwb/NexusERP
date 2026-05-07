@@ -11,7 +11,6 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.sch.domain.SchAttendance;
 import org.dromara.erp.sch.domain.SchEmployeeSchedule;
-import org.dromara.erp.sch.domain.SchPunchRule;
 import org.dromara.erp.sch.domain.vo.SchPunchRuleVo;
 import org.dromara.erp.sch.domain.SchShift;
 import org.dromara.erp.sch.domain.bo.SchAttendanceBo;

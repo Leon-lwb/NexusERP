@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * BOMController
+ * @author wanghuan
+ */
 @Validated
 @RequiredArgsConstructor
 @RestController

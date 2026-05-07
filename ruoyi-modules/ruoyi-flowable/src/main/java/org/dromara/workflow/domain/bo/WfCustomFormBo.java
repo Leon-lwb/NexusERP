@@ -9,8 +9,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.Date;
-
 /**
  * 流程业务单业务对象 wf_custom_form
  *
@@ -41,7 +39,7 @@ public class WfCustomFormBo extends BaseEntity {
     private String businessService;
 
     /**
-     * 
+     *
      */
     @NotBlank(message = "不能为空", groups = { AddGroup.class, EditGroup.class })
     private String flowName;

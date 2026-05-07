@@ -4,6 +4,11 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
+/**
+ * 账单DTO
+ *
+ * @author wanghuan
+ */
 @Data
 public class BillDto {
 

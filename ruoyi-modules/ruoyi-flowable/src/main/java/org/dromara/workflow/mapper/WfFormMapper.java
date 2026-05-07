@@ -20,11 +20,11 @@ import java.util.List;
 public interface WfFormMapper extends BaseMapperPlus<WfForm, WfFormVo> {
 
     List<WfFormVo> selectFormVoList(@Param(Constants.WRAPPER) Wrapper<WfForm> queryWrapper);
-    
+
     //根据VForm3的form_id获取创建的表名
     @Select("SELECT table_name FROM wf_form WHERE form_id = #{formId}")
     String selectTableName(@Param("formId") Long formId);
-    
+
     //根据表名查询记录数
     @Select("SELECT count(*) FROM ${tableName}")
     int getRows(@Param("tableName") String tableName);

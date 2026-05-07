@@ -12,6 +12,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 在线表单设计Controller
+ *
+ * @author wanghuan
+ */
 @RestController
 @RequestMapping("/online/db/design")
 public class TableDesignController {

@@ -2,8 +2,6 @@ package org.dromara.workflow.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
-import org.dromara.common.excel.annotation.ExcelDictFormat;
-import org.dromara.common.excel.convert.ExcelDictConvert;
 import org.dromara.workflow.domain.WfNform;
 
 import io.github.linpeilie.annotations.AutoMapper;
@@ -11,7 +9,6 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Date;
 
 
 /**

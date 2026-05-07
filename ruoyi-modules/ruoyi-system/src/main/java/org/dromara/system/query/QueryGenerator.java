@@ -5,6 +5,11 @@ import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 查询条件生成器
+ *
+ * @author wanghuan
+ */
 @Slf4j
 public class QueryGenerator {
 

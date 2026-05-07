@@ -77,6 +77,6 @@ public class WfCopy extends BaseEntity {
      * 读状态(未读,已读)
      */
     private String state;
-    
+
 
 }

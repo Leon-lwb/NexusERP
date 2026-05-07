@@ -9,6 +9,11 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.generator.domain.GenTable;
 
+/**
+ * 在线表单Service接口
+ *
+ * @author wanghuan
+ */
 public interface IFormService {
 
 	Map<String, Object> getOnlineForm(Long tableId);

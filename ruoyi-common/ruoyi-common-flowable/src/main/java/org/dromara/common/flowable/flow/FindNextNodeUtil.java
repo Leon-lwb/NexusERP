@@ -225,7 +225,7 @@ public class FindNextNodeUtil {
         final Object execute = exp.execute(map);
         return Boolean.parseBoolean(String.valueOf(execute));
     }
-    
+
     /**
      * 校验el表达示例
      *
@@ -234,7 +234,7 @@ public class FindNextNodeUtil {
      * @return
      */
     public static Object result(Map<String, Object> map, String expression) {
-    	Object result = null; 
+    	Object result = null;
     	try {
 	        FelEngine fel = new FelEngineImpl();
 	        FelContext ctx = fel.getContext();
@@ -257,15 +257,15 @@ public class FindNextNodeUtil {
 	        result = fel.eval(exp);
 	        //result = fel.eval(expression);
 		} catch (Exception e) {
-			result = null;	
+			result = null;
 		}
     	 return result;
     }
-    
+
     /**
      * 获取排他网关分支名称、分支表达式是否存在${approved}
      * @param flowElement
-     * @param 
+     * @param
      * add by nbacheng
      */
     public static boolean GetExclusiveGatewayExpression(FlowElement flowElement) {
@@ -283,7 +283,7 @@ public class FindNextNodeUtil {
             		return true;
             	}
             }
-        }    
-    	return false;   	
+        }
+    	return false;
     }
 }

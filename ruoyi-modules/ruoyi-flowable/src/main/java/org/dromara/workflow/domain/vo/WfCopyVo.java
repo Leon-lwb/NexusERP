@@ -75,7 +75,7 @@ public class WfCopyVo implements Serializable {
      * 发起人名称
      */
     private String originatorName;
-    
+
     /**
      * 状态
      */

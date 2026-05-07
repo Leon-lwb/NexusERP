@@ -7,6 +7,11 @@ import org.dromara.erp.bd.domain.vo.BdMaterialVo;
 
 import java.util.List;
 
+/**
+ * 物料产品主Mapper接口
+ *
+ * @author wanghuan
+ */
 public interface BdMaterialMapper extends BaseMapperPlus<BdMaterial, BdMaterialVo> {
 
     List<BdMaterialVo> selectByCategoryIds(@Param("categoryIds") List<Long> categoryIds);

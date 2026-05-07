@@ -9,8 +9,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.Date;
-
 
 /**
  * 钉钉流程业务对象 wf_dd_flow

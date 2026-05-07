@@ -12,6 +12,6 @@ import lombok.Data;
 @Data
 public class CustomFormVo {
 	private String id;
-	private String deployId;	
+	private String deployId;
 	private String flowName;
 }

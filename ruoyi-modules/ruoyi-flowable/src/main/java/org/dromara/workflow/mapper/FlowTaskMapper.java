@@ -27,6 +27,6 @@ public interface FlowTaskMapper {
      * @param processInstanceId
      */
     void deleteAllHisAndRun(String processInstanceId);
-    
+
     int querySubTaskByParentTaskId(@Param("parentTaskId")  String parentTaskId);
 }
