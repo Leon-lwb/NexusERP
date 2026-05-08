@@ -2,6 +2,7 @@ package org.dromara.erp.sch.controller.app;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
 import org.dromara.erp.sch.domain.SchAttendance;
@@ -30,6 +31,7 @@ import java.util.*;
  * @date 2026/1/7
  */
 @RequiredArgsConstructor
+@DS("erp")
 @RestController
 @RequestMapping("/app/sch")
 public class AppSchAttendanceController {

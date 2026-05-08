@@ -69,7 +69,10 @@
       "Bash(rm -rf *)",
       "Bash(mysql *)",
       "Read(//d/workspace/Nexus_App/**)",
-      "Bash(sed -i \"s/const user = res.user/const d = res.data || res\\\\n\\\\t        const user = d.user/\" store/modules/user.js)"
+      "Bash(sed -i \"s/const user = res.user/const d = res.data || res\\\\n\\\\t        const user = d.user/\" store/modules/user.js)",
+      "Read(//c/Users/MyPC/.m2/repository/cn/dev33/sa-token-jwt/1.44.0/**)",
+      "Read(//mnt/c/Users/MyPC/.m2/repository/cn/dev33/sa-token-jwt/**)",
+      "Bash(find /mnt -path \"*/sa-token-jwt*\" -name \"*.jar\")"
     ]
   }
 }

@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 07/05/2026 17:55:37
+ Date: 08/05/2026 17:54:27
 */
 
 SET NAMES utf8mb4;
@@ -1032,6 +1032,7 @@ INSERT INTO `sch_attendance` VALUES (1, '000000', 19, NULL, '2026-01-09 00:00:00
 INSERT INTO `sch_attendance` VALUES (2, '000000', 19, NULL, '2026-01-10 00:00:00', NULL, '2026-01-10 19:16:23', '2026-01-10 19:17:22', 0, 342, 0.00, 'late_early_leave', 'manual', NULL, NULL, NULL, 103, 1, '2026-01-10 19:16:23', 1, '2026-01-10 19:17:22', '0');
 INSERT INTO `sch_attendance` VALUES (4, '000000', 19, '吴静', '2026-01-22 00:00:00', NULL, '2026-01-22 11:13:37', '2026-01-22 12:55:56', 133, 244, 0.00, 'late_early_leave', 'manual', NULL, NULL, NULL, 103, 1, '2026-01-22 11:13:37', 1, '2026-01-22 12:55:56', '0');
 INSERT INTO `sch_attendance` VALUES (5, '000000', 19, '吴静', '2026-01-23 00:00:00', NULL, '2026-01-23 15:43:28', NULL, 403, 0, 0.00, 'late', 'manual', NULL, NULL, NULL, 103, 1, '2026-01-23 15:43:28', 1, '2026-01-23 15:43:28', '0');
+INSERT INTO `sch_attendance` VALUES (2052577815196393473, '000000', 12, '张明', '2026-05-08 00:00:00', NULL, '2026-05-08 10:34:21', NULL, 0, 0, 0.00, 'normal', 'manual', NULL, NULL, NULL, 103, 1, '2026-05-08 10:34:21', 1, '2026-05-08 10:34:21', '0');
 
 -- ----------------------------
 -- Table structure for sch_employee_schedule
