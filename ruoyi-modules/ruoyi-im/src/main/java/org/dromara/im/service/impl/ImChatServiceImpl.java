@@ -80,6 +80,7 @@ public class ImChatServiceImpl implements IImChatService {
         msg.setMsgType(msgType);
         msg.setIsRead("0");
         msg.setRevoked("0");
+        msg.setForwardFrom(bo.getForwardFrom());
         imMessageMapper.insert(msg);
 
         String title = "私聊 · " + (from != null ? StrUtil.blankToDefault(from.getNickName(), from.getUserName()) : "用户");
@@ -117,6 +118,7 @@ public class ImChatServiceImpl implements IImChatService {
         msg.setMsgType(msgType);
         msg.setIsRead("0");
         msg.setRevoked("0");
+        msg.setForwardFrom(bo.getForwardFrom());
         imMessageMapper.insert(msg);
 
         SysUserVo from = sysUserService.selectUserById(fromId);
@@ -298,6 +300,22 @@ public class ImChatServiceImpl implements IImChatService {
             .eq(ImMessage::getFromUserId, peerUserId)
             .eq(ImMessage::getIsRead, "0")
             .isNull(ImMessage::getGroupId));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int markGroupRead(Long groupId) {
+        Long me = LoginHelper.getUserId();
+        ImGroup group = imGroupMapper.selectById(groupId);
+        if (group == null || !"0".equals(group.getStatus())) {
+            return 0;
+        }
+        ImMessage patch = new ImMessage();
+        patch.setIsRead("1");
+        return imMessageMapper.update(patch, new LambdaUpdateWrapper<ImMessage>()
+            .eq(ImMessage::getGroupId, groupId)
+            .ne(ImMessage::getFromUserId, me)
+            .eq(ImMessage::getIsRead, "0"));
     }
 
     private long countUnreadPrivate(Long me, Long peer) {

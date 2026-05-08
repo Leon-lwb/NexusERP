@@ -14,4 +14,6 @@ public class ImPrivateSendBo {
     private String content;
 
     private String msgType = "text";
+
+    private Long forwardFrom;
 }

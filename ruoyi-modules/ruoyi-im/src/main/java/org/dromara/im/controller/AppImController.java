@@ -2,6 +2,7 @@ package org.dromara.im.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.dromara.common.json.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -16,6 +17,8 @@ import org.dromara.im.domain.bo.ImGroupSendBo;
 import org.dromara.im.domain.bo.ImPrivateSendBo;
 import org.dromara.im.domain.vo.ImConversationVo;
 import org.dromara.im.mapper.*;
+import org.dromara.im.push.ImEnvelopeHelper;
+import org.dromara.im.push.ImRealtimePush;
 import org.dromara.im.service.IImChatService;
 import org.dromara.im.service.ISysUserNotificationService;
 import org.dromara.system.domain.SysUser;
@@ -53,6 +56,8 @@ public class AppImController extends BaseController {
     private final ImGroupMapper groupMapper;
     private final ImGroupMemberMapper groupMemberMapper;
     private final SysUserNotificationMapper notificationMapper;
+    private final ImFriendMapper friendMapper;
+    private final ImRealtimePush imRealtimePush;
 
     // ==================== Session ====================
 
@@ -82,6 +87,21 @@ public class AppImController extends BaseController {
     // ==================== 用户 ====================
 
     /**
+     * 获取当前登录用户的 IM 信息
+     */
+    @GetMapping("/user/info")
+    public R<Map<String, Object>> currentUserInfo() {
+        Long userId = LoginHelper.getUserId();
+        SysUserVo user = userMapper.selectVoById(userId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", userId);
+        data.put("userName", user != null ? user.getUserName() : "");
+        data.put("nickName", user != null ? user.getNickName() : "");
+        data.put("avatar", user != null ? user.getAvatar() : "");
+        return R.ok(data);
+    }
+
+    /**
      * 可聊天用户列表（同租户下所有用户）
      */
     @GetMapping("/user/list")
@@ -109,25 +129,25 @@ public class AppImController extends BaseController {
     // ==================== 好友列表 ====================
 
     /**
-     * 好友列表：有私聊记录的用户
+     * 好友列表（从好友关系表读取）
      */
     @GetMapping("/friend/list")
     public R<List<Map<String, Object>>> friendList() {
         Long me = LoginHelper.getUserId();
-        List<ImMessage> msgs = messageMapper.selectList(new LambdaQueryWrapper<ImMessage>()
-            .isNull(ImMessage::getGroupId)
-            .and(w -> w.eq(ImMessage::getFromUserId, me).or().eq(ImMessage::getToUserId, me))
-            .orderByDesc(ImMessage::getCreateTime));
-
-        Set<Long> peerIds = new LinkedHashSet<>();
-        for (ImMessage m : msgs) {
-            Long peer = m.getFromUserId().equals(me) ? m.getToUserId() : m.getFromUserId();
-            if (peer != null) peerIds.add(peer);
+        String tenantId = TenantHelper.getTenantId();
+        List<ImFriend> relations;
+        if (TenantHelper.isEnable()) {
+            relations = friendMapper.selectList(new LambdaQueryWrapper<ImFriend>()
+                .eq(ImFriend::getTenantId, tenantId)
+                .eq(ImFriend::getUserId, me));
+        } else {
+            relations = friendMapper.selectList(new LambdaQueryWrapper<ImFriend>()
+                .eq(ImFriend::getUserId, me));
         }
 
         List<Map<String, Object>> friends = new ArrayList<>();
-        for (Long peerId : peerIds) {
-            SysUserVo u = userMapper.selectVoById(peerId);
+        for (ImFriend rel : relations) {
+            SysUserVo u = userMapper.selectVoById(rel.getFriendUserId());
             if (u != null) {
                 Map<String, Object> f = new HashMap<>();
                 f.put("userId", u.getUserId());
@@ -149,18 +169,56 @@ public class AppImController extends BaseController {
     public R<Void> sendFriendRequest(@RequestBody Map<String, String> body) {
         Long fromUserId = LoginHelper.getUserId();
         Long toUserId = Long.valueOf(body.get("toUserId"));
-        String message = body.getOrDefault("message", "请求添加您为好友");
+        String requestMessage = body.getOrDefault("message", "请求添加您为好友");
 
         if (fromUserId.equals(toUserId)) {
             return R.fail("不能添加自己为好友");
         }
 
         SysUserVo fromUser = userMapper.selectVoById(fromUserId);
-        String title = StrUtil.blankToDefault(fromUser != null ? fromUser.getNickName() : "", fromUser != null ? fromUser.getUserName() : "用户") + " 请求添加您为好友";
+        String senderName = StrUtil.blankToDefault(fromUser != null ? fromUser.getNickName() : "", fromUser != null ? fromUser.getUserName() : "用户");
+        String title = senderName + " 请求添加您为好友";
 
+        // 原有的通知（用于 toast 弹窗，保持兼容）
         notificationService.addAndPush(toUserId, CATEGORY_FRIEND_REQUEST, "friend_request",
-            String.valueOf(fromUserId), title, message,
+            String.valueOf(fromUserId), title, requestMessage,
             "{\"status\":\"" + FRIEND_REQUEST_SENT + "\",\"fromUserId\":" + fromUserId + "}");
+
+        // 插入 IM 消息（让好友请求出现在私聊对话中）
+        Map<String, Object> fromInfo = new LinkedHashMap<>();
+        fromInfo.put("nickName", fromUser != null ? fromUser.getNickName() : "");
+        fromInfo.put("userName", fromUser != null ? fromUser.getUserName() : "");
+        fromInfo.put("avatar", fromUser != null ? fromUser.getAvatar() : "");
+        Map<String, Object> contentMap = new LinkedHashMap<>();
+        contentMap.put("fromUserInfo", fromInfo);
+        contentMap.put("requestMessage", requestMessage);
+        contentMap.put("status", "pending");
+        String contentJson = JsonUtils.toJsonString(contentMap);
+
+        ImMessage msg = new ImMessage();
+        msg.setFromUserId(fromUserId);
+        msg.setToUserId(toUserId);
+        msg.setContent(contentJson);
+        msg.setMsgType("friend_request");
+        msg.setIsRead("0");
+        msg.setRevoked("0");
+        messageMapper.insert(msg);
+
+        // 推送给对方
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("chatType", "PRIVATE");
+        payload.put("messageId", msg.getMessageId());
+        payload.put("fromUserId", fromUserId);
+        payload.put("toUserId", toUserId);
+        payload.put("content", contentJson);
+        payload.put("msgType", "friend_request");
+        payload.put("status", "pending");
+        payload.put("createTime", msg.getCreateTime());
+        if (fromUser != null) {
+            payload.put("senderName", senderName);
+            payload.put("senderAvatar", fromUser.getAvatar());
+        }
+        imRealtimePush.publishToUser(toUserId, ImEnvelopeHelper.imMessage(payload));
 
         return R.ok();
     }
@@ -200,32 +258,160 @@ public class AppImController extends BaseController {
 
     /**
      * 处理好友请求（接受/拒绝）
+     * 支持参数格式:
+     * - 前端消息格式: { messageId, accept: true/false }
+     * - 通知格式:     { id, action: "accept"/"reject" }
      */
     @PostMapping("/friend/request/handle")
-    public R<Void> handleFriendRequest(@RequestBody Map<String, String> body) {
-        Long notificationId = Long.valueOf(body.get("id"));
-        boolean accept = "accept".equals(body.get("action"));
+    public R<Void> handleFriendRequest(@RequestBody Map<String, Object> body) {
+        Long notificationId;
+        Long messageId;
+        boolean accept;
+        Long fromUserId = null;
+        Long toUserId = null;
 
-        SysUserNotification notification = notificationMapper.selectById(notificationId);
-        if (notification == null) {
+        // 解析参数并获取申请者/接收者信息
+        // 前端消息格式: { messageId: 123, accept: true, remark: '' }
+        messageId = body.get("messageId") != null
+            ? Long.valueOf(body.get("messageId").toString()) : null;
+
+        if (body.containsKey("accept")) {
+            accept = Boolean.TRUE.equals(body.get("accept"));
+            notificationId = body.get("id") != null
+                ? Long.valueOf(body.get("id").toString()) : null;
+        } else {
+            notificationId = Long.valueOf(body.get("id").toString());
+            accept = "accept".equals(body.get("action"));
+        }
+
+        // 优先从 IM 消息获取好友关系
+        if (messageId != null) {
+            ImMessage msg = messageMapper.selectById(messageId);
+            if (msg != null && "friend_request".equals(msg.getMsgType())) {
+                fromUserId = msg.getFromUserId();
+                toUserId = msg.getToUserId();
+                // 更新消息内容中的状态
+                updateFriendRequestMessageStatus(msg, accept);
+            }
+        }
+
+        // 从通知获取（旧格式兼容）
+        if (notificationId != null) {
+            SysUserNotification notification = notificationMapper.selectById(notificationId);
+            if (notification == null && messageId == null) {
+                return R.fail("请求不存在");
+            }
+            if (notification != null) {
+                String status = accept ? FRIEND_REQUEST_ACCEPTED : FRIEND_REQUEST_REJECTED;
+                SysUserNotification update = new SysUserNotification();
+                update.setNotificationId(notificationId);
+                if (notification.getExtJson() != null) {
+                    update.setExtJson(notification.getExtJson().replace("\"status\":\"" + FRIEND_REQUEST_SENT + "\"", "\"status\":\"" + status + "\""));
+                } else {
+                    update.setExtJson("{\"status\":\"" + status + "\"}");
+                }
+                update.setReadFlag("1");
+                notificationMapper.updateById(update);
+                if (fromUserId == null) {
+                    fromUserId = notification.getRefId() != null ? Long.valueOf(notification.getRefId()) : null;
+                    toUserId = notification.getUserId();
+                }
+            }
+        }
+
+        if (fromUserId == null || toUserId == null) {
             return R.fail("请求不存在");
         }
 
-        String status = accept ? FRIEND_REQUEST_ACCEPTED : FRIEND_REQUEST_REJECTED;
-
-        // 更新通知的extJson状态
-        SysUserNotification update = new SysUserNotification();
-        update.setNotificationId(notificationId);
-        if (notification.getExtJson() != null) {
-            update.setExtJson(notification.getExtJson().replace("\"status\":\"" + FRIEND_REQUEST_SENT + "\"", "\"status\":\"" + status + "\""));
-        } else {
-            update.setExtJson("{\"status\":\"" + status + "\"}");
+        // 接受时写入双向好友关系
+        if (accept) {
+            addFriendRelation(fromUserId, toUserId);
         }
-        notification.setReadFlag("1");
-        update.setReadFlag("1");
-        notificationMapper.updateById(update);
+
+        // 通知申请者处理结果
+        String resultStatus = accept ? "accepted" : "rejected";
+        String resultAction = accept ? "已同意" : "已拒绝";
+        SysUserVo me = userMapper.selectVoById(LoginHelper.getUserId());
+        String myName = me != null ? StrUtil.blankToDefault(me.getNickName(), me.getUserName()) : "对方";
+
+        Map<String, Object> resultFromInfo = new LinkedHashMap<>();
+        resultFromInfo.put("nickName", me != null ? me.getNickName() : "");
+        resultFromInfo.put("userName", me != null ? me.getUserName() : "");
+        resultFromInfo.put("avatar", me != null ? me.getAvatar() : "");
+        Map<String, Object> resultContentMap = new LinkedHashMap<>();
+        resultContentMap.put("fromUserInfo", resultFromInfo);
+        resultContentMap.put("requestMessage", myName + resultAction + "了您的好友申请");
+        resultContentMap.put("status", resultStatus);
+        String notifyContent = JsonUtils.toJsonString(resultContentMap);
+
+        ImMessage notifyMsg = new ImMessage();
+        notifyMsg.setFromUserId(toUserId); // 被通知的消息显示为"对方"发的
+        notifyMsg.setToUserId(fromUserId);
+        notifyMsg.setContent(notifyContent);
+        notifyMsg.setMsgType("friend_request");
+        notifyMsg.setIsRead("0");
+        notifyMsg.setRevoked("0");
+        messageMapper.insert(notifyMsg);
+
+        // 推送给申请者
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("chatType", "PRIVATE");
+        payload.put("messageId", notifyMsg.getMessageId());
+        payload.put("fromUserId", toUserId);
+        payload.put("toUserId", fromUserId);
+        payload.put("content", notifyContent);
+        payload.put("msgType", "friend_request");
+        payload.put("status", resultStatus);
+        payload.put("createTime", notifyMsg.getCreateTime());
+        imRealtimePush.publishToUser(fromUserId, ImEnvelopeHelper.imMessage(payload));
 
         return R.ok();
+    }
+
+    /**
+     * 更新好友申请消息内容中的状态
+     */
+    @SuppressWarnings("unchecked")
+    private void updateFriendRequestMessageStatus(ImMessage msg, boolean accept) {
+        String oldContent = msg.getContent();
+        if (oldContent == null) return;
+        try {
+            Map<String, Object> map = JsonUtils.parseMap(oldContent);
+            if (map != null) {
+                map.put("status", accept ? "accepted" : "rejected");
+                String newContent = JsonUtils.toJsonString(map);
+                if (!newContent.equals(oldContent)) {
+                    ImMessage update = new ImMessage();
+                    update.setMessageId(msg.getMessageId());
+                    update.setContent(newContent);
+                    messageMapper.updateById(update);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * 写入双向好友关系
+     */
+    private void addFriendRelation(Long userIdA, Long userIdB) {
+        // 检查是否已存在好友关系
+        long countA = friendMapper.selectCount(new LambdaQueryWrapper<ImFriend>()
+            .eq(ImFriend::getUserId, userIdA).eq(ImFriend::getFriendUserId, userIdB));
+        if (countA == 0) {
+            ImFriend f1 = new ImFriend();
+            f1.setUserId(userIdA);
+            f1.setFriendUserId(userIdB);
+            friendMapper.insert(f1);
+        }
+        long countB = friendMapper.selectCount(new LambdaQueryWrapper<ImFriend>()
+            .eq(ImFriend::getUserId, userIdB).eq(ImFriend::getFriendUserId, userIdA));
+        if (countB == 0) {
+            ImFriend f2 = new ImFriend();
+            f2.setUserId(userIdB);
+            f2.setFriendUserId(userIdA);
+            friendMapper.insert(f2);
+        }
     }
 
     /**
@@ -247,6 +433,23 @@ public class AppImController extends BaseController {
     @DeleteMapping("/friend/request/{messageId}")
     public R<Void> revokeRequest(@PathVariable Long messageId) {
         notificationMapper.deleteById(messageId);
+        return R.ok();
+    }
+
+    /**
+     * 删除好友
+     */
+    @PostMapping("/friend/remove")
+    public R<Void> removeFriend(@RequestBody Map<String, String> body) {
+        Long me = LoginHelper.getUserId();
+        Long friendUserId = Long.valueOf(body.get("friendUserId"));
+
+        friendMapper.delete(new LambdaQueryWrapper<ImFriend>()
+            .eq(ImFriend::getUserId, me)
+            .eq(ImFriend::getFriendUserId, friendUserId));
+        friendMapper.delete(new LambdaQueryWrapper<ImFriend>()
+            .eq(ImFriend::getUserId, friendUserId)
+            .eq(ImFriend::getFriendUserId, me));
         return R.ok();
     }
 
@@ -313,12 +516,15 @@ public class AppImController extends BaseController {
     }
 
     /**
-     * 标记已读
+     * 标记已读（支持私聊和群聊）
      */
     @PostMapping("/message/read")
     public R<Void> markRead(@RequestBody Map<String, Object> body) {
         if (body.containsKey("toUserId") && body.get("toUserId") != null) {
             imChatService.markPrivateRead(Long.valueOf(body.get("toUserId").toString()));
+        }
+        if (body.containsKey("groupId") && body.get("groupId") != null) {
+            imChatService.markGroupRead(Long.valueOf(body.get("groupId").toString()));
         }
         return R.ok();
     }
@@ -376,6 +582,40 @@ public class AppImController extends BaseController {
     public R<Void> deleteMessage(@PathVariable Long messageId) {
         messageMapper.deleteById(messageId);
         return R.ok();
+    }
+
+    /**
+     * 转发消息
+     */
+    @PostMapping("/message/forward")
+    public R<Long> forwardMessage(@RequestBody Map<String, Object> body) {
+        Long messageId = Long.valueOf(body.get("messageId").toString());
+        String targetType = (String) body.get("targetType");
+        Long targetId = Long.valueOf(body.get("targetId").toString());
+
+        ImMessage original = messageMapper.selectById(messageId);
+        if (original == null) {
+            return R.fail("消息不存在");
+        }
+        if ("1".equals(original.getRevoked())) {
+            return R.fail("已被撤回的消息无法转发");
+        }
+
+        if ("private".equalsIgnoreCase(targetType)) {
+            ImPrivateSendBo bo = new ImPrivateSendBo();
+            bo.setToUserId(targetId);
+            bo.setContent(original.getContent());
+            bo.setMsgType(original.getMsgType());
+            bo.setForwardFrom(original.getMessageId());
+            return imChatService.sendPrivate(bo);
+        } else {
+            ImGroupSendBo bo = new ImGroupSendBo();
+            bo.setGroupId(targetId);
+            bo.setContent(original.getContent());
+            bo.setMsgType(original.getMsgType());
+            bo.setForwardFrom(original.getMessageId());
+            return imChatService.sendGroup(bo);
+        }
     }
 
     // ==================== 群组 ====================

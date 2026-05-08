@@ -74,6 +74,7 @@ create table if not exists im_message
     msg_type     varchar(32)   default 'text'  comment '消息类型',
     is_read      char(1)       default '0'     comment '私聊已读(0否1是)；群聊MVP不使用',
     revoked      char(1)       default '0'     comment '是否撤回（0否 1是）',
+    forward_from bigint        default null    comment '转发来源消息ID',
     create_dept  bigint(20)                    comment '创建部门',
     create_by    bigint(20)                    comment '创建者',
     create_time  datetime                      comment '创建时间',
@@ -84,3 +85,20 @@ create table if not exists im_message
     key idx_im_msg_to (tenant_id, to_user_id, create_time),
     key idx_im_msg_group (tenant_id, group_id, create_time)
 ) engine = innodb comment = 'IM消息';
+
+create table if not exists im_friend
+(
+    id             bigint        not null        comment '主键',
+    tenant_id      varchar(20)   default '000000' comment '租户编号',
+    user_id        bigint        not null        comment '用户ID',
+    friend_user_id bigint        not null        comment '好友用户ID',
+    create_dept    bigint(20)                    comment '创建部门',
+    create_by      bigint(20)                    comment '创建者',
+    create_time    datetime                      comment '创建时间',
+    update_by      bigint(20)                    comment '更新者',
+    update_time    datetime                      comment '更新时间',
+    remark         varchar(500)  default null    comment '备注',
+    primary key (id),
+    unique key uk_im_friend (tenant_id, user_id, friend_user_id),
+    key idx_im_friend_user (tenant_id, user_id)
+) engine = innodb comment = 'IM好友关系';

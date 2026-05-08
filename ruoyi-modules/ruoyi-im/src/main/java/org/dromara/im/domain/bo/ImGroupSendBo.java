@@ -14,4 +14,6 @@ public class ImGroupSendBo {
     private String content;
 
     private String msgType = "text";
+
+    private Long forwardFrom;
 }

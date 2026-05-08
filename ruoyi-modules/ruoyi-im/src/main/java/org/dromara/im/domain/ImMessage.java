@@ -32,4 +32,6 @@ public class ImMessage extends TenantEntity {
     private String isRead;
 
     private String revoked;
+
+    private Long forwardFrom;
 }

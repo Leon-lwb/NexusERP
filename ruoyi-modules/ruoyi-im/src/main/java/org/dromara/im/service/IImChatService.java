@@ -34,4 +34,6 @@ public interface IImChatService {
     R<Void> addGroupMembers(Long groupId, ImGroupMemberAddBo bo);
 
     int markPrivateRead(Long peerUserId);
+
+    int markGroupRead(Long groupId);
 }
