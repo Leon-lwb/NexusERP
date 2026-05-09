@@ -75,7 +75,11 @@
       "Bash(find /mnt -path \"*/sa-token-jwt*\" -name \"*.jar\")",
       "Bash(find ruoyi-modules/ruoyi-flowable -name \"*Controller*.java\" -path \"*/app/*\")",
       "Bash(find ruoyi-modules/ruoyi-flowable -name \"*Controller*.java\" -not -path \"*/test/*\")",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Read(//c/Users/MyPC/.m2/**)",
+      "Bash(find /e -path \"*/.m2/*sa-token*\" -name \"*.jar\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(unzip *)"
     ]
   }
 }

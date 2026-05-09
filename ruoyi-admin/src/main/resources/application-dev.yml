@@ -1,6 +1,7 @@
---- # 验证码配置 (App移动端无需验证码)
+--- # 验证码配置
+# PC登录需要图形验证码，APP短信登录无需，APP密码登录在提交时弹出验证码
 captcha:
-  enable: false
+  enable: true
 
 --- # 监控中心配置
 spring.boot.admin.client:

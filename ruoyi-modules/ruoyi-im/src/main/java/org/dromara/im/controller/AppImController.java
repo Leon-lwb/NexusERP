@@ -371,7 +371,6 @@ public class AppImController extends BaseController {
     /**
      * 更新好友申请消息内容中的状态
      */
-    @SuppressWarnings("unchecked")
     private void updateFriendRequestMessageStatus(ImMessage msg, boolean accept) {
         String oldContent = msg.getContent();
         if (oldContent == null) return;
