@@ -531,7 +531,7 @@ import { listUserByPostId } from "@/api/system/user"
 import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, RESOURCE_TYPE } from "@/api/erp/prd/workOrderResource"
 
 const { proxy } = getCurrentInstance()
-const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status } = proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status')
+const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status } = toRefs<any>(proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status'))
 const route = useRoute()
 const router = useRouter()
 

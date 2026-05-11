@@ -320,7 +320,7 @@ import { debounce } from 'lodash'
 const router = useRouter()
 const route = useRoute()
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sys_core_status, bd_material_type } = proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type')
+const { sys_true_or_false, sys_core_status, bd_material_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type'))
 
 // 表单相关
 const formRef = ref(null)

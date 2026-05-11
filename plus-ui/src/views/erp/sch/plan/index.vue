@@ -214,14 +214,14 @@
   </div>
 </template>
 
-<script setup name="Plan">
+<script setup lang="ts" name="Plan">
 import { listPlan, getPlan, delPlan, addPlan, updatePlan } from "@/api/erp/sch/plan"
 import { useUserStore } from '@/store/modules/user'
 import ShiftManage from './ShiftManage.vue'
 import TeamManage from './TeamManage.vue'
 
 const { proxy } = getCurrentInstance()
-const { sch_plan_period_type, sch_plan_status, sch_rotation_type } = proxy.useDict('sch_plan_period_type', 'sch_plan_status', 'sch_rotation_type')
+const { sch_plan_period_type, sch_plan_status, sch_rotation_type } = toRefs(proxy.useDict('sch_plan_period_type', 'sch_plan_status', 'sch_rotation_type'))
 
 const autoGenFlag = ref(false)
 const planList = ref([])

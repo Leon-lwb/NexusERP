@@ -298,7 +298,7 @@ import { debounce } from "lodash-es"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
-const { sys_true_or_false, wm_notice_status, bd_material_type } = proxy.useDict('sys_true_or_false', 'wm_notice_status', 'bd_material_type')
+const { sys_true_or_false, wm_notice_status, bd_material_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_notice_status', 'bd_material_type'))
 const route = useRoute()
 const router = useRouter()
 

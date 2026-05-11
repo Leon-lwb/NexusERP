@@ -284,13 +284,13 @@
   </div>
 </template>
 
-<script setup name="Team">
+<script setup lang="ts" name="Team">
 import { listTeam, getTeam, delTeam, addTeam, updateTeam } from "@/api/erp/sch/team"
 import { listWorkshop } from "@/api/erp/bd/workshop"
 import { listWorker } from "@/api/erp/sch/worker"
 
 const { proxy } = getCurrentInstance()
-const { sys_core_status, sch_worker_role, sch_team_category, sch_work_status, sch_work_category, sys_user_sex, sch_skill_level } = proxy.useDict('sys_core_status', 'sch_worker_role', 'sch_team_category', 'sch_work_status', 'sch_work_category', 'sys_user_sex', 'sch_skill_level')
+const { sys_core_status, sch_worker_role, sch_team_category, sch_work_status, sch_work_category, sys_user_sex, sch_skill_level } = toRefs(proxy.useDict('sys_core_status', 'sch_worker_role', 'sch_team_category', 'sch_work_status', 'sch_work_category', 'sys_user_sex', 'sch_skill_level'))
 
 const teamList = ref([])
 const schTeamMemberList = ref([])

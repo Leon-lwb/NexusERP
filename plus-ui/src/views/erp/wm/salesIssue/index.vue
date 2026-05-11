@@ -175,7 +175,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const { proxy } = getCurrentInstance() as any
-const { wm_sales_status } = proxy.useDict('wm_sales_status')
+const { wm_sales_status } = toRefs<any>(proxy.useDict('wm_sales_status'))
 
 const salesIssueList = ref([])
 const loading = ref(true)

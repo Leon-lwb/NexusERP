@@ -328,7 +328,7 @@ import { listStoragelocation } from "@/api/erp/wm/storagelocation"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
-const { wm_sales_status, so_order_status } = proxy.useDict('wm_sales_status', 'so_order_status')
+const { wm_sales_status, so_order_status } = toRefs<any>(proxy.useDict('wm_sales_status', 'so_order_status'))
 const route = useRoute()
 const router = useRouter()
 

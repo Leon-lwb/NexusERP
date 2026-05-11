@@ -464,7 +464,7 @@ import { genCode } from "@/api/system/autocode/rule"
 import { debounce } from 'lodash'
 
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, bd_source_type, bd_material_type, bd_quality_status } = proxy.useDict('sys_true_or_false', 'bd_source_type', 'bd_material_type', 'bd_quality_status')
+const { sys_true_or_false, bd_source_type, bd_material_type, bd_quality_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'bd_source_type', 'bd_material_type', 'bd_quality_status'))
 
 const materialList = ref([])
 const open = ref(false)

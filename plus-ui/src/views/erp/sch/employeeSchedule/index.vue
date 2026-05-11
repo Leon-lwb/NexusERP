@@ -233,11 +233,11 @@
   </div>
 </template>
 
-<script setup name="EmployeeSchedule">
+<script setup lang="ts" name="EmployeeSchedule">
 import { listEmployeeSchedule, getEmployeeSchedule, delEmployeeSchedule, addEmployeeSchedule, updateEmployeeSchedule } from "@/api/erp/sch/employeeSchedule"
 
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sch_schedule_status } = proxy.useDict('sys_true_or_false', 'sch_schedule_status')
+const { sys_true_or_false, sch_schedule_status } = toRefs(proxy.useDict('sys_true_or_false', 'sch_schedule_status'))
 
 const employeeScheduleList = ref([])
 const open = ref(false)

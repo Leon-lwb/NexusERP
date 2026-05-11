@@ -142,14 +142,14 @@
   </div>
 </template>
 
-<script setup name="TeamManage">
+<script setup lang="ts" name="TeamManage">
 import { listPlanteam, getPlanteam, delPlanteam, addPlanteam, updatePlanteam } from "@/api/erp/sch/planteam"
 import { listTeam, getTeam } from "@/api/erp/sch/team"
 
 const { proxy } = getCurrentInstance()
 
-const { sch_team_category, sch_worker_role } = proxy.useDict('sch_team_category', 'sch_worker_role')
-const { sys_core_status } = proxy.useDict('sys_core_status')
+const { sch_team_category, sch_worker_role } = toRefs(proxy.useDict('sch_team_category', 'sch_worker_role'))
+const { sys_core_status } = toRefs(proxy.useDict('sys_core_status'))
 
 const props = defineProps({
   planId: {

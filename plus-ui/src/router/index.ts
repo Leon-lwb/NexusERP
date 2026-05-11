@@ -302,6 +302,34 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '生产工单表单', activeMenu: '/erp/prd/work' }
       }
     ]
+  },
+  {
+    path: '/erp/wm/storagearea',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:storagearea:list'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/erp/wm/storagearea/index.vue'),
+        name: 'Storagearea',
+        meta: { title: '库区', activeMenu: '/erp/wm/warehouse' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/storagelocation',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:storagelocation:list'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/erp/wm/storagelocation/index.vue'),
+        name: 'Storagelocation',
+        meta: { title: '库位', activeMenu: '/erp/wm/storagearea' }
+      }
+    ]
   }
 ];
 

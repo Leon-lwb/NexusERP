@@ -229,7 +229,7 @@ import { listPart, getPart, delPart, addPart, updatePart } from "@/api/system/au
 
 const { proxy } = getCurrentInstance()
 const route = useRoute()
-const { sys_autocode_parttype, sys_autocode_cyclemethod } = proxy.useDict("sys_autocode_parttype", "sys_autocode_cyclemethod")
+const { sys_autocode_parttype, sys_autocode_cyclemethod } = toRefs<any>(proxy.useDict("sys_autocode_parttype", "sys_autocode_cyclemethod"))
 
 const partList = ref([])
 const loading = ref(true)

@@ -256,7 +256,7 @@ import { listUser } from "@/api/system/user"
 import { getProvinces, getNextLevel } from "@/api/system/area"
 
 const { proxy } = getCurrentInstance() as any
-const { wm_warehouse_status } = proxy.useDict('wm_warehouse_status')
+const { wm_warehouse_status } = toRefs<any>(proxy.useDict('wm_warehouse_status'))
 
 const warehouseList = ref([])
 const open = ref(false)

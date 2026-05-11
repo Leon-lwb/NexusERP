@@ -142,7 +142,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance()
-const { prd_plan_type, prd_plan_status, so_order_priority, sys_true_or_false } = proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'sys_true_or_false')
+const { prd_plan_type, prd_plan_status, so_order_priority, sys_true_or_false } = toRefs<any>(proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'sys_true_or_false'))
 
 const planList = ref([])
 const loading = ref(true)

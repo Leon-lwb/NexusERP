@@ -162,7 +162,7 @@
 import { listAttendance, getAttendance, delAttendance, addAttendance, updateAttendance } from "@/api/erp/sch/attendance"
 
 const { proxy } = getCurrentInstance()
-const { sch_attendance_status, sch_source_type } = proxy.useDict('sch_attendance_status', 'sch_source_type')
+const { sch_attendance_status, sch_source_type } = toRefs(proxy.useDict('sch_attendance_status', 'sch_source_type'))
 
 const attendanceList = ref([])
 const open = ref(false)

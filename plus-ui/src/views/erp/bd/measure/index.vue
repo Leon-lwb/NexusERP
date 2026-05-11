@@ -222,7 +222,7 @@
 import { listMeasure, getMeasure, delMeasure, addMeasure, updateMeasure } from "@/api/erp/bd/measure"
 
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sys_core_status } = proxy.useDict('sys_true_or_false', 'sys_core_status')
+const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'))
 
 const measureList = ref([])
 const open = ref(false)

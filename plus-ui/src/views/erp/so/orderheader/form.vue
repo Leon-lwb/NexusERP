@@ -531,7 +531,7 @@ import { debounce } from 'lodash'
 import { useRouter, useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
-const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type } = proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type', 'so_order_line_status', 'so_order_priority', 'bd_material_type')
+const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type', 'so_order_line_status', 'so_order_priority', 'bd_material_type'))
 
 const route = useRoute()
 const router = useRouter()

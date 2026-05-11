@@ -212,7 +212,7 @@
 import { listReport, getReport, delReport, addReport, updateReport } from "@/api/erp/prd/report"
 
 const { proxy } = getCurrentInstance()
-const { prd_report_type, prd_report_status, bd_quality_status, prd_report_source_type } = proxy.useDict('prd_report_type', 'prd_report_status', 'bd_quality_status', 'prd_report_source_type')
+const { prd_report_type, prd_report_status, bd_quality_status, prd_report_source_type } = toRefs<any>(proxy.useDict('prd_report_type', 'prd_report_status', 'bd_quality_status', 'prd_report_source_type'))
 
 const reportList = ref([])
 const open = ref(false)

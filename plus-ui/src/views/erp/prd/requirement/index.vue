@@ -90,7 +90,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance()
-const { prd_requirement_status } = proxy.useDict('prd_requirement_status')
+const { prd_requirement_status } = toRefs<any>(proxy.useDict('prd_requirement_status'))
 
 const requirementList = ref([])
 const loading = ref(true)

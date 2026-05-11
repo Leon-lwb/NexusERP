@@ -136,7 +136,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance()
-const { prd_source_type, so_order_priority, prd_wo_status } = proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status')
+const { prd_source_type, so_order_priority, prd_wo_status } = toRefs<any>(proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status'))
 
 const workList = ref([])
 const loading = ref(true)

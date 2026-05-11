@@ -329,7 +329,7 @@ import { genCode } from "@/api/system/autocode/rule"
 import { listUser } from "@/api/system/user"
 
 const { proxy } = getCurrentInstance()
-const { so_customer_order_status, so_currency_type, so_order_priority, so_source_channel, bd_client_type } = proxy.useDict('so_customer_order_status', 'so_currency_type', 'so_order_priority', 'so_source_channel', 'bd_client_type')
+const { so_customer_order_status, so_currency_type, so_order_priority, so_source_channel, bd_client_type } = toRefs<any>(proxy.useDict('so_customer_order_status', 'so_currency_type', 'so_order_priority', 'so_source_channel', 'bd_client_type'))
 const autoGenFlag = ref(false)
 const clientDialogVisible = ref(false)
 const clientList = ref([])

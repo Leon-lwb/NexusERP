@@ -256,7 +256,7 @@ import { useRouter } from 'vue-router'
 
   const router = useRouter();
   const { proxy } = getCurrentInstance()
-  const { so_credit_status, so_customer_order_status, sys_true_or_false, so_currency_type } = proxy.useDict('so_credit_status', 'so_customer_order_status', 'sys_true_or_false', 'so_currency_type')
+  const { so_credit_status, so_customer_order_status, sys_true_or_false, so_currency_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_customer_order_status', 'sys_true_or_false', 'so_currency_type'))
 
   const orderheaderList = ref([])
   const loading = ref(true)

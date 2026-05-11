@@ -189,13 +189,13 @@
   </div>
 </template>
 
-<script setup name="PunchRule">
+<script setup lang="ts" name="PunchRule">
 import { listPunchRule, getPunchRule, delPunchRule, addPunchRule, updatePunchRule } from "@/api/erp/sch/punchRule"
 import { ref, reactive, toRefs } from "vue"
 import { getCurrentInstance } from "vue"
 
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false } = proxy.useDict('sys_true_or_false')
+const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'))
 
 const punchRuleList = ref([])
 const open = ref(false)

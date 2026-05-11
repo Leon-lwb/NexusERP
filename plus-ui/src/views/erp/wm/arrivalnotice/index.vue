@@ -237,7 +237,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as any
-const { wm_notice_status } = proxy.useDict('wm_notice_status')
+const { wm_notice_status } = toRefs<any>(proxy.useDict('wm_notice_status'))
 
 const arrivalnoticeList = ref([])
 const open = ref(false)

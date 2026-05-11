@@ -131,7 +131,7 @@
 import { listPayOrder, getPayOrder, delPayOrder, addPayOrder, updatePayOrder } from "@/api/pay/order"
 
 const { proxy } = getCurrentInstance()
-const { pay_order_status, pay_pay_type } = proxy.useDict('pay_order_status', 'pay_pay_type')
+const { pay_order_status, pay_pay_type } = toRefs<any>(proxy.useDict('pay_order_status', 'pay_pay_type'))
 
 const orderList = ref([])
 const open = ref(false)

@@ -459,7 +459,7 @@ import { useRoute } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance() as any
-const { sys_true_or_false, wm_location_type, wm_location_status } = proxy.useDict('sys_true_or_false', 'wm_location_type', 'wm_location_status')
+const { sys_true_or_false, wm_location_type, wm_location_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_location_type', 'wm_location_status'))
 
 const storagelocationList = ref([])
 const open = ref(false)

@@ -211,7 +211,7 @@ import { getRequirement, addRequirement, updateRequirement } from "@/api/erp/prd
 import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
-const { sys_core_status, prd_requirement_status } = proxy.useDict('sys_core_status', 'prd_requirement_status')
+const { sys_core_status, prd_requirement_status } = toRefs<any>(proxy.useDict('sys_core_status', 'prd_requirement_status'))
 const route = useRoute()
 const router = useRouter()
 const autoGenFlag = ref(false)

@@ -325,7 +325,7 @@ import { listBom } from "@/api/erp/bd/bom"
 import { listRequirement, getRequirement } from "@/api/erp/prd/requirement"
 
 const { proxy } = getCurrentInstance()
-const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status } = proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'so_order_line_status', 'sys_true_or_false', 'sys_core_status')
+const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'so_order_line_status', 'sys_true_or_false', 'sys_core_status'))
 const route = useRoute()
 const router = useRouter()
 

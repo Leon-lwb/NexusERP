@@ -217,7 +217,7 @@ import { genCode } from "@/api/system/autocode/rule"
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as any
-const { wm_material_receive_status } = proxy.useDict('wm_material_receive_status')
+const { wm_material_receive_status } = toRefs<any>(proxy.useDict('wm_material_receive_status'))
 
 const receiveList = ref([])
 const open = ref(false)

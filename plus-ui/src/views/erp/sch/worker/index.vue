@@ -176,11 +176,11 @@
   </div>
 </template>
 
-<script setup name="Worker">
+<script setup lang="ts" name="Worker">
 import { listWorker, getWorker, delWorker, addWorker, updateWorker } from "@/api/erp/sch/worker"
 
 const { proxy } = getCurrentInstance()
-const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex } = proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex')
+const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex } = toRefs(proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex'))
 
 const workerList = ref([])
 const open = ref(false)

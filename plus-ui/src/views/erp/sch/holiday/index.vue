@@ -152,13 +152,13 @@
   </div>
 </template>
 
-<script setup name="Holiday">
+<script setup lang="ts" name="Holiday">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { listHoliday, getHoliday, delHoliday, addHoliday, updateHoliday } from "@/api/erp/sch/holiday"
 import calendar from '@/utils/calendar'
 
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sch_holiday_type } = proxy.useDict('sys_true_or_false', 'sch_holiday_type')
+const { sys_true_or_false, sch_holiday_type } = toRefs(proxy.useDict('sys_true_or_false', 'sch_holiday_type'))
 
 const currentDate = ref(new Date())
 const currentYear = computed(() => currentDate.value.getFullYear())

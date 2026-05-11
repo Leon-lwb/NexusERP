@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 08/05/2026 17:54:27
+ Date: 11/05/2026 17:44:10
 */
 
 SET NAMES utf8mb4;
@@ -2298,6 +2298,7 @@ CREATE TABLE `wm_material_stock`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
@@ -2309,14 +2310,14 @@ CREATE TABLE `wm_material_stock`  (
 -- ----------------------------
 -- Records of wm_material_stock
 -- ----------------------------
-INSERT INTO `wm_material_stock` VALUES (55, 5, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 20.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-11 16:17:01', 1, '2025-12-11 16:17:01');
-INSERT INTO `wm_material_stock` VALUES (56, 5, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', NULL, NULL, NULL, NULL, 80.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-11 16:17:01', 1, '2025-12-11 16:17:01');
-INSERT INTO `wm_material_stock` VALUES (57, 11, 10, 'LUBRICANT', '润滑油', NULL, '29', '打', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 12, 'L016', '润滑油', 1, 'V00005', '北京五道口', '五2', 110.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
-INSERT INTO `wm_material_stock` VALUES (58, 1, 3001, 'IF20251203004', '轮圈', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 7, 'L011', '轮圈库位', 1, 'V00005', '北京五道口', '五2', 250.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
-INSERT INTO `wm_material_stock` VALUES (59, 1, 3002, 'IF20251203005', '轮胎', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 8, 'L012', '轮胎库位', 1, 'V00005', '北京五道口', '五2', 250.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
-INSERT INTO `wm_material_stock` VALUES (60, 1, 3003, 'IF20251203006', '辐条', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', 1, 'V00005', '北京五道口', '五2', 10000.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
-INSERT INTO `wm_material_stock` VALUES (61, 1, 3004, 'IF20251203007', '把管', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 10, 'L014', '把管库位', 1, 'V00005', '北京五道口', '五2', 120.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
-INSERT INTO `wm_material_stock` VALUES (62, 1, 3005, 'IF20251203008', '把套', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 11, 'L015', '把套库位', 1, 'V00005', '北京五道口', '五2', 250.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
+INSERT INTO `wm_material_stock` VALUES (55, 5, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 20.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-11 16:17:01', 1, '2025-12-11 16:17:01');
+INSERT INTO `wm_material_stock` VALUES (56, 5, 1, 'IF20251016004', '钢板', NULL, '2', '千克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', NULL, NULL, NULL, NULL, 80.00, NULL, NULL, NULL, '2025-12-11 16:17:01', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-11 16:17:01', 1, '2025-12-11 16:17:01');
+INSERT INTO `wm_material_stock` VALUES (57, 11, 10, 'LUBRICANT', '润滑油', NULL, '29', '打', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 12, 'L016', '润滑油', 1, 'V00005', '北京五道口', '五2', 110.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
+INSERT INTO `wm_material_stock` VALUES (58, 1, 3001, 'IF20251203004', '轮圈', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 7, 'L011', '轮圈库位', 1, 'V00005', '北京五道口', '五2', 250.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
+INSERT INTO `wm_material_stock` VALUES (59, 1, 3002, 'IF20251203005', '轮胎', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 8, 'L012', '轮胎库位', 1, 'V00005', '北京五道口', '五2', 250.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
+INSERT INTO `wm_material_stock` VALUES (60, 1, 3003, 'IF20251203006', '辐条', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', 1, 'V00005', '北京五道口', '五2', 10000.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
+INSERT INTO `wm_material_stock` VALUES (61, 1, 3004, 'IF20251203007', '把管', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 10, 'L014', '把管库位', 1, 'V00005', '北京五道口', '五2', 120.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
+INSERT INTO `wm_material_stock` VALUES (62, 1, 3005, 'IF20251203008', '把套', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 11, 'L015', '把套库位', 1, 'V00005', '北京五道口', '五2', 250.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, '2025-12-16 10:26:25', 1, '2025-12-16 10:26:25');
 
 -- ----------------------------
 -- Table structure for wm_material_stock_tx

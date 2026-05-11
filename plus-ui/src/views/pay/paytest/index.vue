@@ -78,7 +78,7 @@ import { addPayOrder } from "@/api/pay/order"
 import request from "@/utils/request"
 
 const { proxy } = getCurrentInstance()
-const { pay_pay_type, pay_order_status } = proxy.useDict('pay_pay_type', 'pay_order_status')
+const { pay_pay_type, pay_order_status } = toRefs<any>(proxy.useDict('pay_pay_type', 'pay_order_status'))
 
 const formRef = ref(null)
 const orderNumber = ref("")

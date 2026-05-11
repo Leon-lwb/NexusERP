@@ -275,7 +275,7 @@ import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
 import { debounce } from 'lodash'
 
 const { proxy } = getCurrentInstance() as any
-const { sys_true_or_false } = proxy.useDict('sys_true_or_false')
+const { sys_true_or_false } = toRefs<any>(proxy.useDict('sys_true_or_false'))
 
 const stockList = ref([])
 const open = ref(false)

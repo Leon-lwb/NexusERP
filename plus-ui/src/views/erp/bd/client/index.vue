@@ -440,7 +440,7 @@ import { getToken } from "@/utils/auth"
 import { getProvinces, getNextLevel } from "@/api/system/area"
 
 const { proxy } = getCurrentInstance()
-const { bd_client_type } = proxy.useDict('bd_client_type')
+const { bd_client_type } = toRefs<any>(proxy.useDict('bd_client_type'))
 
 const bdList = ref([])
 const open = ref(false)

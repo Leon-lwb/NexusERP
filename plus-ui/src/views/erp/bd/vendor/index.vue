@@ -362,7 +362,7 @@
   import { getProvinces, getNextLevel } from "@/api/system/area"
 
   const { proxy } = getCurrentInstance()
-  const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category } = proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category')
+  const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category } = toRefs<any>(proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category'))
 
   const vendorList = ref([])
   const open = ref(false)

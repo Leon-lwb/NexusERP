@@ -223,7 +223,7 @@ import { listWorkshop } from "@/api/erp/bd/workshop"
 import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
-const { sys_core_status } = proxy.useDict('sys_core_status')
+const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'))
 const autoGenFlag = ref(false)
 
 const workstationList = ref([])

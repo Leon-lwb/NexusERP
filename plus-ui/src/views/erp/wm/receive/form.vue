@@ -391,7 +391,7 @@ const props = defineProps({
 })
 
 const { proxy } = getCurrentInstance() as any
-const { wm_material_receive_status } = proxy.useDict('wm_material_receive_status')
+const { wm_material_receive_status } = toRefs<any>(proxy.useDict('wm_material_receive_status'))
 const route = useRoute()
 const router = useRouter()
 

@@ -180,11 +180,11 @@
   </div>
 </template>
 
-<script setup name="Shift">
+<script setup lang="ts" name="Shift">
 import { listShift, getShift, delShift, addShift, updateShift } from "@/api/erp/sch/shift"
 
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sch_shift_category } = proxy.useDict('sys_true_or_false', 'sch_shift_category')
+const { sys_true_or_false, sch_shift_category } = toRefs(proxy.useDict('sys_true_or_false', 'sch_shift_category'))
 
 const shiftList = ref([])
 const open = ref(false)

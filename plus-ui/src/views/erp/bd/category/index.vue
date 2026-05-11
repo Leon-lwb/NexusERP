@@ -169,7 +169,7 @@
 import { listCategory, getCategory, delCategory, addCategory, updateCategory } from "@/api/erp/bd/category"
 
 const { proxy } = getCurrentInstance()
-const { sys_core_status } = proxy.useDict('sys_core_status')
+const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'))
 
 const categoryList = ref([])
 const open = ref(false)

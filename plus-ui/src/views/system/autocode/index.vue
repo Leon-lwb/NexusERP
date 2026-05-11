@@ -183,12 +183,12 @@
   </div>
 </template>
 
-<script setup name="autoCodeRule">
+<script setup lang="ts" name="autoCodeRule">
 import { ref, reactive, onMounted, toRefs, getCurrentInstance } from 'vue'
 import { listRule, getRule, delRule, addRule, updateRule } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
-const { sys_yes_no } = proxy.useDict("sys_yes_no")
+const { sys_yes_no } = toRefs<any>(proxy.useDict("sys_yes_no"))
 
 const ruleList = ref([])
 const loading = ref(true)

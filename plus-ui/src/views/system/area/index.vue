@@ -99,12 +99,12 @@
   </div>
 </template>
 
-<script setup name="Area">
+<script setup lang="ts" name="Area">
 import { ref, reactive, toRefs, getCurrentInstance } from 'vue'
 import { listArea, listAreaExcludeChild, getArea, delArea, addArea, updateArea } from "@/api/system/area"
 
 const { proxy } = getCurrentInstance()
-const { sys_area_level } = proxy.useDict("sys_area_level")
+const { sys_area_level } = toRefs<any>(proxy.useDict("sys_area_level"))
 
 const areaList = ref([])
 const open = ref(false)

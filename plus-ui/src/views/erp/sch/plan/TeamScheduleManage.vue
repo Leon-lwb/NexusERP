@@ -43,14 +43,14 @@
   </div>
 </template>
 
-<script setup name="TeamScheduleManage">
+<script setup lang="ts" name="TeamScheduleManage">
 import { listTeamSchedule, getTeamSchedule, delTeamSchedule, addTeamSchedule, updateTeamSchedule } from "@/api/erp/sch/teamSchedule"
 import { listTeam } from "@/api/erp/sch/team"
 import { listShift } from "@/api/erp/sch/shift"
 import { listPlanteam } from "@/api/erp/sch/planteam"
 
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false } = proxy.useDict('sys_true_or_false')
+const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'))
 
 const teamScheduleList = ref([])
 const open = ref(false)

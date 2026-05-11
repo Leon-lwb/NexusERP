@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 11/05/2026 13:18:22
+ Date: 11/05/2026 17:44:27
 */
 
 SET NAMES utf8mb4;
@@ -11721,6 +11721,11 @@ INSERT INTO `sys_logininfor` VALUES (2053701948060635138, '000000', 'admin', '',
 INSERT INTO `sys_logininfor` VALUES (2053702019481243650, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'MSEdge', 'iPhone', '0', '登录成功', '2026-05-11 13:01:32');
 INSERT INTO `sys_logininfor` VALUES (2053704159356452865, '000000', 'admin', 'app', 'android', '0:0:0:0:0:0:0:1', '内网IP', 'MSEdge', 'iPhone', '0', '退出成功', '2026-05-11 13:10:02');
 INSERT INTO `sys_logininfor` VALUES (2053704233339781121, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'MSEdge', 'iPhone', '0', '登录成功', '2026-05-11 13:10:20');
+INSERT INTO `sys_logininfor` VALUES (2053721169024974849, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 14:17:38');
+INSERT INTO `sys_logininfor` VALUES (2053730649640992770, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 14:55:18');
+INSERT INTO `sys_logininfor` VALUES (2053741431615320065, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 15:38:09');
+INSERT INTO `sys_logininfor` VALUES (2053757397845864449, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 16:41:35');
+INSERT INTO `sys_logininfor` VALUES (2053763541263880194, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 17:06:00');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -11911,8 +11916,8 @@ INSERT INTO `sys_menu` VALUES (2033, '车间管理', 2001, 7, 'workshop', 'erp/b
 INSERT INTO `sys_menu` VALUES (2034, '工位管理', 2001, 8, 'workstation', 'erp/bd/workstation/index', NULL, 1, 0, 'C', '0', '0', 'bd:workstation:list', 'coordinate', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2100, '仓库管理', 2000, 2, 'wm', NULL, NULL, 1, 0, 'M', '0', '0', '', 'shopping', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '仓库管理');
 INSERT INTO `sys_menu` VALUES (2101, '仓库设置', 2100, 1, 'warehouse', 'erp/wm/warehouse/index', NULL, 1, 0, 'C', '0', '0', 'wm:warehouse:list', 'build', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2102, '库区设置', 2100, 2, 'storagearea', 'erp/wm/storagearea/index', NULL, 1, 0, 'C', '0', '0', 'wm:storagearea:list', 'grid', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2103, '库位设置', 2100, 3, 'storagelocation', 'erp/wm/storagelocation/index', NULL, 1, 0, 'C', '0', '0', 'wm:storagelocation:list', 'guide', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2102, '库区设置', 2100, 2, 'storagearea', 'erp/wm/storagearea/index', NULL, 1, 0, 'C', '1', '1', 'wm:storagearea:list', 'grid', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-11 17:30:25', '');
+INSERT INTO `sys_menu` VALUES (2103, '库位设置', 2100, 3, 'storagelocation', 'erp/wm/storagelocation/index', NULL, 1, 0, 'C', '1', '1', 'wm:storagelocation:list', 'guide', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-11 17:30:33', '');
 INSERT INTO `sys_menu` VALUES (2104, '到货通知', 2100, 4, 'arrivalnotice', 'erp/wm/arrivalnotice/index', NULL, 1, 0, 'C', '0', '0', 'wm:arrivalnotice:list', 'message', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2105, '物料入库', 2100, 5, 'receive', 'erp/wm/receive/index', NULL, 1, 0, 'C', '0', '0', 'wm:receive:list', 'log-in', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2106, '库存清单', 2100, 6, 'stock', 'erp/wm/stock/index', NULL, 1, 0, 'C', '0', '0', 'wm:stock:list', 'list', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
@@ -12299,6 +12304,8 @@ INSERT INTO `sys_oper_log` VALUES (2052649659186331649, '000000', '对象存储�
 INSERT INTO `sys_oper_log` VALUES (2052649712642736129, '000000', '用户头像', 2, 'org.dromara.system.controller.system.SysProfileController.avatar()', 'POST', 1, 'admin', '研发部门', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"imgUrl\":\"http://127.0.0.1:9005/ruoyi/2026/05/08/a1c0821bed56448cb1139802885fd611.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260508T072002Z&X-Amz-SignedHeaders=host&X-Amz-Credential=Minio%2F20260508%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=90041e3ad41ffe2c4fac2ca9bad2a5632f50c9f225c26bfe6f36641088ea2b83\"}}', 0, '', '2026-05-08 15:20:03', 86);
 INSERT INTO `sys_oper_log` VALUES (2052651622040911874, '000000', '个人信息', 2, 'org.dromara.system.controller.system.SysProfileController.updateProfile()', 'PUT', 1, 'admin', '研发部门', '/system/user/profile', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"nickName\":\"系统管理员\",\"email\":\"crazyLionLi@163.com\",\"phonenumber\":\"15888888888\",\"sex\":\"1\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-08 15:27:38', 21);
 INSERT INTO `sys_oper_log` VALUES (2053013457203064834, '000000', '用户头像', 2, 'org.dromara.system.controller.system.SysProfileController.avatar()', 'POST', 1, 'test', '市场部门', '/system/user/profile/avatar', '0:0:0:0:0:0:0:1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"imgUrl\":\"http://127.0.0.1:9005/ruoyi/2026/05/09/c188a9aca7934b92a9390bf6d8401707.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260509T072525Z&X-Amz-SignedHeaders=host&X-Amz-Credential=Minio%2F20260509%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dbe1530b5321d3691954f3a0b1ff3f288a214419e461f5469cd8913d71d4c02a\"}}', 0, '', '2026-05-09 15:25:26', 477);
+INSERT INTO `sys_oper_log` VALUES (2053769684698697730, '000000', '菜单管理', 2, 'org.dromara.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2026-04-30 10:41:23\",\"updateBy\":null,\"updateTime\":null,\"menuId\":2102,\"parentId\":2100,\"menuName\":\"库区设置\",\"orderNum\":2,\"path\":\"storagearea\",\"component\":\"erp/wm/storagearea/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"1\",\"perms\":\"wm:storagearea:list\",\"icon\":\"grid\",\"remark\":\"\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-11 17:30:25', 29);
+INSERT INTO `sys_oper_log` VALUES (2053769718332821506, '000000', '菜单管理', 2, 'org.dromara.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2026-04-30 10:41:23\",\"updateBy\":null,\"updateTime\":null,\"menuId\":2103,\"parentId\":2100,\"menuName\":\"库位设置\",\"orderNum\":3,\"path\":\"storagelocation\",\"component\":\"erp/wm/storagelocation/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"1\",\"perms\":\"wm:storagelocation:list\",\"icon\":\"guide\",\"remark\":\"\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-11 17:30:33', 10);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -12650,7 +12657,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 13:10:20', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 13:10:20', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-11 17:06:00', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 17:06:00', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 11:54:44', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 11:54:44', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 
