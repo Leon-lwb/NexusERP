@@ -14,9 +14,9 @@ create table if not exists sys_user_notification
     ref_type          varchar(64)   default null    comment '关联业务类型',
     ref_id            varchar(128)  default null    comment '关联业务主键',
     title             varchar(200)  not null        comment '标题',
-    content           text                          comment '内容(可存摘要或HTML)',
+    content           text          character set utf8mb4 collate utf8mb4_unicode_ci comment '内容(可存摘要或HTML)',
     read_flag         char(1)       default '0'     comment '是否已读（0否 1是）',
-    ext_json          text                          comment '扩展JSON',
+    ext_json          text          character set utf8mb4 collate utf8mb4_unicode_ci comment '扩展JSON',
     create_dept       bigint(20)                    comment '创建部门',
     create_by         bigint(20)                    comment '创建者',
     create_time       datetime                      comment '创建时间',
@@ -26,7 +26,12 @@ create table if not exists sys_user_notification
     primary key (notification_id),
     key idx_sun_user_read (tenant_id, user_id, read_flag, create_time),
     key idx_sun_category (tenant_id, user_id, category)
-) engine = innodb comment = '用户站内通知';
+) engine = innodb default charset = utf8mb4 collate = utf8mb4_unicode_ci comment = '用户站内通知';
+
+-- 已建库环境执行：修复站内通知内容字段字符集，支持 emoji / 表情等 4 字节字符
+alter table sys_user_notification convert to character set utf8mb4 collate utf8mb4_unicode_ci;
+alter table sys_user_notification modify content text character set utf8mb4 collate utf8mb4_unicode_ci comment '内容(可存摘要或HTML)';
+alter table sys_user_notification modify ext_json text character set utf8mb4 collate utf8mb4_unicode_ci comment '扩展JSON';
 
 create table if not exists im_group
 (
@@ -70,7 +75,7 @@ create table if not exists im_message
     from_user_id bigint        not null        comment '发送人',
     to_user_id   bigint        default null    comment '接收人(私聊)',
     group_id     bigint        default null    comment '群ID(群聊)',
-    content      text          not null        comment '消息内容',
+    content      text          character set utf8mb4 collate utf8mb4_unicode_ci not null comment '消息内容',
     msg_type     varchar(32)   default 'text'  comment '消息类型',
     is_read      char(1)       default '0'     comment '私聊已读(0否1是)；群聊MVP不使用',
     revoked      char(1)       default '0'     comment '是否撤回（0否 1是）',
@@ -84,7 +89,11 @@ create table if not exists im_message
     key idx_im_msg_private (tenant_id, from_user_id, to_user_id, create_time),
     key idx_im_msg_to (tenant_id, to_user_id, create_time),
     key idx_im_msg_group (tenant_id, group_id, create_time)
-) engine = innodb comment = 'IM消息';
+) engine = innodb default charset = utf8mb4 collate = utf8mb4_unicode_ci comment = 'IM消息';
+
+-- 已建库环境执行：修复 IM 消息内容字段字符集，支持 emoji / 表情等 4 字节字符
+alter table im_message convert to character set utf8mb4 collate utf8mb4_unicode_ci;
+alter table im_message modify content text character set utf8mb4 collate utf8mb4_unicode_ci not null comment '消息内容';
 
 create table if not exists im_friend
 (

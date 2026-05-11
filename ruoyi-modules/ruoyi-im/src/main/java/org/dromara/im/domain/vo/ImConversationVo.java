@@ -5,6 +5,7 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class ImConversationVo implements Serializable {
@@ -17,6 +18,10 @@ public class ImConversationVo implements Serializable {
     private String targetId;
 
     private String title;
+
+    private String avatar;
+
+    private List<String> memberAvatars;
 
     private String lastContent;
 

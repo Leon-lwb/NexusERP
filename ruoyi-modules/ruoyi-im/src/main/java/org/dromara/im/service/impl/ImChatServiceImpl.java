@@ -28,7 +28,9 @@ import org.dromara.im.push.ImEnvelopeHelper;
 import org.dromara.im.push.ImRealtimePush;
 import org.dromara.im.service.IImChatService;
 import org.dromara.im.service.ISysUserNotificationService;
+import org.dromara.system.domain.vo.SysOssVo;
 import org.dromara.system.domain.vo.SysUserVo;
+import org.dromara.system.service.ISysOssService;
 import org.dromara.system.service.ISysUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +61,7 @@ public class ImChatServiceImpl implements IImChatService {
     private final ImGroupMapper imGroupMapper;
     private final ImGroupMemberMapper imGroupMemberMapper;
     private final ISysUserService sysUserService;
+    private final ISysOssService sysOssService;
     private final ISysUserNotificationService sysUserNotificationService;
     private final ImRealtimePush imRealtimePush;
 
@@ -159,6 +162,19 @@ public class ImChatServiceImpl implements IImChatService {
     }
 
     @Override
+    public TableDataInfo<Map<String, Object>> privateHistoryWithSender(Long peerUserId, PageQuery pageQuery) {
+        Long me = LoginHelper.getUserId();
+        requireSameTenantUser(peerUserId);
+        LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
+            .isNull(ImMessage::getGroupId)
+            .and(q -> q.and(a -> a.eq(ImMessage::getFromUserId, me).eq(ImMessage::getToUserId, peerUserId))
+                .or(a -> a.eq(ImMessage::getFromUserId, peerUserId).eq(ImMessage::getToUserId, me)))
+            .orderByDesc(ImMessage::getCreateTime);
+        Page<ImMessage> page = imMessageMapper.selectPage(pageQuery.build(), w);
+        return buildSenderMessagePage(page);
+    }
+
+    @Override
     public TableDataInfo<ImMessage> groupHistory(Long groupId, PageQuery pageQuery) {
         Long me = LoginHelper.getUserId();
         if (!isGroupMember(groupId, me)) {
@@ -169,6 +185,19 @@ public class ImChatServiceImpl implements IImChatService {
             .orderByDesc(ImMessage::getCreateTime);
         Page<ImMessage> page = imMessageMapper.selectPage(pageQuery.build(), w);
         return TableDataInfo.build(page);
+    }
+
+    @Override
+    public TableDataInfo<Map<String, Object>> groupHistoryWithSender(Long groupId, PageQuery pageQuery) {
+        Long me = LoginHelper.getUserId();
+        if (!isGroupMember(groupId, me)) {
+            throw new ServiceException("无权查看该群消息");
+        }
+        LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
+            .eq(ImMessage::getGroupId, groupId)
+            .orderByDesc(ImMessage::getCreateTime);
+        Page<ImMessage> page = imMessageMapper.selectPage(pageQuery.build(), w);
+        return buildSenderMessagePage(page);
     }
 
     @Override
@@ -191,6 +220,8 @@ public class ImChatServiceImpl implements IImChatService {
             vo.setChatType("GROUP");
             vo.setTargetId(String.valueOf(g.getGroupId()));
             vo.setTitle(g.getGroupName());
+            vo.setAvatar(g.getAvatar());
+            vo.setMemberAvatars(loadGroupMemberAvatars(g.getGroupId()));
             vo.setLastContent(last != null ? last.getContent() : "");
             vo.setLastTime(last != null ? last.getCreateTime() : g.getCreateTime());
             vo.setUnreadCount(0L);
@@ -216,6 +247,7 @@ public class ImChatServiceImpl implements IImChatService {
             vo.setChatType("PRIVATE");
             vo.setTargetId(String.valueOf(peer));
             vo.setTitle(u != null ? StrUtil.blankToDefault(u.getNickName(), u.getUserName()) : String.valueOf(peer));
+            vo.setAvatar(resolveAvatarUrl(u != null ? u.getAvatar() : null));
             vo.setLastContent(last.getContent());
             vo.setLastTime(last.getCreateTime());
             vo.setUnreadCount(countUnreadPrivate(me, peer));
@@ -326,6 +358,63 @@ public class ImChatServiceImpl implements IImChatService {
             .isNull(ImMessage::getGroupId));
     }
 
+    private TableDataInfo<Map<String, Object>> buildSenderMessagePage(Page<ImMessage> page) {
+        List<Map<String, Object>> rows = page.getRecords().stream()
+            .map(this::buildSenderMessageRow)
+            .toList();
+        return new TableDataInfo<>(rows, page.getTotal());
+    }
+
+    private Map<String, Object> buildSenderMessageRow(ImMessage msg) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("messageId", msg.getMessageId());
+        row.put("fromUserId", msg.getFromUserId());
+        row.put("toUserId", msg.getToUserId());
+        row.put("groupId", msg.getGroupId());
+        row.put("content", msg.getContent());
+        row.put("msgType", msg.getMsgType());
+        row.put("messageType", msg.getMsgType());
+        row.put("isRead", msg.getIsRead());
+        row.put("revoked", msg.getRevoked());
+        row.put("forwardFrom", msg.getForwardFrom());
+        row.put("createTime", msg.getCreateTime());
+        SysUserVo sender = msg.getFromUserId() == null ? null : sysUserService.selectUserById(msg.getFromUserId());
+        if (sender != null) {
+            row.put("senderId", sender.getUserId());
+            row.put("senderName", StrUtil.blankToDefault(sender.getNickName(), sender.getUserName()));
+            row.put("senderAvatar", resolveAvatarUrl(sender.getAvatar()));
+        }
+        return row;
+    }
+
+    private List<String> loadGroupMemberAvatars(Long groupId) {
+        List<ImGroupMember> members = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getGroupId, groupId)
+            .orderByAsc(ImGroupMember::getJoinTime)
+            .last("limit 4"));
+        List<String> avatars = new ArrayList<>();
+        for (ImGroupMember member : members) {
+            SysUserVo user = sysUserService.selectUserById(member.getUserId());
+            String avatar = resolveAvatarUrl(user != null ? user.getAvatar() : null);
+            if (StrUtil.isNotBlank(avatar)) {
+                avatars.add(avatar);
+            }
+        }
+        return avatars;
+    }
+
+    private String resolveAvatarUrl(Long avatarId) {
+        if (avatarId == null) {
+            return "";
+        }
+        try {
+            List<SysOssVo> list = sysOssService.listByIds(List.of(avatarId));
+            return list.isEmpty() || list.get(0) == null ? "" : StrUtil.blankToDefault(list.get(0).getUrl(), "");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private boolean isGroupMember(Long groupId, Long userId) {
         return imGroupMemberMapper.selectCount(new LambdaQueryWrapper<ImGroupMember>()
             .eq(ImGroupMember::getGroupId, groupId)
@@ -399,7 +488,7 @@ public class ImChatServiceImpl implements IImChatService {
         p.put("createTime", msg.getCreateTime());
         if (from != null) {
             p.put("senderName", StrUtil.blankToDefault(from.getNickName(), from.getUserName()));
-            p.put("senderAvatar", from.getAvatar());
+            p.put("senderAvatar", resolveAvatarUrl(from.getAvatar()));
         }
         return p;
     }
@@ -416,7 +505,7 @@ public class ImChatServiceImpl implements IImChatService {
         p.put("groupName", group.getGroupName());
         if (from != null) {
             p.put("senderName", StrUtil.blankToDefault(from.getNickName(), from.getUserName()));
-            p.put("senderAvatar", from.getAvatar());
+            p.put("senderAvatar", resolveAvatarUrl(from.getAvatar()));
         }
         return p;
     }

@@ -11,6 +11,7 @@ import org.dromara.im.domain.bo.ImPrivateSendBo;
 import org.dromara.im.domain.vo.ImConversationVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 即时通讯聊天Service接口
@@ -25,7 +26,11 @@ public interface IImChatService {
 
     TableDataInfo<ImMessage> privateHistory(Long peerUserId, PageQuery pageQuery);
 
+    TableDataInfo<Map<String, Object>> privateHistoryWithSender(Long peerUserId, PageQuery pageQuery);
+
     TableDataInfo<ImMessage> groupHistory(Long groupId, PageQuery pageQuery);
+
+    TableDataInfo<Map<String, Object>> groupHistoryWithSender(Long groupId, PageQuery pageQuery);
 
     List<ImConversationVo> listConversations();
 

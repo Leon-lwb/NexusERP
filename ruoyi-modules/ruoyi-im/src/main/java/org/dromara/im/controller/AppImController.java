@@ -498,11 +498,11 @@ public class AppImController extends BaseController {
      * 获取聊天记录
      */
     @GetMapping("/message/history")
-    public TableDataInfo<ImMessage> history(@RequestParam String targetId, PageQuery pageQuery) {
+    public TableDataInfo<Map<String, Object>> history(@RequestParam String targetId, PageQuery pageQuery) {
         if (targetId.startsWith("private_")) {
-            return imChatService.privateHistory(Long.valueOf(targetId.substring(8)), pageQuery);
+            return imChatService.privateHistoryWithSender(Long.valueOf(targetId.substring(8)), pageQuery);
         } else {
-            return imChatService.groupHistory(Long.valueOf(targetId), pageQuery);
+            return imChatService.groupHistoryWithSender(Long.valueOf(targetId), pageQuery);
         }
     }
 
