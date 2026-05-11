@@ -16,6 +16,8 @@ public interface IBdUnitOfMeasureService {
     TableDataInfo<BdUnitOfMeasureVo> selectPageList(BdUnitOfMeasureBo bo, PageQuery pageQuery);
     List<BdUnitOfMeasureVo> selectList(BdUnitOfMeasureBo bo);
     BdUnitOfMeasureVo selectById(Long id);
+    List<BdUnitOfMeasureVo> selectByPrimaryId(Long primaryId);
+    List<String> selectCategories();
     int insertByBo(BdUnitOfMeasureBo bo);
     int updateByBo(BdUnitOfMeasureBo bo);
     int deleteByIds(Long[] ids);

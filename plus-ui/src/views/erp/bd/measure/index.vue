@@ -59,6 +59,12 @@
       <el-table-column label="单位名称" align="center" prop="uomName" />
       <el-table-column label="单位符号" align="center" prop="uomSymbol" />
       <el-table-column label="单位类别" align="center" prop="category" />
+	      <el-table-column label="基本单位" align="center" prop="primaryName">
+	        <template #default="scope">
+	          <span v-if="scope.row.primaryName">{{ scope.row.primaryName }}</span>
+	          <span v-else style="color: #999">-</span>
+	        </template>
+	      </el-table-column>
       <el-table-column label="是否基本单位" align="center" prop="isBase">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isBase" />
@@ -107,7 +113,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="单位类别" prop="category">
-              <el-input v-model="form.category" placeholder="重量、长度、数量等" />
+              <el-select v-model="form.category" placeholder="请选择单位类别" clearable style="width: 100%"><el-option v-for="item in categories" :key="item" :label="item" :value="item" /></el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -169,6 +175,20 @@
           </el-col>
         </el-row>
       </el-form>
+
+      <!-- 查看模式下的衍生单位列表 -->
+      <div v-if="isViewMode && form.isBase === '1'" style="margin-top: 20px; border-top: 1px solid #e8e8e8; padding-top: 16px">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #333">引用该基本单位的衍生单位</h4>
+        <el-table v-loading="derivedUnitLoading" :data="derivedUnitList" max-height="300" border>
+          <el-table-column label="单位编码" align="center" prop="uomCode" />
+          <el-table-column label="单位名称" align="center" prop="uomName" />
+          <el-table-column label="单位符号" align="center" prop="uomSymbol" />
+          <el-table-column label="转换率" align="center" prop="conversionRate" />
+        </el-table>
+        <div v-if="!derivedUnitLoading && derivedUnitList.length === 0" style="text-align: center; color: #999; padding: 20px">
+          暂无引用该基本单位的衍生单位
+        </div>
+      </div>
       <template #footer>
         <div class="dialog-footer">
           <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
@@ -219,7 +239,7 @@
 </template>
 
 <script setup lang="ts" name="Measure">
-import { listMeasure, getMeasure, delMeasure, addMeasure, updateMeasure } from "@/api/erp/bd/measure"
+import { listMeasure, getMeasure, delMeasure, addMeasure, updateMeasure, listByPrimary, listCategories } from "@/api/erp/bd/measure"
 
 const { proxy } = getCurrentInstance()
 const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'))
@@ -249,6 +269,10 @@ const baseUnitQueryParams = reactive({
   uomName: undefined,
   isBase: '1' // 只查询基本单位，使用字符串类型
 })
+
+const categories = ref([])
+const derivedUnitList = ref([])
+const derivedUnitLoading = ref(false)
 
 // 修改验证规则，使其动态生效
 const data = reactive({
@@ -327,6 +351,7 @@ function reset() {
     updateTime: null
   }
   baseUnitName.value = ''
+  derivedUnitList.value = []
   proxy.resetForm("measureRef")
 }
 
@@ -394,6 +419,10 @@ function handleView(row) {
     if (response.data.primaryId) {
       loadPrimaryUnitName(response.data.primaryId)
     }
+    // 如果是基本单位，加载关联的衍生单位列表
+    if (data.isBase === '1') {
+      loadDerivedUnits(data.uomId)
+    }
     open.value = true
     title.value = "查看计量单位"
   })
@@ -407,6 +436,24 @@ function loadPrimaryUnitName(primaryId) {
       baseUnitName.value = response.data.uomName
     })
   }
+}
+
+// 加载衍生单位列表
+function loadDerivedUnits(primaryId) {
+  if (primaryId) {
+    derivedUnitLoading.value = true
+    listByPrimary(primaryId).then(response => {
+      derivedUnitList.value = response.data || response
+      derivedUnitLoading.value = false
+    })
+  }
+}
+
+// 获取单位类别列表
+function getCategories() {
+  listCategories().then(response => {
+    categories.value = response.data || response
+  })
 }
 
 /** 提交按钮 */
@@ -513,4 +560,5 @@ function resetBaseUnitQuery() {
 }
 
 getList()
-</script>
+getCategories()
+</script>\r

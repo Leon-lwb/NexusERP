@@ -9,6 +9,10 @@ import org.dromara.common.satoken.utils.LoginHelper;
 import org.jeecg.modules.jmreport.api.JmReportTokenServiceI;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * 积木报表 Token 鉴权桥接 — 对接 Sa-Token 权限体系
  *
@@ -81,13 +85,33 @@ public class JimuReportTokenService implements JmReportTokenServiceI {
         return new String[0];
     }
 
+    /**
+     * 仪表盘（drag 模块）内部权限码
+     * <p>
+     * JimuReport 的 drag 控制器方法上标注了 @RequiresPermissions，
+     * 但这些权限码不在系统菜单表（sys_menu）中维护，故对已认证用户自动注入。
+     */
+    private static final String[] DRAG_PERMISSIONS = {
+        "drag:datasource:testConnection",
+        "drag:datasource:saveOrUpate",
+        "drag:datasource:delete",
+        "drag:analysis:sql",
+        "drag:dataset:delete",
+        "drag:dataset:save",
+        "drag:design:getTotalData",
+        "onl:drag:page:delete",
+        "onl:drag:clear:recovery",
+    };
+
     @Override
     public String[] getPermissions(String token) {
         LoginUser loginUser = LoginHelper.getLoginUser(token);
         if (loginUser != null && loginUser.getMenuPermission() != null) {
-            return loginUser.getMenuPermission().toArray(new String[0]);
+            List<String> permissions = new ArrayList<>(loginUser.getMenuPermission());
+            permissions.addAll(Arrays.asList(DRAG_PERMISSIONS));
+            return permissions.toArray(new String[0]);
         }
-        return new String[0];
+        return DRAG_PERMISSIONS.clone();
     }
 
     @Override

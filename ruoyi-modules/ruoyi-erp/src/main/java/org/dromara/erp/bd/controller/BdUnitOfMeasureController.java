@@ -57,6 +57,18 @@ public class BdUnitOfMeasureController extends BaseController {
         return R.ok(bdUnitOfMeasureService.selectById(uomId));
     }
 
+    @SaCheckPermission("bd:measure:query")
+    @GetMapping("/byPrimary/{primaryId}")
+    public R<List<BdUnitOfMeasureVo>> getByPrimaryId(@PathVariable Long primaryId) {
+        return R.ok(bdUnitOfMeasureService.selectByPrimaryId(primaryId));
+    }
+
+    @SaCheckPermission("bd:measure:list")
+    @GetMapping("/categories")
+    public R<List<String>> getCategories() {
+        return R.ok(bdUnitOfMeasureService.selectCategories());
+    }
+
     @SaCheckPermission("bd:measure:add")
     @Log(title = "计量单位", businessType = BusinessType.INSERT)
     @PostMapping

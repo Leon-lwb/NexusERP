@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -49,8 +50,35 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
     }
 
     @Override
+    public List<BdUnitOfMeasureVo> selectByPrimaryId(Long primaryId) {
+        return baseMapper.selectVoList(
+            Wrappers.<BdUnitOfMeasure>lambdaQuery()
+                .eq(BdUnitOfMeasure::getPrimaryId, primaryId)
+                .orderByAsc(BdUnitOfMeasure::getSortOrder)
+        );
+    }
+
+    @Override
+    public List<String> selectCategories() {
+        return baseMapper.selectObjs(
+            new LambdaQueryWrapper<BdUnitOfMeasure>()
+                .select(BdUnitOfMeasure::getCategory)
+                .isNotNull(BdUnitOfMeasure::getCategory)
+                .groupBy(BdUnitOfMeasure::getCategory)
+                .orderByAsc(BdUnitOfMeasure::getCategory)
+        );
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdUnitOfMeasureBo bo) {
+        // 自动回填基本单位名称
+        if (bo.getPrimaryId() != null && StringUtils.isBlank(bo.getPrimaryName())) {
+            BdUnitOfMeasureVo primary = baseMapper.selectVoById(bo.getPrimaryId());
+            if (primary != null) {
+                bo.setPrimaryName(primary.getUomName());
+            }
+        }
         BdUnitOfMeasure entity = MapstructUtils.convert(bo, BdUnitOfMeasure.class);
         return baseMapper.insert(entity);
     }
@@ -58,6 +86,19 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdUnitOfMeasureBo bo) {
+        // 自动回填基本单位名称
+        if (bo.getPrimaryId() != null && StringUtils.isBlank(bo.getPrimaryName())) {
+            BdUnitOfMeasureVo primary = baseMapper.selectVoById(bo.getPrimaryId());
+            if (primary != null) {
+                bo.setPrimaryName(primary.getUomName());
+            }
+        }
+        // 如果是基本单位，清空关联字段
+        if (Long.valueOf(1).equals(bo.getIsBase())) {
+            bo.setPrimaryId(null);
+            bo.setPrimaryName(null);
+            bo.setConversionRate(null);
+        }
         BdUnitOfMeasure entity = MapstructUtils.convert(bo, BdUnitOfMeasure.class);
         return baseMapper.updateById(entity);
     }
@@ -65,6 +106,19 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        // 校验是否有衍生单位引用待删除的记录
+        for (Long id : ids) {
+            BdUnitOfMeasureVo unit = baseMapper.selectVoById(id);
+            if (unit != null && Long.valueOf(1).equals(unit.getIsBase())) {
+                boolean hasChildren = baseMapper.exists(
+                    Wrappers.<BdUnitOfMeasure>lambdaQuery()
+                        .eq(BdUnitOfMeasure::getPrimaryId, id)
+                );
+                if (hasChildren) {
+                    throw new ServiceException("基本单位「" + unit.getUomName() + "」已被其他单位引用，无法删除");
+                }
+            }
+        }
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
@@ -74,6 +128,7 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
         lqw.like(StringUtils.isNotBlank(bo.getUomName()), BdUnitOfMeasure::getUomName, bo.getUomName());
         lqw.eq(StringUtils.isNotBlank(bo.getCategory()), BdUnitOfMeasure::getCategory, bo.getCategory());
         lqw.eq(bo.getStatus() != null, BdUnitOfMeasure::getStatus, bo.getStatus());
+        lqw.eq(bo.getIsBase() != null, BdUnitOfMeasure::getIsBase, bo.getIsBase());
         lqw.orderByAsc(BdUnitOfMeasure::getSortOrder);
         return lqw;
     }

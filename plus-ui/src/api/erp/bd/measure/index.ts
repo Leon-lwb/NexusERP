@@ -47,3 +47,17 @@ export const listMeasureAll = (query?: MeasureQuery): AxiosPromise<MeasureVO[]> 
     params: query
   });
 };
+
+export const listByPrimary = (primaryId: number): AxiosPromise<MeasureVO[]> => {
+  return request({
+    url: '/erp/bd/measure/byPrimary/' + primaryId,
+    method: 'get'
+  });
+};
+
+export const listCategories = (): AxiosPromise<string[]> => {
+  return request({
+    url: '/erp/bd/measure/categories',
+    method: 'get'
+  });
+};

@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : whbuild
+ Source Server         : 本地5.7
  Source Server Type    : MySQL
- Source Server Version : 50720
+ Source Server Version : 50714 (5.7.14)
  Source Host           : localhost:3306
  Source Schema         : ry-vue
 
  Target Server Type    : MySQL
- Target Server Version : 50720
+ Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 11/05/2026 17:44:27
+ Date: 11/05/2026 23:27:44
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,11 @@ CREATE TABLE `act_evt_log`  (
   `LOCK_TIME_` timestamp(3) NULL DEFAULT NULL,
   `IS_PROCESSED_` tinyint(4) NULL DEFAULT 0,
   PRIMARY KEY (`LOG_NR_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_evt_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ge_bytearray
@@ -51,7 +55,7 @@ CREATE TABLE `act_ge_bytearray`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `ACT_FK_BYTEARR_DEPL`(`DEPLOYMENT_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_BYTEARR_DEPL` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_bytearray
@@ -81,7 +85,7 @@ CREATE TABLE `act_ge_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_property
@@ -127,7 +131,7 @@ CREATE TABLE `act_hi_actinst`  (
   INDEX `ACT_IDX_HI_ACT_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_PROCINST`(`PROC_INST_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_EXEC`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_actinst
@@ -183,7 +187,11 @@ CREATE TABLE `act_hi_attachment`  (
   `CONTENT_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TIME_` datetime(3) NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_attachment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_comment
@@ -200,7 +208,7 @@ CREATE TABLE `act_hi_comment`  (
   `MESSAGE_` varchar(4000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `FULL_MSG_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_comment
@@ -245,7 +253,11 @@ CREATE TABLE `act_hi_detail`  (
   INDEX `ACT_IDX_HI_DETAIL_TIME`(`TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_NAME`(`NAME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_TASK_ID`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_detail
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_entitylink
@@ -271,7 +283,11 @@ CREATE TABLE `act_hi_entitylink`  (
   INDEX `ACT_IDX_HI_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_identitylink
@@ -296,7 +312,7 @@ CREATE TABLE `act_hi_identitylink`  (
   INDEX `ACT_IDX_HI_IDENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_TASK`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_identitylink
@@ -358,7 +374,7 @@ CREATE TABLE `act_hi_procinst`  (
   INDEX `ACT_IDX_HI_PRO_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_I_BUSKEY`(`BUSINESS_KEY_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_SUPER_PROCINST`(`SUPER_PROCESS_INSTANCE_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_procinst
@@ -407,7 +423,7 @@ CREATE TABLE `act_hi_taskinst`  (
   INDEX `ACT_IDX_HI_TASK_SUB_SCOPE`(`SUB_SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_INST_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_taskinst
@@ -443,7 +459,11 @@ CREATE TABLE `act_hi_tsk_log`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_tsk_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_varinst
@@ -475,7 +495,7 @@ CREATE TABLE `act_hi_varinst`  (
   INDEX `ACT_IDX_HI_PROCVAR_PROC_INST`(`PROC_INST_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_TASK_ID`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_EXE`(`EXECUTION_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_varinst
@@ -562,7 +582,11 @@ CREATE TABLE `act_id_bytearray`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_bytearray
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_group
@@ -574,7 +598,11 @@ CREATE TABLE `act_id_group`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_group
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_info
@@ -590,7 +618,11 @@ CREATE TABLE `act_id_info`  (
   `PASSWORD_` longblob NULL,
   `PARENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_membership
@@ -603,7 +635,11 @@ CREATE TABLE `act_id_membership`  (
   INDEX `ACT_FK_MEMB_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_MEMB_GROUP` FOREIGN KEY (`GROUP_ID_`) REFERENCES `act_id_group` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MEMB_USER` FOREIGN KEY (`USER_ID_`) REFERENCES `act_id_user` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_membership
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv
@@ -614,7 +650,11 @@ CREATE TABLE `act_id_priv`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PRIV_NAME`(`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv_mapping
@@ -630,7 +670,11 @@ CREATE TABLE `act_id_priv_mapping`  (
   INDEX `ACT_IDX_PRIV_USER`(`USER_ID_`) USING BTREE,
   INDEX `ACT_IDX_PRIV_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_PRIV_MAPPING` FOREIGN KEY (`PRIV_ID_`) REFERENCES `act_id_priv` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv_mapping
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_property
@@ -641,7 +685,7 @@ CREATE TABLE `act_id_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_id_property
@@ -662,7 +706,11 @@ CREATE TABLE `act_id_token`  (
   `USER_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TOKEN_DATA_` varchar(2000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_token
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_user
@@ -679,7 +727,11 @@ CREATE TABLE `act_id_user`  (
   `PICTURE_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_user
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_procdef_info
@@ -696,7 +748,11 @@ CREATE TABLE `act_procdef_info`  (
   INDEX `ACT_FK_INFO_JSON_BA`(`INFO_JSON_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_INFO_JSON_BA` FOREIGN KEY (`INFO_JSON_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_INFO_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_procdef_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_re_deployment
@@ -714,7 +770,7 @@ CREATE TABLE `act_re_deployment`  (
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `ENGINE_VERSION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_deployment
@@ -747,7 +803,7 @@ CREATE TABLE `act_re_model`  (
   CONSTRAINT `ACT_FK_MODEL_DEPLOYMENT` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE` FOREIGN KEY (`EDITOR_SOURCE_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE_EXTRA` FOREIGN KEY (`EDITOR_SOURCE_EXTRA_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_model
@@ -783,7 +839,7 @@ CREATE TABLE `act_re_procdef`  (
   `DERIVED_VERSION_` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PROCDEF`(`KEY_`, `VERSION_`, `DERIVED_VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_procdef
@@ -821,7 +877,7 @@ CREATE TABLE `act_ru_actinst`  (
   INDEX `ACT_IDX_RU_ACTI_EXEC`(`EXECUTION_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_EXEC_ACT`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_TASK`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_actinst
@@ -876,7 +932,11 @@ CREATE TABLE `act_ru_deadletter_job`  (
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_deadletter_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_entitylink
@@ -903,7 +963,11 @@ CREATE TABLE `act_ru_entitylink`  (
   INDEX `ACT_IDX_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_event_subscr
@@ -932,7 +996,11 @@ CREATE TABLE `act_ru_event_subscr`  (
   INDEX `ACT_IDX_EVENT_SUBSCR_SCOPEREF_`(`SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_FK_EVENT_EXEC`(`EXECUTION_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_EVENT_EXEC` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_event_subscr
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_execution
@@ -990,7 +1058,7 @@ CREATE TABLE `act_ru_execution`  (
   CONSTRAINT `ACT_FK_EXE_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXE_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `ACT_FK_EXE_SUPER` FOREIGN KEY (`SUPER_EXEC_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_execution
@@ -1039,7 +1107,11 @@ CREATE TABLE `act_ru_external_job`  (
   INDEX `ACT_IDX_EJOB_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_CUSTOM_VALUES` FOREIGN KEY (`CUSTOM_VALUES_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_EXCEPTION` FOREIGN KEY (`EXCEPTION_STACK_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_external_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_history_job
@@ -1061,7 +1133,11 @@ CREATE TABLE `act_ru_history_job`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_history_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_identitylink
@@ -1092,7 +1168,7 @@ CREATE TABLE `act_ru_identitylink`  (
   CONSTRAINT `ACT_FK_ATHRZ_PROCEDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_IDL_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TSKASS_TASK` FOREIGN KEY (`TASK_ID_`) REFERENCES `act_ru_task` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_identitylink
@@ -1148,7 +1224,11 @@ CREATE TABLE `act_ru_job`  (
   CONSTRAINT `ACT_FK_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_suspended_job
@@ -1195,7 +1275,11 @@ CREATE TABLE `act_ru_suspended_job`  (
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_suspended_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_task
@@ -1243,7 +1327,7 @@ CREATE TABLE `act_ru_task`  (
   CONSTRAINT `ACT_FK_TASK_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_task
@@ -1298,7 +1382,11 @@ CREATE TABLE `act_ru_timer_job`  (
   CONSTRAINT `ACT_FK_TIMER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_timer_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_variable
@@ -1331,7 +1419,7 @@ CREATE TABLE `act_ru_variable`  (
   CONSTRAINT `ACT_FK_VAR_BYTEARRAY` FOREIGN KEY (`BYTEARRAY_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_variable
@@ -1367,7 +1455,11 @@ CREATE TABLE `flw_channel_definition`  (
   `IMPLEMENTATION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_CHANNEL_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_channel_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ev_databasechangelog
@@ -1377,7 +1469,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
+  `DATEEXECUTED` datetime NULL DEFAULT NULL,
   `ORDEREXECUTED` int(11) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
@@ -1388,7 +1480,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `CONTEXTS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `LABELS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `DEPLOYMENT_ID` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangelog
@@ -1404,10 +1496,10 @@ DROP TABLE IF EXISTS `flw_ev_databasechangeloglock`;
 CREATE TABLE `flw_ev_databasechangeloglock`  (
   `ID` int(11) NOT NULL,
   `LOCKED` tinyint(4) NOT NULL,
-  `LOCKGRANTED` datetime(0) NULL DEFAULT NULL,
+  `LOCKGRANTED` datetime NULL DEFAULT NULL,
   `LOCKEDBY` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangeloglock
@@ -1430,7 +1522,11 @@ CREATE TABLE `flw_event_definition`  (
   `DESCRIPTION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_EVENT_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_deployment
@@ -1444,7 +1540,11 @@ CREATE TABLE `flw_event_deployment`  (
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_deployment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_resource
@@ -1456,7 +1556,11 @@ CREATE TABLE `flw_event_resource`  (
   `DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `RESOURCE_BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_resource
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch
@@ -1474,7 +1578,11 @@ CREATE TABLE `flw_ru_batch`  (
   `BATCH_DOC_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch_part
@@ -1498,7 +1606,11 @@ CREATE TABLE `flw_ru_batch_part`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `FLW_IDX_BATCH_PART`(`BATCH_ID_`) USING BTREE,
   CONSTRAINT `FLW_FK_BATCH_PART_PARENT` FOREIGN KEY (`BATCH_ID_`) REFERENCES `flw_ru_batch` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch_part
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for gen_table
@@ -1527,14 +1639,14 @@ CREATE TABLE `gen_table`  (
   `options` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE,
   INDEX `idx_gen_table_design_id`(`design_id`) USING BTREE,
   INDEX `idx_gen_table_source_type`(`source_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table
@@ -1573,11 +1685,11 @@ CREATE TABLE `gen_table_column`  (
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -1656,11 +1768,15 @@ CREATE TABLE `gen_table_design_history`  (
   `design_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设计JSON内容',
   `version` int(11) NULL DEFAULT 1 COMMENT '版本号',
   `create_by` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`history_id`) USING BTREE,
   INDEX `idx_design_history_table_id`(`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of gen_table_design_history
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for huiyuan_age
@@ -1671,7 +1787,7 @@ CREATE TABLE `huiyuan_age`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_age
@@ -1694,7 +1810,7 @@ CREATE TABLE `huiyuan_fengongsi`  (
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_fengongsi
@@ -1716,7 +1832,7 @@ CREATE TABLE `huiyuan_huoyuedu`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_huoyuedu
@@ -1736,7 +1852,7 @@ CREATE TABLE `huiyuan_sex`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '性别',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_sex
@@ -1753,7 +1869,7 @@ CREATE TABLE `huiyuan_work`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '姓名',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_work
@@ -1771,7 +1887,7 @@ CREATE TABLE `huiyuan_wxtl`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_wxtl
@@ -1788,7 +1904,7 @@ CREATE TABLE `huiyuan_wxtlshuliang`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` int(10) NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_wxtlshuliang
@@ -1812,7 +1928,7 @@ CREATE TABLE `huiyuan_xueli`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_xueli
@@ -1834,14 +1950,14 @@ CREATE TABLE `im_friend`  (
   `friend_user_id` bigint(20) NOT NULL COMMENT '濂藉弸鐢ㄦ埛ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '鍒涘缓閮ㄩ棬',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '鍒涘缓鑰',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '鍒涘缓鏃堕棿',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '鍒涘缓鏃堕棿',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '鏇存柊鑰',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '鏇存柊鏃堕棿',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '鏇存柊鏃堕棿',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '澶囨敞',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_im_friend`(`tenant_id`, `user_id`, `friend_user_id`) USING BTREE,
   INDEX `idx_im_friend_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM濂藉弸鍏崇郴' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM濂藉弸鍏崇郴' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_friend
@@ -1862,13 +1978,13 @@ CREATE TABLE `im_group`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1解散）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`group_id`) USING BTREE,
   INDEX `idx_im_group_tenant`(`tenant_id`, `status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group
@@ -1885,16 +2001,16 @@ CREATE TABLE `im_group_member`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `group_id` bigint(20) NOT NULL COMMENT '群ID',
   `user_id` bigint(20) NOT NULL COMMENT '成员用户ID',
-  `join_time` datetime(0) NULL DEFAULT NULL COMMENT '加入时间',
+  `join_time` datetime NULL DEFAULT NULL COMMENT '加入时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_group_user`(`group_id`, `user_id`) USING BTREE,
   INDEX `idx_igm_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group_member
@@ -1923,14 +2039,14 @@ CREATE TABLE `im_message`  (
   `forward_from` bigint(20) NULL DEFAULT NULL COMMENT '杞?彂鏉ユ簮娑堟伅ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`message_id`) USING BTREE,
   INDEX `idx_im_msg_private`(`tenant_id`, `from_user_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_to`(`tenant_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_group`(`tenant_id`, `group_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_message
@@ -1965,14 +2081,14 @@ CREATE TABLE `jimu_dict`  (
   `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '描述',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `type` int(1) UNSIGNED ZEROFILL NULL DEFAULT 0 COMMENT '字典类型0为string,1为number',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_sd_dict_code`(`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict
@@ -2051,15 +2167,15 @@ CREATE TABLE `jimu_dict_item`  (
   `sort_order` int(10) NULL DEFAULT NULL COMMENT '排序',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态（1启用 0不启用）',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_sdi_role_dict_id`(`dict_id`) USING BTREE,
   INDEX `idx_sdi_role_sort_order`(`sort_order`) USING BTREE,
   INDEX `idx_sdi_status`(`status`) USING BTREE,
   INDEX `idx_sdi_dict_val`(`dict_id`, `item_value`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict_item
@@ -2298,9 +2414,9 @@ CREATE TABLE `jimu_report`  (
   `api_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求地址',
   `thumb` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '缩略图',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   `api_method` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求方法0-get,1-post',
   `api_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求编码',
@@ -2317,7 +2433,7 @@ CREATE TABLE `jimu_report`  (
   UNIQUE INDEX `uniq_jmreport_code`(`code`) USING BTREE,
   INDEX `uniq_jmreport_createby`(`create_by`) USING BTREE,
   INDEX `uniq_jmreport_delflag`(`del_flag`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report
@@ -2408,14 +2524,14 @@ CREATE TABLE `jimu_report_category`  (
   `iz_leaf` int(1) NULL DEFAULT NULL COMMENT '是否为叶子节点(0 否 1是)',
   `source_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型( report 积木报表 screen 大屏  drag 仪表盘)',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态(0未删除，1已删除，2临时删除)',
   `sort_no` int(11) NULL DEFAULT NULL COMMENT '排序',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_category
@@ -2444,25 +2560,26 @@ CREATE TABLE `jimu_report_data_source`  (
   `db_username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户名',
   `db_password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `connect_times` int(11) NULL DEFAULT 0 COMMENT '连接失败次数',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   `type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型(report:报表;drag:仪表盘)',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jmdatasource_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jmdatasource_code`(`code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_data_source
 -- ----------------------------
-INSERT INTO `jimu_report_data_source` VALUES ('1011872166805864448', '本地积木库', NULL, NULL, NULL, 'MYSQL5.7', 'com.mysql.cj.jdbc.Driver', 'jdbc:mysql://127.0.0.1:3306/jimureport?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai', 'root', '@JimuReportSMy3f94QGFM=', 'admin', '2024-11-01 09:43:13', 'admin', '2025-09-01 19:16:51', 0, '1', 'drag');
+INSERT INTO `jimu_report_data_source` VALUES ('1011872166805864448', '本地vue库', NULL, NULL, NULL, 'MYSQL5.7', 'com.mysql.cj.jdbc.Driver', 'jdbc:mysql://127.0.0.1:3306/ry-vue?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai', 'root', '@JimuReportSMy3f94QGFM=', 'admin', '2024-11-01 09:43:13', 'admin', '2026-05-11 21:59:59', 0, '000000', 'drag');
 INSERT INTO `jimu_report_data_source` VALUES ('1029609033844228096', '1029608668138668032文件数据源', '1029608668138668032', NULL, NULL, 'FILES', 'filesDataSet\\1029608668138668032', '[{\"fileName\":\"统计每日注册用户数.csv\",\"name\":\"jmf.统计每日注册用户数\"}]', NULL, NULL, 'admin', '2024-12-19 14:25:33', 'admin', '2024-12-19 14:26:06', NULL, '1', 'report');
 INSERT INTO `jimu_report_data_source` VALUES ('1161917667495411712', 'elasticsearch', '873354273768964096', '', NULL, 'es', '/', '192.168.1.188:9200', '', '', 'admin', '2025-12-19 16:52:50', 'admin', '2025-12-19 16:53:08', 0, NULL, 'report');
 INSERT INTO `jimu_report_data_source` VALUES ('1161920651331665920', 'mogo', '873354273768964096', '', NULL, 'mongodb', 'org.h2.Driver', '192.168.1.188:27017/qqyun_test', 'qqyun_test', '@JmAESW1hJqcpDqRKLpzSKRdmUJA==', 'admin', '2025-12-19 17:04:41', 'admin', '2025-12-25 16:48:03', 0, NULL, 'report');
 INSERT INTO `jimu_report_data_source` VALUES ('1162272894157357056', 'mogon176', '873354273768964096', '', NULL, 'mongodb', '', 'mongodb://jeecgdev:jeecgd_89@111.225.222.176:27017/?authSource=jeecgdev', '', '', 'admin', '2025-12-20 16:24:22', 'admin', '2025-12-20 16:44:21', 0, NULL, 'report');
+INSERT INTO `jimu_report_data_source` VALUES ('1213816539553763328', '本地ERP库', NULL, NULL, NULL, 'MYSQL5.7', 'com.mysql.cj.jdbc.Driver', 'jdbc:mysql://127.0.0.1:3306/ry-erp?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai', 'root', '@JimuReportSMy3f94QGFM=', 'admin', '2026-05-11 22:00:25', NULL, NULL, 0, '000000', 'drag');
 INSERT INTO `jimu_report_data_source` VALUES ('59297214208654131@2', 'localcloud', '958618719055085568', '', NULL, 'MYSQL5.7', 'com.mysql.cj.jdbc.Driver', 'jdbc:mysql://127.0.0.1:3306/jimureport?useUnicode=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8', 'root', '@JmAES1lg7jczy9sNwe5mGiymOxA==', 'admin', '2024-06-06 18:03:27', 'admin', '2024-06-06 18:03:27', 0, '1', 'report');
 INSERT INTO `jimu_report_data_source` VALUES ('891608839425720320', 'ceshi库', '948079358232330240', '', NULL, 'MYSQL5.5', 'com.mysql.jdbc.Driver', 'jdbc:mysql://120.78.210.7:23306/ceshi?useUnicode=true&characterEncoding=UTF-8&serverTimezone=GMT%2B8&tinyInt1isBit=false', 'ceshi', '@JmAESa4228j07JMFqAXp9/AA8jIvpDtsR4C1ae92/gaIR/SU=', 'admin', '2024-05-08 14:56:51', 'admin', '2024-05-08 14:56:51', 2, '2', 'report');
 INSERT INTO `jimu_report_data_source` VALUES ('948079713791868928', 'jeecg', '948079358232330240', NULL, NULL, 'MYSQL5.5', 'com.mysql.jdbc.Driver', 'jdbc:mysql://127.0.0.1:3306/jeecgboot2?characterEncoding=UTF-8&useUnicode=true&useSSL=false&serverTimezone=GMT%2B8&tinyInt1isBit=false', 'root', '@JmAES1lg7jczy9sNwe5mGiymOxA==', 'admin', '2024-05-08 15:36:29', 'admin', '2025-12-25 15:18:55', 0, '1', 'report');
@@ -2479,8 +2596,8 @@ CREATE TABLE `jimu_report_db`  (
   `jimu_report_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '主键字段',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `db_code` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集编码',
   `db_ch_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集名字',
   `db_type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源类型',
@@ -2505,7 +2622,7 @@ CREATE TABLE `jimu_report_db`  (
   INDEX `idx_jmreportdb_db_key`(`db_key`) USING BTREE,
   INDEX `idx_jimu_report_id`(`jimu_report_id`) USING BTREE,
   INDEX `idx_db_source_id`(`db_source`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db
@@ -2654,9 +2771,9 @@ DROP TABLE IF EXISTS `jimu_report_db_field`;
 CREATE TABLE `jimu_report_db_field`  (
   `id` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `jimu_report_db_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源ID',
   `field_name` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字段名',
   `field_name_physics` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '物理字段名（文件数据集使用，存的是excel的字段标题）',
@@ -2673,7 +2790,7 @@ CREATE TABLE `jimu_report_db_field`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdf_jimu_report_db_id`(`jimu_report_db_id`) USING BTREE,
   INDEX `idx_dbfield_order_num`(`order_num`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_field
@@ -3597,9 +3714,9 @@ CREATE TABLE `jimu_report_db_param`  (
   `param_value` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '参数默认值',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `search_flag` int(1) NULL DEFAULT NULL COMMENT '查询标识0否1是 默认0',
   `widget_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询控件类型',
   `search_mode` int(1) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
@@ -3608,7 +3725,7 @@ CREATE TABLE `jimu_report_db_param`  (
   `ext_json` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '参数配置',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdp_jimu_report_head_id`(`jimu_report_head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_param
@@ -3650,21 +3767,21 @@ DROP TABLE IF EXISTS `jimu_report_export_job`;
 CREATE TABLE `jimu_report_export_job`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务名称',
-  `begin_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
-  `end_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `begin_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
   `exec_interval` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '执行频率',
   `report_conf` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '导出报表配置',
-  `last_run_time` datetime(0) NULL DEFAULT NULL COMMENT '最后执行时间',
+  `last_run_time` datetime NULL DEFAULT NULL COMMENT '最后执行时间',
   `receiver_email` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '接收通知的邮件',
   `file_sync_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件同步路径',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态(0:停止;1:启动)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_job
@@ -3688,11 +3805,11 @@ CREATE TABLE `jimu_report_export_log`  (
   `status` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '状态',
   `err_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误消息',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_log
@@ -3985,12 +4102,12 @@ CREATE TABLE `jimu_report_ext_data`  (
   `metadata` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '元数据，用于存储补充信息',
   `status` tinyint(4) NULL DEFAULT 1 COMMENT '状态标识：1正常 0禁用',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_biz`(`biz_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_ext_data
@@ -4007,12 +4124,12 @@ CREATE TABLE `jimu_report_icon_lib`  (
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图片类型',
   `image_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '图片地址',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户id',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_icon_lib
@@ -4248,7 +4365,7 @@ CREATE TABLE `jimu_report_link`  (
   `requirement` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '条件',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `uniq_link_reportid`(`report_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_link
@@ -4269,14 +4386,14 @@ CREATE TABLE `jimu_report_map`  (
   `name` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '地图编码',
   `data` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '地图数据',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '0表示未删除,1表示删除',
   `sys_org_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '所属部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_jmreport_map_name`(`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_map
@@ -4302,7 +4419,7 @@ CREATE TABLE `jimu_report_share`  (
   `report_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线excel设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，2:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁状态(0不存在密码锁，1存在密码锁)',
@@ -4310,7 +4427,7 @@ CREATE TABLE `jimu_report_share`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jrs_share_token`(`share_token`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_share
@@ -4335,14 +4452,14 @@ CREATE TABLE `jimu_report_sheet`  (
   `sheet_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Sheet名称',
   `sheet_order` int(11) NOT NULL COMMENT '排序（可以为负数，负数表示在默认sheet前面）',
   `json_str` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '该sheet的完整jsonStr',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_report_id`(`report_id`) USING BTREE,
   INDEX `idx_sheet_order`(`report_id`, `sheet_order`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_sheet
@@ -4371,11 +4488,11 @@ CREATE TABLE `onl_drag_comp`  (
   `comp_config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `status` varchar(2) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态0:无效 1:有效',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_comp
@@ -4519,14 +4636,14 @@ CREATE TABLE `onl_drag_dataset_head`  (
   `iz_agent` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT 'iz_agent',
   `data_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据类型',
   `api_method` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'api方法：get/post',
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `low_app_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_head
@@ -4534,6 +4651,8 @@ CREATE TABLE `onl_drag_dataset_head`  (
 INSERT INTO `onl_drag_dataset_head` VALUES ('1011801324208574464', '大屏数据集', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2024-10-31 11:04:04', 'admin', NULL, NULL, NULL, 3);
 INSERT INTO `onl_drag_dataset_head` VALUES ('1011805223195824128', '车辆归属地', '', '1011801324208574464', '', 'https://api.jeecg.com/mock/26/activering', '', '0', 'api', 'get', '2024-10-31 11:19:34', 'admin', '2024-11-15 11:50:54', 'admin', NULL, 3);
 INSERT INTO `onl_drag_dataset_head` VALUES ('1011861146144657408', '拨打电话排行榜', '', '1011801324208574464', '', 'https://api.jeecg.com/mock/26/activering', '', '0', 'api', 'get', '2024-10-31 15:01:47', 'admin', NULL, NULL, NULL, 3);
+INSERT INTO `onl_drag_dataset_head` VALUES ('1213816773876944896', 'ERP', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-11 22:01:21', 'admin', NULL, NULL, NULL, 0);
+INSERT INTO `onl_drag_dataset_head` VALUES ('1213817160684048384', 'erp', '', '1213816773876944896', '1213816539553763328', 'select COUNT(*) from bd_client', '', '0', 'sql', 'get', '2026-05-11 22:02:53', 'admin', NULL, NULL, NULL, 0);
 INSERT INTO `onl_drag_dataset_head` VALUES ('1516317603268657153', '示例_参数查询', '', '1516743332632494082', '1011872166805864448', 'select * from demo where name like \'%${name}%\'', '', '', 'sql', 'get', '2022-04-21 15:59:43', 'admin', '2022-04-21 17:28:44', 'admin', NULL, NULL);
 INSERT INTO `onl_drag_dataset_head` VALUES ('1516743332632494082', '示例数据集', NULL, NULL, NULL, '0', NULL, '0', NULL, NULL, '2022-04-20 19:39:25', 'admin', NULL, NULL, NULL, NULL);
 INSERT INTO `onl_drag_dataset_head` VALUES ('1516743766914924546', '统计近十日的登陆次数', '', '1516743332632494082', '1011872166805864448', 'SELECT\n	count(*) num,\n	DATE_FORMAT(create_time, \'%Y-%m-%d\') AS `day`\nFROM\n	sys_log\nWHERE\n	log_type = 1\nAND create_time > DATE_SUB(NOW(), INTERVAL 10 DAY)\nGROUP BY\n	DATE_FORMAT(create_time, \'%Y-%m-%d\')', '', '', 'sql', 'get', '2022-04-20 19:41:08', 'admin', '2024-10-31 15:51:02', 'admin', NULL, 1);
@@ -4639,12 +4758,12 @@ CREATE TABLE `onl_drag_dataset_item`  (
   `search_mode` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询模式',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddi_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_item
@@ -4685,6 +4804,7 @@ INSERT INTO `onl_drag_dataset_item` VALUES ('1017248926035136512', '101180522319
 INSERT INTO `onl_drag_dataset_item` VALUES ('1017248926102245376', '1011805223195824128', 'value', 'value', 'String', NULL, NULL, NULL, NULL, 'Y', NULL, NULL, NULL, 1, 'admin', '2024-10-31 11:19:34', NULL, NULL);
 INSERT INTO `onl_drag_dataset_item` VALUES ('1023816829318037504', '970251620641243136', 'count', '数量', 'Integer', NULL, NULL, NULL, NULL, 'Y', NULL, NULL, NULL, 0, 'admin', '2024-07-08 19:20:23', NULL, NULL);
 INSERT INTO `onl_drag_dataset_item` VALUES ('1023816829372563456', '970251620641243136', 'type', '类型', 'String', NULL, NULL, NULL, NULL, 'Y', NULL, NULL, NULL, 1, 'admin', '2024-07-08 19:20:23', NULL, NULL);
+INSERT INTO `onl_drag_dataset_item` VALUES ('1213817160709214208', '1213817160684048384', 'COUNT(*)', '数量', 'String', NULL, NULL, NULL, NULL, 'Y', NULL, NULL, NULL, 0, 'admin', '2026-05-11 22:02:53', NULL, NULL);
 INSERT INTO `onl_drag_dataset_item` VALUES ('1516748630361407489', '1516748630344630273', 'column1', '项目性质', 'String', NULL, '', NULL, NULL, 'Y', NULL, 'Y', NULL, NULL, 'admin', '2022-04-20 20:00:28', NULL, NULL);
 INSERT INTO `onl_drag_dataset_item` VALUES ('1516748630373990402', '1516748630344630273', 'column5', '保险公估费', 'Integer', NULL, '', NULL, NULL, 'Y', NULL, 'Y', NULL, NULL, 'admin', '2022-04-20 20:00:28', NULL, NULL);
 INSERT INTO `onl_drag_dataset_item` VALUES ('1516748630382379010', '1516748630344630273', 'column4', '承保公估评估费', 'Integer', NULL, '', NULL, NULL, 'Y', NULL, 'Y', NULL, NULL, 'admin', '2022-04-20 20:00:28', NULL, NULL);
@@ -4898,12 +5018,12 @@ CREATE TABLE `onl_drag_dataset_param`  (
   `search_mode` int(11) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
   `dict_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字典',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddp_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_param
@@ -4934,16 +5054,16 @@ CREATE TABLE `onl_drag_page`  (
   `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件夹类',
   `iz_template` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否模板(1:是；0不是)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   `update_count` int(10) NULL DEFAULT 1,
   `visits_num` int(11) NULL DEFAULT NULL COMMENT '访问次数',
   `del_flag` int(11) NULL DEFAULT NULL COMMENT '删除状态( 0未删除 1已删除)',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page
@@ -4953,7 +5073,7 @@ INSERT INTO `onl_drag_page` VALUES ('1011800681234354176', '医院实时数据�
 INSERT INTO `onl_drag_page` VALUES ('1011871598899679232', '北京税务在线监控', '/drag/page/view/1011871598899679232', '#1E0047', 'https://jeecgdev.oss-cn-beijing.aliyuncs.com/jimureport/images/bg2_1733208420102.png', 100, 'dark', 'bigScreen', NULL, '{\"width\":1920,\"height\":1080}', '[{\"component\":\"JDragBorder\",\"w\":1918,\"x\":-1,\"h\":1077,\"i\":\"0cc22009-cfe5-492f-9e3b-8708cbdbda81\",\"y\":-1,\"orderNum\":0,\"pageCompId\":\"1023816327790907392\",\"componentName\":\"边框1\",\"key\":\"f00c04db-0349-4afe-b0fc-da6789411877\"},{\"component\":\"JDragBorder\",\"w\":524,\"x\":389,\"h\":289,\"i\":\"0a3aa2ce-dae7-4507-916c-f04ac3040fee\",\"y\":159,\"orderNum\":1072,\"pageCompId\":\"1023816327832850432\",\"componentName\":\"边框1\",\"key\":\"54891ccd-ee91-4bc0-8f55-ad19e94021bf\"},{\"component\":\"JImg\",\"w\":1911,\"x\":0,\"h\":78,\"i\":\"90667f29-8fe9-42e1-bab7-3ba1737f3743\",\"y\":-1,\"orderNum\":0,\"pageCompId\":\"1023816327853821952\",\"componentName\":\"图片\",\"key\":\"01769c78-a893-430a-9ca3-6d44da9e18ef\"},{\"component\":\"JDragBorder\",\"w\":460,\"x\":1411,\"h\":320,\"i\":\"es-drager-1731470190655-12\",\"y\":732,\"orderNum\":1072,\"pageCompId\":\"1023816327891570688\",\"componentName\":\"边框1\",\"key\":\"40744a4e-1dcf-4d3a-aa5e-d7b428f82c8d\"},{\"component\":\"JDragBorder\",\"w\":447,\"x\":932,\"h\":321,\"i\":\"es-drager-1731047088918-3\",\"y\":729,\"orderNum\":1072,\"pageCompId\":\"1023816327916736512\",\"componentName\":\"边框1\",\"key\":\"53f91224-70cc-47d7-a12d-0740556219f6\"},{\"component\":\"JDragBorder\",\"w\":453,\"x\":932,\"h\":245,\"i\":\"es-drager-1731046742304-1\",\"y\":461,\"orderNum\":1072,\"pageCompId\":\"1023816327937708032\",\"componentName\":\"边框1\",\"key\":\"372ce922-3bcd-40e6-8dad-bd7a6ed66d78\"},{\"component\":\"JDragBorder\",\"w\":454,\"x\":1415,\"h\":286,\"i\":\"64fabe6b-c6c0-47c5-babe-f365769a5a57\",\"y\":154,\"orderNum\":0,\"pageCompId\":\"1023816327971262464\",\"componentName\":\"边框1\",\"key\":\"736f181f-e855-43a1-a3d4-670aa28c4f7e\"},{\"component\":\"JDragBorder\",\"w\":521,\"x\":386,\"h\":325,\"i\":\"es-drager-1731047055106-2\",\"y\":729,\"orderNum\":1072,\"pageCompId\":\"1023816327992233984\",\"componentName\":\"边框1\",\"key\":\"91f39508-ba29-4564-965e-dec1d7c0d429\"},{\"component\":\"JBar\",\"w\":444,\"x\":-22,\"h\":414,\"i\":\"492e7aed-5126-46b6-828d-c33ac0b52eea\",\"y\":381,\"orderNum\":0,\"pageCompId\":\"1023816328042565632\",\"componentName\":\"基础柱形图\",\"key\":\"f6099efc-cb26-4831-8eee-baa389523052\"},{\"component\":\"JText\",\"w\":666,\"x\":615,\"h\":85.00000000000006,\"i\":\"85a6c956-9417-4e56-87ab-b6828d82aa42\",\"y\":6,\"orderNum\":128,\"pageCompId\":\"1023816328071925760\",\"componentName\":\"文本\",\"key\":\"47e20d30-a16a-4d58-8d2e-b8fa2aee858a\"},{\"component\":\"JText\",\"w\":137,\"x\":4,\"h\":75.99999999999997,\"i\":\"ca03940c-8e02-46c1-af5b-5d256059e4e2\",\"y\":59,\"orderNum\":0,\"pageCompId\":\"1023816328109674496\",\"componentName\":\"文本\",\"key\":\"9076cce5-c821-49e9-977b-4836f77c10f7\"},{\"component\":\"JImg\",\"w\":129.0000000000001,\"x\":201,\"h\":61.99999999999994,\"i\":\"b3f25af5-b0bc-4bbf-a11c-5a7b01174b14\",\"y\":77,\"orderNum\":0,\"pageCompId\":\"1023816328130646016\",\"componentName\":\"图片\",\"key\":\"bc89e2fa-b84a-4a2f-bceb-6dd5cf389e54\"},{\"component\":\"JText\",\"w\":145,\"x\":194,\"h\":95.00000000000006,\"i\":\"4bfdb5e1-0fcc-445d-8b96-bad7d6a5d106\",\"y\":62,\"orderNum\":0,\"pageCompId\":\"1023816328151617536\",\"componentName\":\"文本\",\"key\":\"32e785e0-9553-4245-8e39-e7226439b457\"},{\"component\":\"JImg\",\"w\":125,\"x\":461,\"h\":54.000000000000064,\"i\":\"6e4f9a66-2884-45e0-932d-ca1638e76d02\",\"y\":83.00000000000001,\"orderNum\":0,\"pageCompId\":\"1023816328185171968\",\"componentName\":\"图片\",\"key\":\"f348f7f4-3233-4d6d-ac4e-14efc9009428\"},{\"component\":\"JImg\",\"w\":152.9999999999999,\"x\":680,\"h\":58,\"i\":\"74041015-3d1e-48c2-8651-5103b5f9d51c\",\"y\":92,\"orderNum\":0,\"pageCompId\":\"1023816328214532096\",\"componentName\":\"图片\",\"key\":\"93c2a4e6-98d8-4ddc-83f0-29feaec54e43\"},{\"component\":\"JImg\",\"w\":156,\"x\":939,\"h\":57.00000000000015,\"i\":\"215a7f44-2f53-4984-9eb8-2e03c157bb6f\",\"y\":98.99999999999999,\"orderNum\":0,\"pageCompId\":\"1023816328252280832\",\"componentName\":\"图片\",\"key\":\"e171bc62-1bd8-4e96-803d-e801f959d63e\"},{\"component\":\"JImg\",\"w\":149,\"x\":1205,\"h\":52.99999999999994,\"i\":\"630e71d8-c9bf-40ff-9dd4-04420343f500\",\"y\":101,\"orderNum\":0,\"pageCompId\":\"1023816328277446656\",\"componentName\":\"图片\",\"key\":\"d1a38d8e-6329-46b5-8d55-831008e6dbfb\"},{\"component\":\"JImg\",\"w\":159.9999999999999,\"x\":1426,\"h\":50.00000000000003,\"i\":\"25c7a576-aad7-42c9-8dec-3a7dc6d79f8b\",\"y\":104.99999999999999,\"orderNum\":0,\"pageCompId\":\"1023816328311001088\",\"componentName\":\"图片\",\"key\":\"01e6cbdb-6f02-45f4-8806-c265ed7bb999\"},{\"component\":\"JImg\",\"w\":150.0000000000001,\"x\":1665,\"h\":53.99999999999997,\"i\":\"d28acb12-4bf1-434a-b583-9eacadd9836e\",\"y\":102.00000000000001,\"orderNum\":0,\"pageCompId\":\"1023816328336166912\",\"componentName\":\"图片\",\"key\":\"03673620-0948-4454-bcaa-562d5cb94a7b\"},{\"component\":\"JText\",\"w\":117,\"x\":463,\"h\":68.99999999999989,\"i\":\"c126d088-629f-4657-8473-781dde4302a3\",\"y\":76,\"orderNum\":0,\"pageCompId\":\"1023816328352944128\",\"componentName\":\"文本\",\"key\":\"cbb9a863-b00e-4a3e-8bb8-65db6149e067\"},{\"component\":\"JText\",\"w\":173,\"x\":666,\"h\":60.00000000000003,\"i\":\"09c94616-d224-4fa8-8654-c017a7a7a8e4\",\"y\":91,\"orderNum\":0,\"pageCompId\":\"1023816328394887168\",\"componentName\":\"文本\",\"key\":\"3813482a-894a-48b9-b78b-77b3d38e24bc\"},{\"component\":\"JText\",\"w\":173.00000000000006,\"x\":929,\"h\":53.99999999999983,\"i\":\"00e87ff1-5149-4ec3-853b-107dfc90c947\",\"y\":102,\"orderNum\":0,\"pageCompId\":\"1023816328411664384\",\"componentName\":\"文本\",\"key\":\"8697d9bb-c7f9-4b72-bee0-6fa68df15693\"},{\"component\":\"JText\",\"w\":147,\"x\":1206,\"h\":56.00000000000001,\"i\":\"68992daa-bcb5-4bf9-879b-aeec9b24e105\",\"y\":99,\"orderNum\":0,\"pageCompId\":\"1023816328432635904\",\"componentName\":\"文本\",\"key\":\"ea0cd3c1-065b-443b-80f0-62dd61b5e3c5\"},{\"component\":\"JText\",\"w\":146,\"x\":1435,\"h\":54.00000000000007,\"i\":\"7da253f2-da2c-4483-8f7a-9b604269fee8\",\"y\":101.00000000000003,\"orderNum\":0,\"pageCompId\":\"1023816328457801728\",\"componentName\":\"文本\",\"key\":\"82463e99-1c67-4268-83de-e663a1bfa68f\"},{\"component\":\"JText\",\"w\":164,\"x\":1657,\"h\":59.999999999999794,\"i\":\"ffefd138-865e-4857-8268-8980c0eb3433\",\"y\":98.99999999999999,\"orderNum\":0,\"pageCompId\":\"1023816328482967552\",\"componentName\":\"文本\",\"key\":\"e7fca865-757a-4a39-aa07-cf434a3daebc\"},{\"component\":\"JText\",\"w\":171,\"x\":21,\"h\":53.99999999999997,\"i\":\"7a274443-2335-41d1-8edb-93595b5fb3eb\",\"y\":156,\"orderNum\":0,\"pageCompId\":\"1023816328512327680\",\"componentName\":\"文本\",\"key\":\"c7ac5314-df57-4055-a47e-ba307d4182c2\"},{\"component\":\"JPie\",\"w\":426,\"x\":-59,\"h\":267,\"i\":\"5f2a005a-facb-492d-9221-e8d5b641dc50\",\"y\":190,\"orderNum\":0,\"pageCompId\":\"1023816328533299200\",\"componentName\":\"饼图\",\"key\":\"480bff7a-7170-4cda-8c49-ee2ec18e9edb\"},{\"component\":\"JText\",\"w\":195.00000000000014,\"x\":32.999999999999886,\"h\":50.99999999999994,\"i\":\"4399b94e-3eca-4f0d-872a-6d8a33cf3f45\",\"y\":725,\"orderNum\":0,\"pageCompId\":\"1023816328550076416\",\"componentName\":\"文本\",\"key\":\"dc81d128-94f1-4bff-8e96-bc8d4ee6b0fc\"},{\"component\":\"JBar\",\"w\":407,\"x\":3,\"h\":360,\"i\":\"e05f2635-03f9-4718-a268-ee5513bf4f78\",\"y\":764,\"orderNum\":0,\"pageCompId\":\"1023816328587825152\",\"componentName\":\"基础柱形图\",\"key\":\"02002e38-c239-498c-9376-3cb65af8e201\"},{\"component\":\"JText\",\"w\":151.00000000000003,\"x\":410,\"h\":49.000000000000014,\"i\":\"d3edb23c-86fb-4021-9aff-e50ab1fe113e\",\"y\":161.99999999999997,\"orderNum\":0,\"pageCompId\":\"1023816328608796672\",\"componentName\":\"文本\",\"key\":\"a9d8c13a-b827-40b0-953f-2fb977c1dfa8\"},{\"component\":\"JBar\",\"w\":517,\"x\":390,\"h\":267,\"i\":\"7b7a1ca9-b9de-4a27-9d76-4e85f324edb3\",\"y\":158,\"orderNum\":0,\"pageCompId\":\"1023816328629768192\",\"componentName\":\"基础柱形图\",\"key\":\"e8c6130a-e499-4287-943f-f29ec145dcc8\"},{\"component\":\"JBar\",\"w\":434.00000000000006,\"x\":388,\"h\":246.99999999999994,\"i\":\"dc011315-c8cb-460e-8958-f89ec118789d\",\"y\":465,\"orderNum\":0,\"pageCompId\":\"1023816328667516928\",\"componentName\":\"基础柱形图\",\"key\":\"fd8d79e7-f546-4633-86e8-805de5866eb5\"},{\"component\":\"JText\",\"w\":203.99999999999983,\"x\":397.0000000000001,\"h\":59.99999999999996,\"i\":\"4f9d7602-3fb7-4f57-81f0-1c9c06f71109\",\"y\":450,\"orderNum\":0,\"pageCompId\":\"1023816328684294144\",\"componentName\":\"文本\",\"key\":\"20d2dbe0-a66b-456d-880a-f0558b563704\"},{\"component\":\"JText\",\"w\":145.9999999999999,\"x\":385,\"h\":72.99999999999997,\"i\":\"b084b430-2d26-4952-90c5-dd3778d98df6\",\"y\":711,\"orderNum\":0,\"pageCompId\":\"1023816328701071360\",\"componentName\":\"文本\",\"key\":\"5a67aed1-f3b2-45d7-8c3c-dbe521a3fd1e\"},{\"component\":\"JImg\",\"w\":44,\"x\":429,\"h\":42,\"i\":\"6b66ae21-a187-42e8-8de8-c43933e3baa5\",\"y\":797,\"orderNum\":0,\"pageCompId\":\"1023816328738820096\",\"componentName\":\"图片\",\"key\":\"db0c5c3a-a04b-4e71-8c52-1fbe2d548007\"},{\"component\":\"JImg\",\"w\":45.999999999999986,\"x\":426,\"h\":44.00000000000005,\"i\":\"d2c60790-219a-4c37-b82b-d625aba9ad95\",\"y\":875,\"orderNum\":0,\"pageCompId\":\"1023816328755597312\",\"componentName\":\"图片\",\"key\":\"64c8cf8b-ffba-429f-a78e-84bbd83a6494\"},{\"component\":\"JImg\",\"w\":37,\"x\":432,\"h\":35,\"i\":\"4ac90ff9-722a-4836-8056-681329419d0a\",\"y\":949,\"orderNum\":0,\"pageCompId\":\"1023816328768180224\",\"componentName\":\"图片\",\"key\":\"3d5b4124-523a-4843-8bf5-a7fca530a156\"},{\"component\":\"JText\",\"w\":133,\"x\":479,\"h\":50,\"i\":\"7e2ab80b-2abe-4a5b-ab57-3821d8e954ea\",\"y\":786,\"orderNum\":0,\"pageCompId\":\"1023816328801734656\",\"componentName\":\"文本\",\"key\":\"cd7c368d-9c78-4299-abf3-3d45aa962d10\"},{\"component\":\"JLine\",\"w\":425,\"x\":933,\"h\":204,\"i\":\"5add5568-a651-4150-802d-8e13fab4be54\",\"y\":210,\"orderNum\":0,\"pageCompId\":\"1023816328818511872\",\"componentName\":\"基础折线图\",\"key\":\"3737d2ec-7355-4678-8b15-23de79634383\"},{\"component\":\"JLiquid\",\"w\":209,\"x\":1432,\"h\":126,\"i\":\"1d2da469-9128-4339-8ffb-2f665b9c760c\",\"y\":203,\"orderNum\":0,\"pageCompId\":\"1023816328835289088\",\"componentName\":\"水波图\",\"key\":\"739835a3-0af5-48be-823a-f2aad83e3ec3\"},{\"component\":\"JRose\",\"w\":397,\"x\":948,\"h\":206,\"i\":\"f81fe9db-cf49-4461-8e8c-dcc43b3a9128\",\"y\":490,\"orderNum\":0,\"pageCompId\":\"1023816328864649216\",\"componentName\":\"南丁格尔玫瑰图\",\"key\":\"2d22b9d9-04e0-4d1c-8760-01a89ab517db\"},{\"component\":\"JLine\",\"w\":425,\"x\":943,\"h\":241,\"i\":\"c161f938-81ce-4033-8492-9203ddbfba85\",\"y\":797,\"orderNum\":0,\"pageCompId\":\"1023816328885620736\",\"componentName\":\"基础折线图\",\"key\":\"93ace0f6-c47f-4143-8a3d-3ecbd53e1947\"},{\"component\":\"JText\",\"w\":252,\"x\":919,\"h\":42,\"i\":\"b5644afc-7551-4690-98d7-a3b67ae76ab8\",\"y\":729,\"orderNum\":0,\"pageCompId\":\"1023816328906592256\",\"componentName\":\"文本\",\"key\":\"ebf198ba-0973-4223-8b2f-a8f14deab29e\"},{\"component\":\"JDragBorder\",\"w\":365,\"x\":14,\"h\":334,\"i\":\"b2390199-e9b6-4036-8032-c3657c90312f\",\"y\":728,\"orderNum\":1072,\"pageCompId\":\"1023816328935952384\",\"componentName\":\"边框1\",\"key\":\"b9612da1-0a05-48e5-bfa7-8287ee17bbf2\"},{\"component\":\"JDragBorder\",\"w\":370,\"x\":6,\"h\":551,\"i\":\"a6f4742b-49f3-4760-9243-ee7691f68c00\",\"y\":154,\"orderNum\":1072,\"pageCompId\":\"1023816328956923904\",\"componentName\":\"边框1\",\"key\":\"ade24c76-ac58-4b06-826a-7bc81324a1f8\"},{\"component\":\"JDragBorder\",\"w\":526,\"x\":388,\"h\":248,\"i\":\"7be4dcb2-744b-4f1a-9b83-6f586a730002\",\"y\":460,\"orderNum\":1072,\"pageCompId\":\"1023816328969506816\",\"componentName\":\"边框1\",\"key\":\"e6698dec-2d96-433c-809a-65a030e566b1\"},{\"component\":\"JDragBorder\",\"w\":449,\"x\":930,\"h\":277,\"i\":\"e692a49f-8747-4df5-9e31-b35cb080d875\",\"y\":160,\"orderNum\":0,\"pageCompId\":\"1023816328986284032\",\"componentName\":\"边框1\",\"key\":\"c87222c9-2274-4bc0-89b0-e21ecfcef07b\"},{\"component\":\"JLiquid\",\"w\":181.00000000000006,\"x\":1642,\"h\":136.99999999999997,\"i\":\"f7de9b5c-c4e8-41f1-9197-f7efc7a7126d\",\"y\":194,\"orderNum\":0,\"pageCompId\":\"1023816329019838464\",\"componentName\":\"水波图\",\"key\":\"65c8e18b-b906-45e7-b167-ba6ff88cf8c9\"},{\"component\":\"JText\",\"w\":194,\"x\":933,\"h\":31.0000000000001,\"i\":\"b3659810-6e9c-47ac-ba63-8e78044a2c63\",\"y\":167,\"orderNum\":0,\"pageCompId\":\"1023816329036615680\",\"componentName\":\"文本\",\"key\":\"e845dc37-a9af-4153-8a66-bf7204f8d3a1\"},{\"component\":\"JText\",\"w\":159,\"x\":1417,\"h\":52.00000000000011,\"i\":\"aaa6cdac-bcfc-40f3-8c0c-2605417665da\",\"y\":157,\"orderNum\":0,\"pageCompId\":\"1023816329057587200\",\"componentName\":\"文本\",\"key\":\"b258bd40-8c44-4cee-9bd3-483a7b71f15d\"},{\"component\":\"JText\",\"w\":133,\"x\":1479,\"h\":31.999999999999886,\"i\":\"3a0e298c-ee1b-49cf-82b3-9066d30920a0\",\"y\":360,\"orderNum\":0,\"pageCompId\":\"1023816329095335936\",\"componentName\":\"文本\",\"key\":\"99a13c51-11d4-4653-a3df-f901809aa8b3\"},{\"component\":\"JText\",\"w\":125.00000000000003,\"x\":1476,\"h\":43.00000000000007,\"i\":\"51138ed7-27f5-4b2f-bb91-92581db74f2a\",\"y\":320,\"orderNum\":300,\"pageCompId\":\"1023816329112113152\",\"componentName\":\"文本\",\"key\":\"7eedfdb5-7a0d-4188-8990-dcc6fba4ac91\"},{\"component\":\"JText\",\"w\":112.99999999999983,\"x\":1681,\"h\":75.00000000000009,\"i\":\"38e5ef36-5efc-4b1a-8c98-9707729f25b6\",\"y\":311,\"orderNum\":0,\"pageCompId\":\"1023816329149861888\",\"componentName\":\"文本\",\"key\":\"a3d81f8d-7a50-49da-979f-3644a9319ff1\"},{\"component\":\"JText\",\"w\":103.00000000000003,\"x\":1495,\"h\":58.99999999999993,\"i\":\"51933693-1a23-43a7-8d3d-9a117555a080\",\"y\":378,\"orderNum\":0,\"pageCompId\":\"1023816329166639104\",\"componentName\":\"文本\",\"key\":\"ce8e4be4-fa4b-4b4f-b62a-4c2ebf8cf912\"},{\"component\":\"JText\",\"w\":101,\"x\":1686,\"h\":55.999999999999915,\"i\":\"2c7c13a4-d842-4aeb-80e0-322baf38fcd4\",\"y\":349,\"orderNum\":0,\"angle\":0,\"pageCompId\":\"1023816329187610624\",\"componentName\":\"文本\",\"key\":\"cbd63feb-ac7a-44e5-8cd2-f876266ccde9\"},{\"component\":\"JText\",\"w\":187,\"x\":941,\"h\":44.99999999999998,\"i\":\"b46eb115-30ae-4109-9d3b-c9ebee84d462\",\"y\":456,\"orderNum\":0,\"pageCompId\":\"1023816329221165056\",\"componentName\":\"文本\",\"key\":\"5e32cb8d-3c0e-4ef0-bf35-21c5b22323f0\"},{\"component\":\"JText\",\"w\":117.00000000000001,\"x\":1417,\"h\":48.999999999999886,\"i\":\"086c850d-6552-4d12-8f7b-2a356e319fd5\",\"y\":460,\"orderNum\":0,\"pageCompId\":\"1023816329246330880\",\"componentName\":\"文本\",\"key\":\"a0c2319e-820f-4917-9183-c618e2191afb\"},{\"component\":\"JText\",\"w\":231.9999999999999,\"x\":1416,\"h\":36.00000000000006,\"i\":\"f2632fa7-5cd6-4508-bc8e-bed46dc4796b\",\"y\":734,\"orderNum\":0,\"pageCompId\":\"1023816329263108096\",\"componentName\":\"文本\",\"key\":\"537922e2-250e-4fc6-a285-6c9616408d12\"},{\"component\":\"JText\",\"w\":133,\"x\":588,\"h\":50,\"i\":\"es-drager-1731468997745-1\",\"y\":786,\"orderNum\":0,\"pageCompId\":\"1023816329292468224\",\"componentName\":\"文本\",\"key\":\"42d7fe19-dba1-49ce-977a-0a7f4c734d4d\"},{\"component\":\"JText\",\"w\":133,\"x\":689,\"h\":50,\"i\":\"es-drager-1731469045324-2\",\"y\":788,\"orderNum\":0,\"pageCompId\":\"1023816329309245440\",\"componentName\":\"文本\",\"key\":\"137deb59-8229-4443-a6db-1a32d3314f28\"},{\"component\":\"JText\",\"w\":156,\"x\":487,\"h\":50,\"i\":\"es-drager-1731469067745-3\",\"y\":816,\"orderNum\":0,\"pageCompId\":\"1023816329330216960\",\"componentName\":\"文本\",\"key\":\"6172c7db-0958-4695-8959-5383b8c7a813\"},{\"component\":\"JText\",\"w\":133,\"x\":475,\"h\":50,\"i\":\"es-drager-1731469093837-4\",\"y\":873,\"orderNum\":0,\"pageCompId\":\"1023816329363771392\",\"componentName\":\"文本\",\"key\":\"508cdaa6-76d8-4528-aa40-490ad090b798\"},{\"component\":\"JText\",\"w\":133,\"x\":593,\"h\":50,\"i\":\"es-drager-1731469107919-5\",\"y\":874,\"orderNum\":0,\"pageCompId\":\"1023816329376354304\",\"componentName\":\"文本\",\"key\":\"10e5279b-44d1-4ef4-8cd9-0471159b640d\"},{\"component\":\"JText\",\"w\":133,\"x\":473,\"h\":50,\"i\":\"es-drager-1731469125505-6\",\"y\":939,\"orderNum\":0,\"pageCompId\":\"1023816329397325824\",\"componentName\":\"文本\",\"key\":\"683165dd-c105-4cec-98eb-54e6d4770dbd\"},{\"component\":\"JDragBorder\",\"w\":459,\"x\":1409,\"h\":258,\"i\":\"es-drager-1731469576838-7\",\"y\":458,\"orderNum\":1072,\"pageCompId\":\"1023816329430880256\",\"componentName\":\"边框1\",\"key\":\"a4d4e644-4965-4aec-868f-8c53448ce113\"},{\"visible\":true,\"h\":216,\"i\":\"d8b90d85-f8b8-47c8-88bd-e498323150d8\",\"orderNum\":77,\"compTextName\":\"\",\"component\":\"JMultipleBar\",\"w\":422,\"x\":1423,\"y\":501,\"pageCompId\":\"1023816329451851776\",\"componentName\":\"对比柱形图\",\"key\":\"7d7a295f-e411-4d1e-8536-69699c32a7ce\"},{\"visible\":true,\"h\":159,\"i\":\"5f653b62-2148-406b-8d29-f6fe1a2e313a\",\"orderNum\":77,\"compTextName\":\"\",\"component\":\"JLiquid\",\"w\":239,\"x\":1411,\"y\":814,\"pageCompId\":\"1023816329468628992\",\"componentName\":\"水波图\",\"key\":\"47ca34b1-801c-41e2-84da-1fb9b2b846c5\"},{\"component\":\"JText\",\"w\":133,\"x\":1459,\"h\":50,\"i\":\"es-drager-1731469849535-8\",\"y\":964,\"orderNum\":0,\"pageCompId\":\"1023816329497989120\",\"componentName\":\"文本\",\"key\":\"58bfe70f-7c07-498d-815b-7b84b339b548\"},{\"visible\":true,\"h\":159,\"i\":\"es-drager-1731469860843-9\",\"orderNum\":77,\"compTextName\":\"\",\"component\":\"JLiquid\",\"w\":239,\"x\":1625,\"y\":810,\"pageCompId\":\"1023816329514766336\",\"componentName\":\"水波图\",\"key\":\"af4592a7-893a-4ac6-a8ad-f5858f5ce642\"},{\"component\":\"JText\",\"w\":133,\"x\":1682,\"h\":50,\"i\":\"es-drager-1731469871395-11\",\"y\":963,\"orderNum\":0,\"pageCompId\":\"1023816329539932160\",\"componentName\":\"文本\",\"key\":\"f073c7b6-f877-40c4-8360-02db29823dcb\"},{\"component\":\"JImg\",\"visible\":true,\"w\":372,\"x\":4,\"h\":563,\"i\":\"664afc6d-de2e-4ea3-add4-6a4775aecdb6\",\"y\":147,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329569292288\",\"key\":\"e426e43f-b306-4f10-b035-7750f520bd2f\"},{\"component\":\"JImg\",\"visible\":true,\"w\":370,\"x\":9,\"h\":342,\"i\":\"es-drager-1732616244282-1\",\"y\":722,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329594458112\",\"key\":\"458e2e3c-3736-4c8b-8b67-425facc62e01\"},{\"component\":\"JImg\",\"visible\":true,\"w\":530,\"x\":386,\"h\":246,\"i\":\"es-drager-1732616354696-2\",\"y\":459,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329615429632\",\"key\":\"7f23d65d-ed7f-4b03-97a4-5f0afcd1bc4c\"},{\"component\":\"JImg\",\"visible\":true,\"w\":529,\"x\":388,\"h\":289,\"i\":\"es-drager-1732616405643-3\",\"y\":157,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329640595456\",\"key\":\"c984532e-0bfa-4599-8c75-9bfcaae81138\"},{\"component\":\"JImg\",\"visible\":true,\"w\":525,\"x\":384,\"h\":330,\"i\":\"es-drager-1732616467619-4\",\"y\":724,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329665761280\",\"key\":\"73f250d3-e0e1-4e06-ad49-d93e9c802c05\"},{\"component\":\"JImg\",\"visible\":true,\"w\":456,\"x\":925,\"h\":284,\"i\":\"es-drager-1732616496825-5\",\"y\":155,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329682538496\",\"key\":\"a6e2b4fe-5795-4755-85f6-c4a6c5eff951\"},{\"component\":\"JImg\",\"visible\":true,\"w\":459,\"x\":928,\"h\":247,\"i\":\"es-drager-1732616524093-6\",\"y\":457,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329711898624\",\"key\":\"1924130e-9b87-4549-a316-2ac1fc858713\"},{\"component\":\"JImg\",\"visible\":true,\"w\":450,\"x\":930,\"h\":330,\"i\":\"es-drager-1732616572285-7\",\"y\":724,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329732870144\",\"key\":\"b321eb44-73a3-48e3-9560-37d2a279b018\"},{\"component\":\"JImg\",\"visible\":true,\"w\":457,\"x\":1414,\"h\":285,\"i\":\"es-drager-1732616606027-8\",\"y\":152,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329758035968\",\"key\":\"c9c3913f-b2ea-46ca-84df-8190b09f1707\"},{\"component\":\"JImg\",\"visible\":true,\"w\":462,\"x\":1405,\"h\":262,\"i\":\"es-drager-1732616641566-9\",\"y\":454,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329783201792\",\"key\":\"ae158e97-49b6-4e08-8d05-34ff82e43ddc\"},{\"component\":\"JImg\",\"visible\":true,\"w\":464,\"x\":1410,\"h\":323,\"i\":\"es-drager-1732616671162-10\",\"y\":729,\"orderNum\":1076,\"componentName\":\"图片\",\"pageCompId\":\"1023816329799979008\",\"key\":\"cb74b720-4a75-46bd-883c-ddb194c1f370\"}]', '', '0', '1', 'admin', '2024-10-31 15:43:19', 'admin', '2024-12-03 14:47:25', NULL, 3, 2, 70, 0);
 INSERT INTO `onl_drag_page` VALUES ('1011890741255962624', '公司年度招聘看板', '/drag/page/view/1011890741255962624', NULL, NULL, 100, 'default', 'default', NULL, NULL, '[{\"pcX\":0,\"moved\":false,\"pcY\":0,\"h\":8,\"i\":\"95729a29-9b15-4102-8ca0-4474bcdfd6ea\",\"orderNum\":0,\"component\":\"JText\",\"w\":24,\"x\":0,\"y\":0,\"pageCompId\":\"1074256137933586432\",\"key\":\"c65d42a5-a824-49a9-83c0-c4596aa219d4\"},{\"pcX\":0,\"moved\":false,\"pcY\":13,\"h\":6,\"i\":\"89ac8d65-5a17-4c62-83cc-05f29f629734\",\"orderNum\":13,\"component\":\"JText\",\"w\":3,\"x\":0,\"y\":13,\"pageCompId\":\"1074256137954557952\",\"key\":\"45bb9ca9-ade1-44b4-8a8c-f912aa5920b6\"},{\"pcX\":0,\"moved\":false,\"pcY\":19,\"h\":6,\"i\":\"f5f244fb-deed-48eb-8ada-78dadbe08bd8\",\"orderNum\":21,\"component\":\"JText\",\"w\":3,\"x\":0,\"y\":19,\"pageCompId\":\"1074256137958752256\",\"key\":\"37d8b7ad-6b59-480f-8af1-c44a03ffca00\"},{\"pcX\":3,\"moved\":false,\"pcY\":13,\"h\":6,\"i\":\"de17aaaf-b81c-48b3-8309-854b1d0b3d14\",\"orderNum\":20,\"component\":\"JText\",\"w\":3,\"x\":3,\"y\":13,\"pageCompId\":\"1074256137962946560\",\"key\":\"41b3d153-7e04-4751-94a3-2f6b466e9424\"},{\"pcX\":3,\"moved\":false,\"pcY\":19,\"h\":6,\"i\":\"2df4f63e-b1a9-4a53-8972-08947f5f011b\",\"orderNum\":20,\"component\":\"JText\",\"w\":3,\"x\":3,\"y\":19,\"pageCompId\":\"1074256137971335168\",\"key\":\"e065a06b-e251-42b3-8ecf-e115459ae476\"},{\"pcX\":6,\"moved\":false,\"pcY\":13,\"h\":16,\"i\":\"2429182c-a58b-4cd9-8c88-8ad9b2b6a1e2\",\"orderNum\":20,\"component\":\"JRing\",\"w\":6,\"x\":6,\"y\":13,\"pageCompId\":\"1074256137975529472\",\"key\":\"0bd2ecf1-d948-411c-8c49-09530f9ccae0\"},{\"pcX\":12,\"moved\":false,\"pcY\":13,\"h\":31,\"i\":\"33c42a31-ee7f-4f0a-b9bb-280bef0f4c02\",\"orderNum\":20,\"component\":\"JBubbleMap\",\"w\":6,\"x\":12,\"y\":13,\"pageCompId\":\"1074256137983918080\",\"key\":\"6f298d57-db77-4801-9dc8-76b14967300f\"},{\"pcX\":18,\"moved\":false,\"pcY\":13,\"h\":31,\"i\":\"59cce641-ef13-4a49-835b-4ad20a3cc477\",\"orderNum\":20,\"component\":\"JFunnel\",\"w\":6,\"x\":18,\"y\":13,\"pageCompId\":\"1074256137992306688\",\"key\":\"e8e525b9-051b-4f45-88ec-00dfcca1ffc8\"},{\"pcX\":0,\"moved\":false,\"pcY\":8,\"h\":5,\"i\":\"6979473b-9eb1-4d90-887c-483378b89886\",\"orderNum\":20,\"component\":\"JText\",\"w\":6,\"x\":0,\"y\":8,\"pageCompId\":\"1074256137996500992\",\"key\":\"79a6e469-54b4-46dd-88f2-896c07e6ec0b\"},{\"pcX\":6,\"moved\":false,\"pcY\":8,\"h\":5,\"i\":\"fabcd19e-73a2-4a44-9035-d18bccfa77ba\",\"orderNum\":25,\"component\":\"JText\",\"w\":12,\"x\":6,\"y\":8,\"pageCompId\":\"1074256138000695296\",\"key\":\"808ca03a-2f22-4f5e-851b-cdd19a2e059d\"},{\"pcX\":18,\"moved\":false,\"pcY\":8,\"h\":5,\"i\":\"e5eb46cd-4d1a-447e-b42a-6e390fa7080e\",\"orderNum\":25,\"component\":\"JText\",\"w\":6,\"x\":18,\"y\":8,\"pageCompId\":\"1074256138009083904\",\"key\":\"8b2edadf-cdaf-43f4-86a1-2735219e5980\"},{\"pcX\":6,\"moved\":false,\"pcY\":29,\"h\":15,\"i\":\"a53c49e6-435a-402d-8de1-b8644b87486b\",\"orderNum\":25,\"component\":\"JPie\",\"w\":6,\"x\":6,\"y\":29,\"pageCompId\":\"1074256138017472512\",\"key\":\"e8bdb58d-8950-4791-93dd-37a064e886f4\"},{\"pcX\":0,\"moved\":false,\"pcY\":25,\"h\":19,\"i\":\"f42ce4f9-0e56-47da-8220-254436afea6d\",\"orderNum\":25,\"component\":\"JSmoothLine\",\"w\":6,\"x\":0,\"y\":25,\"pageCompId\":\"1074256138021666816\",\"key\":\"891346e4-3bb3-46d0-af0d-da0a6cc118b8\"},{\"component\":\"JText\",\"pcX\":0,\"w\":6,\"moved\":false,\"pcY\":44,\"x\":0,\"h\":5,\"i\":\"102fa102-3bd7-4e86-83ea-77cc7ef23651\",\"y\":44,\"orderNum\":44,\"pageCompId\":\"1074256138030055424\"},{\"component\":\"JMultipleBar\",\"pcX\":0,\"w\":6,\"moved\":false,\"pcY\":49,\"x\":0,\"h\":29,\"i\":\"6841deb3-d062-42d8-8a2b-b58f6da64159\",\"y\":49,\"orderNum\":49,\"pageCompId\":\"1074256138038444032\"},{\"component\":\"JCommonTable\",\"pcX\":6,\"w\":12,\"moved\":false,\"pcY\":49,\"x\":6,\"h\":29,\"i\":\"92758754-3165-4df6-a897-6da821492f81\",\"y\":49,\"orderNum\":69,\"pageCompId\":\"1074256138042638336\"},{\"component\":\"JText\",\"pcX\":6,\"w\":12,\"moved\":false,\"pcY\":44,\"x\":6,\"h\":5,\"i\":\"201a48c1-924c-4da0-87e5-9dc0eb2579a9\",\"y\":44,\"orderNum\":69,\"pageCompId\":\"1074256138046832640\"},{\"component\":\"JText\",\"pcX\":18,\"w\":6,\"moved\":false,\"pcY\":44,\"x\":18,\"h\":5,\"i\":\"7e2ecc0a-7930-4c76-9c9a-76af22a58f59\",\"y\":44,\"orderNum\":78,\"pageCompId\":\"1074256138051026944\"},{\"component\":\"JStackBar\",\"pcX\":18,\"w\":6,\"moved\":false,\"pcY\":49,\"x\":18,\"h\":29,\"i\":\"a9f3e66d-cfcd-41bb-908b-fc2e95cdb125\",\"y\":49,\"orderNum\":78,\"pageCompId\":\"1074256138055221248\"}]', NULL, '988299668956545024', '0', 'admin', '2024-10-31 16:59:23', 'admin', '2025-04-21 19:17:12', '', 1, 42, 0, 0);
 INSERT INTO `onl_drag_page` VALUES ('1011915958294990848', '军地大数据驾驶舱', '/drag/page/view/1011915958294990848', '#495A78', 'https://jeecgdev.oss-cn-beijing.aliyuncs.com/temp/bg2_1731048266718.png', 100, 'dark', 'bigScreen', NULL, '{\"width\":1920,\"height\":1080}', '[{\"visible\":true,\"h\":73.99999999999997,\"i\":\"d21ff181-9e4f-4232-8541-6eb1960fc562\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JText\",\"w\":446.00000000000006,\"x\":762,\"y\":20,\"pageCompId\":\"1023811507021467648\",\"componentName\":\"文本\",\"key\":\"6e5a3ecd-17c7-4a07-9b16-2d5ae6335ff9\"},{\"visible\":true,\"h\":268,\"i\":\"05e6432a-51b5-48fd-8ab6-a124d3a50aae\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRose\",\"w\":426,\"x\":49,\"y\":23,\"pageCompId\":\"1023811507063410688\",\"componentName\":\"南丁格尔玫瑰图\",\"key\":\"c1577c67-fbef-4166-8af1-ea7981306105\"},{\"visible\":true,\"h\":492,\"i\":\"eadb74d9-d2ac-44f9-bf13-ea1a7dee4654\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JBubbleMap\",\"w\":635,\"x\":635,\"y\":115,\"pageCompId\":\"1023811507080187904\",\"componentName\":\"散点地图\",\"key\":\"041f1194-8fd0-46d3-bbd9-b71d48d2d404\"},{\"visible\":true,\"h\":60,\"i\":\"6f3bc67b-ab9f-4802-876b-95e5881d3407\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JCurrentTime\",\"w\":465,\"x\":695,\"y\":116,\"pageCompId\":\"1023811507101159424\",\"componentName\":\"当前时间\",\"key\":\"134efa53-4ce2-49ba-8c71-e8ff88494146\"},{\"visible\":true,\"h\":512,\"i\":\"53b9d837-ac93-4267-814d-2fb58de90959\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JImg\",\"w\":560,\"x\":707,\"y\":111,\"pageCompId\":\"1023811507117936640\",\"componentName\":\"图片\",\"key\":\"b6519495-5bc5-41bb-aa2e-d8847fff1623\"},{\"visible\":true,\"h\":328,\"i\":\"ea130c05-dbd4-420e-8e5b-7527dfc89349\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JMultipleBar\",\"w\":536,\"x\":44,\"y\":228,\"pageCompId\":\"1023811507130519552\",\"componentName\":\"对比柱形图\",\"key\":\"340b4328-86e9-4e2a-8fa1-cbcc67a1219a\"},{\"visible\":true,\"h\":305,\"i\":\"es-drager-1731053336142-4\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JMultipleLine\",\"w\":519,\"x\":38,\"y\":560,\"pageCompId\":\"1023811507138908160\",\"componentName\":\"对比折线图\",\"key\":\"d10f660e-e668-467d-910a-0c92ac105f85\"},{\"visible\":true,\"h\":286,\"i\":\"es-drager-1731054001741-5\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JMultipleBar\",\"w\":1259,\"x\":7,\"y\":770,\"pageCompId\":\"1023811507151491072\",\"componentName\":\"对\",\"key\":\"7b7de114-55f0-4040-8511-fafc5e890c0b\"},{\"visible\":true,\"h\":36.99999999999996,\"i\":\"8b80e585-cca1-4de4-8029-cdf6a11ecb01\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JText\",\"w\":99.00000000000006,\"x\":1809,\"y\":18,\"pageCompId\":\"1023811507180851200\",\"componentName\":\"文本\",\"key\":\"fdd9bf52-0641-412a-9073-8344018e4ce2\"},{\"visible\":true,\"h\":295,\"i\":\"c7ca60ee-3281-428d-975e-49195c8cb742\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JScrollBoard\",\"w\":510,\"x\":1383,\"y\":68,\"pageCompId\":\"1023811507189239808\",\"componentName\":\"轮播表\",\"key\":\"a348bf5a-bf05-4d38-8f7a-3141536de3f8\"},{\"visible\":true,\"h\":326,\"i\":\"5e3ac2b4-7262-4999-b3f8-eed7cde4aae0\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRadar\",\"w\":540,\"x\":1344,\"y\":418,\"pageCompId\":\"1023811507201822720\",\"componentName\":\"普通雷达图\",\"key\":\"4cf7463a-80a4-4a94-8e0c-93ff64e01d13\"},{\"visible\":true,\"h\":36.99999999999996,\"i\":\"es-drager-1731055443036-8\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JText\",\"w\":171.00000000000006,\"x\":1732,\"y\":739,\"pageCompId\":\"1023811507214405632\",\"componentName\":\"文本\",\"key\":\"3adaa5fa-b8b2-4666-9671-c6a0f57a7793\"},{\"visible\":true,\"h\":150,\"i\":\"bc23259f-0db5-4ff9-8651-b04ab85bfd86\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRingProgress\",\"w\":245,\"x\":1289,\"y\":778,\"pageCompId\":\"1023811507222794240\",\"componentName\":\"基础环形图\",\"key\":\"bff57100-8221-475f-8ae4-556f4f003623\"},{\"visible\":true,\"h\":145,\"i\":\"es-drager-1731464896011-1\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRingProgress\",\"w\":206,\"x\":1490,\"y\":784,\"pageCompId\":\"1023811507247960064\",\"componentName\":\"基础环形图\",\"key\":\"af09d0dd-6ee8-4888-be1e-0aa70e8034a9\"},{\"visible\":true,\"h\":145,\"i\":\"es-drager-1731465032706-2\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRingProgress\",\"w\":206,\"x\":1681,\"y\":789,\"pageCompId\":\"1023811507260542976\",\"componentName\":\"基础环形图\",\"key\":\"d14af176-59cc-4b63-bb63-e2c0359f90b5\"},{\"visible\":true,\"h\":148,\"i\":\"es-drager-1731465068621-3\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRingProgress\",\"w\":225,\"x\":1310,\"y\":920,\"pageCompId\":\"1023811507273125888\",\"componentName\":\"基础环形图\",\"key\":\"b6f36278-68f0-4aac-8ccd-8b433a61a645\"},{\"visible\":true,\"h\":145,\"i\":\"es-drager-1731465078501-4\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRingProgress\",\"w\":228,\"x\":1477,\"y\":920,\"pageCompId\":\"1023811507281514496\",\"componentName\":\"基础环形图\",\"key\":\"6417673f-2e1e-4484-8fd5-47a54765c64c\"},{\"visible\":true,\"h\":145,\"i\":\"es-drager-1731465083311-5\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JRingProgress\",\"w\":267,\"x\":1643,\"y\":924,\"pageCompId\":\"1023811507294097408\",\"componentName\":\"基础环形图\",\"key\":\"db7baa0d-98da-45d0-9a00-321e7469973e\"},{\"visible\":true,\"h\":55,\"i\":\"bbf1a7a0-2dd6-4a91-88de-e8f83d8a4d15\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JProgress\",\"w\":330,\"x\":618,\"y\":629,\"pageCompId\":\"1023811507319263232\",\"componentName\":\"进度图\",\"key\":\"51a1720e-f1f3-4fde-8b92-9fb184d1003b\"},{\"visible\":true,\"h\":55,\"i\":\"es-drager-1731661825946-1\",\"orderNum\":390,\"compTextName\":\"\",\"component\":\"JProgress\",\"w\":330,\"x\":614,\"y\":677,\"pageCompId\":\"1023811507331846144\",\"componentName\":\"进度图\",\"key\":\"f3ea9eff-ac32-405a-abf2-3a48a31763eb\"}]', '', '0', '1', 'admin', '2024-10-31 18:39:35', 'admin', '2024-12-03 14:28:15', NULL, 3, 2, 0, 0);
-INSERT INTO `onl_drag_page` VALUES ('1014376428645961728', '北京科技数字化云平台', '/drag/page/view/1014376428645961728', '#1E0047', '/img/bg/bg10.png', 100, 'dark', 'bigScreen', NULL, '{\"width\":1920,\"height\":1080}', '[{\"component\":\"JImg\",\"w\":1917.0000000000002,\"x\":-1,\"h\":80,\"i\":\"1c5b0dae-314f-4663-8ebc-529e7ef397a1\",\"y\":0,\"orderNum\":0,\"pageCompId\":\"1021338143312891904\",\"componentName\":\"图片\",\"key\":\"c6bb8c0a-1734-405f-82be-5b25699a1bc1\"},{\"component\":\"JText\",\"w\":420,\"x\":746,\"h\":77,\"i\":\"afe6932a-9fcd-4cc1-8037-eefcf1b0605f\",\"y\":2,\"orderNum\":80,\"pageCompId\":\"1021338143350640640\",\"componentName\":\"文本\",\"key\":\"2ce590fd-9d06-4a8d-9680-247a0fb4edef\"},{\"component\":\"JCurrentTime\",\"w\":421,\"x\":745,\"h\":35,\"i\":\"a1ce6897-c28b-4f42-a775-c8c34d495d5d\",\"y\":107,\"orderNum\":80,\"pageCompId\":\"1021338143363223552\",\"componentName\":\"当前时间\",\"key\":\"4aa4d128-8900-4bb3-8931-0de2329d594c\"},{\"component\":\"JImg\",\"w\":130,\"x\":82,\"h\":52,\"i\":\"df702a2c-c1bf-4b9a-a1c7-83ff51a74c19\",\"y\":21,\"orderNum\":80,\"pageCompId\":\"1021338143375806464\",\"componentName\":\"图片\",\"key\":\"0423a14c-aa58-4a24-88b5-9e72c803f2f3\"},{\"component\":\"JText\",\"w\":80,\"x\":104,\"h\":41,\"i\":\"30361f52-fd03-40ab-86b8-52f358f3aff4\",\"y\":28.00000000000003,\"orderNum\":80,\"pageCompId\":\"1021338143384195072\",\"componentName\":\"文本\",\"key\":\"6f310775-12f2-4e7b-851e-8ac90409239a\"},{\"component\":\"JImg\",\"w\":130,\"x\":327,\"h\":52,\"i\":\"bc141cf0-9e31-424b-bc6c-1698023529be\",\"y\":21,\"orderNum\":80,\"pageCompId\":\"1021338143392583680\",\"componentName\":\"图片\",\"key\":\"c3323f46-a868-4a34-814d-f95979d553cd\"},{\"component\":\"JText\",\"w\":80,\"x\":352,\"h\":40,\"i\":\"becd17b5-e053-40c1-ab20-936e08457e38\",\"y\":27,\"orderNum\":80,\"pageCompId\":\"1021338143405166592\",\"componentName\":\"文本\",\"key\":\"10d319c0-bcb7-46ea-8d7b-8aeced7cb4f8\"},{\"component\":\"JImg\",\"w\":130,\"x\":205,\"h\":52,\"i\":\"08856df6-2e3b-422d-9a27-ceb3e94ddbe1\",\"y\":22,\"orderNum\":80,\"pageCompId\":\"1021338143426138112\",\"componentName\":\"图片\",\"key\":\"bdd13a67-9d91-4ac0-973e-9149f2abeb12\"},{\"component\":\"JImg\",\"w\":130,\"x\":1327,\"h\":52,\"i\":\"36ab5497-269f-4aee-a4b6-3fe6a2c20d4b\",\"y\":22,\"orderNum\":340,\"pageCompId\":\"1021338143442915328\",\"componentName\":\"图片\",\"key\":\"c0961091-151c-4a65-81db-7c8263018832\"},{\"component\":\"JImg\",\"w\":130,\"x\":1454,\"h\":52,\"i\":\"9697caf8-8a85-44c2-b7a4-ff5624b29217\",\"y\":22,\"orderNum\":600,\"pageCompId\":\"1021338143455498240\",\"componentName\":\"图片\",\"key\":\"5bd5f33d-49d3-4c51-b6fc-dccc388a565b\"},{\"component\":\"JImg\",\"w\":130,\"x\":1701,\"h\":52,\"i\":\"3b70af8f-cb79-45fb-b493-67f9f3ba68cd\",\"y\":22,\"orderNum\":1120,\"pageCompId\":\"1021338143468081152\",\"componentName\":\"图片\",\"key\":\"bc96714a-6706-4a8a-8f21-7f9c26859c51\"},{\"component\":\"JImg\",\"w\":130,\"x\":1579,\"h\":52,\"i\":\"4190d49d-5234-4c6b-8092-311e77aff8e1\",\"y\":21,\"orderNum\":1380,\"pageCompId\":\"1021338143484858368\",\"componentName\":\"图片\",\"key\":\"541dc811-5fd0-4b3a-8deb-082e430c3ac4\"},{\"component\":\"JImg\",\"w\":130,\"x\":452,\"h\":52,\"i\":\"cf1d47c4-70d8-4792-ab2c-cfa33476c5e2\",\"y\":21,\"orderNum\":1640,\"pageCompId\":\"1021338143501635584\",\"componentName\":\"图片\",\"key\":\"f9ce5aba-f469-48d9-aad6-b7f82cf14ea4\"},{\"component\":\"JText\",\"w\":81,\"x\":229,\"h\":40,\"i\":\"65595a23-9092-4735-8f50-e43aa9b1090f\",\"y\":29,\"orderNum\":80,\"pageCompId\":\"1021338143514218496\",\"componentName\":\"文本\",\"key\":\"124b4e24-fc36-419d-b0e0-011c683512f2\"},{\"component\":\"JText\",\"w\":80,\"x\":477,\"h\":40,\"i\":\"c3f77106-d4d2-49e0-9d94-7836eb492869\",\"y\":27,\"orderNum\":380,\"pageCompId\":\"1021338143526801408\",\"componentName\":\"文本\",\"key\":\"647324c5-98a4-4bdd-9aa0-71e6d07ca55a\"},{\"component\":\"JText\",\"w\":80,\"x\":1351,\"h\":40,\"i\":\"73f50ee8-3743-466d-b2e3-87c05122a4fc\",\"y\":28,\"orderNum\":680,\"pageCompId\":\"1021338143539384320\",\"componentName\":\"文本\",\"key\":\"0c05486a-7cf8-42dd-8408-80d9b0d7467d\"},{\"component\":\"JText\",\"w\":80,\"x\":1726,\"h\":40,\"i\":\"e9c3ab9b-a254-47fd-8965-b871c21a19dc\",\"y\":29,\"orderNum\":980,\"pageCompId\":\"1021338143560355840\",\"componentName\":\"文本\",\"key\":\"2e9efc55-2346-41d8-8829-3fd8f83c16cd\"},{\"component\":\"JText\",\"w\":80,\"x\":1480,\"h\":40,\"i\":\"38a62dd0-f307-4f50-8fd6-c84c7026c875\",\"y\":29,\"orderNum\":1280,\"pageCompId\":\"1021338143577133056\",\"componentName\":\"文本\",\"key\":\"0390e889-22ba-4fde-8657-32d8be6bd605\"},{\"component\":\"JText\",\"w\":80,\"x\":1604,\"h\":40,\"i\":\"495b30ae-75f6-49cb-8fa8-c5ee1b178529\",\"y\":28,\"orderNum\":80,\"pageCompId\":\"1021338143593910272\",\"componentName\":\"文本\",\"key\":\"755692a6-4622-401e-a2f3-27e516fe3153\"},{\"component\":\"JImg\",\"w\":465,\"x\":51,\"h\":260,\"i\":\"73b633d2-20f2-4b52-8db7-c23650825fc4\",\"y\":134,\"orderNum\":80,\"pageCompId\":\"1021338143606493184\",\"componentName\":\"图片\",\"key\":\"76375940-b57f-4530-add1-cca8070a881e\"},{\"component\":\"JText\",\"w\":115,\"x\":104,\"h\":33.99999999999994,\"i\":\"88a76ab8-7f47-43a3-8c56-2208a412dc9b\",\"y\":140,\"orderNum\":80,\"pageCompId\":\"1021338143619076096\",\"componentName\":\"文本\",\"key\":\"74de6558-99ae-46eb-8fd1-9dd23c3e0b17\"},{\"component\":\"JText\",\"w\":267.00000000000006,\"x\":167.99999999999997,\"h\":42.999999999999886,\"i\":\"1a568920-26ed-4f2a-a3b2-ee30e9120783\",\"y\":183,\"orderNum\":80,\"pageCompId\":\"1021338143635853312\",\"componentName\":\"文本\",\"key\":\"064902ad-c58b-4c31-9a14-ba351374f686\"},{\"component\":\"JCountTo\",\"w\":87,\"x\":170,\"h\":40,\"i\":\"cf88897f-f8ed-4994-8825-4781822d6da4\",\"y\":254,\"orderNum\":80,\"pageCompId\":\"1021338143648436224\",\"componentName\":\"翻牌器\",\"key\":\"33006bad-0489-43c3-aecd-e7ad249e95e4\"},{\"component\":\"JCountTo\",\"w\":91.99999999999994,\"x\":318,\"h\":39.00000000000006,\"i\":\"7e11b52c-2c9c-49d9-8921-529e89f7e188\",\"y\":252,\"orderNum\":80,\"pageCompId\":\"1021338143665213440\",\"componentName\":\"翻牌器\",\"key\":\"14f4c518-fd66-41b7-ae24-69f4992e78b3\"},{\"component\":\"JText\",\"w\":80.00000000000006,\"x\":174,\"h\":32.99999999999994,\"i\":\"5e3aaf53-23db-40d7-8492-9ca6220991a8\",\"y\":302,\"orderNum\":80,\"pageCompId\":\"1021338143690379264\",\"componentName\":\"文本\",\"key\":\"cdd16d26-6bf3-4010-8a4f-198112383d83\"},{\"component\":\"JText\",\"w\":91.00000000000006,\"x\":323,\"h\":31.999999999999886,\"i\":\"b012cf61-412e-4a10-8131-e0d0c0ee722c\",\"y\":303.00000000000006,\"orderNum\":80,\"pageCompId\":\"1021338143711350784\",\"componentName\":\"文本\",\"key\":\"73a0a2a9-8b9b-41ad-ac84-70ad6fbab13c\"},{\"component\":\"JImg\",\"w\":468,\"x\":48,\"h\":632,\"i\":\"5440a659-599a-4f47-aedd-0dffeba16881\",\"y\":415,\"orderNum\":80,\"pageCompId\":\"1021338143728128000\",\"componentName\":\"图片\",\"key\":\"21fed81a-0e75-460d-bb02-5354b624135a\"},{\"component\":\"JBar\",\"w\":393,\"x\":90,\"h\":264,\"i\":\"293ea950-a869-4661-818d-2ddb042c5831\",\"y\":466,\"orderNum\":80,\"pageCompId\":\"1021338143744905216\",\"componentName\":\"基础柱形图\",\"key\":\"4b4ec44a-d4ad-4f25-803e-bc9d8d5a1c3f\"},{\"component\":\"JBar\",\"w\":391,\"x\":83,\"h\":266,\"i\":\"53e124ad-12e5-4e40-8bda-c4a3982df3f2\",\"y\":758,\"orderNum\":80,\"pageCompId\":\"1021338143761682432\",\"componentName\":\"基础柱形图\",\"key\":\"7bfd0d39-b4b8-44cb-8d6a-34fc5ebd1d47\"},{\"component\":\"JImg\",\"w\":857,\"x\":539,\"h\":483,\"i\":\"748d6c5f-c1ba-42a8-b853-d72e8cf86037\",\"y\":162,\"orderNum\":80,\"pageCompId\":\"1021338143786848256\",\"componentName\":\"图片\",\"key\":\"dc04036a-aac4-492a-8118-3fa7ebee2d65\"},{\"component\":\"JGauge\",\"w\":465,\"x\":941,\"h\":300,\"i\":\"62bbe478-2de0-4ba0-883e-7851a22525f8\",\"y\":166,\"orderNum\":80,\"pageCompId\":\"1021338143803625472\",\"componentName\":\"基础仪表盘\",\"key\":\"ee9ea87e-eb4c-4ecd-9637-6012763d69b6\"},{\"component\":\"JGauge\",\"w\":359,\"x\":563,\"h\":253,\"i\":\"72e4c8b5-9ad4-4209-8f91-232ec35404f3\",\"y\":410,\"orderNum\":380,\"pageCompId\":\"1021338143816208384\",\"componentName\":\"基础仪表盘\",\"key\":\"4d0dfcb4-5a66-4e40-b1f9-890f3a863827\"},{\"component\":\"JGauge\",\"w\":359,\"x\":798,\"h\":253,\"i\":\"c682e09f-78f2-4ad3-90e8-e5a8c29e87e2\",\"y\":411,\"orderNum\":680,\"pageCompId\":\"1021338143837179904\",\"componentName\":\"基础仪表盘\",\"key\":\"9433d861-11bc-478d-8826-3d37777cb5de\"},{\"component\":\"JGauge\",\"w\":359,\"x\":1033,\"h\":253,\"i\":\"24276840-64dc-4a3e-91df-3ee4ebc11dda\",\"y\":411,\"orderNum\":980,\"pageCompId\":\"1021338143853957120\",\"componentName\":\"基础仪表盘\",\"key\":\"87de9d63-8c51-4485-bb2b-0a02b396709d\"},{\"component\":\"JImg\",\"w\":859,\"x\":534,\"h\":390,\"i\":\"75acb749-0e0d-4786-82a8-00e95be9f438\",\"y\":655,\"orderNum\":80,\"pageCompId\":\"1021338143870734336\",\"componentName\":\"图片\",\"key\":\"c9ce4876-c35e-4b30-8c7a-8b94342f1f72\"},{\"component\":\"JText\",\"w\":184,\"x\":558,\"h\":44.000000000000064,\"i\":\"b3343cad-a2e4-4fe8-aee3-0df2011efdba\",\"y\":666,\"orderNum\":80,\"pageCompId\":\"1021338143895900160\",\"componentName\":\"文本\",\"key\":\"6efaa506-5e73-4b5c-9001-dfe627072b7f\"},{\"component\":\"JImg\",\"w\":465,\"x\":1416,\"h\":449,\"i\":\"64faccb2-3cdb-4f2c-893c-5500876b9814\",\"y\":134,\"orderNum\":80,\"pageCompId\":\"1021338143921065984\",\"componentName\":\"图片\",\"key\":\"849ff904-c1cd-417b-85e8-c628b3a94d94\"},{\"component\":\"JText\",\"w\":342,\"x\":1478,\"h\":51,\"i\":\"b026c26b-d67e-4d2a-abb0-faee39022d65\",\"y\":146,\"orderNum\":80,\"pageCompId\":\"1021338143933648896\",\"componentName\":\"文本\",\"key\":\"7ad15ec7-26ec-4311-a081-9ec6433ad949\"},{\"component\":\"JText\",\"w\":459,\"x\":1394,\"h\":80,\"i\":\"7a3e3767-a8c2-420b-8fb8-e7b0449b6ea0\",\"y\":188,\"orderNum\":80,\"pageCompId\":\"1021338143946231808\",\"componentName\":\"文本\",\"key\":\"c1ef9157-88d6-418f-8555-e4c0eb3a9910\"},{\"component\":\"JText\",\"w\":460,\"x\":1402,\"h\":80,\"i\":\"5b37cb7e-23f1-476d-8306-cce309220168\",\"y\":267,\"orderNum\":80,\"pageCompId\":\"1021338143958814720\",\"componentName\":\"文本\",\"key\":\"334c39ea-3d81-44f4-81a5-3f5becb7c238\"},{\"component\":\"JText\",\"w\":458,\"x\":1419,\"h\":80,\"i\":\"80333722-29ff-4703-80cc-6244600321cf\",\"y\":342,\"orderNum\":80,\"pageCompId\":\"1021338143983980544\",\"componentName\":\"文本\",\"key\":\"64176ba1-1726-4b3b-930a-60d78f55405d\"},{\"component\":\"JText\",\"w\":459,\"x\":1401,\"h\":80,\"i\":\"72fbb44c-32de-413d-8968-b7b7d7d4e701\",\"y\":420,\"orderNum\":80,\"pageCompId\":\"1021338143996563456\",\"componentName\":\"文本\",\"key\":\"2180452b-8354-41eb-8ca2-f8ac29a3d72d\"},{\"component\":\"JImg\",\"w\":465,\"x\":1415,\"h\":410,\"i\":\"c1d5b4eb-3891-4a0a-9a21-80e80259a176\",\"y\":634,\"orderNum\":80,\"pageCompId\":\"1021338144009146368\",\"componentName\":\"图片\",\"key\":\"6fbc13df-3fe5-4bd3-a66a-bd0c0f6fc52a\"},{\"component\":\"JText\",\"w\":340,\"x\":1477,\"h\":44,\"i\":\"44f731e0-fa94-4109-8d53-e216cab63b8a\",\"y\":647,\"orderNum\":80,\"pageCompId\":\"1021338144025923584\",\"componentName\":\"文本\",\"key\":\"d26580ba-97bd-4656-84eb-b176c458ad32\"},{\"component\":\"JText\",\"w\":465,\"x\":761,\"h\":57.99999999999997,\"i\":\"c0d264d8-2b60-4afd-b306-d265c58e8473\",\"y\":165,\"orderNum\":80,\"pageCompId\":\"1021338144046895104\",\"componentName\":\"文本\",\"key\":\"fd6b9ecb-a058-45ff-96af-7ff4429e58dd\"},{\"component\":\"JLine\",\"w\":466,\"x\":1414,\"h\":288,\"i\":\"0b1de716-468e-42ec-89b8-be233d3d8724\",\"y\":707,\"orderNum\":80,\"pageCompId\":\"1021338144063672320\",\"componentName\":\"基础折线图\",\"key\":\"34d49859-b94c-48e3-808f-da08b873426c\"},{\"compTextName\":\"\",\"component\":\"JScrollTable\",\"visible\":true,\"w\":852,\"x\":537,\"h\":329,\"i\":\"89e5576b-dbbf-4a06-9ceb-db690e7ad61c\",\"y\":712,\"orderNum\":80,\"pageCompId\":\"1021338144080449536\",\"componentName\":\"表格\"},{\"component\":\"JGauge\",\"w\":524,\"x\":543,\"h\":301,\"i\":\"9044d895-c38e-44ba-a793-826b086fec66\",\"y\":166,\"orderNum\":80,\"pageCompId\":\"1021338144088838144\",\"componentName\":\"基础仪表盘\",\"key\":\"331dc721-7c5e-4004-81b1-8aca324df4f8\"}]', '', '0', '1', 'admin', '2024-11-07 13:36:37', 'admin', '2024-11-26 18:39:59', NULL, 3, 2, 0, 0);
+INSERT INTO `onl_drag_page` VALUES ('1014376428645961728', '北京科技数字化云平台', '/drag/page/view/1014376428645961728', '#1E0047', '/img/bg/bg10.png', 100, 'dark', 'bigScreen', NULL, '{\"width\":1920,\"height\":1080,\"waterMark\":{\"show\":false,\"content\":\"\",\"fontSize\":12,\"color\":\"#ffffff\",\"angle\":45},\"sysDefColor\":[{\"color\":\"#1e90ff\",\"color1\":\"#1e90ff\"},{\"color\":\"#90ee90\",\"color1\":\"#90ee90\"},{\"color\":\"#00ced1\",\"color1\":\"#00ced1\"},{\"color\":\"#e2bd84\",\"color1\":\"#e2bd84\"},{\"color\":\"#7a90e0\",\"color1\":\"#7a90e0\"},{\"color\":\"#3ba272\",\"color1\":\"#3ba272\"},{\"color\":\"#2be7ff\",\"color1\":\"#2be7ff\"},{\"color\":\"#0a8ada\",\"color1\":\"#0a8ada\"},{\"color\":\"#ffd700\",\"color1\":\"#ffd700\"}],\"layoutMode\":\"fullScreen\",\"autoRefresh\":{\"enabled\":false,\"time\":\"03:00\"}}', '[{\"component\":\"JGauge\",\"w\":524,\"x\":543,\"h\":301,\"i\":\"9044d895-c38e-44ba-a793-826b086fec66\",\"y\":166,\"orderNum\":80,\"pageCompId\":\"1213817471620386816\",\"componentName\":\"基础仪表盘\",\"key\":\"331dc721-7c5e-4004-81b1-8aca324df4f8\"},{\"compTextName\":\"\",\"component\":\"JScrollTable\",\"visible\":true,\"w\":852,\"x\":537,\"h\":329,\"i\":\"89e5576b-dbbf-4a06-9ceb-db690e7ad61c\",\"y\":712,\"orderNum\":80,\"pageCompId\":\"1213817471653941248\",\"componentName\":\"表格\"},{\"component\":\"JLine\",\"w\":466,\"x\":1414,\"h\":288,\"i\":\"0b1de716-468e-42ec-89b8-be233d3d8724\",\"y\":707,\"orderNum\":80,\"pageCompId\":\"1213817471662329856\",\"componentName\":\"基础折线图\",\"key\":\"34d49859-b94c-48e3-808f-da08b873426c\"},{\"component\":\"JText\",\"w\":465,\"x\":761,\"h\":57.99999999999997,\"i\":\"c0d264d8-2b60-4afd-b306-d265c58e8473\",\"y\":165,\"orderNum\":80,\"pageCompId\":\"1213817471670718464\",\"componentName\":\"文本\",\"key\":\"fd6b9ecb-a058-45ff-96af-7ff4429e58dd\"},{\"component\":\"JText\",\"w\":340,\"x\":1477,\"h\":44,\"i\":\"44f731e0-fa94-4109-8d53-e216cab63b8a\",\"y\":647,\"orderNum\":80,\"pageCompId\":\"1213817471679107072\",\"componentName\":\"文本\",\"key\":\"d26580ba-97bd-4656-84eb-b176c458ad32\"},{\"component\":\"JImg\",\"w\":465,\"x\":1415,\"h\":410,\"i\":\"c1d5b4eb-3891-4a0a-9a21-80e80259a176\",\"y\":634,\"orderNum\":80,\"pageCompId\":\"1213817471687495680\",\"componentName\":\"图片\",\"key\":\"6fbc13df-3fe5-4bd3-a66a-bd0c0f6fc52a\"},{\"component\":\"JText\",\"w\":459,\"x\":1401,\"h\":80,\"i\":\"72fbb44c-32de-413d-8968-b7b7d7d4e701\",\"y\":420,\"orderNum\":80,\"pageCompId\":\"1213817471695884288\",\"componentName\":\"文本\",\"key\":\"2180452b-8354-41eb-8ca2-f8ac29a3d72d\"},{\"component\":\"JText\",\"w\":458,\"x\":1419,\"h\":80,\"i\":\"80333722-29ff-4703-80cc-6244600321cf\",\"y\":342,\"orderNum\":80,\"pageCompId\":\"1213817471704272896\",\"componentName\":\"文本\",\"key\":\"64176ba1-1726-4b3b-930a-60d78f55405d\"},{\"component\":\"JText\",\"w\":460,\"x\":1402,\"h\":80,\"i\":\"5b37cb7e-23f1-476d-8306-cce309220168\",\"y\":267,\"orderNum\":80,\"pageCompId\":\"1213817471712661504\",\"componentName\":\"文本\",\"key\":\"334c39ea-3d81-44f4-81a5-3f5becb7c238\"},{\"component\":\"JText\",\"w\":459,\"x\":1394,\"h\":80,\"i\":\"7a3e3767-a8c2-420b-8fb8-e7b0449b6ea0\",\"y\":188,\"orderNum\":80,\"pageCompId\":\"1213817471721050112\",\"componentName\":\"文本\",\"key\":\"c1ef9157-88d6-418f-8555-e4c0eb3a9910\"},{\"component\":\"JText\",\"w\":342,\"x\":1478,\"h\":51,\"i\":\"b026c26b-d67e-4d2a-abb0-faee39022d65\",\"y\":146,\"orderNum\":80,\"pageCompId\":\"1213817471725244416\",\"componentName\":\"文本\",\"key\":\"7ad15ec7-26ec-4311-a081-9ec6433ad949\"},{\"component\":\"JImg\",\"w\":465,\"x\":1416,\"h\":449,\"i\":\"64faccb2-3cdb-4f2c-893c-5500876b9814\",\"y\":134,\"orderNum\":80,\"pageCompId\":\"1213817471733633024\",\"componentName\":\"图片\",\"key\":\"849ff904-c1cd-417b-85e8-c628b3a94d94\"},{\"component\":\"JText\",\"w\":184,\"x\":558,\"h\":44.000000000000064,\"i\":\"b3343cad-a2e4-4fe8-aee3-0df2011efdba\",\"y\":666,\"orderNum\":80,\"pageCompId\":\"1213817471737827328\",\"componentName\":\"文本\",\"key\":\"6efaa506-5e73-4b5c-9001-dfe627072b7f\"},{\"component\":\"JImg\",\"w\":859,\"x\":534,\"h\":390,\"i\":\"75acb749-0e0d-4786-82a8-00e95be9f438\",\"y\":655,\"orderNum\":80,\"pageCompId\":\"1213817471746215936\",\"componentName\":\"图片\",\"key\":\"c9ce4876-c35e-4b30-8c7a-8b94342f1f72\"},{\"component\":\"JGauge\",\"w\":359,\"x\":1033,\"h\":253,\"i\":\"24276840-64dc-4a3e-91df-3ee4ebc11dda\",\"y\":411,\"orderNum\":980,\"pageCompId\":\"1213817471750410240\",\"componentName\":\"基础仪表盘\",\"key\":\"87de9d63-8c51-4485-bb2b-0a02b396709d\"},{\"component\":\"JGauge\",\"w\":359,\"x\":798,\"h\":253,\"i\":\"c682e09f-78f2-4ad3-90e8-e5a8c29e87e2\",\"y\":411,\"orderNum\":680,\"pageCompId\":\"1213817471762993152\",\"componentName\":\"基础仪表盘\",\"key\":\"9433d861-11bc-478d-8826-3d37777cb5de\"},{\"component\":\"JGauge\",\"w\":359,\"x\":563,\"h\":253,\"i\":\"72e4c8b5-9ad4-4209-8f91-232ec35404f3\",\"y\":410,\"orderNum\":380,\"pageCompId\":\"1213817471771381760\",\"componentName\":\"基础仪表盘\",\"key\":\"4d0dfcb4-5a66-4e40-b1f9-890f3a863827\"},{\"component\":\"JGauge\",\"w\":465,\"x\":941,\"h\":300,\"i\":\"62bbe478-2de0-4ba0-883e-7851a22525f8\",\"y\":166,\"orderNum\":80,\"pageCompId\":\"1213817471775576064\",\"componentName\":\"基础仪表盘\",\"key\":\"ee9ea87e-eb4c-4ecd-9637-6012763d69b6\"},{\"component\":\"JImg\",\"w\":857,\"x\":539,\"h\":483,\"i\":\"748d6c5f-c1ba-42a8-b853-d72e8cf86037\",\"y\":162,\"orderNum\":80,\"pageCompId\":\"1213817471783964672\",\"componentName\":\"图片\",\"key\":\"dc04036a-aac4-492a-8118-3fa7ebee2d65\"},{\"component\":\"JBar\",\"w\":391,\"x\":83,\"h\":266,\"i\":\"53e124ad-12e5-4e40-8bda-c4a3982df3f2\",\"y\":758,\"orderNum\":80,\"pageCompId\":\"1213817471788158976\",\"componentName\":\"基础柱形图\",\"key\":\"7bfd0d39-b4b8-44cb-8d6a-34fc5ebd1d47\"},{\"component\":\"JBar\",\"w\":393,\"x\":90,\"h\":264,\"i\":\"293ea950-a869-4661-818d-2ddb042c5831\",\"y\":466,\"orderNum\":80,\"pageCompId\":\"1213817471792353280\",\"componentName\":\"基础柱形图\",\"key\":\"4b4ec44a-d4ad-4f25-803e-bc9d8d5a1c3f\"},{\"component\":\"JImg\",\"w\":468,\"x\":48,\"h\":632,\"i\":\"5440a659-599a-4f47-aedd-0dffeba16881\",\"y\":415,\"orderNum\":80,\"pageCompId\":\"1213817471800741888\",\"componentName\":\"图片\",\"key\":\"21fed81a-0e75-460d-bb02-5354b624135a\"},{\"component\":\"JText\",\"w\":91.00000000000006,\"x\":323,\"h\":31.999999999999886,\"i\":\"b012cf61-412e-4a10-8131-e0d0c0ee722c\",\"y\":303.00000000000006,\"orderNum\":80,\"pageCompId\":\"1213817471804936192\",\"componentName\":\"文本\",\"key\":\"73a0a2a9-8b9b-41ad-ac84-70ad6fbab13c\"},{\"component\":\"JText\",\"w\":80.00000000000006,\"x\":174,\"h\":32.99999999999994,\"i\":\"5e3aaf53-23db-40d7-8492-9ca6220991a8\",\"y\":302,\"orderNum\":80,\"pageCompId\":\"1213817471846879232\",\"componentName\":\"文本\",\"key\":\"cdd16d26-6bf3-4010-8a4f-198112383d83\"},{\"component\":\"JCountTo\",\"w\":91.99999999999994,\"x\":318,\"h\":39.00000000000006,\"i\":\"7e11b52c-2c9c-49d9-8921-529e89f7e188\",\"y\":252,\"orderNum\":80,\"pageCompId\":\"1213817471851073536\",\"componentName\":\"翻牌器\",\"key\":\"14f4c518-fd66-41b7-ae24-69f4992e78b3\"},{\"component\":\"JCountTo\",\"w\":87,\"x\":170,\"h\":40,\"i\":\"cf88897f-f8ed-4994-8825-4781822d6da4\",\"y\":254,\"orderNum\":80,\"pageCompId\":\"1213817471859462144\",\"componentName\":\"翻牌器\",\"key\":\"33006bad-0489-43c3-aecd-e7ad249e95e4\"},{\"component\":\"JText\",\"w\":267.00000000000006,\"x\":167.99999999999997,\"h\":42.999999999999886,\"i\":\"1a568920-26ed-4f2a-a3b2-ee30e9120783\",\"y\":183,\"orderNum\":80,\"pageCompId\":\"1213817471863656448\",\"componentName\":\"文本\",\"key\":\"064902ad-c58b-4c31-9a14-ba351374f686\"},{\"component\":\"JText\",\"w\":115,\"x\":104,\"h\":33.99999999999994,\"i\":\"88a76ab8-7f47-43a3-8c56-2208a412dc9b\",\"y\":140,\"orderNum\":80,\"pageCompId\":\"1213817471867850752\",\"componentName\":\"文本\",\"key\":\"74de6558-99ae-46eb-8fd1-9dd23c3e0b17\"},{\"component\":\"JImg\",\"w\":465,\"x\":51,\"h\":260,\"i\":\"73b633d2-20f2-4b52-8db7-c23650825fc4\",\"y\":134,\"orderNum\":80,\"pageCompId\":\"1213817471876239360\",\"componentName\":\"图片\",\"key\":\"76375940-b57f-4530-add1-cca8070a881e\"},{\"component\":\"JText\",\"w\":80,\"x\":1604,\"h\":40,\"i\":\"495b30ae-75f6-49cb-8fa8-c5ee1b178529\",\"y\":28,\"orderNum\":80,\"pageCompId\":\"1213817471884627968\",\"componentName\":\"文本\",\"key\":\"755692a6-4622-401e-a2f3-27e516fe3153\"},{\"component\":\"JText\",\"w\":80,\"x\":1480,\"h\":40,\"i\":\"38a62dd0-f307-4f50-8fd6-c84c7026c875\",\"y\":29,\"orderNum\":1280,\"pageCompId\":\"1213817471888822272\",\"componentName\":\"文本\",\"key\":\"0390e889-22ba-4fde-8657-32d8be6bd605\"},{\"component\":\"JText\",\"w\":80,\"x\":1726,\"h\":40,\"i\":\"e9c3ab9b-a254-47fd-8965-b871c21a19dc\",\"y\":29,\"orderNum\":980,\"pageCompId\":\"1213817471901405184\",\"componentName\":\"文本\",\"key\":\"2e9efc55-2346-41d8-8829-3fd8f83c16cd\"},{\"component\":\"JText\",\"w\":80,\"x\":1351,\"h\":40,\"i\":\"73f50ee8-3743-466d-b2e3-87c05122a4fc\",\"y\":28,\"orderNum\":680,\"pageCompId\":\"1213817471905599488\",\"componentName\":\"文本\",\"key\":\"0c05486a-7cf8-42dd-8408-80d9b0d7467d\"},{\"component\":\"JText\",\"w\":80,\"x\":477,\"h\":40,\"i\":\"c3f77106-d4d2-49e0-9d94-7836eb492869\",\"y\":27,\"orderNum\":380,\"pageCompId\":\"1213817471909793792\",\"componentName\":\"文本\",\"key\":\"647324c5-98a4-4bdd-9aa0-71e6d07ca55a\"},{\"component\":\"JText\",\"w\":81,\"x\":229,\"h\":40,\"i\":\"65595a23-9092-4735-8f50-e43aa9b1090f\",\"y\":29,\"orderNum\":80,\"pageCompId\":\"1213817471918182400\",\"componentName\":\"文本\",\"key\":\"124b4e24-fc36-419d-b0e0-011c683512f2\"},{\"component\":\"JImg\",\"w\":130,\"x\":452,\"h\":52,\"i\":\"cf1d47c4-70d8-4792-ab2c-cfa33476c5e2\",\"y\":21,\"orderNum\":1640,\"pageCompId\":\"1213817471926571008\",\"componentName\":\"图片\",\"key\":\"f9ce5aba-f469-48d9-aad6-b7f82cf14ea4\"},{\"component\":\"JImg\",\"w\":130,\"x\":1579,\"h\":52,\"i\":\"4190d49d-5234-4c6b-8092-311e77aff8e1\",\"y\":21,\"orderNum\":1380,\"pageCompId\":\"1213817471934959616\",\"componentName\":\"图片\",\"key\":\"541dc811-5fd0-4b3a-8deb-082e430c3ac4\"},{\"component\":\"JImg\",\"w\":130,\"x\":1701,\"h\":52,\"i\":\"3b70af8f-cb79-45fb-b493-67f9f3ba68cd\",\"y\":22,\"orderNum\":1120,\"pageCompId\":\"1213817471939153920\",\"componentName\":\"图片\",\"key\":\"bc96714a-6706-4a8a-8f21-7f9c26859c51\"},{\"component\":\"JImg\",\"w\":130,\"x\":1454,\"h\":52,\"i\":\"9697caf8-8a85-44c2-b7a4-ff5624b29217\",\"y\":22,\"orderNum\":600,\"pageCompId\":\"1213817471947542528\",\"componentName\":\"图片\",\"key\":\"5bd5f33d-49d3-4c51-b6fc-dccc388a565b\"},{\"component\":\"JImg\",\"w\":130,\"x\":1327,\"h\":52,\"i\":\"36ab5497-269f-4aee-a4b6-3fe6a2c20d4b\",\"y\":22,\"orderNum\":340,\"pageCompId\":\"1213817471951736832\",\"componentName\":\"图片\",\"key\":\"c0961091-151c-4a65-81db-7c8263018832\"},{\"component\":\"JImg\",\"w\":130,\"x\":205,\"h\":52,\"i\":\"08856df6-2e3b-422d-9a27-ceb3e94ddbe1\",\"y\":22,\"orderNum\":80,\"pageCompId\":\"1213817471955931136\",\"componentName\":\"图片\",\"key\":\"bdd13a67-9d91-4ac0-973e-9149f2abeb12\"},{\"component\":\"JText\",\"w\":80,\"x\":352,\"h\":40,\"i\":\"becd17b5-e053-40c1-ab20-936e08457e38\",\"y\":27,\"orderNum\":80,\"pageCompId\":\"1213817471960125440\",\"componentName\":\"文本\",\"key\":\"10d319c0-bcb7-46ea-8d7b-8aeced7cb4f8\"},{\"component\":\"JImg\",\"w\":130,\"x\":327,\"h\":52,\"i\":\"bc141cf0-9e31-424b-bc6c-1698023529be\",\"y\":21,\"orderNum\":80,\"pageCompId\":\"1213817471968514048\",\"componentName\":\"图片\",\"key\":\"c3323f46-a868-4a34-814d-f95979d553cd\"},{\"component\":\"JText\",\"w\":80,\"x\":104,\"h\":41,\"i\":\"30361f52-fd03-40ab-86b8-52f358f3aff4\",\"y\":28.00000000000003,\"orderNum\":80,\"pageCompId\":\"1213817471972708352\",\"componentName\":\"文本\",\"key\":\"6f310775-12f2-4e7b-851e-8ac90409239a\"},{\"component\":\"JImg\",\"w\":130,\"x\":82,\"h\":52,\"i\":\"df702a2c-c1bf-4b9a-a1c7-83ff51a74c19\",\"y\":21,\"orderNum\":80,\"pageCompId\":\"1213817471976902656\",\"componentName\":\"图片\",\"key\":\"0423a14c-aa58-4a24-88b5-9e72c803f2f3\"},{\"component\":\"JCurrentTime\",\"w\":421,\"x\":745,\"h\":35,\"i\":\"a1ce6897-c28b-4f42-a775-c8c34d495d5d\",\"y\":107,\"orderNum\":80,\"pageCompId\":\"1213817471981096960\",\"componentName\":\"当前时间\",\"key\":\"4aa4d128-8900-4bb3-8931-0de2329d594c\"},{\"component\":\"JText\",\"w\":420,\"x\":746,\"h\":77,\"i\":\"afe6932a-9fcd-4cc1-8037-eefcf1b0605f\",\"y\":2,\"orderNum\":80,\"pageCompId\":\"1213817471985291264\",\"componentName\":\"文本\",\"key\":\"2ce590fd-9d06-4a8d-9680-247a0fb4edef\"},{\"component\":\"JImg\",\"w\":1917.0000000000002,\"x\":-1,\"h\":80,\"i\":\"1c5b0dae-314f-4663-8ebc-529e7ef397a1\",\"y\":0,\"orderNum\":0,\"pageCompId\":\"1213817471993679872\",\"componentName\":\"图片\",\"key\":\"c6bb8c0a-1734-405f-82be-5b25699a1bc1\"}]', '', '0', '1', 'admin', '2024-11-07 13:36:37', 'admin', '2026-05-11 22:04:07', NULL, 0, 2, 0, 0);
 INSERT INTO `onl_drag_page` VALUES ('1015895036886831104', '监狱狱政科数据展示', '/drag/page/view/1015895036886831104', NULL, 'https://jeecgdev.oss-cn-beijing.aliyuncs.com/jimureport/images/2背景_1731554307578.jpg', 100, 'dark', 'bigScreen', NULL, '{\"width\":1920,\"height\":1080}', '[{\"visible\":true,\"h\":39,\"i\":\"8a751a70-50ff-4a18-bb2a-e33c7d8bb055\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":18,\"y\":16,\"pageCompId\":\"1017321185898713088\",\"selected\":true,\"key\":\"3a9800ef-77ba-4d23-ad7f-93299a9746f5\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554341219-1\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":519,\"x\":695,\"y\":39,\"pageCompId\":\"1017321185940656128\",\"selected\":false,\"key\":\"87a516b1-654e-4385-8624-92b63e69dfce\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554641653-2\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":45,\"y\":129,\"pageCompId\":\"1017321185957433344\",\"selected\":false,\"key\":\"8bd60606-6457-4074-8251-67e8d476058c\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554650239-3\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":142,\"x\":621,\"y\":130,\"pageCompId\":\"1017321185974210560\",\"selected\":false,\"key\":\"1118e97a-1e3d-4e8d-839e-80485318ab38\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554657899-4\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":794,\"y\":130,\"pageCompId\":\"1017321185986793472\",\"selected\":false,\"key\":\"9c0a3cb7-aaba-472a-a1d7-cf692e2aa1c4\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554660718-5\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":969,\"y\":131,\"pageCompId\":\"1017321186003570688\",\"selected\":false,\"key\":\"7039875e-bec1-4c3a-9e15-3d2ee61e0d34\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554663509-6\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1140,\"y\":132,\"pageCompId\":\"1017321186024542208\",\"selected\":false,\"key\":\"506c148d-7747-4fb2-aa8f-6642cd48ecde\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554901305-7\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":615,\"y\":180,\"pageCompId\":\"1017321186041319424\",\"selected\":false,\"key\":\"7cb3629b-2812-4137-afba-1036dfd65e4c\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554904164-8\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":49,\"x\":820,\"y\":182,\"pageCompId\":\"1017321186053902336\",\"selected\":false,\"key\":\"fcad8b91-29ab-4094-8626-9d59e91797ef\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554906777-9\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":965,\"y\":181,\"pageCompId\":\"1017321186066485248\",\"selected\":false,\"key\":\"338a28fd-1ac4-4642-8267-7a9259379408\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554911018-10\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":89,\"x\":1173,\"y\":182,\"pageCompId\":\"1017321186095845376\",\"selected\":false,\"key\":\"6f8b961b-77b9-468d-8c6b-ff63b9a834a4\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554930989-11\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1338,\"y\":129,\"pageCompId\":\"1017321186108428288\",\"selected\":false,\"key\":\"0d699b4a-d448-40a2-9cc4-d7f20ecc125e\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554944783-12\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":211,\"x\":1337,\"y\":625,\"pageCompId\":\"1017321186121011200\",\"selected\":false,\"key\":\"97d874ca-f103-4830-8663-a3c68246e406\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554949510-13\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":192,\"x\":616,\"y\":623,\"pageCompId\":\"1017321186133594112\",\"selected\":false,\"key\":\"e36af5b1-f538-45d1-b609-6905b0924772\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731554956540-14\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":52,\"y\":625,\"pageCompId\":\"1017321186154565632\",\"selected\":false,\"key\":\"bcd21420-8a7f-44fe-891b-92600239e2e8\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555036448-15\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":44,\"x\":853,\"y\":182,\"pageCompId\":\"1017321186175537152\",\"selected\":false,\"key\":\"445e208c-59a3-4fb9-b0d2-6def4f0179bd\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555481413-16\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":52,\"y\":189,\"pageCompId\":\"1017321186188120064\",\"selected\":false,\"key\":\"d688d880-01bd-4e34-97cf-b76d90dce3e1\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555488647-17\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":284,\"y\":185,\"pageCompId\":\"1017321186200702976\",\"selected\":false,\"key\":\"9e4d8375-3307-494b-9d50-f00ad07587ee\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555491173-18\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":84,\"y\":225,\"pageCompId\":\"1017321186217480192\",\"selected\":false,\"key\":\"fb22424a-2a27-4ccc-bf06-e8d792580b94\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555492397-19\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":308,\"y\":223,\"pageCompId\":\"1017321186238451712\",\"selected\":false,\"key\":\"a21ba509-1ec6-4450-8353-aa3929092dc3\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555507249-20\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1311,\"y\":188,\"pageCompId\":\"1017321186251034624\",\"selected\":false,\"key\":\"7667dd74-acff-4fb6-8881-b8035d0ede80\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555511061-21\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1541,\"y\":192,\"pageCompId\":\"1017321186263617536\",\"selected\":false,\"key\":\"40d56052-f72b-4eae-8c7e-1d77cae61013\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555514595-22\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1343,\"y\":222,\"pageCompId\":\"1017321186280394752\",\"selected\":false,\"key\":\"8995191b-cfdc-4978-8428-2b43b1d9a046\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731555517774-23\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1610,\"y\":224,\"pageCompId\":\"1017321186305560576\",\"selected\":false,\"key\":\"4e2fb295-3f4e-4e35-ac37-7d85f35a9242\"},{\"visible\":true,\"h\":216,\"i\":\"8fc14384-c894-4c46-830c-9047ff569a66\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JMultipleBar\",\"w\":489,\"x\":55,\"y\":356,\"pageCompId\":\"1017321186322337792\",\"selected\":false,\"key\":\"a132eed8-6436-4fc5-86f6-dfda0f05eb95\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556853370-24\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":63,\"y\":258,\"pageCompId\":\"1017321186334920704\",\"selected\":false,\"key\":\"40d94708-30eb-4c29-8e52-4b7d18036c1d\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556856918-25\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":94,\"y\":297,\"pageCompId\":\"1017321186351697920\",\"selected\":false,\"key\":\"d95f5454-2a3f-49d3-a3fa-2e2854dec8da\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556862766-26\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":311,\"y\":259,\"pageCompId\":\"1017321186376863744\",\"selected\":false,\"key\":\"07269e41-c8ce-4d70-8ff2-3abcf3ba247b\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556870179-27\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":311,\"y\":299,\"pageCompId\":\"1017321186393640960\",\"selected\":false,\"key\":\"f11c4f40-34b9-4048-936a-cdcf2d4017e2\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556893775-28\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1309,\"y\":268,\"pageCompId\":\"1017321186406223872\",\"selected\":false,\"key\":\"b55f7d17-91a2-4cb1-8c2f-60c10c073d5b\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556897633-29\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1353,\"y\":306,\"pageCompId\":\"1017321186431389696\",\"selected\":false,\"key\":\"efeaefc7-4cd2-4563-a337-da451878a314\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556900421-30\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1547,\"y\":269,\"pageCompId\":\"1017321186452361216\",\"selected\":false,\"key\":\"2e268466-8ded-4a7b-808a-8582b306e11f\"},{\"visible\":true,\"h\":39,\"i\":\"es-drager-1731556904681-31\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JText\",\"w\":153,\"x\":1609,\"y\":302,\"pageCompId\":\"1017321186464944128\",\"selected\":false,\"key\":\"920ee28a-be38-41ed-84be-9ca5d8b9e359\"},{\"visible\":true,\"h\":263,\"i\":\"810ae487-0402-45e4-839f-ae53fe327206\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JPie\",\"w\":412,\"x\":608,\"y\":298,\"pageCompId\":\"1017321186477527040\",\"selected\":false,\"key\":\"63730e7b-f8a1-493b-8094-684034d0c004\"},{\"visible\":true,\"h\":263,\"i\":\"es-drager-1731565807875-32\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JPie\",\"w\":412,\"x\":960,\"y\":295,\"pageCompId\":\"1017321186498498560\",\"selected\":false,\"key\":\"ce4dca14-edfc-488c-80e1-f3c908d5de65\"},{\"visible\":true,\"h\":236,\"i\":\"e546a2b1-0da9-45b4-95f6-c6fbcb6d1846\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JMultipleBar\",\"w\":529,\"x\":1339,\"y\":350,\"pageCompId\":\"1017321186515275776\",\"selected\":false,\"key\":\"448ab743-22ec-427a-945f-d44a48b56f0b\"},{\"visible\":true,\"h\":177,\"i\":\"96d5c689-2fc0-494a-92e1-9d446345c1e9\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JDynamicBar\",\"w\":464,\"x\":1336,\"y\":670,\"pageCompId\":\"1017321186532052992\",\"selected\":false,\"key\":\"a3c4101a-faeb-47d8-8db9-476d3133575d\"},{\"visible\":true,\"h\":171,\"i\":\"es-drager-1731571931624-1\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JDynamicBar\",\"w\":450,\"x\":1336,\"y\":838,\"pageCompId\":\"1017321186544635904\",\"selected\":false,\"key\":\"7de97686-514e-47d8-8dca-e3332bb1a101\"},{\"visible\":true,\"h\":321,\"i\":\"18f17713-c9a2-43c8-a1b4-8956526edf92\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JScrollBoard\",\"w\":534,\"x\":49,\"y\":684,\"pageCompId\":\"1017321186561413120\",\"selected\":false,\"key\":\"b9bbfb10-b8b6-4d69-839d-533cb6bc87b3\"},{\"visible\":true,\"h\":324,\"i\":\"es-drager-1731572436300-2\",\"orderNum\":0,\"compTextName\":\"\",\"component\":\"JScrollBoard\",\"w\":676,\"x\":624,\"y\":686,\"pageCompId\":\"1017321186582384640\",\"selected\":false,\"key\":\"4e9900f0-25b3-4afe-8f4a-47fe3278f7d5\"},{\"compTextName\":\"\",\"component\":\"JCurrentTime\",\"visible\":true,\"w\":289,\"x\":1585,\"h\":33,\"i\":\"93f679fd-84cd-4e4e-8b1c-a6c832393f9f\",\"y\":18,\"orderNum\":0,\"pageCompId\":\"1017321186599161856\",\"selected\":false}]', '', '0', '1', 'admin', '2024-11-11 18:11:01', 'admin', '2024-11-15 16:38:02', NULL, 3, 2, 10, 0);
 INSERT INTO `onl_drag_page` VALUES ('1016497921022545920', '监狱财政科数据展示', '/drag/page/view/1016497921022545920', '#1E0047', 'https://jeecgdev.oss-cn-beijing.aliyuncs.com/jimureport/images/1背景_1731463744922.jpg', 100, 'dark', 'bigScreen', NULL, '{\"width\":1920,\"height\":1080}', '[{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":144,\"x\":27,\"h\":33,\"i\":\"bea2f336-12f8-4333-adb1-882c4a46f1ef\",\"y\":22,\"orderNum\":0,\"pageCompId\":\"1019836136064339968\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":466,\"x\":730,\"h\":45,\"i\":\"es-drager-1731575388068-1\",\"y\":40,\"orderNum\":0,\"pageCompId\":\"1019836136139837440\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":144,\"x\":46,\"h\":33,\"i\":\"es-drager-1731575453492-2\",\"y\":135,\"orderNum\":0,\"pageCompId\":\"1019836136160808960\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":144,\"x\":1332,\"h\":33,\"i\":\"es-drager-1731575564662-3\",\"y\":132,\"orderNum\":0,\"pageCompId\":\"1019836136177586176\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":177,\"x\":44,\"h\":33,\"i\":\"es-drager-1731575571643-4\",\"y\":630,\"orderNum\":0,\"pageCompId\":\"1019836136190169088\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":195,\"x\":619,\"h\":33,\"i\":\"es-drager-1731575574764-5\",\"y\":628,\"orderNum\":0,\"pageCompId\":\"1019836136206946304\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":144,\"x\":1338,\"h\":33,\"i\":\"es-drager-1731575579158-6\",\"y\":628,\"orderNum\":0,\"pageCompId\":\"1019836136232112128\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":55,\"h\":33,\"i\":\"es-drager-1731575591936-7\",\"y\":185,\"orderNum\":0,\"pageCompId\":\"1019836136248889344\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":298,\"h\":33,\"i\":\"es-drager-1731575650336-8\",\"y\":183,\"orderNum\":0,\"pageCompId\":\"1019836136261472256\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":57,\"h\":33,\"i\":\"es-drager-1731575655752-9\",\"y\":259,\"orderNum\":0,\"pageCompId\":\"1019836136274055168\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":151,\"x\":302,\"h\":33,\"i\":\"es-drager-1731575658548-10\",\"y\":259,\"orderNum\":0,\"pageCompId\":\"1019836136295026688\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":1364,\"h\":33,\"i\":\"es-drager-1731575662995-11\",\"y\":192,\"orderNum\":0,\"pageCompId\":\"1019836136311803904\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":1633,\"h\":33,\"i\":\"es-drager-1731575667327-12\",\"y\":192,\"orderNum\":0,\"pageCompId\":\"1019836136328581120\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":1367,\"h\":33,\"i\":\"es-drager-1731575676489-13\",\"y\":259,\"orderNum\":0,\"pageCompId\":\"1019836136336969728\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":1649,\"h\":33,\"i\":\"es-drager-1731575681208-14\",\"y\":263,\"orderNum\":0,\"pageCompId\":\"1019836136353746944\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":807,\"h\":33,\"i\":\"es-drager-1731575699841-15\",\"y\":124,\"orderNum\":0,\"pageCompId\":\"1019836136374718464\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":801,\"h\":33,\"i\":\"es-drager-1731575713035-16\",\"y\":202,\"orderNum\":0,\"pageCompId\":\"1019836136395689984\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":1166,\"h\":33,\"i\":\"es-drager-1731575720590-17\",\"y\":122,\"orderNum\":0,\"pageCompId\":\"1019836136412467200\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":1169,\"h\":33,\"i\":\"es-drager-1731575724256-18\",\"y\":205,\"orderNum\":0,\"pageCompId\":\"1019836136429244416\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":637,\"h\":33,\"i\":\"es-drager-1731575741874-19\",\"y\":145,\"orderNum\":0,\"pageCompId\":\"1019836136450215936\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":132,\"x\":1008,\"h\":33,\"i\":\"es-drager-1731575790320-20\",\"y\":136,\"orderNum\":0,\"pageCompId\":\"1019836136466993152\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":298,\"h\":33,\"i\":\"es-drager-1731576490851-23\",\"y\":218,\"orderNum\":0,\"pageCompId\":\"1019836136487964672\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":56,\"h\":33,\"i\":\"es-drager-1731576557313-24\",\"y\":219,\"orderNum\":0,\"pageCompId\":\"1019836136508936192\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":47,\"h\":33,\"i\":\"es-drager-1731576610256-25\",\"y\":290,\"orderNum\":0,\"pageCompId\":\"1019836136525713408\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":288,\"h\":33,\"i\":\"es-drager-1731576613557-26\",\"y\":294,\"orderNum\":0,\"pageCompId\":\"1019836136538296320\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":630,\"h\":33,\"i\":\"es-drager-1731576622559-27\",\"y\":195,\"orderNum\":0,\"pageCompId\":\"1019836136555073536\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":179,\"x\":988,\"h\":33,\"i\":\"es-drager-1731576628027-28\",\"y\":196,\"orderNum\":0,\"pageCompId\":\"1019836136563462144\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":1345,\"h\":33,\"i\":\"es-drager-1731576635331-29\",\"y\":225,\"orderNum\":0,\"pageCompId\":\"1019836136580239360\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":1389,\"h\":33,\"i\":\"es-drager-1731576638739-30\",\"y\":294,\"orderNum\":0,\"pageCompId\":\"1019836136592822272\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":1654,\"h\":33,\"i\":\"es-drager-1731576643262-31\",\"y\":225,\"orderNum\":0,\"pageCompId\":\"1019836136605405184\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":1659,\"h\":33,\"i\":\"es-drager-1731576941854-33\",\"y\":296,\"orderNum\":0,\"pageCompId\":\"1019836136622182400\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":803,\"h\":33,\"i\":\"es-drager-1731577225841-34\",\"y\":150,\"orderNum\":0,\"pageCompId\":\"1019836136638959616\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":782,\"h\":33,\"i\":\"es-drager-1731577276117-35\",\"y\":231,\"orderNum\":0,\"pageCompId\":\"1019836136655736832\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":1154,\"h\":33,\"i\":\"es-drager-1731577281301-36\",\"y\":146,\"orderNum\":0,\"pageCompId\":\"1019836136668319744\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":161,\"x\":1149,\"h\":33,\"i\":\"es-drager-1731577285085-37\",\"y\":231,\"orderNum\":0,\"pageCompId\":\"1019836136685096960\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":84,\"x\":850,\"h\":33,\"i\":\"es-drager-1731577430161-38\",\"y\":231,\"orderNum\":0,\"pageCompId\":\"1019836136693485568\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":84,\"x\":1220,\"h\":33,\"i\":\"es-drager-1731577464601-39\",\"y\":231,\"orderNum\":0,\"pageCompId\":\"1019836136710262784\",\"componentName\":\"文本\"},{\"compTextName\":\"\",\"component\":\"JMultipleBar\",\"visible\":true,\"w\":543,\"x\":47,\"h\":257,\"i\":\"f5598f5b-7aee-4b4a-aa98-3703c9f471f4\",\"y\":335,\"orderNum\":0,\"pageCompId\":\"1019836136727040000\",\"componentName\":\"对比柱形图\"},{\"compTextName\":\"\",\"component\":\"JMultipleLine\",\"visible\":true,\"w\":682,\"x\":628,\"h\":309,\"i\":\"0811e80e-d0df-43d7-92c6-d7f0e0d62fd7\",\"y\":297,\"orderNum\":0,\"pageCompId\":\"1019836136743817216\",\"componentName\":\"对比折线图\"},{\"compTextName\":\"\",\"component\":\"JArea\",\"visible\":true,\"w\":530,\"x\":1358,\"h\":258,\"i\":\"aeafbc37-dcbc-4385-8d24-643fa4dc4fcd\",\"y\":328,\"orderNum\":0,\"pageCompId\":\"1019836136756400128\",\"componentName\":\"面积图\"},{\"compTextName\":\"\",\"component\":\"JScrollBoard\",\"visible\":true,\"w\":531,\"x\":49,\"h\":326,\"i\":\"12b2c94e-529a-4668-a2de-9b2021e93f56\",\"y\":678,\"orderNum\":0,\"pageCompId\":\"1019836136764788736\",\"componentName\":\"轮播表\"},{\"compTextName\":\"\",\"component\":\"JScrollBoard\",\"visible\":true,\"w\":671,\"x\":626,\"h\":338,\"i\":\"es-drager-1731579827097-40\",\"y\":675,\"orderNum\":0,\"pageCompId\":\"1019836136777371648\",\"componentName\":\"轮播表\"},{\"compTextName\":\"\",\"component\":\"JScrollBoard\",\"visible\":true,\"w\":531,\"x\":1342,\"h\":326,\"i\":\"es-drager-1731579847826-41\",\"y\":681,\"orderNum\":0,\"pageCompId\":\"1019836136794148864\",\"componentName\":\"轮播表\"}]', '', '0', '1', 'admin', '2024-11-13 10:06:40', 'admin', '2024-11-22 15:11:33', NULL, 3, 2, 0, 0);
 INSERT INTO `onl_drag_page` VALUES ('1016994145836257280', '个性化组件大阅兵', '/drag/page/view/1016994145836257280', '#1E0047', '/img/bg/bg1.png', 100, 'dark', 'bigScreen', NULL, '{\"width\":1920,\"height\":2000}', '[{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":695,\"x\":606,\"h\":459,\"i\":\"es-drager-1731636172470-5\",\"y\":497,\"orderNum\":0,\"pageCompId\":\"1017225681378529280\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":690,\"x\":610,\"h\":385,\"i\":\"es-drager-1731636518160-9\",\"y\":968,\"orderNum\":0,\"pageCompId\":\"1017225681424666624\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":543,\"x\":41,\"h\":385,\"i\":\"es-drager-1731636444637-8\",\"y\":968,\"orderNum\":0,\"pageCompId\":\"1017225681441443840\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":543,\"x\":1311,\"h\":455,\"i\":\"es-drager-1731636204058-6\",\"y\":501,\"orderNum\":0,\"pageCompId\":\"1017225681454026752\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":688,\"x\":437,\"h\":385,\"i\":\"es-drager-1731635819511-1\",\"y\":96,\"orderNum\":0,\"pageCompId\":\"1017225681470803968\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":350,\"x\":1512.5302491103203,\"h\":385,\"i\":\"es-drager-1731635884970-3\",\"y\":97.09964412811388,\"orderNum\":0,\"pageCompId\":\"1017225681495969792\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":360,\"x\":1139.5302491103203,\"h\":385,\"i\":\"es-drager-1731635842921-2\",\"y\":93.09964412811388,\"orderNum\":0,\"pageCompId\":\"1017225681512747008\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JText\",\"visible\":true,\"w\":588,\"x\":710,\"h\":71,\"i\":\"93d57e1f-efe0-41d8-a970-cca353e07913\",\"y\":5,\"orderNum\":0,\"pageCompId\":\"1017225681525329920\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JFlashCloud\",\"visible\":true,\"w\":321,\"x\":77.53024911032026,\"h\":333,\"i\":\"60e1c0cf-8ed5-4069-8d45-4422daddd4fa\",\"y\":107.09964412811388,\"orderNum\":0,\"pageCompId\":\"1017225681588244480\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JGender\",\"visible\":true,\"w\":341,\"x\":1147,\"h\":284,\"i\":\"b704fde0-b83b-43c9-812f-00669da4fd26\",\"y\":130,\"orderNum\":0,\"pageCompId\":\"1017225681609216000\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JWeatherForecast\",\"visible\":true,\"w\":257,\"x\":1536.5302491103203,\"h\":47,\"i\":\"962e8a41-52bc-486b-8bac-a4d2bede7b60\",\"y\":239.09964412811385,\"orderNum\":0,\"pageCompId\":\"1017225681621798912\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JNegativeBar\",\"visible\":true,\"w\":515,\"x\":63,\"h\":429,\"i\":\"6f636ad2-1e9a-43ae-aa23-79e4066a5f09\",\"y\":511,\"orderNum\":0,\"pageCompId\":\"1017225681634381824\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JFlashList\",\"visible\":true,\"w\":498,\"x\":1353,\"h\":300,\"i\":\"70f4698c-332c-4278-aabe-fbfa06900b68\",\"y\":556,\"orderNum\":0,\"pageCompId\":\"1017225681655353344\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JPictorialBar\",\"visible\":true,\"w\":516,\"x\":55,\"h\":334,\"i\":\"56271f7e-e085-4bdc-81da-1223af3d1ba2\",\"y\":996,\"orderNum\":0,\"pageCompId\":\"1017225681676324864\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDevHistory\",\"visible\":true,\"w\":661,\"x\":620,\"h\":300,\"i\":\"21224e76-d6fe-4600-a16d-ae6e7f55bfbc\",\"y\":991,\"orderNum\":0,\"pageCompId\":\"1017225681697296384\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JRotatePie\",\"visible\":true,\"w\":450,\"x\":1345,\"h\":300,\"i\":\"3b9b8918-5afa-4bb9-83a7-d8b6d87338e3\",\"y\":1012,\"orderNum\":0,\"pageCompId\":\"1017225681714073600\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JColorBlock\",\"visible\":true,\"w\":1865,\"x\":23,\"h\":110,\"i\":\"d7661f3f-303c-4110-8128-32be407275a3\",\"y\":1389,\"orderNum\":0,\"pageCompId\":\"1017225681726656512\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":350,\"x\":58.09964412811388,\"h\":385,\"i\":\"30152f09-985b-4d7f-82a7-1d78251f1c2a\",\"y\":91,\"orderNum\":0,\"pageCompId\":\"1017225681743433728\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":545,\"x\":43,\"h\":468,\"i\":\"es-drager-1731635997743-4\",\"y\":492,\"orderNum\":0,\"pageCompId\":\"1017225681764405248\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":541,\"x\":1311,\"h\":379,\"i\":\"es-drager-1731636613880-10\",\"y\":972,\"orderNum\":0,\"pageCompId\":\"1017225681781182464\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JRectangle\",\"visible\":true,\"w\":662,\"x\":447,\"h\":364,\"i\":\"bbfdcef5-a32d-4d15-8f12-d7a4d5016e68\",\"y\":102,\"orderNum\":0,\"pageCompId\":\"1017225681793765376\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JPyramid3D\",\"visible\":true,\"w\":678,\"x\":625,\"h\":438,\"i\":\"014b738b-9fc6-49ca-8d27-a029b89f2dc0\",\"y\":511,\"orderNum\":0,\"pageCompId\":\"1017225681810542592\",\"selected\":false},{\"compTextName\":\"\",\"component\":\"JDragBorder\",\"visible\":true,\"w\":1878,\"x\":9,\"h\":130,\"i\":\"16e26ff8-0039-4ae7-a2c3-4b4a97e44e8b\",\"y\":1365,\"orderNum\":0,\"pageCompId\":\"1017225681823125504\",\"selected\":false}]', '', '0', '1', 'admin', '2024-11-14 18:58:29', 'admin', '2024-11-15 10:18:32', NULL, 3, 2, 0, 0);
@@ -5010,11 +5130,11 @@ CREATE TABLE `onl_drag_page_comp`  (
   `component` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件名称',
   `config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page_comp
@@ -5163,54 +5283,6 @@ INSERT INTO `onl_drag_page_comp` VALUES ('1019836136756400128', NULL, '101649792
 INSERT INTO `onl_drag_page_comp` VALUES ('1019836136764788736', NULL, '1016497921022545920', NULL, 'JScrollBoard', '{\"chartData\":\"[    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"王来\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"咳嗽药\\\",        \\\"number\\\": \\\"3片\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    }]\",\"size\":{\"width\":531,\"height\":326},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"w\":450,\"dataType\":1,\"h\":300,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"option\":{\"oddRowBGC\":\"#030D3A\",\"headShow\":true,\"hoverPause\":true,\"indexWidth\":80,\"index\":false,\"carousel\":\"single\",\"title\":{\"show\":true,\"text\":\"\",\"textStyle\":{\"color\":\"#464646\",\"fontWeight\":\"normal\"}},\"evenRowBGC\":\"#003B51\",\"header\":[{\"width\":100,\"label\":\"罪犯姓名\"},{\"width\":100,\"label\":\"罪犯编号\"},{\"width\":100,\"label\":\"处遇等级\"},{\"width\":100,\"label\":\"领取药品\"},{\"width\":100,\"label\":\"数量\"},{\"width\":100,\"label\":\"时间\"}],\"headerBGC\":\"#041732\",\"headerHeight\":55,\"waitTime\":2000,\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-22 15:11:33', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1019836136777371648', NULL, '1016497921022545920', NULL, 'JScrollBoard', '{\"chartData\":\"[    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"上账\\\",        \\\"A\\\": \\\"244.50\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"上账\\\",        \\\"A\\\": \\\"0.00\\\",        \\\"B\\\": \\\"1000.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"下账\\\",        \\\"A\\\": \\\"64.50\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"下账\\\",        \\\"A\\\": \\\"0.00\\\",        \\\"B\\\": \\\"162.30\\\",        \\\"C\\\": \\\"16.71\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"上账\\\",        \\\"A\\\": \\\"2000.00\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"上账\\\",        \\\"A\\\": \\\"20.10\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"下账\\\",        \\\"A\\\": \\\"0.00\\\",        \\\"B\\\": \\\"120.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"上账\\\",        \\\"A\\\": \\\"244.10\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"下账\\\",        \\\"A\\\": \\\"0.50\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"120.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"下账\\\",        \\\"A\\\": \\\"0.00\\\",        \\\"B\\\": \\\"1000.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"下账\\\",        \\\"A\\\": \\\"244.50\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890\\\",        \\\"level\\\": \\\"宽管\\\",        \\\"item\\\": \\\"下账\\\",        \\\"A\\\": \\\"244.50\\\",        \\\"B\\\": \\\"0.00\\\",        \\\"C\\\": \\\"0.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    }]\",\"size\":{\"width\":671,\"height\":338},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"w\":450,\"dataType\":1,\"h\":300,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"option\":{\"oddRowBGC\":\"#030D3A\",\"headShow\":true,\"hoverPause\":true,\"indexWidth\":80,\"index\":false,\"carousel\":\"single\",\"title\":{\"show\":true,\"text\":\"\",\"textStyle\":{\"color\":\"#464646\",\"fontWeight\":\"normal\"}},\"evenRowBGC\":\"#003B51\",\"header\":[{\"width\":100,\"label\":\"罪犯姓名\"},{\"width\":100,\"label\":\"罪犯编号\"},{\"width\":100,\"label\":\"处遇等级\"},{\"width\":100,\"label\":\"流向\"},{\"width\":100,\"label\":\"A账户\"},{\"width\":100,\"label\":\"B账户\"},{\"width\":100,\"label\":\"C账户\"},{\"width\":100,\"label\":\"时间\"}],\"headerBGC\":\"#041732\",\"headerHeight\":55,\"waitTime\":2000,\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-22 15:11:33', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1019836136794148864', NULL, '1016497921022545920', NULL, 'JScrollBoard', '{\"chartData\":\"[    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"出所结算\\\",        \\\"item\\\": \\\"205.32\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"出所结算\\\",        \\\"item\\\": \\\"68.32\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"381.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"381.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"出所结算\\\",        \\\"item\\\": \\\"8.32\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"出所结算\\\",        \\\"item\\\": \\\"68.32\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"381.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"381.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"出所结算\\\",        \\\"item\\\": \\\"68.32\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"32.24\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"李慧\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"381.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"381.00\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"出所结算\\\",        \\\"item\\\": \\\"68.32\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    },    {        \\\"name\\\": \\\"张三\\\",        \\\"SN\\\": \\\"1234657890023154\\\",        \\\"manage\\\": \\\"银行结算\\\",        \\\"item\\\": \\\"32.24\\\",        \\\"time\\\": \\\"2020-11-19 15:30:15\\\"    }]\",\"size\":{\"width\":531,\"height\":326},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"w\":450,\"dataType\":1,\"h\":300,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"option\":{\"oddRowBGC\":\"#030D3A\",\"headShow\":true,\"hoverPause\":true,\"indexWidth\":80,\"index\":false,\"carousel\":\"single\",\"title\":{\"show\":true,\"text\":\"\",\"textStyle\":{\"color\":\"#464646\",\"fontWeight\":\"normal\"}},\"evenRowBGC\":\"#003B51\",\"header\":[{\"width\":100,\"label\":\"罪犯姓名\"},{\"width\":100,\"label\":\"银行账户\"},{\"width\":100,\"label\":\"异常来源\"},{\"width\":100,\"label\":\"异常金额\"},{\"width\":100,\"label\":\"时间\"}],\"headerBGC\":\"#041732\",\"headerHeight\":55,\"waitTime\":2000,\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-22 15:11:33', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143312891904', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":1917.0000000000002,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6%E5%A4%B4%E5%9B%BE%E7%89%87_1657175683138.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143350640640', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"北京科技数字化云平台\",\"size\":{\"width\":420,\"height\":77},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":7,\"fontSize\":27,\"text\":\"\",\"fontWeight\":\"bold\",\"marginTop\":13,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143363223552', NULL, '1014376428645961728', NULL, 'JCurrentTime', '{\"chartData\":\"\",\"borderColor\":\"#FFFFFF00\",\"size\":{\"width\":421,\"height\":35},\"background\":\"#FFFFFF00\",\"w\":6,\"dataType\":1,\"h\":6,\"turnConfig\":{\"url\":\"\"},\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"option\":{\"body\":{\"color\":\"#13DADD\",\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"showWeek\":\"hide\",\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143375806464', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143384195072', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"网关管理\",\"size\":{\"width\":80,\"height\":41},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143392583680', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143405166592', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"云组态\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143426138112', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143442915328', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143455498240', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143468081152', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143484858368', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143501635584', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143514218496', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备管理\",\"size\":{\"width\":81,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143526801408', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"动态数据\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143539384320', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"人员管理\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143560355840', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"监控管理\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143577133056', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"人员定位\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143593910272', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"能源管理\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143606493184', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":465,\"height\":260},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6左上_1657176154547.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143619076096', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"功耗总量\",\"size\":{\"width\":115,\"height\":33.99999999999994},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143635853312', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"电能耗|水能耗\",\"size\":{\"width\":267.00000000000006,\"height\":42.999999999999886},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":15,\"fontSize\":21,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143648436224', NULL, '1014376428645961728', NULL, 'JCountTo', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"17563\",\"size\":{\"width\":87.99999999999996,\"height\":40.52517985611512},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#4A90E200\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"suffixFontSize\":16,\"borderColor\":\"#31aefd\",\"prefixColor\":\"#FFFFFF\",\"color\":\"#FFFFFF\",\"suffixFontWeight\":\"normal\",\"prefix\":\"\",\"whole\":true,\"boxHeight\":50,\"suffix\":\"\",\"type\":\"img\",\"body\":{\"color\":\"#FFFFFF\",\"text\":\"\",\"fontWeight\":\"bold\",\"marginTop\":0,\"marginLeft\":0},\"prefixFontSize\":16,\"prefixFontWeight\":\"normal\",\"suffixColor\":\"#FFFFFF\",\"fontSize\":16,\"boxWidth\":50,\"fontWeight\":\"normal\",\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143665213440', NULL, '1014376428645961728', NULL, 'JCountTo', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"11163\",\"size\":{\"width\":91.99999999999994,\"height\":39.00000000000006},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#4A90E200\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"suffixFontSize\":16,\"borderColor\":\"#31aefd\",\"prefixColor\":\"#FFFFFF\",\"color\":\"#FFFFFF\",\"suffixFontWeight\":\"normal\",\"prefix\":\"\",\"whole\":true,\"boxHeight\":50,\"suffix\":\"\",\"type\":\"none\",\"body\":{\"color\":\"#FFFFFF\",\"text\":\"\",\"fontWeight\":\"bold\",\"marginTop\":0,\"marginLeft\":0},\"prefixFontSize\":16,\"prefixFontWeight\":\"normal\",\"suffixColor\":\"#FFFFFF\",\"fontSize\":16,\"boxWidth\":50,\"fontWeight\":\"normal\",\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143690379264', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"kw/h\",\"size\":{\"width\":80.00000000000006,\"height\":32.99999999999994},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":22,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143711350784', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"kw/h\",\"size\":{\"width\":91.00000000000006,\"height\":31.999999999999886},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":22,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143728128000', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":468,\"height\":632},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6左下_1657176316163.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143744905216', NULL, '1014376428645961728', NULL, 'JBar', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"name\\\": \\\"一日\\\",    \\\"value\\\": 1280,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"二日\\\",    \\\"value\\\": 2000,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"三日\\\",    \\\"value\\\": 1756,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"四日\\\",    \\\"value\\\": 1240,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"五日\\\",    \\\"value\\\": 800,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"六日\\\",    \\\"value\\\": 1654,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"七日\\\",    \\\"value\\\": 2125,    \\\"type\\\": \\\"近七日电能耗\\\"  }]\",\"size\":{\"width\":393,\"height\":264},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"yAxis\":{\"axisLabel\":{\"color\":\"#909198\"},\"lineStyle\":{\"color\":\"#f3f3f3\"},\"splitLine\":{\"lineStyle\":{\"color\":\"#9B9B9B\"},\"show\":true,\"interval\":2},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"xAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"},\"axisLine\":{\"lineStyle\":{\"color\":\"#CCCCCC\"}},\"splitLine\":{\"lineStyle\":{\"color\":\"#F3F3F3\"},\"show\":false},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"grid\":{\"top\":46,\"left\":1,\"bottom\":20,\"show\":false,\"right\":6,\"containLabel\":true},\"series\":[{\"barWidth\":12,\"data\":[],\"itemStyle\":{\"color\":\"#00CED1\",\"borderRadius\":3},\"type\":\"bar\"}],\"tooltip\":{\"axisPointer\":{\"label\":{\"backgroundColor\":\"#333\",\"show\":true},\"type\":\"shadow\"},\"trigger\":\"axis\"},\"title\":{\"subtext\":\"\",\"left\":137,\"show\":true,\"text\":\"近七日电能耗\",\"textStyle\":{\"color\":\"#EEF1FA\",\"fontSize\":17,\"fontWeight\":\"normal\"},\"subtextStyle\":{\"color\":\"#B9B8CE\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143761682432', NULL, '1014376428645961728', NULL, 'JBar', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"name\\\": \\\"一日\\\",    \\\"value\\\": 1280,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"二日\\\",    \\\"value\\\": 2000,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"三日\\\",    \\\"value\\\": 1756,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"四日\\\",    \\\"value\\\": 1240,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"五日\\\",    \\\"value\\\": 800,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"六日\\\",    \\\"value\\\": 1654,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"七日\\\",    \\\"value\\\": 2125,    \\\"type\\\": \\\"近七日电能耗\\\"  }]\",\"size\":{\"width\":391,\"height\":266},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"yAxis\":{\"axisLabel\":{\"color\":\"#909198\"},\"lineStyle\":{\"color\":\"#f3f3f3\"},\"splitLine\":{\"lineStyle\":{\"color\":\"#909198\"},\"show\":true,\"interval\":2},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"xAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"},\"axisLine\":{\"lineStyle\":{\"color\":\"#CCCCCC\"}},\"splitLine\":{\"lineStyle\":{\"color\":\"#F3F3F3\"},\"show\":false},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"grid\":{\"top\":46,\"left\":1,\"bottom\":20,\"show\":false,\"right\":6,\"containLabel\":true},\"series\":[{\"barWidth\":12,\"data\":[],\"itemStyle\":{\"color\":\"#00CED1\",\"borderRadius\":3},\"type\":\"bar\"}],\"tooltip\":{\"axisPointer\":{\"label\":{\"backgroundColor\":\"#333\",\"show\":true},\"type\":\"shadow\"},\"trigger\":\"axis\",\"textStyle\":{\"color\":\"#EEF1FA\"}},\"title\":{\"subtext\":\"\",\"left\":116,\"show\":true,\"text\":\"近七日水能耗\",\"textStyle\":{\"color\":\"#EEF1FA\",\"fontSize\":17,\"fontWeight\":\"normal\"},\"subtextStyle\":{\"color\":\"#B9B8CE\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143786848256', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":857,\"height\":483},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6border16_1657176410080.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143803625472', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 66,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":465,\"height\":300},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} <br/>{b} : {c}%\"},\"title\":{\"top\":213,\"left\":159,\"text\":\"二号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":16,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143816208384', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 50,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":359,\"height\":253},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} <br/>{b} : {c}%\"},\"title\":{\"top\":179,\"left\":117,\"text\":\"三号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":15,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143837179904', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 30,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":359,\"height\":253},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} <br/>{b} : {c}%\"},\"title\":{\"top\":177,\"left\":117,\"text\":\"四号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":15,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143853957120', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 90,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":359,\"height\":253},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} <br/>{b} : {c}%\"},\"title\":{\"top\":177,\"left\":117,\"text\":\"五号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":15,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143870734336', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":859,\"height\":390},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6中下_1657176573600.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143895900160', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备列表\",\"size\":{\"width\":184,\"height\":44.000000000000064},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":17,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143921065984', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":465,\"height\":449},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6右上_1657176473804.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143933648896', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"信息\",\"size\":{\"width\":342,\"height\":51},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143946231808', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"站点号：0001\",\"size\":{\"width\":459,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143958814720', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备状态：正常\",\"size\":{\"width\":460,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143983980544', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"环境温度：36摄氏度\",\"size\":{\"width\":458,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338143996563456', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"在线设备：20 台\",\"size\":{\"width\":459,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338144009146368', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":465,\"height\":410},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6右上_1657176473804.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338144025923584', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"近七日设备在线数\",\"size\":{\"width\":340,\"height\":44},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":15,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338144046895104', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备功率信息\",\"size\":{\"width\":465,\"height\":57.99999999999997},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":17,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338144063672320', NULL, '1014376428645961728', NULL, 'JLine', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"value\\\": 20,    \\\"name\\\": \\\"1\\\"  },  {    \\\"value\\\": 19,    \\\"name\\\": \\\"2\\\"  },  {    \\\"value\\\": 20,    \\\"name\\\": \\\"3\\\"  },  {    \\\"value\\\": 17,    \\\"name\\\": \\\"4\\\"  },  {    \\\"value\\\": 18,    \\\"name\\\": \\\"5\\\"  },  {    \\\"value\\\": 20,    \\\"name\\\": \\\"6\\\"  },  {    \\\"value\\\": 20,    \\\"name\\\": \\\"7\\\"  },  {    \\\"value\\\": 16,    \\\"name\\\": \\\"8\\\"  },  {    \\\"value\\\": 17,    \\\"name\\\": \\\"9\\\"  },  {    \\\"value\\\": 19,    \\\"name\\\": \\\"10\\\"  }]\",\"size\":{\"width\":466,\"height\":288},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"yAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"},\"max\":30,\"axisLine\":{\"lineStyle\":{\"color\":\"#039199\"},\"show\":true},\"splitLine\":{\"lineStyle\":{\"color\":\"#CCCCCC\"},\"show\":false},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"grid\":{\"top\":9,\"left\":31,\"bottom\":41,\"show\":false,\"right\":1},\"series\":[{\"areaStyleOpacity\":0.5,\"data\":[],\"lineType\":\"area\",\"itemStyle\":{\"color\":\"#64b5f6\"},\"label\":{\"color\":\"#EEF1FA\",\"show\":false},\"type\":\"line\"}],\"tooltip\":{\"textStyle\":{\"color\":\"#EEF1FA\"}},\"title\":{\"subtext\":\"\",\"left\":10,\"show\":false,\"text\":\"基础折线图\",\"textStyle\":{\"color\":\"#EEF1FA\",\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"headColor\":\"#1D1F26\",\"textStyle\":{\"color\":\"#FFFFFF\"},\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338144080449536', NULL, '1014376428645961728', NULL, 'JScrollTable', '{\"borderColor\":\"#FFFFFF00\",\"dataType\":1,\"h\":300,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号搅机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  }]\",\"size\":{\"width\":852,\"height\":329},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":450,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"evenColor\":\"#003B51\",\"headerBgColor\":\"#0A73FF\",\"fieldMapping\":[{\"name\":\"编号\",\"width\":150,\"key\":\"type1\"},{\"name\":\"设备名\",\"width\":300,\"key\":\"type2\"},{\"name\":\"设备状态\",\"width\":200,\"key\":\"type3\"},{\"name\":\"功率\",\"width\":150,\"key\":\"type4\"}],\"showHead\":true,\"scroll\":true,\"scrollTime\":5000,\"lineHeight\":50,\"fontSize\":24,\"bodyFontColor\":\"#FFFFFF\",\"showBorder\":true,\"oddColor\":\"#0A2732\",\"headerFontColor\":\"#FFFFFF\"}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
-INSERT INTO `onl_drag_page_comp` VALUES ('1021338144088838144', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 70,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":524,\"height\":301},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#EEEEEE\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#EEEEEE\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} <br/>{b} : {c}%\"},\"title\":{\"top\":211,\"left\":159,\"text\":\"一号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":16,\"fontWeight\":\"normal\"},\"subtextStyle\":{\"color\":\"#B9B8CE\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"headColor\":\"#1D1F26\",\"textStyle\":{\"color\":\"#FFFFFF\"},\"title\":\"\"}}}', 'admin', '2024-11-26 18:39:59', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1021960592459091968', NULL, '1016994272231608320', NULL, 'JDragBorder', '{\"size\":{\"width\":801,\"height\":926},\"w\":450,\"dataType\":1,\"h\":300,\"option\":{\"dur\":3,\"backgroundColor\":\"#ffffff00\",\"mainColor\":\"#83BFF6\",\"titleWidth\":250,\"type\":\"8\",\"title\":\"边框\",\"subColor\":\"#00CED1\",\"reverse\":false}}', 'admin', '2024-11-28 11:53:23', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1021960592501035008', NULL, '1016994272231608320', NULL, 'JDragBorder', '{\"size\":{\"width\":488,\"height\":926},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":450,\"dataType\":1,\"h\":300,\"option\":{\"dur\":3,\"backgroundColor\":\"#ffffff00\",\"mainColor\":\"#83BFF6\",\"titleWidth\":250,\"type\":\"8\",\"title\":\"边框\",\"subColor\":\"#00CED1\",\"reverse\":false}}', 'admin', '2024-11-28 11:53:23', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1021960592526200832', NULL, '1016994272231608320', NULL, 'JDragBorder', '{\"size\":{\"width\":507,\"height\":926},\"w\":450,\"dataType\":1,\"h\":300,\"option\":{\"dur\":3,\"backgroundColor\":\"#ffffff00\",\"mainColor\":\"#83BFF6\",\"titleWidth\":250,\"type\":\"8\",\"title\":\"边框\",\"subColor\":\"#00CED1\",\"reverse\":false}}', 'admin', '2024-11-28 11:53:23', NULL, NULL);
@@ -5466,6 +5538,54 @@ INSERT INTO `onl_drag_page_comp` VALUES ('1174260665948340224', NULL, '115977471
 INSERT INTO `onl_drag_page_comp` VALUES ('1174260665977700352', NULL, '1159774718212997120', NULL, 'JPictorial', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":300,\"url\":\"http://api.jeecg.com/mock/26/pictogram\",\"timeOut\":0,\"chartData\":\"[{\\\"name\\\":\\\"驯鹿\\\",\\\"value\\\":123},{\\\"name\\\":\\\"飞机\\\",\\\"value\\\":60},{\\\"name\\\":\\\"火箭\\\",\\\"value\\\":25},{\\\"name\\\":\\\"高铁\\\",\\\"value\\\":18},{\\\"name\\\":\\\"轮船\\\",\\\"value\\\":12},{\\\"name\\\":\\\"汽车\\\",\\\"value\\\":9},{\\\"name\\\":\\\"跑步\\\",\\\"value\\\":2},{\\\"name\\\":\\\"步行\\\",\\\"value\\\":1}]\",\"size\":{\"height\":300},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":450,\"turnConfig\":{\"type\":\"_blank\",\"url\":\"\"},\"linkType\":\"url\",\"linkageConfig\":[],\"option\":{\"symbol\":\"/img/bg/source/source1.svg\",\"symbolMargin\":0,\"symbolSize\":30,\"grid\":{\"top\":12,\"left\":0,\"bottom\":18,\"right\":50,\"containLabel\":true},\"series\":[],\"tooltip\":{\"axisPointer\":{\"label\":{\"backgroundColor\":\"#333\",\"show\":true},\"type\":\"shadow\"},\"trigger\":\"axis\",\"textStyle\":{\"color\":\"#EEF1FA\"}},\"title\":{\"textAlign\":\"left\",\"show\":true,\"text\":\"\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-01-22 18:19:30', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1174260666002866176', NULL, '1159774718212997120', NULL, 'JDragDecoration', '{\"size\":{\"height\":100},\"w\":300,\"dataType\":1,\"h\":100,\"option\":{\"dur\":3,\"mainColor\":\"#00CED1\",\"fontSize\":15,\"type\":\"2\",\"title\":\"装饰2\",\"subColor\":\"#FAD400\",\"reverse\":false}}', 'admin', '2026-01-22 18:19:30', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1174260666015449088', NULL, '1159774718212997120', NULL, 'JBar', '{\"markLineConfig\":{\"show\":false,\"markLine\":[]},\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":300,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":[{\"name\":\"苹果\",\"type\":\"手机品牌\",\"value\":1000},{\"name\":\"三星\",\"type\":\"手机品牌\",\"value\":5400},{\"name\":\"小米\",\"type\":\"手机品牌\",\"value\":800},{\"name\":\"oppo\",\"type\":\"手机品牌\",\"value\":400},{\"name\":\"vivo\",\"type\":\"手机品牌\",\"value\":10000}],\"size\":{\"height\":300},\"w\":450,\"turnConfig\":{\"type\":\"_blank\",\"url\":\"\"},\"linkType\":\"url\",\"linkageConfig\":[],\"option\":{\"yAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"},\"lineStyle\":{\"color\":\"#EEF1FA\"},\"splitLine\":{\"lineStyle\":{\"color\":\"#8F8D8D\"},\"show\":false,\"interval\":2},\"yUnit\":\"\"},\"xAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"}},\"grid\":{\"top\":30,\"left\":0,\"bottom\":18,\"show\":false,\"right\":40,\"containLabel\":true},\"series\":[{\"barWidth\":40,\"data\":[],\"itemStyle\":{\"color\":\"#64b5f6\",\"borderRadius\":0},\"label\":{\"position\":\"top\"},\"type\":\"bar\"}],\"tooltip\":{\"axisPointer\":{\"label\":{\"backgroundColor\":\"#333\",\"show\":true},\"type\":\"shadow\"},\"trigger\":\"axis\",\"textStyle\":{\"color\":\"#EEF1FA\"}},\"title\":{\"textAlign\":\"left\",\"show\":true,\"text\":\"\",\"textStyle\":{\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-01-22 18:19:30', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471620386816', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 70,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":524,\"height\":301},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#EEEEEE\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#EEEEEE\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} {b} : {c}%\"},\"title\":{\"top\":211,\"left\":159,\"text\":\"一号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":16,\"fontWeight\":\"normal\"},\"subtextStyle\":{\"color\":\"#B9B8CE\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"headColor\":\"#1D1F26\",\"textStyle\":{\"color\":\"#FFFFFF\"},\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471653941248', NULL, '1014376428645961728', NULL, 'JScrollTable', '{\"borderColor\":\"#FFFFFF00\",\"dataType\":1,\"h\":300,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"5322\\\",    \\\"type2\\\": \\\"2号搅机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"185\\\"  },  {    \\\"type1\\\": \\\"1753\\\",    \\\"type2\\\": \\\"1号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0022\\\",    \\\"type2\\\": \\\"2号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"8509\\\",    \\\"type2\\\": \\\"3号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  },  {    \\\"type1\\\": \\\"0374\\\",    \\\"type2\\\": \\\"4号机房\\\",    \\\"type3\\\": \\\"正常\\\",    \\\"type4\\\": \\\"180\\\"  }]\",\"size\":{\"width\":852,\"height\":329},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":450,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"evenColor\":\"#003B51\",\"headerBgColor\":\"#0A73FF\",\"fieldMapping\":[{\"name\":\"编号\",\"width\":150,\"key\":\"type1\"},{\"name\":\"设备名\",\"width\":300,\"key\":\"type2\"},{\"name\":\"设备状态\",\"width\":200,\"key\":\"type3\"},{\"name\":\"功率\",\"width\":150,\"key\":\"type4\"}],\"showHead\":true,\"scroll\":true,\"scrollTime\":5000,\"lineHeight\":50,\"fontSize\":24,\"bodyFontColor\":\"#FFFFFF\",\"showBorder\":true,\"oddColor\":\"#0A2732\",\"headerFontColor\":\"#FFFFFF\"}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471662329856', NULL, '1014376428645961728', NULL, 'JLine', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"value\\\": 20,    \\\"name\\\": \\\"1\\\"  },  {    \\\"value\\\": 19,    \\\"name\\\": \\\"2\\\"  },  {    \\\"value\\\": 20,    \\\"name\\\": \\\"3\\\"  },  {    \\\"value\\\": 17,    \\\"name\\\": \\\"4\\\"  },  {    \\\"value\\\": 18,    \\\"name\\\": \\\"5\\\"  },  {    \\\"value\\\": 20,    \\\"name\\\": \\\"6\\\"  },  {    \\\"value\\\": 20,    \\\"name\\\": \\\"7\\\"  },  {    \\\"value\\\": 16,    \\\"name\\\": \\\"8\\\"  },  {    \\\"value\\\": 17,    \\\"name\\\": \\\"9\\\"  },  {    \\\"value\\\": 19,    \\\"name\\\": \\\"10\\\"  }]\",\"size\":{\"width\":466,\"height\":288},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"yAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"},\"max\":30,\"axisLine\":{\"lineStyle\":{\"color\":\"#039199\"},\"show\":true},\"splitLine\":{\"lineStyle\":{\"color\":\"#CCCCCC\"},\"show\":false},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"grid\":{\"top\":9,\"left\":31,\"bottom\":41,\"show\":false,\"right\":1},\"series\":[{\"areaStyleOpacity\":0.5,\"data\":[],\"lineType\":\"area\",\"itemStyle\":{\"color\":\"#64b5f6\"},\"label\":{\"color\":\"#EEF1FA\",\"show\":false},\"type\":\"line\"}],\"tooltip\":{\"textStyle\":{\"color\":\"#EEF1FA\"}},\"title\":{\"subtext\":\"\",\"left\":10,\"show\":false,\"text\":\"基础折线图\",\"textStyle\":{\"color\":\"#EEF1FA\",\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"headColor\":\"#1D1F26\",\"textStyle\":{\"color\":\"#FFFFFF\"},\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471670718464', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备功率信息\",\"size\":{\"width\":465,\"height\":57.99999999999997},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":17,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471679107072', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"近七日设备在线数\",\"size\":{\"width\":340,\"height\":44},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":15,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471687495680', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":465,\"height\":410},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6右上_1657176473804.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471695884288', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"在线设备：20 台\",\"size\":{\"width\":459,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471704272896', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"环境温度：36摄氏度\",\"size\":{\"width\":458,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471712661504', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备状态：正常\",\"size\":{\"width\":460,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471721050112', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"站点号：0001\",\"size\":{\"width\":459,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471725244416', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"信息\",\"size\":{\"width\":342,\"height\":51},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471733633024', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":465,\"height\":449},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6右上_1657176473804.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471737827328', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备列表\",\"size\":{\"width\":184,\"height\":44.000000000000064},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":17,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471746215936', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":859,\"height\":390},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6中下_1657176573600.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471750410240', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 90,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":359,\"height\":253},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} {b} : {c}%\"},\"title\":{\"top\":177,\"left\":117,\"text\":\"五号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":15,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471762993152', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 30,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":359,\"height\":253},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} {b} : {c}%\"},\"title\":{\"top\":177,\"left\":117,\"text\":\"四号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":15,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471771381760', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 50,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":359,\"height\":253},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} {b} : {c}%\"},\"title\":{\"top\":179,\"left\":117,\"text\":\"三号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":15,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471775576064', NULL, '1014376428645961728', NULL, 'JGauge', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"名称\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/26/gauge\",\"timeOut\":-1,\"chartData\":\"[  {    \\\"min\\\": 1,    \\\"max\\\": 210,    \\\"label\\\": \\\"名称\\\",    \\\"value\\\": 66,    \\\"unit\\\": \\\"%\\\"  }]\",\"size\":{\"width\":465,\"height\":300},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"grid\":{\"bottom\":115},\"series\":[{\"axisLabel\":{\"show\":true,\"fontSize\":12},\"data\":[],\"splitLine\":{\"lineStyle\":{\"color\":\"#eee\",\"width\":4},\"length\":12},\"axisTick\":{\"lineStyle\":{\"color\":\"#eee\"},\"show\":true},\"progress\":{\"show\":true},\"itemStyle\":{\"color\":\"#64b5f6\"},\"detail\":{\"formatter\":\"{value}\",\"fontSize\":25},\"type\":\"gauge\"}],\"tooltip\":{\"formatter\":\"{a} {b} : {c}%\"},\"title\":{\"top\":213,\"left\":159,\"text\":\"二号机房功率\",\"textStyle\":{\"color\":\"#9AA8D4\",\"fontSize\":16,\"fontWeight\":\"normal\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471783964672', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":857,\"height\":483},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6border16_1657176410080.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471788158976', NULL, '1014376428645961728', NULL, 'JBar', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"name\\\": \\\"一日\\\",    \\\"value\\\": 1280,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"二日\\\",    \\\"value\\\": 2000,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"三日\\\",    \\\"value\\\": 1756,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"四日\\\",    \\\"value\\\": 1240,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"五日\\\",    \\\"value\\\": 800,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"六日\\\",    \\\"value\\\": 1654,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"七日\\\",    \\\"value\\\": 2125,    \\\"type\\\": \\\"近七日电能耗\\\"  }]\",\"size\":{\"width\":391,\"height\":266},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"yAxis\":{\"axisLabel\":{\"color\":\"#909198\"},\"lineStyle\":{\"color\":\"#f3f3f3\"},\"splitLine\":{\"lineStyle\":{\"color\":\"#909198\"},\"show\":true,\"interval\":2},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"xAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"},\"axisLine\":{\"lineStyle\":{\"color\":\"#CCCCCC\"}},\"splitLine\":{\"lineStyle\":{\"color\":\"#F3F3F3\"},\"show\":false},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"grid\":{\"top\":46,\"left\":1,\"bottom\":20,\"show\":false,\"right\":6,\"containLabel\":true},\"series\":[{\"barWidth\":12,\"data\":[],\"itemStyle\":{\"color\":\"#00CED1\",\"borderRadius\":3},\"type\":\"bar\"}],\"tooltip\":{\"axisPointer\":{\"label\":{\"backgroundColor\":\"#333\",\"show\":true},\"type\":\"shadow\"},\"trigger\":\"axis\",\"textStyle\":{\"color\":\"#EEF1FA\"}},\"title\":{\"subtext\":\"\",\"left\":116,\"show\":true,\"text\":\"近七日水能耗\",\"textStyle\":{\"color\":\"#EEF1FA\",\"fontSize\":17,\"fontWeight\":\"normal\"},\"subtextStyle\":{\"color\":\"#B9B8CE\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471792353280', NULL, '1014376428645961728', NULL, 'JBar', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"维度\"},{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":0,\"chartData\":\"[  {    \\\"name\\\": \\\"一日\\\",    \\\"value\\\": 1280,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"二日\\\",    \\\"value\\\": 2000,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"三日\\\",    \\\"value\\\": 1756,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"四日\\\",    \\\"value\\\": 1240,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"五日\\\",    \\\"value\\\": 800,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"六日\\\",    \\\"value\\\": 1654,    \\\"type\\\": \\\"近七日电能耗\\\"  },  {    \\\"name\\\": \\\"七日\\\",    \\\"value\\\": 2125,    \\\"type\\\": \\\"近七日电能耗\\\"  }]\",\"size\":{\"width\":393,\"height\":264},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"yAxis\":{\"axisLabel\":{\"color\":\"#909198\"},\"lineStyle\":{\"color\":\"#f3f3f3\"},\"splitLine\":{\"lineStyle\":{\"color\":\"#9B9B9B\"},\"show\":true,\"interval\":2},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"xAxis\":{\"axisLabel\":{\"color\":\"#EEF1FA\"},\"axisLine\":{\"lineStyle\":{\"color\":\"#CCCCCC\"}},\"splitLine\":{\"lineStyle\":{\"color\":\"#F3F3F3\"},\"show\":false},\"nameTextStyle\":{\"color\":\"#EEF1FA\"}},\"grid\":{\"top\":46,\"left\":1,\"bottom\":20,\"show\":false,\"right\":6,\"containLabel\":true},\"series\":[{\"barWidth\":12,\"data\":[],\"itemStyle\":{\"color\":\"#00CED1\",\"borderRadius\":3},\"type\":\"bar\"}],\"tooltip\":{\"axisPointer\":{\"label\":{\"backgroundColor\":\"#333\",\"show\":true},\"type\":\"shadow\"},\"trigger\":\"axis\"},\"title\":{\"subtext\":\"\",\"left\":137,\"show\":true,\"text\":\"近七日电能耗\",\"textStyle\":{\"color\":\"#EEF1FA\",\"fontSize\":17,\"fontWeight\":\"normal\"},\"subtextStyle\":{\"color\":\"#B9B8CE\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471800741888', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":468,\"height\":632},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6左下_1657176316163.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471804936192', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"kw/h\",\"size\":{\"width\":91.00000000000006,\"height\":31.999999999999886},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":22,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471846879232', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"kw/h\",\"size\":{\"width\":80.00000000000006,\"height\":32.99999999999994},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":22,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471851073536', NULL, '1014376428645961728', NULL, 'JCountTo', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"11163\",\"size\":{\"width\":91.99999999999994,\"height\":39.00000000000006},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#4A90E200\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"suffixFontSize\":16,\"borderColor\":\"#31aefd\",\"prefixColor\":\"#FFFFFF\",\"color\":\"#FFFFFF\",\"suffixFontWeight\":\"normal\",\"prefix\":\"\",\"whole\":true,\"boxHeight\":50,\"suffix\":\"\",\"type\":\"none\",\"body\":{\"color\":\"#FFFFFF\",\"text\":\"\",\"fontWeight\":\"bold\",\"marginTop\":0,\"marginLeft\":0},\"prefixFontSize\":16,\"prefixFontWeight\":\"normal\",\"suffixColor\":\"#FFFFFF\",\"fontSize\":16,\"boxWidth\":50,\"fontWeight\":\"normal\",\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471859462144', NULL, '1014376428645961728', NULL, 'JCountTo', '{\"borderColor\":\"#FFFFFF00\",\"paramOption\":[],\"dataSetName\":\"erp\",\"chartData\":\"17563\",\"fieldOption\":[{\"show\":\"Y\",\"label\":\"数量\",\"text\":\"数量\",\"type\":\"String\",\"value\":\"COUNT(*)\"}],\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"seriesType\":[],\"dataMapping\":[{\"mapping\":\"COUNT(*)\",\"filed\":\"数值\"}],\"dataType\":2,\"query\":[],\"h\":30,\"dataSetApi\":\"select COUNT(*) from bd_client\",\"drillData\":[],\"viewLoading\":true,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"dataSetMethod\":\"get\",\"timeOut\":0,\"size\":{\"width\":87.99999999999996,\"height\":40.52517985611512},\"dataSetId\":\"1213817160684048384\",\"dataSetType\":\"sql\",\"background\":\"#4A90E200\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"dictOptions\":{},\"linkageConfig\":[],\"dataSetIzAgent\":\"0\",\"option\":{\"suffixFontSize\":16,\"borderColor\":\"#31aefd\",\"prefixColor\":\"#FFFFFF\",\"color\":\"#FFFFFF\",\"suffixFontWeight\":\"normal\",\"prefix\":\"\",\"whole\":true,\"boxHeight\":50,\"suffix\":\"\",\"type\":\"img\",\"body\":{\"color\":\"#FFFFFF\",\"text\":\"\",\"fontWeight\":\"bold\",\"marginTop\":0,\"marginLeft\":0},\"prefixFontSize\":16,\"prefixFontWeight\":\"normal\",\"suffixColor\":\"#FFFFFF\",\"fontSize\":16,\"boxWidth\":50,\"fontWeight\":\"normal\",\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471863656448', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"电能耗|水能耗\",\"size\":{\"width\":267.00000000000006,\"height\":42.999999999999886},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":15,\"fontSize\":21,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471867850752', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"功耗总量\",\"size\":{\"width\":115,\"height\":33.99999999999994},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471876239360', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":465,\"height\":260},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6左上_1657176154547.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471884627968', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"能源管理\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471888822272', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"人员定位\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471901405184', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"监控管理\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471905599488', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"人员管理\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471909793792', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"动态数据\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471918182400', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"设备管理\",\"size\":{\"width\":81,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471926571008', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471934959616', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471939153920', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471947542528', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471951736832', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471955931136', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471960125440', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"云组态\",\"size\":{\"width\":80,\"height\":40},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471968514048', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471972708352', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"网关管理\",\"size\":{\"width\":80,\"height\":41},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":0,\"fontSize\":18,\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471976902656', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":130,\"height\":52},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6菱形_1657175841432.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471981096960', NULL, '1014376428645961728', NULL, 'JCurrentTime', '{\"chartData\":\"\",\"borderColor\":\"#FFFFFF00\",\"size\":{\"width\":421,\"height\":35},\"background\":\"#FFFFFF00\",\"w\":6,\"dataType\":1,\"h\":6,\"turnConfig\":{\"url\":\"\"},\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"option\":{\"body\":{\"color\":\"#13DADD\",\"text\":\"\",\"fontWeight\":\"normal\",\"marginTop\":0,\"marginLeft\":0},\"showWeek\":\"hide\",\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471985291264', NULL, '1014376428645961728', NULL, 'JText', '{\"borderColor\":\"#FFFFFF00\",\"dataMapping\":[{\"mapping\":\"\",\"filed\":\"数值\"}],\"dataType\":1,\"h\":30,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":0,\"chartData\":\"北京科技数字化云平台\",\"size\":{\"width\":420,\"height\":77},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"background\":\"#FFFFFF00\",\"w\":6,\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"option\":{\"body\":{\"color\":\"#13DADD\",\"letterSpacing\":7,\"fontSize\":27,\"text\":\"\",\"fontWeight\":\"bold\",\"marginTop\":13,\"marginLeft\":0},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
+INSERT INTO `onl_drag_page_comp` VALUES ('1213817471993679872', NULL, '1014376428645961728', NULL, 'JImg', '{\"size\":{\"width\":1917.0000000000002,\"height\":80},\"actionConfig\":{\"operateType\":\"modal\",\"modalName\":\"\",\"url\":\"\"},\"w\":6,\"dataType\":1,\"h\":26,\"url\":\"http://api.jeecg.com/mock/42/nav\",\"timeOut\":-1,\"option\":{\"body\":{\"url\":\"https://static.jeecg.com/bigscreen/6%E5%A4%B4%E5%9B%BE%E7%89%87_1657175683138.png\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"title\":\"\"}}}', 'admin', '2026-05-11 22:04:07', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1517018288431857665', NULL, '1516747539813007362', NULL, 'JPie', '{\"dataMapping\":[{\"mapping\":\"column1\",\"filed\":\"维度\"},{\"mapping\":\"column8\",\"filed\":\"数值\"}],\"paramOption\":[],\"dataType\":2,\"dataSetName\":\"项目性质收入统计JSON\",\"query\":[],\"dataSetApi\":\"[{\\\"column1\\\":\\\"市场化-电商业务\\\",\\\"column2\\\":4865.41,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":4865.41},{\\\"column1\\\":\\\"统筹型\\\",\\\"column2\\\":35767081.88,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":35767081.88},{\\\"column1\\\":\\\"市场化-非股东\\\",\\\"column2\\\":1487045.35,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":1487045.35},{\\\"column1\\\":\\\"市场化-参控股\\\",\\\"column2\\\":382690.56,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":382690.56},{\\\"column1\\\":\\\"市场化-员工福利\\\",\\\"column2\\\":256684.91,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":265684.91},{\\\"column1\\\":\\\"市场化-再保险\\\",\\\"column2\\\":563451.03,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":563451.03},{\\\"column1\\\":\\\"市场化-海外业务\\\",\\\"column2\\\":760576.25,\\\"column3\\\":770458.75,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":1531035.00},{\\\"column1\\\":\\\"市场化-风险咨询\\\",\\\"column2\\\":0.00,\\\"column3\\\":910183.93,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":226415.09,\\\"column8\\\":1136599.02}]\",\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":-1,\"chartData\":\"[{\\\"value\\\":1048,\\\"name\\\":\\\"vivo\\\"},{\\\"value\\\":735,\\\"name\\\":\\\"oppo\\\"},{\\\"value\\\":580,\\\"name\\\":\\\"苹果\\\"},{\\\"value\\\":484,\\\"name\\\":\\\"小米\\\"},{\\\"value\\\":300,\\\"name\\\":\\\"三星\\\"}]\",\"size\":{\"height\":420},\"dataSetId\":\"1516748630344630273\",\"fieldOption\":[{\"label\":\"项目性质\",\"text\":\"项目性质\",\"value\":\"column1\"},{\"label\":\"保险公估费\",\"text\":\"保险公估费\",\"value\":\"column5\"},{\"label\":\"承保公估评估费\",\"text\":\"承保公估评估费\",\"value\":\"column4\"},{\"label\":\"风险咨询费\",\"text\":\"风险咨询费\",\"value\":\"column3\"},{\"label\":\"保险经纪佣金费\",\"text\":\"保险经纪佣金费\",\"value\":\"column2\"},{\"label\":\"总计\",\"text\":\"总计\",\"value\":\"column8\"},{\"label\":\"内控咨询费\",\"text\":\"内控咨询费\",\"value\":\"column7\"},{\"label\":\"投标咨询费\",\"text\":\"投标咨询费\",\"value\":\"column6\"}],\"dataSetType\":\"json\",\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"dataSetIzAgent\":\"\",\"option\":{\"grid\":{\"bottom\":115,\"show\":false},\"legend\":{\"orient\":\"vertical\"},\"series\":[{\"data\":[],\"name\":\"AccessFrom\",\"emphasis\":{\"itemStyle\":{\"shadowOffsetX\":0,\"shadowBlur\":10,\"shadowColor\":\"rgba(0,0,0,0.5)\"}},\"type\":\"pie\",\"radius\":\"50%\"}],\"tooltip\":{\"trigger\":\"item\"},\"title\":{\"subtext\":\"\",\"left\":\"left\",\"show\":true,\"text\":\"基础饼图\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"textStyle\":{\"color\":\"#4A4A4A\"},\"title\":\"\"}}}', 'admin', '2022-04-21 13:51:59', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1517018288566075393', NULL, '1516747539813007362', NULL, 'JBar', '{\"dataMapping\":[{\"mapping\":\"column1\",\"filed\":\"维度\"},{\"mapping\":\"column8\",\"filed\":\"数值\"}],\"paramOption\":[],\"dataType\":2,\"dataSetName\":\"项目性质收入统计JSON\",\"query\":[],\"dataSetApi\":\"[{\\\"column1\\\":\\\"市场化-电商业务\\\",\\\"column2\\\":4865.41,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":4865.41},{\\\"column1\\\":\\\"统筹型\\\",\\\"column2\\\":35767081.88,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":35767081.88},{\\\"column1\\\":\\\"市场化-非股东\\\",\\\"column2\\\":1487045.35,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":1487045.35},{\\\"column1\\\":\\\"市场化-参控股\\\",\\\"column2\\\":382690.56,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":382690.56},{\\\"column1\\\":\\\"市场化-员工福利\\\",\\\"column2\\\":256684.91,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":265684.91},{\\\"column1\\\":\\\"市场化-再保险\\\",\\\"column2\\\":563451.03,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":563451.03},{\\\"column1\\\":\\\"市场化-海外业务\\\",\\\"column2\\\":760576.25,\\\"column3\\\":770458.75,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":1531035.00},{\\\"column1\\\":\\\"市场化-风险咨询\\\",\\\"column2\\\":0.00,\\\"column3\\\":910183.93,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":226415.09,\\\"column8\\\":1136599.02}]\",\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":-1,\"chartData\":\"[{\\\"name\\\":\\\"苹果\\\",\\\"value\\\":1000879,\\\"type\\\":\\\"手机品牌\\\"},{\\\"name\\\":\\\"三星\\\",\\\"value\\\":3400879,\\\"type\\\":\\\"手机品牌\\\"},{\\\"name\\\":\\\"小米\\\",\\\"value\\\":2300879,\\\"type\\\":\\\"手机品牌\\\"},{\\\"name\\\":\\\"oppo\\\",\\\"value\\\":5400879,\\\"type\\\":\\\"手机品牌\\\"},{\\\"name\\\":\\\"vivo\\\",\\\"value\\\":3400879,\\\"type\\\":\\\"手机品牌\\\"}]\",\"size\":{\"height\":420},\"dataSetId\":\"1516748630344630273\",\"fieldOption\":[{\"label\":\"项目性质\",\"text\":\"项目性质\",\"value\":\"column1\"},{\"label\":\"保险公估费\",\"text\":\"保险公估费\",\"value\":\"column5\"},{\"label\":\"承保公估评估费\",\"text\":\"承保公估评估费\",\"value\":\"column4\"},{\"label\":\"风险咨询费\",\"text\":\"风险咨询费\",\"value\":\"column3\"},{\"label\":\"保险经纪佣金费\",\"text\":\"保险经纪佣金费\",\"value\":\"column2\"},{\"label\":\"总计\",\"text\":\"总计\",\"value\":\"column8\"},{\"label\":\"内控咨询费\",\"text\":\"内控咨询费\",\"value\":\"column7\"},{\"label\":\"投标咨询费\",\"text\":\"投标咨询费\",\"value\":\"column6\"}],\"dataSetType\":\"json\",\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"dataSetIzAgent\":\"\",\"option\":{\"grid\":{\"bottom\":115,\"show\":false},\"series\":[{\"data\":[],\"showBackground\":true,\"backgroundStyle\":{\"color\":\"rgba(180,180,180,0.2)\"},\"type\":\"bar\"}],\"tooltip\":{\"axisPointer\":{\"label\":{\"backgroundColor\":\"#333\",\"show\":true},\"type\":\"shadow\"},\"trigger\":\"axis\"},\"title\":{\"show\":true,\"text\":\"基础柱形图\",\"textStyle\":{\"color\":\"#464646\"}},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"textStyle\":{\"color\":\"#4A4A4A\"},\"title\":\"\"}}}', 'admin', '2022-04-21 13:51:59', NULL, NULL);
 INSERT INTO `onl_drag_page_comp` VALUES ('1517018288670932994', NULL, '1516747539813007362', NULL, 'JLine', '{\"dataMapping\":[{\"mapping\":\"column1\",\"filed\":\"维度\"},{\"mapping\":\"column8\",\"filed\":\"数值\"}],\"paramOption\":[],\"dataType\":2,\"dataSetName\":\"项目性质收入统计JSON\",\"query\":[],\"dataSetApi\":\"[{\\\"column1\\\":\\\"市场化-电商业务\\\",\\\"column2\\\":4865.41,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":4865.41},{\\\"column1\\\":\\\"统筹型\\\",\\\"column2\\\":35767081.88,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":35767081.88},{\\\"column1\\\":\\\"市场化-非股东\\\",\\\"column2\\\":1487045.35,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":1487045.35},{\\\"column1\\\":\\\"市场化-参控股\\\",\\\"column2\\\":382690.56,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":382690.56},{\\\"column1\\\":\\\"市场化-员工福利\\\",\\\"column2\\\":256684.91,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":265684.91},{\\\"column1\\\":\\\"市场化-再保险\\\",\\\"column2\\\":563451.03,\\\"column3\\\":0,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":563451.03},{\\\"column1\\\":\\\"市场化-海外业务\\\",\\\"column2\\\":760576.25,\\\"column3\\\":770458.75,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":0,\\\"column8\\\":1531035.00},{\\\"column1\\\":\\\"市场化-风险咨询\\\",\\\"column2\\\":0.00,\\\"column3\\\":910183.93,\\\"column4\\\":0,\\\"column5\\\":0,\\\"column6\\\":0,\\\"column7\\\":226415.09,\\\"column8\\\":1136599.02}]\",\"url\":\"http://api.jeecg.com/mock/33/chart\",\"timeOut\":-1,\"chartData\":\"[{\\\"value\\\":1000,\\\"name\\\":\\\"联想\\\"},{\\\"value\\\":7350,\\\"name\\\":\\\"小米\\\"},{\\\"value\\\":5800,\\\"name\\\":\\\"华为\\\"},{\\\"value\\\":6000,\\\"name\\\":\\\"苹果\\\"},{\\\"value\\\":3000,\\\"name\\\":\\\"戴尔\\\"}]\",\"size\":{\"width\":1650,\"height\":474},\"dataSetId\":\"1516748630344630273\",\"fieldOption\":[{\"label\":\"项目性质\",\"text\":\"项目性质\",\"value\":\"column1\"},{\"label\":\"保险公估费\",\"text\":\"保险公估费\",\"value\":\"column5\"},{\"label\":\"承保公估评估费\",\"text\":\"承保公估评估费\",\"value\":\"column4\"},{\"label\":\"风险咨询费\",\"text\":\"风险咨询费\",\"value\":\"column3\"},{\"label\":\"保险经纪佣金费\",\"text\":\"保险经纪佣金费\",\"value\":\"column2\"},{\"label\":\"总计\",\"text\":\"总计\",\"value\":\"column8\"},{\"label\":\"内控咨询费\",\"text\":\"内控咨询费\",\"value\":\"column7\"},{\"label\":\"投标咨询费\",\"text\":\"投标咨询费\",\"value\":\"column6\"}],\"dataSetType\":\"json\",\"turnConfig\":{\"url\":\"\"},\"linkageConfig\":[],\"dataSetIzAgent\":\"\",\"option\":{\"grid\":{\"bottom\":115,\"show\":false},\"series\":[{\"data\":[],\"type\":\"line\"}],\"title\":{\"subtext\":\"\",\"left\":\"left\",\"text\":\"基础折线图\"},\"card\":{\"rightHref\":\"\",\"size\":\"default\",\"extra\":\"\",\"textStyle\":{\"color\":\"#4A4A4A\"},\"title\":\"\"}}}', 'admin', '2022-04-21 13:52:00', NULL, NULL);
@@ -5983,14 +6103,19 @@ CREATE TABLE `onl_drag_share`  (
   `drag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线仪表盘设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，7:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为密码锁(0 否,1是)',
   `share_token` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分享token',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_ods_drag_id`(`drag_id`) USING BTREE COMMENT '仪表盘id唯一索引'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of onl_drag_share
+-- ----------------------------
+INSERT INTO `onl_drag_share` VALUES ('1213824491073343488', '1014376428645961728', 'http://localhost:8080/drag/share/view/1014376428645961728?shareToken=RalXd4a2eMV9WUJSRER0SvEKxK5r0paW', '', '2026-05-11 22:32:01', '0', '0', '0', 'RalXd4a2eMV9WUJSRER0SvEKxK5r0paW');
 
 -- ----------------------------
 -- Table structure for onl_drag_table_relation
@@ -6009,15 +6134,19 @@ CREATE TABLE `onl_drag_table_relation`  (
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户ID',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_aggregation_name`(`aggregation_name`) USING BTREE,
   INDEX `idx_del_flag`(`del_flag`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_create_by`(`create_by`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of onl_drag_table_relation
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pay_invoice
@@ -6035,12 +6164,12 @@ CREATE TABLE `pay_invoice`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`invoice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_invoice
@@ -6061,18 +6190,18 @@ CREATE TABLE `pay_order`  (
   `order_content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '订单内容',
   `order_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负载信息',
   `pay_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付方式',
-  `pay_time` datetime(0) NULL DEFAULT NULL COMMENT '支付时间',
+  `pay_time` datetime NULL DEFAULT NULL COMMENT '支付时间',
   `pay_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '支付人',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`order_id`) USING BTREE,
   INDEX `idx_order_number`(`order_number`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_order
@@ -6112,16 +6241,16 @@ DROP TABLE IF EXISTS `rep_demo_dxtj`;
 CREATE TABLE `rep_demo_dxtj`  (
   `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '姓名',
-  `gtime` datetime(0) NULL DEFAULT NULL COMMENT '雇佣日期',
+  `gtime` datetime NULL DEFAULT NULL COMMENT '雇佣日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '职务',
   `jphone` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '家庭电话',
-  `birth` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birth` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `hukou` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '户口所在地',
   `laddress` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系地址',
   `jperson` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '紧急联系人',
   `sex` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'xingbie',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_dxtj
@@ -6161,7 +6290,7 @@ CREATE TABLE `rep_demo_employee`  (
   `num` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '编号',
   `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
   `sex` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '性别',
-  `birthday` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birthday` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `nation` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '民族',
   `political` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '政治面貌',
   `native_place` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '籍贯',
@@ -6179,18 +6308,18 @@ CREATE TABLE `rep_demo_employee`  (
   `foreign_language` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语语种',
   `foreign_language_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语水平',
   `computer_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '计算机水平',
-  `graduation_time` datetime(0) NULL DEFAULT NULL COMMENT '毕业时间',
-  `arrival_time` datetime(0) NULL DEFAULT NULL COMMENT '到职时间',
+  `graduation_time` datetime NULL DEFAULT NULL COMMENT '毕业时间',
+  `arrival_time` datetime NULL DEFAULT NULL COMMENT '到职时间',
   `positional_titles` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '职称',
   `education_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '教育经历',
   `work_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '工作经历',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_employee
@@ -6211,7 +6340,7 @@ CREATE TABLE `rep_demo_gongsi`  (
   `zhaiyao` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `num` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_gongsi
@@ -6235,7 +6364,7 @@ CREATE TABLE `rep_demo_jianpiao`  (
   `shihelv` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `s_id` int(11) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_jianpiao
@@ -6345,7 +6474,7 @@ CREATE TABLE `rep_demo_xiaoshou`  (
   `beizhu` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `s_id` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_xiaoshou
@@ -6378,10 +6507,14 @@ CREATE TABLE `sj_distributed_lock`  (
   `lock_until` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '锁定时长',
   `locked_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '锁定时间',
   `locked_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '锁定者',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_distributed_lock
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -6398,11 +6531,11 @@ CREATE TABLE `sj_group_config`  (
   `group_partition` int(11) NOT NULL COMMENT '分区',
   `id_generator_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '唯一id生成模式 默认号段模式',
   `init_scene` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否初始化场景 0:否 1:是',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_group_config
@@ -6442,13 +6575,13 @@ CREATE TABLE `sj_job`  (
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_job_status_bucket_index`(`job_status`, `bucket_index`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job
@@ -6465,12 +6598,12 @@ CREATE TABLE `sj_job_executor`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `executor_info` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '任务执行器名称',
   `executor_type` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '1:java 2:python 3:go',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_executor
@@ -6500,12 +6633,12 @@ CREATE TABLE `sj_job_log_message`  (
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_id`(`task_batch_id`, `task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1575 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1575 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_log_message
@@ -7276,7 +7409,7 @@ CREATE TABLE `sj_job_summary`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `business_id` bigint(20) NOT NULL COMMENT '业务id (job_id或workflow_id)',
   `system_task_type` tinyint(4) NOT NULL DEFAULT 3 COMMENT '任务类型 3、JOB任务 4、WORKFLOW任务',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `success_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行成功-日志数量',
   `fail_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `fail_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
@@ -7284,12 +7417,12 @@ CREATE TABLE `sj_job_summary`  (
   `stop_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
   `cancel_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `cancel_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_trigger_at_system_task_type_business_id`(`trigger_at`, `system_task_type`, `business_id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_business_id`(`namespace_id`, `group_name`, `business_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_summary
@@ -7326,13 +7459,13 @@ CREATE TABLE `sj_job_task`  (
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '执行方法参数',
   `args_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '参数类型 ',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_status`(`task_batch_id`, `task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1494 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1494 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task
@@ -8079,14 +8212,14 @@ CREATE TABLE `sj_job_task_batch`  (
   `parent_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '父节点',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`job_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_workflow_task_batch_id_workflow_node_id`(`workflow_task_batch_id`, `workflow_node_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1613 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1613 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task_batch
@@ -8857,12 +8990,12 @@ CREATE TABLE `sj_namespace`  (
   `unique_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '唯一id',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_unique_id`(`unique_id`) USING BTREE,
   INDEX `idx_name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_namespace
@@ -8887,11 +9020,15 @@ CREATE TABLE `sj_notify_config`  (
   `rate_limiter_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '限流状态 0、未启用 1、启用',
   `rate_limiter_threshold` int(11) NOT NULL DEFAULT 0 COMMENT '每秒限流阈值',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_notify_recipient
@@ -8904,11 +9041,15 @@ CREATE TABLE `sj_notify_recipient`  (
   `notify_type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '通知类型 1、钉钉 2、邮件 3、企业微信 4 飞书 5 webhook',
   `notify_attribute` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置属性',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id`(`namespace_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_recipient
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry
@@ -8934,8 +9075,8 @@ CREATE TABLE `sj_retry`  (
   `bucket_index` int(11) NOT NULL DEFAULT 0 COMMENT 'bucket',
   `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父节点id',
   `deleted` bigint(20) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_tasktype_idempotentid_deleted`(`scene_id`, `task_type`, `idempotent_id`, `deleted`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
@@ -8943,7 +9084,11 @@ CREATE TABLE `sj_retry`  (
   INDEX `idx_retry_status_bucket_index`(`retry_status`, `bucket_index`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_dead_letter
@@ -8962,13 +9107,17 @@ CREATE TABLE `sj_retry_dead_letter`  (
   `serializer_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'jackson' COMMENT '执行方法参数序列化器名称',
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '执行方法参数',
   `ext_attrs` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `idx_idempotent_id`(`idempotent_id`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_dead_letter
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_scene_config
@@ -8995,11 +9144,15 @@ CREATE TABLE `sj_retry_scene_config`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_scene_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_summary
@@ -9010,17 +9163,21 @@ CREATE TABLE `sj_retry_summary`  (
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `scene_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '场景名称',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `running_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试中-日志数量',
   `finish_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试完成-日志数量',
   `max_count_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试到达最大次数-日志数量',
   `suspend_num` int(11) NOT NULL DEFAULT 0 COMMENT '暂停重试-日志数量',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_name_trigger_at`(`namespace_id`, `group_name`, `scene_name`, `trigger_at`) USING BTREE,
   INDEX `idx_trigger_at`(`trigger_at`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_summary
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task
@@ -9037,14 +9194,18 @@ CREATE TABLE `sj_retry_task`  (
   `task_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '任务类型 1、重试数据 2、回调数据',
   `operation_reason` tinyint(4) NOT NULL DEFAULT 0 COMMENT '操作原因',
   `client_info` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '客户端地址 clientId#ip:port',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `task_status`(`task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_retry_id`(`retry_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task_log_message
@@ -9059,11 +9220,15 @@ CREATE TABLE `sj_retry_task_log_message`  (
   `message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '异常信息',
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_retry_task_id`(`namespace_id`, `group_name`, `retry_task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task_log_message
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_server_node
@@ -9076,17 +9241,21 @@ CREATE TABLE `sj_server_node`  (
   `host_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主机id',
   `host_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '机器ip',
   `host_port` int(16) NOT NULL COMMENT '机器端口',
-  `expire_at` datetime(0) NOT NULL COMMENT '过期时间',
+  `expire_at` datetime NOT NULL COMMENT '过期时间',
   `node_type` tinyint(4) NOT NULL COMMENT '节点类型 1、客户端 2、是服务端',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_server_node
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -9097,11 +9266,11 @@ CREATE TABLE `sj_system_user`  (
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '账号',
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '密码',
   `role` tinyint(4) NOT NULL DEFAULT 0 COMMENT '角色：1-普通用户、2-管理员',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_system_user
@@ -9117,11 +9286,15 @@ CREATE TABLE `sj_system_user_permission`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `system_user_id` bigint(20) NOT NULL COMMENT '系统用户id',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_system_user_id`(`namespace_id`, `group_name`, `system_user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_system_user_permission
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow
@@ -9147,12 +9320,16 @@ CREATE TABLE `sj_workflow`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_node
@@ -9174,12 +9351,16 @@ CREATE TABLE `sj_workflow_node`  (
   `version` int(11) NOT NULL COMMENT '版本号',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_node
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_task_batch
@@ -9198,13 +9379,17 @@ CREATE TABLE `sj_workflow_task_batch`  (
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `version` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`workflow_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_task_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_auto_code_part
@@ -9234,14 +9419,14 @@ CREATE TABLE `sys_auto_code_part`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`part_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -9313,15 +9498,15 @@ CREATE TABLE `sys_auto_code_result`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`code_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_gen_date`(`gen_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -9355,14 +9540,14 @@ CREATE TABLE `sys_auto_code_rule`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -9403,11 +9588,11 @@ CREATE TABLE `sys_client`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_client
@@ -9428,12 +9613,12 @@ CREATE TABLE `sys_config`  (
   `config_type` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_config
@@ -9463,11 +9648,11 @@ CREATE TABLE `sys_dept`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -9499,16 +9684,16 @@ CREATE TABLE `sys_dic_area`  (
   `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`pkid`) USING BTREE,
   INDEX `idx_layered`(`layered`) USING BTREE,
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   INDEX `idx_parent_area_id`(`parent_area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dic_area
@@ -11191,12 +11376,12 @@ CREATE TABLE `sys_dict_data`  (
   `is_default` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -11512,13 +11697,13 @@ CREATE TABLE `sys_dict_type`  (
   `dict_type` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '字典类型',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `tenant_id`(`tenant_id`, `dict_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -11613,11 +11798,11 @@ CREATE TABLE `sys_logininfor`  (
   `os` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '操作系统',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
   `msg` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '提示消息',
-  `login_time` datetime(0) NULL DEFAULT NULL COMMENT '访问时间',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -11726,6 +11911,8 @@ INSERT INTO `sys_logininfor` VALUES (2053730649640992770, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2053741431615320065, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 15:38:09');
 INSERT INTO `sys_logininfor` VALUES (2053757397845864449, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 16:41:35');
 INSERT INTO `sys_logininfor` VALUES (2053763541263880194, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 17:06:00');
+INSERT INTO `sys_logininfor` VALUES (2053821422912069633, '000000', 'admin', 'pc', 'pc', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 20:56:00');
+INSERT INTO `sys_logininfor` VALUES (2053845810348703746, '000000', 'admin', 'pc', 'pc', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-11 22:32:54');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -11748,12 +11935,12 @@ CREATE TABLE `sys_menu`  (
   `icon` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -12003,6 +12190,7 @@ INSERT INTO `sys_menu` VALUES (2045078110832984065, '表单设计', 20000, 2, 'd
 INSERT INTO `sys_menu` VALUES (2045078330752925697, '部署管理', 20000, 4, 'deploy', 'workflow/deploy/index', NULL, 1, 0, 'C', '0', '0', 'workflow:deploy:list', '', 103, 1, '2026-04-17 17:54:04', 1, '2026-04-17 17:54:23', '');
 INSERT INTO `sys_menu` VALUES (2045078556964323330, '业务表单', 20000, 5, 'customForm', 'workflow/customForm/index', NULL, 1, 0, 'C', '0', '0', 'workflow:customForm:list', '', 103, 1, '2026-04-17 17:54:58', 1, '2026-04-17 17:54:58', '');
 INSERT INTO `sys_menu` VALUES (2045078769934303233, '任务管理', 0, 12, 'work', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'list', 103, 1, '2026-04-17 17:55:49', 1, '2026-04-28 13:20:47', '');
+INSERT INTO `sys_menu` VALUES (2053846181246812161, '驾驶舱', 0, 14, 'http://localhost:8080/drag/share/view/1014376428645961728?shareToken=RalXd4a2eMV9WUJSRER0SvEKxK5r0paW', NULL, NULL, 0, 0, 'M', '0', '0', NULL, 'dashboard', 103, 1, '2026-05-11 22:34:23', 1, '2026-05-11 22:34:23', '');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -12017,12 +12205,12 @@ CREATE TABLE `sys_notice`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2052226250938740738 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2052226250938740738 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -12054,13 +12242,13 @@ CREATE TABLE `sys_oper_log`  (
   `json_result` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '返回参数',
   `status` int(1) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
   `error_msg` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '错误消息',
-  `oper_time` datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
+  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
   `cost_time` bigint(20) NULL DEFAULT 0 COMMENT '消耗时间',
   PRIMARY KEY (`oper_id`) USING BTREE,
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -12306,6 +12494,7 @@ INSERT INTO `sys_oper_log` VALUES (2052651622040911874, '000000', '个人信息'
 INSERT INTO `sys_oper_log` VALUES (2053013457203064834, '000000', '用户头像', 2, 'org.dromara.system.controller.system.SysProfileController.avatar()', 'POST', 1, 'test', '市场部门', '/system/user/profile/avatar', '0:0:0:0:0:0:0:1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"imgUrl\":\"http://127.0.0.1:9005/ruoyi/2026/05/09/c188a9aca7934b92a9390bf6d8401707.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260509T072525Z&X-Amz-SignedHeaders=host&X-Amz-Credential=Minio%2F20260509%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dbe1530b5321d3691954f3a0b1ff3f288a214419e461f5469cd8913d71d4c02a\"}}', 0, '', '2026-05-09 15:25:26', 477);
 INSERT INTO `sys_oper_log` VALUES (2053769684698697730, '000000', '菜单管理', 2, 'org.dromara.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2026-04-30 10:41:23\",\"updateBy\":null,\"updateTime\":null,\"menuId\":2102,\"parentId\":2100,\"menuName\":\"库区设置\",\"orderNum\":2,\"path\":\"storagearea\",\"component\":\"erp/wm/storagearea/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"1\",\"perms\":\"wm:storagearea:list\",\"icon\":\"grid\",\"remark\":\"\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-11 17:30:25', 29);
 INSERT INTO `sys_oper_log` VALUES (2053769718332821506, '000000', '菜单管理', 2, 'org.dromara.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2026-04-30 10:41:23\",\"updateBy\":null,\"updateTime\":null,\"menuId\":2103,\"parentId\":2100,\"menuName\":\"库位设置\",\"orderNum\":3,\"path\":\"storagelocation\",\"component\":\"erp/wm/storagelocation/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"1\",\"status\":\"1\",\"perms\":\"wm:storagelocation:list\",\"icon\":\"guide\",\"remark\":\"\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-11 17:30:33', 10);
+INSERT INTO `sys_oper_log` VALUES (2053846181313921025, '000000', '菜单管理', 1, 'org.dromara.system.controller.system.SysMenuController.add()', 'POST', 1, 'admin', '研发部门', '/system/menu', '0:0:0:0:0:0:0:1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"menuId\":null,\"parentId\":0,\"menuName\":\"驾驶舱\",\"orderNum\":14,\"path\":\"http://localhost:8080/drag/share/view/1014376428645961728?shareToken=RalXd4a2eMV9WUJSRER0SvEKxK5r0paW\",\"component\":null,\"queryParam\":null,\"isFrame\":\"0\",\"isCache\":\"0\",\"menuType\":\"M\",\"visible\":\"0\",\"status\":\"0\",\"icon\":\"dashboard\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-11 22:34:23', 25);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -12320,13 +12509,13 @@ CREATE TABLE `sys_oss`  (
   `url` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'URL地址',
   `ext1` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '上传人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `service` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'minio' COMMENT '服务商',
   PRIMARY KEY (`oss_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss
@@ -12355,12 +12544,12 @@ CREATE TABLE `sys_oss_config`  (
   `ext1` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`oss_config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss_config
@@ -12386,12 +12575,12 @@ CREATE TABLE `sys_post`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_post
@@ -12418,12 +12607,12 @@ CREATE TABLE `sys_role`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role
@@ -12440,7 +12629,11 @@ CREATE TABLE `sys_role_dept`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `dept_id` bigint(20) NOT NULL COMMENT '部门ID',
   PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_role_dept
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_role_menu
@@ -12450,7 +12643,7 @@ CREATE TABLE `sys_role_menu`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -12565,12 +12758,16 @@ CREATE TABLE `sys_social`  (
   `oauth_token_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Twitter平台用户的附带属性，部分平台可能没有',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_social
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_tenant
@@ -12588,17 +12785,17 @@ CREATE TABLE `sys_tenant`  (
   `domain` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '域名',
   `remark` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   `package_id` bigint(20) NULL DEFAULT NULL COMMENT '租户套餐编号',
-  `expire_time` datetime(0) NULL DEFAULT NULL COMMENT '过期时间',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
   `account_count` int(11) NULL DEFAULT -1 COMMENT '用户数量（-1不限制）',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '租户状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_tenant
@@ -12619,11 +12816,15 @@ CREATE TABLE `sys_tenant_package`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`package_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_tenant_package
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_user
@@ -12644,20 +12845,20 @@ CREATE TABLE `sys_user`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `login_ip` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `login_date` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
+  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-11 17:06:00', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 17:06:00', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 22:32:54', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 22:32:54', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 11:54:44', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 11:54:44', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 
@@ -12678,14 +12879,14 @@ CREATE TABLE `sys_user_notification`  (
   `ext_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '扩展JSON',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notification_id`) USING BTREE,
   INDEX `idx_sun_user_read`(`tenant_id`, `user_id`, `read_flag`, `create_time`) USING BTREE,
   INDEX `idx_sun_category`(`tenant_id`, `user_id`, `category`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_notification
@@ -12720,7 +12921,7 @@ CREATE TABLE `sys_user_post`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
   PRIMARY KEY (`user_id`, `post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_post
@@ -12735,7 +12936,7 @@ CREATE TABLE `sys_user_role`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -12763,7 +12964,7 @@ CREATE TABLE `test_customer`  (
   `tbr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '填表人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_customer
@@ -12788,13 +12989,13 @@ CREATE TABLE `test_demo`  (
   `value` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_demo
@@ -12822,18 +13023,18 @@ CREATE TABLE `test_leave`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `apply_code` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '申请编号',
   `leave_type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '请假类型',
-  `start_date` datetime(0) NOT NULL COMMENT '开始时间',
-  `end_date` datetime(0) NOT NULL COMMENT '结束时间',
+  `start_date` datetime NOT NULL COMMENT '开始时间',
+  `end_date` datetime NOT NULL COMMENT '结束时间',
   `leave_days` int(10) NOT NULL COMMENT '请假天数',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请假原因',
   `status` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_leave
@@ -12883,7 +13084,11 @@ CREATE TABLE `test_monthly_report`  (
   `by_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '本月-弃水天数',
   `lj_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '累计-弃水天数',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_monthly_report
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order
@@ -12893,15 +13098,19 @@ CREATE TABLE `test_order`  (
   `id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `order_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单名称',
   `order_no` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单编号',
-  `order_sign_date` datetime(0) NULL DEFAULT NULL COMMENT '订单签订日期',
-  `order_delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '订单交付日期',
+  `order_sign_date` datetime NULL DEFAULT NULL COMMENT '订单签订日期',
+  `order_delivery_date` datetime NULL DEFAULT NULL COMMENT '订单交付日期',
   `order_coms` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户名称',
   `order_pers` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系人',
   `order_phone` varchar(15) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系方式',
   `fzr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order_pros
@@ -12917,7 +13126,11 @@ CREATE TABLE `test_order_pros`  (
   `pro_model` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '型号',
   `main_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外键',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order_pros
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_resume
@@ -12941,7 +13154,7 @@ CREATE TABLE `test_resume`  (
   `edu_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '教育经历',
   `work_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '工作经历',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_resume
@@ -12962,13 +13175,13 @@ CREATE TABLE `test_tree`  (
   `tree_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_tree
@@ -12998,7 +13211,7 @@ CREATE TABLE `tmp_report_data_1`  (
   `his_lowest` decimal(10, 2) NULL DEFAULT NULL,
   `his_average` decimal(10, 2) NULL DEFAULT NULL,
   `his_highest` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_1
@@ -13029,7 +13242,7 @@ CREATE TABLE `tmp_report_data_income`  (
   `tb_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `neikong_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `total` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_income
@@ -13052,14 +13265,14 @@ CREATE TABLE `wf_category`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`category_id`) USING BTREE,
   UNIQUE INDEX `codeIndex`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_category
@@ -13089,12 +13302,16 @@ CREATE TABLE `wf_copy`  (
   `state` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`copy_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_copy
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_custom_form
@@ -13110,13 +13327,13 @@ CREATE TABLE `wf_custom_form`  (
   `component` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件注入方法',
   `table_id` bigint(20) NULL DEFAULT NULL COMMENT '业务主表ID',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2015689339895906307 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2015689339895906307 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_custom_form
@@ -13140,11 +13357,15 @@ CREATE TABLE `wf_custom_rule`  (
   `attribute` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '属性0-隐藏1-只读默认2-可编辑',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_custom_rule
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_dd_flow
@@ -13155,11 +13376,15 @@ CREATE TABLE `wf_dd_flow`  (
   `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '流程名称',
   `flow_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '流程JSON数据',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_dd_flow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_default_operate
@@ -13172,11 +13397,15 @@ CREATE TABLE `wf_default_operate`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_default_operate
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_demo
@@ -13191,14 +13420,14 @@ CREATE TABLE `wf_demo`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`demo_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_demo
@@ -13218,7 +13447,7 @@ CREATE TABLE `wf_deploy_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`deploy_id`, `form_key`, `node_key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_deploy_form
@@ -13241,11 +13470,15 @@ CREATE TABLE `wf_flow_config`  (
   `form_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表单Key',
   `app_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用类型',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_flow_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_form
@@ -13257,16 +13490,20 @@ CREATE TABLE `wf_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `db` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否保存数据库',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_form
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_my_business
@@ -13275,9 +13512,9 @@ DROP TABLE IF EXISTS `wf_my_business`;
 CREATE TABLE `wf_my_business`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `process_definition_key` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义key 一个key会有多个版本的id',
   `process_definition_id` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义id 一个流程定义唯一',
   `process_instance_id` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程业务实例id 一个流程业务唯一，本表中也唯一',
@@ -13298,7 +13535,7 @@ CREATE TABLE `wf_my_business`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `dataid`(`data_id`) USING BTREE COMMENT '业务数据Id索引'
-) ENGINE = InnoDB AUTO_INCREMENT = 2052251090236145667 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2052251090236145667 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_my_business
@@ -13329,12 +13566,12 @@ CREATE TABLE `wf_nform`  (
   `form_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_nform
@@ -13359,10 +13596,14 @@ CREATE TABLE `wf_operate_rule`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_operate_rule
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;

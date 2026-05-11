@@ -79,7 +79,19 @@
       "Read(//c/Users/MyPC/.m2/**)",
       "Bash(find /e -path \"*/.m2/*sa-token*\" -name \"*.jar\")",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(unzip *)"
+      "Bash(unzip *)",
+      "Bash(sed -i 's/\\\\r$//' index.vue)",
+      "Bash(sed -i 's/<el-input v-model=\"queryParams.category\" placeholder=\"请输入单位类别\" clearable \\\\/>/<el-select v-model=\"queryParams.category\" placeholder=\"请选择单位类别\" clearable style=\"width: 200px\"><el-option v-for=\"item in categories\" :key=\"item\" :label=\"item\" :value=\"item\" \\\\/><\\\\/el-select>/' index.vue)",
+      "Bash(cat org/jeecg/modules/jmreport/common/annotation/RequiresPermissions.java)",
+      "Bash(javap -c -p \"org/jeecg/modules/jmreport/config/firewall/interceptor/handlers/JmIPermissionsVerifyHandler.class\")",
+      "Bash(javap -version)",
+      "Bash(unzip -o jimureport-spring-boot3-starter-2.3.2.jar -d /tmp/jimureport-extract)",
+      "Bash(javap -c -p \"/tmp/jimureport-extract/org/jeecg/modules/jmreport/config/firewall/interceptor/handlers/JmIPermissionsVerifyHandler.class\")",
+      "Read(//tmp/**)",
+      "Bash(javap -c -p -verbose org/jeecg/modules/drag/a/e.class)",
+      "Bash(javap -c -p org/jeecg/modules/drag/b/f.class)",
+      "Bash(javap -c -p -verbose org/jeecg/modules/drag/b/h.class)",
+      "Bash(javap -c -p org/jeecg/modules/jmreport/config/firewall/interceptor/JimuReportTokenInterceptor.class)"
     ]
   }
 }
