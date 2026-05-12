@@ -23,7 +23,6 @@ import org.dromara.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import org.dromara.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import org.dromara.erp.wm.mapper.WmMaterialReceiveMapper;
 import org.dromara.erp.wm.service.IWmMaterialReceiveService;
-import org.dromara.erp.wm.service.IWmStockOperationService;
 import org.dromara.workflow.domain.WfMyBusiness;
 import org.dromara.workflow.service.IWfProcessService;
 import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -37,7 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +57,6 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
-    private final IWmStockOperationService stockOperationService;
 
     @Override
     public TableDataInfo<WmMaterialReceiveVo> selectPageList(WmMaterialReceiveBo bo, PageQuery pageQuery) {
@@ -123,7 +120,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         for (Long receiveId : ids) {
             deleteLinesAndDetailsByReceiveId(receiveId);
         }
-        return baseMapper.deleteByIds(List.of(ids));
+        return baseMapper.deleteBatchIds(List.of(ids));
     }
 
     @Override
@@ -241,8 +238,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         if (ActStatus.doing.equals(actStatus)) {
             receive.setStatus("APPROVING");
         } else if (ActStatus.pass.equals(actStatus)) {
-            stockOperationService.postMaterialReceive(receiveId);
-            receive.setStatus("FINISHED");
+            receive.setStatus("APPROVED");
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             receive.setStatus("REJECTED");
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
@@ -272,43 +268,30 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
      */
     private void validateDetailsForApproval(WmMaterialReceiveBo bo) {
         StringBuilder errorMsg = new StringBuilder();
+        boolean isValid = true;
 
         if (bo.getWmMaterialReceiveLineList() == null || bo.getWmMaterialReceiveLineList().isEmpty()) {
             throw new RuntimeException("入库单行不能为空！");
         }
 
         for (WmMaterialReceiveLineBo line : bo.getWmMaterialReceiveLineList()) {
-            String materialName = StringUtils.blankToDefault(line.getMaterialName(), "未知物料");
-            if (line.getQuantityReceived() == null || line.getQuantityReceived().compareTo(BigDecimal.ZERO) <= 0) {
-                errorMsg.append("物料[").append(materialName).append("]入库数量必须大于0！");
-                continue;
-            }
             if (line.getWmMaterialReceiveLineDetailList() == null
                 || line.getWmMaterialReceiveLineDetailList().isEmpty()) {
-                errorMsg.append("物料[").append(materialName).append("]未分配对应的明细行！");
-                continue;
-            }
-
-            BigDecimal detailTotal = BigDecimal.ZERO;
-            int detailIndex = 1;
-            for (WmMaterialReceiveDetailBo detail : line.getWmMaterialReceiveLineDetailList()) {
-                if (detail.getQuantity() == null || detail.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-                    errorMsg.append("物料[").append(materialName).append("]第")
-                        .append(detailIndex).append("条明细数量必须大于0！");
-                } else {
-                    detailTotal = detailTotal.add(detail.getQuantity());
+                isValid = false;
+                errorMsg.append("物料[").append(line.getMaterialName())
+                    .append("]未分配对应的明细行！");
+            } else {
+                for (WmMaterialReceiveDetailBo detail : line.getWmMaterialReceiveLineDetailList()) {
+                    if (detail.getQuantity().compareTo(line.getQuantityReceived()) != 0) {
+                        isValid = false;
+                        errorMsg.append("物料[").append(line.getMaterialName())
+                            .append("]明细数量与入库数量不一致！");
+                    }
                 }
-                detailIndex++;
-            }
-
-            if (detailTotal.compareTo(line.getQuantityReceived()) != 0) {
-                errorMsg.append("物料[").append(materialName)
-                    .append("]明细数量合计[").append(detailTotal)
-                    .append("]必须等于入库数量[").append(line.getQuantityReceived()).append("]！");
             }
         }
 
-        if (!errorMsg.isEmpty()) {
+        if (!isValid) {
             throw new RuntimeException(errorMsg.toString());
         }
     }
@@ -320,7 +303,6 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         if (lineBoList != null && !lineBoList.isEmpty()) {
             List<WmMaterialReceiveLine> lineList = MapstructUtils.convert(lineBoList, WmMaterialReceiveLine.class);
             for (WmMaterialReceiveLine line : lineList) {
-                line.setLineId(null);
                 line.setReceiveId(receiveId);
             }
             receiveLineMapper.insertBatch(lineList);
@@ -333,7 +315,6 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
                     List<WmMaterialReceiveDetail> detailList = MapstructUtils.convert(
                         lineBo.getWmMaterialReceiveLineDetailList(), WmMaterialReceiveDetail.class);
                     for (WmMaterialReceiveDetail detail : detailList) {
-                        detail.setDetailId(null);
                         detail.setReceiveId(receiveId);
                         detail.setLineId(lineList.get(i).getLineId());
                     }

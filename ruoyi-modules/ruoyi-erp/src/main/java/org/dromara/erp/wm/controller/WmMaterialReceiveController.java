@@ -13,7 +13,6 @@ import org.dromara.common.web.core.BaseController;
 import org.dromara.erp.wm.domain.bo.WmMaterialReceiveBo;
 import org.dromara.erp.wm.domain.vo.WmMaterialReceiveVo;
 import org.dromara.erp.wm.service.IWmMaterialReceiveService;
-import org.dromara.erp.wm.service.IWmStockOperationService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +30,6 @@ import java.util.List;
 public class WmMaterialReceiveController extends BaseController {
 
     private final IWmMaterialReceiveService wmMaterialReceiveService;
-    private final IWmStockOperationService stockOperationService;
 
     /**
      * 查询物料入库单列表
@@ -106,12 +104,8 @@ public class WmMaterialReceiveController extends BaseController {
     @Log(title = "物料入库单", businessType = BusinessType.UPDATE)
     @PostMapping("/execute/{receiveId}")
     public R<Void> executeReceive(@PathVariable Long receiveId) {
-        try {
-            stockOperationService.postMaterialReceive(receiveId);
-            return R.ok();
-        } catch (RuntimeException e) {
-            return R.fail(e.getMessage());
-        }
+        // Inventory execution - to be integrated with WmInventoryCoreService
+        return R.ok();
     }
 
     /**

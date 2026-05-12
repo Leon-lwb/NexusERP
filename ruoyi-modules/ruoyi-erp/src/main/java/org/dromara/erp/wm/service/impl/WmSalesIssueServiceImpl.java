@@ -8,19 +8,21 @@ import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.erp.wm.domain.WmMaterialStock;
 import org.dromara.erp.wm.domain.WmSalesIssue;
 import org.dromara.erp.wm.domain.WmSalesIssueLine;
 import org.dromara.erp.wm.domain.bo.WmSalesIssueBo;
 import org.dromara.erp.wm.domain.bo.WmSalesIssueLineBo;
 import org.dromara.erp.wm.domain.vo.WmSalesIssueVo;
+import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
 import org.dromara.erp.wm.mapper.WmSalesIssueLineMapper;
 import org.dromara.erp.wm.mapper.WmSalesIssueMapper;
 import org.dromara.erp.wm.service.IWmSalesIssueService;
-import org.dromara.erp.wm.service.IWmStockOperationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -36,7 +38,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 
     private final WmSalesIssueMapper baseMapper;
     private final WmSalesIssueLineMapper lineMapper;
-    private final IWmStockOperationService stockOperationService;
+    private final WmMaterialStockMapper wmMaterialStockMapper;
 
     @Override
     public TableDataInfo<WmSalesIssueVo> selectPageList(WmSalesIssueBo bo, PageQuery pageQuery) {
@@ -79,7 +81,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     public int deleteByIds(Long[] ids) {
         lineMapper.delete(new LambdaQueryWrapper<WmSalesIssueLine>()
             .in(WmSalesIssueLine::getIssueId, List.of(ids)));
-        return baseMapper.deleteByIds(List.of(ids));
+        return baseMapper.deleteBatchIds(List.of(ids));
     }
 
     @Override
@@ -107,7 +109,37 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             throw new RuntimeException("只有已确认的出库单才能完成");
         }
 
-        stockOperationService.postSalesIssue(issueId);
+        List<WmSalesIssueLine> lineList = lineMapper.selectList(
+            new LambdaQueryWrapper<WmSalesIssueLine>()
+                .eq(WmSalesIssueLine::getIssueId, issueId));
+        if (lineList == null || lineList.isEmpty()) {
+            throw new RuntimeException("出库单明细为空");
+        }
+
+        // 扣减库存
+        for (WmSalesIssueLine line : lineList) {
+            LambdaQueryWrapper<WmMaterialStock> stockLqw = Wrappers.lambdaQuery();
+            stockLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
+            stockLqw.eq(WmMaterialStock::getWarehouseId, salesIssue.getWarehouseId());
+            stockLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
+            stockLqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
+
+            WmMaterialStock stock = wmMaterialStockMapper.selectOne(stockLqw);
+            if (stock == null) {
+                throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不存在");
+            }
+
+            BigDecimal currentQty = stock.getStockQuantity();
+            BigDecimal issueQty = line.getQuantityIssue();
+
+            if (currentQty == null || currentQty.compareTo(issueQty) < 0) {
+                throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足，当前库存："
+                    + (currentQty != null ? currentQty : BigDecimal.ZERO) + "，出库数量：" + issueQty);
+            }
+
+            stock.setStockQuantity(currentQty.subtract(issueQty));
+            wmMaterialStockMapper.updateById(stock);
+        }
 
         salesIssue.setStatus("COMPLETED");
         return baseMapper.updateById(salesIssue);
