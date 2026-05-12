@@ -96,7 +96,7 @@ public class WmWarehouseController extends BaseController {
      * 查询树型的列表
      */
     @SaCheckPermission("wm:warehouse:list")
-    @GetMapping("/tree")
+    @GetMapping({"/tree", "/getWareHouseTree"})
     public R<List<WmWarehouse>> getWareHouseTree() {
         return R.ok(wmWarehouseService.getWareHouseTree());
     }
