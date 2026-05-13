@@ -7,7 +7,7 @@ export default {
   // 登录页面国际化
   login: {
     selectPlaceholder: 'Please select/enter a company name',
-    username: 'Username',
+    username: 'Username / Phone',
     password: 'Password',
     login: 'Login',
     logging: 'Logging...',

@@ -140,6 +140,6 @@ public class WmMaterialReceiveController extends BaseController {
     @SaCheckPermission("wm:receive:query")
     @GetMapping("/{receiveId}/proc")
     public R<String> getProcInsId(@PathVariable("receiveId") String receiveId) {
-        return R.ok(wmMaterialReceiveService.getProcInsId(receiveId));
+        return R.ok("查询成功", wmMaterialReceiveService.getProcInsId(receiveId));
     }
 }

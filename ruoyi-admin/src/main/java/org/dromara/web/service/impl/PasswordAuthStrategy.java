@@ -111,6 +111,9 @@ public class PasswordAuthStrategy implements IAuthStrategy {
     private SysUserVo loadUserByUsername(String username) {
         SysUserVo user = userMapper.selectVoOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUserName, username));
         if (ObjectUtil.isNull(user)) {
+            user = userMapper.selectVoOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getPhonenumber, username));
+        }
+        if (ObjectUtil.isNull(user)) {
             log.info("登录用户：{} 不存在.", username);
             throw new UserException("user.not.exists", username);
         } else if (SystemConstants.DISABLE.equals(user.getStatus())) {

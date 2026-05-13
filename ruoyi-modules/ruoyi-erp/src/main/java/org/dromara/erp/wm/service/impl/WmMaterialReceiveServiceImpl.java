@@ -694,7 +694,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     }
 
     /**
-     * Insert lines and their details
+     * 插入入库单行及其明细数据
      */
     private void insertLinesAndDetails(Long receiveId, List<WmMaterialReceiveLineBo> lineBoList) {
         if (lineBoList != null && !lineBoList.isEmpty()) {
@@ -705,7 +705,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             }
             receiveLineMapper.insertBatch(lineList);
 
-            // Insert details
+            // 插入明细数据
             for (int i = 0; i < lineBoList.size(); i++) {
                 WmMaterialReceiveLineBo lineBo = lineBoList.get(i);
                 if (lineBo.getWmMaterialReceiveLineDetailList() != null
@@ -724,10 +724,10 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     }
 
     /**
-     * Delete lines and details by receive ID
+     * 根据收货ID删除行和明细数据
      */
     private void deleteLinesAndDetailsByReceiveId(Long receiveId) {
-        // Delete details for all lines under this receive
+        // 删除该入库单下所有行的明细数据
         List<WmMaterialReceiveLine> lines = receiveLineMapper.selectList(
             new LambdaQueryWrapper<WmMaterialReceiveLine>()
                 .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
@@ -735,7 +735,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             receiveDetailMapper.delete(new LambdaQueryWrapper<WmMaterialReceiveDetail>()
                 .eq(WmMaterialReceiveDetail::getLineId, line.getLineId()));
         }
-        // Delete lines
+        // 删除入库单行（明细已在上方循环中删除）
         receiveLineMapper.delete(new LambdaQueryWrapper<WmMaterialReceiveLine>()
             .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
     }

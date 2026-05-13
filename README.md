@@ -10,6 +10,12 @@ Nexus-ERP 是一个基于 **RuoYi-Vue-Plus v5.6.0** 二次开发的企业级 ERP
 
 ---
 
+## 演示地址
+http://nexuserp.website/index
+
+账号：admin
+密码：admin123
+
 ## 业务功能
 
 ### 基础数据管理 (BD)

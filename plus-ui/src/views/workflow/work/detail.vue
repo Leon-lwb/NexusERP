@@ -85,7 +85,7 @@
         </el-card>
       </el-tab-pane>
 
-      <el-tab-pane label="表单信息" name="form">
+      <el-tab-pane label="表单信息" name="form" v-if="showFormTab">
         <div v-if="customForm.visible"> <!-- 自定义表单 -->
           <component ref="refCustomForm" :disabled="customForm.disabled" :is="customForm.formComponent" :model="customForm.model"
             :customFormData="customForm.customFormData" :isNew = "customForm.isNew"></component>
@@ -114,7 +114,7 @@
            <!--对上传文件进行显示处理，临时方案 add by nbacheng 2022-07-27 -->
            <el-upload action="#" :on-preview="handleFilePreview" :file-list="fileList" v-if="fileDisplay" />
         </div>
-      </el-tab-pane >
+      </el-tab-pane>
 
       <el-tab-pane label="流转记录" name="record">
         <el-card class="box-card" shadow="never">
@@ -337,6 +337,7 @@
   const historyProcNodeList = ref<any>();
   const formVisible = ref(false);
   const finishedInfo = ref({});
+  const showFormTab = ref(true);
   
   // 字典数据
   const dictOptions = ref<Record<string, any[]>>({});
@@ -716,6 +717,9 @@
 
     processXml.value = data.bpmnXml;
     processFormList.value = data.processFormList;
+
+    // 入库单等部分业务没有可渲染的表单配置时，隐藏“表单信息”页签，只保留流转记录和流程跟踪
+    showFormTab.value = !!(processFormList.value && processFormList.value.length > 0);
     
     // 加载流程表单中所有需要的字典数据（先清空就绪标记）
     dictReady.value = false

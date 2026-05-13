@@ -320,7 +320,7 @@ import {
   confirmSalesIssue,
   completeSalesIssue
 } from "@/api/erp/wm/salesIssue"
-import { listOrderheader } from "@/api/erp/so/orderheader"
+import { listOrderheader, getOrderLine } from "@/api/erp/so/orderheader"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { listMaterial } from "@/api/erp/bd/material"
 import { listStock } from "@/api/erp/wm/stock"
@@ -369,6 +369,7 @@ const selectedWarehouse = ref(null)
 const selectedMaterial = ref(null)
 const selectedBatch = ref(null)
 const selectedLocation = ref(null)
+const importOrderLoading = ref(false)
 
 // 列表数据
 const salesOrderList = ref([])
@@ -791,8 +792,54 @@ function handleImportFromOrder() {
     return
   }
 
-  // 这里需要调用API获取销售订单明细
-  proxy.$modal.msgWarning("功能开发中：从销售订单导入明细")
+  if (wmSalesIssueLineList.value.length > 0) {
+    proxy.$modal.confirm('导入订单明细会覆盖当前已有的出库明细，是否继续？').then(() => {
+      return loadOrderLinesIntoIssue()
+    })
+    return
+  }
+
+  loadOrderLinesIntoIssue()
+}
+
+function loadOrderLinesIntoIssue() {
+  importOrderLoading.value = true
+  return getOrderLine(form.value.soNo).then((response: any) => {
+    const orderLines = response.data || []
+
+    if (orderLines.length === 0) {
+      proxy.$modal.msgWarning("该销售订单暂无明细")
+      return
+    }
+
+    wmSalesIssueLineList.value = orderLines.map((item: any, index: number) => ({
+      sourceDocLineId: item.lineId,
+      lineNo: String((index + 1) * 10).padStart(4, '0'),
+      materialId: item.materialId,
+      materialCode: item.materialCode,
+      materialName: item.materialName,
+      materialSpec: item.materialSpec,
+      baseUomId: null,
+      baseUomName: item.unit,
+      batchId: null,
+      batchCode: null,
+      locationId: null,
+      locationCode: null,
+      locationName: null,
+      stockQuantity: item.orderedQty || 0,
+      quantityIssue: Math.max((item.orderedQty || 0) - (item.deliveredQty || 0), 0),
+      quantityOrdered: item.orderedQty || 0,
+      quantityDelivered: item.deliveredQty || 0,
+      unitPrice: item.unitPrice || 0,
+      lineAmount: ((Math.max((item.orderedQty || 0) - (item.deliveredQty || 0), 0)) * (item.unitPrice || 0)).toFixed(4),
+      remark: item.attr1 || null
+    }))
+
+    calculateTotal()
+    proxy.$modal.msgSuccess(`已导入 ${orderLines.length} 条销售订单明细`)
+  }).finally(() => {
+    importOrderLoading.value = false
+  })
 }
 </script>
 
