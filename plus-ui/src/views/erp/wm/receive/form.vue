@@ -745,11 +745,19 @@ function onViewFlow() {
   })
 }
 
+/** 同步入库行明细字段 */
+function normalizeReceiveLineDetails() {
+  return wmMaterialReceiveLineList.value.map((line: any) => ({
+    ...line,
+    wmMaterialReceiveLineDetailList: line.wmMaterialReceiveLineDetailList || line.detailList || []
+  }))
+}
+
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["receiveRef"].validate((valid: boolean) => {
     if (valid) {
-      form.value.wmMaterialReceiveLineList = wmMaterialReceiveLineList.value
+      form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails()
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
@@ -771,7 +779,7 @@ function submitApprovingForm() {
     if (valid) {
       // 设置状态为审核中
       form.value.status = 'APPROVING'
-      form.value.wmMaterialReceiveLineList = wmMaterialReceiveLineList.value
+      form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails()
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
           proxy.$modal.msgSuccess("审核提交成功")

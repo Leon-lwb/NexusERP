@@ -19,7 +19,7 @@ export const getWarehouse = (warehouseId: string | number): AxiosPromise<Warehou
 
 export const getWareHouseTree = (): AxiosPromise<any> => {
   return request({
-    url: '/erp/wm/warehouse/getWareHouseTree',
+    url: '/erp/wm/warehouse/tree',
     method: 'get'
   });
 };

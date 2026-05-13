@@ -38,6 +38,11 @@ public interface IWmMaterialReceiveService extends WfCallBackServiceI {
     boolean submit(String receiveIdStr, String selectFlowId);
 
     /**
+     * 执行物料入库
+     */
+    boolean executeReceive(Long receiveId);
+
+    /**
      * 获取流程实例ID
      */
     String getProcInsId(String receiveIdStr);

@@ -104,8 +104,12 @@ public class WmMaterialReceiveController extends BaseController {
     @Log(title = "物料入库单", businessType = BusinessType.UPDATE)
     @PostMapping("/execute/{receiveId}")
     public R<Void> executeReceive(@PathVariable Long receiveId) {
-        // Inventory execution - to be integrated with WmInventoryCoreService
-        return R.ok();
+        try {
+            wmMaterialReceiveService.executeReceive(receiveId);
+            return R.ok("物料入库执行成功");
+        } catch (RuntimeException e) {
+            return R.fail("物料入库执行失败：" + e.getMessage());
+        }
     }
 
     /**
