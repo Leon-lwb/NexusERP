@@ -13,11 +13,31 @@
 
       <el-form ref="planRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="12">
             <el-form-item label="生产计划编号" prop="planNo">
-              <el-input v-model="form.planNo" placeholder="请输入生产计划编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.planNo" placeholder="请输入生产计划编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="自动生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode"
+                />
+              </div>
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="销售订单" prop="referenceNo">
+              <el-input v-model="form.referenceNo" placeholder="请选择销售订单" readonly>
+                <template #append>
+                  <el-button v-if="!isViewMode && isAddMode" icon="Search" @click="handleSelectSalesOrder" />
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="计划名称" prop="planName">
               <el-input v-model="form.planName" placeholder="请输入计划名称" />
@@ -33,13 +53,13 @@
               <el-input v-model="form.originalPlanId" placeholder="请输入原始计划ID" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="物料需求单ID" prop="materialRequirementId">
               <el-input v-model="form.materialRequirementId" placeholder="请输入物料需求单ID" />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="物料需求单编号" prop="materialRequirementNo">
               <el-input v-model="form.materialRequirementNo" placeholder="请输入物料需求单编号" />
@@ -47,11 +67,6 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item label="参考单据号" prop="referenceNo">
-              <el-input v-model="form.referenceNo" placeholder="请输入参考单据号" />
-            </el-form-item>
-          </el-col>
           <el-col :span="6">
             <el-form-item label="计划类型" prop="planType">
               <el-select v-model="form.planType" placeholder="请选择计划类型">
@@ -74,8 +89,6 @@
               </el-date-picker>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="计划结束日期" prop="endDate">
               <el-date-picker clearable v-model="form.endDate" type="date" value-format="YYYY-MM-DD"
@@ -83,6 +96,8 @@
               </el-date-picker>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status">
@@ -102,6 +117,11 @@
           <el-col :span="6">
             <el-form-item label="计划员ID" prop="plannerId">
               <el-input v-model="form.plannerId" placeholder="请输入计划员ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="计划员" prop="plannerName">
+              <el-input v-model="form.plannerName" placeholder="请输入计划员" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -246,6 +266,65 @@
       </el-table>
     </el-drawer>
 
+    <!-- 销售订单选择对话框 -->
+    <el-dialog title="选择销售订单" v-model="salesOrderOpen" width="1000px" append-to-body>
+      <el-form :model="salesOrderQueryParams" ref="salesOrderQueryRef" :inline="true" label-width="90px">
+        <el-form-item label="销售订单编号" prop="soNo">
+          <el-input
+            v-model="salesOrderQueryParams.soNo"
+            placeholder="请输入销售订单编号"
+            clearable
+            @keyup.enter="handleSalesOrderQuery"
+          />
+        </el-form-item>
+        <el-form-item label="客户名称" prop="clientName">
+          <el-input
+            v-model="salesOrderQueryParams.clientName"
+            placeholder="请输入客户名称"
+            clearable
+            @keyup.enter="handleSalesOrderQuery"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="handleSalesOrderQuery">搜索</el-button>
+          <el-button icon="Refresh" @click="resetSalesOrderQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table v-loading="salesOrderLoading" :data="salesOrderList" @row-dblclick="selectSalesOrder" style="width: 100%">
+        <el-table-column label="销售订单编号" align="center" prop="soNo" />
+        <el-table-column label="客户名称" align="center" prop="clientName" />
+        <el-table-column label="订单日期" align="center" prop="orderDate" width="180">
+          <template #default="scope">
+            <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="交期" align="center" prop="deliveryDate" width="180">
+          <template #default="scope">
+            <span>{{ parseTime(scope.row.deliveryDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="订单状态" align="center" prop="orderStatus">
+          <template #default="scope">
+            <dict-tag :options="so_order_line_status" :value="scope.row.orderStatus" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectSalesOrder(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <pagination
+        v-show="salesOrderTotal > 0"
+        :total="salesOrderTotal"
+        v-model:page="salesOrderQueryParams.pageNum"
+        v-model:limit="salesOrderQueryParams.pageSize"
+        @pagination="getSalesOrderList"
+      />
+    </el-dialog>
+
     <!-- BOM选择对话框 -->
     <el-dialog :title="bomDialogTitle" v-model="bomSelectOpen" width="1200px" append-to-body>
       <el-form :model="bomQueryParams" ref="bomQueryRef" :inline="true" label-width="80px">
@@ -320,9 +399,11 @@
 
 <script setup lang="ts" name="PrdPlanForm">
 import { getPlan, addPlan, updatePlan, updatePlanVersion, generateMaterialRequirementsWithDetails, listDetailsByPlanNo } from "@/api/erp/prd/plan"
-import { getOrderLine, getOrderLineById } from "@/api/erp/so/orderheader"
+import { listOrderheader, getOrderLine } from "@/api/erp/so/orderheader"
 import { listBom } from "@/api/erp/bd/bom"
-import { listRequirement, getRequirement } from "@/api/erp/prd/requirement"
+import { listRequirement } from "@/api/erp/prd/requirement"
+import { getAutoCode } from "@/api/system/autocode"
+import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
 const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'so_order_line_status', 'sys_true_or_false', 'sys_core_status'))
@@ -331,7 +412,21 @@ const router = useRouter()
 
 const form = ref({})
 const isViewMode = ref(false)
+const isAddMode = ref(false)
+const autoGenFlag = ref(false)
 const title = ref("")
+const salesOrderOpen = ref(false)
+const salesOrderList = ref([])
+const salesOrderLoading = ref(false)
+const salesOrderTotal = ref(0)
+const salesOrderQueryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  soNo: null,
+  clientName: null,
+  orderStatus: 'CONFIRMED'
+})
+
 
 // BOM选择相关变量
 const bomSelectOpen = ref(false)
@@ -371,6 +466,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action
   isViewMode.value = action === 'view'
+  isAddMode.value = action === 'add' || !id || id === '0'
 
   if (id && id !== '0') {
     initPage(id)
@@ -390,16 +486,21 @@ function initPage(id) {
     }
   } else if (action === 'edit') {
     isViewMode.value = false
+    isAddMode.value = false
     title.value = "修改生产计划"
     if (id && id !== '0') {
       getInfo(id)
     }
   } else if (action === 'add') {
     isViewMode.value = false
+    isAddMode.value = true
     title.value = "新增生产计划"
     reset()
+    autoGenFlag.value = true
+    handleAutoGenChange(true)
   } else {
     isViewMode.value = false
+    isAddMode.value = false
     title.value = "生产计划"
     if (id && id !== '0') {
       getInfo(id)
@@ -413,7 +514,9 @@ function initPage(id) {
 function getInfo(id) {
   getPlan(id).then(response => {
     form.value = response.data
-    if (form.value.soLineId) {
+    if (form.value.referenceNo) {
+      loadOrderLines(form.value.referenceNo)
+    } else if (form.value.soLineId) {
       loadOrderLines(form.value.soLineId)
     } else if (form.value.orderLineId) {
       loadOrderLines(form.value.orderLineId)
@@ -428,25 +531,120 @@ function getInfo(id) {
 }
 
 // 加载订单行信息
-function loadOrderLines(soLineId) {
-  orderLineLoading.value = true
-  getOrderLineById(soLineId).then(response => {
-    orderLineList.value = response.data || []
-    orderLineLoading.value = false
-  }).catch(error => {
-    console.error("获取订单行信息失败:", error);
-    proxy.$modal.msgError("获取订单行信息失败: " + error.message)
-    orderLineLoading.value = false
+function loadOrderLines(soNo) {
+  return new Promise((resolve, reject) => {
+    if (!soNo) {
+      orderLineList.value = []
+      resolve([])
+      return
+    }
+    orderLineLoading.value = true
+    getOrderLine(soNo).then(response => {
+      orderLineList.value = response.data || []
+      orderLineLoading.value = false
+      resolve(orderLineList.value)
+    }).catch(error => {
+      console.error("获取订单行信息失败:", error);
+      proxy.$modal.msgError("获取订单行信息失败: " + error.message)
+      orderLineLoading.value = false
+      reject(error)
+    })
   })
+}
+
+function handleSelectSalesOrder() {
+  salesOrderOpen.value = true
+  resetSalesOrderQuery()
+  getSalesOrderList()
+}
+
+function handleAutoGenChange(autoGenFlagValue) {
+  if (autoGenFlagValue) {
+    genCode('PRD_PLAN_CODE').then(response => {
+      form.value.planNo = response || response.data || ''
+    }).catch(error => {
+      console.error('自动生成生产计划编号失败:', error)
+      proxy.$modal.msgError('自动生成生产计划编号失败: ' + (error.message || '未知错误'))
+      autoGenFlag.value = false
+    })
+  } else {
+    form.value.planNo = null
+  }
+}
+
+function getSalesOrderList() {
+  salesOrderLoading.value = true
+  listOrderheader(salesOrderQueryParams.value).then(response => {
+    salesOrderList.value = response.rows || []
+    salesOrderTotal.value = response.total || 0
+    salesOrderLoading.value = false
+  }).catch(error => {
+    console.error('获取销售订单列表失败:', error)
+    proxy.$modal.msgError('获取销售订单列表失败: ' + error.message)
+    salesOrderLoading.value = false
+  })
+}
+
+
+function handleSalesOrderQuery() {
+  salesOrderQueryParams.value.pageNum = 1
+  getSalesOrderList()
+}
+
+function resetSalesOrderQuery() {
+  salesOrderQueryParams.value.soNo = null
+  salesOrderQueryParams.value.clientName = null
+  salesOrderQueryParams.value.pageNum = 1
+  salesOrderQueryParams.value.pageSize = 10
+}
+
+function fillFormFromOrderLine() {
+  if (!orderLineList.value.length) {
+    return
+  }
+  const line = orderLineList.value[0]
+  form.value.orderLineId = line.lineId
+  form.value.orderLineNo = line.lineNo
+  form.value.soLineId = line.lineId
+  form.value.originalPlanId = line.soId || form.value.originalPlanId
+  form.value.totalQuantity = line.orderedQty
+  form.value.referenceNo = line.soNo || form.value.referenceNo
+  form.value.planName = form.value.planName || line.materialName || ''
+  if (!form.value.planNo && line.soId) {
+    form.value.planNo = String(line.soId)
+  }
+  if (!form.value.plannerName && line.customerLineRef) {
+    form.value.plannerName = line.customerLineRef
+  }
+  if (!form.value.materialRequirementNo) {
+    form.value.materialRequirementNo = line.lineNo
+  }
+  if (!form.value.remark) {
+    form.value.remark = line.remark || ''
+  }
+}
+
+async function selectSalesOrder(row) {
+  form.value.referenceNo = row.soNo
+  form.value.originalPlanId = row.soId || row.id || form.value.originalPlanId
+  form.value.orderLineId = null
+  form.value.orderLineNo = null
+  form.value.soLineId = null
+  salesOrderOpen.value = false
+  if (row.soNo) {
+    await loadOrderLines(row.soNo)
+    fillFormFromOrderLine()
+  }
 }
 
 // 表单重置
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     planId: null,
     planNo: null,
     planName: null,
-    version: null,
+    version: 0,
     originalPlanId: null,
     referenceNo: null,
     planType: null,
@@ -474,6 +672,7 @@ function reset() {
     orderLineNo: null,
     soLineId: null
   }
+  orderLineList.value = []
   materialItems.value = [
     {
       materialCode: "",
@@ -491,19 +690,30 @@ function reset() {
 function submitForm() {
   proxy.$refs["planRef"].validate(valid => {
     if (valid) {
-      const formData = { ...form.value };
+      const formData = { ...form.value }
+      if (isAddMode.value) {
+        formData.version = 0
+        addPlan(formData).then(() => {
+          proxy.$modal.msgSuccess("新增成功")
+          router.push('/erp/prd/plan')
+        }).catch(error => {
+          proxy.$modal.msgError("新增失败: " + (error.message || "未知错误"))
+        })
+        return
+      }
       if (formData.planId) {
-        updatePlanVersion(formData).then(response => {
+        formData.version = 1
+        updatePlanVersion(formData).then(() => {
           proxy.$modal.msgSuccess("版本变更成功")
           if (form.value.planNo) {
             loadMaterialRequirements(form.value.planNo)
           }
           router.push('/erp/prd/plan')
         }).catch(error => {
-          proxy.$modal.msgError("版本变更失败: " + (error.message || "未知错误"));
-        });
+          proxy.$modal.msgError("版本变更失败: " + (error.message || "未知错误"))
+        })
       } else {
-        proxy.$modal.msgError("生产计划ID不存在，无法更新版本");
+        proxy.$modal.msgError("生产计划ID不存在，无法更新版本")
       }
     }
   })

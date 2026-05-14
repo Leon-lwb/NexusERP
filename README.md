@@ -122,6 +122,12 @@ npm run dev
 
 前端开发服务器默认监听 `http://localhost:80`，通过 `/dev-api` 代理到后端 `http://localhost:8080`。
 
+### 后端打包
+mvn clean package -D maven.test.skip=true -P prod
+
+### 前端打包
+npm run build:prod
+
 ## License
 
 MIT License. 保留原始 RuoYi-Vue-Plus 开源协议文件即可。

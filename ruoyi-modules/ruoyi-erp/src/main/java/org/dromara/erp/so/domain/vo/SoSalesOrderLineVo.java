@@ -29,6 +29,9 @@ public class SoSalesOrderLineVo implements Serializable {
     @ExcelProperty(value = "销售订单ID")
     private Long soId;
 
+    @ExcelProperty(value = "销售订单编号")
+    private String soNo;
+
     @ExcelProperty(value = "行号")
     private String lineNo;
 

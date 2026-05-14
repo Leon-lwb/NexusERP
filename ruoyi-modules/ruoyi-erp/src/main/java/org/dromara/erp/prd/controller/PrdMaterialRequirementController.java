@@ -11,7 +11,6 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.erp.prd.domain.PrdMaterialRequirement;
-import org.dromara.erp.prd.domain.PrdMaterialRequirementDetail;
 import org.dromara.erp.prd.domain.bo.PrdMaterialRequirementBo;
 import org.dromara.erp.prd.domain.vo.PrdMaterialRequirementVo;
 import org.dromara.erp.prd.service.IPrdMaterialRequirementService;
@@ -19,7 +18,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 物料清单Controller
@@ -94,22 +92,14 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 根据生产计划编号查询物料清单子表（无分页）
+     * 根据生产计划编号查询物料清单（含明细，无分页）
      */
     @SaCheckPermission("prd:requirement:list")
     @GetMapping("/listDetailsByPlanNo/{planNo}")
-    public R<List<PrdMaterialRequirementDetail>> listDetailsByPlanNo(@PathVariable String planNo) {
-        // 根据planNo查询主表数据（包含明细）
+    public R<List<PrdMaterialRequirement>> listDetailsByPlanNo(@PathVariable String planNo) {
         PrdMaterialRequirement queryParam = new PrdMaterialRequirement();
         queryParam.setPlanNo(planNo);
         List<PrdMaterialRequirement> mainList = prdMaterialRequirementService.selectPrdMaterialRequirementListWithDetails(queryParam);
-
-        // 收集所有子表数据
-        List<PrdMaterialRequirementDetail> detailList = mainList.stream()
-                .filter(main -> main.getPrdMaterialRequirementDetailList() != null)
-                .flatMap(main -> main.getPrdMaterialRequirementDetailList().stream())
-                .collect(Collectors.toList());
-
-        return R.ok(detailList);
+        return R.ok(mainList);
     }
 }

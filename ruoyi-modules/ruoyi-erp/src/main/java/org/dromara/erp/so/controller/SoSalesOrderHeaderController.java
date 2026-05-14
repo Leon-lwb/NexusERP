@@ -100,6 +100,7 @@ public class SoSalesOrderHeaderController extends BaseController {
     @GetMapping("/listLine/{soNo}")
     public R<List<SoSalesOrderLineVo>> listLine(@PathVariable String soNo) {
         List<SoSalesOrderLineVo> lineList = soSalesOrderHeaderService.selectLineListBySoNo(soNo);
+        lineList.forEach(line -> line.setSoNo(soNo));
         return R.ok(lineList);
     }
 

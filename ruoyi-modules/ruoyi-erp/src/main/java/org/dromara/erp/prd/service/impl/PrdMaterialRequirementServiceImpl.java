@@ -13,6 +13,7 @@ import org.dromara.erp.prd.domain.PrdMaterialRequirement;
 import org.dromara.erp.prd.domain.PrdMaterialRequirementDetail;
 import org.dromara.erp.prd.domain.bo.PrdMaterialRequirementBo;
 import org.dromara.erp.prd.domain.vo.PrdMaterialRequirementVo;
+import org.dromara.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import org.dromara.erp.prd.mapper.PrdMaterialRequirementMapper;
 import org.dromara.erp.prd.service.IPrdMaterialRequirementService;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ import java.util.List;
 public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequirementService {
 
     private final PrdMaterialRequirementMapper baseMapper;
+    private final PrdMaterialRequirementDetailMapper detailMapper;
 
     @Override
     public TableDataInfo<PrdMaterialRequirementVo> selectPageList(PrdMaterialRequirementBo bo, PageQuery pageQuery) {
@@ -67,11 +69,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     public List<PrdMaterialRequirement> selectPrdMaterialRequirementListWithDetails(PrdMaterialRequirement prdMaterialRequirement) {
         LambdaQueryWrapper<PrdMaterialRequirement> lqw = buildEntityQueryWrapper(prdMaterialRequirement);
         List<PrdMaterialRequirement> list = baseMapper.selectList(lqw);
-        // Load details for each main record
         for (PrdMaterialRequirement main : list) {
             if (main.getRequirementId() != null) {
-                // Details will be loaded lazily by the service layer or client
-                main.setPrdMaterialRequirementDetailList(new ArrayList<>());
+                LambdaQueryWrapper<PrdMaterialRequirementDetail> detailLqw = Wrappers.lambdaQuery();
+                detailLqw.eq(PrdMaterialRequirementDetail::getRequirementId, main.getRequirementId());
+                List<PrdMaterialRequirementDetail> details = detailMapper.selectList(detailLqw);
+                main.setPrdMaterialRequirementDetailList(details);
             }
         }
         return list;
@@ -153,8 +156,7 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     public int insertPrdMaterialRequirementDetails(List<PrdMaterialRequirementDetail> detailList) {
         int count = 0;
         for (PrdMaterialRequirementDetail detail : detailList) {
-            // Use the mapper to insert, assuming detail is managed separately
-            count++;
+            count += detailMapper.insert(detail);
         }
         return count;
     }
@@ -182,11 +184,9 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
      */
     private void deleteDetailByRequirementId(Long requirementId) {
         if (requirementId != null) {
-            // Delete details using lambda wrapper
             LambdaQueryWrapper<PrdMaterialRequirementDetail> lqw = Wrappers.lambdaQuery();
             lqw.eq(PrdMaterialRequirementDetail::getRequirementId, requirementId);
-            // This operation needs a separate mapper for details
-            log.debug("Deleted details for requirement: {}", requirementId);
+            detailMapper.delete(lqw);
         }
     }
 

@@ -32,6 +32,9 @@ import org.dromara.erp.prd.domain.vo.PrdProductionPlanVo;
 import org.dromara.erp.prd.mapper.PrdProductionPlanMapper;
 import org.dromara.erp.prd.service.IPrdMaterialRequirementService;
 import org.dromara.erp.prd.service.IPrdProductionPlanService;
+import org.dromara.erp.so.domain.vo.SoSalesOrderLineVo;
+import org.dromara.erp.so.service.ISoSalesOrderLineService;
+import org.dromara.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,14 +60,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private final BdMaterialCategoryMapper bdMaterialCategoryMapper;
     private final BdBomDetailMapper bdBomDetailMapper;
     private final IPrdMaterialRequirementService prdMaterialRequirementService;
-
-    // ========== SO 模块依赖（需要迁移 so 模块后方可使用） ==========
-    // TODO: 从 nexus-erp 迁移 SoSalesOrderLineService 后取消注释
-    // private final SoSalesOrderLineService soSalesOrderLineService;
-
-    // ========== 自动编码依赖（需要迁移 AutoCodeUtil 后方可使用） ==========
-    // TODO: 从 nexus-erp 迁移 AutoCodeUtil 后取消注释
-    // private final AutoCodeUtil autoCodeUtil;
+    private final ISoSalesOrderLineService soSalesOrderLineService;
+    private final AutoCodeUtil autoCodeUtil;
 
     // 状态常量（从 NexusConstants 迁移）
     private static final String STATUS_DRAFT = "DRAFT";
@@ -160,27 +157,15 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("该生产计划不为草稿，无法保存！");
         }
 
-        // 创建新版本的生产计划
-        PrdProductionPlan newPlan = new PrdProductionPlan();
-        // 复制原计划的所有属性
-        BeanUtil.copyProperties(prdProductionPlan, newPlan);
-        // 版本号加1
-        if (originalPlan.getVersion() != null) {
-            newPlan.setVersion(originalPlan.getVersion() + 1);
-        } else {
-            newPlan.setVersion(1L);
-        }
-        // 设置更新人
+        // 直接在原记录上更新全部表单字段，不新增记录
         Long userId = LoginHelper.getUserId();
-        newPlan.setCreateBy(userId);
-        // 设置为当前版本
-        newPlan.setIsCurrent(VERSION_INIT);
-        // 修改原计划为非当前版本
-        originalPlan.setIsCurrent(VERSION_NOT_CURRENT);
-        baseMapper.updateById(originalPlan);
+        BeanUtil.copyProperties(prdProductionPlan, originalPlan);
+        originalPlan.setPlanId(prdProductionPlan.getPlanId());
+        originalPlan.setUpdateBy(userId);
+        originalPlan.setVersion((originalPlan.getVersion() == null ? 0L : originalPlan.getVersion()) + 1L);
+        originalPlan.setIsCurrent(VERSION_INIT);
 
-        // 插入新版本的生产计划
-        return baseMapper.insert(newPlan);
+        return baseMapper.updateById(originalPlan);
     }
 
     /**
@@ -203,15 +188,13 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("该生产计划未关联订单行信息");
         }
 
-        // TODO: 从 nexus-erp 迁移 SoSalesOrderLine 后恢复下方逻辑
-        // SoSalesOrderLine orderLine = soSalesOrderLineService.getById(plan.getOrderLineId());
-        // if (orderLine == null) {
-        //     throw new RuntimeException("订单行信息不存在");
-        // }
-        // if (orderLine.getMaterialId() == null) {
-        //     throw new RuntimeException("订单行未指定物料信息");
-        // }
-        log.warn("SO模块尚未迁移，跳过订单行检查。planId={}, orderLineId={}", planId, plan.getOrderLineId());
+        SoSalesOrderLineVo orderLine = soSalesOrderLineService.selectById(plan.getOrderLineId());
+        if (orderLine == null) {
+            throw new RuntimeException("订单行信息不存在");
+        }
+        if (orderLine.getMaterialId() == null) {
+            throw new RuntimeException("订单行未指定物料信息");
+        }
 
         // 查询该物料的当前有效BOM
         LambdaQueryWrapper<BdBom> bomQuery = Wrappers.lambdaQuery();
@@ -255,12 +238,10 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("该生产计划未关联订单行信息");
         }
 
-        // TODO: 从 nexus-erp 迁移 SoSalesOrderLineService 后恢复
-        // SoSalesOrderLine orderLine = soSalesOrderLineService.getById(plan.getOrderLineId());
-        // if (orderLine == null) {
-        //     throw new RuntimeException("订单行信息不存在");
-        // }
-        log.warn("SO模块尚未迁移，使用计划中的 bomId={} 进行BOM展开", plan.getBomId());
+        SoSalesOrderLineVo orderLine = soSalesOrderLineService.selectById(plan.getOrderLineId());
+        if (orderLine == null) {
+            throw new RuntimeException("订单行信息不存在");
+        }
 
         // 4. 按节点拆分生成：顶层与每个子节点BOM分别生成主表与底层物料子表
         List<PrdMaterialRequirement> createdMainRequirements = processBomNode(
@@ -529,9 +510,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             }
         }
 
-        // 自动生成需求单号（TODO: 迁移 AutoCodeUtil 后恢复正式编码）
-        // String requirementNo = autoCodeUtil.genSerialCode("PRD_MATERIAL_MBOM", null);
-        String requirementNo = "MR-" + System.currentTimeMillis();
+        String requirementNo = autoCodeUtil.genSerialCode("PRD_MATERIAL_MBOM", null);
         mainRequirement.setRequirementNo(requirementNo);
 
         // 计算统计信息

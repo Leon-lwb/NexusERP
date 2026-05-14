@@ -10,8 +10,11 @@ import org.dromara.system.service.ISysAutoCodePartService;
 import org.dromara.system.service.ISysAutoCodeResultService;
 import org.dromara.system.service.ISysAutoCodeRuleService;
 import org.dromara.common.core.utils.StringUtils;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,6 +43,8 @@ public class AutoCodeUtil {
 
     private String lastSerialNo;
 
+    @DS("master")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public synchronized String genSerialCode(String ruleCode, String inputCharacter) {
 
         SysAutoCodeRule rule = iAutoCodeRuleService.getOne(ruleCode);
