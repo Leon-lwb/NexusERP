@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 工作流节点元素视图对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/9/11 22:04
  */
 @Data

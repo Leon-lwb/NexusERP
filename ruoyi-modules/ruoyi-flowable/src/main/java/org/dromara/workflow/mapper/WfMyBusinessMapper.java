@@ -7,7 +7,7 @@ import org.dromara.workflow.domain.vo.WfMyBusinessVo;
 /**
  * 流程业务扩展Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-11
  */
 public interface WfMyBusinessMapper extends BaseMapperPlus<WfMyBusiness, WfMyBusinessVo> {

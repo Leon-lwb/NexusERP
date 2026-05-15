@@ -7,7 +7,7 @@ import java.util.Date;
 /**
  * 流程模型视图对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/6/21 9:16
  */
 @Data

@@ -11,7 +11,7 @@ import org.dromara.common.mybatis.core.page.TableDataInfo;
 /**
  * 部门管理 服务层
  *
- * @author nbacheng
+ * @author wanghuan
  */
 public interface IWfIdentityService {
 

@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * 具体的字典数据视图
  *
- * @author nbacheng
+ * @author wanghuan
  */
 
 @Data

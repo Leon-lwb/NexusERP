@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Param;
 /**
  * 流程配置主Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-19
  */
 public interface WfFlowConfigMapper extends BaseMapperPlus<WfFlowConfig, WfFlowConfigVo> {

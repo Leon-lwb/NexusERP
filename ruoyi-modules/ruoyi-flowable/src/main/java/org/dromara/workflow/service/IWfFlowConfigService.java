@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 流程配置主Service接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-19
  */
 public interface IWfFlowConfigService {

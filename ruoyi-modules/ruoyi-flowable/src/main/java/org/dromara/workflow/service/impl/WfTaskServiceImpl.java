@@ -97,7 +97,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 
 /**
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/3/10 00:12
  */
 @RequiredArgsConstructor
@@ -1310,7 +1310,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 
     }
 
-    /**  modify by nbacheng
+    /**  modify by wanghuan
      * 获取下一个节点信息,流程定义上的节点信息
      * @param taskId 当前节点id
      * @param values 流程变量

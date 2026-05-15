@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 流程默认操作Service接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-23
  */
 public interface IWfDefaultOperateService {

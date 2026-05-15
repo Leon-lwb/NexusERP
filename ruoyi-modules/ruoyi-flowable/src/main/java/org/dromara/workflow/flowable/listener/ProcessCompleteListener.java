@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * 全局监听-工作流完成消息提醒
  *
- * @author nbacheng
+ * @author wanghuan
  */
 
 //必须要用 AbstractFlowableEngineEventListener 用FlowableEventListener这个会出现问题，应该是已经完成了

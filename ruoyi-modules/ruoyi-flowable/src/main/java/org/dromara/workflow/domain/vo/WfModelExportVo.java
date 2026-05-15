@@ -12,7 +12,7 @@ import java.util.Date;
 /**
  * 流程模型对象导出VO
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @NoArgsConstructor

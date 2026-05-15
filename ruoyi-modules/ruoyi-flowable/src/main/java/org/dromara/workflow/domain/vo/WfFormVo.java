@@ -11,7 +11,7 @@ import org.dromara.workflow.domain.WfForm;
 /**
  * 流程分类视图对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/3/7 22:07
  */
 @Data

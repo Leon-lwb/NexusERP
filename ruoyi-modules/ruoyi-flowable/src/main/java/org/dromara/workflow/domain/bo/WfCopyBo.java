@@ -14,7 +14,7 @@ import org.dromara.workflow.domain.WfCopy;
 /**
  * 流程抄送业务对象 wf_copy
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2022-05-19
  */
 

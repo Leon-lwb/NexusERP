@@ -16,7 +16,7 @@ import jakarta.annotation.Resource;
 
 /**
  * 流程表达式应用类
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-05-16
  */
 

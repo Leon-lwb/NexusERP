@@ -29,7 +29,7 @@ import org.dromara.workflow.service.IWfMyBusinessService;
 /**
  * 流程业务扩展
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-11
  */
 @Validated

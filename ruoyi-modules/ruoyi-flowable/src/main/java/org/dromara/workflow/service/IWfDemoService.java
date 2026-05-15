@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * DEMOService接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-12
  */
 public interface IWfDemoService {

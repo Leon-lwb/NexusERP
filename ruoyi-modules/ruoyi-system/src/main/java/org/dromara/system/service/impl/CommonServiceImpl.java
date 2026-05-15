@@ -22,7 +22,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 /**
  * 通用 公共服务实现
  *
- * @author nbacheng
+ * @author wanhuan
  * @date 2023-09-21
  */
 @Slf4j

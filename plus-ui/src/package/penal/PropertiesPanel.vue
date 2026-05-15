@@ -92,12 +92,12 @@
   import ElementProperties from "./properties/ElementProperties";
   import ElementForm from "./form/ElementForm";
   import UserTaskListeners from "./listeners/UserTaskListeners";
-  // add by nbacheng 2022-12-16
+  // add by wanghuan 2022-12-16
   import BoundaryEvent from "./boundary-events/BoundaryEvent";
   import CatchEvent from "./catch-events/CatchEvent";
   /**
    * 侧边栏
-   * @Author MiyueFE nbacheng
+   * @Author MiyueFE wanghuan
    * @Home https://github.com/miyuesc
    * @Date 2021年3月31日18:57:51
    */

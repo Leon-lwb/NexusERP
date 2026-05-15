@@ -10,7 +10,7 @@ import java.io.Serial;
 /**
  * 设计器单对象 wf_nform
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2025-04-29
  */
 @Data

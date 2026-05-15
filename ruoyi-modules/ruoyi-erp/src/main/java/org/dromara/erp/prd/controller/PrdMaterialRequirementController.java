@@ -11,12 +11,14 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.erp.prd.domain.PrdMaterialRequirement;
+import org.dromara.erp.prd.domain.PrdMaterialRequirementDetail;
 import org.dromara.erp.prd.domain.bo.PrdMaterialRequirementBo;
 import org.dromara.erp.prd.domain.vo.PrdMaterialRequirementVo;
 import org.dromara.erp.prd.service.IPrdMaterialRequirementService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -101,5 +103,18 @@ public class PrdMaterialRequirementController extends BaseController {
         queryParam.setPlanNo(planNo);
         List<PrdMaterialRequirement> mainList = prdMaterialRequirementService.selectPrdMaterialRequirementListWithDetails(queryParam);
         return R.ok(mainList);
+    }
+
+    /**
+     * 从BOM导入物料需求明细
+     */
+    @SaCheckPermission("prd:requirement:query")
+    @GetMapping("/importBomDetails")
+    public R<List<PrdMaterialRequirementDetail>> importBomDetails(
+            @RequestParam Long bomId,
+            @RequestParam BigDecimal totalRequiredQuantity) {
+        List<PrdMaterialRequirementDetail> detailList =
+            prdMaterialRequirementService.importBomDetails(bomId, totalRequiredQuantity);
+        return R.ok(detailList);
     }
 }

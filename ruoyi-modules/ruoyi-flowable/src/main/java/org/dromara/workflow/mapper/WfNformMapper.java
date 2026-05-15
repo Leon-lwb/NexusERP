@@ -7,7 +7,7 @@ import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 /**
  * 设计器单Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2025-04-29
  */
 public interface WfNformMapper extends BaseMapperPlus<WfNform, WfNformVo> {

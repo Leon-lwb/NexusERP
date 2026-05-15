@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * 流程部署视图对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2022-06-30
  */
 @Data

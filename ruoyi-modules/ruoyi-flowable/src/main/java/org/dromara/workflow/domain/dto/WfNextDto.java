@@ -10,7 +10,7 @@ import org.dromara.system.domain.SysUser;
 
 /**
  * 动态人员、组
- * @author KonBAI
+ * @author wanghuan
  * @createTime 2022/3/10 00:12
  */
 @Data

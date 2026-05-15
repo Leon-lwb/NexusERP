@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Param;
 /**
  * 流程抄送Service接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2022-05-19
  */
 public interface IWfCopyService {

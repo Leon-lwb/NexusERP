@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Select;
 /**
  * 流程自定义业务规则Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-23
  */
 public interface WfCustomRuleMapper extends BaseMapperPlus<WfCustomRule, WfCustomRuleVo> {

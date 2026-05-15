@@ -14,7 +14,7 @@ import java.io.Serial;
 /**
  * 流程分类对象 wf_category
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

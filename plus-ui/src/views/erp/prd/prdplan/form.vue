@@ -695,7 +695,7 @@ function submitForm() {
         formData.version = 0
         addPlan(formData).then(() => {
           proxy.$modal.msgSuccess("新增成功")
-          router.push('/erp/prd/plan')
+          proxy.$tab.closeOpenPage({ path: '/erp/prd/plan' })
         }).catch(error => {
           proxy.$modal.msgError("新增失败: " + (error.message || "未知错误"))
         })
@@ -708,7 +708,7 @@ function submitForm() {
           if (form.value.planNo) {
             loadMaterialRequirements(form.value.planNo)
           }
-          router.push('/erp/prd/plan')
+          proxy.$tab.closeOpenPage({ path: '/erp/prd/plan' })
         }).catch(error => {
           proxy.$modal.msgError("版本变更失败: " + (error.message || "未知错误"))
         })

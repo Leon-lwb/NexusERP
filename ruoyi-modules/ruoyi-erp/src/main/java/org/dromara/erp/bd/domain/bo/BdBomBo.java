@@ -85,6 +85,11 @@ public class BdBomBo extends BaseEntity {
     private Long attr4;
 
     /**
+     * 来源类型（PROCUREMENT-采购, PROCESS-加工）
+     */
+    private String sourceType;
+
+    /**
      * 批量删除ID集合
      */
     private Long[] ids;

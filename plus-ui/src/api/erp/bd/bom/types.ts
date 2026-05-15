@@ -18,6 +18,7 @@ export interface BomVO {
   isCurrent: number;
   status: number;
   remark: string;
+  sourceType?: string;
   createBy: number;
   createTime: string;
   updateBy: number;
@@ -34,6 +35,7 @@ export interface BomForm {
   isCurrent?: number;
   status?: number;
   remark?: string;
+  sourceType?: string;
 }
 
 export interface BomDetailVO {
@@ -61,8 +63,8 @@ export interface BomDetailVO {
   status: number;
   statusDesc: string;
   remark: string;
+  sourceType?: string;
 }
-
 export interface BomDetailForm {
   detailId?: number;
   bomId: number;
@@ -80,4 +82,5 @@ export interface BomDetailForm {
   sortOrder?: number;
   status?: number;
   remark?: string;
+  sourceType?: string;
 }

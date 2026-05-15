@@ -9,7 +9,7 @@ import lombok.Data;
 /**
  * 流程操作规则视图对象 wf_operate_rule
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-23
  */
 @Data

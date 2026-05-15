@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * 流程定义视图对象 workflow_definition
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2022-01-17
  */
 @Data

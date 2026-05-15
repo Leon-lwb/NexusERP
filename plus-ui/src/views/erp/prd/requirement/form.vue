@@ -121,6 +121,16 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="来源类型" prop="sourceType">
+              <el-select v-model="form.sourceType" placeholder="请选择来源类型" :disabled="isViewMode" clearable v-if="!isViewMode">
+                <el-option v-for="dict in prd_material_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
+              <dict-tag v-else :options="prd_material_source_type" :value="form.sourceType" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
         <el-divider content-position="center">物料需求单明细信息</el-divider>
         <el-row :gutter="10" class="mb8">
@@ -129,6 +139,9 @@
           </el-col>
           <el-col :span="1.5">
             <el-button type="danger" icon="Delete" @click="handleDeleteDetail" v-if="!isViewMode">删除</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button type="success" icon="Upload" @click="handleImportBom" v-if="!isViewMode">导入BOM</el-button>
           </el-col>
         </el-row>
         <el-table :data="detailList" :row-class-name="rowDetailIndex"
@@ -207,11 +220,11 @@
 </template>
 
 <script setup lang="ts" name="PrdRequirementForm">
-import { getRequirement, addRequirement, updateRequirement } from "@/api/erp/prd/requirement"
+import { getRequirement, addRequirement, updateRequirement, importBomDetails } from "@/api/erp/prd/requirement"
 import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
-const { sys_core_status, prd_requirement_status } = toRefs<any>(proxy.useDict('sys_core_status', 'prd_requirement_status'))
+const { sys_core_status, prd_requirement_status, prd_material_source_type } = toRefs<any>(proxy.useDict('sys_core_status', 'prd_requirement_status', 'prd_material_source_type'))
 const route = useRoute()
 const router = useRouter()
 const autoGenFlag = ref(false)
@@ -284,7 +297,8 @@ function reset() {
     materialId: null,
     materialCode: null,
     materialName: null,
-    materialSpec: null
+    materialSpec: null,
+    sourceType: null
   }
   detailList.value = []
   proxy.resetForm("requirementRef")
@@ -337,7 +351,8 @@ function handleAddDetail() {
     leadTime: "",
     requiredDate: "",
     status: "",
-    remark: ""
+    remark: "",
+    sourceType: ""
   }
   detailList.value.push(obj)
 }
@@ -352,6 +367,54 @@ function handleDeleteDetail() {
       return checkedItems.indexOf(item.index) == -1
     })
   }
+}
+
+function handleImportBom() {
+  const bomId = form.value.bomId
+  const totalRequiredQuantity = form.value.totalRequiredQuantity
+
+  if (!bomId) {
+    proxy.$modal.msgError("请先填写BOM ID")
+    return
+  }
+  if (!totalRequiredQuantity || Number(totalRequiredQuantity) <= 0) {
+    proxy.$modal.msgError("请先填写有效的需求总量")
+    return
+  }
+
+  proxy.$modal.confirm('确认从BOM导入物料明细吗？这将覆盖当前明细列表。').then(() => {
+    return importBomDetails(Number(bomId), Number(totalRequiredQuantity))
+  }).then(response => {
+    const data = response.data || []
+    if (data.length === 0) {
+      proxy.$modal.msgWarning("该BOM没有明细数据")
+      return
+    }
+    detailList.value = data.map(item => ({
+      materialId: item.materialId || "",
+      materialCode: item.materialCode || "",
+      materialName: item.materialName || "",
+      materialSpec: item.materialSpec || "",
+      unit: item.unit || "",
+      bomQuantity: item.bomQuantity || "",
+      lossRate: item.lossRate || "",
+      requiredQuantity: item.requiredQuantity || "",
+      issuedQuantity: item.issuedQuantity || "",
+      stockQuantity: item.stockQuantity || "",
+      shortageQuantity: item.shortageQuantity || "",
+      operationStep: item.operationStep || "",
+      workstationId: item.workstationId || "",
+      workstationName: item.workstationName || "",
+      leadTime: item.leadTime || "",
+      requiredDate: item.requiredDate || "",
+      status: item.status || "",
+      remark: item.remark || "",
+      sourceType: item.sourceType || ""
+    }))
+    proxy.$modal.msgSuccess(`成功导入 ${detailList.value.length} 条物料明细`)
+  }).catch(() => {
+    // cancelled or error
+  })
 }
 
 function handleDetailSelectionChange(selection) {

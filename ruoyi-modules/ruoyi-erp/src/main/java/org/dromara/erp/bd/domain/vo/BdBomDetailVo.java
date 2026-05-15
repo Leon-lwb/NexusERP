@@ -90,6 +90,9 @@ public class BdBomDetailVo implements Serializable {
     @ExcelProperty("备注")
     private String remark;
 
+    @ExcelProperty("来源类型")
+    private String sourceType;
+
     @ExcelProperty("创建人")
     private Long createBy;
 

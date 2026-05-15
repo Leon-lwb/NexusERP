@@ -39,3 +39,11 @@ export const delRequirement = (requirementId: string | number | (string | number
     method: 'delete'
   });
 };
+
+export const importBomDetails = (bomId: number, totalRequiredQuantity: number): AxiosPromise<any> => {
+  return request({
+    url: '/erp/prd/requirement/importBomDetails',
+    method: 'get',
+    params: { bomId, totalRequiredQuantity }
+  });
+};

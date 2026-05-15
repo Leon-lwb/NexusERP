@@ -7,7 +7,7 @@ import lombok.Data;
 /**
  * 流程规则对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-24
  */
 @Data

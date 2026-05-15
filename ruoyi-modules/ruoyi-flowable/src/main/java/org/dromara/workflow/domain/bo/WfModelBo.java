@@ -10,7 +10,7 @@ import lombok.Data;
 /**
  * 流程模型对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/6/21 9:16
  */
 @Data

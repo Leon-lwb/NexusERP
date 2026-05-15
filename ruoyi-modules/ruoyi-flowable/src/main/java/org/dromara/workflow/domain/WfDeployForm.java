@@ -9,7 +9,7 @@ import java.io.Serializable;
 /**
  * 流程实例关联表单对象 wf_deploy_form
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @TableName("wf_deploy_form")

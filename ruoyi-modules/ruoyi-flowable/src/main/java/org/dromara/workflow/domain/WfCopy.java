@@ -13,7 +13,7 @@ import java.io.Serial;
 /**
  * 流程抄送对象 wf_copy
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

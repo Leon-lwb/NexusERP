@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 流程业务单对象 wf_custom_form
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-09
  */
 @Data

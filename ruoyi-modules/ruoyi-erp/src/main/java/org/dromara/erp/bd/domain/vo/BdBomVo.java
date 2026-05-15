@@ -101,4 +101,10 @@ public class BdBomVo implements Serializable {
      */
     private Long attr4;
 
+    /**
+     * 来源类型（PROCUREMENT-采购, PROCESS-加工）
+     */
+    @ExcelProperty(value = "来源类型")
+    private String sourceType;
+
 }

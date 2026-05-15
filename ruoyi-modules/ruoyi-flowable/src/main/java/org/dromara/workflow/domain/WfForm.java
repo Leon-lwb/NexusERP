@@ -12,7 +12,7 @@ import java.io.Serial;
 /**
  * 流程表单对象 wf_form
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

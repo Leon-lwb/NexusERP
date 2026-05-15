@@ -12,7 +12,7 @@ import jakarta.validation.constraints.*;
 /**
  * 设计器单业务对象 wf_nform
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2025-04-29
  */
 @Data

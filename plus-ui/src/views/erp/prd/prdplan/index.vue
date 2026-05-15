@@ -139,6 +139,7 @@
 <script setup lang="ts" name="PrdPlan">
 import { listPlan, delPlan } from "@/api/erp/prd/plan"
 import { useRouter } from 'vue-router'
+import { onActivated } from 'vue'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance()
@@ -280,4 +281,8 @@ function handleExport() {
 }
 
 getList()
+
+onActivated(() => {
+  getList()
+})
 </script>

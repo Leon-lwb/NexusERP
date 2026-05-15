@@ -280,9 +280,13 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             return result;
         }
 
-        // 当前节点用于主表的底层物料清单（仅收集无BOM的子项；有BOM的子项作为子节点递归处理）
+        // 获取BOM的来源类型：PROCUREMENT-采购（不递归），PROCESS-加工（递归展开子BOM）
+        String sourceType = currentBom.getSourceType();
+        boolean isProcurement = "PROCUREMENT".equals(sourceType);
+
+        // 当前节点用于主表的底层物料清单
         List<MaterialRequirementCalcDTO> leafRequirements = new ArrayList<>();
-        // 需要递归处理的子节点（具备BOM）
+        // 需要递归处理的子节点（具备BOM，且非采购类型）
         List<BomCalculationNode> childAssemblyNodes = new ArrayList<>();
 
         for (BdBomDetailVo detail : bomDetails) {
@@ -293,8 +297,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                     detail.getLossRate()
             );
 
-            // 判断子项是否有BOM（子节点BOM）
-            BdBom childBom = getCurrentBom(detail.getChildMaterialId(), null);
+            // 采购类型BOM：所有明细均作为底层物料，不递归展开子BOM
+            // 加工类型BOM：判断子项是否有子BOM来决定是否递归
+            BdBom childBom = isProcurement ? null : getCurrentBom(detail.getChildMaterialId(), null);
             if (childBom != null) {
                 // 作为子节点，递归生成其主表与底层物料子表
                 BomCalculationNode childNode = new BomCalculationNode();
@@ -304,7 +309,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 childNode.setParentDetail(detail);
                 childAssemblyNodes.add(childNode);
             } else {
-                // 无BOM，为底层物料，归属于当前节点的主表子表
+                // 底层物料，归属于当前节点的主表子表
                 MaterialRequirementCalcDTO dto = new MaterialRequirementCalcDTO();
                 dto.setMaterialId(detail.getChildMaterialId());
                 dto.setTotalRequiredQuantity(childRequiredQuantity);
@@ -314,6 +319,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                         Long.valueOf(detail.getOperationStep()) : null);
                 dto.setWorkstationId(detail.getWorkstationId());
                 dto.setWorkstationName(detail.getWorkstationName());
+                dto.setSourceType(sourceType);
                 // 尝试补充物料基础信息
                 BdMaterial material = getMaterialInfo(detail.getChildMaterialId());
                 if (material != null) {
@@ -502,6 +508,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         BdBom bom = bdBomMapper.selectById(bomId);
         if (bom != null) {
             mainRequirement.setMaterialId(bom.getParentMaterialId());
+            mainRequirement.setSourceType(bom.getSourceType());
             BdMaterial material = getMaterialInfo(bom.getParentMaterialId());
             if (material != null) {
                 mainRequirement.setMaterialCode(material.getMaterialCode());
@@ -558,6 +565,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
         detail.setRequiredDate(new Date());
         detail.setStatus(1L);
+        detail.setSourceType(calcDto.getSourceType());
 
         return detail;
     }

@@ -87,6 +87,21 @@
       </el-row>
       
       <el-row :gutter="20">
+        <el-col :span="12">
+          <el-form-item label="来源类型" prop="sourceType">
+            <el-select v-model="form.sourceType" placeholder="请选择来源类型" :disabled="isViewMode" clearable>
+              <el-option
+                  v-for="dict in prd_material_source_type"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="20">
         <el-col :span="24">
           <el-form-item label="备注信息" prop="remark">
             <el-input v-model="form.remark" type="textarea" placeholder="请输入备注信息" :readonly="isViewMode" />
@@ -320,7 +335,7 @@ import { debounce } from 'lodash'
 const router = useRouter()
 const route = useRoute()
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sys_core_status, bd_material_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type'))
+const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type'))
 
 // 表单相关
 const formRef = ref(null)
@@ -334,7 +349,8 @@ const form = ref({
   expiryDate: null,
   isCurrent: null,
   status: null,
-  remark: null
+  remark: null,
+  sourceType: null
 })
 
 // 查看模式标识

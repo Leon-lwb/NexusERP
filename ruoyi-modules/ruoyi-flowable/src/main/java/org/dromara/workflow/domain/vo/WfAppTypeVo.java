@@ -3,7 +3,7 @@ package org.dromara.workflow.domain.vo;
 import lombok.Data;
 
 /**
- * @Author nbacheng
+ * @Author wanghuan
  * @Date 2023/10/13
  * @Description:
  * @Version 1.0

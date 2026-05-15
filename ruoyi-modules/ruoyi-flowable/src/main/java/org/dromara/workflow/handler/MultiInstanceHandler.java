@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 /**
  * 多实例处理类
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @AllArgsConstructor
 @Component("multiInstanceHandler")

@@ -12,7 +12,7 @@ import org.dromara.workflow.domain.WfCopy;
 /**
  * 流程抄送视图对象 wf_copy
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @AutoMapper(target = WfCopy.class)

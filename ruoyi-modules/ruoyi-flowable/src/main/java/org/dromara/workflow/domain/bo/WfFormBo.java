@@ -16,7 +16,7 @@ import java.io.Serial;
 /**
  * 流程表单业务对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/3/7 22:07
  */
 @Data

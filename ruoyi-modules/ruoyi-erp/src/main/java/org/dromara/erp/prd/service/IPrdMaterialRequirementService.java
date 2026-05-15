@@ -7,6 +7,7 @@ import org.dromara.erp.prd.domain.PrdMaterialRequirementDetail;
 import org.dromara.erp.prd.domain.bo.PrdMaterialRequirementBo;
 import org.dromara.erp.prd.domain.vo.PrdMaterialRequirementVo;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -43,4 +44,13 @@ public interface IPrdMaterialRequirementService {
     int deletePrdMaterialRequirementByRequirementId(Long requirementId);
 
     int insertPrdMaterialRequirementDetails(List<PrdMaterialRequirementDetail> detailList);
+
+    /**
+     * 根据BOM ID导入物料需求明细
+     *
+     * @param bomId BOM ID
+     * @param totalRequiredQuantity 需求总量
+     * @return 物料需求明细列表
+     */
+    List<PrdMaterialRequirementDetail> importBomDetails(Long bomId, BigDecimal totalRequiredQuantity);
 }

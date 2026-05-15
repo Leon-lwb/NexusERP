@@ -10,7 +10,7 @@ import org.dromara.workflow.domain.vo.WfCategoryVo;
 /**
  * 流程分类Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2022-01-15
  */
 public interface WfCategoryMapper extends BaseMapperPlus<WfCategory, WfCategoryVo> {

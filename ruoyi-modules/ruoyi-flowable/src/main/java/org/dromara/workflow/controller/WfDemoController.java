@@ -37,7 +37,7 @@ import org.dromara.workflow.service.IWfDemoService;
 /**
  * DEMO
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-12
  */
 @Validated
@@ -55,7 +55,7 @@ public class WfDemoController extends BaseController {
     @SaCheckPermission("workflow:demo:list")
     @GetMapping("/list")
     public TableDataInfo<WfDemoVo> list(WfDemoVo vo, PageQuery pageQuery, HttpServletRequest req) {
-    	//by nbacheng for java.sql.SQLSyntaxErrorException: ORA-00918: 未明确定义列
+    	//by wanghuan for java.sql.SQLSyntaxErrorException: ORA-00918: 未明确定义列
 		Map<String, String[]> ParameterMap = new HashMap<String, String[]>(req.getParameterMap());
 		String[] column = new String[]{""};
 		if(ParameterMap!=null&&  ParameterMap.containsKey("column")) {

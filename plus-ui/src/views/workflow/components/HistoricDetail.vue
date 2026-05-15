@@ -9,7 +9,7 @@
                         :customFormData="customForm.customFormData" :isNew = "customForm.isNew"></component>
         </div>
         <div style="margin-left:10%;margin-bottom: 30px">
-           <!--对上传文件进行显示处理，临时方案 add by nbacheng 2022-07-27 -->
+           <!--对上传文件进行显示处理，临时方案 add by wanghuan 2022-07-27 -->
            <el-upload action="#" :on-preview="handleFilePreview" :file-list="fileList" v-if="fileDisplay" />
         </div>
       </el-tab-pane >

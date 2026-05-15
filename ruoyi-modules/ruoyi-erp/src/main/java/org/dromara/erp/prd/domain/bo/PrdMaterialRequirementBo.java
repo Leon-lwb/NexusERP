@@ -129,6 +129,11 @@ public class PrdMaterialRequirementBo extends BaseEntity {
     private String remark;
 
     /**
+     * 来源类型（PROCUREMENT-采购, PROCESS-加工）
+     */
+    private String sourceType;
+
+    /**
      * 物料需求单行列表
      */
     private List<PrdMaterialRequirementDetail> prdMaterialRequirementDetailList;

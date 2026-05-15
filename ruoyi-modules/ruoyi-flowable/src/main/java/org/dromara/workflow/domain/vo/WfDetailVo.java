@@ -10,7 +10,7 @@ import org.dromara.common.flowable.core.FormConf;
 /**
  * 流程详情视图对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/8/7 15:01
  */
 @Data

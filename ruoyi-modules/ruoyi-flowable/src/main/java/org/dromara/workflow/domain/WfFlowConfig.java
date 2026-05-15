@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 流程配置主对象 wf_flow_config
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-19
  */
 @Data

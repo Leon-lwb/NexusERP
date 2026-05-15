@@ -20,8 +20,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import org.dromara.erp.bd.domain.BdMaterial;
+import org.dromara.erp.bd.domain.BdBom;
+import org.dromara.erp.bd.domain.bo.BdBomDetailBo;
+import org.dromara.erp.bd.domain.vo.BdMaterialVo;
+import org.dromara.erp.bd.domain.vo.BdBomDetailVo;
+import org.dromara.erp.bd.mapper.BdMaterialMapper;
+import org.dromara.erp.bd.mapper.BdBomMapper;
+import org.dromara.erp.bd.service.IBdBomDetailService;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 物料清单Service业务层处理
@@ -36,6 +51,9 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
 
     private final PrdMaterialRequirementMapper baseMapper;
     private final PrdMaterialRequirementDetailMapper detailMapper;
+    private final IBdBomDetailService bomDetailService;
+    private final BdMaterialMapper materialMapper;
+    private final BdBomMapper bdBomMapper;
 
     @Override
     public TableDataInfo<PrdMaterialRequirementVo> selectPageList(PrdMaterialRequirementBo bo, PageQuery pageQuery) {
@@ -149,6 +167,80 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     public int deletePrdMaterialRequirementByRequirementId(Long requirementId) {
         deleteDetailByRequirementId(requirementId);
         return baseMapper.deleteById(requirementId);
+    }
+
+    @Override
+    public List<PrdMaterialRequirementDetail> importBomDetails(Long bomId, BigDecimal totalRequiredQuantity) {
+        if (bomId == null) {
+            throw new RuntimeException("BOM ID不能为空");
+        }
+        if (totalRequiredQuantity == null || totalRequiredQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("需求总量必须大于0");
+        }
+
+        // 1. Query BOM to get sourceType
+        BdBom bom = bdBomMapper.selectById(bomId);
+        String sourceType = bom != null ? bom.getSourceType() : null;
+
+        // 2. Query BOM details by bomId
+        BdBomDetailBo bo = new BdBomDetailBo();
+        bo.setBomId(bomId);
+        List<BdBomDetailVo> bomDetails = bomDetailService.selectList(bo);
+
+        if (bomDetails == null || bomDetails.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 3. Batch-query materials for code, spec, and UOM name
+        List<Long> materialIds = bomDetails.stream()
+            .map(BdBomDetailVo::getChildMaterialId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+        Map<Long, BdMaterialVo> materialMap = new HashMap<>();
+        if (!materialIds.isEmpty()) {
+            materialMap = materialMapper.selectVoList(
+                Wrappers.<BdMaterial>lambdaQuery()
+                    .in(BdMaterial::getMaterialId, materialIds)
+            ).stream().collect(Collectors.toMap(
+                BdMaterialVo::getMaterialId,
+                v -> v,
+                (a, b) -> a,
+                HashMap::new
+            ));
+        }
+
+        // 4. Map to PrdMaterialRequirementDetail with quantity calculation
+        final Map<Long, BdMaterialVo> finalMaterialMap = materialMap;
+        final String finalSourceType = sourceType;
+        return bomDetails.stream().map(detail -> {
+            PrdMaterialRequirementDetail reqDetail = new PrdMaterialRequirementDetail();
+            BdMaterialVo mat = finalMaterialMap.get(detail.getChildMaterialId());
+
+            reqDetail.setMaterialId(detail.getChildMaterialId());
+            reqDetail.setMaterialCode(detail.getChildMaterialCode() != null ? detail.getChildMaterialCode() : (mat != null ? mat.getMaterialCode() : null));
+            reqDetail.setMaterialName(detail.getChildMaterialName() != null ? detail.getChildMaterialName() : (mat != null ? mat.getMaterialName() : null));
+            reqDetail.setMaterialSpec(detail.getChildMaterialSpec() != null ? detail.getChildMaterialSpec() : (mat != null ? mat.getMaterialSpec() : null));
+            reqDetail.setUnit(mat != null ? mat.getBaseUomName() : null);
+            reqDetail.setBomQuantity(detail.getQuantityPerParent());
+            reqDetail.setLossRate(detail.getLossRate());
+            if (detail.getQuantityPerParent() != null) {
+                reqDetail.setRequiredQuantity(detail.getQuantityPerParent().multiply(totalRequiredQuantity));
+            }
+            reqDetail.setIssuedQuantity(BigDecimal.ZERO);
+            reqDetail.setStockQuantity(BigDecimal.ZERO);
+            reqDetail.setShortageQuantity(BigDecimal.ZERO);
+            reqDetail.setOperationStep(detail.getOperationStep() != null ? Long.valueOf(detail.getOperationStep()) : null);
+            reqDetail.setWorkstationId(detail.getWorkstationId());
+            reqDetail.setWorkstationName(detail.getWorkstationName());
+            reqDetail.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
+            reqDetail.setRequiredDate(new Date());
+            reqDetail.setStatus(1L);
+            reqDetail.setSourceType(finalSourceType);
+
+            return reqDetail;
+        }).collect(Collectors.toList());
     }
 
     @Override

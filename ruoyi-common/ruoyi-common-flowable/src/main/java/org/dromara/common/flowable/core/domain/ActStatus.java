@@ -1,7 +1,7 @@
 package org.dromara.common.flowable.core.domain;
 
 /**
- * @author PanMeiCheng
+ * @author wanghuan
  * @version 1.0
  * @date 2021/11/26
  */

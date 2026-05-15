@@ -14,7 +14,7 @@ import java.io.Serializable;
 /**
  * 设计器单视图对象 wf_nform
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2025-04-29
  */
 @Data

@@ -17,7 +17,7 @@ import org.dromara.workflow.flowable.listener.TaskCreateListener;
 /**
  * Flowable全局监听配置
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Configuration
 @AllArgsConstructor

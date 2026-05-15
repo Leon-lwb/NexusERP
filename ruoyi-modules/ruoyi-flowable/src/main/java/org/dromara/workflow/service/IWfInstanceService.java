@@ -7,7 +7,7 @@ import org.flowable.engine.history.HistoricProcessInstance;
 import java.util.Map;
 
 /**
- * @author KonBAI
+ * @author wanghuan
  * @createTime 2022/3/10 00:12
  */
 public interface IWfInstanceService {

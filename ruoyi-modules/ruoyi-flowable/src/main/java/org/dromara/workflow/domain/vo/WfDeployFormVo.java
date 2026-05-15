@@ -11,7 +11,7 @@ import org.dromara.workflow.domain.WfDeployForm;
 /**
  * 部署实例和表单关联视图对象
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/7/17 18:29
  */
 @Data

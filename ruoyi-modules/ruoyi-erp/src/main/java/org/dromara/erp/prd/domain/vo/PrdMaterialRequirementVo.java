@@ -136,6 +136,11 @@ public class PrdMaterialRequirementVo implements Serializable {
     private String materialSpec;
 
     /**
+     * 来源类型（PROCUREMENT-采购, PROCESS-加工）
+     */
+    private String sourceType;
+
+    /**
      * 物料需求单行列表
      */
     private List<PrdMaterialRequirementDetail> prdMaterialRequirementDetailList;

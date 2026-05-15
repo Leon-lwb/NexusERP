@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 钉钉流程Service接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-29
  */
 public interface IWfDdFlowService {

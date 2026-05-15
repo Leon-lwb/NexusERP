@@ -26,6 +26,7 @@ export interface RequirementVO {
   materialName: string;
   materialSpec: string;
   remark: string;
+  sourceType?: string;
   createBy: number;
   createTime: string;
   updateBy: number;
@@ -54,4 +55,5 @@ export interface RequirementForm {
   materialName?: string;
   materialSpec?: string;
   remark?: string;
+  sourceType?: string;
 }

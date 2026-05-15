@@ -20,7 +20,7 @@ import org.dromara.online.domain.vo.OnlFieldVo;
 /**
  * 在线Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2024-12-30
  */
 

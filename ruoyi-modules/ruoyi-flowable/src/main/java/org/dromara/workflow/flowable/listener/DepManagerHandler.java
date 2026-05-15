@@ -17,7 +17,7 @@ import lombok.AllArgsConstructor;
 /**
  * 部门经理处理类
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-08-06
  */
 @AllArgsConstructor

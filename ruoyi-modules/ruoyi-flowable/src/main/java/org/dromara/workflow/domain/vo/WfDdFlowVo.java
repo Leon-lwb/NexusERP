@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * 钉钉流程视图对象 wf_dd_flow
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-29
  */
 @Data

@@ -9,7 +9,7 @@ import org.dromara.workflow.domain.vo.WfCopyVo;
 /**
  * 流程抄送Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2022-05-19
  */
 public interface WfCopyMapper extends BaseMapperPlus<WfCopy, WfCopyVo> {

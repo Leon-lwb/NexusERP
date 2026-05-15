@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * 表单属性类
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/8/6 18:54
  */
 @Data

@@ -10,7 +10,7 @@ import org.dromara.system.domain.vo.SysUserVo;
 /**
  * 通用 公共服务
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-09-21
  */
 public interface CommonService extends IService<Object> {

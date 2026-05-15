@@ -1,7 +1,7 @@
 package org.dromara.common.flowable.common.constant;
 
 /**
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/4/24 13:24
  */
 public class TaskConstants {

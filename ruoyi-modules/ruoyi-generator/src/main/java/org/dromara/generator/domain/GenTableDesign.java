@@ -11,7 +11,7 @@ import org.dromara.common.mybatis.core.domain.BaseEntity;
  * 代码生成表设计器-设计保存表
  * 从ruoyi-online模块迁移过来
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -35,6 +35,11 @@ public class BdBom extends TenantEntity {
 
     private String remark;
 
+    /**
+     * 来源类型（PROCUREMENT-采购, PROCESS-加工）
+     */
+    private String sourceType;
+
     private String attr1;
 
     private String attr2;

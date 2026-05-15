@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * 流程业务扩展Service接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-11
  */
 public interface IWfMyBusinessService extends IService<WfMyBusiness> {

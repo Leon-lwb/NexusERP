@@ -128,6 +128,11 @@
                       <dict-tag :options="sys_core_status" :value="scope.row.status"/>
                 </template>
               </el-table-column>
+              <el-table-column label="来源类型" align="center" prop="sourceType">
+                <template #default="scope">
+                  <dict-tag :options="prd_material_source_type" :value="scope.row.sourceType" />
+                </template>
+              </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -230,7 +235,22 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="来源类型" prop="sourceType">
+              <el-select v-model="form.sourceType" placeholder="请选择来源类型" clearable>
+                <el-option
+                    v-for="dict in prd_material_source_type"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="备注信息" prop="remark">
@@ -360,7 +380,7 @@ import { debounce } from 'lodash'
 
   const router = useRouter();
   const { proxy } = getCurrentInstance()
-  const { sys_true_or_false, sys_core_status, bd_material_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type'))
+  const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type'))
 
   const bomList = ref([])
   const open = ref(false)
@@ -525,6 +545,7 @@ import { debounce } from 'lodash'
                     isCurrent: null,
                     status: null,
                     remark: null,
+                    sourceType: null,
                     attr1: null,
                     attr2: null,
                     attr3: null,

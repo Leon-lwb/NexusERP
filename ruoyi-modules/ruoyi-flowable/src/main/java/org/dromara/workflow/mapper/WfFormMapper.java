@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * 流程表单Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/3/7 22:07
  */
 public interface WfFormMapper extends BaseMapperPlus<WfForm, WfFormVo> {

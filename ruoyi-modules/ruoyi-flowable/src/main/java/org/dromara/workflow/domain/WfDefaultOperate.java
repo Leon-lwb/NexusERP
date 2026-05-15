@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 流程默认操作对象 wf_default_operate
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-23
  */
 @Data

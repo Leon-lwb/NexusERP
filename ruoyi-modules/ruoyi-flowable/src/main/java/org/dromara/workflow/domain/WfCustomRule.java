@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 流程自定义业务规则对象 wf_custom_rule
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-23
  */
 @Data

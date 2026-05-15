@@ -11,7 +11,7 @@ import org.dromara.workflow.domain.WfCategory;
 /**
  * 流程分类视图对象 flow_category
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2022-01-15
  */
 @Data

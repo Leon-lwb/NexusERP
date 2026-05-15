@@ -28,7 +28,7 @@ import org.dromara.workflow.service.IWfOperateRuleService;
 /**
  * 流程操作规则
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-23
  */
 @Validated

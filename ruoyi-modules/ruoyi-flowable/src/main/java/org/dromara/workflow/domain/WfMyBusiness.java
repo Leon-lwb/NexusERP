@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * 流程业务扩展对象 wf_my_business
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-11
  */
 @Data

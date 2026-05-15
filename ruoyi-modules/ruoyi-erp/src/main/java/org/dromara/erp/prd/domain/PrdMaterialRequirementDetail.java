@@ -139,4 +139,9 @@ public class PrdMaterialRequirementDetail extends TenantEntity {
      * 备注
      */
     private String remark;
+
+    /**
+     * 来源类型（PROCUREMENT-采购, PROCESS-加工）
+     */
+    private String sourceType;
 }

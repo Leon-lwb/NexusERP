@@ -106,7 +106,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 /**
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2023-09-25
  */
 @DS("master")
@@ -964,14 +964,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
         }
 
-        // remove by nbacheng
+        // remove by wanghuan
         /*System.out.print("流程描述="+procDef.getDescription());
         String definitionld = procDef.getId();
         BpmnModel bpmnModel = repositoryService.getBpmnModel(definitionld);//获取bpm（模型）对象
         // 获取开始节点
         StartEvent startEvent = FlowableUtils.getStartEvent(bpmnModel);
         System.out.print("开始节点描述="+startEvent.getDocumentation());*/
-        // remove by nbacheng
+        // remove by wanghuan
 
         //获取下个节点信息
         getNextFlowInfo(procDef, variablesnew, usermap, variables, userlist);
@@ -1114,7 +1114,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
     /**
 	 * 保存VForm3数据到数据库里
-	 *  add by nbacheng
+	 *  add by wanghuan
 	 *
 	 * @param tableName
 	 *
@@ -1248,7 +1248,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
     /**
 	 * 设置下个节点信息处理人员
-	 *  add by nbacheng
+	 *  add by wanghuan
 	 *
 	 * @param variablesnew, usermap,
 	 *		  userlist, sysUser, variables,  bparallelGateway
@@ -1327,7 +1327,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 					if( nextFlowNode.getUserList().size() == 1 ) {
 						if (nextFlowNode.getUserList().get(0) != null) {
 							if(StringUtils.equalsAnyIgnoreCase(nextFlowNode.getUserList().get(0).getUserName(), "${initiator}")) {//对发起人做特殊处理
-								//System.out.print("任务描述="+task.getDescription()); //remove by nbacheng
+								//System.out.print("任务描述="+task.getDescription()); //remove by wanghuan
 								taskService.complete(task.getId(), variables);
 								return R.ok("流程启动成功给发起人.");
 							}
@@ -1409,7 +1409,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
 	/**
 	 * 设置发起人变量
-	 *  add by nbacheng
+	 *  add by wanghuan
 	 *
 	 * @param variables
 	 *            流程变量
@@ -1427,7 +1427,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
     /**
 	 * 获取下个节点信息,对并行与排它网关做处理
-	 *  add by nbacheng
+	 *  add by wanghuan
 	 *
 	 * @param processDefinition, variablesnew, usermap,
 			   variables, userlist, bparallelGateway
@@ -1471,7 +1471,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * 获取排他网关分支名称、分支表达式、下一级任务节点
      * @param flowElement
      * @param data
-     * add by nbacheng
+     * add by wanghuan
      */
     private Map<String, Object> GetExclusiveGatewayUser(FlowElement flowElement,Map<String, Object> variables){
     	// 获取所有网关分支
@@ -1957,7 +1957,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
     /**
 	 * 获取流程是否结束
-	 *  add by nbacheng
+	 *  add by wanghuan
 	 * @param String procInsId
 	 * @return
 	 */
@@ -1983,7 +1983,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
 	/**
 	 * 根据流程dataId,serviceName启动流程实例，主要是自定义业务表单发起流程使用
-	 *  add by nbacheng
+	 *  add by wanghuan
 	 * @param dataId,serviceName
 	 *
 	 * @param variables
@@ -2068,7 +2068,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
 	/**
 	 * 根据仿钉钉流程json转flowable的bpmn的xml格式
-	 *  add by nbacheng
+	 *  add by wanghuan
 	 * @param String ddjson
 	 *
 	 *

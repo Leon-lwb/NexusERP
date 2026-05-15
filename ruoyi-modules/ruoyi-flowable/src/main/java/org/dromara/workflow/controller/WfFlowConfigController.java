@@ -30,7 +30,7 @@ import org.dromara.workflow.service.IWfFlowConfigService;
 /**
  * 流程配置
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-19
  */
 @Validated

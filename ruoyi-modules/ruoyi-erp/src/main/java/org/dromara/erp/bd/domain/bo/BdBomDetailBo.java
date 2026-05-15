@@ -58,6 +58,8 @@ public class BdBomDetailBo extends BaseEntity {
 
     private String remark;
 
+    private String sourceType;
+
     private String attr1;
     private String attr2;
     private Integer attr3;

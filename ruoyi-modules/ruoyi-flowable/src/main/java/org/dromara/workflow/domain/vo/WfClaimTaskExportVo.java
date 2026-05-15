@@ -13,7 +13,7 @@ import java.util.Date;
 /**
  * 待签流程对象导出VO
  *
- * @author nbacheng
+ * @author wanghuan
  */
 @Data
 @NoArgsConstructor

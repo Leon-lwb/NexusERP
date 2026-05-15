@@ -58,6 +58,9 @@ public class BdBomDetail extends TenantEntity {
 
     private String remark;
 
+    @ExcelProperty("来源类型")
+    private String sourceType;
+
     private String attr1;
     private String attr2;
     private Integer attr3;

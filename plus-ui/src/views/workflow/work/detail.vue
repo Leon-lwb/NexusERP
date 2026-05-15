@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-tabs tab-position="top" v-model="activeName" :model-value="processed === true ? 'approval' : 'form'" @tab-click="changeTab">
       <el-tab-pane label="任务办理" name="approval" v-if="processed === true">
-        
+
         <!-- 自定义路由业务表单在「表单信息」展示；任务办理仅保留审批操作 -->
         <el-card class="box-card" shadow="hover" v-if="taskFormVisible && !taskFormCustom.visible">
           <template #header>
@@ -111,7 +111,7 @@
           </template>
         </div>
         <div style="margin-left:10%;margin-bottom: 30px">
-           <!--对上传文件进行显示处理，临时方案 add by nbacheng 2022-07-27 -->
+           <!--对上传文件进行显示处理，临时方案 add by wanghuan 2022-07-27 -->
            <el-upload action="#" :on-preview="handleFilePreview" :file-list="fileList" v-if="fileDisplay" />
         </div>
       </el-tab-pane>
@@ -338,7 +338,7 @@
   const formVisible = ref(false);
   const finishedInfo = ref({});
   const showFormTab = ref(true);
-  
+
   // 字典数据
   const dictOptions = ref<Record<string, any[]>>({});
   const dictReady = ref(false)
@@ -383,9 +383,9 @@
         })
       }
     });
-    
+
     // 需要加载的字典类型集合
-    
+
     for (const dictType of dictTypes) {
       await loadDictData(dictType);
     }
@@ -565,7 +565,7 @@
     //getProcessDetails(taskForm.procInsId, taskForm.taskId);
     //判断流程是否结束
     processIscompleted({procInsId: taskForm.procInsId}).then(res => {
-      
+
       if(res.data) {
        processed.value = false;
       }
@@ -613,10 +613,10 @@
 
   /** 获取流程变量内容 */
   const processVariables = (taskId: string) => {
-    
+
     if (taskId) {
       getProcessVariables(taskId).then(res => {
-        
+
         if(res.code == 200) {
           if(res.data.hasOwnProperty('dataId') && res.data.dataId) {
             customForm.formId = res.data.dataId;
@@ -655,13 +655,13 @@
   }
 
   const changeTab = (tab, event) => {
-    
+
     if(tab.paneName.value === 'form') {
-      
+
       if(customForm.formId === "") {
         // 回填数据,这里主要是处理文件列表显示,临时解决，以后应该在表单设计器里完成
         processFormList.value?.forEach((item) => {
-          
+
           if (item?.hasOwnProperty('list')) {
             fillFormData(item.list, item)
             // 更新表单
@@ -673,13 +673,13 @@
   }
 
   const fillFormData = (list, formConf) => { // for 上传文件显示
-    
+
     list?.forEach((item, i) => {
       // 特殊处理el-upload，包括 回显图片
       if(formConf.formValues[item.id] != '') {
         const val = formConf.formValues[item.id];
         if (item.ele === 'el-upload') {
-          
+
           if(item['list-type'] != 'text') {//图片
             fileList.value = []    //隐藏加的el-upload文件列表
             //item['file-list'] = JSON.parse(val)
@@ -688,7 +688,7 @@
             }
           }
           else {  //列表
-            
+
             fileList.value = JSON.parse(val)
             item['file-list'] = [] //隐藏加的表单设计器的文件列表
           }
@@ -720,7 +720,7 @@
 
     // 入库单等部分业务没有可渲染的表单配置时，隐藏“表单信息”页签，只保留流转记录和流程跟踪
     showFormTab.value = !!(processFormList.value && processFormList.value.length > 0);
-    
+
     // 加载流程表单中所有需要的字典数据（先清空就绪标记）
     dictReady.value = false
     if (processFormList.value && processFormList.value.length > 0) {
@@ -731,7 +731,7 @@
       }
     }
     dictReady.value = true
-    
+
     // Tab 2 "表单信息": 自定义业务表单初始化
     if(processFormList.value.length == 1 && processFormList.value[0]?.formValues?.hasOwnProperty('routeName')) {
       customForm.disabled = true;
@@ -855,20 +855,20 @@
             console.error("🔍 [ERROR] handleComplete - 获取表单数据失败:", error);
           }
         } else {
-          
+
         }
-        
+
         // 补充 dataId（若存在）
         if (route.query && (route.query as any).dataId) {
           payload.dataId = (route.query as any).dataId
         }
-        
-        
+
+
         const res = await complete(payload)
         proxy?.$modal.msgSuccess(res.msg);
         goBack();
       } else {
-        
+
       }
     });
   }
@@ -925,11 +925,11 @@
   }
   // 关闭标签
   const handleClose = (type: any, tag: any) => {
-    
+
     let userObj = userMultipleSelection.value.find(item => item.userId === tag.id);
     userMultipleSelection.value.splice(userMultipleSelection.value.indexOf(userObj), 1);
     if (type === 'copy') {
-      
+
       copyUser.value = userMultipleSelection.value;
       // 设置抄送人ID
       if (copyUser.value && copyUser.value.length > 0) {
@@ -974,7 +974,7 @@
       nextTick(()=> {
         selection.forEach(item => {
           let row = userList.value.find(k => k.userId === item.userId);
-          
+
           if(row === undefined) return;
           userTableRef.value.toggleRowSelection(row);
         })
@@ -998,18 +998,18 @@
         goBack()
       }
     });
-    
+
   }
   const submitUserData = () => {
     let type = userSelectType.value;
     if (type === 'copy' || type === 'next'  || type === 'addSign') {
-      
+
       if (!userMultipleSelection || userMultipleSelection.value.length <= 0) {
         proxy?.$modal.msgError("请选择用户");
         return false;
       }
       let userIds = userMultipleSelection.value.map(k => k.userId);
-      
+
       if (type === 'copy') {
         // 设置抄送人ID信息
         copyUser.value = userMultipleSelection.value;
@@ -1068,7 +1068,7 @@
         addSignType.value = 0;
         addSignTitle.value = "前加签流程";
         addSignOpen.value = true;
-        
+
       }
     });
   }
@@ -1098,7 +1098,7 @@
 
     //对VForm3后续加签审批的时候需要用到
     addSignForm.value.comment = taskForm.comment;
-    
+
 
     if(addSignForm.value.addSignType === 2) {
       multiInstanceAddSignTask(addSignForm.value).then(response => {
@@ -1144,7 +1144,7 @@
     //目标选择的节点信息
     jumpForm.targetActId = selectedJumpRows.value[0].id;
     jumpForm.targetActName = selectedJumpRows.value[0].name;
-    
+
     jumpTask(jumpForm).then(res => {
       console.log(" jumpTask",res);
       if (res.code == 200) {
@@ -1231,7 +1231,7 @@ const getEditableFormContent = (item: any) => {
     const rawModel = typeof item?.formModel === 'string' ? JSON.parse(item.formModel) : (item?.formModel || {})
     const cloned = JSON.parse(JSON.stringify(rawModel || {}))
     const comps = cloned.formComponents || cloned.widgetList || cloned.components || cloned.fields || []
-    
+
     // 移除 formConfig 中的标签配置，让 FormRender 组件的 label-width 属性来控制
     if (cloned.formConfig) {
       cloned.formConfig = {
@@ -1239,7 +1239,7 @@ const getEditableFormContent = (item: any) => {
         // 移除 labelWidth 和 labelPosition，让组件属性来控制
       }
     }
-    
+
     const masterSubTableData: Record<string, any[]> = {}
     const subComp = Array.isArray(comps) ? comps.find((c: any) => c.type === 'subtable') : null
     const subFieldFromModel = subComp?.field || ''
@@ -1273,7 +1273,7 @@ const getReadonlyFormContent = (item: any) => {
     const cloned = JSON.parse(JSON.stringify(rawModel || {}))
     const comps = cloned.formComponents || cloned.widgetList || cloned.components || cloned.fields || []
     console.log('[Detail][getReadonlyFormContent] comps length=', Array.isArray(comps) ? comps.length : 0)
-    
+
     // 移除 formConfig 中的标签配置，让 FormRender 组件的 label-width 属性来控制
     if (cloned.formConfig) {
       cloned.formConfig = {
@@ -1281,7 +1281,7 @@ const getReadonlyFormContent = (item: any) => {
         // 移除 labelWidth 和 labelPosition，让组件属性来控制
       }
     }
-    
+
     // 禁用主表与子表字段
     comps.forEach((c: any) => {
       c.props = c.props || {}

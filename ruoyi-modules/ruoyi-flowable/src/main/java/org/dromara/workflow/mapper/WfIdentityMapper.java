@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * 身份Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  */
 public interface WfIdentityMapper {
 

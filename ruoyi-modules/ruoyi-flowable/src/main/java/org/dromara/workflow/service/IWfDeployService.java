@@ -8,7 +8,7 @@ import org.dromara.workflow.domain.vo.WfDeployVo;
 import java.util.List;
 
 /**
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/6/30 9:03
  */
 public interface IWfDeployService {

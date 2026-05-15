@@ -12,7 +12,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 /**
  * DEMOMapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-10-12
  */
 public interface WfDemoMapper extends BaseMapperPlus<WfDemo, WfDemoVo> {

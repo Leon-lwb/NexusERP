@@ -10,7 +10,7 @@ import org.dromara.common.flowable.core.FormConf;
 /**
  * 流程表单工具类
  *
- * @author KonBAI
+ * @author wanghuan
  * @createTime 2022/8/7 17:09
  */
 public class ProcessFormUtils {

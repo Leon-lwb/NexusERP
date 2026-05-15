@@ -71,6 +71,11 @@
       </el-table-column>
       <el-table-column label="物料编码" align="center" prop="materialCode" />
       <el-table-column label="物料名称" align="center" prop="materialName" />
+      <el-table-column label="来源类型" align="center" prop="sourceType">
+        <template #default="scope">
+          <dict-tag :options="prd_material_source_type" :value="scope.row.sourceType" />
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -90,7 +95,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance()
-const { prd_requirement_status } = toRefs<any>(proxy.useDict('prd_requirement_status'))
+const { prd_requirement_status, prd_material_source_type } = toRefs<any>(proxy.useDict('prd_requirement_status', 'prd_material_source_type'))
 
 const requirementList = ref([])
 const loading = ref(true)

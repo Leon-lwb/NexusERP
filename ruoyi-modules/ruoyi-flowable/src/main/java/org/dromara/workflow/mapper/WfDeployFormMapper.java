@@ -7,7 +7,7 @@ import org.dromara.workflow.domain.vo.WfDeployFormVo;
 /**
  * 流程实例关联表单Mapper接口
  *
- * @author nbacheng
+ * @author wanghuan
  * @createTime 2022/3/7 22:07
  */
 public interface WfDeployFormMapper extends BaseMapperPlus<WfDeployForm, WfDeployFormVo> {

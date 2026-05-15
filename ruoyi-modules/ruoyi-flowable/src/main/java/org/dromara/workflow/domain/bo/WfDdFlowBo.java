@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 钉钉流程业务对象 wf_dd_flow
  *
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-11-29
  */
 

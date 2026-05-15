@@ -91,7 +91,19 @@
       "Bash(javap -c -p -verbose org/jeecg/modules/drag/a/e.class)",
       "Bash(javap -c -p org/jeecg/modules/drag/b/f.class)",
       "Bash(javap -c -p -verbose org/jeecg/modules/drag/b/h.class)",
-      "Bash(javap -c -p org/jeecg/modules/jmreport/config/firewall/interceptor/JimuReportTokenInterceptor.class)"
+      "Bash(javap -c -p org/jeecg/modules/jmreport/config/firewall/interceptor/JimuReportTokenInterceptor.class)",
+      "Bash(git grep *)",
+      "Bash(awk -F: '{sum+=$2} END {print \"Total files with TODO:\", NR; print \"Total TODO count:\", sum}')",
+      "Bash(mvn clean *)",
+      "Bash(mvn --version)",
+      "Bash(MAVEN_HOME=/d/maven/apache-maven-3.6.3 /d/maven/apache-maven-3.6.3/bin/mvn --version)",
+      "Bash(export JAVA_HOME=/d/Java/jdk-21)",
+      "Bash(export PATH=\"/d/Java/jdk-21/bin:$PATH\")",
+      "Bash(/d/maven/apache-maven-3.6.3/bin/mvn -version)",
+      "Bash(export M2_HOME=/d/maven/apache-maven-3.5.2)",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$M2_HOME/bin:$PATH\")",
+      "Bash(/d/maven/apache-maven-3.9.15/bin/mvn --version)",
+      "Bash(/d/maven/apache-maven-3.9.15/bin/mvn clean *)"
     ]
   }
 }

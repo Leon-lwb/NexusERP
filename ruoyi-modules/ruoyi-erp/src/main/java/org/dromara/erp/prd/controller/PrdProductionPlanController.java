@@ -9,6 +9,7 @@ import org.dromara.common.log.annotation.Log;
 import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.erp.bd.domain.vo.BdBomDetailVo;
 import org.dromara.erp.prd.domain.PrdMaterialRequirement;
@@ -100,12 +101,7 @@ public class PrdProductionPlanController extends BaseController {
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
     @PutMapping("/updateVersion")
     public R<Void> updateVersion(@RequestBody PrdProductionPlanBo bo) {
-        PrdProductionPlan plan = new PrdProductionPlan();
-        plan.setPlanId(bo.getPlanId());
-        plan.setPlanNo(bo.getPlanNo());
-        plan.setPlanName(bo.getPlanName());
-        plan.setBomId(bo.getBomId());
-        plan.setTotalQuantity(bo.getTotalQuantity());
+        PrdProductionPlan plan = MapstructUtils.convert(bo, PrdProductionPlan.class);
         return toAjax(prdProductionPlanService.updatePrdProductionPlanVersion(plan));
     }
 

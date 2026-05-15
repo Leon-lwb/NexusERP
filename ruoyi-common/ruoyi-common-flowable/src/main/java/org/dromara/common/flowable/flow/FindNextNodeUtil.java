@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author nbacheng
+ * @author wanghuan
  * @date 2023-09-25
  */
 public class FindNextNodeUtil {
@@ -266,7 +266,7 @@ public class FindNextNodeUtil {
      * 获取排他网关分支名称、分支表达式是否存在${approved}
      * @param flowElement
      * @param
-     * add by nbacheng
+     * add by wanghuan
      */
     public static boolean GetExclusiveGatewayExpression(FlowElement flowElement) {
     	// 获取所有网关分支

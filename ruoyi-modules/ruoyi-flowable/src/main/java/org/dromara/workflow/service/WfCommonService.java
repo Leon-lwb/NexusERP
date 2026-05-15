@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 /**
  *业务模块调用API的集合
- *@author PanMeiCheng,nbacheng
+ *@author wanghuan,wanghuan
  *@date 2022/11/02
  *@version 1.0
  */

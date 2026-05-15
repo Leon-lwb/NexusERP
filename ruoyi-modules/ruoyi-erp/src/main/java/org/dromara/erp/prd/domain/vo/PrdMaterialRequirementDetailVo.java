@@ -126,4 +126,10 @@ public class PrdMaterialRequirementDetailVo implements Serializable {
      * 状态
      */
     private Long status;
+
+    /**
+     * 来源类型（PROCUREMENT-采购, PROCESS-加工）
+     */
+    @ExcelProperty("来源类型")
+    private String sourceType;
 }
