@@ -50,6 +50,11 @@ public class PrdMaterialRequirement extends TenantEntity {
     private String planNo;
 
     /**
+     * 父级物料需求单ID
+     */
+    private Long parentRequirementId;
+
+    /**
      * BOM ID
      */
     @ExcelProperty("BOM ID")

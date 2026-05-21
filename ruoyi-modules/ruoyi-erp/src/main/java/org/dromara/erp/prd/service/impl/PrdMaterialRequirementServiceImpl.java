@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.utils.MapstructUtils;
+import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
@@ -31,6 +32,7 @@ import org.dromara.erp.bd.service.IBdBomDetailService;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +71,14 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
 
     @Override
     public PrdMaterialRequirementVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        PrdMaterialRequirementVo vo = baseMapper.selectVoById(id);
+        if (vo != null && vo.getRequirementId() != null) {
+            LambdaQueryWrapper<PrdMaterialRequirementDetail> detailLqw = Wrappers.lambdaQuery();
+            detailLqw.eq(PrdMaterialRequirementDetail::getRequirementId, vo.getRequirementId());
+            List<PrdMaterialRequirementDetail> details = detailMapper.selectList(detailLqw);
+            vo.setPrdMaterialRequirementDetailList(details);
+        }
+        return vo;
     }
 
     @Override
@@ -241,6 +250,48 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
 
             return reqDetail;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PrdMaterialRequirementVo> selectPrdMaterialRequirementTreeByPlanNo(String planNo) {
+        PrdMaterialRequirement queryParam = new PrdMaterialRequirement();
+        queryParam.setPlanNo(planNo);
+        List<PrdMaterialRequirement> allList = selectPrdMaterialRequirementListWithDetails(queryParam);
+        if (allList == null || allList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 按bomId排序
+        allList.sort(Comparator.comparing(PrdMaterialRequirement::getBomId, Comparator.nullsLast(Comparator.naturalOrder())));
+
+        List<PrdMaterialRequirementVo> treeRoots = new ArrayList<>();
+        Map<Long, PrdMaterialRequirementVo> nodeMap = new HashMap<>();
+
+        for (PrdMaterialRequirement req : allList) {
+            PrdMaterialRequirementVo vo = MapstructUtils.convert(req, PrdMaterialRequirementVo.class);
+            vo.setChildren(new ArrayList<>());
+            nodeMap.put(vo.getRequirementId(), vo);
+        }
+
+        for (PrdMaterialRequirementVo vo : nodeMap.values()) {
+            if (vo.getParentRequirementId() != null) {
+                PrdMaterialRequirementVo parent = nodeMap.get(vo.getParentRequirementId());
+                if (parent != null) {
+                    parent.getChildren().add(vo);
+                }
+            } else {
+                treeRoots.add(vo);
+            }
+        }
+
+        // 每层子节点也按bomId排序
+        for (PrdMaterialRequirementVo vo : nodeMap.values()) {
+            if (vo.getChildren() != null && !vo.getChildren().isEmpty()) {
+                vo.getChildren().sort(Comparator.comparing(PrdMaterialRequirementVo::getBomId, Comparator.nullsLast(Comparator.naturalOrder())));
+            }
+        }
+
+        return treeRoots;
     }
 
     @Override

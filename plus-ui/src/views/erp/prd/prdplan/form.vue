@@ -230,14 +230,38 @@
               </div>
             </div>
           </template>
-          <el-table :data="materialItems" style="width: 100%">
-            <el-table-column type="index" width="50" label="序号" align="center" />
-            <el-table-column label="物料编码" prop="materialCode" width="150" />
+          <el-table :data="materialTree" row-key="requirementId" style="width: 100%"
+            :tree-props="{ children: 'children' }" default-expand-all>
+            <el-table-column label="物料编码" prop="materialCode" width="180" />
             <el-table-column label="物料名称" prop="materialName" min-width="200" />
-            <el-table-column label="规格型号" prop="specification" width="150" />
-            <el-table-column label="单位" prop="unit" width="100" />
-            <el-table-column label="需求数量" prop="requiredQuantity" width="175" />
-            <el-table-column label="已分配数量" prop="allocatedQuantity" width="175" />
+            <el-table-column label="规格型号" prop="materialSpec" width="150" />
+            <el-table-column label="需求总量" prop="totalRequiredQuantity" width="120" />
+            <el-table-column label="物料类型" width="100" align="center">
+              <template #default="scope">
+                <el-tag v-if="scope.row.sourceType === 'PROCUREMENT'" type="info" size="small">采购件</el-tag>
+                <el-tag v-else-if="scope.row.sourceType === 'PROCESS'" size="small">加工件</el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="下级物料" width="100" align="center">
+              <template #default="scope">
+                <el-popover v-if="scope.row.prdMaterialRequirementDetailList?.length" placement="right" width="650" trigger="click">
+                  <template #reference>
+                    <el-button link type="primary" size="small">{{ scope.row.prdMaterialRequirementDetailList.length }}项</el-button>
+                  </template>
+                  <el-table :data="scope.row.prdMaterialRequirementDetailList" size="small" border>
+                    <el-table-column label="物料编码" prop="materialCode" width="150" />
+                    <el-table-column label="物料名称" prop="materialName" min-width="150" />
+                    <el-table-column label="规格型号" prop="materialSpec" width="150" />
+                    <el-table-column label="单位" prop="unit" width="80" />
+                    <el-table-column label="BOM用量" prop="bomQuantity" width="100" />
+                    <el-table-column label="损耗率(%)" prop="lossRate" width="100" />
+                    <el-table-column label="需求数量" prop="requiredQuantity" width="120" />
+                  </el-table>
+                </el-popover>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </el-form>
@@ -261,6 +285,13 @@
         <el-table-column label="已发料数量" prop="issuedQuantity" width="120" />
         <el-table-column label="当前库存数量" prop="stockQuantity" width="120" />
         <el-table-column label="缺料数量" prop="shortageQuantity" width="120" />
+        <el-table-column label="物料类型" width="100" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.sourceType === 'PROCUREMENT'" type="info" size="small">采购件</el-tag>
+            <el-tag v-else-if="scope.row.sourceType === 'PROCESS'" size="small">加工件</el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="工序步骤" prop="operationStep" width="100" />
         <el-table-column label="需求日期" prop="requiredDate" width="120" />
       </el-table>
@@ -401,7 +432,7 @@
 import { getPlan, addPlan, updatePlan, updatePlanVersion, generateMaterialRequirementsWithDetails, listDetailsByPlanNo } from "@/api/erp/prd/plan"
 import { listOrderheader, getOrderLine } from "@/api/erp/so/orderheader"
 import { listBom } from "@/api/erp/bd/bom"
-import { listRequirement } from "@/api/erp/prd/requirement"
+import { listTreeByPlanNo } from "@/api/erp/prd/requirement"
 import { getAutoCode } from "@/api/system/autocode"
 import { genCode } from "@/api/system/autocode/rule"
 
@@ -443,16 +474,7 @@ const bomQueryParams = ref({
   status: 1
 })
 
-const materialItems = ref([
-  {
-    materialCode: "",
-    materialName: "",
-    specification: "",
-    unit: "",
-    requiredQuantity: 0,
-    allocatedQuantity: 0
-  }
-])
+const materialTree = ref([])
 
 // 物料清单弹窗相关变量
 const materialListOpen = ref(false)
@@ -673,16 +695,7 @@ function reset() {
     soLineId: null
   }
   orderLineList.value = []
-  materialItems.value = [
-    {
-      materialCode: "",
-      materialName: "",
-      specification: "",
-      unit: "",
-      requiredQuantity: 0,
-      allocatedQuantity: 0
-    }
-  ]
+  materialTree.value = []
   proxy.resetForm("planRef")
 }
 
@@ -729,27 +742,6 @@ function cancel() {
 function getDictLabel(dictOptions, value) {
   const dict = dictOptions.find(item => item.value === value)
   return dict ? dict.label : value
-}
-
-// 添加物料行
-function addMaterialItem() {
-  materialItems.value.push({
-    materialCode: "",
-    materialName: "",
-    specification: "",
-    unit: "",
-    requiredQuantity: 0,
-    allocatedQuantity: 0
-  })
-}
-
-// 删除物料行
-function removeMaterialItem(index) {
-  if (materialItems.value.length > 1) {
-    materialItems.value.splice(index, 1)
-  } else {
-    proxy.$modal.msgWarning("至少保留一行物料信息")
-  }
 }
 
 // 打开BOM选择对话框
@@ -823,86 +815,18 @@ function handleBomCalculate() {
   })
 }
 
-// 加载物料需求信息
+// 加载物料需求树信息
 function loadMaterialRequirements(planNo) {
   if (!planNo) {
     return;
   }
 
-  const queryParams = {
-    planNo: planNo,
-    pageNum: 1,
-    pageSize: 1000
-  }
-
-  listRequirement(queryParams).then(response => {
-    if (response.rows && response.rows.length > 0) {
-      let allMaterialItems = [];
-
-      const sortedRequirements = response.rows.sort((a, b) => {
-        return a.requirementId - b.requirementId;
-      });
-
-      sortedRequirements.forEach((requirement, index) => {
-        if (requirement.materialId) {
-          allMaterialItems.push({
-            materialCode: requirement.materialCode || '',
-            materialName: requirement.materialName || '',
-            specification: requirement.materialSpec || '',
-            unit: '',
-            requiredQuantity: requirement.totalRequiredQuantity || 0,
-            allocatedQuantity: 0
-          });
-        }
-
-        if (requirement.prdMaterialRequirementDetailList && requirement.prdMaterialRequirementDetailList.length > 0) {
-          requirement.prdMaterialRequirementDetailList.forEach((item) => {
-            allMaterialItems.push({
-              materialCode: item.materialCode || '',
-              materialName: item.materialName || '',
-              specification: item.materialSpec || '',
-              unit: item.unit || '',
-              requiredQuantity: item.requiredQuantity || 0,
-              allocatedQuantity: item.issuedQuantity || 0
-            });
-          });
-        }
-
-        if (!requirement.materialId &&
-            (!requirement.prdMaterialRequirementDetailList || requirement.prdMaterialRequirementDetailList.length === 0)) {
-          allMaterialItems.push({
-            materialCode: "",
-            materialName: "[无物料信息] requirementId: " + requirement.requirementId,
-            specification: "",
-            unit: "",
-            requiredQuantity: requirement.totalRequiredQuantity || 0,
-            allocatedQuantity: 0
-          });
-        }
-      });
-
-      materialItems.value = allMaterialItems;
-    } else {
-      materialItems.value = [{
-        materialCode: "",
-        materialName: "",
-        specification: "",
-        unit: "",
-        requiredQuantity: 0,
-        allocatedQuantity: 0
-      }];
-    }
+  listTreeByPlanNo(planNo).then(response => {
+    materialTree.value = response.data || []
   }).catch(error => {
-    console.error("获取物料需求信息失败:", error);
-    proxy.$modal.msgError("获取物料需求信息失败: " + error.message)
-    materialItems.value = [{
-      materialCode: "",
-      materialName: "",
-      specification: "",
-      unit: "",
-      requiredQuantity: 0,
-      allocatedQuantity: 0
-    }];
+    console.error("获取物料需求树失败:", error);
+    proxy.$modal.msgError("获取物料需求树失败: " + error.message)
+    materialTree.value = []
   });
 }
 
@@ -917,7 +841,16 @@ function handleMaterialList() {
   materialListOpen.value = true
 
   listDetailsByPlanNo(form.value.planNo).then(response => {
-    materialListData.value = response.data || []
+    const allDetails: any[] = []
+    const requirements = response.data || []
+    for (const req of requirements) {
+      if (req.prdMaterialRequirementDetailList && req.prdMaterialRequirementDetailList.length) {
+        for (const detail of req.prdMaterialRequirementDetailList) {
+          allDetails.push(detail)
+        }
+      }
+    }
+    materialListData.value = allDetails
   }).catch(error => {
     console.error('获取物料清单详情失败:', error)
     proxy.$modal.msgError("获取物料清单详情失败: " + error.message)

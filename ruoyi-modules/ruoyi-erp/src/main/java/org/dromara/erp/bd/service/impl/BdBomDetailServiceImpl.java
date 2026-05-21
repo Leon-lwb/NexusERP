@@ -77,6 +77,23 @@ public class BdBomDetailServiceImpl implements IBdBomDetailService {
         return baseMapper.delete(Wrappers.<BdBomDetail>lambdaQuery().in(BdBomDetail::getDetailId, List.of(ids)));
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int saveBatch(List<BdBomDetailBo> list) {
+        if (list == null || list.isEmpty()) {
+            return 0;
+        }
+        Long bomId = list.get(0).getBomId();
+        baseMapper.delete(Wrappers.<BdBomDetail>lambdaQuery().eq(BdBomDetail::getBomId, bomId));
+        List<BdBomDetail> entities = list.stream().map(bo -> {
+            BdBomDetail entity = MapstructUtils.convert(bo, BdBomDetail.class);
+            entity.setDetailId(null);
+            return entity;
+        }).toList();
+        entities.forEach(baseMapper::insert);
+        return entities.size();
+    }
+
     private LambdaQueryWrapper<BdBomDetail> buildQueryWrapper(BdBomDetailBo bo) {
         LambdaQueryWrapper<BdBomDetail> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getBomId() != null, BdBomDetail::getBomId, bo.getBomId());

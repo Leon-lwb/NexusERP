@@ -19,4 +19,5 @@ public interface IBdBomDetailService {
     int insertByBo(BdBomDetailBo bo);
     int updateByBo(BdBomDetailBo bo);
     int deleteByIds(Long[] ids);
+    int saveBatch(List<BdBomDetailBo> list);
 }

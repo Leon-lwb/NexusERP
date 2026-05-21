@@ -53,4 +53,12 @@ public interface IPrdMaterialRequirementService {
      * @return 物料需求明细列表
      */
     List<PrdMaterialRequirementDetail> importBomDetails(Long bomId, BigDecimal totalRequiredQuantity);
+
+    /**
+     * 根据计划编号查询物料需求树（含父子关系嵌套）
+     *
+     * @param planNo 生产计划编号
+     * @return 物料需求树形列表（顶层节点）
+     */
+    List<PrdMaterialRequirementVo> selectPrdMaterialRequirementTreeByPlanNo(String planNo);
 }

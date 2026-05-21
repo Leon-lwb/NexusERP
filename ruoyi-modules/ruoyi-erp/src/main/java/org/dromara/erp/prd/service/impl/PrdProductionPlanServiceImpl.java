@@ -248,7 +248,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 plan.getBomId(),
                 plan.getBomId(),
                 plan.getTotalQuantity(),
-                plan
+                plan,
+                null
         );
 
         log.info("成功生成物料需求，共生成 {} 条主表记录", createdMainRequirements.size());
@@ -263,7 +264,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
      * - 对每个具备BOM的子节点，递归生成独立的主表与其底层物料子表
      */
     private List<PrdMaterialRequirement> processBomNode(Long materialId, Long specifiedBomId,
-                                                         BigDecimal parentQuantity, PrdProductionPlan plan) {
+                                                         BigDecimal parentQuantity, PrdProductionPlan plan,
+                                                         Long parentRequirementId) {
         List<PrdMaterialRequirement> result = new ArrayList<>();
 
         // 获取当前节点的BOM（顶层使用指定bomId，子节点优先查当前有效BOM）
@@ -344,8 +346,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         List<MaterialRequirementCalcDTO> mergedLeaves = mergeMaterialRequirements(leafRequirements);
 
         // 当前节点主表与子表生成（若存在底层物料）
+        PrdMaterialRequirement mainRequirement = null;
         if (!mergedLeaves.isEmpty()) {
-            PrdMaterialRequirement mainRequirement = createMaterialRequirement(plan, currentBom.getBomId(), mergedLeaves);
+            mainRequirement = createMaterialRequirement(plan, currentBom.getBomId(), mergedLeaves, parentRequirementId);
             prdMaterialRequirementService.insertPrdMaterialRequirement(mainRequirement);
 
             List<PrdMaterialRequirementDetail> detailList = new ArrayList<>();
@@ -372,7 +375,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                     childNode.getMaterialId(),
                     childNode.getBomId(),
                     childNode.getQuantity(),
-                    plan
+                    plan,
+                    mainRequirement != null ? mainRequirement.getRequirementId() : null
             ));
         }
 
@@ -488,12 +492,14 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
      * 创建物料需求主表记录
      */
     private PrdMaterialRequirement createMaterialRequirement(PrdProductionPlan plan, Long bomId,
-                                                             List<MaterialRequirementCalcDTO> requirements) {
+                                                             List<MaterialRequirementCalcDTO> requirements,
+                                                             Long parentRequirementId) {
         PrdMaterialRequirement mainRequirement = new PrdMaterialRequirement();
 
         // 设置基本信息
         mainRequirement.setPlanId(plan.getPlanId());
         mainRequirement.setPlanNo(plan.getPlanNo());
+        mainRequirement.setParentRequirementId(parentRequirementId);
         mainRequirement.setBomId(bomId);
         mainRequirement.setRequirementDate(new Date());
         mainRequirement.setStatus("DRAFT");

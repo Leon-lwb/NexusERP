@@ -51,6 +51,11 @@ public class PrdMaterialRequirementVo implements Serializable {
     private String planNo;
 
     /**
+     * 父级物料需求单ID
+     */
+    private Long parentRequirementId;
+
+    /**
      * BOM ID
      */
     @ExcelProperty("BOM ID")
@@ -144,4 +149,9 @@ public class PrdMaterialRequirementVo implements Serializable {
      * 物料需求单行列表
      */
     private List<PrdMaterialRequirementDetail> prdMaterialRequirementDetailList;
+
+    /**
+     * 子级物料需求单列表（树形展示用）
+     */
+    private List<PrdMaterialRequirementVo> children;
 }

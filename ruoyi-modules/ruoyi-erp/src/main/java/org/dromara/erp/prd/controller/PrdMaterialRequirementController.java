@@ -106,6 +106,16 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
+     * 根据计划编号查询物料需求树（含父子嵌套，用于树形展示）
+     */
+    @SaCheckPermission("prd:requirement:list")
+    @GetMapping("/treeByPlanNo/{planNo}")
+    public R<List<PrdMaterialRequirementVo>> treeByPlanNo(@PathVariable String planNo) {
+        List<PrdMaterialRequirementVo> tree = prdMaterialRequirementService.selectPrdMaterialRequirementTreeByPlanNo(planNo);
+        return R.ok(tree);
+    }
+
+    /**
      * 从BOM导入物料需求明细
      */
     @SaCheckPermission("prd:requirement:query")

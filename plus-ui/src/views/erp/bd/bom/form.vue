@@ -384,6 +384,7 @@ const materialItems = ref([
     leadTime: 0,
     effectiveDate: null,
     expiryDate: null,
+    sourceType: null,
     status: 1,
     remark: ''
   }
@@ -598,6 +599,7 @@ function addMaterialRow() {
     leadTime: 0,
     effectiveDate: null,
     expiryDate: null,
+    sourceType: null,
     status: 1,
     remark: ''
   })
@@ -675,7 +677,8 @@ function saveBomDetails(bomId) {
     .filter(item => item.childMaterialId && item.childMaterialName)
     .map(item => ({
       ...item,
-      bomId: bomId
+      bomId: bomId,
+      sourceType: item.sourceType || form.value.sourceType
     }));
   
   // 如果有有效的明细数据，则使用批量保存接口

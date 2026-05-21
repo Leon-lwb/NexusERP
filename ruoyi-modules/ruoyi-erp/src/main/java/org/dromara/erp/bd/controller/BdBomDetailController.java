@@ -71,4 +71,11 @@ public class BdBomDetailController extends BaseController {
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(bdBomDetailService.deleteByIds(ids));
     }
+
+    @SaCheckPermission("bd:bom:add")
+    @Log(title = "BOM明细", businessType = BusinessType.INSERT)
+    @PostMapping("/batch")
+    public R<Void> saveBatch(@RequestBody List<BdBomDetailBo> list) {
+        return toAjax(bdBomDetailService.saveBatch(list));
+    }
 }
