@@ -20,6 +20,7 @@ import org.dromara.erp.wm.mapper.WmStockTakingLineMapper;
 import org.dromara.erp.wm.mapper.WmStockTakingPlanMapper;
 import org.dromara.erp.wm.service.IWmStockOperationService;
 import org.dromara.erp.wm.service.IWmStockTakingPlanService;
+import org.dromara.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
     private final WmStockTakingLineMapper lineMapper;
     private final WmMaterialStockMapper stockMapper;
     private final IWmStockOperationService stockOperationService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmStockTakingPlanVo> selectPageList(WmStockTakingPlanBo bo, PageQuery pageQuery) {
@@ -65,6 +67,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmStockTakingPlanBo bo) {
         WmStockTakingPlan entity = MapstructUtils.convert(bo, WmStockTakingPlan.class);
+        entity.setPlanCode(autoCodeUtil.genSerialCode("WM_STOCKTAKING_CODE", null));
         int rows = baseMapper.insert(entity);
         if (bo.getWmStockTakingLineList() != null) {
             for (WmStockTakingLine line : bo.getWmStockTakingLineList()) {

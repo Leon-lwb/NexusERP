@@ -61,4 +61,13 @@ public interface IPrdMaterialRequirementService {
      * @return 物料需求树形列表（顶层节点）
      */
     List<PrdMaterialRequirementVo> selectPrdMaterialRequirementTreeByPlanNo(String planNo);
+
+    /**
+     * 计算单个物料明细的净需求
+     * 逻辑：毛需求 - 现有库存 - 安全库存 = 净需求(短缺量)
+     * 更新明细的 stockQuantity 和 shortageQuantity 字段
+     *
+     * @param detail 物料需求明细（需已设置 materialId 和 requiredQuantity）
+     */
+    void calculateNetRequirements(PrdMaterialRequirementDetail detail);
 }

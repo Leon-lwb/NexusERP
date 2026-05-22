@@ -21,6 +21,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import lombok.extern.slf4j.Slf4j;
+import org.dromara.erp.bd.domain.BdClientCredit;
+import org.dromara.erp.bd.domain.BdMaterial;
+import org.dromara.erp.bd.domain.BdBom;
+import org.dromara.erp.bd.mapper.BdClientCreditMapper;
+import org.dromara.erp.bd.mapper.BdMaterialMapper;
+import org.dromara.erp.bd.mapper.BdBomMapper;
+import org.dromara.erp.prd.domain.PrdProductionPlan;
+import org.dromara.erp.prd.mapper.PrdProductionPlanMapper;
+import org.dromara.system.strategy.AutoCodeUtil;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -29,6 +40,7 @@ import java.util.List;
  *
  * @author ruoyi
  */
+@Slf4j
 @RequiredArgsConstructor
 @DS("erp")
 @Service
@@ -36,6 +48,11 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
 
     private final SoSalesOrderHeaderMapper baseMapper;
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
+    private final BdClientCreditMapper bdClientCreditMapper;
+    private final BdMaterialMapper bdMaterialMapper;
+    private final BdBomMapper bdBomMapper;
+    private final PrdProductionPlanMapper prdProductionPlanMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<SoSalesOrderHeaderVo> selectPageList(SoSalesOrderHeaderBo bo, PageQuery pageQuery) {
@@ -56,7 +73,21 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             List<SoSalesOrderLine> lineList = soSalesOrderLineMapper.selectList(
                 new LambdaQueryWrapper<SoSalesOrderLine>()
                     .eq(SoSalesOrderLine::getSoId, id));
-            vo.setSoSalesOrderLineList(MapstructUtils.convert(lineList, SoSalesOrderLineVo.class));
+            List<SoSalesOrderLineVo> lineVoList = MapstructUtils.convert(lineList, SoSalesOrderLineVo.class);
+            // Populate linked production plan number for each line
+            for (SoSalesOrderLineVo lineVo : lineVoList) {
+                if (lineVo.getLineId() != null) {
+                    LambdaQueryWrapper<PrdProductionPlan> planQuery = Wrappers.lambdaQuery();
+                    planQuery.eq(PrdProductionPlan::getOrderLineId, lineVo.getLineId());
+                    planQuery.last("LIMIT 1");
+                    PrdProductionPlan plan = prdProductionPlanMapper.selectOne(planQuery);
+                    if (plan != null) {
+                        lineVo.setLinkedPlanNo(plan.getPlanNo());
+                        lineVo.setLinkedPlanId(plan.getPlanId());
+                    }
+                }
+            }
+            vo.setSoSalesOrderLineList(lineVoList);
         }
         return vo;
     }
@@ -113,9 +144,26 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (!STATUS_DRAFT.equals(header.getOrderStatus())) {
             throw new RuntimeException("只有草稿状态的订单才能确认");
         }
+
+        // 信用检查
+        String creditCheckResult = checkCredit(header);
+        if (!"OK".equals(creditCheckResult)) {
+            header.setCreditStatus("BLOCKED");
+            header.setCreditCheckTime(new Date());
+            header.setCreditBlockedBy(-1L);
+            baseMapper.updateById(header);
+            throw new RuntimeException("信用检查未通过：" + creditCheckResult);
+        }
+        header.setCreditStatus("PASSED");
+        header.setCreditCheckTime(new Date());
+
         header.setOrderStatus(STATUS_CONFIRMED);
         header.setConfirmedTime(new Date());
         baseMapper.updateById(header);
+        log.info("销售订单确认成功, soId={}, soNo={}, creditStatus=PASSED", soId, header.getSoNo());
+
+        // 自动创建生产计划（针对自制物料）
+        createProductionPlansFromSalesOrder(soId, header.getSoNo());
     }
 
     @Override
@@ -165,6 +213,62 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     /**
+     * 信用检查
+     * 查询客户信用额度，计算已用额度（已确认未关闭订单合计），超额则阻止
+     */
+    private String checkCredit(SoSalesOrderHeader header) {
+        if (header.getClientId() == null) {
+            return "订单未关联客户";
+        }
+        try {
+            LambdaQueryWrapper<BdClientCredit> creditLqw = Wrappers.lambdaQuery();
+            creditLqw.eq(BdClientCredit::getClientId, header.getClientId());
+            BdClientCredit credit = bdClientCreditMapper.selectOne(creditLqw);
+            if (credit == null || credit.getClientCredit() == null) {
+                log.info("客户未配置信用额度，跳过信用检查, clientId={}", header.getClientId());
+                return "OK";
+            }
+
+            // 计算已用额度：已确认/已履行/部分发货的订单合计（排除已关闭/已取消）
+            LambdaQueryWrapper<SoSalesOrderHeader> usedLqw = Wrappers.lambdaQuery();
+            usedLqw.eq(SoSalesOrderHeader::getClientId, header.getClientId());
+            usedLqw.ne(SoSalesOrderHeader::getOrderStatus, STATUS_CLOSED);
+            usedLqw.ne(SoSalesOrderHeader::getOrderStatus, STATUS_CANCELLED);
+            usedLqw.ne(SoSalesOrderHeader::getOrderStatus, STATUS_DRAFT);
+            // 排除本订单（如果是修改后重新确认）
+            if (header.getSoId() != null) {
+                usedLqw.ne(SoSalesOrderHeader::getSoId, header.getSoId());
+            }
+            List<SoSalesOrderHeader> activeOrders = baseMapper.selectList(usedLqw);
+
+            BigDecimal usedAmount = BigDecimal.ZERO;
+            for (SoSalesOrderHeader order : activeOrders) {
+                if (order.getTotalAmount() != null) {
+                    usedAmount = usedAmount.add(order.getTotalAmount());
+                }
+            }
+
+            BigDecimal orderAmount = header.getTotalAmount() != null ? header.getTotalAmount() : BigDecimal.ZERO;
+            BigDecimal totalAmount = usedAmount.add(orderAmount);
+            BigDecimal creditLimit = BigDecimal.valueOf(credit.getClientCredit());
+
+            if (totalAmount.compareTo(creditLimit) > 0) {
+                log.warn("信用检查失败, clientId={}, 信用额度={}, 已用={}, 本次={}, 合计={}",
+                    header.getClientId(), creditLimit, usedAmount, orderAmount, totalAmount);
+                return "客户【" + credit.getClientName() + "】信用额度不足"
+                    + "（额度:" + creditLimit + ", 已用:" + usedAmount + ", 本次:" + orderAmount + "）";
+            }
+
+            log.info("信用检查通过, clientId={}, 额度={}, 已用={}, 本次={}",
+                header.getClientId(), creditLimit, usedAmount, orderAmount);
+            return "OK";
+        } catch (Exception e) {
+            log.error("信用检查异常, clientId={}", header.getClientId(), e);
+            return "信用检查系统异常：" + e.getMessage();
+        }
+    }
+
+    /**
      * Batch insert or update sales order lines
      */
     private void insertOrUpdateLines(Long soId, List<SoSalesOrderLineBo> lineBoList) {
@@ -175,6 +279,56 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             }
             soSalesOrderLineMapper.insertBatch(lineList);
         }
+    }
+
+    /**
+     * 销售订单确认后，对自制物料自动创建生产计划
+     */
+    private void createProductionPlansFromSalesOrder(Long soId, String soNo) {
+        List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
+            new LambdaQueryWrapper<SoSalesOrderLine>()
+                .eq(SoSalesOrderLine::getSoId, soId));
+        for (SoSalesOrderLine line : lines) {
+            if (line.getMaterialId() == null) {
+                continue;
+            }
+            BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
+            if (material != null && Long.valueOf(1L).equals(material.getSourceType())) {
+                createProductionPlan(line, soNo, material);
+            }
+        }
+    }
+
+    private void createProductionPlan(SoSalesOrderLine line, String soNo, BdMaterial material) {
+        PrdProductionPlan plan = new PrdProductionPlan();
+        plan.setPlanNo(autoCodeUtil.genSerialCode("PRD_PLAN_CODE", null));
+        plan.setPlanName("销售订单-" + soNo + "-" + material.getMaterialName());
+        plan.setPlanType("MPS");
+        plan.setPlanDate(new Date());
+        plan.setStatus(STATUS_DRAFT);
+        plan.setReferenceNo(soNo);
+        plan.setOrderLineId(line.getLineId());
+        plan.setOrderLineNo(line.getLineNo());
+        plan.setTotalQuantity(line.getOrderedQty());
+
+        // 查找物料当前有效BOM
+        LambdaQueryWrapper<BdBom> bomQuery = Wrappers.lambdaQuery();
+        bomQuery.eq(BdBom::getParentMaterialId, material.getMaterialId());
+        bomQuery.eq(BdBom::getIsCurrent, 1L);
+        bomQuery.last("LIMIT 1");
+        BdBom bom = bdBomMapper.selectOne(bomQuery);
+        if (bom != null) {
+            plan.setBomId(bom.getBomId());
+            plan.setBomName(bom.getBomName());
+            plan.setBomVersion(bom.getBomVersion());
+        } else {
+            log.warn("物料未配置BOM，生产计划将不关联BOM, materialId={}, materialCode={}",
+                material.getMaterialId(), material.getMaterialCode());
+        }
+
+        prdProductionPlanMapper.insert(plan);
+        log.info("销售订单确认后自动创建生产计划, soNo={}, materialCode={}, planNo={}",
+            soNo, material.getMaterialCode(), plan.getPlanNo());
     }
 
     private LambdaQueryWrapper<SoSalesOrderHeader> buildQueryWrapper(SoSalesOrderHeaderBo bo) {

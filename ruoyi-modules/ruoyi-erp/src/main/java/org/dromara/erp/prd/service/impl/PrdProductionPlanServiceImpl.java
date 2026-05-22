@@ -26,12 +26,15 @@ import org.dromara.erp.bd.mapper.BdMaterialMapper;
 import org.dromara.erp.prd.domain.PrdMaterialRequirement;
 import org.dromara.erp.prd.domain.PrdMaterialRequirementDetail;
 import org.dromara.erp.prd.domain.PrdProductionPlan;
+import org.dromara.erp.prd.domain.PrdWorkOrder;
 import org.dromara.erp.prd.domain.bo.MaterialRequirementCalcDTO;
 import org.dromara.erp.prd.domain.bo.PrdProductionPlanBo;
 import org.dromara.erp.prd.domain.vo.PrdProductionPlanVo;
 import org.dromara.erp.prd.mapper.PrdProductionPlanMapper;
+import org.dromara.erp.prd.mapper.PrdWorkOrderMapper;
 import org.dromara.erp.prd.service.IPrdMaterialRequirementService;
 import org.dromara.erp.prd.service.IPrdProductionPlanService;
+import org.dromara.erp.prd.service.IPrdWorkOrderService;
 import org.dromara.erp.so.domain.vo.SoSalesOrderLineVo;
 import org.dromara.erp.so.service.ISoSalesOrderLineService;
 import org.dromara.system.strategy.AutoCodeUtil;
@@ -39,9 +42,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import org.dromara.erp.wm.domain.WmMaterialStock;
-import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -67,8 +67,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private final BdBomDetailMapper bdBomDetailMapper;
     private final IPrdMaterialRequirementService prdMaterialRequirementService;
     private final ISoSalesOrderLineService soSalesOrderLineService;
-    private final WmMaterialStockMapper wmMaterialStockMapper;
     private final AutoCodeUtil autoCodeUtil;
+    private final PrdWorkOrderMapper prdWorkOrderMapper;
+    private final IPrdWorkOrderService prdWorkOrderService;
 
     // 状态常量（从 NexusConstants 迁移）
     private static final String STATUS_DRAFT = "DRAFT";
@@ -394,6 +395,74 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     /**
      * 获取当前物料的BOM
      */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer generateWorkOrders(Long planId, List<Long> requirementIds) {
+        if (planId == null) {
+            throw new RuntimeException("生产计划ID不能为空");
+        }
+        if (requirementIds == null || requirementIds.isEmpty()) {
+            throw new RuntimeException("请选择至少一个物料需求单");
+        }
+
+        PrdProductionPlan plan = baseMapper.selectById(planId);
+        if (plan == null) {
+            throw new RuntimeException("生产计划不存在");
+        }
+
+        int count = 0;
+        for (Long requirementId : requirementIds) {
+            PrdMaterialRequirement requirement = prdMaterialRequirementService
+                    .selectPrdMaterialRequirementByRequirementId(requirementId);
+            if (requirement == null) {
+                log.warn("物料需求单不存在, requirementId={}", requirementId);
+                continue;
+            }
+            if (requirement.getMaterialId() == null) {
+                log.warn("物料需求单未关联物料, requirementId={}", requirementId);
+                continue;
+            }
+
+            // 已生成过工单的跳过
+            LambdaQueryWrapper<PrdWorkOrder> checkLqw = Wrappers.lambdaQuery();
+            checkLqw.eq(PrdWorkOrder::getSourceId, requirementId);
+            checkLqw.eq(PrdWorkOrder::getSourceType, "MATERIAL_REQUIREMENT");
+            Long existing = prdWorkOrderMapper.selectCount(checkLqw);
+            if (existing != null && existing > 0) {
+                log.info("物料需求单已生成过工单, requirementId={}", requirementId);
+                continue;
+            }
+
+            // 生成工单号
+            String woNo = autoCodeUtil.genSerialCode("PRD_WORK_ORDER_CODE", null);
+
+            // 创建工单
+            PrdWorkOrder wo = new PrdWorkOrder();
+            wo.setWoNo(woNo);
+            wo.setPlanId(planId);
+            wo.setPlanName(plan.getPlanName());
+            wo.setSourceType("MATERIAL_REQUIREMENT");
+            wo.setSourceId(requirementId);
+            wo.setSourceNo(requirement.getRequirementNo());
+            wo.setMaterialId(requirement.getMaterialId());
+            wo.setMaterialCode(requirement.getMaterialCode());
+            wo.setMaterialName(requirement.getMaterialName());
+            wo.setMaterialSpec(requirement.getMaterialSpec());
+            wo.setPlannedQty(requirement.getTotalRequiredQuantity());
+            wo.setCompletedQty(BigDecimal.ZERO);
+            wo.setScrapQty(BigDecimal.ZERO);
+            wo.setBomId(requirement.getBomId());
+            wo.setWoStatus(IPrdWorkOrderService.STATUS_CREATED);
+            wo.setPlanStartDate(new Date());
+
+            prdWorkOrderMapper.insert(wo);
+            log.info("从物料需求单生成工单, requirementId={}, woNo={}, woId={}", requirementId, woNo, wo.getWoId());
+            count++;
+        }
+
+        return count;
+    }
+
     private BdBom getCurrentBom(Long materialId, Long specifiedBomId) {
         // 如果指定了BOM ID，优先使用指定的BOM
         if (specifiedBomId != null) {
@@ -579,21 +648,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         detail.setWorkstationName(calcDto.getWorkstationName());
         detail.setLeadTime(calcDto.getLeadTime());
 
-        // 净需求计算: 查询当前库存和安全库存
-        BigDecimal stockQty = queryTotalStock(calcDto.getMaterialId());
-        detail.setStockQuantity(stockQty);
-
-        BigDecimal safetyStock = material != null && material.getSafetyStock() != null
-                ? material.getSafetyStock() : BigDecimal.ZERO;
-
-        // 短缺数量 = 需求数量 - 库存数量 - 安全库存（不小于0）
-        BigDecimal availableStock = stockQty.subtract(safetyStock);
-        if (availableStock.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal shortage = calcDto.getTotalRequiredQuantity().subtract(availableStock);
-            detail.setShortageQuantity(shortage.compareTo(BigDecimal.ZERO) > 0 ? shortage : BigDecimal.ZERO);
-        } else {
-            detail.setShortageQuantity(calcDto.getTotalRequiredQuantity());
-        }
+        // 净需求计算: 毛需求 - 现有库存 - 安全库存 = 净需求
+        prdMaterialRequirementService.calculateNetRequirements(detail);
 
         // 提前期偏移: 需求日期 = 当前日期 + 提前期(小时)
         Date requiredDate = calcDto.getLeadTime() != null && calcDto.getLeadTime() > 0
@@ -606,28 +662,6 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         detail.setSourceType(calcDto.getSourceType());
 
         return detail;
-    }
-
-    /**
-     * 查询物料的总库存量
-     */
-    private BigDecimal queryTotalStock(Long materialId) {
-        if (materialId == null) {
-            return BigDecimal.ZERO;
-        }
-        try {
-            LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
-            lqw.eq(WmMaterialStock::getMaterialId, materialId);
-            lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
-            List<WmMaterialStock> stocks = wmMaterialStockMapper.selectList(lqw);
-            return stocks.stream()
-                    .map(WmMaterialStock::getStockQuantity)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-        } catch (Exception e) {
-            log.warn("查询物料库存失败, materialId={}", materialId, e);
-            return BigDecimal.ZERO;
-        }
     }
 
     private LambdaQueryWrapper<PrdProductionPlan> buildQueryWrapper(PrdProductionPlanBo bo) {

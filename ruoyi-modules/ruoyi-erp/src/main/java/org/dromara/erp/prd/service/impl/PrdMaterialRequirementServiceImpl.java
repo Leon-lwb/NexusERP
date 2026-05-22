@@ -29,6 +29,8 @@ import org.dromara.erp.bd.domain.vo.BdBomDetailVo;
 import org.dromara.erp.bd.mapper.BdMaterialMapper;
 import org.dromara.erp.bd.mapper.BdBomMapper;
 import org.dromara.erp.bd.service.IBdBomDetailService;
+import org.dromara.erp.wm.domain.WmMaterialStock;
+import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -56,6 +58,7 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     private final IBdBomDetailService bomDetailService;
     private final BdMaterialMapper materialMapper;
     private final BdBomMapper bdBomMapper;
+    private final WmMaterialStockMapper wmMaterialStockMapper;
 
     @Override
     public TableDataInfo<PrdMaterialRequirementVo> selectPageList(PrdMaterialRequirementBo bo, PageQuery pageQuery) {
@@ -302,6 +305,61 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             count += detailMapper.insert(detail);
         }
         return count;
+    }
+
+    @Override
+    public void calculateNetRequirements(PrdMaterialRequirementDetail detail) {
+        if (detail == null || detail.getMaterialId() == null) {
+            return;
+        }
+
+        // 查询当前库存
+        BigDecimal stockQty = queryTotalStock(detail.getMaterialId());
+        detail.setStockQuantity(stockQty);
+
+        // 查询物料安全库存
+        BigDecimal safetyStock = BigDecimal.ZERO;
+        try {
+            BdMaterial material = materialMapper.selectById(detail.getMaterialId());
+            if (material != null && material.getSafetyStock() != null) {
+                safetyStock = material.getSafetyStock();
+            }
+        } catch (Exception e) {
+            log.warn("查询物料安全库存失败, materialId={}", detail.getMaterialId(), e);
+        }
+
+        // 净需求 = 毛需求 - (现有库存 - 安全库存)，不小于0
+        BigDecimal requiredQty = detail.getRequiredQuantity() != null ? detail.getRequiredQuantity() : BigDecimal.ZERO;
+        BigDecimal availableStock = stockQty.subtract(safetyStock);
+
+        if (availableStock.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal shortage = requiredQty.subtract(availableStock);
+            detail.setShortageQuantity(shortage.compareTo(BigDecimal.ZERO) > 0 ? shortage : BigDecimal.ZERO);
+        } else {
+            detail.setShortageQuantity(requiredQty);
+        }
+    }
+
+    /**
+     * 查询物料的总库存量
+     */
+    private BigDecimal queryTotalStock(Long materialId) {
+        if (materialId == null) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
+            lqw.eq(WmMaterialStock::getMaterialId, materialId);
+            lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
+            List<WmMaterialStock> stocks = wmMaterialStockMapper.selectList(lqw);
+            return stocks.stream()
+                    .map(WmMaterialStock::getStockQuantity)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } catch (Exception e) {
+            log.warn("查询物料库存失败, materialId={}", materialId, e);
+            return BigDecimal.ZERO;
+        }
     }
 
     /**

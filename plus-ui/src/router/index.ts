@@ -374,6 +374,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/wm/productionissue/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:productionissue:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/productionissue/form.vue'),
+        name: 'ProductionIssueForm',
+        meta: { title: '生产领料表单', activeMenu: '/erp/wm/productionissue' }
+      }
+    ]
+  },
+  {
     path: '/erp/wm/miscrecpt/form',
     component: Layout,
     hidden: true,

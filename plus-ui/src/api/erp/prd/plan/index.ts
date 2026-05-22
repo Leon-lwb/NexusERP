@@ -62,6 +62,14 @@ export const generateMaterialRequirementsWithDetails = (planId: string | number)
   });
 };
 
+export const generateWorkOrders = (planId: string | number, requirementIds: (string | number)[]) => {
+  return request({
+    url: '/erp/prd/plan/generateWorkOrders/' + planId,
+    method: 'post',
+    data: requirementIds
+  });
+};
+
 export const listDetailsByPlanNo = (planNo: string): AxiosPromise => {
   return request({
     url: '/erp/prd/requirement/listDetailsByPlanNo/' + planNo,

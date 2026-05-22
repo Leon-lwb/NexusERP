@@ -37,7 +37,11 @@
     <el-table v-loading="loading" :data="issueList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="出库单编号" align="center" prop="issueCode" />
-      <el-table-column label="出库类型" align="center" prop="issueType" />
+      <el-table-column label="出库类型" align="center" prop="issueType">
+        <template #default="scope">
+          <dict-tag :options="wm_misc_issue_type" :value="scope.row.issueType" />
+        </template>
+      </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouseName" />
       <el-table-column label="出库日期" align="center" prop="issueDate" width="180">
         <template #default="scope">
@@ -69,7 +73,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as any
-const { wm_misc_status } = toRefs<any>(proxy.useDict('wm_misc_status'))
+const { wm_misc_status, wm_misc_issue_type } = toRefs<any>(proxy.useDict('wm_misc_status', 'wm_misc_issue_type'))
 
 const issueList = ref([])
 const loading = ref(true)

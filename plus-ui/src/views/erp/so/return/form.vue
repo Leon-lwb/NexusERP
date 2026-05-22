@@ -193,8 +193,9 @@
 import { getReturn, addReturn, updateReturn } from "@/api/erp/so/return"
 import { listMaterial } from "@/api/erp/bd/material"
 import { listClient } from "@/api/erp/bd/client"
-import { listWarehouse } from "@/api/erp/bd/warehouse"
+import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
+import { genCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -236,7 +237,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增退货单"; reset() }
+  if (action === 'add') { title.value = "新增退货单"; reset(); genCode('SO_RETURN_CODE').then((code: any) => { form.value.returnNo = code }) }
   else if (action === 'edit') { title.value = "修改退货单"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看退货单"; if (id) getInfo(id) }
 })

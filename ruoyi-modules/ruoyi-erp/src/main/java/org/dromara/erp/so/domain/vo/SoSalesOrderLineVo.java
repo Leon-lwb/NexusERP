@@ -105,4 +105,9 @@ public class SoSalesOrderLineVo implements Serializable {
     private String customerLineRef;
     private Long sortOrder;
     private String remark;
+
+    @ExcelProperty(value = "关联生产计划编号")
+    private String linkedPlanNo;
+
+    private Long linkedPlanId;
 }

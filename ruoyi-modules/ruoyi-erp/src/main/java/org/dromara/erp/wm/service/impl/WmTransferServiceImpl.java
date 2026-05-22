@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import org.dromara.system.strategy.AutoCodeUtil;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -34,6 +35,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
     private final WmTransferMapper baseMapper;
     private final WmTransferLineMapper lineMapper;
     private final WmStockOperationServiceImpl stockOperationService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmTransferVo> selectPageList(WmTransferBo bo, PageQuery pageQuery) {
@@ -62,6 +64,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmTransferBo bo) {
         WmTransfer entity = MapstructUtils.convert(bo, WmTransfer.class);
+        entity.setTransferNo(autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
         int rows = baseMapper.insert(entity);
         if (bo.getWmTransferLineList() != null) {
             for (WmTransferLine line : bo.getWmTransferLineList()) {

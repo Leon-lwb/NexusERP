@@ -9422,6 +9422,24 @@ INSERT INTO `sys_auto_code_part` VALUES (370, '000000', 269, 2, 'NOWDATE', 'DATE
 INSERT INTO `sys_auto_code_part` VALUES (371, '000000', 269, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2025-12-19 16:10:01', 1, '2025-12-19 16:10:31', '0');
 INSERT INTO `sys_auto_code_part` VALUES (372, '000000', 270, 1, 'INPUTCHAR', 'PREFIX', '前缀', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2025-12-24 10:20:59', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_part` VALUES (373, '000000', 270, 2, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'N', NULL, '', NULL, NULL, 0, 0, NULL, 1, '2025-12-24 10:21:52', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (374, '000000', 271, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'TR', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (375, '000000', 271, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (376, '000000', 271, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (377, '000000', 272, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'PD', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (378, '000000', 272, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (379, '000000', 272, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (380, '000000', 273, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'ZICK', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (381, '000000', 273, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (382, '000000', 273, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (383, '000000', 274, 1, 'FIXCHAR', 'PREFIX', '前缀', 4, NULL, NULL, 'ZIRK', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (384, '000000', 274, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (385, '000000', 274, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (386, '000000', 275, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'BJ', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (387, '000000', 275, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (388, '000000', 275, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (389, '000000', 276, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'TH', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (390, '000000', 276, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (391, '000000', 276, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sys_auto_code_result
@@ -9519,6 +9537,12 @@ INSERT INTO `sys_auto_code_rule` VALUES (267, '000000', 'PRD_PLAN_CODE', '生产
 INSERT INTO `sys_auto_code_rule` VALUES (268, '000000', 'PRD_MATERIAL_MBOM', '物料需求单编号', NULL, 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2025-11-27 15:57:06', 1, '2025-11-27 15:57:37', '0');
 INSERT INTO `sys_auto_code_rule` VALUES (269, '000000', 'SCH_WORKER_CODE', '员工编号', NULL, 15, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2025-12-19 16:06:11', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (270, '000000', 'SCH_TEAM_CODE', '班组编号', NULL, 6, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2025-12-24 10:19:06', 1, '2025-12-24 10:22:06', '0');
+INSERT INTO `sys_auto_code_rule` VALUES (271, '000000', 'WM_TRANSFER_CODE', '调拨单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (272, '000000', 'WM_STOCKTAKING_CODE', '盘点单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (273, '000000', 'WM_MISC_ISSUE_CODE', '杂项出库单编号', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (274, '000000', 'WM_MISC_RECPT_CODE', '杂项入库单编号', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (275, '000000', 'SO_QUOTATION_CODE', '报价单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (276, '000000', 'SO_RETURN_CODE', '退货单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sys_client
@@ -11663,6 +11687,32 @@ INSERT INTO `sys_dict_data` VALUES (331, '000000', 4, '已取消', 'CANCELLED', 
 INSERT INTO `sys_dict_data` VALUES (2047213325753827330, '000000', 1, 'OA流程', 'OA', 'wf_app_type', '', 'primary', 'N', 103, 1, '2026-04-23 15:17:47', 1, '2026-04-23 15:17:47', '');
 INSERT INTO `sys_dict_data` VALUES (2047213392552312834, '000000', 2, '自定义业务流程', 'ZDYYW', 'wf_app_type', '', 'success', 'N', 103, 1, '2026-04-23 15:18:03', 1, '2026-04-23 15:18:03', '');
 INSERT INTO `sys_dict_data` VALUES (2047213465952632833, '000000', 3, '钉钉流程', 'DINGDING', 'wf_app_type', '', 'info', 'N', 103, 1, '2026-04-23 15:18:20', 1, '2026-04-23 15:18:20', '');
+INSERT INTO `sys_dict_data` VALUES (332, '000000', 1, '报废', 'SCRAP', 'wm_misc_issue_type', '', 'danger', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (333, '000000', 2, '损耗', 'LOSS', 'wm_misc_issue_type', '', 'warning', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (334, '000000', 3, '赠品', 'GIFT', 'wm_misc_issue_type', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (335, '000000', 4, '其他', 'OTHER', 'wm_misc_issue_type', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (336, '000000', 1, '盘盈', 'SURPLUS', 'wm_misc_recpt_type', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (337, '000000', 2, '赠品', 'GIFT', 'wm_misc_recpt_type', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (338, '000000', 3, '样品', 'SAMPLE', 'wm_misc_recpt_type', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (339, '000000', 4, '其他', 'OTHER', 'wm_misc_recpt_type', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (340, '000000', 1, '草稿', 'DRAFT', 'so_quotation_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (341, '000000', 2, '已确认', 'CONFIRMED', 'so_quotation_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (342, '000000', 3, '已转换', 'CONVERTED', 'so_quotation_status', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (343, '000000', 1, '草稿', 'DRAFT', 'so_return_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (344, '000000', 2, '已确认', 'CONFIRMED', 'so_return_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (345, '000000', 3, '已收货', 'RECEIVED', 'so_return_status', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (346, '000000', 1, '草稿', 'DRAFT', 'wm_transfer_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (347, '000000', 2, '已执行', 'EXECUTED', 'wm_transfer_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (348, '000000', 1, '草稿', 'DRAFT', 'wm_stocktaking_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (349, '000000', 2, '已生成', 'GENERATED', 'wm_stocktaking_status', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (350, '000000', 3, '已过账', 'POSTED', 'wm_stocktaking_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (351, '000000', 1, '草稿', 'DRAFT', 'wm_misc_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (352, '000000', 2, '已执行', 'EXECUTED', 'wm_misc_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (353, '000000', 1, '全部退货', 'FULL', 'so_return_type', '', 'danger', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (354, '000000', 2, '部分退货', 'PARTIAL', 'so_return_type', '', 'warning', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (355, '000000', 3, '破损退货', 'DAMAGED', 'so_return_type', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (356, '000000', 1, '仓库调拨', 'WAREHOUSE', 'wm_transfer_type', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (357, '000000', 2, '库位移位', 'LOCATION', 'wm_transfer_type', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2054472457295687681, '240047', 1, '男', '0', 'sys_user_sex', '', '', 'Y', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59', '性别男');
 INSERT INTO `sys_dict_data` VALUES (2054472457295687682, '240047', 2, '女', '1', 'sys_user_sex', '', '', 'N', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59', '性别女');
 INSERT INTO `sys_dict_data` VALUES (2054472457299881985, '240047', 3, '未知', '2', 'sys_user_sex', '', '', 'N', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59', '性别未知');
@@ -12059,6 +12109,15 @@ INSERT INTO `sys_dict_type` VALUES (152, '000000', '报工状态', 'prd_report_s
 INSERT INTO `sys_dict_type` VALUES (153, '000000', '报工途径', 'prd_report_channel', 103, 1, '2026-03-27 10:39:26', NULL, NULL, '报工途径');
 INSERT INTO `sys_dict_type` VALUES (154, '000000', '报工来源类型', 'prd_report_source_type', 103, 1, '2026-03-27 10:46:16', NULL, NULL, '报工来源类型');
 INSERT INTO `sys_dict_type` VALUES (155, '000000', '销售出库审批状态', 'wm_sales_status', 103, 1, '2026-04-03 11:05:17', NULL, NULL, '销售出库审批状态');
+INSERT INTO `sys_dict_type` VALUES (156, '000000', '杂项出库类型', 'wm_misc_issue_type', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '杂项出库类型');
+INSERT INTO `sys_dict_type` VALUES (157, '000000', '杂项入库类型', 'wm_misc_recpt_type', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '杂项入库类型');
+INSERT INTO `sys_dict_type` VALUES (158, '000000', '报价单状态', 'so_quotation_status', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '报价单状态');
+INSERT INTO `sys_dict_type` VALUES (159, '000000', '退货单状态', 'so_return_status', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '退货单状态');
+INSERT INTO `sys_dict_type` VALUES (160, '000000', '调拨单状态', 'wm_transfer_status', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '调拨单状态');
+INSERT INTO `sys_dict_type` VALUES (161, '000000', '盘点状态', 'wm_stocktaking_status', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '盘点状态');
+INSERT INTO `sys_dict_type` VALUES (162, '000000', '杂项出入库状态', 'wm_misc_status', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '杂项出入库状态');
+INSERT INTO `sys_dict_type` VALUES (163, '000000', '退货类型', 'so_return_type', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '退货类型');
+INSERT INTO `sys_dict_type` VALUES (164, '000000', '调拨类型', 'wm_transfer_type', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '调拨类型');
 INSERT INTO `sys_dict_type` VALUES (2047213188084187137, '000000', '流程应用类型', 'wf_app_type', 103, 1, '2026-04-23 15:17:14', 1, '2026-04-23 15:17:14', '');
 INSERT INTO `sys_dict_type` VALUES (2054472457203412993, '240047', '用户性别', 'sys_user_sex', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59', '用户性别列表');
 INSERT INTO `sys_dict_type` VALUES (2054472457203412994, '240047', '菜单状态', 'sys_show_hide', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59', '菜单状态列表');

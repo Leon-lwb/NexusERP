@@ -178,8 +178,9 @@
 <script setup lang="ts" name="TransferForm">
 import { getTransfer, addTransfer, updateTransfer } from "@/api/erp/wm/transfer"
 import { listMaterial } from "@/api/erp/bd/material"
-import { listWarehouse } from "@/api/erp/bd/warehouse"
+import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
+import { genCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -216,7 +217,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增调拨单"; reset() }
+  if (action === 'add') { title.value = "新增调拨单"; reset(); genCode('WM_TRANSFER_CODE').then((code: any) => { form.value.transferNo = code }) }
   else if (action === 'edit') { title.value = "修改调拨单"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看调拨单"; if (id) getInfo(id) }
 })

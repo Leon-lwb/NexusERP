@@ -17,6 +17,7 @@ import org.dromara.erp.wm.domain.vo.WmMiscRecptVo;
 import org.dromara.erp.wm.mapper.WmMiscRecptLineMapper;
 import org.dromara.erp.wm.mapper.WmMiscRecptMapper;
 import org.dromara.erp.wm.service.IWmMiscRecptService;
+import org.dromara.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
     private final WmMiscRecptMapper baseMapper;
     private final WmMiscRecptLineMapper lineMapper;
     private final WmStockOperationServiceImpl stockOperationService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmMiscRecptVo> selectPageList(WmMiscRecptBo bo, PageQuery pageQuery) {
@@ -60,6 +62,7 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMiscRecptBo bo) {
         WmMiscRecpt entity = MapstructUtils.convert(bo, WmMiscRecpt.class);
+        entity.setRecptCode(autoCodeUtil.genSerialCode("WM_MISC_RECPT_CODE", null));
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getRecptId(), bo.getWmMiscRecptLineList());
         return rows;

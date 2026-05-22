@@ -17,6 +17,7 @@ import org.dromara.erp.wm.domain.vo.WmMiscIssueVo;
 import org.dromara.erp.wm.mapper.WmMiscIssueLineMapper;
 import org.dromara.erp.wm.mapper.WmMiscIssueMapper;
 import org.dromara.erp.wm.service.IWmMiscIssueService;
+import org.dromara.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class WmMiscIssueServiceImpl implements IWmMiscIssueService {
     private final WmMiscIssueMapper baseMapper;
     private final WmMiscIssueLineMapper lineMapper;
     private final WmStockOperationServiceImpl stockOperationService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmMiscIssueVo> selectPageList(WmMiscIssueBo bo, PageQuery pageQuery) {
@@ -60,6 +62,7 @@ public class WmMiscIssueServiceImpl implements IWmMiscIssueService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMiscIssueBo bo) {
         WmMiscIssue entity = MapstructUtils.convert(bo, WmMiscIssue.class);
+        entity.setIssueCode(autoCodeUtil.genSerialCode("WM_MISC_ISSUE_CODE", null));
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getIssueId(), bo.getWmMiscIssueLineList());
         return rows;

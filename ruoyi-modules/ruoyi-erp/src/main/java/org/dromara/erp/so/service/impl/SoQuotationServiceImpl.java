@@ -22,6 +22,7 @@ import org.dromara.erp.so.mapper.SoSalesOrderHeaderMapper;
 import org.dromara.erp.so.mapper.SoSalesOrderLineMapper;
 import org.dromara.erp.so.service.ISoQuotationService;
 import org.dromara.erp.so.service.ISoSalesOrderHeaderService;
+import org.dromara.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     private final SoQuotationLineMapper lineMapper;
     private final SoSalesOrderHeaderMapper salesOrderMapper;
     private final SoSalesOrderLineMapper salesOrderLineMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<SoQuotationVo> selectPageList(SoQuotationBo bo, PageQuery pageQuery) {
@@ -69,6 +71,7 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoQuotationBo bo) {
         SoQuotation entity = MapstructUtils.convert(bo, SoQuotation.class);
+        entity.setQuotationNo(autoCodeUtil.genSerialCode("SO_QUOTATION_CODE", null));
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getQuotationId(), bo.getSoQuotationLineList());
         return rows;

@@ -129,4 +129,19 @@ public class PrdProductionPlanController extends BaseController {
             return R.fail("物料需求清单及明细生成失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 从物料需求单生成生产工单
+     */
+    @SaCheckPermission("prd:plan:edit")
+    @Log(title = "生产计划", businessType = BusinessType.UPDATE)
+    @PostMapping("/generateWorkOrders/{planId}")
+    public R<String> generateWorkOrders(@PathVariable Long planId, @RequestBody List<Long> requirementIds) {
+        try {
+            Integer count = prdProductionPlanService.generateWorkOrders(planId, requirementIds);
+            return R.ok("成功生成 " + count + " 个工单");
+        } catch (Exception e) {
+            return R.fail("生成工单失败：" + e.getMessage());
+        }
+    }
 }

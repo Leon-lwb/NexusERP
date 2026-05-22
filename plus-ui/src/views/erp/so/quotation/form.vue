@@ -194,6 +194,7 @@ import { listMaterial } from "@/api/erp/bd/material"
 import { listClient } from "@/api/erp/bd/client"
 import { getMeasure } from "@/api/erp/bd/measure"
 import { listUserByPostId } from "@/api/system/user"
+import { genCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -231,7 +232,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增报价单"; reset() }
+  if (action === 'add') { title.value = "新增报价单"; reset(); genCode('SO_QUOTATION_CODE').then((code: any) => { form.value.quotationNo = code }) }
   else if (action === 'edit') { title.value = "修改报价单"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看报价单"; if (id) getInfo(id) }
 })

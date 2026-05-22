@@ -46,4 +46,14 @@ public interface IPrdProductionPlanService {
     List<BdBomDetailVo> calculateBomTree(Long planId);
 
     List<PrdMaterialRequirement> generateMaterialRequirementsWithDetails(Long planId);
+
+    /**
+     * 从物料需求单生成生产工单
+     * 选中物料需求记录，一键生成对应的生产工单（状态=CREATED）
+     *
+     * @param planId         生产计划ID
+     * @param requirementIds 物料需求单ID列表
+     * @return 生成的工单数量
+     */
+    Integer generateWorkOrders(Long planId, List<Long> requirementIds);
 }

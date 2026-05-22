@@ -21,6 +21,7 @@ import org.dromara.erp.wm.domain.WmMaterialStock;
 import org.dromara.erp.wm.domain.WmMaterialStockTx;
 import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
 import org.dromara.erp.wm.mapper.WmMaterialStockTxMapper;
+import org.dromara.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ public class SoReturnServiceImpl implements ISoReturnService {
     private final SoReturnLineMapper lineMapper;
     private final WmMaterialStockMapper stockMapper;
     private final WmMaterialStockTxMapper stockTxMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<SoReturnVo> selectPageList(SoReturnBo bo, PageQuery pageQuery) {
@@ -66,6 +68,7 @@ public class SoReturnServiceImpl implements ISoReturnService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoReturnBo bo) {
         SoReturn entity = MapstructUtils.convert(bo, SoReturn.class);
+        entity.setReturnNo(autoCodeUtil.genSerialCode("SO_RETURN_CODE", null));
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getReturnId(), bo.getSoReturnLineList());
         return rows;

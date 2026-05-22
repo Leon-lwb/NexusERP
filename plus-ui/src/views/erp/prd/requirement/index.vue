@@ -48,6 +48,9 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:requirement:export']">导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" :disabled="multiple" @click="handleGenerateWorkOrders" v-hasPermi="['prd:plan:edit']">生成工单</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -91,6 +94,7 @@
 
 <script setup lang="ts" name="PrdRequirement">
 import { listRequirement, delRequirement } from "@/api/erp/prd/requirement"
+import { generateWorkOrders } from "@/api/erp/prd/plan"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
@@ -218,6 +222,26 @@ function handleExport() {
   proxy.download('erp/prd/requirement/export', {
     ...queryParams.value
   }, `requirement_${new Date().getTime()}.xlsx`)
+}
+
+function handleGenerateWorkOrders() {
+  if (ids.value.length === 0) {
+    proxy.$modal.msgWarning("请选择至少一个物料需求单");
+    return;
+  }
+  const selected = requirementList.value.filter(item => ids.value.includes(item.requirementId));
+  const planIds = [...new Set(selected.map(item => item.planId))];
+  if (planIds.length !== 1) {
+    proxy.$modal.msgWarning("请选择同一生产计划下的物料需求单");
+    return;
+  }
+  const planId = planIds[0];
+  proxy.$modal.confirm('确认要为选中的 ' + ids.value.length + ' 个物料需求单生成生产工单？').then(function () {
+    return generateWorkOrders(planId, ids.value);
+  }).then((res) => {
+    proxy.$modal.msgSuccess(res.msg || "工单生成成功");
+    getList();
+  }).catch(() => {});
 }
 
 getList()

@@ -3,6 +3,7 @@ package org.dromara.erp.wm.service;
 import org.dromara.erp.wm.domain.WmMiscIssueLine;
 import org.dromara.erp.wm.domain.WmMiscRecpt;
 import org.dromara.erp.wm.domain.WmMiscRecptLine;
+import org.dromara.erp.wm.domain.WmProductionIssueLine;
 import org.dromara.erp.wm.domain.WmStockTakingLine;
 import org.dromara.erp.wm.domain.WmTransferLine;
 
@@ -46,4 +47,9 @@ public interface IWmStockOperationService {
      * 杂项入库过账（增加库存）
      */
     void postMiscRecpt(WmMiscRecptLine line, WmMiscRecpt recpt, Date now);
+
+    /**
+     * 生产领料过账（FIFO扣减库存）
+     */
+    void postProductionIssue(WmProductionIssueLine line, Date now);
 }

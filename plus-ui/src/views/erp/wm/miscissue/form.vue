@@ -21,7 +21,7 @@
           <el-col :span="8">
             <el-form-item label="出库类型" prop="issueType">
               <el-select v-model="form.issueType" placeholder="请选择出库类型">
-                <el-option v-for="dict in wm_misc_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                <el-option v-for="dict in wm_misc_issue_type" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -146,12 +146,13 @@
 <script setup lang="ts" name="MiscIssueForm">
 import { getMiscIssue, addMiscIssue, updateMiscIssue } from "@/api/erp/wm/miscissue"
 import { listMaterial } from "@/api/erp/bd/material"
-import { listWarehouse } from "@/api/erp/bd/warehouse"
+import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
+import { genCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
-const { wm_misc_type } = toRefs<any>(proxy.useDict('wm_misc_type'))
+const { wm_misc_issue_type, wm_misc_status } = toRefs<any>(proxy.useDict('wm_misc_issue_type', 'wm_misc_status'))
 const route = useRoute()
 const router = useRouter()
 
@@ -183,7 +184,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增杂项出库"; reset() }
+  if (action === 'add') { title.value = "新增杂项出库"; reset(); genCode('WM_MISC_ISSUE_CODE').then((code: any) => { form.value.issueCode = code }) }
   else if (action === 'edit') { title.value = "修改杂项出库"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看杂项出库"; if (id) getInfo(id) }
 })

@@ -132,8 +132,9 @@
 
 <script setup lang="ts" name="StockTakingForm">
 import { getStockTakingPlan, addStockTakingPlan, updateStockTakingPlan, generateLines, postAdjustment } from "@/api/erp/wm/stocktaking"
-import { listWarehouse } from "@/api/erp/bd/warehouse"
+import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { listStoragearea } from "@/api/erp/wm/storagearea"
+import { genCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -167,7 +168,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增盘点计划"; reset() }
+  if (action === 'add') { title.value = "新增盘点计划"; reset(); genCode('WM_STOCKTAKING_CODE').then((code: any) => { form.value.planCode = code }) }
   else if (action === 'edit') { title.value = "修改盘点计划"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看盘点计划"; if (id) getInfo(id) }
 })

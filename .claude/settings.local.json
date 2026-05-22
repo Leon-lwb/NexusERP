@@ -105,7 +105,21 @@
       "Bash(/d/maven/apache-maven-3.9.15/bin/mvn --version)",
       "Bash(/d/maven/apache-maven-3.9.15/bin/mvn clean *)",
       "Bash(./mvnw compile *)",
-      "Bash(sed 's/.*VALUES \\(//')"
+      "Bash(sed 's/.*VALUES \\(//')",
+      "Bash(grep -oP \"INSERT INTO \\\\`sys_dict_type\\\\` VALUES \\\\\\(\\\\K[0-9]+\" \"D:/workspace/nexus-erp/script/sql/ry-vue.sql\")",
+      "Bash(grep -oP \"INSERT INTO \\\\`sys_dict_data\\\\` VALUES \\\\\\(\\\\K[0-9]+\" \"D:/workspace/nexus-erp/script/sql/ry-vue.sql\")",
+      "Bash(grep -o \"INSERT INTO \\\\`sys_dict_type\\\\` VALUES \\([0-9]*\" \"D:/workspace/nexus-erp/script/sql/ry-vue.sql\")",
+      "Bash(sed 's/.*\\(//')",
+      "Bash(grep -o \"INSERT INTO \\\\`sys_dict_data\\\\` VALUES \\([0-9]*\" \"D:/workspace/nexus-erp/script/sql/ry-vue.sql\")",
+      "Bash(grep -o \"INSERT INTO \\\\`sys_auto_code_rule\\\\` VALUES \\([0-9]*\" \"D:/workspace/nexus-erp/script/sql/ry-vue.sql\")",
+      "Bash(grep -o \"INSERT INTO \\\\`sys_auto_code_part\\\\` VALUES \\([0-9]*\" \"D:/workspace/nexus-erp/script/sql/ry-vue.sql\")",
+      "Bash(grep \"INSERT INTO \\\\`sys_dict_data\\\\`\")",
+      "Bash(sed 's/, .*//')",
+      "Bash(dpkg -l)",
+      "Bash(/d/software/mysql-5.7.14/bin/mysql *)",
+      "Bash(/d/Program Files/Redis/redis-cli KEYS *)",
+      "Bash(\"/d/Program Files/Redis/redis-cli\" KEYS \"sys_dict*\")",
+      "Bash(curl -s \"http://localhost:8080/system/dict/data/type/wm_transfer_type\")"
     ]
   }
 }

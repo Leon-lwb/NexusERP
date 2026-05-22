@@ -358,6 +358,12 @@
                                 <span v-else>{{ scope.row.purchaseQty }}</span>
                             </template>
                         </el-table-column>
+                        <el-table-column label="关联生产计划" prop="linkedPlanNo" width="180" v-if="isViewMode">
+                            <template #default="scope">
+                                <el-link v-if="scope.row.linkedPlanNo" type="primary" @click="viewProductionPlan(scope.row)">{{ scope.row.linkedPlanNo }}</el-link>
+                                <span v-else>-</span>
+                            </template>
+                        </el-table-column>
                         <el-table-column label="已预留库存数量" prop="reservedQty" width="150">
                             <template #default="scope">
                                 <el-input v-model="scope.row.reservedQty" placeholder="请输入已预留库存数量" v-if="!isViewMode" />
@@ -748,6 +754,10 @@ function handleDeleteSoSalesOrderLine() {
 
 function handleSoSalesOrderLineSelectionChange(selection) {
     checkedSoSalesOrderLine.value = selection.map(item => item.index)
+}
+
+function viewProductionPlan(row) {
+    router.push({ path: '/erp/prd/prdplan/form', query: { id: row.linkedPlanId, action: 'view' } })
 }
 
 function getDictLabel(dictOptions, value) {
