@@ -73,6 +73,22 @@
         <el-button type="warning" plain icon="Download" @click="handleExport"
           v-hasPermi="['prd:work:export']">导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Check" :disabled="single" @click="handleRelease"
+          v-hasPermi="['prd:work:edit']">下达</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="VideoPlay" :disabled="single" @click="handleStart"
+          v-hasPermi="['prd:work:edit']">开始</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Finished" :disabled="single" @click="handleComplete"
+          v-hasPermi="['prd:work:edit']">完成</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Close" :disabled="single" @click="handleClose"
+          v-hasPermi="['prd:work:edit']">关闭</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -121,6 +137,10 @@
             v-hasPermi="['prd:work:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
             v-hasPermi="['prd:work:remove']">删除</el-button>
+          <el-button link type="success" icon="Check" @click="handleRelease(scope.row)" v-if="scope.row.woStatus === 'PREPARE'" v-hasPermi="['prd:work:edit']">下达</el-button>
+          <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.woStatus === 'RELEASED'" v-hasPermi="['prd:work:edit']">开始</el-button>
+          <el-button link type="success" icon="Finished" @click="handleComplete(scope.row)" v-if="scope.row.woStatus === 'IN_PROGRESS'" v-hasPermi="['prd:work:edit']">完成</el-button>
+          <el-button link type="danger" icon="Close" @click="handleClose(scope.row)" v-if="scope.row.woStatus !== 'CLOSED' && scope.row.woStatus !== 'COMPLETED'" v-hasPermi="['prd:work:edit']">关闭</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -131,7 +151,7 @@
 </template>
 
 <script setup lang="ts" name="PrdWork">
-import { listWork, delWork } from "@/api/erp/prd/work"
+import { listWork, delWork, releaseWork, startWork, completeWork, closeWork } from "@/api/erp/prd/work"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
@@ -275,6 +295,39 @@ function handleExport() {
   proxy.download('erp/prd/work/export', {
     ...queryParams.value
   }, `work_${new Date().getTime()}.xlsx`)
+}
+
+/** 工单状态下拉按钮 */
+function handleRelease(row: any) {
+  const woId = row.woId || ids.value[0]
+  if (!woId) { proxy.$modal.msgWarning("请选择一条工单"); return }
+  proxy.$modal.confirm('确认下达工单编号为"' + woId + '"的工单？').then(() => {
+    releaseWork(woId).then(() => { proxy.$modal.msgSuccess("下达成功"); getList() })
+  }).catch(() => {})
+}
+
+function handleStart(row: any) {
+  const woId = row.woId || ids.value[0]
+  if (!woId) { proxy.$modal.msgWarning("请选择一条工单"); return }
+  proxy.$modal.confirm('确认开始工单编号为"' + woId + '"的生产？').then(() => {
+    startWork(woId).then(() => { proxy.$modal.msgSuccess("开始生产成功"); getList() })
+  }).catch(() => {})
+}
+
+function handleComplete(row: any) {
+  const woId = row.woId || ids.value[0]
+  if (!woId) { proxy.$modal.msgWarning("请选择一条工单"); return }
+  proxy.$modal.confirm('确认完成工单编号为"' + woId + '"的生产？').then(() => {
+    completeWork(woId).then(() => { proxy.$modal.msgSuccess("完成成功"); getList() })
+  }).catch(() => {})
+}
+
+function handleClose(row: any) {
+  const woId = row.woId || ids.value[0]
+  if (!woId) { proxy.$modal.msgWarning("请选择一条工单"); return }
+  proxy.$modal.confirm('确认关闭工单编号为"' + woId + '"？').then(() => {
+    closeWork(woId).then(() => { proxy.$modal.msgSuccess("关闭成功"); getList() })
+  }).catch(() => {})
 }
 
 getList()

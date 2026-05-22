@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -101,6 +102,67 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     @Transactional(rollbackFor = Exception.class)
     public int deletePrdWorkOrderByWoId(Long woId) {
         return baseMapper.deleteById(woId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void release(Long woId) {
+        PrdWorkOrder wo = baseMapper.selectById(woId);
+        if (wo == null) {
+            throw new RuntimeException("工单不存在");
+        }
+        if (!STATUS_CREATED.equals(wo.getWoStatus())) {
+            throw new RuntimeException("仅新建状态工单可下达,当前状态:" + wo.getWoStatus());
+        }
+        wo.setWoStatus(STATUS_RELEASED);
+        baseMapper.updateById(wo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void startProduction(Long woId) {
+        PrdWorkOrder wo = baseMapper.selectById(woId);
+        if (wo == null) {
+            throw new RuntimeException("工单不存在");
+        }
+        if (!STATUS_RELEASED.equals(wo.getWoStatus())) {
+            throw new RuntimeException("仅已下达状态工单可开始生产,当前状态:" + wo.getWoStatus());
+        }
+        wo.setWoStatus(STATUS_IN_PROGRESS);
+        wo.setActualStartDate(new Date());
+        baseMapper.updateById(wo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void complete(Long woId) {
+        PrdWorkOrder wo = baseMapper.selectById(woId);
+        if (wo == null) {
+            throw new RuntimeException("工单不存在");
+        }
+        if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus())) {
+            throw new RuntimeException("仅生产中状态工单可完工,当前状态:" + wo.getWoStatus());
+        }
+        wo.setWoStatus(STATUS_COMPLETED);
+        wo.setActualEndDate(new Date());
+        baseMapper.updateById(wo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void close(Long woId) {
+        PrdWorkOrder wo = baseMapper.selectById(woId);
+        if (wo == null) {
+            throw new RuntimeException("工单不存在");
+        }
+        if (STATUS_CLOSED.equals(wo.getWoStatus())) {
+            return;
+        }
+        if (STATUS_IN_PROGRESS.equals(wo.getWoStatus())) {
+            throw new RuntimeException("生产中工单不能直接关闭,请先完工");
+        }
+        wo.setWoStatus(STATUS_CLOSED);
+        baseMapper.updateById(wo);
     }
 
     private LambdaQueryWrapper<PrdWorkOrder> buildQueryWrapper(PrdWorkOrderBo bo) {

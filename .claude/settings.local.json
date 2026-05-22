@@ -103,7 +103,9 @@
       "Bash(export M2_HOME=/d/maven/apache-maven-3.5.2)",
       "Bash(export PATH=\"$JAVA_HOME/bin:$M2_HOME/bin:$PATH\")",
       "Bash(/d/maven/apache-maven-3.9.15/bin/mvn --version)",
-      "Bash(/d/maven/apache-maven-3.9.15/bin/mvn clean *)"
+      "Bash(/d/maven/apache-maven-3.9.15/bin/mvn clean *)",
+      "Bash(./mvnw compile *)",
+      "Bash(sed 's/.*VALUES \\(//')"
     ]
   }
 }

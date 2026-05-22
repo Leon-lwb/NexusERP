@@ -330,6 +330,90 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '库位', activeMenu: '/erp/wm/storagearea' }
       }
     ]
+  },
+  {
+    path: '/erp/wm/transfer/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:transfer:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/transfer/form.vue'),
+        name: 'TransferForm',
+        meta: { title: '调拨单表单', activeMenu: '/erp/wm/transfer' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/stocktaking/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:stocktaking:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/stocktaking/form.vue'),
+        name: 'StockTakingForm',
+        meta: { title: '盘点计划表单', activeMenu: '/erp/wm/stocktaking' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/miscissue/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:miscissue:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/miscissue/form.vue'),
+        name: 'MiscIssueForm',
+        meta: { title: '杂项出库表单', activeMenu: '/erp/wm/miscissue' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/miscrecpt/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:miscrecpt:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/miscrecpt/form.vue'),
+        name: 'MiscRecptForm',
+        meta: { title: '杂项入库表单', activeMenu: '/erp/wm/miscrecpt' }
+      }
+    ]
+  },
+  {
+    path: '/erp/so/quotation/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['so:quotation:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/so/quotation/form.vue'),
+        name: 'QuotationForm',
+        meta: { title: '报价单表单', activeMenu: '/erp/so/quotation' }
+      }
+    ]
+  },
+  {
+    path: '/erp/so/return/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['so:return:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/so/return/form.vue'),
+        name: 'ReturnForm',
+        meta: { title: '退货单表单', activeMenu: '/erp/so/return' }
+      }
+    ]
   }
 ];
 

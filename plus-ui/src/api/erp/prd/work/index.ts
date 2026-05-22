@@ -39,3 +39,15 @@ export const delWork = (woId: string | number | (string | number)[]) => {
     method: 'delete'
   });
 };
+
+export const releaseWork = (woId: number) =>
+  request({ url: '/erp/prd/work/release/' + woId, method: 'put' });
+
+export const startWork = (woId: number) =>
+  request({ url: '/erp/prd/work/start/' + woId, method: 'put' });
+
+export const completeWork = (woId: number) =>
+  request({ url: '/erp/prd/work/complete/' + woId, method: 'put' });
+
+export const closeWork = (woId: number) =>
+  request({ url: '/erp/prd/work/close/' + woId, method: 'put' });

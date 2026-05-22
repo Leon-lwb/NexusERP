@@ -39,8 +39,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import org.dromara.erp.wm.domain.WmMaterialStock;
+import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -61,6 +67,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private final BdBomDetailMapper bdBomDetailMapper;
     private final IPrdMaterialRequirementService prdMaterialRequirementService;
     private final ISoSalesOrderLineService soSalesOrderLineService;
+    private final WmMaterialStockMapper wmMaterialStockMapper;
     private final AutoCodeUtil autoCodeUtil;
 
     // 状态常量（从 NexusConstants 迁移）
@@ -321,6 +328,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                         Long.valueOf(detail.getOperationStep()) : null);
                 dto.setWorkstationId(detail.getWorkstationId());
                 dto.setWorkstationName(detail.getWorkstationName());
+                dto.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
                 dto.setSourceType(sourceType);
                 // 尝试补充物料基础信息
                 BdMaterial material = getMaterialInfo(detail.getChildMaterialId());
@@ -538,7 +546,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     }
 
     /**
-     * 创建物料需求明细项
+     * 创建物料需求明细项（含净需求计算和提前期偏移）
      */
     private PrdMaterialRequirementDetail createMaterialRequirementDetail(Long requirementId,
                                                                           MaterialRequirementCalcDTO calcDto) {
@@ -563,17 +571,63 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         detail.setLossRate(calcDto.getLossRate() != null ?
                 calcDto.getLossRate() : BigDecimal.ZERO);
         detail.setRequiredQuantity(calcDto.getTotalRequiredQuantity());
+        detail.setIssuedQuantity(BigDecimal.ZERO);
 
         // 设置工艺信息
         detail.setOperationStep(calcDto.getOperationStep());
         detail.setWorkstationId(calcDto.getWorkstationId());
         detail.setWorkstationName(calcDto.getWorkstationName());
+        detail.setLeadTime(calcDto.getLeadTime());
 
-        detail.setRequiredDate(new Date());
+        // 净需求计算: 查询当前库存和安全库存
+        BigDecimal stockQty = queryTotalStock(calcDto.getMaterialId());
+        detail.setStockQuantity(stockQty);
+
+        BigDecimal safetyStock = material != null && material.getSafetyStock() != null
+                ? material.getSafetyStock() : BigDecimal.ZERO;
+
+        // 短缺数量 = 需求数量 - 库存数量 - 安全库存（不小于0）
+        BigDecimal availableStock = stockQty.subtract(safetyStock);
+        if (availableStock.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal shortage = calcDto.getTotalRequiredQuantity().subtract(availableStock);
+            detail.setShortageQuantity(shortage.compareTo(BigDecimal.ZERO) > 0 ? shortage : BigDecimal.ZERO);
+        } else {
+            detail.setShortageQuantity(calcDto.getTotalRequiredQuantity());
+        }
+
+        // 提前期偏移: 需求日期 = 当前日期 + 提前期(小时)
+        Date requiredDate = calcDto.getLeadTime() != null && calcDto.getLeadTime() > 0
+                ? Date.from(LocalDateTime.now().plusHours(calcDto.getLeadTime())
+                    .atZone(ZoneId.systemDefault()).toInstant())
+                : new Date();
+        detail.setRequiredDate(requiredDate);
+
         detail.setStatus(1L);
         detail.setSourceType(calcDto.getSourceType());
 
         return detail;
+    }
+
+    /**
+     * 查询物料的总库存量
+     */
+    private BigDecimal queryTotalStock(Long materialId) {
+        if (materialId == null) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
+            lqw.eq(WmMaterialStock::getMaterialId, materialId);
+            lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
+            List<WmMaterialStock> stocks = wmMaterialStockMapper.selectList(lqw);
+            return stocks.stream()
+                    .map(WmMaterialStock::getStockQuantity)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } catch (Exception e) {
+            log.warn("查询物料库存失败, materialId={}", materialId, e);
+            return BigDecimal.ZERO;
+        }
     }
 
     private LambdaQueryWrapper<PrdProductionPlan> buildQueryWrapper(PrdProductionPlanBo bo) {

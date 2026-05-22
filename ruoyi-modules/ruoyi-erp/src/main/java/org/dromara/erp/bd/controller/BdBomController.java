@@ -70,4 +70,19 @@ public class BdBomController extends BaseController {
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(bdBomService.deleteByIds(ids));
     }
+
+    @SaCheckPermission("bd:bom:edit")
+    @Log(title = "BOM", businessType = BusinessType.UPDATE)
+    @PutMapping("/activateVersion/{bomId}")
+    public R<Void> activateVersion(@PathVariable Long bomId) {
+        bdBomService.activateVersion(bomId);
+        return R.ok();
+    }
+
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/verify/{bomId}")
+    public R<String> verify(@PathVariable Long bomId) {
+        String result = bdBomService.verifyBom(bomId);
+        return R.ok(result);
+    }
 }

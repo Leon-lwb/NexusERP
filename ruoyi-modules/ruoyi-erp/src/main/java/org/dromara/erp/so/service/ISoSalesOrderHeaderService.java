@@ -15,6 +15,12 @@ import java.util.List;
  */
 public interface ISoSalesOrderHeaderService {
 
+    String STATUS_DRAFT = "DRAFT";
+    String STATUS_CONFIRMED = "CONFIRMED";
+    String STATUS_FULFILLED = "FULFILLED";
+    String STATUS_CLOSED = "CLOSED";
+    String STATUS_CANCELLED = "CANCELLED";
+
     TableDataInfo<SoSalesOrderHeaderVo> selectPageList(SoSalesOrderHeaderBo bo, PageQuery pageQuery);
 
     List<SoSalesOrderHeaderVo> selectList(SoSalesOrderHeaderBo bo);
@@ -28,4 +34,12 @@ public interface ISoSalesOrderHeaderService {
     int deleteByIds(Long[] ids);
 
     List<SoSalesOrderLineVo> selectLineListBySoNo(String soNo);
+
+    void confirm(Long soId);
+
+    void fulfill(Long soId);
+
+    void close(Long soId);
+
+    void cancel(Long soId, String reason);
 }

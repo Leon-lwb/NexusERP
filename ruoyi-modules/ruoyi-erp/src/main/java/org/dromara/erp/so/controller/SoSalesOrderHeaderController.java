@@ -104,6 +104,38 @@ public class SoSalesOrderHeaderController extends BaseController {
         return R.ok(lineList);
     }
 
+    @SaCheckPermission("so:orderheader:edit")
+    @Log(title = "销售订单", businessType = BusinessType.UPDATE)
+    @PutMapping("/confirm/{soId}")
+    public R<Void> confirm(@PathVariable Long soId) {
+        soSalesOrderHeaderService.confirm(soId);
+        return R.ok();
+    }
+
+    @SaCheckPermission("so:orderheader:edit")
+    @Log(title = "销售订单", businessType = BusinessType.UPDATE)
+    @PutMapping("/fulfill/{soId}")
+    public R<Void> fulfill(@PathVariable Long soId) {
+        soSalesOrderHeaderService.fulfill(soId);
+        return R.ok();
+    }
+
+    @SaCheckPermission("so:orderheader:edit")
+    @Log(title = "销售订单", businessType = BusinessType.UPDATE)
+    @PutMapping("/close/{soId}")
+    public R<Void> close(@PathVariable Long soId) {
+        soSalesOrderHeaderService.close(soId);
+        return R.ok();
+    }
+
+    @SaCheckPermission("so:orderheader:edit")
+    @Log(title = "销售订单", businessType = BusinessType.UPDATE)
+    @PutMapping("/cancel/{soId}")
+    public R<Void> cancel(@PathVariable Long soId, String reason) {
+        soSalesOrderHeaderService.cancel(soId, reason);
+        return R.ok();
+    }
+
     /**
      * 通过销售订单子表id获取销售订单行详细信息
      */

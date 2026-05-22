@@ -148,6 +148,22 @@
             v-hasPermi="['so:orderheader:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Check" :disabled="single" @click="handleConfirm"
+          v-hasPermi="['so:orderheader:edit']">确认</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Finished" :disabled="single" @click="handleFulfill"
+          v-hasPermi="['so:orderheader:edit']">履行</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="info" plain icon="Close" :disabled="single" @click="handleCloseOrder"
+          v-hasPermi="['so:orderheader:edit']">关闭</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="CircleClose" :disabled="single" @click="handleCancel"
+          v-hasPermi="['so:orderheader:edit']">取消</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -236,6 +252,10 @@
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:orderheader:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:orderheader:remove']">删除</el-button>
+          <el-button link type="success" icon="Check" @click="handleConfirm(scope.row)" v-if="scope.row.orderStatus === 'DRAFT'" v-hasPermi="['so:orderheader:edit']">确认</el-button>
+          <el-button link type="primary" icon="Finished" @click="handleFulfill(scope.row)" v-if="scope.row.orderStatus === 'CONFIRMED'" v-hasPermi="['so:orderheader:edit']">履行</el-button>
+          <el-button link type="info" icon="Close" @click="handleCloseOrder(scope.row)" v-if="scope.row.orderStatus === 'CONFIRMED'" v-hasPermi="['so:orderheader:edit']">关闭</el-button>
+          <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.orderStatus !== 'CLOSED' && scope.row.orderStatus !== 'CANCELLED'" v-hasPermi="['so:orderheader:edit']">取消</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -251,7 +271,7 @@
 </template>
 
 <script setup lang="ts" name="Orderheader">
-import { listOrderheader, delOrderheader } from "@/api/erp/so/orderheader"
+import { listOrderheader, delOrderheader, confirmOrder, fulfillOrder, closeOrder, cancelOrder } from "@/api/erp/so/orderheader"
 import { useRouter } from 'vue-router'
 
   const router = useRouter();
@@ -392,6 +412,42 @@ import { useRouter } from 'vue-router'
       ...queryParams.value
     }, `orderheader_${new Date().getTime()}.xlsx`)
   }
+
+/** 确认订单 */
+function handleConfirm(row: any) {
+  const soId = row.soId || ids.value[0]
+  if (!soId) { proxy.$modal.msgWarning("请选择一个订单"); return }
+  proxy.$modal.confirm('确认订单编号为"' + soId + '"的吗？').then(() => {
+    confirmOrder(soId).then(() => { proxy.$modal.msgSuccess("确认成功"); getList() })
+  }).catch(() => {})
+}
+
+/** 履行订单 */
+function handleFulfill(row: any) {
+  const soId = row.soId || ids.value[0]
+  if (!soId) { proxy.$modal.msgWarning("请选择一个订单"); return }
+  proxy.$modal.confirm('确认履行订单编号为"' + soId + '"的吗？').then(() => {
+    fulfillOrder(soId).then(() => { proxy.$modal.msgSuccess("履行成功"); getList() })
+  }).catch(() => {})
+}
+
+/** 关闭订单 */
+function handleCloseOrder(row: any) {
+  const soId = row.soId || ids.value[0]
+  if (!soId) { proxy.$modal.msgWarning("请选择一个订单"); return }
+  proxy.$modal.confirm('确认关闭订单编号为"' + soId + '"的吗？').then(() => {
+    closeOrder(soId).then(() => { proxy.$modal.msgSuccess("关闭成功"); getList() })
+  }).catch(() => {})
+}
+
+/** 取消订单 */
+function handleCancel(row: any) {
+  const soId = row.soId || ids.value[0]
+  if (!soId) { proxy.$modal.msgWarning("请选择一个订单"); return }
+  proxy.$prompt('请输入取消原因', '取消订单').then(({ value }: any) => {
+    cancelOrder(soId, value).then(() => { proxy.$modal.msgSuccess("取消成功"); getList() })
+  }).catch(() => {})
+}
 
   getList()
 </script>

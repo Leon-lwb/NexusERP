@@ -29,5 +29,6 @@ public class MaterialRequirementCalcDTO {
     private Long operationStep;
     private Long workstationId;
     private String workstationName;
+    private Long leadTime;
     private String sourceType;
 }

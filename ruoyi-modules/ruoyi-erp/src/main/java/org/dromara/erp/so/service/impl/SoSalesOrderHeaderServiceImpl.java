@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -100,6 +101,67 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         lineWrapper.orderByDesc(SoSalesOrderLine::getSortOrder);
         List<SoSalesOrderLine> lineList = soSalesOrderLineMapper.selectList(lineWrapper);
         return MapstructUtils.convert(lineList, SoSalesOrderLineVo.class);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirm(Long soId) {
+        SoSalesOrderHeader header = baseMapper.selectById(soId);
+        if (header == null) {
+            throw new RuntimeException("销售订单不存在");
+        }
+        if (!STATUS_DRAFT.equals(header.getOrderStatus())) {
+            throw new RuntimeException("只有草稿状态的订单才能确认");
+        }
+        header.setOrderStatus(STATUS_CONFIRMED);
+        header.setConfirmedTime(new Date());
+        baseMapper.updateById(header);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void fulfill(Long soId) {
+        SoSalesOrderHeader header = baseMapper.selectById(soId);
+        if (header == null) {
+            throw new RuntimeException("销售订单不存在");
+        }
+        if (!STATUS_CONFIRMED.equals(header.getOrderStatus())) {
+            throw new RuntimeException("只有已确认状态的订单才能执行");
+        }
+        header.setOrderStatus(STATUS_FULFILLED);
+        header.setFulfilledTime(new Date());
+        baseMapper.updateById(header);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void close(Long soId) {
+        SoSalesOrderHeader header = baseMapper.selectById(soId);
+        if (header == null) {
+            throw new RuntimeException("销售订单不存在");
+        }
+        if (STATUS_CANCELLED.equals(header.getOrderStatus())) {
+            throw new RuntimeException("已取消的订单不能关闭");
+        }
+        header.setOrderStatus(STATUS_CLOSED);
+        header.setClosedTime(new Date());
+        baseMapper.updateById(header);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancel(Long soId, String reason) {
+        SoSalesOrderHeader header = baseMapper.selectById(soId);
+        if (header == null) {
+            throw new RuntimeException("销售订单不存在");
+        }
+        if (STATUS_CLOSED.equals(header.getOrderStatus())) {
+            throw new RuntimeException("已关闭的订单不能取消");
+        }
+        header.setOrderStatus(STATUS_CANCELLED);
+        header.setCancelledTime(new Date());
+        header.setCancelledReason(reason);
+        baseMapper.updateById(header);
     }
 
     /**

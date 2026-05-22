@@ -2715,4 +2715,433 @@ CREATE TABLE `wm_warehouse`  (
 INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '成品仓库', '浙江省杭州市上城区小营街道', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2025-09-30 12:04:16', 1, '2025-12-03 17:06:02', 330000, 330100, 330102, 330102004, NULL, NULL);
 INSERT INTO `wm_warehouse` VALUES (2, 'WH004', '原料仓库', '浙江省杭州市上城区清波街道', 300.00, 'admin', 1, '成品仓库', 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2025-12-02 10:55:51', 1, '2025-12-03 17:19:14', 330000, 330100, 330102, 330102001, NULL, NULL);
 
+-- ----------------------------
+-- P0: 库存调拨 (wm_transfer / wm_transfer_line)
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_transfer_line`;
+DROP TABLE IF EXISTS `wm_transfer`;
+
+CREATE TABLE `wm_transfer`  (
+  `transfer_id`         bigint(20) NOT NULL COMMENT '调拨单ID',
+  `transfer_no`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '调拨单号',
+  `from_warehouse_id`   bigint(20) DEFAULT NULL COMMENT '来源仓库ID',
+  `from_warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源仓库编码',
+  `from_warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源仓库名称',
+  `from_area_id`        bigint(20) DEFAULT NULL COMMENT '来源库区ID',
+  `from_area_code`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源库区编码',
+  `from_area_name`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源库区名称',
+  `to_warehouse_id`     bigint(20) DEFAULT NULL COMMENT '目标仓库ID',
+  `to_warehouse_code`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '目标仓库编码',
+  `to_warehouse_name`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '目标仓库名称',
+  `to_area_id`          bigint(20) DEFAULT NULL COMMENT '目标库区ID',
+  `to_area_code`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '目标库区编码',
+  `to_area_name`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '目标库区名称',
+  `transfer_type`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '调拨类型',
+  `total_quantity`      decimal(18,4) DEFAULT NULL COMMENT '总数量',
+  `status`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'DRAFT' COMMENT '状态',
+  `operator_id`         bigint(20) DEFAULT NULL COMMENT '操作人ID',
+  `operator_name`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '操作人',
+  `transfer_date`       datetime DEFAULT NULL COMMENT '调拨日期',
+  `execute_date`        datetime DEFAULT NULL COMMENT '执行日期',
+  `select_flow_id`      bigint(20) DEFAULT NULL COMMENT '已选审批流ID(wf_custom_form.id)',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`transfer_id`) USING BTREE,
+  INDEX `idx_transfer_status`(`status`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨单表' ROW_FORMAT = Dynamic;
+
+CREATE TABLE `wm_transfer_line`  (
+  `line_id`             bigint(20) NOT NULL COMMENT '行ID',
+  `transfer_id`         bigint(20) NOT NULL COMMENT '调拨单ID',
+  `material_id`         bigint(20) DEFAULT NULL COMMENT '物料ID',
+  `material_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料编码',
+  `material_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料名称',
+  `material_spec`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料规格',
+  `base_uom_id`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位ID',
+  `base_uom_name`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位名称',
+  `batch_id`            bigint(20) DEFAULT NULL COMMENT '批次ID',
+  `batch_code`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '批次编码',
+  `from_location_id`    bigint(20) DEFAULT NULL COMMENT '来源库位ID',
+  `from_location_code`  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源库位编码',
+  `from_location_name`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '来源库位名称',
+  `to_location_id`      bigint(20) DEFAULT NULL COMMENT '目标库位ID',
+  `to_location_code`    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '目标库位编码',
+  `to_location_name`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '目标库位名称',
+  `quantity`            decimal(18,4) DEFAULT NULL COMMENT '调拨数量',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_transfer_line_mid`(`transfer_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨行表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- P0: 盘点管理 (wm_stock_taking_plan / wm_stock_taking_line)
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_stock_taking_line`;
+DROP TABLE IF EXISTS `wm_stock_taking_plan`;
+
+CREATE TABLE `wm_stock_taking_plan`  (
+  `plan_id`             bigint(20) NOT NULL COMMENT '盘点计划ID',
+  `plan_code`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '计划编号',
+  `plan_name`           varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '计划名称',
+  `warehouse_id`        bigint(20) DEFAULT NULL COMMENT '仓库ID',
+  `warehouse_code`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库名称',
+  `area_id`             bigint(20) DEFAULT NULL COMMENT '库区ID',
+  `area_code`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库区编码',
+  `area_name`           varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库区名称',
+  `planned_date`        datetime DEFAULT NULL COMMENT '计划盘点日期',
+  `status`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'DRAFT' COMMENT '状态',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`plan_id`) USING BTREE,
+  INDEX `idx_taking_plan_status`(`status`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点计划表' ROW_FORMAT = Dynamic;
+
+CREATE TABLE `wm_stock_taking_line`  (
+  `line_id`             bigint(20) NOT NULL COMMENT '盘点行ID',
+  `plan_id`             bigint(20) NOT NULL COMMENT '盘点计划ID',
+  `material_id`         bigint(20) DEFAULT NULL COMMENT '物料ID',
+  `material_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料编码',
+  `material_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料名称',
+  `material_spec`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料规格',
+  `base_uom_id`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位ID',
+  `base_uom_name`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位名称',
+  `batch_id`            bigint(20) DEFAULT NULL COMMENT '批次ID',
+  `batch_code`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '批次编码',
+  `location_id`         bigint(20) DEFAULT NULL COMMENT '库位ID',
+  `location_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库位编码',
+  `location_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库位名称',
+  `stock_id`            bigint(20) DEFAULT NULL COMMENT '库存记录ID',
+  `book_quantity`       decimal(18,4) DEFAULT NULL COMMENT '账面数量',
+  `actual_quantity`     decimal(18,4) DEFAULT NULL COMMENT '实盘数量',
+  `difference_quantity` decimal(18,4) DEFAULT NULL COMMENT '差异数量',
+  `status`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'PENDING' COMMENT '状态',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_taking_line_pid`(`plan_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点行表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- P0: 杂项出库 (wm_misc_issue / wm_misc_issue_line)
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_misc_issue_line`;
+DROP TABLE IF EXISTS `wm_misc_issue`;
+
+CREATE TABLE `wm_misc_issue`  (
+  `issue_id`            bigint(20) NOT NULL COMMENT '杂项出库ID',
+  `issue_code`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '出库单号',
+  `issue_type`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '出库类型',
+  `warehouse_id`        bigint(20) DEFAULT NULL COMMENT '仓库ID',
+  `warehouse_code`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库名称',
+  `issue_date`          datetime DEFAULT NULL COMMENT '出库日期',
+  `status`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'DRAFT' COMMENT '状态',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`issue_id`) USING BTREE,
+  INDEX `idx_misc_issue_status`(`status`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库单表' ROW_FORMAT = Dynamic;
+
+CREATE TABLE `wm_misc_issue_line`  (
+  `line_id`             bigint(20) NOT NULL COMMENT '行ID',
+  `issue_id`            bigint(20) NOT NULL COMMENT '杂项出库单ID',
+  `material_id`         bigint(20) DEFAULT NULL COMMENT '物料ID',
+  `material_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料编码',
+  `material_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料名称',
+  `material_spec`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料规格',
+  `base_uom_id`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位ID',
+  `base_uom_name`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位名称',
+  `batch_id`            bigint(20) DEFAULT NULL COMMENT '批次ID',
+  `batch_code`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '批次编码',
+  `location_id`         bigint(20) DEFAULT NULL COMMENT '库位ID',
+  `location_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库位编码',
+  `location_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库位名称',
+  `quantity`            decimal(18,4) DEFAULT NULL COMMENT '出库数量',
+  `unit_price`          decimal(18,4) DEFAULT NULL COMMENT '单价',
+  `amount`              decimal(18,4) DEFAULT NULL COMMENT '金额',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_misc_issue_line_mid`(`issue_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库行表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- P0: 杂项入库 (wm_misc_recpt / wm_misc_recpt_line)
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_misc_recpt_line`;
+DROP TABLE IF EXISTS `wm_misc_recpt`;
+
+CREATE TABLE `wm_misc_recpt`  (
+  `recpt_id`            bigint(20) NOT NULL COMMENT '杂项入库ID',
+  `recpt_code`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '入库单号',
+  `recpt_type`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '入库类型',
+  `warehouse_id`        bigint(20) DEFAULT NULL COMMENT '仓库ID',
+  `warehouse_code`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库名称',
+  `area_id`             bigint(20) DEFAULT NULL COMMENT '库区ID',
+  `area_code`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库区编码',
+  `area_name`           varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库区名称',
+  `recpt_date`          datetime DEFAULT NULL COMMENT '入库日期',
+  `status`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'DRAFT' COMMENT '状态',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`recpt_id`) USING BTREE,
+  INDEX `idx_misc_recpt_status`(`status`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库单表' ROW_FORMAT = Dynamic;
+
+CREATE TABLE `wm_misc_recpt_line`  (
+  `line_id`             bigint(20) NOT NULL COMMENT '行ID',
+  `recpt_id`            bigint(20) NOT NULL COMMENT '杂项入库单ID',
+  `material_id`         bigint(20) DEFAULT NULL COMMENT '物料ID',
+  `material_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料编码',
+  `material_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料名称',
+  `material_spec`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料规格',
+  `base_uom_id`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位ID',
+  `base_uom_name`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位名称',
+  `batch_id`            bigint(20) DEFAULT NULL COMMENT '批次ID',
+  `batch_code`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '批次编码',
+  `location_id`         bigint(20) DEFAULT NULL COMMENT '库位ID',
+  `location_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库位编码',
+  `location_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '库位名称',
+  `quantity`            decimal(18,4) DEFAULT NULL COMMENT '入库数量',
+  `unit_price`          decimal(18,4) DEFAULT NULL COMMENT '单价',
+  `amount`              decimal(18,4) DEFAULT NULL COMMENT '金额',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_misc_recpt_line_mid`(`recpt_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库行表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- P0: 销售报价 (so_quotation / so_quotation_line)
+-- ----------------------------
+DROP TABLE IF EXISTS `so_quotation_line`;
+DROP TABLE IF EXISTS `so_quotation`;
+
+CREATE TABLE `so_quotation`  (
+  `quotation_id`        bigint(20) NOT NULL COMMENT '报价单ID',
+  `quotation_no`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '报价单号',
+  `client_id`           bigint(20) DEFAULT NULL COMMENT '客户ID',
+  `client_name`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '客户名称',
+  `sales_rep_id`        bigint(20) DEFAULT NULL COMMENT '销售代表ID',
+  `sales_rep_name`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '销售代表',
+  `quotation_date`      datetime DEFAULT NULL COMMENT '报价日期',
+  `valid_until`         datetime DEFAULT NULL COMMENT '有效期至',
+  `currency`            varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '币种',
+  `exchange_rate`       decimal(18,6) DEFAULT NULL COMMENT '汇率',
+  `total_amount`        decimal(18,4) DEFAULT NULL COMMENT '总金额',
+  `tax_amount`          decimal(18,4) DEFAULT NULL COMMENT '税额',
+  `discount_amount`     decimal(18,4) DEFAULT NULL COMMENT '折扣额',
+  `discount_rate`       decimal(10,4) DEFAULT NULL COMMENT '折扣率',
+  `payment_terms`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '付款条件',
+  `delivery_terms`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '交货条件',
+  `status`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'DRAFT' COMMENT '状态',
+  `select_flow_id`      bigint(20) DEFAULT NULL COMMENT '审批流ID',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1（转换来源报价单号）',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`quotation_id`) USING BTREE,
+  INDEX `idx_quotation_status`(`status`) USING BTREE,
+  INDEX `idx_quotation_client`(`client_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价单表' ROW_FORMAT = Dynamic;
+
+CREATE TABLE `so_quotation_line`  (
+  `line_id`             bigint(20) NOT NULL COMMENT '行ID',
+  `quotation_id`        bigint(20) NOT NULL COMMENT '报价单ID',
+  `material_id`         bigint(20) DEFAULT NULL COMMENT '物料ID',
+  `material_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料编码',
+  `material_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料名称',
+  `material_spec`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料规格',
+  `base_uom_id`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位ID',
+  `base_uom_name`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位名称',
+  `quantity`            decimal(18,4) DEFAULT NULL COMMENT '数量',
+  `unit_price`          decimal(18,4) DEFAULT NULL COMMENT '单价',
+  `amount`              decimal(18,4) DEFAULT NULL COMMENT '金额',
+  `tax_rate`            decimal(10,4) DEFAULT NULL COMMENT '税率',
+  `tax_amount`          decimal(18,4) DEFAULT NULL COMMENT '税额',
+  `delivery_date`       datetime DEFAULT NULL COMMENT '交货日期',
+  `sort_order`          int(11) DEFAULT 0 COMMENT '排序',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_quotation_line_mid`(`quotation_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价行表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- P0: 销售退货 (so_return / so_return_line)
+-- ----------------------------
+DROP TABLE IF EXISTS `so_return_line`;
+DROP TABLE IF EXISTS `so_return`;
+
+CREATE TABLE `so_return`  (
+  `return_id`           bigint(20) NOT NULL COMMENT '退货单ID',
+  `return_no`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '退货单号',
+  `so_id`               bigint(20) DEFAULT NULL COMMENT '原销售订单ID',
+  `so_no`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '原销售订单号',
+  `client_id`           bigint(20) DEFAULT NULL COMMENT '客户ID',
+  `client_name`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '客户名称',
+  `sales_rep_id`        bigint(20) DEFAULT NULL COMMENT '销售代表ID',
+  `sales_rep_name`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '销售代表',
+  `return_date`         datetime DEFAULT NULL COMMENT '退货日期',
+  `return_reason`       varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '退货原因',
+  `return_type`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '退货类型',
+  `total_amount`        decimal(18,4) DEFAULT NULL COMMENT '总金额',
+  `tax_amount`          decimal(18,4) DEFAULT NULL COMMENT '税额',
+  `refund_amount`       decimal(18,4) DEFAULT NULL COMMENT '退款金额',
+  `warehouse_id`        bigint(20) DEFAULT NULL COMMENT '退货入库仓库ID',
+  `warehouse_code`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '仓库名称',
+  `status`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'DRAFT' COMMENT '状态',
+  `select_flow_id`      bigint(20) DEFAULT NULL COMMENT '审批流ID',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`return_id`) USING BTREE,
+  INDEX `idx_return_so`(`so_id`) USING BTREE,
+  INDEX `idx_return_status`(`status`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货单表' ROW_FORMAT = Dynamic;
+
+CREATE TABLE `so_return_line`  (
+  `line_id`             bigint(20) NOT NULL COMMENT '行ID',
+  `return_id`           bigint(20) NOT NULL COMMENT '退货单ID',
+  `so_line_id`          bigint(20) DEFAULT NULL COMMENT '原订单行ID',
+  `material_id`         bigint(20) DEFAULT NULL COMMENT '物料ID',
+  `material_code`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料编码',
+  `material_name`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料名称',
+  `material_spec`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '物料规格',
+  `base_uom_id`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位ID',
+  `base_uom_name`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位名称',
+  `return_quantity`     decimal(18,4) DEFAULT NULL COMMENT '退货数量',
+  `unit_price`          decimal(18,4) DEFAULT NULL COMMENT '单价',
+  `amount`              decimal(18,4) DEFAULT NULL COMMENT '金额',
+  `tax_rate`            decimal(10,4) DEFAULT NULL COMMENT '税率',
+  `tax_amount`          decimal(18,4) DEFAULT NULL COMMENT '税额',
+  `return_reason`       varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '退货原因',
+  `sort_order`          int(11) DEFAULT 0 COMMENT '排序',
+  `remark`              varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '备注',
+  `attr1`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留1',
+  `attr2`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '预留2',
+  `attr3`               int(11) DEFAULT 0 COMMENT '预留3',
+  `attr4`               int(11) DEFAULT 0 COMMENT '预留4',
+  `tenant_id`           varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '000000' COMMENT '租户ID',
+  `create_dept`         bigint(20) DEFAULT NULL COMMENT '创建部门',
+  `del_flag`            char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '0' COMMENT '删除标志',
+  `create_by`           bigint(20) DEFAULT NULL COMMENT '创建人',
+  `create_time`         datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`           bigint(20) DEFAULT NULL COMMENT '更新人',
+  `update_time`         datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_return_line_mid`(`return_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货行表' ROW_FORMAT = Dynamic;
+
 SET FOREIGN_KEY_CHECKS = 1;

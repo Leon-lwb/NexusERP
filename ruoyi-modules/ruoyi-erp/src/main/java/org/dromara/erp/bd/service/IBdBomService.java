@@ -19,4 +19,15 @@ public interface IBdBomService {
     int insertByBo(BdBomBo bo);
     int updateByBo(BdBomBo bo);
     int deleteByIds(Long[] ids);
+
+    /**
+     * 激活BOM版本（将该版本设为当前版本，同物料其他版本设为非当前）
+     */
+    void activateVersion(Long bomId);
+
+    /**
+     * 校验BOM完整性（检查明细是否为空、是否有循环引用）
+     * @return 校验结果消息
+     */
+    String verifyBom(Long bomId);
 }

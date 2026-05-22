@@ -100,6 +100,14 @@
             v-hasPermi="['bd:bom:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Check" :disabled="single" @click="handleActivateVersion"
+          v-hasPermi="['bd:bom:edit']">激活版本</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="info" plain icon="Search" :disabled="single" @click="handleVerify"
+          v-hasPermi="['bd:bom:query']">验证BOM</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -138,6 +146,8 @@
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:bom:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:bom:remove']">删除</el-button>
+          <el-button link type="success" icon="Check" @click="handleActivateVersion(scope.row)" v-if="scope.row.isCurrent != 1" v-hasPermi="['bd:bom:edit']">激活</el-button>
+          <el-button link type="info" icon="Search" @click="handleVerify(scope.row)" v-hasPermi="['bd:bom:query']">验证</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -372,7 +382,7 @@
 </template>
 
 <script setup lang="ts" name="Bom">
-import { listBom, getBom, delBom, addBom, updateBom } from "@/api/erp/bd/bom"
+import { listBom, getBom, delBom, addBom, updateBom, activateBomVersion, verifyBom } from "@/api/erp/bd/bom"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/erp/bd/category"
 import { useRouter } from 'vue-router'
@@ -680,6 +690,29 @@ import { debounce } from 'lodash'
     proxy.download('bd/bom/export', {
       ...queryParams.value
     }, `bom_${new Date().getTime()}.xlsx`)
+  }
+
+  /** 激活BOM版本 */
+  function handleActivateVersion(row: any) {
+    const bomId = row.bomId || ids.value[0]
+    if (!bomId) { proxy.$modal.msgWarning("请选择一个BOM版本"); return }
+    proxy.$modal.confirm('确认激活该BOM版本为当前版本？').then(() => {
+      activateBomVersion(bomId).then(() => { proxy.$modal.msgSuccess("激活成功"); getList() })
+    }).catch(() => {})
+  }
+
+  /** 验证BOM */
+  function handleVerify(row: any) {
+    const bomId = row.bomId || ids.value[0]
+    if (!bomId) { proxy.$modal.msgWarning("请选择一个BOM"); return }
+    verifyBom(bomId).then((response: any) => {
+      const result = response.data || response
+      if (result === 'OK') {
+        proxy.$modal.msgSuccess("BOM验证通过")
+      } else {
+        proxy.$modal.msgWarning("BOM验证问题: " + result)
+      }
+    })
   }
 
   // 获取物料分类树
