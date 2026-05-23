@@ -21,9 +21,3 @@ export const delReturn = (id: string | number | (string | number)[]) =>
 
 export const exportReturn = (query: ReturnQuery) =>
   request({ url: BASE + '/export', method: 'post', params: query });
-
-export const confirmReturn = (id: number) =>
-  request({ url: BASE + '/confirm/' + id, method: 'put' });
-
-export const executeReturn = (id: number) =>
-  request({ url: BASE + '/execute/' + id, method: 'put' });

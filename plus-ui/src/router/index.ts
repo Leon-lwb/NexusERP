@@ -428,6 +428,48 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '退货单表单', activeMenu: '/erp/so/return' }
       }
     ]
+  },
+  {
+    path: '/erp/pu/requisition/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['pu:requisition:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/pu/requisition/form.vue'),
+        name: 'PurchaseRequisitionForm',
+        meta: { title: '采购申请表单', activeMenu: '/erp/pu/requisition' }
+      }
+    ]
+  },
+  {
+    path: '/erp/pu/order/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['pu:order:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/pu/order/form.vue'),
+        name: 'PurchaseOrderForm',
+        meta: { title: '采购订单表单', activeMenu: '/erp/pu/order' }
+      }
+    ]
+  },
+  {
+    path: '/erp/pu/return/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['pu:return:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/pu/return/form.vue'),
+        name: 'PurchaseReturnForm',
+        meta: { title: '采购退货表单', activeMenu: '/erp/pu/return' }
+      }
+    ]
   }
 ];
 

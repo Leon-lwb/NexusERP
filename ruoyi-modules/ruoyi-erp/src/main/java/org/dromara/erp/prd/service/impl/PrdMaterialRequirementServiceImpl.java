@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.utils.MapstructUtils;
-import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
@@ -247,10 +246,10 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             reqDetail.setWorkstationId(detail.getWorkstationId());
             reqDetail.setWorkstationName(detail.getWorkstationName());
             reqDetail.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
-            reqDetail.setRequiredDate(new Date());
+            reqDetail.setRequiredDate(resolveRequiredDate(detail.getLeadTime()));
             reqDetail.setStatus(1L);
             reqDetail.setSourceType(finalSourceType);
-
+            calculateNetRequirements(reqDetail);
             return reqDetail;
         }).collect(Collectors.toList());
     }
@@ -360,6 +359,15 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             log.warn("查询物料库存失败, materialId={}", materialId, e);
             return BigDecimal.ZERO;
         }
+    }
+
+    private Date resolveRequiredDate(Integer leadTime) {
+        Date requiredDate = new Date();
+        if (leadTime == null || leadTime <= 0) {
+            return requiredDate;
+        }
+        long offsetMillis = leadTime.longValue() * 24L * 60L * 60L * 1000L;
+        return new Date(System.currentTimeMillis() - offsetMillis);
     }
 
     /**

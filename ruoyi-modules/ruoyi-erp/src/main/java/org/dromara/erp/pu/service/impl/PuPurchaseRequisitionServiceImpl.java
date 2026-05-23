@@ -1,0 +1,309 @@
+package org.dromara.erp.pu.service.impl;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.dromara.common.core.utils.MapstructUtils;
+import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.mybatis.core.page.PageQuery;
+import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.erp.pu.domain.PuPurchaseRequisition;
+import org.dromara.erp.pu.domain.PuPurchaseRequisitionLine;
+import org.dromara.erp.pu.domain.PuPurchaseOrder;
+import org.dromara.erp.pu.domain.PuPurchaseOrderLine;
+import org.dromara.erp.pu.domain.bo.PuPurchaseRequisitionBo;
+import org.dromara.erp.pu.domain.vo.PuPurchaseRequisitionVo;
+import org.dromara.erp.pu.mapper.PuPurchaseOrderLineMapper;
+import org.dromara.erp.pu.mapper.PuPurchaseOrderMapper;
+import org.dromara.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
+import org.dromara.erp.pu.mapper.PuPurchaseRequisitionMapper;
+import org.dromara.erp.pu.service.IPuPurchaseRequisitionService;
+import org.dromara.system.strategy.AutoCodeUtil;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 采购申请服务实现类
+ * <p>
+ * 实现采购申请的核心业务逻辑，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页查询、新增（自动编号/默认状态）、修改（状态校验）、删除</li>
+ *   <li>状态流转：提交（草稿→已提交）、审批（已提交→已批准）、关闭、作废</li>
+ *   <li>转单操作：将已批准的采购申请转换为采购订单</li>
+ * </ul>
+ *
+ * @author ruoyi
+ */
+@Slf4j
+@RequiredArgsConstructor
+@DS("erp")
+@Service
+public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionService {
+
+    private final PuPurchaseRequisitionMapper baseMapper;
+    private final PuPurchaseRequisitionLineMapper lineMapper;
+    private final PuPurchaseOrderMapper purchaseOrderMapper;
+    private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
+    private final AutoCodeUtil autoCodeUtil;
+
+    /**
+     * 分页查询采购申请列表
+     */
+    @Override
+    public TableDataInfo<PuPurchaseRequisitionVo> selectPageList(PuPurchaseRequisitionBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<PuPurchaseRequisition> lqw = buildQueryWrapper(bo);
+        Page<PuPurchaseRequisitionVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(page);
+    }
+
+    /**
+     * 查询采购申请列表（不分页）
+     */
+    @Override
+    public List<PuPurchaseRequisitionVo> selectList(PuPurchaseRequisitionBo bo) {
+        return baseMapper.selectVoList(buildQueryWrapper(bo));
+    }
+
+    /**
+     * 根据主键查询采购申请，附带明细行列表
+     */
+    @Override
+    public PuPurchaseRequisitionVo selectById(Long id) {
+        PuPurchaseRequisitionVo vo = baseMapper.selectVoById(id);
+        if (vo != null && vo.getRequisitionId() != null) {
+            LambdaQueryWrapper<PuPurchaseRequisitionLine> lqw = Wrappers.lambdaQuery();
+            lqw.eq(PuPurchaseRequisitionLine::getRequisitionId, vo.getRequisitionId());
+            vo.setPuPurchaseRequisitionLineList(lineMapper.selectList(lqw));
+        }
+        return vo;
+    }
+
+    /**
+     * 新增采购申请
+     * <p>
+     * 自动生成申请单号（如为空）、默认设为草稿状态、默认申请日期为当天，同时保存明细行。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int insertByBo(PuPurchaseRequisitionBo bo) {
+        PuPurchaseRequisition entity = MapstructUtils.convert(bo, PuPurchaseRequisition.class);
+        if (StringUtils.isBlank(entity.getRequisitionNo())) {
+            entity.setRequisitionNo(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null));
+        }
+        if (entity.getStatus() == null) {
+            entity.setStatus(STATUS_DRAFT);
+        }
+        if (entity.getRequisitionDate() == null) {
+            entity.setRequisitionDate(new Date());
+        }
+        int rows = baseMapper.insert(entity);
+        insertLines(entity.getRequisitionId(), bo.getPuPurchaseRequisitionLineList());
+        return rows;
+    }
+
+    /**
+     * 修改采购申请
+     * <p>
+     * 仅草稿或已提交状态的申请允许编辑。修改时先删除全部旧明细行，再插入新明细行。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateByBo(PuPurchaseRequisitionBo bo) {
+        PuPurchaseRequisition entity = MapstructUtils.convert(bo, PuPurchaseRequisition.class);
+        PuPurchaseRequisition current = baseMapper.selectById(entity.getRequisitionId());
+        if (current == null) {
+            throw new RuntimeException("采购申请单不存在");
+        }
+        if (!STATUS_DRAFT.equals(current.getStatus()) && !STATUS_SUBMITTED.equals(current.getStatus())) {
+            throw new RuntimeException("当前状态不允许编辑采购申请单");
+        }
+        deleteLinesByRequisitionId(entity.getRequisitionId());
+        insertLines(entity.getRequisitionId(), bo.getPuPurchaseRequisitionLineList());
+        return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 批量删除采购申请，同时删除关联的明细行
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteByIds(Long[] ids) {
+        for (Long id : ids) {
+            deleteLinesByRequisitionId(id);
+        }
+        return baseMapper.deleteBatchIds(List.of(ids));
+    }
+
+    /**
+     * 提交采购申请：仅草稿状态允许提交，将状态改为已提交
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void submit(Long requisitionId) {
+        PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        if (!STATUS_DRAFT.equals(requisition.getStatus())) {
+            throw new RuntimeException("只有草稿状态的采购申请才能提交");
+        }
+        requisition.setStatus(STATUS_SUBMITTED);
+        baseMapper.updateById(requisition);
+    }
+
+    /**
+     * 审批通过采购申请：仅已提交或审批中状态允许审批，将状态改为已批准
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void approve(Long requisitionId) {
+        PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        if (!STATUS_SUBMITTED.equals(requisition.getStatus()) && !STATUS_APPROVING.equals(requisition.getStatus())) {
+            throw new RuntimeException("当前状态不允许审批采购申请");
+        }
+        requisition.setStatus(STATUS_APPROVED);
+        baseMapper.updateById(requisition);
+    }
+
+    /**
+     * 关闭采购申请：直接设为已关闭状态
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void close(Long requisitionId) {
+        PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        requisition.setStatus(STATUS_CLOSED);
+        baseMapper.updateById(requisition);
+    }
+
+    /**
+     * 作废采购申请：已转单的申请不允许作废
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancel(Long requisitionId) {
+        PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        if (STATUS_ORDERED.equals(requisition.getStatus())) {
+            throw new RuntimeException("已转单的采购申请不能作废");
+        }
+        requisition.setStatus(STATUS_CANCELLED);
+        baseMapper.updateById(requisition);
+    }
+
+    /**
+     * 将已批准的采购申请转换为采购订单
+     * <p>
+     * 校验采购申请已批准且有明细行，然后创建采购订单及其明细行，
+     * 并将采购申请状态更新为"已转单"（ORDERED）。
+     *
+     * @param requisitionId 采购申请ID
+     * @return 生成的采购订单ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long convertToPurchaseOrder(Long requisitionId) {
+        PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        if (!STATUS_APPROVED.equals(requisition.getStatus())) {
+            throw new RuntimeException("只有已批准的采购申请才能转采购订单");
+        }
+        List<PuPurchaseRequisitionLine> lines = lineMapper.selectList(Wrappers.lambdaQuery(PuPurchaseRequisitionLine.class).eq(PuPurchaseRequisitionLine::getRequisitionId, requisitionId));
+        if (lines == null || lines.isEmpty()) {
+            throw new RuntimeException("采购申请无明细行");
+        }
+
+        // 创建采购订单主表
+        PuPurchaseOrder order = new PuPurchaseOrder();
+        order.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
+        order.setRequisitionId(requisition.getRequisitionId());
+        order.setRequisitionNo(requisition.getRequisitionNo());
+        order.setOrderDate(new Date());
+        order.setStatus("DRAFT");
+        order.setRemark("由采购申请【" + requisition.getRequisitionNo() + "】转单生成");
+        purchaseOrderMapper.insert(order);
+
+        // 逐行转换明细：将采购申请明细行的物料信息拷贝到采购订单明细行
+        for (PuPurchaseRequisitionLine reqLine : lines) {
+            PuPurchaseOrderLine orderLine = new PuPurchaseOrderLine();
+            orderLine.setOrderId(order.getOrderId());
+            orderLine.setRequisitionLineId(reqLine.getLineId());
+            orderLine.setMaterialId(reqLine.getMaterialId());
+            orderLine.setMaterialCode(reqLine.getMaterialCode());
+            orderLine.setMaterialName(reqLine.getMaterialName());
+            orderLine.setMaterialSpec(reqLine.getMaterialSpec());
+            orderLine.setUnit(reqLine.getUnit());
+            orderLine.setOrderQuantity(reqLine.getApplyQuantity());
+            orderLine.setReceivedQuantity(java.math.BigDecimal.ZERO);
+            orderLine.setSortOrder(reqLine.getAttr3() != null ? reqLine.getAttr3().intValue() : null);
+            orderLine.setRemark(reqLine.getRemark());
+            purchaseOrderLineMapper.insert(orderLine);
+        }
+
+        // 更新采购申请状态为"已转单"
+        requisition.setStatus(STATUS_ORDERED);
+        baseMapper.updateById(requisition);
+        log.info("采购申请 {} 已转采购订单 {}", requisitionId, order.getOrderId());
+        return order.getOrderId();
+    }
+
+    /**
+     * 批量插入采购申请明细行
+     *
+     * @param requisitionId 采购申请ID
+     * @param lineList      明细行列表
+     */
+    private void insertLines(Long requisitionId, List<PuPurchaseRequisitionLine> lineList) {
+        if (requisitionId == null || lineList == null || lineList.isEmpty()) {
+            return;
+        }
+        for (PuPurchaseRequisitionLine line : lineList) {
+            line.setRequisitionId(requisitionId);
+            lineMapper.insert(line);
+        }
+    }
+
+    /**
+     * 删除指定采购申请的所有明细行
+     *
+     * @param requisitionId 采购申请ID
+     */
+    private void deleteLinesByRequisitionId(Long requisitionId) {
+        if (requisitionId == null) {
+            return;
+        }
+        lineMapper.delete(Wrappers.lambdaQuery(PuPurchaseRequisitionLine.class).eq(PuPurchaseRequisitionLine::getRequisitionId, requisitionId));
+    }
+
+    /**
+     * 确保采购申请存在，否则抛出异常
+     *
+     * @param requisitionId 采购申请ID
+     * @return 采购申请实体
+     */
+    private PuPurchaseRequisition ensureRequisition(Long requisitionId) {
+        PuPurchaseRequisition requisition = baseMapper.selectById(requisitionId);
+        if (requisition == null) {
+            throw new RuntimeException("采购申请单不存在");
+        }
+        return requisition;
+    }
+
+    /**
+     * 构建查询条件 Wrapper
+     * <p>
+     * 支持按申请单号精确匹配、按申请名称模糊匹配、按状态精确匹配，默认按创建时间降序排列。
+     *
+     * @param bo 查询条件
+     * @return 查询条件 Wrapper
+     */
+    private LambdaQueryWrapper<PuPurchaseRequisition> buildQueryWrapper(PuPurchaseRequisitionBo bo) {
+        LambdaQueryWrapper<PuPurchaseRequisition> lqw = Wrappers.lambdaQuery();
+        lqw.eq(StringUtils.isNotBlank(bo.getRequisitionNo()), PuPurchaseRequisition::getRequisitionNo, bo.getRequisitionNo());
+        lqw.like(StringUtils.isNotBlank(bo.getRequisitionName()), PuPurchaseRequisition::getRequisitionName, bo.getRequisitionName());
+        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseRequisition::getStatus, bo.getStatus());
+        lqw.orderByDesc(PuPurchaseRequisition::getCreateTime);
+        return lqw;
+    }
+}
