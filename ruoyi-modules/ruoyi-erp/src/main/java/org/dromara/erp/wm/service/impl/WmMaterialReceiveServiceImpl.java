@@ -30,6 +30,7 @@ import org.dromara.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import org.dromara.erp.wm.mapper.WmMaterialReceiveMapper;
 import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
 import org.dromara.erp.wm.mapper.WmMaterialStockTxMapper;
+import org.dromara.erp.wm.service.IWmBarcodeService;
 import org.dromara.erp.wm.service.IWmMaterialReceiveService;
 import org.dromara.workflow.domain.WfMyBusiness;
 import org.dromara.workflow.service.IWfProcessService;
@@ -83,6 +84,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final IWmBarcodeService wmBarcodeService;
 
     // ==================== 1. 基础 CRUD ====================
 
@@ -256,6 +258,21 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
                 notice.setUpdateTime(new Date());
                 arrivalNoticeMapper.updateById(notice);
             }
+        }
+
+        // 入库完成后为每条库存生成条码，方便后续扫码追踪、拣货和盘点。
+        // 这里先优先尝试默认配置；如果默认配置不存在，条码服务内部会自动回退到其它可用启用配置。
+        for (WmMaterialStock stock : stockMap.values()) {
+            wmBarcodeService.generateAndSaveByCode(
+                "WM_RECEIVE_DEFAULT",
+                "RECEIVE_IN",
+                receiveId,
+                null,
+                stock.getMaterialId(),
+                stock.getBatchId(),
+                stock.getStockId(),
+                new Date()
+            );
         }
 
         return true;

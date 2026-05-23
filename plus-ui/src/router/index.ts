@@ -360,6 +360,34 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/wm/barcode',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:barcode:list'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/erp/wm/barcode/index.vue'),
+        name: 'Barcode',
+        meta: { title: '条码管理', activeMenu: '/erp/wm/barcode' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/barcode/config',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:barcodeConfig:list'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/erp/wm/barcode/config/index.vue'),
+        name: 'BarcodeConfig',
+        meta: { title: '条码配置', activeMenu: '/erp/wm/barcode/config' }
+      }
+    ]
+  },
+  {
     path: '/erp/wm/miscissue/form',
     component: Layout,
     hidden: true,
