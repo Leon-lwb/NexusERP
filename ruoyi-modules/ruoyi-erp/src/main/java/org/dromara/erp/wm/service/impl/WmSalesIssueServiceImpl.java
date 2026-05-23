@@ -116,29 +116,52 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             throw new RuntimeException("出库单明细为空");
         }
 
-        // 扣减库存
+        // 扣减库存：按批次效期、收货时间、库存ID排序，跨库存记录 FIFO 扣减
         for (WmSalesIssueLine line : lineList) {
+            BigDecimal issueQty = line.getQuantityIssue() != null ? line.getQuantityIssue() : BigDecimal.ZERO;
+            if (issueQty.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
             LambdaQueryWrapper<WmMaterialStock> stockLqw = Wrappers.lambdaQuery();
             stockLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
             stockLqw.eq(WmMaterialStock::getWarehouseId, salesIssue.getWarehouseId());
-            stockLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
             stockLqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
+            stockLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
+            stockLqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
+            stockLqw.orderByAsc(WmMaterialStock::getExpireDate);
+            stockLqw.orderByAsc(WmMaterialStock::getRecptDate);
+            stockLqw.orderByAsc(WmMaterialStock::getStockId);
 
-            WmMaterialStock stock = wmMaterialStockMapper.selectOne(stockLqw);
-            if (stock == null) {
+            List<WmMaterialStock> stockList = wmMaterialStockMapper.selectList(stockLqw);
+            if (stockList == null || stockList.isEmpty()) {
                 throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不存在");
             }
 
-            BigDecimal currentQty = stock.getStockQuantity();
-            BigDecimal issueQty = line.getQuantityIssue();
-
-            if (currentQty == null || currentQty.compareTo(issueQty) < 0) {
+            BigDecimal remaining = issueQty;
+            BigDecimal totalAvailable = BigDecimal.ZERO;
+            for (WmMaterialStock stock : stockList) {
+                totalAvailable = totalAvailable.add(stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO);
+            }
+            if (totalAvailable.compareTo(issueQty) < 0) {
                 throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足，当前库存："
-                    + (currentQty != null ? currentQty : BigDecimal.ZERO) + "，出库数量：" + issueQty);
+                    + totalAvailable + "，出库数量：" + issueQty);
             }
 
-            stock.setStockQuantity(currentQty.subtract(issueQty));
-            wmMaterialStockMapper.updateById(stock);
+            for (WmMaterialStock stock : stockList) {
+                if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                    break;
+                }
+                BigDecimal currentQty = stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO;
+                if (currentQty.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                BigDecimal consumeQty = currentQty.min(remaining);
+                stock.setStockQuantity(currentQty.subtract(consumeQty));
+                wmMaterialStockMapper.updateById(stock);
+                remaining = remaining.subtract(consumeQty);
+            }
         }
 
         salesIssue.setStatus("COMPLETED");

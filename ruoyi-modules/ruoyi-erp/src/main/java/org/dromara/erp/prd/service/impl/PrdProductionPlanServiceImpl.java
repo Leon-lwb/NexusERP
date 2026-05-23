@@ -257,6 +257,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 plan.getBomId(),
                 plan.getTotalQuantity(),
                 plan,
+                null,
                 null
         );
 
@@ -273,7 +274,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
      */
     private List<PrdMaterialRequirement> processBomNode(Long materialId, Long specifiedBomId,
                                                          BigDecimal parentQuantity, PrdProductionPlan plan,
-                                                         Long parentRequirementId) {
+                                                         Long parentRequirementId,
+                                                         Date parentRequiredDate) {
         List<PrdMaterialRequirement> result = new ArrayList<>();
 
         // 获取当前节点的BOM（顶层使用指定bomId，子节点优先查当前有效BOM）
@@ -364,7 +366,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             for (MaterialRequirementCalcDTO calcDto : mergedLeaves) {
                 PrdMaterialRequirementDetail detailRecord = createMaterialRequirementDetail(
                         mainRequirement.getRequirementId(),
-                        calcDto
+                        calcDto,
+                        null
                 );
                 detailList.add(detailRecord);
             }
@@ -385,7 +388,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                     childNode.getBomId(),
                     childNode.getQuantity(),
                     plan,
-                    mainRequirement != null ? mainRequirement.getRequirementId() : null
+                    mainRequirement != null ? mainRequirement.getRequirementId() : null,
+                    parentRequiredDate
             ));
         }
 
@@ -618,7 +622,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
      * 创建物料需求明细项（含净需求计算和提前期偏移）
      */
     private PrdMaterialRequirementDetail createMaterialRequirementDetail(Long requirementId,
-                                                                          MaterialRequirementCalcDTO calcDto) {
+                                                                          MaterialRequirementCalcDTO calcDto,
+                                                                          Date parentRequiredDate) {
         PrdMaterialRequirementDetail detail = new PrdMaterialRequirementDetail();
 
         detail.setRequirementId(requirementId);
@@ -652,10 +657,18 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         prdMaterialRequirementService.calculateNetRequirements(detail);
 
         // 提前期偏移: 需求日期 = 当前日期 + 提前期(小时)
-        Date requiredDate = calcDto.getLeadTime() != null && calcDto.getLeadTime() > 0
-                ? Date.from(LocalDateTime.now().plusHours(calcDto.getLeadTime())
-                    .atZone(ZoneId.systemDefault()).toInstant())
-                : new Date();
+        Date requiredDate;
+        if (parentRequiredDate != null && calcDto.getLeadTime() != null && calcDto.getLeadTime() > 0) {
+            requiredDate = Date.from(parentRequiredDate.toInstant()
+                .minusSeconds(calcDto.getLeadTime() * 3600L));
+        } else if (parentRequiredDate != null) {
+            requiredDate = parentRequiredDate;
+        } else if (calcDto.getLeadTime() != null && calcDto.getLeadTime() > 0) {
+            requiredDate = Date.from(LocalDateTime.now().plusHours(calcDto.getLeadTime())
+                .atZone(ZoneId.systemDefault()).toInstant());
+        } else {
+            requiredDate = new Date();
+        }
         detail.setRequiredDate(requiredDate);
 
         detail.setStatus(1L);
