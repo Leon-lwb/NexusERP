@@ -31,12 +31,25 @@ public class BdVendorController extends BaseController {
 
     private final IBdVendorService bdVendorService;
 
+    /**
+     * 查询供应商列表
+     *
+     * @param bo 查询参数
+     * @param pageQuery 分页参数
+     * @return 供应商分页列表
+     */
     @SaCheckPermission("bd:vendor:list")
     @GetMapping("/list")
     public TableDataInfo<BdVendorVo> list(BdVendorBo bo, PageQuery pageQuery) {
         return bdVendorService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 导出供应商数据
+     *
+     * @param bo 查询参数
+     * @param response HTTP响应对象
+     */
     @SaCheckPermission("bd:vendor:export")
     @Log(title = "供应商", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
@@ -45,12 +58,24 @@ public class BdVendorController extends BaseController {
         ExcelUtil.exportExcel(list, "供应商数据", BdVendorVo.class, response);
     }
 
+    /**
+     * 获取供应商详细信息
+     *
+     * @param id 供应商ID
+     * @return 供应商详细信息
+     */
     @SaCheckPermission("bd:vendor:query")
     @GetMapping("/{id}")
     public R<BdVendorVo> getInfo(@PathVariable Long id) {
         return R.ok(bdVendorService.selectById(id));
     }
 
+    /**
+     * 新增供应商
+     *
+     * @param bo 供应商信息
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:vendor:add")
     @Log(title = "供应商", businessType = BusinessType.INSERT)
     @PostMapping
@@ -58,6 +83,12 @@ public class BdVendorController extends BaseController {
         return toAjax(bdVendorService.insertByBo(bo));
     }
 
+    /**
+     * 修改供应商
+     *
+     * @param bo 供应商信息
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:vendor:edit")
     @Log(title = "供应商", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -65,6 +96,12 @@ public class BdVendorController extends BaseController {
         return toAjax(bdVendorService.updateByBo(bo));
     }
 
+    /**
+     * 删除供应商
+     *
+     * @param ids 供应商ID数组
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:vendor:remove")
     @Log(title = "供应商", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")

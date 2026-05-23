@@ -142,6 +142,7 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         order.setDiscountAmount(quotation.getDiscountAmount());
         order.setDiscountRate(quotation.getDiscountRate());
         order.setPaymentTerms(quotation.getPaymentTerms());
+        order.setSoNo(autoCodeUtil.genSerialCode("SO_ORDER_CODE", null));
         order.setOrderStatus(ISoSalesOrderHeaderService.STATUS_DRAFT);
         order.setRemark("从报价单【" + quotation.getQuotationNo() + "】转换");
         order.setAttr1(quotation.getQuotationNo());

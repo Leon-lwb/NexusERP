@@ -31,12 +31,25 @@ public class BdWorkshopController extends BaseController {
 
     private final IBdWorkshopService bdWorkshopService;
 
+    /**
+     * 查询车间列表
+     *
+     * @param bo 查询参数
+     * @param pageQuery 分页参数
+     * @return 车间分页列表
+     */
     @SaCheckPermission("bd:workshop:list")
     @GetMapping("/list")
     public TableDataInfo<BdWorkshopVo> list(BdWorkshopBo bo, PageQuery pageQuery) {
         return bdWorkshopService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 导出车间数据
+     *
+     * @param bo 查询参数
+     * @param response HTTP响应对象
+     */
     @SaCheckPermission("bd:workshop:export")
     @Log(title = "车间", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
@@ -45,12 +58,24 @@ public class BdWorkshopController extends BaseController {
         ExcelUtil.exportExcel(list, "车间数据", BdWorkshopVo.class, response);
     }
 
+    /**
+     * 获取车间详细信息
+     *
+     * @param id 车间ID
+     * @return 车间详细信息
+     */
     @SaCheckPermission("bd:workshop:query")
     @GetMapping("/{id}")
     public R<BdWorkshopVo> getInfo(@PathVariable Long id) {
         return R.ok(bdWorkshopService.selectById(id));
     }
 
+    /**
+     * 新增车间
+     *
+     * @param bo 车间信息
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:workshop:add")
     @Log(title = "车间", businessType = BusinessType.INSERT)
     @PostMapping
@@ -58,6 +83,12 @@ public class BdWorkshopController extends BaseController {
         return toAjax(bdWorkshopService.insertByBo(bo));
     }
 
+    /**
+     * 修改车间
+     *
+     * @param bo 车间信息
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:workshop:edit")
     @Log(title = "车间", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -65,6 +96,12 @@ public class BdWorkshopController extends BaseController {
         return toAjax(bdWorkshopService.updateByBo(bo));
     }
 
+    /**
+     * 删除车间
+     *
+     * @param ids 车间ID数组
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:workshop:remove")
     @Log(title = "车间", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")

@@ -221,13 +221,12 @@
   </div>
 </template>
 
-<script setup name="Part">
-import { ref, reactive, onMounted, toRefs } from 'vue'
-import { getCurrentInstance } from 'vue'
+<script setup name="Part" lang="ts">
+import { ref, reactive, onMounted, toRefs, ComponentInternalInstance, getCurrentInstance } from 'vue'
 import { useRoute } from 'vue-router'
 import { listPart, getPart, delPart, addPart, updatePart } from "@/api/system/autocode/part"
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as ComponentInternalInstance
 const route = useRoute()
 const { sys_autocode_parttype, sys_autocode_cyclemethod } = toRefs<any>(proxy.useDict("sys_autocode_parttype", "sys_autocode_cyclemethod"))
 
@@ -244,8 +243,26 @@ const recentRuleId = ref(undefined)
 const queryFormRef = ref()
 const formRef = ref()
 
+interface PartForm {
+  partId?: number
+  ruleId?: number
+  partCode?: string
+  partName?: string
+  partIndex?: number
+  partLength?: number
+  partType?: string
+  dateFormat?: string
+  inputCharacter?: string
+  fixCharacter?: string
+  seriaStartNo?: number
+  seriaStep?: number
+  cycleFlag?: string
+  cycleMethod?: string
+  remark?: string
+}
+
 const data = reactive({
-  form: {},
+  form: {} as PartForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,

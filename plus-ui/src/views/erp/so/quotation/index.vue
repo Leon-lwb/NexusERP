@@ -32,6 +32,12 @@
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['so:quotation:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="success" plain icon="Check" :disabled="single" @click="handleConfirm" v-hasPermi="['so:quotation:edit']">确认</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="Right" :disabled="single" @click="handleConvert" v-hasPermi="['so:quotation:edit']">转换销售订单</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:quotation:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -59,6 +65,8 @@
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:quotation:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:quotation:remove']">删除</el-button>
+          <el-button link type="success" icon="Check" @click="handleConfirm(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['so:quotation:edit']">确认</el-button>
+          <el-button link type="warning" icon="Right" @click="handleConvert(scope.row)" v-if="scope.row.status === 'CONFIRMED'" v-hasPermi="['so:quotation:edit']">转换</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -68,7 +76,7 @@
 </template>
 
 <script setup lang="ts" name="Quotation">
-import { listQuotation, delQuotation } from "@/api/erp/so/quotation"
+import { listQuotation, delQuotation, confirmQuotation, convertQuotationToOrder } from "@/api/erp/so/quotation"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
@@ -158,6 +166,28 @@ function handleDelete(row: any) {
 
 function handleExport() {
   proxy.download('/erp/so/quotation/export', { ...queryParams.value }, `quotation_${new Date().getTime()}.xlsx`)
+}
+
+function handleConfirm(row: any) {
+  const qId = row.quotationId || ids.value[0]
+  const qNo = row.quotationNo || qId
+  proxy.$modal.confirm('是否确认报价单"' + qNo + '"？').then(() => {
+    confirmQuotation(qId).then(() => {
+      proxy.$modal.msgSuccess("确认成功")
+      getList()
+    })
+  }).catch(() => {})
+}
+
+function handleConvert(row: any) {
+  const qId = row.quotationId || ids.value[0]
+  const qNo = row.quotationNo || qId
+  proxy.$modal.confirm('是否将报价单"' + qNo + '"转换为销售订单？').then(() => {
+    convertQuotationToOrder(qId).then(() => {
+      proxy.$modal.msgSuccess("转换成功，已生成销售订单")
+      getList()
+    })
+  }).catch(() => {})
 }
 
 getList()

@@ -30,12 +30,25 @@ public class BdBomController extends BaseController {
 
     private final IBdBomService bdBomService;
 
+    /**
+     * 查询BOM列表
+     *
+     * @param bo 查询参数
+     * @param pageQuery 分页参数
+     * @return BOM分页列表
+     */
     @SaCheckPermission("bd:bom:list")
     @GetMapping("/list")
     public TableDataInfo<BdBomVo> list(BdBomBo bo, PageQuery pageQuery) {
         return bdBomService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 导出BOM数据
+     *
+     * @param bo 查询参数
+     * @param response HTTP响应对象
+     */
     @SaCheckPermission("bd:bom:export")
     @Log(title = "BOM", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
@@ -44,12 +57,24 @@ public class BdBomController extends BaseController {
         ExcelUtil.exportExcel(list, "BOM数据", BdBomVo.class, response);
     }
 
+    /**
+     * 获取BOM详细信息
+     *
+     * @param id BOM ID
+     * @return BOM详细信息
+     */
     @SaCheckPermission("bd:bom:query")
     @GetMapping("/{id}")
     public R<BdBomVo> getInfo(@PathVariable Long id) {
         return R.ok(bdBomService.selectById(id));
     }
 
+    /**
+     * 新增BOM
+     *
+     * @param bo BOM信息
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:bom:add")
     @Log(title = "BOM", businessType = BusinessType.INSERT)
     @PostMapping
@@ -57,6 +82,12 @@ public class BdBomController extends BaseController {
         return toAjax(bdBomService.insertByBo(bo));
     }
 
+    /**
+     * 修改BOM
+     *
+     * @param bo BOM信息
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:bom:edit")
     @Log(title = "BOM", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -64,6 +95,12 @@ public class BdBomController extends BaseController {
         return toAjax(bdBomService.updateByBo(bo));
     }
 
+    /**
+     * 删除BOM
+     *
+     * @param ids BOM ID数组
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:bom:remove")
     @Log(title = "BOM", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
@@ -71,6 +108,12 @@ public class BdBomController extends BaseController {
         return toAjax(bdBomService.deleteByIds(ids));
     }
 
+    /**
+     * 激活BOM版本
+     *
+     * @param bomId BOM ID
+     * @return 操作结果
+     */
     @SaCheckPermission("bd:bom:edit")
     @Log(title = "BOM", businessType = BusinessType.UPDATE)
     @PutMapping("/activateVersion/{bomId}")
@@ -79,6 +122,12 @@ public class BdBomController extends BaseController {
         return R.ok();
     }
 
+    /**
+     * 校验BOM完整性
+     *
+     * @param bomId BOM ID
+     * @return 校验结果
+     */
     @SaCheckPermission("bd:bom:query")
     @GetMapping("/verify/{bomId}")
     public R<String> verify(@PathVariable Long bomId) {

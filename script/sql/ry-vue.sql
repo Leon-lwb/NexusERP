@@ -9543,6 +9543,7 @@ INSERT INTO `sys_auto_code_rule` VALUES (273, '000000', 'WM_MISC_ISSUE_CODE', '�
 INSERT INTO `sys_auto_code_rule` VALUES (274, '000000', 'WM_MISC_RECPT_CODE', '杂项入库单编号', NULL, 16, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (275, '000000', 'SO_QUOTATION_CODE', '报价单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (276, '000000', 'SO_RETURN_CODE', '退货单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (277, '000000', 'SO_ORDER_CODE', '销售订单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-05-22 00:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sys_client

@@ -104,6 +104,12 @@ public class SoSalesOrderHeaderController extends BaseController {
         return R.ok(lineList);
     }
 
+    /**
+     * 确认销售订单
+     *
+     * @param soId 销售订单ID
+     * @return 操作结果
+     */
     @SaCheckPermission("so:orderheader:edit")
     @Log(title = "销售订单", businessType = BusinessType.UPDATE)
     @PutMapping("/confirm/{soId}")
@@ -112,6 +118,12 @@ public class SoSalesOrderHeaderController extends BaseController {
         return R.ok();
     }
 
+    /**
+     * 履行销售订单
+     *
+     * @param soId 销售订单ID
+     * @return 操作结果
+     */
     @SaCheckPermission("so:orderheader:edit")
     @Log(title = "销售订单", businessType = BusinessType.UPDATE)
     @PutMapping("/fulfill/{soId}")
@@ -120,6 +132,12 @@ public class SoSalesOrderHeaderController extends BaseController {
         return R.ok();
     }
 
+    /**
+     * 关闭销售订单
+     *
+     * @param soId 销售订单ID
+     * @return 操作结果
+     */
     @SaCheckPermission("so:orderheader:edit")
     @Log(title = "销售订单", businessType = BusinessType.UPDATE)
     @PutMapping("/close/{soId}")
@@ -128,6 +146,13 @@ public class SoSalesOrderHeaderController extends BaseController {
         return R.ok();
     }
 
+    /**
+     * 取消销售订单
+     *
+     * @param soId 销售订单ID
+     * @param reason 取消原因
+     * @return 操作结果
+     */
     @SaCheckPermission("so:orderheader:edit")
     @Log(title = "销售订单", businessType = BusinessType.UPDATE)
     @PutMapping("/cancel/{soId}")

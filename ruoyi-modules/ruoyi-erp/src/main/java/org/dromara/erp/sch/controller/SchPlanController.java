@@ -32,12 +32,25 @@ public class SchPlanController extends BaseController {
 
     private final ISchPlanService schPlanService;
 
+    /**
+     * 查询排班计划列表
+     *
+     * @param bo 查询参数
+     * @param pageQuery 分页参数
+     * @return 排班计划分页列表
+     */
     @SaCheckPermission("sch:plan:list")
     @GetMapping("/list")
     public TableDataInfo<SchPlanVo> list(SchPlanBo bo, PageQuery pageQuery) {
         return schPlanService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 导出排班计划数据
+     *
+     * @param bo 查询参数
+     * @param response HTTP响应对象
+     */
     @SaCheckPermission("sch:plan:export")
     @Log(title = "排班计划", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
@@ -46,12 +59,24 @@ public class SchPlanController extends BaseController {
         ExcelUtil.exportExcel(list, "排班计划数据", SchPlanVo.class, response);
     }
 
+    /**
+     * 获取排班计划详细信息
+     *
+     * @param planId 排班计划ID
+     * @return 排班计划详细信息
+     */
     @SaCheckPermission("sch:plan:query")
     @GetMapping("/{planId}")
     public R<SchPlanVo> getInfo(@PathVariable Long planId) {
         return R.ok(schPlanService.selectById(planId));
     }
 
+    /**
+     * 新增排班计划
+     *
+     * @param bo 排班计划信息
+     * @return 操作结果
+     */
     @SaCheckPermission("sch:plan:add")
     @Log(title = "排班计划", businessType = BusinessType.INSERT)
     @PostMapping
@@ -59,6 +84,12 @@ public class SchPlanController extends BaseController {
         return toAjax(schPlanService.insertByBo(bo));
     }
 
+    /**
+     * 修改排班计划
+     *
+     * @param bo 排班计划信息
+     * @return 操作结果
+     */
     @SaCheckPermission("sch:plan:edit")
     @Log(title = "排班计划", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -66,6 +97,12 @@ public class SchPlanController extends BaseController {
         return toAjax(schPlanService.updateByBo(bo));
     }
 
+    /**
+     * 删除排班计划
+     *
+     * @param planIds 排班计划ID数组
+     * @return 操作结果
+     */
     @SaCheckPermission("sch:plan:remove")
     @Log(title = "排班计划", businessType = BusinessType.DELETE)
     @DeleteMapping("/{planIds}")

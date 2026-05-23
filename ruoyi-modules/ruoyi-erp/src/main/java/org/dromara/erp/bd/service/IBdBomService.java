@@ -13,11 +13,53 @@ import java.util.List;
  * @author wanghuan
  */
 public interface IBdBomService {
+    /**
+     * 查询BOM分页列表
+     *
+     * @param bo 查询参数
+     * @param pageQuery 分页参数
+     * @return BOM分页列表
+     */
     TableDataInfo<BdBomVo> selectPageList(BdBomBo bo, PageQuery pageQuery);
+
+    /**
+     * 查询BOM列表
+     *
+     * @param bo 查询参数
+     * @return BOM列表
+     */
     List<BdBomVo> selectList(BdBomBo bo);
+
+    /**
+     * 根据ID查询BOM
+     *
+     * @param id BOM ID
+     * @return BOM信息
+     */
     BdBomVo selectById(Long id);
+
+    /**
+     * 新增BOM
+     *
+     * @param bo BOM信息
+     * @return 结果
+     */
     int insertByBo(BdBomBo bo);
+
+    /**
+     * 修改BOM
+     *
+     * @param bo BOM信息
+     * @return 结果
+     */
     int updateByBo(BdBomBo bo);
+
+    /**
+     * 批量删除BOM
+     *
+     * @param ids BOM ID数组
+     * @return 结果
+     */
     int deleteByIds(Long[] ids);
 
     /**
