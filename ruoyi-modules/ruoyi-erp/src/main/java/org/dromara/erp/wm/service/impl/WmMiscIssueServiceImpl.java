@@ -117,6 +117,7 @@ public class WmMiscIssueServiceImpl implements IWmMiscIssueService {
     private void insertOrUpdateLines(Long issueId, List<WmMiscIssueLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (WmMiscIssueLine line : lineList) {
+                line.setLineId(null);
                 line.setIssueId(issueId);
                 lineMapper.insert(line);
             }

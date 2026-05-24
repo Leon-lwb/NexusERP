@@ -181,6 +181,7 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     private void insertOrUpdateLines(Long quotationId, List<SoQuotationLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (SoQuotationLine line : lineList) {
+                line.setLineId(null);
                 line.setQuotationId(quotationId);
                 lineMapper.insert(line);
             }

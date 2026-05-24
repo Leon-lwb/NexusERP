@@ -538,7 +538,8 @@ function selectMaterial(row: any) {
  */
 function submitForm() {
   form.value.puPurchaseRequisitionLineList = lineList.value
-  ;(form.value.requisitionId ? updatePurchaseRequisition(form.value) : addPurchaseRequisition(form.value)).then(() => {
+  const isEdit = route.query.action === 'edit' || form.value.requisitionId != null
+  ;(isEdit ? updatePurchaseRequisition(form.value) : addPurchaseRequisition(form.value)).then(() => {
     proxy.$modal.msgSuccess('保存成功')
     router.push('/erp/pu/requisition')
   })

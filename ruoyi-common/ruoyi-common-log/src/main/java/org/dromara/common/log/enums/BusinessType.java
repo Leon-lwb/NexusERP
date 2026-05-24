@@ -55,4 +55,9 @@ public enum BusinessType {
      * 清空数据
      */
     CLEAN,
+
+    /**
+     * 提交
+     */
+    SUBMIT,
 }

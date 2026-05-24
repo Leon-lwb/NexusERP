@@ -305,6 +305,7 @@ public class SoReturnServiceImpl implements ISoReturnService {
     private void insertOrUpdateLines(Long returnId, List<SoReturnLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (SoReturnLine line : lineList) {
+                line.setLineId(null);
                 line.setReturnId(returnId);
                 lineMapper.insert(line);
             }

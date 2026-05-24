@@ -406,6 +406,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
             return;
         }
         for (PuPurchaseOrderLine line : lines) {
+            line.setLineId(null);
             line.setOrderId(orderId);
             lineMapper.insert(line);
         }

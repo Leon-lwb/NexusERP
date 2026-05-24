@@ -296,6 +296,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
             return;
         }
         for (PuPurchaseReturnLine line : lineList) {
+            line.setLineId(null);
             line.setReturnId(returnId);
             lineMapper.insert(line);
         }

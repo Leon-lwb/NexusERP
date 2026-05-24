@@ -276,6 +276,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (lineBoList != null && !lineBoList.isEmpty()) {
             List<WmSalesIssueLine> lineList = MapstructUtils.convert(lineBoList, WmSalesIssueLine.class);
             for (WmSalesIssueLine line : lineList) {
+                line.setLineId(null);
                 line.setIssueId(issueId);
             }
             lineMapper.insertBatch(lineList);

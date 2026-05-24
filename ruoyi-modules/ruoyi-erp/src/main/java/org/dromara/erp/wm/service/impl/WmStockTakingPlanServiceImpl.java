@@ -71,6 +71,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         int rows = baseMapper.insert(entity);
         if (bo.getWmStockTakingLineList() != null) {
             for (WmStockTakingLine line : bo.getWmStockTakingLineList()) {
+                line.setLineId(null);
                 line.setPlanId(entity.getPlanId());
                 lineMapper.insert(line);
             }
@@ -85,6 +86,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         deleteLinesByPlanId(entity.getPlanId());
         if (bo.getWmStockTakingLineList() != null) {
             for (WmStockTakingLine line : bo.getWmStockTakingLineList()) {
+                line.setLineId(null);
                 line.setPlanId(entity.getPlanId());
                 lineMapper.insert(line);
             }

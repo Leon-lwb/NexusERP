@@ -388,6 +388,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (lineBoList != null && !lineBoList.isEmpty()) {
             List<SoSalesOrderLine> lineList = MapstructUtils.convert(lineBoList, SoSalesOrderLine.class);
             for (SoSalesOrderLine line : lineList) {
+                line.setLineId(null);
                 line.setSoId(soId);
             }
             soSalesOrderLineMapper.insertBatch(lineList);

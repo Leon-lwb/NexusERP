@@ -117,6 +117,7 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
     private void insertOrUpdateLines(Long recptId, List<WmMiscRecptLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (WmMiscRecptLine line : lineList) {
+                line.setLineId(null);
                 line.setRecptId(recptId);
                 lineMapper.insert(line);
             }

@@ -96,6 +96,7 @@ public class WmArrivalNoticeServiceImpl implements IWmArrivalNoticeService {
         if (lineBoList != null && !lineBoList.isEmpty()) {
             List<WmArrivalNoticeLine> lineList = MapstructUtils.convert(lineBoList, WmArrivalNoticeLine.class);
             for (WmArrivalNoticeLine line : lineList) {
+                line.setLineId(null);
                 line.setNoticeId(noticeId);
             }
             noticeLineMapper.insertBatch(lineList);

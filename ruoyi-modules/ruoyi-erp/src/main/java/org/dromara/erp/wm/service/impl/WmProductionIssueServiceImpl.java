@@ -114,6 +114,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     private void insertOrUpdateLines(Long issueId, List<WmProductionIssueLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (WmProductionIssueLine line : lineList) {
+                line.setLineId(null);
                 line.setIssueId(issueId);
                 lineMapper.insert(line);
             }

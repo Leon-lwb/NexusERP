@@ -109,10 +109,14 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
      * 新增采购申请
      * <p>
      * 自动生成申请单号（如为空）、默认设为草稿状态、默认申请日期为当天，同时保存明细行。
+     * 如果 BO 中已存在 ID，则自动转为更新操作，防止前端误调用导致重复插入。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseRequisitionBo bo) {
+        if (bo.getRequisitionId() != null) {
+            return updateByBo(bo);
+        }
         PuPurchaseRequisition entity = MapstructUtils.convert(bo, PuPurchaseRequisition.class);
         if (StringUtils.isBlank(entity.getRequisitionNo())) {
             entity.setRequisitionNo(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null));
@@ -378,6 +382,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
             return;
         }
         for (PuPurchaseRequisitionLine line : lineList) {
+            line.setLineId(null);
             line.setRequisitionId(requisitionId);
             lineMapper.insert(line);
         }
