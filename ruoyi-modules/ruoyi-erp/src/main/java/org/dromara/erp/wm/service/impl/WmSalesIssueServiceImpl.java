@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.wm.domain.WmMaterialStock;
@@ -18,12 +20,22 @@ import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
 import org.dromara.erp.wm.mapper.WmSalesIssueLineMapper;
 import org.dromara.erp.wm.mapper.WmSalesIssueMapper;
 import org.dromara.erp.wm.service.IWmSalesIssueService;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.service.IWfProcessService;
+import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 销售出库Service业务层处理
@@ -33,12 +45,16 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @DS("erp")
-@Service
+@Service("wmSalesIssueService")
 public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 
     private final WmSalesIssueMapper baseMapper;
     private final WmSalesIssueLineMapper lineMapper;
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    private final IWfProcessService processService;
+    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final RuntimeService runtimeService;
+    private final HistoryService historyService;
 
     @Override
     public TableDataInfo<WmSalesIssueVo> selectPageList(WmSalesIssueBo bo, PageQuery pageQuery) {
@@ -91,10 +107,10 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (salesIssue == null) {
             throw new RuntimeException("销售出库单不存在");
         }
-        if (!"PREPARE".equals(salesIssue.getStatus())) {
-            throw new RuntimeException("只有准备中的出库单才能确认");
+        if (!STATUS_PREPARE.equals(salesIssue.getStatus()) && !STATUS_APPROVED.equals(salesIssue.getStatus())) {
+            throw new RuntimeException("只有准备中或已批准的出库单才能确认");
         }
-        salesIssue.setStatus("CONFIRMED");
+        salesIssue.setStatus(STATUS_CONFIRMED);
         return baseMapper.updateById(salesIssue);
     }
 
@@ -105,7 +121,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (salesIssue == null) {
             throw new RuntimeException("销售出库单不存在");
         }
-        if (!"CONFIRMED".equals(salesIssue.getStatus())) {
+        if (!STATUS_CONFIRMED.equals(salesIssue.getStatus())) {
             throw new RuntimeException("只有已确认的出库单才能完成");
         }
 
@@ -164,8 +180,96 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             }
         }
 
-        salesIssue.setStatus("COMPLETED");
+        salesIssue.setStatus(STATUS_COMPLETED);
         return baseMapper.updateById(salesIssue);
+    }
+
+    // ==================== Flowable 工作流集成 ====================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submit(String issueIdStr, String selectFlowId) {
+        Long issueId = Long.parseLong(issueIdStr);
+        WmSalesIssue entity = baseMapper.selectById(issueId);
+        if (entity == null) {
+            throw new RuntimeException("销售出库单不存在");
+        }
+        if (!STATUS_PREPARE.equals(entity.getStatus())) {
+            throw new RuntimeException("只有准备中的出库单才能提交审批");
+        }
+        if (StringUtils.isBlank(selectFlowId)) {
+            if (entity.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(entity.getSelectFlowId());
+            } else {
+                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("dataId", issueIdStr);
+        variables.put("requireTaskOnStart", true);
+        variables.put("issueId", entity.getIssueId());
+        variables.put("issueCode", entity.getIssueCode());
+        variables.put("clientName", entity.getClientName());
+        R<Void> result = processService.startProcessByDataId(issueIdStr, selectFlowId, "wmSalesIssueService", variables);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+        throw new RuntimeException(result.getMsg());
+    }
+
+    @Override
+    public String getProcInsId(String issueIdStr) {
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(issueIdStr);
+            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
+                return business.getProcessInstanceId();
+            }
+        } catch (Exception ignored) {
+        }
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+            .processInstanceBusinessKey(issueIdStr).singleResult();
+        if (runtime != null) {
+            return runtime.getId();
+        }
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceBusinessKey(issueIdStr).singleResult();
+        return hist != null ? hist.getId() : null;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void afterFlowHandle(WfMyBusiness business) {
+        Long issueId = Long.parseLong(business.getDataId());
+        WmSalesIssue entity = baseMapper.selectById(issueId);
+        if (entity == null) return;
+        String actStatus = business.getActStatus();
+        if (ActStatus.doing.equals(actStatus)) {
+            entity.setStatus(STATUS_APPROVING);
+        } else if (ActStatus.pass.equals(actStatus)) {
+            entity.setStatus(STATUS_APPROVED);
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            entity.setStatus(STATUS_REJECTED);
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            entity.setStatus(STATUS_PREPARE);
+        }
+        baseMapper.updateById(entity);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Object getBusinessDataById(String dataId) {
+        return selectById(Long.parseLong(dataId));
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
     }
 
     private void insertLines(Long issueId, List<WmSalesIssueLineBo> lineBoList) {

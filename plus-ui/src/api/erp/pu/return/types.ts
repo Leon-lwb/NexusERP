@@ -23,6 +23,8 @@ export interface PurchaseReturnVO {
   status?: string;
   /** 备注 */
   remark?: string;
+  /** 已选审批流程模板ID */
+  selectFlowId?: number;
   /** 退货单行项列表 */
   puPurchaseReturnLineList?: any[];
 }

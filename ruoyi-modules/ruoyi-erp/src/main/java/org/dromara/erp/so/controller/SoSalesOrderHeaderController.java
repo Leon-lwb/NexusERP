@@ -55,12 +55,33 @@ public class SoSalesOrderHeaderController extends BaseController {
     }
 
     /**
-     * 获取销售订单详细信息
+     * 获取销售订单详细信息（通过ID）
      */
     @SaCheckPermission("so:orderheader:query")
     @GetMapping("/{id}")
     public R<SoSalesOrderHeaderVo> getInfo(@PathVariable Long id) {
         return R.ok(soSalesOrderHeaderService.selectById(id));
+    }
+
+    /**
+     * 提交审批
+     */
+    @SaCheckPermission("so:orderheader:edit")
+    @Log(title = "销售订单", businessType = BusinessType.UPDATE)
+    @PostMapping("/{soId}/submit")
+    public R<Void> submit(@PathVariable Long soId, @RequestParam("selectFlowId") String selectFlowId) {
+        soSalesOrderHeaderService.submit(String.valueOf(soId), selectFlowId);
+        return R.ok();
+    }
+
+    /**
+     * 获取流程实例ID
+     */
+    @SaCheckPermission("so:orderheader:query")
+    @GetMapping("/{soId}/proc")
+    public R<String> getProcInsId(@PathVariable Long soId) {
+        String procInsId = soSalesOrderHeaderService.getProcInsId(String.valueOf(soId));
+        return R.ok(procInsId);
     }
 
     /**

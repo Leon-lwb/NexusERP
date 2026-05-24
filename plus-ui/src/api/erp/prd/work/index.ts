@@ -51,3 +51,9 @@ export const completeWork = (woId: number) =>
 
 export const closeWork = (woId: number) =>
   request({ url: '/erp/prd/work/close/' + woId, method: 'put' });
+
+export const submitWorkFlow = (woId: string | number, selectFlowId?: string) =>
+  request({ url: '/erp/prd/work/' + woId + '/submit', method: 'post', params: { selectFlowId } });
+
+export const getWorkProcId = (woId: string | number) =>
+  request({ url: '/erp/prd/work/' + woId + '/proc', method: 'get' });

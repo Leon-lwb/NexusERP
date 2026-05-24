@@ -6,12 +6,14 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.returnId">提交审批</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'CONFIRMED'">查看流程</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
       </template>
 
-      <el-form ref="returnRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-form ref="returnRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="退货单编号" prop="returnNo">
@@ -73,6 +75,28 @@
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="审批流程" prop="selectFlowId">
+              <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="状态" prop="status">
+              <el-tag :type="getStatusType(form.status)">{{ getStatusLabel(form.status) }}</el-tag>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20" v-if="form.status === 'DRAFT' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
+          <el-col :span="24">
+            <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 soReturnService。" />
           </el-col>
         </el-row>
 
@@ -190,12 +214,13 @@
 </template>
 
 <script setup lang="ts" name="ReturnForm">
-import { getReturn, addReturn, updateReturn } from "@/api/erp/so/return"
+import { getReturn, addReturn, updateReturn, submitReturnFlow, getReturnProcId } from "@/api/erp/so/return"
 import { listMaterial } from "@/api/erp/bd/material"
 import { listClient } from "@/api/erp/bd/client"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
 import { genCode } from "@/api/system/autocode/rule"
+import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -203,11 +228,23 @@ const { so_return_type } = toRefs<any>(proxy.useDict('so_return_type'))
 const route = useRoute()
 const router = useRouter()
 
+/** 流程详情 / HistoricDetail 嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+})
+
 const form = ref<any>({})
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
 const checkedLines = ref<any[]>([])
+const loadingFlow = ref(false)
+const flowOptions = ref([])
+
+const formDisabled = computed(() => isViewMode.value || props.disabled)
 
 const materialSelectOpen = ref(false)
 const materialList = ref([])
@@ -237,8 +274,8 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增退货单"; reset(); genCode('SO_RETURN_CODE').then((code: any) => { form.value.returnNo = code }) }
-  else if (action === 'edit') { title.value = "修改退货单"; if (id) getInfo(id) }
+  if (action === 'add') { title.value = "新增退货单"; reset(); genCode('SO_RETURN_CODE').then((code: any) => { form.value.returnNo = code }); loadFlows() }
+  else if (action === 'edit') { title.value = "修改退货单"; if (id) getInfo(id); loadFlows() }
   else if (action === 'view') { title.value = "查看退货单"; if (id) getInfo(id) }
 })
 
@@ -246,13 +283,61 @@ function getInfo(id: any) {
   getReturn(id).then((response: any) => {
     form.value = response.data
     lineList.value = response.data.soReturnLineList || []
+    tryAutoSelect()
   })
 }
 
 function reset() {
-  form.value = { returnId: null, returnNo: null, soNo: null, clientId: null, clientName: null, returnDate: null, returnReason: null, returnType: null, totalAmount: null, taxAmount: null, refundAmount: null, warehouseId: null, warehouseCode: null, warehouseName: null, status: null, remark: null }
+  form.value = { returnId: null, returnNo: null, soNo: null, clientId: null, clientName: null, returnDate: null, returnReason: null, returnType: null, totalAmount: null, taxAmount: null, refundAmount: null, warehouseId: null, warehouseCode: null, warehouseName: null, status: null, remark: null, selectFlowId: null }
   lineList.value = []
   proxy.resetForm("returnRef")
+}
+
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'soReturnService' }).then((response: any) => {
+    flowOptions.value = response?.data || []
+    tryAutoSelect()
+    loadingFlow.value = false
+  }).catch(() => {
+    loadingFlow.value = false
+  })
+}
+
+function tryAutoSelect() {
+  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).returnId != null) {
+      const merged = JSON.parse(JSON.stringify(val)) as Record<string, any>
+      form.value = merged
+      isViewMode.value = props.disabled
+      title.value = props.disabled ? '销售退货（流程）' : '销售退货'
+      loadFlows()
+    }
+  },
+  { deep: true, immediate: true }
+)
+
+const statusMap: Record<string, { label: string; type: string }> = {
+  DRAFT:     { label: '草稿',   type: 'info' },
+  APPROVING: { label: '审批中', type: 'warning' },
+  CONFIRMED: { label: '已确认', type: 'success' },
+  RECEIVED:  { label: '已收货', type: 'primary' },
+  CLOSED:    { label: '已关闭', type: 'danger' },
+}
+
+function getStatusType(status: string): string {
+  return statusMap[status]?.type || 'info'
+}
+
+function getStatusLabel(status: string): string {
+  return statusMap[status]?.label || status || '未知'
 }
 
 function submitForm() {
@@ -265,6 +350,41 @@ function submitForm() {
         addReturn(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); router.push('/erp/so/return') })
       }
     }
+  })
+}
+
+function handleSubmitFlow() {
+  if (!form.value.selectFlowId) {
+    proxy.$modal.msgWarning("请先选择审批流程")
+    return
+  }
+  if (form.value.returnId != null) {
+    updateReturn(form.value).then(() => {
+      submitReturnFlow(String(form.value.returnId), String(form.value.selectFlowId)).then((res: any) => {
+        if (res.code === 200) {
+          proxy.$modal.msgSuccess("提交审批成功")
+          router.push('/erp/so/return')
+        } else {
+          proxy.$modal.msgError(res.msg || '提交审批失败')
+        }
+      }).catch((error: any) => {
+        proxy.$modal.msgError('提交审批失败：' + error)
+      })
+    })
+  } else {
+    proxy.$modal.msgWarning("请先保存单据后再提交审批")
+  }
+}
+
+function onViewFlow() {
+  getReturnProcId(String(form.value.returnId)).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
   })
 }
 

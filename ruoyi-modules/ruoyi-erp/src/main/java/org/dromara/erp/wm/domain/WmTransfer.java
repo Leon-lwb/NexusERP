@@ -47,7 +47,7 @@ public class WmTransfer extends TenantEntity {
     private String operatorName;
     private Date transferDate;
     private Date executeDate;
-    private String selectFlowId;
+    private Long selectFlowId;
     private String remark;
 
     @TableLogic

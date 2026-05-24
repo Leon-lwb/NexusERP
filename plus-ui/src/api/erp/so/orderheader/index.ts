@@ -65,3 +65,20 @@ export const closeOrder = (soId: number) =>
 
 export const cancelOrder = (soId: number, reason: string) =>
   request({ url: '/erp/so/orderheader/cancel/' + soId, method: 'put', params: { reason } });
+
+// ==================== Flowable 审批 ====================
+
+export const submitOrderFlow = (id: string | number, selectFlowId?: string) => {
+  return request({
+    url: '/erp/so/orderheader/' + id + '/submit',
+    method: 'post',
+    params: { selectFlowId }
+  });
+};
+
+export const getOrderProcId = (id: string | number) => {
+  return request({
+    url: '/erp/so/orderheader/' + id + '/proc',
+    method: 'get'
+  });
+};

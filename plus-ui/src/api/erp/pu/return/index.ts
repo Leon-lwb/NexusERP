@@ -94,8 +94,20 @@ export const confirmPurchaseReturn = (id: number) =>
  * @param id 采购退货单ID
  * @returns 请求结果
  */
-export const executePurchaseReturn = (id: number) => 
-  request({ 
-    url: BASE + '/execute/' + id, 
-    method: 'put' 
+export const executePurchaseReturn = (id: number) =>
+  request({
+    url: BASE + '/execute/' + id,
+    method: 'put'
   });
+
+/**
+ * 提交审批
+ */
+export const submitPurchaseReturnFlow = (id: string | number, selectFlowId?: string) =>
+  request({ url: BASE + '/' + id + '/submit', method: 'post', params: { selectFlowId } });
+
+/**
+ * 获取流程实例ID
+ */
+export const getPurchaseReturnProcId = (id: string | number) =>
+  request({ url: BASE + '/' + id + '/proc', method: 'get' });

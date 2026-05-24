@@ -53,3 +53,20 @@ export const completeSalesIssue = (issueId: string | number) => {
     method: 'put'
   });
 };
+
+// ==================== Flowable 审批 ====================
+
+export const submitSalesIssueFlow = (id: string | number, selectFlowId?: string) => {
+  return request({
+    url: '/erp/wm/salesIssue/' + id + '/submit',
+    method: 'post',
+    params: { selectFlowId }
+  });
+};
+
+export const getSalesIssueProcId = (id: string | number) => {
+  return request({
+    url: '/erp/wm/salesIssue/' + id + '/proc',
+    method: 'get'
+  });
+};

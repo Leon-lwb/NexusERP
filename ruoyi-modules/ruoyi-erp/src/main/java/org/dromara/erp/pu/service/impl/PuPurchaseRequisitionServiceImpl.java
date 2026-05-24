@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.pu.domain.PuPurchaseRequisition;
@@ -22,11 +24,26 @@ import org.dromara.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
 import org.dromara.erp.pu.mapper.PuPurchaseRequisitionMapper;
 import org.dromara.erp.pu.service.IPuPurchaseRequisitionService;
 import org.dromara.system.strategy.AutoCodeUtil;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.service.IWfProcessService;
+import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 采购申请服务实现类
@@ -43,7 +60,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
-@Service
+@Service("puPurchaseRequisitionService")
 public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionService {
 
     private final PuPurchaseRequisitionMapper baseMapper;
@@ -51,6 +68,10 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     private final PuPurchaseOrderMapper purchaseOrderMapper;
     private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
     private final AutoCodeUtil autoCodeUtil;
+    private final IWfProcessService processService;
+    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final RuntimeService runtimeService;
+    private final HistoryService historyService;
 
     /**
      * 分页查询采购申请列表
@@ -154,9 +175,107 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         baseMapper.updateById(requisition);
     }
 
+    // ==================== Flowable 工作流集成 ====================
+
     /**
-     * 审批通过采购申请：仅已提交或审批中状态允许审批，将状态改为已批准
+     * 提交流程审批（启动 Flowable 审批流）
      */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submit(String requisitionIdStr, String selectFlowId) {
+        Long requisitionId = Long.parseLong(requisitionIdStr);
+        PuPurchaseRequisition requisition = baseMapper.selectById(requisitionId);
+        if (requisition == null) {
+            throw new RuntimeException("采购申请单不存在");
+        }
+
+        // 如果前端没传 selectFlowId，从数据库已保存记录中读取
+        if (StringUtils.isBlank(selectFlowId)) {
+            if (requisition.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(requisition.getSelectFlowId());
+            } else {
+                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        // 发起 Flowable 流程
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("dataId", requisitionIdStr);
+        variables.put("requireTaskOnStart", true);
+        variables.put("requisitionId", requisition.getRequisitionId());
+        variables.put("requisitionNo", requisition.getRequisitionNo());
+        variables.put("requisitionName", requisition.getRequisitionName());
+        variables.put("applicantName", requisition.getApplicantName());
+        variables.put("requisitionDate", requisition.getRequisitionDate());
+        R<Void> result = processService.startProcessByDataId(requisitionIdStr, selectFlowId, "puPurchaseRequisitionService", variables);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+        throw new RuntimeException(result.getMsg());
+    }
+
+    @Override
+    public String getProcInsId(String requisitionIdStr) {
+        // 第一级：查 wf_my_business 表
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(requisitionIdStr);
+            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
+                return business.getProcessInstanceId();
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 第二级：查运行中的流程实例
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+            .processInstanceBusinessKey(requisitionIdStr).singleResult();
+        if (runtime != null) {
+            return runtime.getId();
+        }
+
+        // 第三级：查历史流程实例
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceBusinessKey(requisitionIdStr).singleResult();
+        return hist != null ? hist.getId() : null;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void afterFlowHandle(WfMyBusiness business) {
+        Long requisitionId = Long.parseLong(business.getDataId());
+        PuPurchaseRequisition requisition = baseMapper.selectById(requisitionId);
+        if (requisition == null) {
+            return;
+        }
+        String actStatus = business.getActStatus();
+        if (ActStatus.doing.equals(actStatus)) {
+            requisition.setStatus(STATUS_APPROVING);
+        } else if (ActStatus.pass.equals(actStatus)) {
+            requisition.setStatus(STATUS_APPROVED);
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            requisition.setStatus(STATUS_REJECTED);
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            requisition.setStatus(STATUS_DRAFT);
+        }
+        baseMapper.updateById(requisition);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Object getBusinessDataById(String dataId) {
+        return selectById(Long.parseLong(dataId));
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    // ==================== 原有审批流（保留兼容） ====================
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approve(Long requisitionId) {

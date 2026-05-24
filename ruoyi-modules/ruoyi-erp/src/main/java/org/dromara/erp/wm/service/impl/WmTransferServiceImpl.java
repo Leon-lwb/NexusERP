@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.wm.domain.WmTransfer;
@@ -16,7 +18,15 @@ import org.dromara.erp.wm.domain.vo.WmTransferVo;
 import org.dromara.erp.wm.mapper.WmTransferLineMapper;
 import org.dromara.erp.wm.mapper.WmTransferMapper;
 import org.dromara.erp.wm.service.IWmTransferService;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.service.IWfProcessService;
+import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
@@ -24,18 +34,24 @@ import org.dromara.system.strategy.AutoCodeUtil;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
-@Service
+@Service("wmTransferService")
 public class WmTransferServiceImpl implements IWmTransferService {
 
     private final WmTransferMapper baseMapper;
     private final WmTransferLineMapper lineMapper;
     private final WmStockOperationServiceImpl stockOperationService;
     private final AutoCodeUtil autoCodeUtil;
+    private final IWfProcessService processService;
+    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final RuntimeService runtimeService;
+    private final HistoryService historyService;
 
     @Override
     public TableDataInfo<WmTransferVo> selectPageList(WmTransferBo bo, PageQuery pageQuery) {
@@ -65,6 +81,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
     public int insertByBo(WmTransferBo bo) {
         WmTransfer entity = MapstructUtils.convert(bo, WmTransfer.class);
         entity.setTransferNo(autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
+        entity.setStatus(STATUS_PREPARE);
         int rows = baseMapper.insert(entity);
         if (bo.getWmTransferLineList() != null) {
             for (WmTransferLine line : bo.getWmTransferLineList()) {
@@ -105,7 +122,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
         if (transfer == null) {
             throw new RuntimeException("调拨单不存在");
         }
-        if ("EXECUTED".equals(transfer.getStatus())) {
+        if (STATUS_EXECUTED.equals(transfer.getStatus())) {
             throw new RuntimeException("调拨单已执行");
         }
 
@@ -121,10 +138,97 @@ public class WmTransferServiceImpl implements IWmTransferService {
             stockOperationService.postTransfer(line);
         }
 
-        transfer.setStatus("EXECUTED");
+        transfer.setStatus(STATUS_EXECUTED);
         transfer.setExecuteDate(new Date());
         baseMapper.updateById(transfer);
         log.info("调拨单执行完成, transferId={}", transferId);
+    }
+
+    // ==================== Flowable 工作流集成 ====================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submit(String transferIdStr, String selectFlowId) {
+        Long transferId = Long.parseLong(transferIdStr);
+        WmTransfer entity = baseMapper.selectById(transferId);
+        if (entity == null) {
+            throw new RuntimeException("调拨单不存在");
+        }
+        if (!STATUS_PREPARE.equals(entity.getStatus())) {
+            throw new RuntimeException("只有准备中的调拨单才能提交审批");
+        }
+        if (StringUtils.isBlank(selectFlowId)) {
+            if (entity.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(entity.getSelectFlowId());
+            } else {
+                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("dataId", transferIdStr);
+        variables.put("requireTaskOnStart", true);
+        variables.put("transferId", entity.getTransferId());
+        variables.put("transferNo", entity.getTransferNo());
+        R<Void> result = processService.startProcessByDataId(transferIdStr, selectFlowId, "wmTransferService", variables);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+        throw new RuntimeException(result.getMsg());
+    }
+
+    @Override
+    public String getProcInsId(String transferIdStr) {
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(transferIdStr);
+            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
+                return business.getProcessInstanceId();
+            }
+        } catch (Exception ignored) {
+        }
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+            .processInstanceBusinessKey(transferIdStr).singleResult();
+        if (runtime != null) {
+            return runtime.getId();
+        }
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceBusinessKey(transferIdStr).singleResult();
+        return hist != null ? hist.getId() : null;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void afterFlowHandle(WfMyBusiness business) {
+        Long transferId = Long.parseLong(business.getDataId());
+        WmTransfer entity = baseMapper.selectById(transferId);
+        if (entity == null) return;
+        String actStatus = business.getActStatus();
+        if (ActStatus.doing.equals(actStatus)) {
+            entity.setStatus(STATUS_APPROVING);
+        } else if (ActStatus.pass.equals(actStatus)) {
+            entity.setStatus(STATUS_APPROVED);
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            entity.setStatus(STATUS_PREPARE);
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            entity.setStatus(STATUS_PREPARE);
+        }
+        baseMapper.updateById(entity);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Object getBusinessDataById(String dataId) {
+        return selectById(Long.parseLong(dataId));
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
     }
 
     private void deleteLinesByTransferId(Long transferId) {

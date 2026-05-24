@@ -98,4 +98,7 @@ public class PuPurchaseOrder extends BaseEntity {
 
     /** 删除标志（0正常 1已删除） */
     private String delFlag;
+
+    /** 选用的审批流ID，关联wf_custom_form表 */
+    private Long selectFlowId;
 }

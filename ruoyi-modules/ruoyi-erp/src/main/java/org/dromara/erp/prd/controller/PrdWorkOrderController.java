@@ -134,4 +134,24 @@ public class PrdWorkOrderController extends BaseController {
         prdWorkOrderService.close(woId);
         return R.ok();
     }
+
+    /**
+     * 提交审批
+     */
+    @SaCheckPermission("prd:work:edit")
+    @Log(title = "生产工单", businessType = BusinessType.UPDATE)
+    @PostMapping("/{woId}/submit")
+    public R<Void> submit(@PathVariable Long woId, @RequestParam(required = false) String selectFlowId) {
+        prdWorkOrderService.submit(String.valueOf(woId), selectFlowId);
+        return R.ok();
+    }
+
+    /**
+     * 获取流程实例ID
+     */
+    @SaCheckPermission("prd:work:query")
+    @GetMapping("/{woId}/proc")
+    public R<String> getProcInsId(@PathVariable Long woId) {
+        return R.ok(prdWorkOrderService.getProcInsId(String.valueOf(woId)));
+    }
 }

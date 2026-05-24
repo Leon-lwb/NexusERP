@@ -50,11 +50,14 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:transfer:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:transfer:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === 'PREPARE'" v-hasPermi="['wm:transfer:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === 'PREPARE'" v-hasPermi="['wm:transfer:remove']">删除</el-button>
+          <el-button link type="primary" icon="Finished" @click="handleSubmit(scope.row)" v-if="scope.row.status === 'PREPARE'" v-hasPermi="['wm:transfer:edit']">提交审批</el-button>
+          <el-button link type="info" icon="View" @click="handleViewFlow(scope.row)" v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'" v-hasPermi="['wm:transfer:query']">流程</el-button>
+          <el-button link type="success" icon="CircleCheck" @click="handleExecute(scope.row)" v-if="scope.row.status === 'APPROVED'" v-hasPermi="['wm:transfer:edit']">执行</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -64,7 +67,7 @@
 </template>
 
 <script setup lang="ts" name="Transfer">
-import { listTransfer, delTransfer } from "@/api/erp/wm/transfer"
+import { listTransfer, delTransfer, submitTransferFlow, getTransferProcId, executeTransfer } from "@/api/erp/wm/transfer"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
@@ -139,6 +142,39 @@ function handleView(row: any) {
     row = selected
   }
   router.push({ path: '/erp/wm/transfer/form', query: { id: row.transferId, action: 'view' } })
+}
+
+/** 提交审批 */
+function handleSubmit(row: any) {
+  proxy.$modal.confirm('确认提交审批调拨单【' + row.transferNo + '】吗？').then(() => {
+    return submitTransferFlow(row.transferId)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("提交审批成功")
+  }).catch(() => {})
+}
+
+/** 查看流程 */
+function handleViewFlow(row: any) {
+  getTransferProcId(row.transferId).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
+}
+
+/** 执行调拨 */
+function handleExecute(row: any) {
+  proxy.$modal.confirm('确认执行调拨单【' + row.transferNo + '】吗？执行后库存将过账！').then(() => {
+    return executeTransfer(row.transferId)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("调拨执行成功")
+  }).catch(() => {})
 }
 
 function handleDelete(row: any) {

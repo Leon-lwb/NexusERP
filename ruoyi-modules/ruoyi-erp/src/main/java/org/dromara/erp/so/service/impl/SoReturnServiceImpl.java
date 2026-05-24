@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.so.domain.SoReturn;
@@ -22,16 +24,26 @@ import org.dromara.erp.wm.domain.WmMaterialStockTx;
 import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
 import org.dromara.erp.wm.mapper.WmMaterialStockTxMapper;
 import org.dromara.system.strategy.AutoCodeUtil;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.service.IWfProcessService;
+import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
-@Service
+@Service("soReturnService")
 public class SoReturnServiceImpl implements ISoReturnService {
 
     private final SoReturnMapper baseMapper;
@@ -39,6 +51,10 @@ public class SoReturnServiceImpl implements ISoReturnService {
     private final WmMaterialStockMapper stockMapper;
     private final WmMaterialStockTxMapper stockTxMapper;
     private final AutoCodeUtil autoCodeUtil;
+    private final IWfProcessService processService;
+    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final RuntimeService runtimeService;
+    private final HistoryService historyService;
 
     @Override
     public TableDataInfo<SoReturnVo> selectPageList(SoReturnBo bo, PageQuery pageQuery) {
@@ -134,13 +150,98 @@ public class SoReturnServiceImpl implements ISoReturnService {
         log.info("退货单执行完成, returnId={}", returnId);
     }
 
+    // ==================== Flowable 工作流集成 ====================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submit(String returnIdStr, String selectFlowId) {
+        Long returnId = Long.parseLong(returnIdStr);
+        SoReturn entity = baseMapper.selectById(returnId);
+        if (entity == null) {
+            throw new RuntimeException("退货单不存在");
+        }
+        if (!STATUS_DRAFT.equals(entity.getStatus())) {
+            throw new RuntimeException("只有草稿状态的退货单才能提交审批");
+        }
+        if (StringUtils.isBlank(selectFlowId)) {
+            if (entity.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(entity.getSelectFlowId());
+            } else {
+                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("dataId", returnIdStr);
+        variables.put("requireTaskOnStart", true);
+        variables.put("returnId", entity.getReturnId());
+        variables.put("returnNo", entity.getReturnNo());
+        R<Void> result = processService.startProcessByDataId(returnIdStr, selectFlowId, "soReturnService", variables);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+        throw new RuntimeException(result.getMsg());
+    }
+
+    @Override
+    public String getProcInsId(String returnIdStr) {
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(returnIdStr);
+            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
+                return business.getProcessInstanceId();
+            }
+        } catch (Exception ignored) {
+        }
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+            .processInstanceBusinessKey(returnIdStr).singleResult();
+        if (runtime != null) {
+            return runtime.getId();
+        }
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceBusinessKey(returnIdStr).singleResult();
+        return hist != null ? hist.getId() : null;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void afterFlowHandle(WfMyBusiness business) {
+        Long returnId = Long.parseLong(business.getDataId());
+        SoReturn entity = baseMapper.selectById(returnId);
+        if (entity == null) return;
+        String actStatus = business.getActStatus();
+        if (ActStatus.doing.equals(actStatus)) {
+            entity.setStatus(STATUS_APPROVING);
+        } else if (ActStatus.pass.equals(actStatus)) {
+            entity.setStatus(STATUS_CONFIRMED);
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            entity.setStatus(STATUS_DRAFT);
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            entity.setStatus(STATUS_DRAFT);
+        }
+        baseMapper.updateById(entity);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Object getBusinessDataById(String dataId) {
+        return selectById(Long.parseLong(dataId));
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
     private void postReturnStock(SoReturn soReturn, SoReturnLine line, Date now) {
         if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("退货数量必须大于0");
         }
-        // 查找匹配库存
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WmMaterialStock> lqw =
-            Wrappers.lambdaQuery();
+        LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
         lqw.eq(soReturn.getWarehouseId() != null, WmMaterialStock::getWarehouseId, soReturn.getWarehouseId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
@@ -171,7 +272,6 @@ public class SoReturnServiceImpl implements ISoReturnService {
             stockMapper.updateById(stock);
         }
 
-        // 生成库存交易记录
         WmMaterialStockTx tx = new WmMaterialStockTx();
         tx.setTxType("RETURN_IN");
         tx.setMaterialId(stock.getMaterialId());

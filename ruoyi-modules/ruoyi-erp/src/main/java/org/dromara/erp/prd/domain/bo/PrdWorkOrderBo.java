@@ -217,6 +217,11 @@ public class PrdWorkOrderBo extends BaseEntity {
     private String remark;
 
     /**
+     * 已选审批流程模板ID
+     */
+    private Long selectFlowId;
+
+    /**
      * 批量删除ID集合
      */
     private Long[] ids;

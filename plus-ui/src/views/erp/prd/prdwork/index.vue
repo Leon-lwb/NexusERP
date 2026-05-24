@@ -137,7 +137,9 @@
             v-hasPermi="['prd:work:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
             v-hasPermi="['prd:work:remove']">删除</el-button>
-          <el-button link type="success" icon="Check" @click="handleRelease(scope.row)" v-if="scope.row.woStatus === 'PREPARE'" v-hasPermi="['prd:work:edit']">下达</el-button>
+          <el-button link type="primary" icon="Finished" @click="handleSubmit(scope.row)" v-if="scope.row.woStatus === 'CREATED'" v-hasPermi="['prd:work:edit']">提交审批</el-button>
+          <el-button link type="info" icon="View" @click="handleViewFlow(scope.row)" v-if="scope.row.woStatus === 'APPROVING' || scope.row.woStatus === 'APPROVED'" v-hasPermi="['prd:work:query']">流程</el-button>
+          <el-button link type="success" icon="Check" @click="handleRelease(scope.row)" v-if="scope.row.woStatus === 'APPROVED'" v-hasPermi="['prd:work:edit']">下达</el-button>
           <el-button link type="primary" icon="VideoPlay" @click="handleStart(scope.row)" v-if="scope.row.woStatus === 'RELEASED'" v-hasPermi="['prd:work:edit']">开始</el-button>
           <el-button link type="success" icon="Finished" @click="handleComplete(scope.row)" v-if="scope.row.woStatus === 'IN_PROGRESS'" v-hasPermi="['prd:work:edit']">完成</el-button>
           <el-button link type="danger" icon="Close" @click="handleClose(scope.row)" v-if="scope.row.woStatus !== 'CLOSED' && scope.row.woStatus !== 'COMPLETED'" v-hasPermi="['prd:work:edit']">关闭</el-button>
@@ -151,7 +153,7 @@
 </template>
 
 <script setup lang="ts" name="PrdWork">
-import { listWork, delWork, releaseWork, startWork, completeWork, closeWork } from "@/api/erp/prd/work"
+import { listWork, delWork, releaseWork, startWork, completeWork, closeWork, submitWorkFlow, getWorkProcId } from "@/api/erp/prd/work"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
@@ -295,6 +297,33 @@ function handleExport() {
   proxy.download('erp/prd/work/export', {
     ...queryParams.value
   }, `work_${new Date().getTime()}.xlsx`)
+}
+
+/** 提交审批 */
+function handleSubmit(row: any) {
+  const woId = row.woId || ids.value[0]
+  if (!woId) { proxy.$modal.msgWarning("请选择一条工单"); return }
+  proxy.$modal.confirm('确认提交审批工单编号为"' + woId + '"的工单？').then(() => {
+    return submitWorkFlow(woId)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("提交审批成功")
+  }).catch(() => {})
+}
+
+/** 查看流程 */
+function handleViewFlow(row: any) {
+  const woId = row.woId || ids.value[0]
+  if (!woId) { proxy.$modal.msgWarning("请选择一条工单"); return }
+  getWorkProcId(woId).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
 }
 
 /** 工单状态下拉按钮 */

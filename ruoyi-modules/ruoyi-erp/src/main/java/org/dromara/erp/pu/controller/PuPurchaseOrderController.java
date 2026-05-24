@@ -90,7 +90,7 @@ public class PuPurchaseOrderController extends BaseController {
     }
 
     /**
-     * 提交采购订单（草稿 → 已提交）
+     * 提交采购订单（草稿 → 已提交，旧版无审批流）
      */
     @SaCheckPermission("pu:order:submit")
     @Log(title = "采购订单", businessType = BusinessType.UPDATE)
@@ -98,6 +98,30 @@ public class PuPurchaseOrderController extends BaseController {
     public R<Void> submit(@PathVariable Long orderId) {
         purchaseOrderService.submit(orderId);
         return R.ok();
+    }
+
+    /**
+     * 提交流程审批（启动 Flowable 审批流）
+     */
+    @SaCheckPermission("pu:order:submit")
+    @Log(title = "采购订单", businessType = BusinessType.UPDATE)
+    @PostMapping("/{orderId}/submit")
+    public R<Void> submitWithFlow(@PathVariable Long orderId,
+                                   @RequestParam(value = "selectFlowId", required = false) String selectFlowId) {
+        try {
+            return toAjax(purchaseOrderService.submit(String.valueOf(orderId), selectFlowId));
+        } catch (RuntimeException e) {
+            return R.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取流程实例ID
+     */
+    @SaCheckPermission("pu:order:query")
+    @GetMapping("/{orderId}/proc")
+    public R<String> getProcInsId(@PathVariable Long orderId) {
+        return R.ok("查询成功", purchaseOrderService.getProcInsId(String.valueOf(orderId)));
     }
 
     /**

@@ -60,8 +60,10 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:return:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:return:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['so:return:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['so:return:remove']">删除</el-button>
+          <el-button link type="primary" icon="Finished" @click="handleSubmit(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['so:return:edit']">提交审批</el-button>
+          <el-button link type="info" icon="View" @click="handleViewFlow(scope.row)" v-if="scope.row.status === 'APPROVING' || scope.row.status === 'CONFIRMED'" v-hasPermi="['so:return:query']">流程</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -71,7 +73,7 @@
 </template>
 
 <script setup lang="ts" name="Return">
-import { listReturn, delReturn } from "@/api/erp/so/return"
+import { listReturn, delReturn, submitReturnFlow, getReturnProcId } from "@/api/erp/so/return"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
@@ -128,7 +130,7 @@ function handleAdd() {
   router.push({ path: '/erp/so/return/form', query: { action: 'add' } })
 }
 
-function handleUpdate(row: any) {
+function handleUpdate(row?: any) {
   if (row && row.type && row instanceof Event) { row = null }
   if (!row) {
     if (ids.value.length !== 1) { proxy.$modal.msgWarning("请选择一条数据进行修改"); return }
@@ -139,7 +141,7 @@ function handleUpdate(row: any) {
   router.push({ path: '/erp/so/return/form', query: { id: row.returnId, action: 'edit' } })
 }
 
-function handleView(row: any) {
+function handleView(row?: any) {
   if (row && row.type && row instanceof Event) { row = null }
   if (!row) {
     if (ids.value.length !== 1) { proxy.$modal.msgWarning("请选择一条数据进行查看"); return }
@@ -150,8 +152,8 @@ function handleView(row: any) {
   router.push({ path: '/erp/so/return/form', query: { id: row.returnId, action: 'view' } })
 }
 
-function handleDelete(row: any) {
-  const _ids = row.returnId || ids.value
+function handleDelete(row?: any) {
+  const _ids = row ? row.returnId : ids.value
   proxy.$modal.confirm('是否确认删除退货单编号为"' + _ids + '"的数据项？').then(function () {
     return delReturn(_ids)
   }).then(() => {
@@ -162,6 +164,31 @@ function handleDelete(row: any) {
 
 function handleExport() {
   proxy.download('/erp/so/return/export', { ...queryParams.value }, `return_${new Date().getTime()}.xlsx`)
+}
+
+function handleSubmit(row: any) {
+  const id = row.returnId || ids.value[0]
+  if (!id) { proxy.$modal.msgWarning("请选择一条退货单"); return }
+  proxy.$modal.confirm('确认提交审批退货单【' + row.returnNo + '】吗？').then(() => {
+    return submitReturnFlow(id)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("提交审批成功")
+  }).catch(() => {})
+}
+
+function handleViewFlow(row: any) {
+  const id = row.returnId || ids.value[0]
+  if (!id) { proxy.$modal.msgWarning("请选择一条退货单"); return }
+  getReturnProcId(id).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
 }
 
 getList()

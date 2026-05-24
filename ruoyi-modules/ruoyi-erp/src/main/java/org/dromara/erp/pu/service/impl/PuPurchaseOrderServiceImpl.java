@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.pu.domain.PuPurchaseOrder;
@@ -22,8 +24,23 @@ import org.dromara.erp.pu.mapper.PuPurchaseRequisitionMapper;
 import org.dromara.erp.pu.service.IPuPurchaseOrderService;
 import org.dromara.erp.pu.service.PuPurchaseReceivingService;
 import org.dromara.system.strategy.AutoCodeUtil;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.service.IWfProcessService;
+import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -45,7 +62,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
-@Service
+@Service("puPurchaseOrderService")
 public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
 
     private final PuPurchaseOrderMapper baseMapper;
@@ -54,6 +71,10 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     private final PuPurchaseRequisitionLineMapper requisitionLineMapper;
     private final PuPurchaseReceivingService purchaseReceivingService;
     private final AutoCodeUtil autoCodeUtil;
+    private final IWfProcessService processService;
+    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final RuntimeService runtimeService;
+    private final HistoryService historyService;
 
     /**
      * 分页查询采购订单列表
@@ -163,9 +184,98 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         baseMapper.updateById(order);
     }
 
-    /**
-     * 审批通过采购订单：仅已提交或审批中状态允许审批，审批后将状态改为已批准
-     */
+    // ==================== Flowable 工作流集成 ====================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submit(String orderIdStr, String selectFlowId) {
+        Long orderId = Long.parseLong(orderIdStr);
+        PuPurchaseOrder order = baseMapper.selectById(orderId);
+        if (order == null) {
+            throw new RuntimeException("采购订单不存在");
+        }
+
+        if (StringUtils.isBlank(selectFlowId)) {
+            if (order.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(order.getSelectFlowId());
+            } else {
+                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("dataId", orderIdStr);
+        variables.put("requireTaskOnStart", true);
+        variables.put("orderId", order.getOrderId());
+        variables.put("orderNo", order.getOrderNo());
+        variables.put("vendorName", order.getVendorName());
+        variables.put("orderDate", order.getOrderDate());
+        R<Void> result = processService.startProcessByDataId(orderIdStr, selectFlowId, "puPurchaseOrderService", variables);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+        throw new RuntimeException(result.getMsg());
+    }
+
+    @Override
+    public String getProcInsId(String orderIdStr) {
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(orderIdStr);
+            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
+                return business.getProcessInstanceId();
+            }
+        } catch (Exception ignored) {
+        }
+
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+            .processInstanceBusinessKey(orderIdStr).singleResult();
+        if (runtime != null) {
+            return runtime.getId();
+        }
+
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceBusinessKey(orderIdStr).singleResult();
+        return hist != null ? hist.getId() : null;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void afterFlowHandle(WfMyBusiness business) {
+        Long orderId = Long.parseLong(business.getDataId());
+        PuPurchaseOrder order = baseMapper.selectById(orderId);
+        if (order == null) {
+            return;
+        }
+        String actStatus = business.getActStatus();
+        if (ActStatus.doing.equals(actStatus)) {
+            order.setStatus(STATUS_APPROVING);
+        } else if (ActStatus.pass.equals(actStatus)) {
+            order.setStatus(STATUS_APPROVED);
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            order.setStatus(STATUS_REJECTED);
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            order.setStatus(STATUS_DRAFT);
+        }
+        baseMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Object getBusinessDataById(String dataId) {
+        return selectById(Long.parseLong(dataId));
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    // ==================== 原有审批流（保留兼容） ====================
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approve(Long orderId) {

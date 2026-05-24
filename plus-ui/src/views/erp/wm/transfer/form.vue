@@ -6,12 +6,15 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'PREPARE' && form.transferId">提交审批</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
+            <el-button type="warning" @click="handleExecute" v-if="!isViewMode && form.status === 'APPROVED'">执行调拨</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
       </template>
 
-      <el-form ref="transferRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-form ref="transferRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="调拨单编号" prop="transferNo">
@@ -52,10 +55,29 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="24">
+          <el-col :span="8">
+            <el-form-item label="单据状态" prop="status">
+              <el-tag :type="getStatusType(form.status)">{{ getStatusLabel(form.status) }}</el-tag>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="审批流程" prop="selectFlowId">
+              <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'PREPARE'" placeholder="请选择审批流程" style="width: 100%">
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
+          </el-col>
+        </el-row>
+        <!-- 审批流程提示 -->
+        <el-row :gutter="20" v-if="form.status === 'PREPARE' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
+          <el-col :span="24">
+            <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmTransferService。" />
           </el-col>
         </el-row>
 
@@ -176,11 +198,12 @@
 </template>
 
 <script setup lang="ts" name="TransferForm">
-import { getTransfer, addTransfer, updateTransfer } from "@/api/erp/wm/transfer"
+import { getTransfer, addTransfer, updateTransfer, submitTransferFlow, getTransferProcId, executeTransfer } from "@/api/erp/wm/transfer"
 import { listMaterial } from "@/api/erp/bd/material"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
 import { genCode } from "@/api/system/autocode/rule"
+import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -188,10 +211,69 @@ const { wm_transfer_type } = toRefs<any>(proxy.useDict('wm_transfer_type'))
 const route = useRoute()
 const router = useRouter()
 
+/** 流程详情 / HistoricDetail 嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+})
+
 const form = ref<any>({})
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
+const loadingFlow = ref(false)
+const flowOptions = ref([])
+
+// 表单禁用状态（考虑 workflow 嵌入和查看模式）
+const formDisabled = computed(() => isViewMode.value || props.disabled)
+
+/**
+ * 将流程下发的业务数据写入本地状态
+ */
+function applyWorkflowFormPayload(payload: Record<string, any>) {
+  if (!payload || typeof payload !== 'object') return
+  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>
+  form.value = merged
+  lineList.value = Array.isArray(merged.wmTransferLineList) ? merged.wmTransferLineList : []
+}
+
+/**
+ * 加载审批流列表
+ */
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'wmTransferService' }).then((response: any) => {
+    flowOptions.value = response?.data || []
+    tryAutoSelect()
+    loadingFlow.value = false
+  }).catch(() => {
+    loadingFlow.value = false
+  })
+}
+
+/**
+ * 尝试自动选择流程（仅一个选项时自动选中）
+ */
+function tryAutoSelect() {
+  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).transferId != null) {
+      applyWorkflowFormPayload(val as Record<string, any>)
+      isViewMode.value = props.disabled
+      title.value = props.disabled ? '库存调拨（流程）' : '库存调拨'
+      loadFlows()
+    }
+  },
+  { deep: true, immediate: true }
+)
 const checkedLines = ref<any[]>([])
 
 const materialSelectOpen = ref(false)
@@ -217,8 +299,8 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增调拨单"; reset(); genCode('WM_TRANSFER_CODE').then((code: any) => { form.value.transferNo = code }) }
-  else if (action === 'edit') { title.value = "修改调拨单"; if (id) getInfo(id) }
+  if (action === 'add') { title.value = "新增调拨单"; reset(); genCode('WM_TRANSFER_CODE').then((code: any) => { form.value.transferNo = code }); loadFlows() }
+  else if (action === 'edit') { title.value = "修改调拨单"; if (id) getInfo(id); loadFlows() }
   else if (action === 'view') { title.value = "查看调拨单"; if (id) getInfo(id) }
 })
 
@@ -226,11 +308,12 @@ function getInfo(id: any) {
   getTransfer(id).then((response: any) => {
     form.value = response.data
     lineList.value = response.data.wmTransferLineList || []
+    tryAutoSelect()
   })
 }
 
 function reset() {
-  form.value = { transferId: null, transferNo: null, transferType: null, fromWarehouseId: null, fromWarehouseCode: null, fromWarehouseName: null, toWarehouseId: null, toWarehouseCode: null, toWarehouseName: null, transferDate: null, status: null, remark: null }
+  form.value = { transferId: null, transferNo: null, transferType: null, fromWarehouseId: null, fromWarehouseCode: null, fromWarehouseName: null, toWarehouseId: null, toWarehouseCode: null, toWarehouseName: null, transferDate: null, status: 'PREPARE', remark: null, selectFlowId: null }
   lineList.value = []
   proxy.resetForm("transferRef")
 }
@@ -246,6 +329,80 @@ function submitForm() {
       }
     }
   })
+}
+
+/**
+ * 提交审批（Flowable）
+ */
+function handleSubmitFlow() {
+  if (!form.value.selectFlowId) {
+    proxy.$modal.msgWarning("请先选择审批流程")
+    return
+  }
+  form.value.wmTransferLineList = lineList.value
+  if (form.value.transferId != null) {
+    updateTransfer(form.value).then(() => {
+      submitTransferFlow(String(form.value.transferId), String(form.value.selectFlowId)).then((res: any) => {
+        if (res.code === 200) {
+          proxy.$modal.msgSuccess("提交审批成功")
+          router.push('/erp/wm/transfer')
+        } else {
+          proxy.$modal.msgError(res.msg || '提交审批失败')
+        }
+      }).catch((error: any) => {
+        proxy.$modal.msgError('提交审批失败：' + error)
+      })
+    })
+  } else {
+    proxy.$modal.msgWarning("请先保存单据后再提交审批")
+  }
+}
+
+/**
+ * 查看流程
+ */
+function onViewFlow() {
+  getTransferProcId(String(form.value.transferId)).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
+}
+
+/** 执行调拨 */
+function handleExecute() {
+  proxy.$modal.confirm('确认执行调拨单【' + form.value.transferNo + '】吗？执行后库存将过账。').then(() => {
+    return executeTransfer(form.value.transferId)
+  }).then(() => {
+    proxy.$modal.msgSuccess("调拨执行成功")
+    getInfo(form.value.transferId)
+  }).catch(() => {})
+}
+
+function getStatusType(status: string) {
+  const typeMap: any = {
+    'PREPARE': 'info',
+    'APPROVING': 'warning',
+    'APPROVED': 'success',
+    'EXECUTED': 'success',
+    'CANCELLED': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
+
+function getStatusLabel(status: string) {
+  const labelMap: any = {
+    'PREPARE': '准备中',
+    'APPROVING': '审批中',
+    'APPROVED': '已批准',
+    'EXECUTED': '已执行',
+    'CANCELLED': '已取消'
+  }
+  return labelMap[status] || status
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/transfer' }) }

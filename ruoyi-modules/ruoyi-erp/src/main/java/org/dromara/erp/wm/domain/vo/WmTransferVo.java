@@ -48,6 +48,7 @@ public class WmTransferVo implements Serializable {
     @ExcelProperty(value = "执行日期")
     private Date executeDate;
 
+    private Long selectFlowId;
     private String operatorName;
     private String remark;
 

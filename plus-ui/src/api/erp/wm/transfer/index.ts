@@ -24,3 +24,20 @@ export const exportTransfer = (query: TransferQuery) =>
 
 export const executeTransfer = (id: number) =>
   request({ url: BASE + '/execute/' + id, method: 'put' });
+
+// ==================== Flowable 审批 ====================
+
+export const submitTransferFlow = (id: string | number, selectFlowId?: string) => {
+  return request({
+    url: BASE + '/' + id + '/submit',
+    method: 'post',
+    params: { selectFlowId }
+  });
+};
+
+export const getTransferProcId = (id: string | number) => {
+  return request({
+    url: BASE + '/' + id + '/proc',
+    method: 'get'
+  });
+};

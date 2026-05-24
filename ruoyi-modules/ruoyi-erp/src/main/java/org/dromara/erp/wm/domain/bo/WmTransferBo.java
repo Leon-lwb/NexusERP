@@ -43,7 +43,7 @@ public class WmTransferBo extends BaseEntity {
     private String operatorName;
     private Date transferDate;
     private Date executeDate;
-    private String selectFlowId;
+    private Long selectFlowId;
     private String remark;
     private String delFlag;
 

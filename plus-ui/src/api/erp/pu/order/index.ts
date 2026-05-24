@@ -139,7 +139,31 @@ export const receivePurchaseOrder = (id: number) =>
  * @returns 请求结果
  */
 export const generateFromRequisition = (requisitionId: number): AxiosPromise<any> =>
-  request({ 
-    url: BASE + '/generateFromRequisition/' + requisitionId, 
-    method: 'post' 
+  request({
+    url: BASE + '/generateFromRequisition/' + requisitionId,
+    method: 'post'
+  });
+
+/**
+ * 提交流程审批（Flowable 审批流）
+ * @param id 订单ID
+ * @param selectFlowId 审批流ID
+ * @returns 请求结果
+ */
+export const submitOrderFlow = (id: string, selectFlowId?: string) =>
+  request({
+    url: BASE + '/' + id + '/submit',
+    method: 'post',
+    params: selectFlowId ? { selectFlowId } : {}
+  });
+
+/**
+ * 获取流程实例ID
+ * @param id 订单ID
+ * @returns 流程实例ID
+ */
+export const getOrderProcId = (id: string) =>
+  request({
+    url: BASE + '/' + id + '/proc',
+    method: 'get'
   });

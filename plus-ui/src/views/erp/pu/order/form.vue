@@ -8,14 +8,18 @@
           <div>
             <!-- 保存按钮，仅在非查看模式下显示 -->
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <!-- 提交审批按钮 -->
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT'">提交审批</el-button>
+            <!-- 查看流程按钮 -->
+            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <!-- 取消按钮 -->
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
       </template>
-      
+
       <!-- 表单区域 -->
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" :disabled="isViewMode">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" :disabled="formDisabled">
         <!-- 第一行：订单号、采购申请号、订单日期 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -35,16 +39,16 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="订单日期" prop="orderDate">
-              <el-date-picker 
-                v-model="form.orderDate" 
-                type="date" 
-                value-format="YYYY-MM-DD" 
-                style="width:100%" 
+              <el-date-picker
+                v-model="form.orderDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                style="width:100%"
               />
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <!-- 第二行：供应商、预计到货日期、状态 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -59,38 +63,38 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="预计到货" prop="expectedArrivalDate">
-              <el-date-picker 
-                v-model="form.expectedArrivalDate" 
-                type="date" 
-                value-format="YYYY-MM-DD" 
-                style="width:100%" 
+              <el-date-picker
+                v-model="form.expectedArrivalDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                style="width:100%"
               />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status">
-                <el-option 
-                  v-for="dict in pu_purchase_order_status" 
-                  :key="dict.value" 
-                  :label="dict.label" 
-                  :value="dict.value" 
+                <el-option
+                  v-for="dict in pu_purchase_order_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
                 />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <!-- 第三行：币别、汇率、备注 -->
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="币别" prop="currency">
               <el-select v-model="form.currency">
-                <el-option 
-                  v-for="dict in so_currency_type" 
-                  :key="dict.value" 
-                  :label="dict.label" 
-                  :value="dict.value" 
+                <el-option
+                  v-for="dict in so_currency_type"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
                 />
               </el-select>
             </el-form-item>
@@ -101,15 +105,49 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
+            <el-form-item label="审批流程" prop="selectFlowId">
+              <el-select
+                v-model="form.selectFlowId"
+                clearable
+                filterable
+                :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'"
+                placeholder="请选择审批流程"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="f in flowOptions"
+                  :key="f.id"
+                  :label="f.flowName || f.businessName || ('流程#' + f.id)"
+                  :value="f.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 第四行：备注 -->
+        <el-row :gutter="20">
+          <el-col :span="24">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" />
             </el-form-item>
           </el-col>
         </el-row>
-        
+
+        <!-- 流程选择警告 -->
+        <el-alert
+          v-if="!isViewMode && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+          type="warning"
+          show-icon
+          :closable="false"
+          title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 puPurchaseOrderService。"
+          style="margin-bottom: 12px;"
+        />
+
         <!-- 订单明细分隔符 -->
         <el-divider content-position="center">订单明细</el-divider>
-        
+
         <!-- 明细操作按钮 -->
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
@@ -119,7 +157,7 @@
             <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除</el-button>
           </el-col>
         </el-row>
-        
+
         <!-- 订单明细表格 -->
         <el-table :data="lineList" @selection-change="handleLineSelectionChange" border>
           <el-table-column type="selection" width="50" v-if="!isViewMode" />
@@ -219,13 +257,23 @@
 
 <script setup lang="ts" name="PurchaseOrderForm">
 // 导入采购订单相关的API方法
-import { addPurchaseOrder, getPurchaseOrder, updatePurchaseOrder, generateFromRequisition } from '@/api/erp/pu/order'
+import { addPurchaseOrder, getPurchaseOrder, updatePurchaseOrder, generateFromRequisition, submitOrderFlow, getOrderProcId } from '@/api/erp/pu/order'
 // 导入物料管理API
 import { listMaterial } from '@/api/erp/bd/material'
 // 导入供应商管理API
 import { listVendor } from '@/api/erp/bd/vendor'
+// 导入审批流API
+import { getProcesss } from '@/api/workflow/process'
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router'
+
+/** 流程详情 / HistoricDetail 嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+})
 
 // 获取当前实例的代理对象和字典数据
 const { proxy } = getCurrentInstance() as any
@@ -242,6 +290,13 @@ const form = ref<any>({})               // 表单数据
 const lineList = ref<any[]>([])          // 订单明细列表
 const checkedLines = ref<any[]>([])      // 已选中的明细行
 const currentMaterialIndex = ref(-1)     // 当前选择的物料索引
+
+// 流程相关状态
+const loadingFlow = ref(false)
+const flowOptions = ref([])
+
+// 表单禁用状态
+const formDisabled = computed(() => isViewMode.value || props.disabled)
 
 // 供应商选择对话框数据
 const vendorDialog = reactive({
@@ -274,21 +329,44 @@ const rules = {
   ]
 }
 
+/** 将流程下发的业务数据写入本地状态 */
+function applyWorkflowFormPayload(payload: Record<string, any>) {
+  if (!payload || typeof payload !== 'object') return
+  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>
+  form.value = merged
+  lineList.value = Array.isArray(merged.lineList) ? merged.lineList : []
+}
+
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).orderId != null) {
+      applyWorkflowFormPayload(val as Record<string, any>)
+      isViewMode.value = props.disabled
+      title.value = props.disabled ? '采购订单（流程）' : '采购订单'
+      loadFlows()
+    }
+  },
+  { deep: true, immediate: true }
+)
+
 // 组件挂载后的初始化逻辑
 onMounted(() => {
   // 获取路由参数
   const id = route.query.id as any
   const action = route.query.action as string
-  
+
   // 设置页面模式和标题
   isViewMode.value = action === 'view'
   title.value = action === 'add' ? '新增采购订单' : action === 'edit' ? '修改采购订单' : '查看采购订单'
-  
+
   // 根据操作类型初始化页面
   if (action === 'add') {
     reset() // 新增操作：重置表单
+    loadFlows()
   } else if (id) {
     getInfo(id) // 编辑/查看操作：获取详情数据
+    loadFlows()
   }
 })
 
@@ -300,6 +378,7 @@ function getInfo(id: any) {
   getPurchaseOrder(id).then((res: any) => {
     form.value = res.data
     lineList.value = res.data.lineList || res.data.puPurchaseOrderLineList || []
+    tryAutoSelect()
   })
 }
 
@@ -315,6 +394,7 @@ function reset() {
     orderDate: null,
     expectedArrivalDate: null,
     status: 'DRAFT',
+    selectFlowId: null,
     currency: 'CNY',
     exchangeRate: 1,
     remark: null,
@@ -323,6 +403,75 @@ function reset() {
     vendorName: null
   }
   lineList.value = []
+}
+
+/**
+ * 加载审批流列表
+ */
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'puPurchaseOrderService' }).then((response: any) => {
+    flowOptions.value = response?.data || []
+    tryAutoSelect()
+    loadingFlow.value = false
+  }).catch(() => {
+    loadingFlow.value = false
+  })
+}
+
+/**
+ * 尝试自动选择流程
+ */
+function tryAutoSelect() {
+  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
+/**
+ * 提交审批
+ */
+function handleSubmitFlow() {
+  proxy.$refs["formRef"].validate((valid: boolean) => {
+    if (valid) {
+      if (!form.value.selectFlowId) {
+        proxy.$modal.msgWarning("请先选择审批流程")
+        return
+      }
+      form.value.lineList = lineList.value
+      if (form.value.orderId != null) {
+        updatePurchaseOrder(form.value).then(() => {
+          submitOrderFlow(String(form.value.orderId), String(form.value.selectFlowId)).then((res: any) => {
+            if (res.code === 200) {
+              proxy.$modal.msgSuccess("提交审批成功")
+              router.push('/erp/pu/order')
+            } else {
+              proxy.$modal.msgError(res.msg || '提交审批失败')
+            }
+          }).catch((error: any) => {
+            proxy.$modal.msgError('提交审批失败：' + error)
+          })
+        })
+      } else {
+        proxy.$modal.msgWarning("请先保存单据后再提交审批")
+      }
+    }
+  })
+}
+
+/**
+ * 查看流程
+ */
+function onViewFlow() {
+  getOrderProcId(String(form.value.orderId)).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
 }
 
 /**

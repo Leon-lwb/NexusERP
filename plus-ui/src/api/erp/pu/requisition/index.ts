@@ -106,7 +106,31 @@ export const approvePurchaseRequisition = (id: number) =>
  * @returns 新创建的采购订单ID
  */
 export const convertPurchaseRequisition = (id: number): AxiosPromise<number> =>
-  request({ 
-    url: BASE + '/convert/' + id, 
-    method: 'put' 
+  request({
+    url: BASE + '/convert/' + id,
+    method: 'put'
+  });
+
+/**
+ * 提交流程审批（Flowable 审批流）
+ * @param id 请购单ID
+ * @param selectFlowId 审批流ID
+ * @returns 请求结果
+ */
+export const submitRequisitionFlow = (id: string, selectFlowId?: string) =>
+  request({
+    url: BASE + '/' + id + '/submit',
+    method: 'post',
+    params: selectFlowId ? { selectFlowId } : {}
+  });
+
+/**
+ * 获取流程实例ID
+ * @param id 请购单ID
+ * @returns 流程实例ID
+ */
+export const getRequisitionProcId = (id: string) =>
+  request({
+    url: BASE + '/' + id + '/proc',
+    method: 'get'
   });

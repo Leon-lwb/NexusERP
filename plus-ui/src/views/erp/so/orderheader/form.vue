@@ -6,13 +6,15 @@
                     <span class="card-title">{{ title }}</span>
                     <div class="card-actions">
                         <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+                        <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.orderStatus === 'DRAFT'">提交审批</el-button>
+                        <el-button type="info" @click="onViewFlow" v-if="form.orderStatus === 'APPROVING' || form.orderStatus === 'APPROVED'">查看流程</el-button>
                         <el-button @click="cancel">取消</el-button>
                     </div>
                 </div>
             </template>
 
             <div class="form-container">
-                <el-form :model="form" :rules="rules" ref="orderheaderRef" label-width="120px">
+                <el-form :model="form" :rules="rules" ref="orderheaderRef" label-width="120px" :disabled="formDisabled">
                     <el-divider content-position="left">基本信息</el-divider>
                     <el-row :gutter="20">
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
@@ -54,6 +56,21 @@
                                     <el-option v-for="dict in so_order_status" :key="dict.value" :label="dict.label"
                                         :value="dict.value"></el-option>
                                 </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+
+                        <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                            <el-form-item label="审批流程" prop="selectFlowId">
+                                <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
+                                    :disabled="isViewMode || form.orderStatus !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
+                                    <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                            <el-form-item label="审批流程提示" v-if="!isViewMode && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
+                                <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 soSalesOrderHeaderService。" />
                             </el-form-item>
                         </el-col>
                     </el-row>
@@ -530,14 +547,23 @@
 </template>
 
 <script setup lang="ts" name="OrderForm">
-import { getOrderheader, addOrderheader, updateOrderheader } from "@/api/erp/so/orderheader"
+import { getOrderheader, addOrderheader, updateOrderheader, submitOrderFlow, getOrderProcId } from "@/api/erp/so/orderheader"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
+import { getProcesss } from '@/api/workflow/process'
 import { debounce } from 'lodash'
 import { useRouter, useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
 const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type', 'so_order_line_status', 'so_order_priority', 'bd_material_type'))
+
+/** 流程详情 / HistoricDetail 嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -547,6 +573,13 @@ const soSalesOrderLineList = ref([])
 const checkedSoSalesOrderLine = ref([])
 const isViewMode = ref(false)
 const title = ref("")
+
+// 流程相关状态
+const loadingFlow = ref(false)
+const flowOptions = ref([])
+
+// 表单禁用状态（考虑 workflow 嵌入和查看模式）
+const formDisabled = computed(() => isViewMode.value || props.disabled)
 
 const materialSelectOpen = ref(false)
 const materialList = ref([])
@@ -589,6 +622,50 @@ const rules = {
     ],
 }
 
+/** 将流程下发的业务数据写入本地状态 */
+function applyWorkflowFormPayload(payload: Record<string, any>) {
+  if (!payload || typeof payload !== 'object') return
+  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>
+  form.value = merged
+  soSalesOrderLineList.value = Array.isArray(merged.soSalesOrderLineList) ? merged.soSalesOrderLineList : []
+}
+
+/**
+ * 加载审批流列表
+ */
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'soSalesOrderHeaderService' }).then((response: any) => {
+    flowOptions.value = response?.data || []
+    tryAutoSelect()
+    loadingFlow.value = false
+  }).catch(() => {
+    loadingFlow.value = false
+  })
+}
+
+/**
+ * 尝试自动选择流程（仅一个选项时自动选中）
+ */
+function tryAutoSelect() {
+  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).soId != null) {
+      applyWorkflowFormPayload(val as Record<string, any>)
+      isViewMode.value = props.disabled
+      title.value = props.disabled ? '销售订单（流程）' : '销售订单'
+      loadFlows()
+    }
+  },
+  { deep: true, immediate: true }
+)
+
 onMounted(() => {
     const id = route.query.id
     const action = route.query.action
@@ -596,6 +673,8 @@ onMounted(() => {
 
     if (id) {
         initPage(id)
+    } else if (action === 'add') {
+        loadFlows()
     }
 
     getCategoryTree()
@@ -615,10 +694,12 @@ function initPage(id) {
         if (id) {
             getInfo(id)
         }
+        loadFlows()
     } else if (action === 'add') {
         isViewMode.value = false
         title.value = "新增销售订单"
         reset()
+        loadFlows()
     }
 }
 
@@ -626,6 +707,7 @@ function getInfo(id) {
     getOrderheader(id).then(response => {
         form.value = response.data
         soSalesOrderLineList.value = response.data.soSalesOrderLineList || []
+        tryAutoSelect()
     }).catch(error => {
         proxy.$modal.msgError("获取数据失败: " + error.message)
     })
@@ -670,6 +752,7 @@ function reset() {
         attr1: null,
         attr2: null,
         attr3: null,
+        selectFlowId: null,
     }
     soSalesOrderLineList.value = []
     proxy.resetForm("orderheaderRef")
@@ -692,6 +775,52 @@ function submitForm() {
             }
         }
     })
+}
+
+/**
+ * 提交审批（Flowable）
+ */
+function handleSubmitFlow() {
+  proxy.$refs["orderheaderRef"].validate((valid: boolean) => {
+    if (valid) {
+      if (!form.value.selectFlowId) {
+        proxy.$modal.msgWarning("请先选择审批流程")
+        return
+      }
+      form.value.soSalesOrderLineList = soSalesOrderLineList.value
+      if (form.value.soId != null) {
+        updateOrderheader(form.value).then(() => {
+          submitOrderFlow(String(form.value.soId), String(form.value.selectFlowId)).then((res: any) => {
+            if (res.code === 200) {
+              proxy.$modal.msgSuccess("提交审批成功")
+              router.push('/erp/so/orderheader')
+            } else {
+              proxy.$modal.msgError(res.msg || '提交审批失败')
+            }
+          }).catch((error: any) => {
+            proxy.$modal.msgError('提交审批失败：' + error)
+          })
+        })
+      } else {
+        proxy.$modal.msgWarning("请先保存单据后再提交审批")
+      }
+    }
+  })
+}
+
+/**
+ * 查看流程
+ */
+function onViewFlow() {
+  getOrderProcId(String(form.value.soId)).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
 }
 
 function cancel() {

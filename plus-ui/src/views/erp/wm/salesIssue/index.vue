@@ -137,6 +137,24 @@
             确认
           </el-button>
           <el-button
+            v-if="scope.row.status === 'PREPARE'"
+            link type="primary"
+            icon="Finished"
+            @click="handleSubmit(scope.row)"
+            v-hasPermi="['wm:salesIssue:edit']"
+          >
+            提交审批
+          </el-button>
+          <el-button
+            v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'"
+            link type="info"
+            icon="View"
+            @click="handleViewFlow(scope.row)"
+            v-hasPermi="['wm:salesIssue:query']"
+          >
+            流程
+          </el-button>
+          <el-button
             v-if="scope.row.status === 'CONFIRMED'"
             link type="success"
             icon="CircleCheck"
@@ -170,7 +188,7 @@
 </template>
 
 <script setup lang="ts" name="SalesIssue">
-import { listSalesIssue, delSalesIssue, confirmSalesIssue, completeSalesIssue } from "@/api/erp/wm/salesIssue"
+import { listSalesIssue, delSalesIssue, confirmSalesIssue, completeSalesIssue, submitSalesIssueFlow, getSalesIssueProcId } from "@/api/erp/wm/salesIssue"
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -255,6 +273,29 @@ function handleView(row: any) {
   router.push({
     path: '/erp/wm/salesIssue/form',
     query: { id: issueId, action: 'view' }
+  })
+}
+
+/** 提交审批 */
+function handleSubmit(row: any) {
+  proxy.$modal.confirm('确认提交审批出库单【' + row.issueCode + '】吗？').then(() => {
+    return submitSalesIssueFlow(row.issueId)
+  }).then(() => {
+    getList()
+    proxy.$modal.msgSuccess("提交审批成功")
+  }).catch(() => {})
+}
+
+/** 查看流程 */
+function handleViewFlow(row: any) {
+  getSalesIssueProcId(row.issueId).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
   })
 }
 

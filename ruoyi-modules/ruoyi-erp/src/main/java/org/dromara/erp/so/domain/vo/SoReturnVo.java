@@ -46,6 +46,8 @@ public class SoReturnVo implements Serializable {
     @ExcelProperty("状态")
     private String status;
 
+    private Long selectFlowId;
+
     @ExcelProperty("备注")
     private String remark;
 

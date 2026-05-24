@@ -21,3 +21,9 @@ export const delReturn = (id: string | number | (string | number)[]) =>
 
 export const exportReturn = (query: ReturnQuery) =>
   request({ url: BASE + '/export', method: 'post', params: query });
+
+export const submitReturnFlow = (id: string | number, selectFlowId?: string) =>
+  request({ url: BASE + '/' + id + '/submit', method: 'post', params: { selectFlowId } });
+
+export const getReturnProcId = (id: string | number) =>
+  request({ url: BASE + '/' + id + '/proc', method: 'get' });

@@ -185,4 +185,9 @@ public class PrdWorkOrderVo implements Serializable {
      * 优先级
      */
     private Long priority;
+
+    /**
+     * 已选审批流程模板ID
+     */
+    private Long selectFlowId;
 }

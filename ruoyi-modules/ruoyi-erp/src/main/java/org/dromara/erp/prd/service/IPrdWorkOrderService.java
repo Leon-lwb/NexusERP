@@ -5,6 +5,7 @@ import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.prd.domain.PrdWorkOrder;
 import org.dromara.erp.prd.domain.bo.PrdWorkOrderBo;
 import org.dromara.erp.prd.domain.vo.PrdWorkOrderVo;
+import org.dromara.workflow.service.WfCallBackServiceI;
 
 import java.util.List;
 
@@ -13,10 +14,14 @@ import java.util.List;
  *
  * @author ruoyi
  */
-public interface IPrdWorkOrderService {
+public interface IPrdWorkOrderService extends WfCallBackServiceI {
 
     /** 工单状态: 新建 */
     String STATUS_CREATED = "CREATED";
+    /** 工单状态: 审批中 */
+    String STATUS_APPROVING = "APPROVING";
+    /** 工单状态: 已批准 */
+    String STATUS_APPROVED = "APPROVED";
     /** 工单状态: 已下达 */
     String STATUS_RELEASED = "RELEASED";
     /** 工单状态: 生产中 */
@@ -69,4 +74,16 @@ public interface IPrdWorkOrderService {
      * 关闭工单 (→ CLOSED)
      */
     void close(Long woId);
+
+    // ==================== Flowable 工作流 ====================
+
+    /**
+     * 发起审批流程
+     */
+    boolean submit(String woIdStr, String selectFlowId);
+
+    /**
+     * 获取流程实例ID
+     */
+    String getProcInsId(String woIdStr);
 }

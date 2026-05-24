@@ -4,6 +4,7 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.pu.domain.bo.PuPurchaseOrderBo;
 import org.dromara.erp.pu.domain.vo.PuPurchaseOrderVo;
+import org.dromara.workflow.service.WfCallBackServiceI;
 
 import java.util.List;
 
@@ -12,10 +13,12 @@ import java.util.List;
  * <p>
  * 定义采购订单的业务操作，包括 CRUD、状态流转（提交/审批/关闭/作废）、
  * 生成收货联动单据以及从采购申请转单生成采购订单等功能。
+ * <p>
+ * 实现 {@link WfCallBackServiceI} 接口以支持 Flowable 审批流程集成。
  *
  * @author ruoyi
  */
-public interface IPuPurchaseOrderService {
+public interface IPuPurchaseOrderService extends WfCallBackServiceI {
 
     /** 草稿 */
     String STATUS_DRAFT = "DRAFT";
@@ -33,6 +36,8 @@ public interface IPuPurchaseOrderService {
     String STATUS_CLOSED = "CLOSED";
     /** 已作废 */
     String STATUS_CANCELLED = "CANCELLED";
+    /** 已驳回 */
+    String STATUS_REJECTED = "REJECTED";
 
     /**
      * 分页查询采购订单列表
@@ -89,6 +94,23 @@ public interface IPuPurchaseOrderService {
      * @param orderId 订单ID
      */
     void submit(Long orderId);
+
+    /**
+     * 提交流程审批（启动 Flowable 审批流）
+     *
+     * @param orderIdStr    订单ID字符串
+     * @param selectFlowId  选择的审批流ID
+     * @return 是否成功
+     */
+    boolean submit(String orderIdStr, String selectFlowId);
+
+    /**
+     * 获取流程实例ID
+     *
+     * @param orderIdStr 订单ID字符串
+     * @return 流程实例ID
+     */
+    String getProcInsId(String orderIdStr);
 
     /**
      * 审批通过采购订单（已提交 → 已批准）

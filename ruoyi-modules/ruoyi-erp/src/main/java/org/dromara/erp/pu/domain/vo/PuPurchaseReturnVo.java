@@ -53,6 +53,9 @@ public class PuPurchaseReturnVo extends BaseEntity {
     /** 备注 */
     private String remark;
 
+    /** 已选审批流程模板ID */
+    private Long selectFlowId;
+
     /** 退货明细行列表 */
     private List<PuPurchaseReturnLine> puPurchaseReturnLineList;
 }

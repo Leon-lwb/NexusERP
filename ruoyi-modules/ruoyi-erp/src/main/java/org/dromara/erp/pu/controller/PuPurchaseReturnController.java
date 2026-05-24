@@ -20,14 +20,6 @@ import java.util.List;
 
 /**
  * 采购退货控制器
- * <p>
- * 提供采购退货单的 RESTful API 接口，包括：
- * <ul>
- *   <li>CRUD 操作：分页列表查询、详情查询、新增、编辑、删除</li>
- *   <li>数据导出（Excel）</li>
- *   <li>状态流转操作：确认、执行退货出库</li>
- * </ul>
- * 所有接口均通过 Sa-Token 注解 {@link SaCheckPermission} 进行权限校验。
  *
  * @author ruoyi
  */
@@ -118,5 +110,25 @@ public class PuPurchaseReturnController extends BaseController {
     @DeleteMapping("/{returnIds}")
     public R<Void> remove(@PathVariable Long[] returnIds) {
         return toAjax(purchaseReturnService.deleteByIds(returnIds));
+    }
+
+    /**
+     * 提交审批
+     */
+    @SaCheckPermission("pu:return:edit")
+    @Log(title = "采购退货", businessType = BusinessType.UPDATE)
+    @PostMapping("/{returnId}/submit")
+    public R<Void> submit(@PathVariable Long returnId, @RequestParam(required = false) String selectFlowId) {
+        purchaseReturnService.submit(String.valueOf(returnId), selectFlowId);
+        return R.ok();
+    }
+
+    /**
+     * 获取流程实例ID
+     */
+    @SaCheckPermission("pu:return:query")
+    @GetMapping("/{returnId}/proc")
+    public R<String> getProcInsId(@PathVariable Long returnId) {
+        return R.ok(purchaseReturnService.getProcInsId(String.valueOf(returnId)));
     }
 }

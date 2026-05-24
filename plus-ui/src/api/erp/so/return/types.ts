@@ -47,6 +47,7 @@ export interface ReturnVO {
   warehouseCode?: string;
   warehouseName?: string;
   status?: string;
+  selectFlowId?: number;
   remark?: string;
   soReturnLineList?: ReturnLineVO[];
   createBy?: number;
@@ -74,6 +75,7 @@ export interface ReturnForm {
   warehouseCode?: string;
   warehouseName?: string;
   status?: string;
+  selectFlowId?: number;
   remark?: string;
   soReturnLineList?: ReturnLineVO[];
 }

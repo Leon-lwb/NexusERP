@@ -5,6 +5,7 @@ import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.so.domain.bo.SoSalesOrderHeaderBo;
 import org.dromara.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import org.dromara.erp.so.domain.vo.SoSalesOrderLineVo;
+import org.dromara.workflow.service.WfCallBackServiceI;
 
 import java.util.List;
 
@@ -13,10 +14,13 @@ import java.util.List;
  *
  * @author ruoyi
  */
-public interface ISoSalesOrderHeaderService {
+public interface ISoSalesOrderHeaderService extends WfCallBackServiceI {
 
     String STATUS_DRAFT = "DRAFT";
     String STATUS_CONFIRMED = "CONFIRMED";
+    String STATUS_APPROVED = "APPROVED";
+    String STATUS_APPROVING = "APPROVING";
+    String STATUS_REJECTED = "REJECTED";
     String STATUS_FULFILLED = "FULFILLED";
     String STATUS_CLOSED = "CLOSED";
     String STATUS_CANCELLED = "CANCELLED";
@@ -42,4 +46,21 @@ public interface ISoSalesOrderHeaderService {
     void close(Long soId);
 
     void cancel(Long soId, String reason);
+
+    // ==================== Flowable 工作流 ====================
+
+    /**
+     * 发起审批流程
+     * @param soIdStr 销售订单ID（字符串）
+     * @param selectFlowId 流程定义ID
+     * @return 是否成功
+     */
+    boolean submit(String soIdStr, String selectFlowId);
+
+    /**
+     * 获取流程实例ID
+     * @param soIdStr 销售订单ID（字符串）
+     * @return 流程实例ID，无则返回null
+     */
+    String getProcInsId(String soIdStr);
 }

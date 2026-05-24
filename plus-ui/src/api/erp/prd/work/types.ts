@@ -54,6 +54,7 @@ export interface WorkVO {
   attr3: number;
   attr4: number;
   remark: string;
+  selectFlowId?: number;
   createBy: number;
   createTime: string;
   updateBy: number;
@@ -100,4 +101,5 @@ export interface WorkForm {
   attr3?: number;
   attr4?: number;
   remark?: string;
+  selectFlowId?: number;
 }

@@ -109,4 +109,6 @@ public class SoSalesOrderHeaderVo implements Serializable {
     private String remark;
 
     private List<SoSalesOrderLineVo> soSalesOrderLineList;
+
+    private Long selectFlowId;
 }

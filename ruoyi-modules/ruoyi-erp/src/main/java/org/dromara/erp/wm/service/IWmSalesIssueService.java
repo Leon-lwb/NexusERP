@@ -4,6 +4,7 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.wm.domain.bo.WmSalesIssueBo;
 import org.dromara.erp.wm.domain.vo.WmSalesIssueVo;
+import org.dromara.workflow.service.WfCallBackServiceI;
 
 import java.util.List;
 
@@ -13,7 +14,15 @@ import java.util.List;
  * @author ruoyi
  * @date 2026-04-03
  */
-public interface IWmSalesIssueService {
+public interface IWmSalesIssueService extends WfCallBackServiceI {
+
+    String STATUS_PREPARE = "PREPARE";
+    String STATUS_APPROVING = "APPROVING";
+    String STATUS_APPROVED = "APPROVED";
+    String STATUS_REJECTED = "REJECTED";
+    String STATUS_CONFIRMED = "CONFIRMED";
+    String STATUS_COMPLETED = "COMPLETED";
+    String STATUS_CANCELLED = "CANCELLED";
 
     /**
      * 分页查询销售出库列表
@@ -79,4 +88,16 @@ public interface IWmSalesIssueService {
      * @return 结果
      */
     int completeSalesIssue(Long issueId);
+
+    // ==================== Flowable 工作流 ====================
+
+    /**
+     * 发起审批流程
+     */
+    boolean submit(String issueIdStr, String selectFlowId);
+
+    /**
+     * 获取流程实例ID
+     */
+    String getProcInsId(String issueIdStr);
 }

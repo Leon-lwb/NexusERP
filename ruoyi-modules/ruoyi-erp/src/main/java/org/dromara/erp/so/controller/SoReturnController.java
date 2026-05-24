@@ -82,4 +82,24 @@ public class SoReturnController extends BaseController {
         soReturnService.execute(returnId);
         return R.ok();
     }
+
+    /**
+     * 提交审批
+     */
+    @SaCheckPermission("so:return:edit")
+    @Log(title = "销售退货", businessType = BusinessType.UPDATE)
+    @PostMapping("/{returnId}/submit")
+    public R<Void> submit(@PathVariable Long returnId, @RequestParam(required = false) String selectFlowId) {
+        soReturnService.submit(String.valueOf(returnId), selectFlowId);
+        return R.ok();
+    }
+
+    /**
+     * 获取流程实例ID
+     */
+    @SaCheckPermission("so:return:query")
+    @GetMapping("/{returnId}/proc")
+    public R<String> getProcInsId(@PathVariable Long returnId) {
+        return R.ok(soReturnService.getProcInsId(String.valueOf(returnId)));
+    }
 }

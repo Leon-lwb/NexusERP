@@ -110,4 +110,26 @@ public class WmSalesIssueController extends BaseController {
     public R<Void> complete(@PathVariable Long issueId) {
         return toAjax(wmSalesIssueService.completeSalesIssue(issueId));
     }
+
+    // ==================== Flowable 工作流 ====================
+
+    /**
+     * 提交审批
+     */
+    @SaCheckPermission("wm:salesIssue:edit")
+    @Log(title = "销售出库", businessType = BusinessType.SUBMIT)
+    @PostMapping("/{issueId}/submit")
+    public R<Void> submit(@PathVariable Long issueId, @RequestParam(required = false) String selectFlowId) {
+        wmSalesIssueService.submit(String.valueOf(issueId), selectFlowId);
+        return R.ok();
+    }
+
+    /**
+     * 获取流程实例ID
+     */
+    @SaCheckPermission("wm:salesIssue:query")
+    @GetMapping("/{issueId}/proc")
+    public R<String> getProcInsId(@PathVariable Long issueId) {
+        return R.ok(wmSalesIssueService.getProcInsId(String.valueOf(issueId)));
+    }
 }

@@ -250,6 +250,11 @@ public class PrdWorkOrder extends TenantEntity {
     private String remark;
 
     /**
+     * 已选审批流程模板ID
+     */
+    private Long selectFlowId;
+
+    /**
      * 删除标志
      */
     @TableLogic

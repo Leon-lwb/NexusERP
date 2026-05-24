@@ -72,4 +72,7 @@ public class SoSalesOrderHeader extends TenantEntity {
 
     @TableLogic
     private String delFlag;
+
+    /** 审批流程ID */
+    private Long selectFlowId;
 }

@@ -50,7 +50,7 @@ export interface TransferVO {
   operatorName?: string;
   transferDate?: string;
   executeDate?: string;
-  selectFlowId?: string;
+  selectFlowId?: number;
   remark?: string;
   wmTransferLineList?: TransferLineVO[];
   createBy?: number;
@@ -81,7 +81,7 @@ export interface TransferForm {
   operatorName?: string;
   transferDate?: string;
   executeDate?: string;
-  selectFlowId?: string;
+  selectFlowId?: number;
   remark?: string;
   wmTransferLineList?: TransferLineVO[];
 }

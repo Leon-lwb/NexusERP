@@ -74,4 +74,26 @@ public class WmTransferController extends BaseController {
         wmTransferService.execute(transferId);
         return R.ok();
     }
+
+    // ==================== Flowable 工作流 ====================
+
+    /**
+     * 提交审批
+     */
+    @SaCheckPermission("wm:transfer:edit")
+    @Log(title = "库存调拨", businessType = BusinessType.SUBMIT)
+    @PostMapping("/{transferId}/submit")
+    public R<Void> submit(@PathVariable Long transferId, @RequestParam(required = false) String selectFlowId) {
+        wmTransferService.submit(String.valueOf(transferId), selectFlowId);
+        return R.ok();
+    }
+
+    /**
+     * 获取流程实例ID
+     */
+    @SaCheckPermission("wm:transfer:query")
+    @GetMapping("/{transferId}/proc")
+    public R<String> getProcInsId(@PathVariable Long transferId) {
+        return R.ok(wmTransferService.getProcInsId(String.valueOf(transferId)));
+    }
 }

@@ -1,22 +1,19 @@
 <template>
   <div class="app-container">
-    <!-- 采购退货单表单卡片 -->
     <el-card>
       <template #header>
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <!-- 保存按钮，仅在非查看模式下显示 -->
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <!-- 取消按钮 -->
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.returnId">提交审批</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'CONFIRMED'">查看流程</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
       </template>
-      
-      <!-- 表单区域 -->
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" :disabled="isViewMode">
-        <!-- 第一行：退货单号、采购订单、退货日期 -->
+
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" :disabled="formDisabled">
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="退货单号" prop="returnNo">
@@ -27,7 +24,6 @@
             <el-form-item label="采购订单" prop="orderNo">
               <el-input v-model="form.orderNo" readonly>
                 <template #append>
-                  <!-- 选择订单按钮 -->
                   <el-button icon="Search" @click="handleSelectOrder" />
                 </template>
               </el-input>
@@ -35,33 +31,15 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="退货日期" prop="returnDate">
-              <el-date-picker 
-                v-model="form.returnDate" 
-                type="date" 
-                value-format="YYYY-MM-DD" 
-                style="width:100%" 
-              />
+              <el-date-picker v-model="form.returnDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
             </el-form-item>
           </el-col>
         </el-row>
-        
-        <!-- 第二行：供应商、状态、退货原因 -->
+
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="供应商" prop="vendorName">
               <el-input v-model="form.vendorName" readonly />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="form.status">
-                <el-option 
-                  v-for="dict in pu_purchase_return_status" 
-                  :key="dict.value" 
-                  :label="dict.label" 
-                  :value="dict.value" 
-                />
-              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -70,8 +48,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
-        <!-- 第三行：备注 -->
+
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="备注" prop="remark">
@@ -79,11 +56,31 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
-        <!-- 退货明细分隔符 -->
+
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="审批流程" prop="selectFlowId">
+              <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="状态" prop="status">
+              <el-tag :type="getStatusType(form.status)">{{ getStatusLabel(form.status) }}</el-tag>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20" v-if="form.status === 'DRAFT' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
+          <el-col :span="24">
+            <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 puPurchaseReturnService。" />
+          </el-col>
+        </el-row>
+
         <el-divider content-position="center">退货明细</el-divider>
-        
-        <!-- 明细操作按钮 -->
+
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加</el-button>
@@ -92,8 +89,7 @@
             <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除</el-button>
           </el-col>
         </el-row>
-        
-        <!-- 退货明细表格 -->
+
         <el-table :data="lineList" @selection-change="handleLineSelectionChange" border>
           <el-table-column type="selection" width="50" v-if="!isViewMode" />
           <el-table-column label="序号" type="index" width="60" />
@@ -134,67 +130,64 @@
 </template>
 
 <script setup lang="ts" name="PurchaseReturnForm">
-// 导入采购退货单相关的API方法
-import { addPurchaseReturn, getPurchaseReturn, updatePurchaseReturn } from '@/api/erp/pu/return'
-// 导入采购订单API，用于关联订单信息
+import { addPurchaseReturn, getPurchaseReturn, updatePurchaseReturn, submitPurchaseReturnFlow, getPurchaseReturnProcId } from '@/api/erp/pu/return'
 import { getPurchaseOrder } from '@/api/erp/pu/order'
-// 导入路由相关功能
+import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
 
-// 获取当前实例的代理对象和字典数据
 const { proxy } = getCurrentInstance() as any
 const { pu_purchase_return_status } = toRefs<any>(proxy.useDict('pu_purchase_return_status'))
 
-// 路由和导航
 const route = useRoute()
 const router = useRouter()
 
-// 页面状态变量
-const title = ref('')                    // 页面标题
-const isViewMode = ref(false)            // 是否为查看模式
-const form = ref<any>({})               // 表单数据
-const lineList = ref<any[]>([])          // 退货明细列表
-const checkedLines = ref<any[]>([])      // 已选中的明细行
+/** 流程详情 / HistoricDetail 嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+})
 
-// 表单验证规则
+const title = ref('')
+const isViewMode = ref(false)
+const form = ref<any>({})
+const lineList = ref<any[]>([])
+const checkedLines = ref<any[]>([])
+const loadingFlow = ref(false)
+const flowOptions = ref([])
+
+const formDisabled = computed(() => isViewMode.value || props.disabled)
+
 const rules = {
-  returnNo: [
-    { required: true, message: '退货单号不能为空', trigger: 'blur' }
-  ]
+  returnNo: [{ required: true, message: '退货单号不能为空', trigger: 'blur' }]
 }
 
-// 组件挂载后的初始化逻辑
 onMounted(() => {
-  // 获取路由参数
   const id = route.query.id as any
   const action = route.query.action as string
-  
-  // 设置页面模式和标题
   isViewMode.value = action === 'view'
   title.value = action === 'add' ? '新增采购退货' : action === 'edit' ? '修改采购退货' : '查看采购退货'
-  
-  // 根据操作类型初始化页面
+
   if (action === 'add') {
-    reset() // 新增操作：重置表单
+    reset()
+    loadFlows()
+  } else if (action === 'edit') {
+    if (id) getInfo(id)
+    loadFlows()
   } else if (id) {
-    getInfo(id) // 编辑/查看操作：获取详情数据
+    getInfo(id)
   }
 })
 
-/**
- * 根据ID获取采购退货单详情
- * @param id 采购退货单ID
- */
 function getInfo(id: any) {
   getPurchaseReturn(id).then((res: any) => {
     form.value = res.data
     lineList.value = res.data.puPurchaseReturnLineList || []
+    tryAutoSelect()
   })
 }
 
-/**
- * 重置表单数据
- */
 function reset() {
   form.value = {
     returnId: null,
@@ -205,14 +198,59 @@ function reset() {
     vendorName: null,
     status: 'DRAFT',
     returnReason: null,
-    remark: null
+    remark: null,
+    selectFlowId: null
   }
   lineList.value = []
 }
 
-/**
- * 添加退货明细行
- */
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'puPurchaseReturnService' }).then((response: any) => {
+    flowOptions.value = response?.data || []
+    tryAutoSelect()
+    loadingFlow.value = false
+  }).catch(() => {
+    loadingFlow.value = false
+  })
+}
+
+function tryAutoSelect() {
+  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).returnId != null) {
+      const merged = JSON.parse(JSON.stringify(val)) as Record<string, any>
+      form.value = merged
+      isViewMode.value = props.disabled
+      title.value = props.disabled ? '采购退货（流程）' : '采购退货'
+      loadFlows()
+    }
+  },
+  { deep: true, immediate: true }
+)
+
+const statusMap: Record<string, { label: string; type: string }> = {
+  DRAFT:     { label: '草稿',   type: 'info' },
+  APPROVING: { label: '审批中', type: 'warning' },
+  CONFIRMED: { label: '已确认', type: 'success' },
+  EXECUTED:  { label: '已执行', type: 'primary' },
+  CANCELLED: { label: '已作废', type: 'danger' },
+}
+
+function getStatusType(status: string): string {
+  return statusMap[status]?.type || 'info'
+}
+
+function getStatusLabel(status: string): string {
+  return statusMap[status]?.label || status || '未知'
+}
+
 function handleAddLine() {
   lineList.value.push({
     materialCode: null,
@@ -224,24 +262,14 @@ function handleAddLine() {
   })
 }
 
-/**
- * 删除退货明细行
- */
 function handleDeleteLine() {
   lineList.value = lineList.value.filter((_, i) => !checkedLines.value.includes(i))
 }
 
-/**
- * 处理明细表格的选择变化
- * @param rows 选中的行数据
- */
 function handleLineSelectionChange(rows: any[]) {
   checkedLines.value = rows.map((r: any) => lineList.value.indexOf(r))
 }
 
-/**
- * 选择关联的采购订单
- */
 function handleSelectOrder() {
   if (!form.value.orderId) {
     proxy.$modal.msgWarning('请先选择采购订单ID')
@@ -252,8 +280,6 @@ function handleSelectOrder() {
     form.value.orderNo = data.orderNo
     form.value.vendorName = data.vendorName
     form.value.vendorId = data.vendorId
-    
-    // 根据原订单信息生成退货明细
     lineList.value = (data.lineList || data.puPurchaseOrderLineList || []).map((l: any) => ({
       materialCode: l.materialCode,
       materialName: l.materialName,
@@ -265,9 +291,6 @@ function handleSelectOrder() {
   })
 }
 
-/**
- * 提交表单
- */
 function submitForm() {
   form.value.puPurchaseReturnLineList = lineList.value
   ;(form.value.returnId ? updatePurchaseReturn(form.value) : addPurchaseReturn(form.value)).then(() => {
@@ -276,10 +299,50 @@ function submitForm() {
   })
 }
 
-/**
- * 取消并返回列表页
- */
+function handleSubmitFlow() {
+  if (!form.value.selectFlowId) {
+    proxy.$modal.msgWarning("请先选择审批流程")
+    return
+  }
+  if (form.value.returnId != null) {
+    updatePurchaseReturn(form.value).then(() => {
+      submitPurchaseReturnFlow(String(form.value.returnId), String(form.value.selectFlowId)).then((res: any) => {
+        if (res.code === 200) {
+          proxy.$modal.msgSuccess("提交审批成功")
+          router.push('/erp/pu/return')
+        } else {
+          proxy.$modal.msgError(res.msg || '提交审批失败')
+        }
+      }).catch((error: any) => {
+        proxy.$modal.msgError('提交审批失败：' + error)
+      })
+    })
+  } else {
+    proxy.$modal.msgWarning("请先保存单据后再提交审批")
+  }
+}
+
+function onViewFlow() {
+  getPurchaseReturnProcId(String(form.value.returnId)).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  }).catch(() => {
+    proxy.$modal.msgWarning('获取流程信息失败')
+  })
+}
+
 function cancel() {
   router.push('/erp/pu/return')
 }
 </script>
+
+<style scoped>
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>

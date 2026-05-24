@@ -72,6 +72,9 @@ public class PuPurchaseReturn extends TenantEntity {
     /** 备注 */
     private String remark;
 
+    /** 已选审批流程模板ID */
+    private Long selectFlowId;
+
     /** 扩展字段1 */
     private String attr1;
 

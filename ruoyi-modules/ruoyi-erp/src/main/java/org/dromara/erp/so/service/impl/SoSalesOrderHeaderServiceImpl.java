@@ -4,10 +4,20 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.erp.bd.domain.BdClientCredit;
+import org.dromara.erp.bd.domain.BdMaterial;
+import org.dromara.erp.bd.domain.BdBom;
+import org.dromara.erp.bd.mapper.BdClientCreditMapper;
+import org.dromara.erp.bd.mapper.BdMaterialMapper;
+import org.dromara.erp.bd.mapper.BdBomMapper;
+import org.dromara.erp.prd.domain.PrdProductionPlan;
+import org.dromara.erp.prd.mapper.PrdProductionPlanMapper;
 import org.dromara.erp.so.domain.SoSalesOrderHeader;
 import org.dromara.erp.so.domain.SoSalesOrderLine;
 import org.dromara.erp.so.domain.bo.SoSalesOrderHeaderBo;
@@ -17,23 +27,26 @@ import org.dromara.erp.so.domain.vo.SoSalesOrderLineVo;
 import org.dromara.erp.so.mapper.SoSalesOrderHeaderMapper;
 import org.dromara.erp.so.mapper.SoSalesOrderLineMapper;
 import org.dromara.erp.so.service.ISoSalesOrderHeaderService;
+import org.dromara.system.strategy.AutoCodeUtil;
+import org.dromara.workflow.domain.WfMyBusiness;
+import org.dromara.workflow.service.IWfProcessService;
+import org.dromara.workflow.service.impl.WfMyBusinessServiceImpl;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RuntimeService;
+import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
-import org.dromara.erp.bd.domain.BdClientCredit;
-import org.dromara.erp.bd.domain.BdMaterial;
-import org.dromara.erp.bd.domain.BdBom;
-import org.dromara.erp.bd.mapper.BdClientCreditMapper;
-import org.dromara.erp.bd.mapper.BdMaterialMapper;
-import org.dromara.erp.bd.mapper.BdBomMapper;
-import org.dromara.erp.prd.domain.PrdProductionPlan;
-import org.dromara.erp.prd.mapper.PrdProductionPlanMapper;
-import org.dromara.system.strategy.AutoCodeUtil;
+
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 销售订单Service业务层处理
@@ -43,7 +56,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
-@Service
+@Service("soSalesOrderHeaderService")
 public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService {
 
     private final SoSalesOrderHeaderMapper baseMapper;
@@ -53,6 +66,10 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final BdBomMapper bdBomMapper;
     private final PrdProductionPlanMapper prdProductionPlanMapper;
     private final AutoCodeUtil autoCodeUtil;
+    private final IWfProcessService processService;
+    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final RuntimeService runtimeService;
+    private final HistoryService historyService;
 
     @Override
     public TableDataInfo<SoSalesOrderHeaderVo> selectPageList(SoSalesOrderHeaderBo bo, PageQuery pageQuery) {
@@ -96,6 +113,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoSalesOrderHeaderBo bo) {
         SoSalesOrderHeader entity = MapstructUtils.convert(bo, SoSalesOrderHeader.class);
+        if (StringUtils.isBlank(entity.getOrderStatus())) {
+            entity.setOrderStatus(STATUS_DRAFT);
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
         return rows;
@@ -141,8 +161,8 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (header == null) {
             throw new RuntimeException("销售订单不存在");
         }
-        if (!STATUS_DRAFT.equals(header.getOrderStatus())) {
-            throw new RuntimeException("只有草稿状态的订单才能确认");
+        if (!STATUS_DRAFT.equals(header.getOrderStatus()) && !STATUS_APPROVED.equals(header.getOrderStatus())) {
+            throw new RuntimeException("当前状态不允许确认");
         }
 
         // 信用检查
@@ -210,6 +230,99 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         header.setCancelledTime(new Date());
         header.setCancelledReason(reason);
         baseMapper.updateById(header);
+    }
+
+    // ==================== Flowable 工作流集成 ====================
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean submit(String soIdStr, String selectFlowId) {
+        Long soId = Long.parseLong(soIdStr);
+        SoSalesOrderHeader order = baseMapper.selectById(soId);
+        if (order == null) {
+            throw new RuntimeException("销售订单不存在");
+        }
+        if (!STATUS_DRAFT.equals(order.getOrderStatus())) {
+            throw new RuntimeException("只有草稿状态的销售订单才能提交审批");
+        }
+        if (StringUtils.isBlank(selectFlowId)) {
+            if (order.getSelectFlowId() != null) {
+                selectFlowId = String.valueOf(order.getSelectFlowId());
+            } else {
+                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+            }
+        }
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("dataId", soIdStr);
+        variables.put("requireTaskOnStart", true);
+        variables.put("soId", order.getSoId());
+        variables.put("soNo", order.getSoNo());
+        variables.put("clientName", order.getClientName());
+        variables.put("orderDate", order.getOrderDate());
+        R<Void> result = processService.startProcessByDataId(soIdStr, selectFlowId, "soSalesOrderHeaderService", variables);
+        if (R.isSuccess(result)) {
+            return true;
+        }
+        throw new RuntimeException(result.getMsg());
+    }
+
+    @Override
+    public String getProcInsId(String soIdStr) {
+        try {
+            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(soIdStr);
+            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
+                return business.getProcessInstanceId();
+            }
+        } catch (Exception ignored) {
+        }
+
+        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
+            .processInstanceBusinessKey(soIdStr).singleResult();
+        if (runtime != null) {
+            return runtime.getId();
+        }
+
+        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceBusinessKey(soIdStr).singleResult();
+        return hist != null ? hist.getId() : null;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void afterFlowHandle(WfMyBusiness business) {
+        Long soId = Long.parseLong(business.getDataId());
+        SoSalesOrderHeader order = baseMapper.selectById(soId);
+        if (order == null) {
+            return;
+        }
+        String actStatus = business.getActStatus();
+        if (ActStatus.doing.equals(actStatus)) {
+            order.setOrderStatus(STATUS_APPROVING);
+        } else if (ActStatus.pass.equals(actStatus)) {
+            order.setOrderStatus(STATUS_APPROVED);
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            order.setOrderStatus(STATUS_REJECTED);
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            order.setOrderStatus(STATUS_DRAFT);
+        }
+        baseMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Object getBusinessDataById(String dataId) {
+        return selectById(Long.parseLong(dataId));
+    }
+
+    @Override
+    public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
+    }
+
+    @Override
+    public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
+        return null;
     }
 
     /**
@@ -332,7 +445,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     private LambdaQueryWrapper<SoSalesOrderHeader> buildQueryWrapper(SoSalesOrderHeaderBo bo) {
-        LambdaQueryWrapper<SoSalesOrderHeader> lqw = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<SoSalesOrderHeader> lqw = new LambdaQueryWrapper<>();
         lqw.eq(StringUtils.isNotBlank(bo.getSoNo()), SoSalesOrderHeader::getSoNo, bo.getSoNo());
         lqw.eq(bo.getCoId() != null, SoSalesOrderHeader::getCoId, bo.getCoId());
         lqw.eq(bo.getClientId() != null, SoSalesOrderHeader::getClientId, bo.getClientId());

@@ -67,6 +67,8 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     private Long attr4;
     private String remark;
 
+    private Long selectFlowId;
+
     private List<SoSalesOrderLineBo> soSalesOrderLineList;
 
     private Long[] ids;
