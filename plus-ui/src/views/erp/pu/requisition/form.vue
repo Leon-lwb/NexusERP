@@ -24,7 +24,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="申请单号" prop="requisitionNo">
-              <el-input v-model="form.requisitionNo" placeholder="请输入申请单号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.requisitionNo" placeholder="请输入申请单号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -239,6 +243,7 @@ import { listMaterial } from '@/api/erp/bd/material'
 import { getProcesss } from '@/api/workflow/process'
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router'
+import { genCode } from "@/api/system/autocode/rule"
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -258,6 +263,7 @@ const router = useRouter()
 // 页面状态变量
 const title = ref('')                    // 页面标题
 const isViewMode = ref(false)            // 是否为查看模式
+const autoGenFlag = ref(false)           // 自动生成编号开关
 // 初始化表单数据，包含 requisitionId 字段
 const form = ref<any>({
   requisitionId: null,
@@ -362,6 +368,7 @@ function getInfo(id: any) {
  * 重置表单数据
  */
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     requisitionId: null,
     requisitionNo: null,
@@ -550,6 +557,17 @@ function handleConvert() {
 /**
  * 取消并返回列表页
  */
+//自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('PU_REQUISITION_CODE').then(response => {
+      form.value.requisitionNo = response;
+    });
+  } else {
+    form.value.requisitionNo = null;
+  }
+}
+
 function cancel() {
   router.push('/erp/pu/requisition')
 }

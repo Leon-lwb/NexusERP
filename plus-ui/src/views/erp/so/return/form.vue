@@ -17,7 +17,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="退货单编号" prop="returnNo">
-              <el-input v-model="form.returnNo" placeholder="请输入退货单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.returnNo" placeholder="请输入退货单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -237,6 +241,7 @@ const props = defineProps({
 })
 
 const form = ref<any>({})
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
@@ -274,7 +279,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增退货单"; reset(); genCode('SO_RETURN_CODE').then((code: any) => { form.value.returnNo = code }); loadFlows() }
+  if (action === 'add') { title.value = "新增退货单"; reset(); loadFlows() }
   else if (action === 'edit') { title.value = "修改退货单"; if (id) getInfo(id); loadFlows() }
   else if (action === 'view') { title.value = "查看退货单"; if (id) getInfo(id) }
 })
@@ -288,6 +293,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = { returnId: null, returnNo: null, soNo: null, clientId: null, clientName: null, returnDate: null, returnReason: null, returnType: null, totalAmount: null, taxAmount: null, refundAmount: null, warehouseId: null, warehouseCode: null, warehouseName: null, status: null, remark: null, selectFlowId: null }
   lineList.value = []
   proxy.resetForm("returnRef")
@@ -386,6 +392,17 @@ function onViewFlow() {
   }).catch(() => {
     proxy.$modal.msgWarning('获取流程信息失败')
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('SO_RETURN_CODE').then(response => {
+      form.value.returnNo = response;
+    });
+  } else {
+    form.value.returnNo = null;
+  }
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/so/return' }) }

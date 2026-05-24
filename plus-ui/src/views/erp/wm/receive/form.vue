@@ -17,7 +17,11 @@
         <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="入库单编号" prop="receiveCode">
-              <el-input v-model="form.receiveCode" placeholder="请输入入库单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.receiveCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="6">
@@ -381,6 +385,7 @@ import { addDetail, updateDetail, delDetail, listDetail } from "@/api/erp/wm/det
 import { getWareHouseTree } from "@/api/erp/wm/warehouse"
 import { getProcesss } from "@/api/workflow/process"
 import { useRoute, useRouter } from 'vue-router'
+import { genCode } from "@/api/system/autocode/rule"
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -514,6 +519,7 @@ const data = reactive({
 })
 
 const { queryParams, form, shelfRules } = toRefs(data)
+const autoGenFlag = ref(false)
 // rules placeholder for template reference
 const rules = {}
 
@@ -644,6 +650,7 @@ function loadDetailList(lineId: any, index: number) {
 
 // 表单重置
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     receiveId: null,
     receiveCode: null,
@@ -1210,6 +1217,17 @@ watch(shelfForm, (newVal: any) => {
     }
   }
 }, { deep: true });
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag: boolean) {
+  if (autoGenFlag) {
+    genCode('WM_MATERIAL_RECEIVE_CODE').then((response: any) => {
+      form.value.receiveCode = response;
+    });
+  } else {
+    form.value.receiveCode = null;
+  }
+}
 
 </script>
 

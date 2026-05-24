@@ -15,7 +15,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="报价单编号" prop="quotationNo">
-              <el-input v-model="form.quotationNo" placeholder="请输入报价单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.quotationNo" placeholder="请输入报价单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -203,6 +207,7 @@ const route = useRoute()
 const router = useRouter()
 
 const form = ref<any>({})
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
@@ -232,7 +237,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增报价单"; reset(); genCode('SO_QUOTATION_CODE').then((code: any) => { form.value.quotationNo = code }) }
+  if (action === 'add') { title.value = "新增报价单"; reset() }
   else if (action === 'edit') { title.value = "修改报价单"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看报价单"; if (id) getInfo(id) }
 })
@@ -245,6 +250,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = { quotationId: null, quotationNo: null, clientId: null, clientName: null, salesRepId: null, salesRepName: null, quotationDate: null, validUntil: null, currency: 'CNY', exchangeRate: 1, totalAmount: null, taxAmount: null, discountAmount: null, discountRate: null, paymentTerms: null, deliveryTerms: null, status: null, remark: null }
   lineList.value = []
   proxy.resetForm("quotationRef")
@@ -261,6 +267,17 @@ function submitForm() {
       }
     }
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('SO_QUOTATION_CODE').then(response => {
+      form.value.quotationNo = response;
+    });
+  } else {
+    form.value.quotationNo = null;
+  }
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/so/quotation' }) }

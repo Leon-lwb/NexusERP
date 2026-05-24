@@ -19,7 +19,11 @@
                     <el-row :gutter="20">
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
                             <el-form-item label="销售订单编号" prop="soNo">
-                                <el-input v-model="form.soNo" placeholder="请输入销售订单编号" />
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                  <el-input v-model="form.soNo" placeholder="请输入销售订单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                                  <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                                  </el-switch>
+                                </div>
                             </el-form-item>
                         </el-col>
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
@@ -552,6 +556,7 @@ import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
 import { getProcesss } from '@/api/workflow/process'
 import { debounce } from 'lodash'
+import { genCode } from "@/api/system/autocode/rule"
 import { useRouter, useRoute } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
@@ -569,6 +574,7 @@ const route = useRoute()
 const router = useRouter()
 
 const form = ref({})
+const autoGenFlag = ref(false)
 const soSalesOrderLineList = ref([])
 const checkedSoSalesOrderLine = ref([])
 const isViewMode = ref(false)
@@ -821,6 +827,17 @@ function onViewFlow() {
   }).catch(() => {
     proxy.$modal.msgWarning('获取流程信息失败')
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('SO_ORDER_CODE').then(response => {
+      form.value.soNo = response;
+    });
+  } else {
+    form.value.soNo = null;
+  }
 }
 
 function cancel() {

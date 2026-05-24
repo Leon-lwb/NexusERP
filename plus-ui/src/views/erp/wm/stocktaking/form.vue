@@ -17,7 +17,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="盘点编号" prop="planCode">
-              <el-input v-model="form.planCode" placeholder="请输入盘点编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.planCode" placeholder="请输入盘点编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -142,6 +146,7 @@ const route = useRoute()
 const router = useRouter()
 
 const form = ref<any>({})
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
@@ -168,7 +173,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增盘点计划"; reset(); genCode('WM_STOCKTAKING_CODE').then((code: any) => { form.value.planCode = code }) }
+  if (action === 'add') { title.value = "新增盘点计划"; reset() }
   else if (action === 'edit') { title.value = "修改盘点计划"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看盘点计划"; if (id) getInfo(id) }
 })
@@ -181,6 +186,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = { planId: null, planCode: null, planName: null, warehouseId: null, warehouseCode: null, warehouseName: null, areaId: null, areaCode: null, areaName: null, plannedDate: null, status: null, remark: null }
   lineList.value = []
   proxy.resetForm("stocktakingRef")
@@ -197,6 +203,17 @@ function submitForm() {
       }
     }
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag: boolean) {
+  if (autoGenFlag) {
+    genCode('WM_STOCKTAKING_CODE').then((response: any) => {
+      form.value.planCode = response;
+    });
+  } else {
+    form.value.planCode = null;
+  }
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/stocktaking' }) }

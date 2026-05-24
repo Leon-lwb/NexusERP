@@ -18,7 +18,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="调拨单编号" prop="transferNo">
-              <el-input v-model="form.transferNo" placeholder="请输入调拨单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.transferNo" placeholder="请输入调拨单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -220,6 +224,7 @@ const props = defineProps({
 })
 
 const form = ref<any>({})
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
@@ -299,7 +304,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增调拨单"; reset(); genCode('WM_TRANSFER_CODE').then((code: any) => { form.value.transferNo = code }); loadFlows() }
+  if (action === 'add') { title.value = "新增调拨单"; reset(); loadFlows() }
   else if (action === 'edit') { title.value = "修改调拨单"; if (id) getInfo(id); loadFlows() }
   else if (action === 'view') { title.value = "查看调拨单"; if (id) getInfo(id) }
 })
@@ -313,6 +318,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = { transferId: null, transferNo: null, transferType: null, fromWarehouseId: null, fromWarehouseCode: null, fromWarehouseName: null, toWarehouseId: null, toWarehouseCode: null, toWarehouseName: null, transferDate: null, status: 'PREPARE', remark: null, selectFlowId: null }
   lineList.value = []
   proxy.resetForm("transferRef")
@@ -403,6 +409,17 @@ function getStatusLabel(status: string) {
     'CANCELLED': '已取消'
   }
   return labelMap[status] || status
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('WM_TRANSFER_CODE').then((response: any) => {
+      form.value.transferNo = response;
+    });
+  } else {
+    form.value.transferNo = null;
+  }
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/transfer' }) }

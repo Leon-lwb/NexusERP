@@ -17,7 +17,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="退货单号" prop="returnNo">
-              <el-input v-model="form.returnNo" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.returnNo" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -134,6 +138,7 @@ import { addPurchaseReturn, getPurchaseReturn, updatePurchaseReturn, submitPurch
 import { getPurchaseOrder } from '@/api/erp/pu/order'
 import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
+import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance() as any
 const { pu_purchase_return_status } = toRefs<any>(proxy.useDict('pu_purchase_return_status'))
@@ -152,6 +157,7 @@ const props = defineProps({
 const title = ref('')
 const isViewMode = ref(false)
 const form = ref<any>({})
+const autoGenFlag = ref(false)
 const lineList = ref<any[]>([])
 const checkedLines = ref<any[]>([])
 const loadingFlow = ref(false)
@@ -189,6 +195,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     returnId: null,
     returnNo: null,
@@ -332,6 +339,17 @@ function onViewFlow() {
   }).catch(() => {
     proxy.$modal.msgWarning('获取流程信息失败')
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('PU_RETURN_CODE').then(response => {
+      form.value.returnNo = response;
+    });
+  } else {
+    form.value.returnNo = null;
+  }
 }
 
 function cancel() {

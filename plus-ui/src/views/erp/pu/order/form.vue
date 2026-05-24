@@ -24,7 +24,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="订单号" prop="orderNo">
-              <el-input v-model="form.orderNo" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.orderNo" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -266,6 +270,7 @@ import { listVendor } from '@/api/erp/bd/vendor'
 import { getProcesss } from '@/api/workflow/process'
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router'
+import { genCode } from "@/api/system/autocode/rule"
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -287,6 +292,7 @@ const router = useRouter()
 const title = ref('')                    // 页面标题
 const isViewMode = ref(false)            // 是否为查看模式
 const form = ref<any>({})               // 表单数据
+const autoGenFlag = ref(false)           // 自动生成编号开关
 const lineList = ref<any[]>([])          // 订单明细列表
 const checkedLines = ref<any[]>([])      // 已选中的明细行
 const currentMaterialIndex = ref(-1)     // 当前选择的物料索引
@@ -386,6 +392,7 @@ function getInfo(id: any) {
  * 重置表单数据
  */
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     orderId: null,
     orderNo: null,
@@ -624,6 +631,17 @@ function submitForm() {
 /**
  * 取消并返回列表页
  */
+//自动生成编号
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    genCode('PU_ORDER_CODE').then(response => {
+      form.value.orderNo = response;
+    });
+  } else {
+    form.value.orderNo = null;
+  }
+}
+
 function cancel() {
   router.push('/erp/pu/order')
 }

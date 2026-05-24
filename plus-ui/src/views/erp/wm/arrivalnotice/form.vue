@@ -15,7 +15,11 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="通知单编号" prop="noticeCode">
-              <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -296,6 +300,7 @@ import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
 import { getMeasure } from "@/api/erp/bd/measure"
 import { debounce } from "lodash-es"
 import { useRoute, useRouter } from 'vue-router'
+import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance() as any
 const { sys_true_or_false, wm_notice_status, bd_material_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_notice_status', 'bd_material_type'))
@@ -306,6 +311,7 @@ const router = useRouter()
 const materialQueryRef = ref()
 
 const form = ref({})
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 
@@ -386,6 +392,7 @@ function getInfo(id: any) {
 
 // 表单重置
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     noticeId: null,
     noticeCode: null,
@@ -438,6 +445,17 @@ function submitForm() {
 }
 
 // 取消按钮
+//自动生成编号
+function handleAutoGenChange(autoGenFlag: boolean) {
+  if (autoGenFlag) {
+    genCode('WM_ARRIVAL_NOTICE_CODE').then((response: any) => {
+      form.value.noticeCode = response;
+    });
+  } else {
+    form.value.noticeCode = null;
+  }
+}
+
 function cancel() {
   const obj = { path: '/erp/wm/arrivalnotice' }
   proxy.$tab.closeOpenPage(obj)

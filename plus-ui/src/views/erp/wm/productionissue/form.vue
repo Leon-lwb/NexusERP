@@ -15,7 +15,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="领料单编号" prop="issueCode">
-              <el-input v-model="form.issueCode" placeholder="请输入领料单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.issueCode" placeholder="请输入领料单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -138,12 +142,14 @@ import { listMaterial } from "@/api/erp/bd/material"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
 import { useRoute, useRouter } from 'vue-router'
+import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance() as any
 const route = useRoute()
 const router = useRouter()
 
 const form = ref<any>({})
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
@@ -184,6 +190,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = { issueId: null, issueCode: null, woId: null, woNo: null, warehouseId: null, warehouseCode: null, warehouseName: null, issueDate: null, status: null, remark: null }
   lineList.value = []
   proxy.resetForm("issueRef")
@@ -200,6 +207,17 @@ function submitForm() {
       }
     }
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag: boolean) {
+  if (autoGenFlag) {
+    genCode('WM_PROD_ISSUE_CODE').then((response: any) => {
+      form.value.issueCode = response;
+    });
+  } else {
+    form.value.issueCode = null;
+  }
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/productionissue' }) }

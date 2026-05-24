@@ -20,7 +20,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="出库单编号" prop="issueCode">
-              <el-input v-model="form.issueCode" placeholder="请输入出库单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.issueCode" placeholder="请输入出库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -345,6 +349,7 @@ import { listStock } from "@/api/erp/wm/stock"
 import { listStoragelocation } from "@/api/erp/wm/storagelocation"
 import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
+import { genCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance() as any
 const { wm_sales_status, so_order_status } = toRefs<any>(proxy.useDict('wm_sales_status', 'so_order_status'))
@@ -379,6 +384,7 @@ const form = ref({
 
 const wmSalesIssueLineList = ref([])
 const checkedLines = ref([])
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const loadingFlow = ref(false)
@@ -513,6 +519,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = {
     issueId: null,
     issueCode: null,
@@ -633,6 +640,17 @@ function onViewFlow() {
   }).catch(() => {
     proxy.$modal.msgWarning('获取流程信息失败')
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag: boolean) {
+  if (autoGenFlag) {
+    genCode('WM_SALES_ISSUE_CODE').then((response: any) => {
+      form.value.issueCode = response;
+    });
+  } else {
+    form.value.issueCode = null;
+  }
 }
 
 function cancel() {

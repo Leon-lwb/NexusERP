@@ -15,7 +15,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="入库单编号" prop="recptCode">
-              <el-input v-model="form.recptCode" placeholder="请输入入库单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.recptCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                </el-switch>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -181,6 +185,7 @@ const route = useRoute()
 const router = useRouter()
 
 const form = ref<any>({})
+const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
@@ -214,7 +219,7 @@ onMounted(() => {
   const id = route.query.id
   const action = route.query.action as string
   isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增杂项入库"; reset(); genCode('WM_MISC_RECPT_CODE').then((code: any) => { form.value.recptCode = code }) }
+  if (action === 'add') { title.value = "新增杂项入库"; reset() }
   else if (action === 'edit') { title.value = "修改杂项入库"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看杂项入库"; if (id) getInfo(id) }
 })
@@ -227,6 +232,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
+  autoGenFlag.value = false
   form.value = { recptId: null, recptCode: null, recptType: null, warehouseId: null, warehouseCode: null, warehouseName: null, areaId: null, areaCode: null, areaName: null, recptDate: null, status: null, remark: null }
   lineList.value = []
   proxy.resetForm("miscRecptRef")
@@ -243,6 +249,17 @@ function submitForm() {
       }
     }
   })
+}
+
+//自动生成编号
+function handleAutoGenChange(autoGenFlag: boolean) {
+  if (autoGenFlag) {
+    genCode('WM_MISC_RECPT_CODE').then((response: any) => {
+      form.value.recptCode = response;
+    });
+  } else {
+    form.value.recptCode = null;
+  }
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/miscrecpt' }) }
