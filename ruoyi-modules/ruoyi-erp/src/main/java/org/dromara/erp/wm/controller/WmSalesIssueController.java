@@ -19,10 +19,17 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 销售出库Controller
+ * 销售出库 Controller
+ * <p>
+ * 提供销售出库单的 RESTful API 接口，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页列表查询、详情查询、新增、编辑、删除</li>
+ *   <li>数据导出（Excel）</li>
+ *   <li>状态流转操作：确认、完成出库</li>
+ *   <li>流程审批集成</li>
+ * </ul>
  *
  * @author ruoyi
- * @date 2026-04-03
  */
 @Validated
 @RequiredArgsConstructor
@@ -33,7 +40,13 @@ public class WmSalesIssueController extends BaseController {
     private final IWmSalesIssueService wmSalesIssueService;
 
     /**
-     * 查询销售出库列表
+     * 分页查询销售出库列表
+     * <p>
+     * 权限标识：{@code wm:salesIssue:list}</p>
+     *
+     * @param bo        查询参数，包含出库单号、客户、日期范围等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 销售出库分页列表
      */
     @SaCheckPermission("wm:salesIssue:list")
     @GetMapping("/list")
@@ -42,7 +55,12 @@ public class WmSalesIssueController extends BaseController {
     }
 
     /**
-     * 导出销售出库列表
+     * 导出销售出库数据到 Excel
+     * <p>权限标识：{@code wm:salesIssue:export}</p>
+     * <p>日志记录：title="销售出库"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("wm:salesIssue:export")
     @Log(title = "销售出库", businessType = BusinessType.EXPORT)
@@ -53,7 +71,12 @@ public class WmSalesIssueController extends BaseController {
     }
 
     /**
-     * 获取销售出库详细信息
+     * 根据主键获取销售出库详细信息
+     * <p>
+     * 权限标识：{@code wm:salesIssue:query}</p>
+     *
+     * @param issueId 销售出库 ID
+     * @return 销售出库详细信息
      */
     @SaCheckPermission("wm:salesIssue:query")
     @GetMapping("/{issueId}")
@@ -63,6 +86,12 @@ public class WmSalesIssueController extends BaseController {
 
     /**
      * 新增销售出库
+     * <p>
+     * 权限标识：{@code wm:salesIssue:add}</p>
+     * <p>日志记录：title="销售出库"，businessType=INSERT</p>
+     *
+     * @param bo 销售出库业务对象，包含客户、出库物料等信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:salesIssue:add")
     @Log(title = "销售出库", businessType = BusinessType.INSERT)
@@ -73,6 +102,12 @@ public class WmSalesIssueController extends BaseController {
 
     /**
      * 修改销售出库
+     * <p>
+     * 权限标识：{@code wm:salesIssue:edit}</p>
+     * <p>日志记录：title="销售出库"，businessType=UPDATE</p>
+     *
+     * @param bo 销售出库业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:salesIssue:edit")
     @Log(title = "销售出库", businessType = BusinessType.UPDATE)
@@ -82,7 +117,13 @@ public class WmSalesIssueController extends BaseController {
     }
 
     /**
-     * 删除销售出库
+     * 批量删除销售出库
+     * <p>
+     * 权限标识：{@code wm:salesIssue:remove}</p>
+     * <p>日志记录：title="销售出库"，businessType=DELETE</p>
+     *
+     * @param issueIds 要删除的销售出库 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:salesIssue:remove")
     @Log(title = "销售出库", businessType = BusinessType.DELETE)
@@ -93,6 +134,11 @@ public class WmSalesIssueController extends BaseController {
 
     /**
      * 确认销售出库
+     * <p>权限标识：{@code wm:salesIssue:confirm}</p>
+     * <p>日志记录：title="销售出库"，businessType=UPDATE</p>
+     *
+     * @param issueId 销售出库 ID
+     * @return 操作结果
      */
     @SaCheckPermission("wm:salesIssue:confirm")
     @Log(title = "销售出库", businessType = BusinessType.UPDATE)
@@ -103,6 +149,11 @@ public class WmSalesIssueController extends BaseController {
 
     /**
      * 完成销售出库
+     * <p>权限标识：{@code wm:salesIssue:complete}</p>
+     * <p>日志记录：title="销售出库"，businessType=UPDATE</p>
+     *
+     * @param issueId 销售出库 ID
+     * @return 操作结果
      */
     @SaCheckPermission("wm:salesIssue:complete")
     @Log(title = "销售出库", businessType = BusinessType.UPDATE)
@@ -114,7 +165,13 @@ public class WmSalesIssueController extends BaseController {
     // ==================== Flowable 工作流 ====================
 
     /**
-     * 提交审批
+     * 提交销售出库审批
+     * <p>权限标识：{@code wm:salesIssue:edit}</p>
+     * <p>日志记录：title="销售出库"，businessType=SUBMIT</p>
+     *
+     * @param issueId     销售出库 ID
+     * @param selectFlowId 选择的流程模板 ID
+     * @return 操作结果
      */
     @SaCheckPermission("wm:salesIssue:edit")
     @Log(title = "销售出库", businessType = BusinessType.SUBMIT)
@@ -125,7 +182,12 @@ public class WmSalesIssueController extends BaseController {
     }
 
     /**
-     * 获取流程实例ID
+     * 获取销售出库流程实例 ID
+     * <p>
+     * 权限标识：{@code wm:salesIssue:query}</p>
+     *
+     * @param issueId 销售出库 ID
+     * @return 流程实例 ID
      */
     @SaCheckPermission("wm:salesIssue:query")
     @GetMapping("/{issueId}/proc")

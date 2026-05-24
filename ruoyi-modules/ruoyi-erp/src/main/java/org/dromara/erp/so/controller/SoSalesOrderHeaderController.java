@@ -21,7 +21,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 销售订单Controller
+ * 销售订单 Controller
+ * <p>
+ * 提供销售订单的 RESTful API 接口，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页列表查询、详情查询、新增、编辑、删除</li>
+ *   <li>数据导出（Excel）</li>
+ *   <li>状态流转操作：提交、确认、履行、关闭、取消</li>
+ *   <li>销售订单行明细查询</li>
+ * </ul>
+ * 所有接口均通过 Sa-Token 注解 {@link SaCheckPermission} 进行权限校验。
  *
  * @author ruoyi
  */
@@ -35,7 +44,13 @@ public class SoSalesOrderHeaderController extends BaseController {
     private final ISoSalesOrderLineService soSalesOrderLineService;
 
     /**
-     * 查询销售订单列表
+     * 分页查询销售订单列表
+     * <p>
+     * 权限标识：{@code so:orderheader:list}</p>
+     *
+     * @param bo        查询参数，包含订单编号、客户名称、日期范围等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 销售订单分页列表
      */
     @SaCheckPermission("so:orderheader:list")
     @GetMapping("/list")
@@ -44,7 +59,12 @@ public class SoSalesOrderHeaderController extends BaseController {
     }
 
     /**
-     * 导出销售订单列表
+     * 导出销售订单数据到 Excel
+     * <p>权限标识：{@code so:orderheader:export}</p>
+     * <p>日志记录：title="销售订单"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("so:orderheader:export")
     @Log(title = "销售订单", businessType = BusinessType.EXPORT)
@@ -55,7 +75,12 @@ public class SoSalesOrderHeaderController extends BaseController {
     }
 
     /**
-     * 获取销售订单详细信息（通过ID）
+     * 根据主键获取销售订单详细信息
+     * <p>
+     * 权限标识：{@code so:orderheader:query}</p>
+     *
+     * @param id 销售订单 ID
+     * @return 销售订单详细信息
      */
     @SaCheckPermission("so:orderheader:query")
     @GetMapping("/{id}")
@@ -64,7 +89,13 @@ public class SoSalesOrderHeaderController extends BaseController {
     }
 
     /**
-     * 提交审批
+     * 提交销售订单审批（启动 Flowable 审批流）
+     * <p>权限标识：{@code so:orderheader:edit}</p>
+     * <p>日志记录：title="销售订单"，businessType=UPDATE</p>
+     *
+     * @param soId         销售订单 ID
+     * @param selectFlowId 选择的流程模板 ID
+     * @return 操作结果
      */
     @SaCheckPermission("so:orderheader:edit")
     @Log(title = "销售订单", businessType = BusinessType.UPDATE)
@@ -75,7 +106,12 @@ public class SoSalesOrderHeaderController extends BaseController {
     }
 
     /**
-     * 获取流程实例ID
+     * 获取销售订单流程实例 ID
+     * <p>
+     * 权限标识：{@code so:orderheader:query}</p>
+     *
+     * @param soId 销售订单 ID
+     * @return 流程实例 ID
      */
     @SaCheckPermission("so:orderheader:query")
     @GetMapping("/{soId}/proc")
@@ -86,6 +122,12 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     /**
      * 新增销售订单
+     * <p>
+     * 权限标识：{@code so:orderheader:add}</p>
+     * <p>日志记录：title="销售订单"，businessType=INSERT</p>
+     *
+     * @param bo 销售订单业务对象，包含客户信息、产品明细等
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("so:orderheader:add")
     @Log(title = "销售订单", businessType = BusinessType.INSERT)
@@ -96,6 +138,12 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     /**
      * 修改销售订单
+     * <p>
+     * 权限标识：{@code so:orderheader:edit}</p>
+     * <p>日志记录：title="销售订单"，businessType=UPDATE</p>
+     *
+     * @param bo 销售订单业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("so:orderheader:edit")
     @Log(title = "销售订单", businessType = BusinessType.UPDATE)
@@ -105,7 +153,13 @@ public class SoSalesOrderHeaderController extends BaseController {
     }
 
     /**
-     * 删除销售订单
+     * 批量删除销售订单
+     * <p>
+     * 权限标识：{@code so:orderheader:remove}</p>
+     * <p>日志记录：title="销售订单"，businessType=DELETE</p>
+     *
+     * @param ids 要删除的销售订单 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("so:orderheader:remove")
     @Log(title = "销售订单", businessType = BusinessType.DELETE)
@@ -116,6 +170,11 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     /**
      * 通过销售订单编号查询销售订单行信息
+     * <p>
+     * 权限标识：{@code so:orderheader:list}</p>
+     *
+     * @param soNo 销售订单编号
+     * @return 销售订单行列表
      */
     @SaCheckPermission("so:orderheader:list")
     @GetMapping("/listLine/{soNo}")
@@ -127,8 +186,10 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     /**
      * 确认销售订单
+     * <p>权限标识：{@code so:orderheader:edit}</p>
+     * <p>日志记录：title="销售订单"，businessType=UPDATE</p>
      *
-     * @param soId 销售订单ID
+     * @param soId 销售订单 ID
      * @return 操作结果
      */
     @SaCheckPermission("so:orderheader:edit")
@@ -141,8 +202,10 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     /**
      * 履行销售订单
+     * <p>权限标识：{@code so:orderheader:edit}</p>
+     * <p>日志记录：title="销售订单"，businessType=UPDATE</p>
      *
-     * @param soId 销售订单ID
+     * @param soId 销售订单 ID
      * @return 操作结果
      */
     @SaCheckPermission("so:orderheader:edit")
@@ -155,8 +218,10 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     /**
      * 关闭销售订单
+     * <p>权限标识：{@code so:orderheader:edit}</p>
+     * <p>日志记录：title="销售订单"，businessType=UPDATE</p>
      *
-     * @param soId 销售订单ID
+     * @param soId 销售订单 ID
      * @return 操作结果
      */
     @SaCheckPermission("so:orderheader:edit")
@@ -169,8 +234,10 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     /**
      * 取消销售订单
+     * <p>权限标识：{@code so:orderheader:edit}</p>
+     * <p>日志记录：title="销售订单"，businessType=UPDATE</p>
      *
-     * @param soId 销售订单ID
+     * @param soId   销售订单 ID
      * @param reason 取消原因
      * @return 操作结果
      */
@@ -183,7 +250,12 @@ public class SoSalesOrderHeaderController extends BaseController {
     }
 
     /**
-     * 通过销售订单子表id获取销售订单行详细信息
+     * 通过销售订单行 ID 获取行详细信息
+     * <p>
+     * 权限标识：{@code so:orderheader:list}</p>
+     *
+     * @param soLineId 销售订单行 ID
+     * @return 销售订单行详细信息
      */
     @SaCheckPermission("so:orderheader:list")
     @GetMapping("/listLineById/{soLineId}")

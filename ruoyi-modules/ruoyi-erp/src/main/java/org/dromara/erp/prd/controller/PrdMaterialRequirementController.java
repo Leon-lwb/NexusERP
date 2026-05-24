@@ -22,7 +22,15 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 物料清单Controller
+ * 物料清单（物料需求） Controller
+ * <p>
+ * 提供物料需求清单的 RESTful API 接口，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页列表查询、详情查询、新增、编辑、删除</li>
+ *   <li>数据导出（Excel）</li>
+ *   <li>按生产计划查询物料需求与树形展示</li>
+ *   <li>从 BOM 导入物料需求明细</li>
+ * </ul>
  *
  * @author ruoyi
  */
@@ -35,7 +43,13 @@ public class PrdMaterialRequirementController extends BaseController {
     private final IPrdMaterialRequirementService prdMaterialRequirementService;
 
     /**
-     * 查询物料清单列表
+     * 分页查询物料需求清单列表
+     * <p>
+     * 权限标识：{@code prd:requirement:list}</p>
+     *
+     * @param bo        查询参数，包含物料编码、生产计划编号等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 物料需求清单分页列表
      */
     @SaCheckPermission("prd:requirement:list")
     @GetMapping("/list")
@@ -44,7 +58,12 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 导出物料清单列表
+     * 导出物料需求清单数据到 Excel
+     * <p>权限标识：{@code prd:requirement:export}</p>
+     * <p>日志记录：title="物料清单"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("prd:requirement:export")
     @Log(title = "物料清单", businessType = BusinessType.EXPORT)
@@ -55,7 +74,12 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 获取物料清单详细信息
+     * 根据主键获取物料需求清单详细信息
+     * <p>
+     * 权限标识：{@code prd:requirement:query}</p>
+     *
+     * @param requirementId 物料需求 ID
+     * @return 物料需求清单详细信息
      */
     @SaCheckPermission("prd:requirement:query")
     @GetMapping("/{requirementId}")
@@ -64,7 +88,13 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 新增物料清单
+     * 新增物料需求清单
+     * <p>
+     * 权限标识：{@code prd:requirement:add}</p>
+     * <p>日志记录：title="物料清单"，businessType=INSERT</p>
+     *
+     * @param bo 物料需求业务对象，包含物料、数量、生产计划等信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:requirement:add")
     @Log(title = "物料清单", businessType = BusinessType.INSERT)
@@ -74,7 +104,13 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 修改物料清单
+     * 修改物料需求清单
+     * <p>
+     * 权限标识：{@code prd:requirement:edit}</p>
+     * <p>日志记录：title="物料清单"，businessType=UPDATE</p>
+     *
+     * @param bo 物料需求业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:requirement:edit")
     @Log(title = "物料清单", businessType = BusinessType.UPDATE)
@@ -84,7 +120,13 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 删除物料清单
+     * 批量删除物料需求清单
+     * <p>
+     * 权限标识：{@code prd:requirement:remove}</p>
+     * <p>日志记录：title="物料清单"，businessType=DELETE</p>
+     *
+     * @param requirementIds 要删除的物料需求 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:requirement:remove")
     @Log(title = "物料清单", businessType = BusinessType.DELETE)
@@ -94,7 +136,12 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 根据生产计划编号查询物料清单（含明细，无分页）
+     * 根据生产计划编号查询物料需求清单（含明细，无分页）
+     * <p>
+     * 权限标识：{@code prd:requirement:list}</p>
+     *
+     * @param planNo 生产计划编号
+     * @return 物料需求清单列表（含明细）
      */
     @SaCheckPermission("prd:requirement:list")
     @GetMapping("/listDetailsByPlanNo/{planNo}")
@@ -107,6 +154,11 @@ public class PrdMaterialRequirementController extends BaseController {
 
     /**
      * 根据计划编号查询物料需求树（含父子嵌套，用于树形展示）
+     * <p>
+     * 权限标识：{@code prd:requirement:list}</p>
+     *
+     * @param planNo 生产计划编号
+     * @return 物料需求树形结构
      */
     @SaCheckPermission("prd:requirement:list")
     @GetMapping("/treeByPlanNo/{planNo}")
@@ -116,7 +168,13 @@ public class PrdMaterialRequirementController extends BaseController {
     }
 
     /**
-     * 从BOM导入物料需求明细
+     * 从 BOM 导入物料需求明细
+     * <p>
+     * 权限标识：{@code prd:requirement:query}</p>
+     *
+     * @param bomId                BOM 配置 ID
+     * @param totalRequiredQuantity 总需求数量
+     * @return BOM 展开的物料需求明细列表
      */
     @SaCheckPermission("prd:requirement:query")
     @GetMapping("/importBomDetails")

@@ -125,7 +125,12 @@
       "Read(//usr/**)",
       "Bash(java -version)",
       "Bash(\"/d/Program Files/JetBrains/IntelliJ IDEA 2023.1.7/plugins/maven/lib/maven3/bin/mvn\" compile -pl ruoyi-modules/ruoyi-erp -am -q)",
-      "Bash(\"/d/Program Files/JetBrains/IntelliJ IDEA 2023.1.7/plugins/maven/lib/maven3/bin/mvn\" compile -pl ruoyi-admin -am -q)"
+      "Bash(\"/d/Program Files/JetBrains/IntelliJ IDEA 2023.1.7/plugins/maven/lib/maven3/bin/mvn\" compile -pl ruoyi-admin -am -q)",
+      "Bash(git *)",
+      "Bash(echo === $\\(basename \"$f\"\\) === *)",
+      "Bash(grep -oP 'CREATE TABLE\\\\s*`[^`]+`' \"script/sql/ry-erp.sql\")",
+      "Bash(ls *)",
+      "Bash(\"/d/maven/apache-maven-3.6.3/bin/mvn\" compile *)"
     ]
   }
 }

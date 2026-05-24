@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 生产工单资源分配Controller
+ * 生产工单资源分配 Controller
+ * <p>
+ * 管理生产工单的设备、工装、人力等资源分配信息。
  *
  * @author ruoyi
  */
@@ -33,7 +35,13 @@ public class PrdWorkOrderResourceController extends BaseController {
     private final IPrdWorkOrderResourceService prdWorkOrderResourceService;
 
     /**
-     * 查询生产工单资源分配列表
+     * 分页查询生产工单资源分配列表
+     * <p>
+     * 权限标识：{@code prd:workOrderResource:list}</p>
+     *
+     * @param bo        查询参数，包含工单编号、资源类型等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 资源分配分页列表
      */
     @SaCheckPermission("prd:workOrderResource:list")
     @GetMapping("/list")
@@ -42,7 +50,12 @@ public class PrdWorkOrderResourceController extends BaseController {
     }
 
     /**
-     * 导出生产工单资源分配列表
+     * 导出生产工单资源分配数据到 Excel
+     * <p>权限标识：{@code prd:workOrderResource:export}</p>
+     * <p>日志记录：title="生产工单资源分配"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("prd:workOrderResource:export")
     @Log(title = "生产工单资源分配", businessType = BusinessType.EXPORT)
@@ -53,7 +66,12 @@ public class PrdWorkOrderResourceController extends BaseController {
     }
 
     /**
-     * 获取生产工单资源分配详细信息
+     * 根据主键获取资源分配详细信息
+     * <p>
+     * 权限标识：{@code prd:workOrderResource:query}</p>
+     *
+     * @param id 资源分配记录 ID
+     * @return 资源分配详细信息
      */
     @SaCheckPermission("prd:workOrderResource:query")
     @GetMapping("/{id}")
@@ -63,6 +81,12 @@ public class PrdWorkOrderResourceController extends BaseController {
 
     /**
      * 新增生产工单资源分配
+     * <p>
+     * 权限标识：{@code prd:workOrderResource:add}</p>
+     * <p>日志记录：title="生产工单资源分配"，businessType=INSERT</p>
+     *
+     * @param bo 资源分配业务对象，包含资源类型、数量等信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:workOrderResource:add")
     @Log(title = "生产工单资源分配", businessType = BusinessType.INSERT)
@@ -73,6 +97,12 @@ public class PrdWorkOrderResourceController extends BaseController {
 
     /**
      * 修改生产工单资源分配
+     * <p>
+     * 权限标识：{@code prd:workOrderResource:edit}</p>
+     * <p>日志记录：title="生产工单资源分配"，businessType=UPDATE</p>
+     *
+     * @param bo 资源分配业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:workOrderResource:edit")
     @Log(title = "生产工单资源分配", businessType = BusinessType.UPDATE)
@@ -82,7 +112,13 @@ public class PrdWorkOrderResourceController extends BaseController {
     }
 
     /**
-     * 删除生产工单资源分配
+     * 批量删除生产工单资源分配
+     * <p>
+     * 权限标识：{@code prd:workOrderResource:remove}</p>
+     * <p>日志记录：title="生产工单资源分配"，businessType=DELETE</p>
+     *
+     * @param ids 要删除的资源分配记录 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:workOrderResource:remove")
     @Log(title = "生产工单资源分配", businessType = BusinessType.DELETE)
@@ -92,7 +128,12 @@ public class PrdWorkOrderResourceController extends BaseController {
     }
 
     /**
-     * 根据工单ID查询资源分配列表
+     * 根据工单 ID 查询资源分配列表
+     * <p>
+     * 权限标识：{@code prd:workOrderResource:query}</p>
+     *
+     * @param woId 生产工单 ID
+     * @return 资源分配列表
      */
     @SaCheckPermission("prd:workOrderResource:query")
     @GetMapping("/wo/{woId}")
@@ -101,7 +142,13 @@ public class PrdWorkOrderResourceController extends BaseController {
     }
 
     /**
-     * 根据工单ID和资源类型查询资源分配列表
+     * 根据工单 ID 和资源类型查询资源分配列表
+     * <p>
+     * 权限标识：{@code prd:workOrderResource:query}</p>
+     *
+     * @param woId         生产工单 ID
+     * @param resourceType 资源类型
+     * @return 资源分配列表
      */
     @SaCheckPermission("prd:workOrderResource:query")
     @GetMapping("/wo/{woId}/type/{resourceType}")
@@ -112,6 +159,12 @@ public class PrdWorkOrderResourceController extends BaseController {
 
     /**
      * 批量保存工单资源分配
+     * <p>权限标识：{@code prd:workOrderResource:add}</p>
+     * <p>日志记录：title="生产工单资源分配"，businessType=INSERT</p>
+     *
+     * @param woId         生产工单 ID
+     * @param resourceList 资源分配列表
+     * @return 操作结果
      */
     @SaCheckPermission("prd:workOrderResource:add")
     @Log(title = "生产工单资源分配", businessType = BusinessType.INSERT)

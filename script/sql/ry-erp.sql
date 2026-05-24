@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 24/05/2026 17:22:16
+ Date: 24/05/2026 23:41:05
 */
 
 SET NAMES utf8mb4;
@@ -419,6 +419,44 @@ CREATE TABLE `bd_material_vendor`  (
 
 -- ----------------------------
 -- Records of bd_material_vendor
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for bd_serial_number_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `bd_serial_number_rule`;
+CREATE TABLE `bd_serial_number_rule`  (
+  `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `rule_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则编码',
+  `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则名称',
+  `rule_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PRODUCT_SN' COMMENT '规则类型(PRODUCT_SN-产品序列号/BARCODE-条码/BATCH_NO-批次号)',
+  `prefix` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '前缀(固定字符)',
+  `date_format` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '日期格式(如yyyyMMdd)',
+  `seq_length` int(11) NULL DEFAULT 4 COMMENT '流水号长度(补零位数)',
+  `seq_cycle` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NONE' COMMENT '流水号重置周期(DAY/MONTH/YEAR/NONE)',
+  `current_seq` int(11) NULL DEFAULT 0 COMMENT '当前流水号',
+  `check_digit_rule` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NONE' COMMENT '校验位规则(NONE/MOD10/MOD11)',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT '状态(ACTIVE/INACTIVE)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(11) NULL DEFAULT 0 COMMENT '预留字段3',
+  `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`rule_id`) USING BTREE,
+  UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产品序列号/条码规则表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_serial_number_rule
 -- ----------------------------
 
 -- ----------------------------
@@ -1206,7 +1244,7 @@ CREATE TABLE `pu_purchase_requisition`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`requisition_id`) USING BTREE,
   UNIQUE INDEX `uk_requisition_no`(`requisition_no`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2058451208582094851 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2058493299811049474 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pu_purchase_requisition
@@ -1214,6 +1252,7 @@ CREATE TABLE `pu_purchase_requisition`  (
 INSERT INTO `pu_purchase_requisition` VALUES (2058434206744338434, '123123', '测试', NULL, NULL, '2026-05-24 00:00:00', '2026-05-31 00:00:00', 'MANUAL', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 14:25:33', 1, '2026-05-24 14:37:55', '0');
 INSERT INTO `pu_purchase_requisition` VALUES (2058439491252805634, 'PU2026052401', 'cs2', NULL, NULL, '2026-05-24 00:00:00', '2026-05-31 00:00:00', 'MANUAL', 'DRAFT', 2058435612079448066, 'cs', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 14:46:33', 1, '2026-05-24 15:31:57', '0');
 INSERT INTO `pu_purchase_requisition` VALUES (2058451208582094850, 'PU20260524002', '测试3', NULL, NULL, '2026-05-24 00:00:00', '2026-05-25 00:00:00', 'MANUAL', 'APPROVED', 2058435612079448066, '测试', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 15:33:07', 1, '2026-05-24 15:35:20', '0');
+INSERT INTO `pu_purchase_requisition` VALUES (2058493299811049473, 'CGSQ202605240001', '采购', NULL, NULL, '2026-05-24 18:20:22', NULL, 'MANUAL', 'DRAFT', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 18:20:22', 1, '2026-05-24 18:52:01', '0');
 
 -- ----------------------------
 -- Table structure for pu_purchase_requisition_line
@@ -1248,7 +1287,7 @@ CREATE TABLE `pu_purchase_requisition_line`  (
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_requisition_id`(`requisition_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2058451713970561027 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购申请明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2058501265104723970 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购申请明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pu_purchase_requisition_line
@@ -1259,6 +1298,9 @@ INSERT INTO `pu_purchase_requisition_line` VALUES (2058450903584890881, 20584394
 INSERT INTO `pu_purchase_requisition_line` VALUES (2058450913575723009, 2058439491252805634, NULL, 'BOLT_M12', '螺栓M12', '8.8级', NULL, 10.0000, NULL, NULL, '2026-05-25 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 15:31:57', 1, '2026-05-24 15:31:57', '0');
 INSERT INTO `pu_purchase_requisition_line` VALUES (2058451208582094851, 2058451208582094850, NULL, 'GEAR_SET', '齿轮组', '标准齿轮组', NULL, 11.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 15:33:07', 1, '2026-05-24 15:35:07', '1');
 INSERT INTO `pu_purchase_requisition_line` VALUES (2058451713970561026, 2058451208582094850, NULL, 'JZQ350', '减速机JZQ-350', '标准型号', NULL, 2.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 15:35:07', 1, '2026-05-24 15:35:07', '0');
+INSERT INTO `pu_purchase_requisition_line` VALUES (2058493299811049474, 2058493299811049473, NULL, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', NULL, 20.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 18:20:22', 1, '2026-05-24 18:51:56', '1');
+INSERT INTO `pu_purchase_requisition_line` VALUES (2058501246347796481, 2058493299811049473, NULL, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', NULL, 20.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 18:20:22', 1, '2026-05-24 18:52:01', '1');
+INSERT INTO `pu_purchase_requisition_line` VALUES (2058501265104723969, 2058493299811049473, NULL, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', NULL, 20.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 18:20:22', 1, '2026-05-24 18:20:22', '0');
 
 -- ----------------------------
 -- Table structure for pu_purchase_return

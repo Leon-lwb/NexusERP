@@ -20,10 +20,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 仓库设置Controller
+ * 仓库设置 Controller
+ * <p>
+ * 管理企业仓库基础信息，包括仓库编码、名称、地址、状态等。
  *
  * @author ruoyi
- * @date 2025-09-30
  */
 @Validated
 @RequiredArgsConstructor
@@ -34,7 +35,13 @@ public class WmWarehouseController extends BaseController {
     private final IWmWarehouseService wmWarehouseService;
 
     /**
-     * 查询仓库设置列表
+     * 分页查询仓库设置列表
+     * <p>
+     * 权限标识：{@code wm:warehouse:list}</p>
+     *
+     * @param bo        查询参数，包含仓库编码、名称、状态等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 仓库设置分页列表
      */
     @SaCheckPermission("wm:warehouse:list")
     @GetMapping("/list")
@@ -43,7 +50,12 @@ public class WmWarehouseController extends BaseController {
     }
 
     /**
-     * 导出仓库设置列表
+     * 导出仓库设置数据到 Excel
+     * <p>权限标识：{@code wm:warehouse:export}</p>
+     * <p>日志记录：title="仓库设置"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("wm:warehouse:export")
     @Log(title = "仓库设置", businessType = BusinessType.EXPORT)
@@ -54,7 +66,12 @@ public class WmWarehouseController extends BaseController {
     }
 
     /**
-     * 获取仓库设置详细信息
+     * 根据主键获取仓库详细信息
+     * <p>
+     * 权限标识：{@code wm:warehouse:query}</p>
+     *
+     * @param id 仓库 ID
+     * @return 仓库详细信息
      */
     @SaCheckPermission("wm:warehouse:query")
     @GetMapping("/{id}")
@@ -64,6 +81,12 @@ public class WmWarehouseController extends BaseController {
 
     /**
      * 新增仓库设置
+     * <p>
+     * 权限标识：{@code wm:warehouse:add}</p>
+     * <p>日志记录：title="仓库设置"，businessType=INSERT</p>
+     *
+     * @param bo 仓库业务对象，包含仓库编码、名称、地址等信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:warehouse:add")
     @Log(title = "仓库设置", businessType = BusinessType.INSERT)
@@ -74,6 +97,12 @@ public class WmWarehouseController extends BaseController {
 
     /**
      * 修改仓库设置
+     * <p>
+     * 权限标识：{@code wm:warehouse:edit}</p>
+     * <p>日志记录：title="仓库设置"，businessType=UPDATE</p>
+     *
+     * @param bo 仓库业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:warehouse:edit")
     @Log(title = "仓库设置", businessType = BusinessType.UPDATE)
@@ -83,7 +112,13 @@ public class WmWarehouseController extends BaseController {
     }
 
     /**
-     * 删除仓库设置
+     * 批量删除仓库设置
+     * <p>
+     * 权限标识：{@code wm:warehouse:remove}</p>
+     * <p>日志记录：title="仓库设置"，businessType=DELETE</p>
+     *
+     * @param ids 要删除的仓库 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:warehouse:remove")
     @Log(title = "仓库设置", businessType = BusinessType.DELETE)
@@ -93,7 +128,11 @@ public class WmWarehouseController extends BaseController {
     }
 
     /**
-     * 查询树型的列表
+     * 查询仓库树形列表
+     * <p>
+     * 权限标识：{@code wm:warehouse:list}</p>
+     *
+     * @return 仓库树形结构列表
      */
     @SaCheckPermission("wm:warehouse:list")
     @GetMapping("/tree")

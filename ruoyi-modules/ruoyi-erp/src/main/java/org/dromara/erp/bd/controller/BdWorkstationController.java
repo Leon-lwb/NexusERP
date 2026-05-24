@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 工作中心Controller
- *
- * @author wanghuan
+ * 工作中心 Controller
+ * <p>
+ * 管理工作中心基本信息，包含工作中心编码、名称、所属车间及产能参数等。
  */
 @Validated
 @RequiredArgsConstructor
@@ -32,10 +32,11 @@ public class BdWorkstationController extends BaseController {
     private final IBdWorkstationService bdWorkstationService;
 
     /**
-     * 查询工作中心列表
+     * 分页查询工作中心列表
+     * <p>权限标识：{@code bd:workstation:list}</p>
      *
-     * @param bo 查询参数
-     * @param pageQuery 分页参数
+     * @param bo        查询参数，包含工作中心名称、编码等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
      * @return 工作中心分页列表
      */
     @SaCheckPermission("bd:workstation:list")
@@ -45,10 +46,12 @@ public class BdWorkstationController extends BaseController {
     }
 
     /**
-     * 导出工作中心数据
+     * 导出工作中心数据到 Excel
+     * <p>权限标识：{@code bd:workstation:export}</p>
+     * <p>日志记录：title="工作站"，businessType=EXPORT</p>
      *
-     * @param bo 查询参数
-     * @param response HTTP响应对象
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("bd:workstation:export")
     @Log(title = "工作站", businessType = BusinessType.EXPORT)
@@ -59,9 +62,10 @@ public class BdWorkstationController extends BaseController {
     }
 
     /**
-     * 获取工作中心详细信息
+     * 根据主键获取工作中心详细信息
+     * <p>权限标识：{@code bd:workstation:query}</p>
      *
-     * @param id 工作中心ID
+     * @param id 工作中心 ID
      * @return 工作中心详细信息
      */
     @SaCheckPermission("bd:workstation:query")
@@ -72,9 +76,11 @@ public class BdWorkstationController extends BaseController {
 
     /**
      * 新增工作中心
+     * <p>权限标识：{@code bd:workstation:add}</p>
+     * <p>日志记录：title="工作站"，businessType=INSERT</p>
      *
-     * @param bo 工作中心信息
-     * @return 操作结果
+     * @param bo 工作中心业务对象，包含工作中心基本信息字段
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:workstation:add")
     @Log(title = "工作站", businessType = BusinessType.INSERT)
@@ -85,9 +91,11 @@ public class BdWorkstationController extends BaseController {
 
     /**
      * 修改工作中心
+     * <p>权限标识：{@code bd:workstation:edit}</p>
+     * <p>日志记录：title="工作站"，businessType=UPDATE</p>
      *
-     * @param bo 工作中心信息
-     * @return 操作结果
+     * @param bo 工作中心业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:workstation:edit")
     @Log(title = "工作站", businessType = BusinessType.UPDATE)
@@ -97,10 +105,12 @@ public class BdWorkstationController extends BaseController {
     }
 
     /**
-     * 删除工作中心
+     * 批量删除工作中心
+     * <p>权限标识：{@code bd:workstation:remove}</p>
+     * <p>日志记录：title="工作站"，businessType=DELETE</p>
      *
-     * @param ids 工作中心ID数组
-     * @return 操作结果
+     * @param ids 工作中心 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:workstation:remove")
     @Log(title = "工作站", businessType = BusinessType.DELETE)

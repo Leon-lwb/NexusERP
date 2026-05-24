@@ -19,10 +19,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 库位Controller
+ * 库位 Controller
+ * <p>
+ * 管理仓库库位的详细信息，包括库位编码、所属库区、容量等。
  *
  * @author ruoyi
- * @date 2025-12-02
  */
 @Validated
 @RequiredArgsConstructor
@@ -33,7 +34,13 @@ public class WmStorageLocationController extends BaseController {
     private final IWmStorageLocationService wmStorageLocationService;
 
     /**
-     * 查询库位列表
+     * 分页查询库位列表
+     * <p>
+     * 权限标识：{@code wm:storagelocation:list}</p>
+     *
+     * @param bo        查询参数，包含库位编码、名称、所属库区等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 库位分页列表
      */
     @SaCheckPermission("wm:storagelocation:list")
     @GetMapping("/list")
@@ -42,7 +49,12 @@ public class WmStorageLocationController extends BaseController {
     }
 
     /**
-     * 导出库位列表
+     * 导出库位数据到 Excel
+     * <p>权限标识：{@code wm:storagelocation:export}</p>
+     * <p>日志记录：title="库位"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("wm:storagelocation:export")
     @Log(title = "库位", businessType = BusinessType.EXPORT)
@@ -53,7 +65,12 @@ public class WmStorageLocationController extends BaseController {
     }
 
     /**
-     * 获取库位详细信息
+     * 根据主键获取库位详细信息
+     * <p>
+     * 权限标识：{@code wm:storagelocation:query}</p>
+     *
+     * @param id 库位 ID
+     * @return 库位详细信息
      */
     @SaCheckPermission("wm:storagelocation:query")
     @GetMapping("/{id}")
@@ -63,6 +80,12 @@ public class WmStorageLocationController extends BaseController {
 
     /**
      * 新增库位
+     * <p>
+     * 权限标识：{@code wm:storagelocation:add}</p>
+     * <p>日志记录：title="库位"，businessType=INSERT</p>
+     *
+     * @param bo 库位业务对象，包含库位编码、名称、所属库区等信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:storagelocation:add")
     @Log(title = "库位", businessType = BusinessType.INSERT)
@@ -73,6 +96,12 @@ public class WmStorageLocationController extends BaseController {
 
     /**
      * 修改库位
+     * <p>
+     * 权限标识：{@code wm:storagelocation:edit}</p>
+     * <p>日志记录：title="库位"，businessType=UPDATE</p>
+     *
+     * @param bo 库位业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:storagelocation:edit")
     @Log(title = "库位", businessType = BusinessType.UPDATE)
@@ -82,7 +111,13 @@ public class WmStorageLocationController extends BaseController {
     }
 
     /**
-     * 删除库位
+     * 批量删除库位
+     * <p>
+     * 权限标识：{@code wm:storagelocation:remove}</p>
+     * <p>日志记录：title="库位"，businessType=DELETE</p>
+     *
+     * @param ids 要删除的库位 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:storagelocation:remove")
     @Log(title = "库位", businessType = BusinessType.DELETE)

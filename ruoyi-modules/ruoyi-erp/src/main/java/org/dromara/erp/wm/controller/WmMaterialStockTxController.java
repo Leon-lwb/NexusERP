@@ -19,10 +19,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 库存事务Controller
+ * 库存事务 Controller
+ * <p>
+ * 提供库存事务记录的 RESTful API 接口，用于查询物料库存变动历史。
  *
  * @author ruoyi
- * @date 2025-12-12
  */
 @Validated
 @RequiredArgsConstructor
@@ -33,7 +34,13 @@ public class WmMaterialStockTxController extends BaseController {
     private final IWmMaterialStockTxService wmMaterialStockTxService;
 
     /**
-     * 查询库存事务列表
+     * 分页查询库存事务列表
+     * <p>
+     * 权限标识：{@code wm:stocktx:list}</p>
+     *
+     * @param bo        查询参数，包含物料编码、事务类型、日期范围等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 库存事务分页列表
      */
     @SaCheckPermission("wm:stocktx:list")
     @GetMapping("/list")
@@ -42,7 +49,12 @@ public class WmMaterialStockTxController extends BaseController {
     }
 
     /**
-     * 导出库存事务列表
+     * 导出库存事务数据到 Excel
+     * <p>权限标识：{@code wm:stocktx:export}</p>
+     * <p>日志记录：title="库存事务"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("wm:stocktx:export")
     @Log(title = "库存事务", businessType = BusinessType.EXPORT)
@@ -53,7 +65,12 @@ public class WmMaterialStockTxController extends BaseController {
     }
 
     /**
-     * 获取库存事务详细信息
+     * 根据主键获取库存事务详细信息
+     * <p>
+     * 权限标识：{@code wm:stocktx:query}</p>
+     *
+     * @param txId 库存事务 ID
+     * @return 库存事务详细信息
      */
     @SaCheckPermission("wm:stocktx:query")
     @GetMapping("/{txId}")
@@ -63,6 +80,12 @@ public class WmMaterialStockTxController extends BaseController {
 
     /**
      * 新增库存事务
+     * <p>
+     * 权限标识：{@code wm:stocktx:add}</p>
+     * <p>日志记录：title="库存事务"，businessType=INSERT</p>
+     *
+     * @param bo 库存事务业务对象
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:stocktx:add")
     @Log(title = "库存事务", businessType = BusinessType.INSERT)
@@ -73,6 +96,12 @@ public class WmMaterialStockTxController extends BaseController {
 
     /**
      * 修改库存事务
+     * <p>
+     * 权限标识：{@code wm:stocktx:edit}</p>
+     * <p>日志记录：title="库存事务"，businessType=UPDATE</p>
+     *
+     * @param bo 库存事务业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:stocktx:edit")
     @Log(title = "库存事务", businessType = BusinessType.UPDATE)
@@ -82,7 +111,13 @@ public class WmMaterialStockTxController extends BaseController {
     }
 
     /**
-     * 删除库存事务
+     * 批量删除库存事务
+     * <p>
+     * 权限标识：{@code wm:stocktx:remove}</p>
+     * <p>日志记录：title="库存事务"，businessType=DELETE</p>
+     *
+     * @param txIds 要删除的库存事务 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:stocktx:remove")
     @Log(title = "库存事务", businessType = BusinessType.DELETE)

@@ -23,7 +23,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 生产计划Controller
+ * 生产计划 Controller
+ * <p>
+ * 提供生产计划的 RESTful API 接口，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页列表查询、详情查询、新增、编辑、删除</li>
+ *   <li>数据导出（Excel）</li>
+ *   <li>版本管理：生产计划版本更新</li>
+ *   <li>BOM 相关：BOM 树计算、物料需求生成、工单生成</li>
+ * </ul>
  *
  * @author ruoyi
  */
@@ -36,7 +44,13 @@ public class PrdProductionPlanController extends BaseController {
     private final IPrdProductionPlanService prdProductionPlanService;
 
     /**
-     * 查询生产计划列表
+     * 分页查询生产计划列表
+     * <p>
+     * 权限标识：{@code prd:plan:list}</p>
+     *
+     * @param bo        查询参数，包含计划编号、产品、日期范围等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 生产计划分页列表
      */
     @SaCheckPermission("prd:plan:list")
     @GetMapping("/list")
@@ -45,7 +59,12 @@ public class PrdProductionPlanController extends BaseController {
     }
 
     /**
-     * 导出生产计划列表
+     * 导出生产计划数据到 Excel
+     * <p>权限标识：{@code prd:plan:export}</p>
+     * <p>日志记录：title="生产计划"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("prd:plan:export")
     @Log(title = "生产计划", businessType = BusinessType.EXPORT)
@@ -56,7 +75,12 @@ public class PrdProductionPlanController extends BaseController {
     }
 
     /**
-     * 获取生产计划详细信息
+     * 根据主键获取生产计划详细信息
+     * <p>
+     * 权限标识：{@code prd:plan:query}</p>
+     *
+     * @param planId 生产计划 ID
+     * @return 生产计划详细信息
      */
     @SaCheckPermission("prd:plan:query")
     @GetMapping("/{planId}")
@@ -66,6 +90,12 @@ public class PrdProductionPlanController extends BaseController {
 
     /**
      * 新增生产计划
+     * <p>
+     * 权限标识：{@code prd:plan:add}</p>
+     * <p>日志记录：title="生产计划"，businessType=INSERT</p>
+     *
+     * @param bo 生产计划业务对象，包含产品、数量、计划日期等信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:plan:add")
     @Log(title = "生产计划", businessType = BusinessType.INSERT)
@@ -76,6 +106,12 @@ public class PrdProductionPlanController extends BaseController {
 
     /**
      * 修改生产计划
+     * <p>
+     * 权限标识：{@code prd:plan:edit}</p>
+     * <p>日志记录：title="生产计划"，businessType=UPDATE</p>
+     *
+     * @param bo 生产计划业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:plan:edit")
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
@@ -85,7 +121,13 @@ public class PrdProductionPlanController extends BaseController {
     }
 
     /**
-     * 删除生产计划
+     * 批量删除生产计划
+     * <p>
+     * 权限标识：{@code prd:plan:remove}</p>
+     * <p>日志记录：title="生产计划"，businessType=DELETE</p>
+     *
+     * @param planIds 要删除的生产计划 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:plan:remove")
     @Log(title = "生产计划", businessType = BusinessType.DELETE)
@@ -96,6 +138,11 @@ public class PrdProductionPlanController extends BaseController {
 
     /**
      * 生产计划版本更新
+     * <p>权限标识：{@code prd:plan:edit}</p>
+     * <p>日志记录：title="生产计划"，businessType=UPDATE</p>
+     *
+     * @param bo 包含版本更新信息的业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("prd:plan:edit")
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
@@ -106,7 +153,12 @@ public class PrdProductionPlanController extends BaseController {
     }
 
     /**
-     * BOM树计算子节点
+     * BOM 树计算子节点
+     * <p>权限标识：{@code prd:plan:edit}</p>
+     * <p>日志记录：title="生产计划"，businessType=UPDATE</p>
+     *
+     * @param planId 生产计划 ID
+     * @return BOM 详情树节点列表
      */
     @SaCheckPermission("prd:plan:edit")
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
@@ -116,7 +168,13 @@ public class PrdProductionPlanController extends BaseController {
     }
 
     /**
-     * 根据BOM详情生成物料需求清单及明细
+     * 根据 BOM 详情生成物料需求清单及明细
+     * <p>权限标识：{@code prd:plan:edit}</p>
+     * <p>日志记录：title="生产计划"，businessType=UPDATE</p>
+     *
+     * @param planId 生产计划 ID
+     * @return 操作结果信息
+     * @throws Exception 生成失败时抛出异常
      */
     @SaCheckPermission("prd:plan:edit")
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
@@ -132,6 +190,13 @@ public class PrdProductionPlanController extends BaseController {
 
     /**
      * 从物料需求单生成生产工单
+     * <p>权限标识：{@code prd:plan:edit}</p>
+     * <p>日志记录：title="生产计划"，businessType=UPDATE</p>
+     *
+     * @param planId         生产计划 ID
+     * @param requirementIds 选中的物料需求 ID 列表
+     * @return 操作结果信息
+     * @throws Exception 生成失败时抛出异常
      */
     @SaCheckPermission("prd:plan:edit")
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)

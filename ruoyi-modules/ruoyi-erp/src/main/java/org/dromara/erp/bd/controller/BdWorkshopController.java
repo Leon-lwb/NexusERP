@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 车间信息Controller
- *
- * @author wanghuan
+ * 车间信息 Controller
+ * <p>
+ * 管理生产车间基本信息，包含车间编码、名称及所属工厂等。
  */
 @Validated
 @RequiredArgsConstructor
@@ -32,10 +32,11 @@ public class BdWorkshopController extends BaseController {
     private final IBdWorkshopService bdWorkshopService;
 
     /**
-     * 查询车间列表
+     * 分页查询车间列表
+     * <p>权限标识：{@code bd:workshop:list}</p>
      *
-     * @param bo 查询参数
-     * @param pageQuery 分页参数
+     * @param bo        查询参数，包含车间名称、编码等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
      * @return 车间分页列表
      */
     @SaCheckPermission("bd:workshop:list")
@@ -45,10 +46,12 @@ public class BdWorkshopController extends BaseController {
     }
 
     /**
-     * 导出车间数据
+     * 导出车间数据到 Excel
+     * <p>权限标识：{@code bd:workshop:export}</p>
+     * <p>日志记录：title="车间"，businessType=EXPORT</p>
      *
-     * @param bo 查询参数
-     * @param response HTTP响应对象
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("bd:workshop:export")
     @Log(title = "车间", businessType = BusinessType.EXPORT)
@@ -59,9 +62,10 @@ public class BdWorkshopController extends BaseController {
     }
 
     /**
-     * 获取车间详细信息
+     * 根据主键获取车间详细信息
+     * <p>权限标识：{@code bd:workshop:query}</p>
      *
-     * @param id 车间ID
+     * @param id 车间 ID
      * @return 车间详细信息
      */
     @SaCheckPermission("bd:workshop:query")
@@ -72,9 +76,11 @@ public class BdWorkshopController extends BaseController {
 
     /**
      * 新增车间
+     * <p>权限标识：{@code bd:workshop:add}</p>
+     * <p>日志记录：title="车间"，businessType=INSERT</p>
      *
-     * @param bo 车间信息
-     * @return 操作结果
+     * @param bo 车间业务对象，包含车间基本信息字段
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:workshop:add")
     @Log(title = "车间", businessType = BusinessType.INSERT)
@@ -85,9 +91,11 @@ public class BdWorkshopController extends BaseController {
 
     /**
      * 修改车间
+     * <p>权限标识：{@code bd:workshop:edit}</p>
+     * <p>日志记录：title="车间"，businessType=UPDATE</p>
      *
-     * @param bo 车间信息
-     * @return 操作结果
+     * @param bo 车间业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:workshop:edit")
     @Log(title = "车间", businessType = BusinessType.UPDATE)
@@ -97,10 +105,12 @@ public class BdWorkshopController extends BaseController {
     }
 
     /**
-     * 删除车间
+     * 批量删除车间
+     * <p>权限标识：{@code bd:workshop:remove}</p>
+     * <p>日志记录：title="车间"，businessType=DELETE</p>
      *
-     * @param ids 车间ID数组
-     * @return 操作结果
+     * @param ids 车间 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:workshop:remove")
     @Log(title = "车间", businessType = BusinessType.DELETE)

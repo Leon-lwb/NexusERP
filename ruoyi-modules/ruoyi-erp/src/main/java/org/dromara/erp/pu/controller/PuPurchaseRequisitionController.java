@@ -42,6 +42,12 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 分页查询采购申请列表
+     * <p>
+     * 权限标识：{@code pu:requisition:list}</p>
+     *
+     * @param bo        查询参数，包含申请编号、申请人、日期范围等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 采购申请分页列表
      */
     @SaCheckPermission("pu:requisition:list")
     @GetMapping("/list")
@@ -51,6 +57,11 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 导出采购申请数据到 Excel
+     * <p>权限标识：{@code pu:requisition:export}</p>
+     * <p>日志记录：title="采购申请"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("pu:requisition:export")
     @Log(title = "采购申请", businessType = BusinessType.EXPORT)
@@ -62,6 +73,11 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 根据主键获取采购申请详情（含明细行）
+     * <p>
+     * 权限标识：{@code pu:requisition:query}</p>
+     *
+     * @param requisitionId 采购申请 ID
+     * @return 采购申请详细信息
      */
     @SaCheckPermission("pu:requisition:query")
     @GetMapping("/{requisitionId}")
@@ -71,6 +87,12 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 新增采购申请（含明细行）
+     * <p>
+     * 权限标识：{@code pu:requisition:add}</p>
+     * <p>日志记录：title="采购申请"，businessType=INSERT</p>
+     *
+     * @param bo 采购申请业务对象，包含物料信息、需求数量等
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("pu:requisition:add")
     @Log(title = "采购申请", businessType = BusinessType.INSERT)
@@ -81,6 +103,12 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 修改采购申请（含明细行）
+     * <p>
+     * 权限标识：{@code pu:requisition:edit}</p>
+     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
+     *
+     * @param bo 采购申请业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("pu:requisition:edit")
     @Log(title = "采购申请", businessType = BusinessType.UPDATE)
@@ -91,6 +119,11 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 提交采购申请（草稿 → 已提交，旧版无审批流）
+     * <p>权限标识：{@code pu:requisition:submit}</p>
+     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
+     *
+     * @param requisitionId 采购申请 ID
+     * @return 操作结果
      */
     @SaCheckPermission("pu:requisition:submit")
     @Log(title = "采购申请", businessType = BusinessType.UPDATE)
@@ -102,6 +135,13 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 提交流程审批（启动 Flowable 审批流）
+     * <p>权限标识：{@code pu:requisition:submit}</p>
+     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
+     *
+     * @param requisitionId 采购申请 ID
+     * @param selectFlowId  选择的流程模板 ID
+     * @return 操作结果
+     * @throws RuntimeException 提交审批失败时抛出运行时异常
      */
     @SaCheckPermission("pu:requisition:submit")
     @Log(title = "采购申请", businessType = BusinessType.UPDATE)
@@ -116,7 +156,12 @@ public class PuPurchaseRequisitionController extends BaseController {
     }
 
     /**
-     * 获取流程实例ID
+     * 获取采购申请流程实例 ID
+     * <p>
+     * 权限标识：{@code pu:requisition:query}</p>
+     *
+     * @param requisitionId 采购申请 ID
+     * @return 流程实例 ID
      */
     @SaCheckPermission("pu:requisition:query")
     @GetMapping("/{requisitionId}/proc")
@@ -126,6 +171,11 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 审批通过采购申请（已提交 → 已批准）
+     * <p>权限标识：{@code pu:requisition:approve}</p>
+     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
+     *
+     * @param requisitionId 采购申请 ID
+     * @return 操作结果
      */
     @SaCheckPermission("pu:requisition:approve")
     @Log(title = "采购申请", businessType = BusinessType.UPDATE)
@@ -137,8 +187,11 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 将已批准的采购申请转换为采购订单
+     * <p>权限标识：{@code pu:requisition:convert}</p>
+     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
      *
-     * @return 生成的采购订单ID
+     * @param requisitionId 采购申请 ID
+     * @return 生成的采购订单 ID
      */
     @SaCheckPermission("pu:requisition:convert")
     @Log(title = "采购申请", businessType = BusinessType.UPDATE)
@@ -149,6 +202,11 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 关闭采购申请
+     * <p>权限标识：{@code pu:requisition:close}</p>
+     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
+     *
+     * @param requisitionId 采购申请 ID
+     * @return 操作结果
      */
     @SaCheckPermission("pu:requisition:close")
     @Log(title = "采购申请", businessType = BusinessType.UPDATE)
@@ -160,6 +218,11 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 作废采购申请
+     * <p>权限标识：{@code pu:requisition:cancel}</p>
+     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
+     *
+     * @param requisitionId 采购申请 ID
+     * @return 操作结果
      */
     @SaCheckPermission("pu:requisition:cancel")
     @Log(title = "采购申请", businessType = BusinessType.UPDATE)
@@ -171,6 +234,12 @@ public class PuPurchaseRequisitionController extends BaseController {
 
     /**
      * 批量删除采购申请
+     * <p>
+     * 权限标识：{@code pu:requisition:remove}</p>
+     * <p>日志记录：title="采购申请"，businessType=DELETE</p>
+     *
+     * @param requisitionIds 要删除的采购申请 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("pu:requisition:remove")
     @Log(title = "采购申请", businessType = BusinessType.DELETE)

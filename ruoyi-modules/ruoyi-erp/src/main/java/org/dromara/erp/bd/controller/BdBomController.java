@@ -19,8 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * BOMController
- * @author wanghuan
+ * BOM（物料清单）Controller
+ * <p>
+ * 管理产品的物料清单（BOM）结构，包含 BOM 版本管理、完整性校验等功能。
  */
 @Validated
 @RequiredArgsConstructor
@@ -31,11 +32,12 @@ public class BdBomController extends BaseController {
     private final IBdBomService bdBomService;
 
     /**
-     * 查询BOM列表
+     * 分页查询 BOM 列表
+     * <p>权限标识：{@code bd:bom:list}</p>
      *
-     * @param bo 查询参数
-     * @param pageQuery 分页参数
-     * @return BOM分页列表
+     * @param bo        查询参数，包含 BOM 编号、物料编码等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return BOM 分页列表
      */
     @SaCheckPermission("bd:bom:list")
     @GetMapping("/list")
@@ -44,10 +46,12 @@ public class BdBomController extends BaseController {
     }
 
     /**
-     * 导出BOM数据
+     * 导出 BOM 数据到 Excel
+     * <p>权限标识：{@code bd:bom:export}</p>
+     * <p>日志记录：title="BOM"，businessType=EXPORT</p>
      *
-     * @param bo 查询参数
-     * @param response HTTP响应对象
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("bd:bom:export")
     @Log(title = "BOM", businessType = BusinessType.EXPORT)
@@ -58,10 +62,11 @@ public class BdBomController extends BaseController {
     }
 
     /**
-     * 获取BOM详细信息
+     * 根据主键获取 BOM 详细信息
+     * <p>权限标识：{@code bd:bom:query}</p>
      *
      * @param id BOM ID
-     * @return BOM详细信息
+     * @return BOM 详细信息
      */
     @SaCheckPermission("bd:bom:query")
     @GetMapping("/{id}")
@@ -70,10 +75,12 @@ public class BdBomController extends BaseController {
     }
 
     /**
-     * 新增BOM
+     * 新增 BOM
+     * <p>权限标识：{@code bd:bom:add}</p>
+     * <p>日志记录：title="BOM"，businessType=INSERT</p>
      *
-     * @param bo BOM信息
-     * @return 操作结果
+     * @param bo BOM 业务对象，包含物料清单的组成结构信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:bom:add")
     @Log(title = "BOM", businessType = BusinessType.INSERT)
@@ -83,10 +90,12 @@ public class BdBomController extends BaseController {
     }
 
     /**
-     * 修改BOM
+     * 修改 BOM
+     * <p>权限标识：{@code bd:bom:edit}</p>
+     * <p>日志记录：title="BOM"，businessType=UPDATE</p>
      *
-     * @param bo BOM信息
-     * @return 操作结果
+     * @param bo BOM 业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:bom:edit")
     @Log(title = "BOM", businessType = BusinessType.UPDATE)
@@ -96,10 +105,12 @@ public class BdBomController extends BaseController {
     }
 
     /**
-     * 删除BOM
+     * 批量删除 BOM
+     * <p>权限标识：{@code bd:bom:remove}</p>
+     * <p>日志记录：title="BOM"，businessType=DELETE</p>
      *
-     * @param ids BOM ID数组
-     * @return 操作结果
+     * @param ids BOM ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("bd:bom:remove")
     @Log(title = "BOM", businessType = BusinessType.DELETE)
@@ -109,7 +120,11 @@ public class BdBomController extends BaseController {
     }
 
     /**
-     * 激活BOM版本
+     * 激活 BOM 版本
+     * <p>
+     * 将指定 BOM 的某个版本标记为激活状态，激活后的版本将用于生产工单的 BOM 展开。</p>
+     * <p>权限标识：{@code bd:bom:edit}</p>
+     * <p>日志记录：title="BOM"，businessType=UPDATE</p>
      *
      * @param bomId BOM ID
      * @return 操作结果
@@ -123,10 +138,13 @@ public class BdBomController extends BaseController {
     }
 
     /**
-     * 校验BOM完整性
+     * 校验 BOM 完整性
+     * <p>
+     * 检查 BOM 结构中是否存在物料缺失、循环引用或数量异常等完整性问题。</p>
+     * <p>权限标识：{@code bd:bom:query}</p>
      *
      * @param bomId BOM ID
-     * @return 校验结果
+     * @return 校验结果信息
      */
     @SaCheckPermission("bd:bom:query")
     @GetMapping("/verify/{bomId}")

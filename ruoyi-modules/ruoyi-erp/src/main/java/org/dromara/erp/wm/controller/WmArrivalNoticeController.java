@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 到货通知Controller
+ * 到货通知 Controller
+ * <p>
+ * 提供到货通知单的 RESTful API 接口，用于管理供应商到货通知信息。
  *
  * @author ruoyi
  */
@@ -32,7 +34,13 @@ public class WmArrivalNoticeController extends BaseController {
     private final IWmArrivalNoticeService wmArrivalNoticeService;
 
     /**
-     * 查询到货通知列表
+     * 分页查询到货通知列表
+     * <p>
+     * 权限标识：{@code wm:arrivalNotice:list}</p>
+     *
+     * @param bo        查询参数，包含通知单号、供应商、日期范围等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 到货通知分页列表
      */
     @SaCheckPermission("wm:arrivalNotice:list")
     @GetMapping("/list")
@@ -41,7 +49,12 @@ public class WmArrivalNoticeController extends BaseController {
     }
 
     /**
-     * 导出到货通知列表
+     * 导出到货通知数据到 Excel
+     * <p>权限标识：{@code wm:arrivalNotice:export}</p>
+     * <p>日志记录：title="到货通知"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("wm:arrivalNotice:export")
     @Log(title = "到货通知", businessType = BusinessType.EXPORT)
@@ -52,7 +65,12 @@ public class WmArrivalNoticeController extends BaseController {
     }
 
     /**
-     * 获取到货通知详细信息
+     * 根据主键获取到货通知详细信息
+     * <p>
+     * 权限标识：{@code wm:arrivalNotice:query}</p>
+     *
+     * @param id 到货通知 ID
+     * @return 到货通知详细信息
      */
     @SaCheckPermission("wm:arrivalNotice:query")
     @GetMapping("/{id}")
@@ -62,6 +80,12 @@ public class WmArrivalNoticeController extends BaseController {
 
     /**
      * 新增到货通知
+     * <p>
+     * 权限标识：{@code wm:arrivalNotice:add}</p>
+     * <p>日志记录：title="到货通知"，businessType=INSERT</p>
+     *
+     * @param bo 到货通知业务对象，包含供应商信息、到货物料明细等
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:arrivalNotice:add")
     @Log(title = "到货通知", businessType = BusinessType.INSERT)
@@ -72,6 +96,12 @@ public class WmArrivalNoticeController extends BaseController {
 
     /**
      * 修改到货通知
+     * <p>
+     * 权限标识：{@code wm:arrivalNotice:edit}</p>
+     * <p>日志记录：title="到货通知"，businessType=UPDATE</p>
+     *
+     * @param bo 到货通知业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:arrivalNotice:edit")
     @Log(title = "到货通知", businessType = BusinessType.UPDATE)
@@ -81,7 +111,13 @@ public class WmArrivalNoticeController extends BaseController {
     }
 
     /**
-     * 删除到货通知
+     * 批量删除到货通知
+     * <p>
+     * 权限标识：{@code wm:arrivalNotice:remove}</p>
+     * <p>日志记录：title="到货通知"，businessType=DELETE</p>
+     *
+     * @param ids 要删除的到货通知 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("wm:arrivalNotice:remove")
     @Log(title = "到货通知", businessType = BusinessType.DELETE)

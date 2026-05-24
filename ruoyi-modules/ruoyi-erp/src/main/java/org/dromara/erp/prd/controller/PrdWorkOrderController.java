@@ -19,7 +19,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 生产工单Controller
+ * 生产工单 Controller
+ * <p>
+ * 提供生产工单的 RESTful API 接口，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页列表查询、详情查询、新增、编辑、删除</li>
+ *   <li>数据导出（Excel）</li>
+ *   <li>状态流转操作：下达、开始生产、完工、关闭</li>
+ *   <li>流程审批集成</li>
+ * </ul>
  *
  * @author ruoyi
  */
@@ -32,7 +40,13 @@ public class PrdWorkOrderController extends BaseController {
     private final IPrdWorkOrderService prdWorkOrderService;
 
     /**
-     * 查询生产工单列表
+     * 分页查询生产工单列表
+     * <p>
+     * 权限标识：{@code prd:work:list}</p>
+     *
+     * @param bo        查询参数，包含工单编号、产品、状态等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 生产工单分页列表
      */
     @SaCheckPermission("prd:work:list")
     @GetMapping("/list")
@@ -41,7 +55,12 @@ public class PrdWorkOrderController extends BaseController {
     }
 
     /**
-     * 导出生产工单列表
+     * 导出生产工单数据到 Excel
+     * <p>权限标识：{@code prd:work:export}</p>
+     * <p>日志记录：title="生产工单"，businessType=EXPORT</p>
+     *
+     * @param bo        查询参数
+     * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
     @SaCheckPermission("prd:work:export")
     @Log(title = "生产工单", businessType = BusinessType.EXPORT)
@@ -52,7 +71,12 @@ public class PrdWorkOrderController extends BaseController {
     }
 
     /**
-     * 获取生产工单详细信息
+     * 根据主键获取生产工单详细信息
+     * <p>
+     * 权限标识：{@code prd:work:query}</p>
+     *
+     * @param woId 生产工单 ID
+     * @return 生产工单详细信息
      */
     @SaCheckPermission("prd:work:query")
     @GetMapping("/{woId}")
@@ -62,6 +86,12 @@ public class PrdWorkOrderController extends BaseController {
 
     /**
      * 新增生产工单
+     * <p>
+     * 权限标识：{@code prd:work:add}</p>
+     * <p>日志记录：title="生产工单"，businessType=INSERT</p>
+     *
+     * @param bo 生产工单业务对象，包含产品、数量、计划时间等信息
+     * @return 新增后的工单详细信息
      */
     @SaCheckPermission("prd:work:add")
     @Log(title = "生产工单", businessType = BusinessType.INSERT)
@@ -73,6 +103,12 @@ public class PrdWorkOrderController extends BaseController {
 
     /**
      * 修改生产工单
+     * <p>
+     * 权限标识：{@code prd:work:edit}</p>
+     * <p>日志记录：title="生产工单"，businessType=UPDATE</p>
+     *
+     * @param bo 生产工单业务对象，包含需要更新的字段信息
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:work:edit")
     @Log(title = "生产工单", businessType = BusinessType.UPDATE)
@@ -82,7 +118,13 @@ public class PrdWorkOrderController extends BaseController {
     }
 
     /**
-     * 删除生产工单
+     * 批量删除生产工单
+     * <p>
+     * 权限标识：{@code prd:work:remove}</p>
+     * <p>日志记录：title="生产工单"，businessType=DELETE</p>
+     *
+     * @param woIds 要删除的生产工单 ID 数组（支持批量删除）
+     * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
     @SaCheckPermission("prd:work:remove")
     @Log(title = "生产工单", businessType = BusinessType.DELETE)
@@ -93,6 +135,11 @@ public class PrdWorkOrderController extends BaseController {
 
     /**
      * 下达工单
+     * <p>权限标识：{@code prd:work:edit}</p>
+     * <p>日志记录：title="生产工单"，businessType=UPDATE</p>
+     *
+     * @param woId 生产工单 ID
+     * @return 操作结果
      */
     @SaCheckPermission("prd:work:edit")
     @Log(title = "生产工单", businessType = BusinessType.UPDATE)
@@ -104,6 +151,11 @@ public class PrdWorkOrderController extends BaseController {
 
     /**
      * 开始生产
+     * <p>权限标识：{@code prd:work:edit}</p>
+     * <p>日志记录：title="生产工单"，businessType=UPDATE</p>
+     *
+     * @param woId 生产工单 ID
+     * @return 操作结果
      */
     @SaCheckPermission("prd:work:edit")
     @Log(title = "生产工单", businessType = BusinessType.UPDATE)
@@ -115,6 +167,11 @@ public class PrdWorkOrderController extends BaseController {
 
     /**
      * 完工
+     * <p>权限标识：{@code prd:work:edit}</p>
+     * <p>日志记录：title="生产工单"，businessType=UPDATE</p>
+     *
+     * @param woId 生产工单 ID
+     * @return 操作结果
      */
     @SaCheckPermission("prd:work:edit")
     @Log(title = "生产工单", businessType = BusinessType.UPDATE)
@@ -126,6 +183,11 @@ public class PrdWorkOrderController extends BaseController {
 
     /**
      * 关闭工单
+     * <p>权限标识：{@code prd:work:edit}</p>
+     * <p>日志记录：title="生产工单"，businessType=UPDATE</p>
+     *
+     * @param woId 生产工单 ID
+     * @return 操作结果
      */
     @SaCheckPermission("prd:work:edit")
     @Log(title = "生产工单", businessType = BusinessType.UPDATE)
@@ -136,7 +198,13 @@ public class PrdWorkOrderController extends BaseController {
     }
 
     /**
-     * 提交审批
+     * 提交生产工单审批
+     * <p>权限标识：{@code prd:work:edit}</p>
+     * <p>日志记录：title="生产工单"，businessType=UPDATE</p>
+     *
+     * @param woId         生产工单 ID
+     * @param selectFlowId 选择的流程模板 ID
+     * @return 操作结果
      */
     @SaCheckPermission("prd:work:edit")
     @Log(title = "生产工单", businessType = BusinessType.UPDATE)
@@ -147,7 +215,12 @@ public class PrdWorkOrderController extends BaseController {
     }
 
     /**
-     * 获取流程实例ID
+     * 获取生产工单流程实例 ID
+     * <p>
+     * 权限标识：{@code prd:work:query}</p>
+     *
+     * @param woId 生产工单 ID
+     * @return 流程实例 ID
      */
     @SaCheckPermission("prd:work:query")
     @GetMapping("/{woId}/proc")

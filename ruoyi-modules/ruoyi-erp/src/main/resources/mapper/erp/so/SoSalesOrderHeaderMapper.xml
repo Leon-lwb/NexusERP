@@ -4,6 +4,6 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="org.dromara.erp.so.mapper.SoSalesOrderHeaderMapper">
 
-    <!-- Custom SQL for SoSalesOrderHeader, if needed -->
+    <!-- 基础CRUD使用BaseMapperPlus提供的通用方法，无需自定义映射 -->
 
 </mapper>

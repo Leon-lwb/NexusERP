@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="p-2 dict-page">
     <el-row :gutter="16" class="dict-grid">
       <!-- 字典类型 -->
@@ -670,6 +670,20 @@ onMounted(() => {
 
 .dict-table-wrap {
   overflow-x: auto;
+  flex: 1;
+}
+
+.dict-card {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+}
+
+.dict-card :deep(.el-card__body) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 </style>

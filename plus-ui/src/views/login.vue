@@ -1,8 +1,11 @@
 <template>
   <div class="login">
+    <!-- 动态背景粒子 -->
+    <canvas ref="particleCanvas" class="particle-bg"></canvas>
+
     <div class="login-card">
       <!-- 左侧品牌面板 -->
-      <div class="login-brand">
+      <div class="login-brand" :data-module="currentModule">
         <div class="brand-body">
           <div class="brand-logo">
             <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -14,6 +17,21 @@
           </div>
           <h1 class="brand-name">{{ title }}</h1>
           <p class="brand-desc">企业资源计划管理系统</p>
+
+          <!-- 模块切换标签 -->
+          <div class="module-tabs">
+            <div
+              v-for="mod in modules"
+              :key="mod.key"
+              class="module-tab"
+              :class="{ active: currentModule === mod.key }"
+              @click="switchModule(mod.key)"
+            >
+              <svg-icon :icon-class="mod.icon" class="module-icon" />
+              <span class="module-label">{{ mod.label }}</span>
+            </div>
+          </div>
+
           <div class="brand-features">
             <div class="brand-feature">
               <span class="feature-dot"></span>多租户数据隔离
@@ -39,7 +57,7 @@
         <div class="form-wrapper">
           <div class="form-header">
             <h2 class="form-title">欢迎登录</h2>
-            <p class="form-subtitle">请输入账号信息以继续</p>
+            <p class="form-subtitle">{{ moduleSubtitle }}</p>
             <lang-select class="lang-position" />
           </div>
 
@@ -141,6 +159,98 @@ const title = import.meta.env.VITE_APP_TITLE;
 const userStore = useUserStore();
 const router = useRouter();
 const { t } = useI18n();
+
+// ==================== 模块切换 ====================
+interface ModuleItem {
+  key: string;
+  label: string;
+  icon: string;
+  subtitle: string;
+  theme: string;
+}
+
+const modules = ref<ModuleItem[]>([
+  { key: 'erp', label: 'ERP', icon: 'dashboard', subtitle: '企业资源计划 · 登录', theme: '#2563eb' },
+  { key: 'mes', label: 'MES', icon: 'monitor', subtitle: '制造执行系统 · 登录', theme: '#0891b2' },
+  { key: 'iot', label: 'IOT', icon: 'international', subtitle: '物联网平台 · 登录', theme: '#7c3aed' }
+]);
+
+const currentModule = ref('erp');
+const moduleSubtitle = computed(() => modules.value.find(m => m.key === currentModule.value)?.subtitle || '请输入账号信息以继续');
+const currentTheme = computed(() => modules.value.find(m => m.key === currentModule.value)?.theme || '#2563eb');
+
+const switchModule = (key: string) => {
+  currentModule.value = key;
+  // 可扩展：根据模块切换不同的登录接口或跳转路径
+};
+
+// ==================== 粒子背景 ====================
+const particleCanvas = ref<HTMLCanvasElement | null>(null);
+let particleAnimId = 0;
+
+const initParticles = () => {
+  const canvas = particleCanvas.value;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const resize = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles: { x: number; y: number; vx: number; vy: number; radius: number; alpha: number }[] = [];
+  const count = 45;
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      radius: Math.random() * 2 + 1,
+      alpha: Math.random() * 0.5 + 0.2
+    });
+  }
+
+  const animate = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((p, i) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(100, 116, 139, ${p.alpha})`;
+      ctx.fill();
+
+      // 连线
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dx = p.x - q.x;
+        const dy = p.y - q.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = `rgba(148, 163, 184, ${0.12 * (1 - dist / 150)})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    });
+    particleAnimId = requestAnimationFrame(animate);
+  };
+  animate();
+};
+
+onUnmounted(() => {
+  if (particleAnimId) cancelAnimationFrame(particleAnimId);
+});
 
 const loginForm = ref<LoginData>({
   tenantId: '000000',
@@ -277,6 +387,7 @@ onMounted(() => {
   getCode();
   initTenantList();
   getLoginData();
+  initParticles();
 });
 </script>
 
@@ -288,6 +399,17 @@ onMounted(() => {
   min-height: 100vh;
   padding: 24px;
   background: linear-gradient(135deg, #f0f4fc 0%, #e2e8f0 50%, #f0f4fc 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.particle-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .login-card {
@@ -298,6 +420,20 @@ onMounted(() => {
   box-shadow: var(--app-shadow-lg);
   overflow: hidden;
   background: #fff;
+  position: relative;
+  z-index: 1;
+  animation: cardEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ========== 左侧品牌面板 ========== */
@@ -311,6 +447,7 @@ onMounted(() => {
   color: #fff;
   position: relative;
   overflow: hidden;
+  transition: background 0.6s ease;
 
   &::before {
     content: '';
@@ -333,6 +470,14 @@ onMounted(() => {
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.04);
   }
+}
+
+/* 模块主题色 */
+.login-brand[data-module='mes'] {
+  background: linear-gradient(160deg, #164e63 0%, #0891b2 40%, #06b6d4 100%);
+}
+.login-brand[data-module='iot'] {
+  background: linear-gradient(160deg, #4c1d95 0%, #7c3aed 40%, #8b5cf6 100%);
 }
 
 .brand-body {
@@ -360,8 +505,49 @@ onMounted(() => {
 .brand-desc {
   font-size: 14px;
   opacity: 0.8;
-  margin: 0 0 32px 0;
+  margin: 0 0 24px 0;
   letter-spacing: 2px;
+}
+
+/* ========== 模块切换标签 ========== */
+.module-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.module-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--app-radius-md);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(4px);
+
+  .module-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  &.active {
+    background: rgba(255, 255, 255, 0.95);
+    color: #1e293b;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+  }
 }
 
 .brand-features {
@@ -575,6 +761,12 @@ onMounted(() => {
 
   .login-brand {
     background: linear-gradient(160deg, #0c1d4a 0%, #153575 40%, #1d4fa8 100%);
+  }
+  .login-brand[data-module='mes'] {
+    background: linear-gradient(160deg, #083344 0%, #0e5a6e 40%, #115e75 100%);
+  }
+  .login-brand[data-module='iot'] {
+    background: linear-gradient(160deg, #2e1065 0%, #4c1d95 40%, #5b21b6 100%);
   }
 
   .login-form-panel {

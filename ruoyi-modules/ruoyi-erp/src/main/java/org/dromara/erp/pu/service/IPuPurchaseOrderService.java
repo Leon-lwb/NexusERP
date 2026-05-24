@@ -6,6 +6,7 @@ import org.dromara.erp.pu.domain.bo.PuPurchaseOrderBo;
 import org.dromara.erp.pu.domain.vo.PuPurchaseOrderVo;
 import org.dromara.workflow.service.WfCallBackServiceI;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -148,4 +149,15 @@ public interface IPuPurchaseOrderService extends WfCallBackServiceI {
      * @return 采购订单业务对象（未持久化）
      */
     PuPurchaseOrderBo generateFromRequisition(Long requisitionId);
+
+    /**
+     * 校验供应商合法性
+     * <p>
+     * 检查供应商是否存在、状态是否有效（非冻结）、交期是否合理。
+     * 在校验通过后静默返回，校验不通过时抛出 RuntimeException。
+     *
+     * @param vendorId           供应商ID
+     * @param expectedArrivalDate 预计到货日期（可空）
+     */
+    void validateVendor(Long vendorId, Date expectedArrivalDate);
 }

@@ -15,6 +15,8 @@ import org.dromara.erp.pu.domain.PuPurchaseOrder;
 import org.dromara.erp.pu.domain.PuPurchaseOrderLine;
 import org.dromara.erp.pu.domain.PuPurchaseRequisition;
 import org.dromara.erp.pu.domain.PuPurchaseRequisitionLine;
+import org.dromara.erp.bd.domain.BdVendor;
+import org.dromara.erp.bd.mapper.BdVendorMapper;
 import org.dromara.erp.pu.domain.bo.PuPurchaseOrderBo;
 import org.dromara.erp.pu.domain.vo.PuPurchaseOrderVo;
 import org.dromara.erp.pu.mapper.PuPurchaseOrderLineMapper;
@@ -70,6 +72,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     private final PuPurchaseRequisitionMapper requisitionMapper;
     private final PuPurchaseRequisitionLineMapper requisitionLineMapper;
     private final PuPurchaseReceivingService purchaseReceivingService;
+    private final BdVendorMapper vendorMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
@@ -121,6 +124,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseOrderBo bo) {
         PuPurchaseOrder entity = MapstructUtils.convert(bo, PuPurchaseOrder.class);
+        validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
         if (StringUtils.isBlank(entity.getOrderNo())) {
             entity.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
         }
@@ -144,6 +148,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuPurchaseOrderBo bo) {
         PuPurchaseOrder entity = MapstructUtils.convert(bo, PuPurchaseOrder.class);
+        validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
         PuPurchaseOrder current = baseMapper.selectById(entity.getOrderId());
         if (current == null) {
             throw new RuntimeException("采购订单不存在");
@@ -438,6 +443,39 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
             throw new RuntimeException("采购订单不存在");
         }
         return order;
+    }
+
+    /**
+     * 校验供应商合法性
+     * <p>
+     * 检查项：
+     * <ol>
+     *   <li>供应商存在性 — 根据 vendorId 查询 bd_vendor 表</li>
+     *   <li>供应商状态 — 必须为 ACTIVE，若为 FROZEN 视为黑名单拒绝</li>
+     *   <li>交期合理性 — 预计到货日期不能早于当前日期</li>
+     * </ol>
+     *
+     * @param vendorId           供应商ID
+     * @param expectedArrivalDate 预计到货日期（可空）
+     */
+    @Override
+    public void validateVendor(Long vendorId, Date expectedArrivalDate) {
+        if (vendorId == null) {
+            throw new RuntimeException("供应商ID不能为空");
+        }
+        BdVendor vendor = vendorMapper.selectById(vendorId);
+        if (vendor == null) {
+            throw new RuntimeException("供应商不存在(ID=" + vendorId + ")");
+        }
+        if ("FROZEN".equals(vendor.getStatus())) {
+            throw new RuntimeException("供应商【" + vendor.getVendorName() + "】已被冻结（黑名单），不可下单");
+        }
+        if (!"ACTIVE".equals(vendor.getStatus())) {
+            throw new RuntimeException("供应商【" + vendor.getVendorName() + "】状态异常（" + vendor.getStatus() + "），不可下单");
+        }
+        if (expectedArrivalDate != null && expectedArrivalDate.before(new Date())) {
+            throw new RuntimeException("预计到货日期不能早于当前日期");
+        }
     }
 
     /**
