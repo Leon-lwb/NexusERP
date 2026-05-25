@@ -810,7 +810,6 @@ function reset() {
     attr2: null,
     attr3: null,
     attr4: null,
-    remark: null,
     selectFlowId: null,
     createBy: null,
     createTime: null,

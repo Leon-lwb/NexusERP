@@ -64,6 +64,7 @@
                         </el-col>
                     </el-row>
 
+                    <el-row :gutter="20">
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
                             <el-form-item label="审批流程" prop="selectFlowId">
                                 <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
