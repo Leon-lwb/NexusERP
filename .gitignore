@@ -47,3 +47,5 @@ nbdist/
 !*/build/*.xml
 
 .flattened-pom.xml
+
+application-prod.yml
