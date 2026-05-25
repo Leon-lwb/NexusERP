@@ -5,16 +5,16 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingsStore } from '@/store/modules/settings';
-import { handleThemeStyle } from '@/utils/theme';
 import { useAppStore } from '@/store/modules/app';
+import { useThemeStore } from '@/store/modules/theme';
 
 const appStore = useAppStore();
+const themeStore = useThemeStore();
 
 onMounted(() => {
   nextTick(() => {
-    // 初始化主题样式
-    handleThemeStyle(useSettingsStore().theme);
+    // 初始化主题系统
+    themeStore.initTheme();
   });
 });
 </script>

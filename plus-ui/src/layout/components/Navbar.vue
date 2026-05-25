@@ -66,6 +66,12 @@
         <el-tooltip :content="proxy.$t('navbar.layoutSize')" effect="dark" placement="bottom">
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
+
+        <el-tooltip content="主题设置" effect="dark" placement="bottom">
+          <div class="right-menu-item hover-effect" @click="setTheme">
+            <el-icon :size="18"><Brush /></el-icon>
+          </div>
+        </el-tooltip>
       </template>
       <div class="avatar-container">
         <el-dropdown class="right-menu-item hover-effect" trigger="click" @command="handleCommand">
@@ -97,6 +103,7 @@ import SearchMenu from './TopBar/search.vue';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useSettingsStore } from '@/store/modules/settings';
+import { useThemeStore } from '@/store/modules/theme';
 import { useNoticeStore } from '@/store/modules/notice';
 import { getTenantList } from '@/api/login';
 import { dynamicClear, dynamicTenant } from '@/api/system/tenant';
@@ -107,18 +114,20 @@ import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import Logo from "@/layout/components/Sidebar/Logo.vue";
 import TopBar from './TopBar'
+import { Brush } from '@element-plus/icons-vue'
 
 const appStore = useAppStore();
 const userStore = useUserStore();
 const settingsStore = useSettingsStore();
+const themeStore = useThemeStore();
 const noticeStore = storeToRefs(useNoticeStore());
 const newNotice = ref(<number>0);
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const userId = ref(userStore.userId);
-const navType = computed(() => settingsStore.navType);
-const showLogo = computed(() => settingsStore.sidebarLogo);
+const navType = computed(() => themeStore.navType);
+const showLogo = computed(() => themeStore.sidebarLogo);
 
 const companyName = ref(undefined);
 const tenantList = ref<TenantVO[]>([]);
@@ -186,9 +195,12 @@ const logout = async () => {
   });
 };
 
-const emits = defineEmits(['setLayout']);
+const emits = defineEmits(['setLayout', 'setTheme']);
 const setLayout = () => {
   emits('setLayout');
+};
+const setTheme = () => {
+  emits('setTheme');
 };
 // 定义Command方法对象 通过key直接调用方法
 const commandMap: { [key: string]: any } = {

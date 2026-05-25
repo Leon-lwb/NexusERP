@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import ScrollPane from './ScrollPane.vue';
 import { getNormalPath } from '@/utils/ruoyi';
-import { useSettingsStore } from '@/store/modules/settings';
+import { useThemeStore } from '@/store/modules/theme';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useTagsViewStore } from '@/store/modules/tagsView';
 import { RouteRecordRaw, RouteLocationNormalized } from 'vue-router';
@@ -51,8 +51,9 @@ const router = useRouter();
 
 const visitedViews = computed(() => useTagsViewStore().getVisitedViews());
 const routes = computed(() => usePermissionStore().getRoutes());
-const theme = computed(() => useSettingsStore().theme);
-const tagsIcon = computed(() => useSettingsStore().tagsIcon)
+const themeStore = useThemeStore();
+const theme = computed(() => themeStore.brandColor);
+const tagsIcon = computed(() => themeStore.tabsIcon)
 
 watch(route, () => {
   addTags();

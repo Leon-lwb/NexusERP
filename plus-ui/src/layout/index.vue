@@ -1,42 +1,35 @@
 <template>
   <div :class="classObj" class="app-wrapper" :style="{ '--current-color': theme }">
     <div v-if="device === 'mobile' && sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
-    <side-bar v-if="!sidebar.hide" class="sidebar-container" />
-    <div :class="{ hasTagsView: needTagsView, sidebarHide: sidebar.hide }" class="main-container">
-      <!-- <el-scrollbar>
-        <div :class="{ 'fixed-header': fixedHeader }">
-          <navbar ref="navbarRef" @setLayout="setLayout" />
-          <tags-view v-if="needTagsView" />
-        </div>
-        <app-main />
-        <settings ref="settingRef" />
-      </el-scrollbar> -->
+    <side-bar v-if="showSidebar" class="sidebar-container" />
+    <div :class="{ hasTagsView: needTagsView, sidebarHide: !showSidebar }" class="main-container">
       <div :class="{ 'fixed-header': fixedHeader }">
-        <navbar ref="navbarRef" @set-layout="setLayout" />
+        <navbar ref="navbarRef" @set-layout="setLayout" @set-theme="setTheme" />
         <tags-view v-if="needTagsView" />
       </div>
       <app-main />
       <settings ref="settingRef" />
+      <theme-settings ref="themeSettingRef" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import SideBar from './components/Sidebar/index.vue';
-import { AppMain, Navbar, Settings, TagsView } from './components';
+import { AppMain, Navbar, Settings, TagsView, ThemeSettings } from './components';
 import { useAppStore } from '@/store/modules/app';
-import { useSettingsStore } from '@/store/modules/settings';
+import { useThemeStore } from '@/store/modules/theme';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import { initWebSocket } from '@/utils/websocket';
 import { initSSE } from '@/utils/sse';
 
-const settingsStore = useSettingsStore();
-const theme = computed(() => settingsStore.theme);
+const themeStore = useThemeStore();
+const theme = computed(() => themeStore.brandColor);
 const sidebar = computed(() => useAppStore().sidebar);
 const device = computed(() => useAppStore().device);
-const needTagsView = computed(() => settingsStore.tagsView);
-const fixedHeader = computed(() => settingsStore.fixedHeader);
-const layout = computed(() => settingsStore.navType);
+const needTagsView = computed(() => themeStore.isTabsEnabled);
+const fixedHeader = computed(() => themeStore.fixedHeader);
+const layout = computed(() => themeStore.navType);
 
 // 根据布局模式判断是否显示侧边栏
 const showSidebar = computed(() => {
@@ -66,8 +59,22 @@ watchEffect(() => {
   }
 });
 
+// 监听导航类型变化，控制侧边栏显示
+watch(
+  () => themeStore.navType,
+  (newType) => {
+    if (newType === NavTypeEnum.TOP) {
+      useAppStore().toggleSideBarHide(true);
+    } else {
+      useAppStore().toggleSideBarHide(false);
+    }
+  },
+  { immediate: true }
+);
+
 const navbarRef = ref<InstanceType<typeof Navbar>>();
 const settingRef = ref<InstanceType<typeof Settings>>();
+const themeSettingRef = ref<InstanceType<typeof ThemeSettings>>();
 
 onMounted(() => {
   nextTick(() => {
@@ -90,6 +97,10 @@ const handleClickOutside = () => {
 
 const setLayout = () => {
   settingRef.value?.openSetting();
+};
+
+const setTheme = () => {
+  themeSettingRef.value?.open();
 };
 </script>
 

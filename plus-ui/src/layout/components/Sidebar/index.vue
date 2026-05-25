@@ -26,7 +26,7 @@ import Logo from './Logo.vue';
 import SidebarItem from './SidebarItem.vue';
 import variables from '@/assets/styles/variables.module.scss';
 import { useAppStore } from '@/store/modules/app';
-import { useSettingsStore } from '@/store/modules/settings';
+import { useThemeStore } from '@/store/modules/theme';
 import { usePermissionStore } from '@/store/modules/permission';
 import { RouteRecordRaw } from 'vue-router';
 
@@ -34,12 +34,12 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const route = useRoute();
 const appStore = useAppStore();
-const settingsStore = useSettingsStore();
+const themeStore = useThemeStore();
 const permissionStore = usePermissionStore();
 const sidebarRouters = computed<RouteRecordRaw[]>(() => permissionStore.getSidebarRoutes());
-const showLogo = computed(() => settingsStore.sidebarLogo);
-const sideTheme = computed(() => settingsStore.sideTheme);
-const theme = computed(() => settingsStore.theme);
+const showLogo = computed(() => themeStore.sidebarLogo);
+const sideTheme = computed(() => themeStore.sideTheme);
+const theme = computed(() => themeStore.brandColor);
 const isCollapse = computed(() => !appStore.sidebar.opened);
 
 const activeMenu = computed(() => {
