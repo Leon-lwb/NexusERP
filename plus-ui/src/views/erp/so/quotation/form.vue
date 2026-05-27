@@ -12,6 +12,7 @@
       </template>
 
       <el-form ref="quotationRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="报价单编号" prop="quotationNo">
@@ -34,7 +35,7 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="客户" prop="clientName">
               <el-input v-model="form.clientName" placeholder="请选择客户" readonly>
                 <template #append>
@@ -43,7 +44,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="销售员" prop="salesRepName">
               <el-input v-model="form.salesRepName" placeholder="请选择销售员" readonly>
                 <template #append>
@@ -52,8 +53,6 @@
               </el-input>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="币别" prop="currency">
               <el-select v-model="form.currency" placeholder="请选择币别">
@@ -61,6 +60,9 @@
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-divider content-position="left">价格信息</el-divider>
+        <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="汇率" prop="exchangeRate">
               <el-input v-model="form.exchangeRate" placeholder="请输入汇率" />
@@ -71,21 +73,20 @@
               <el-input v-model="form.discountRate" placeholder="请输入折扣率" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="付款条件" prop="paymentTerms">
               <el-input v-model="form.paymentTerms" placeholder="请输入付款条件" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+        </el-row>
+        <el-divider content-position="left">其他信息</el-divider>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="交货条件" prop="deliveryTerms">
               <el-input v-model="form.deliveryTerms" placeholder="请输入交货条件" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="24">
+          <el-col :span="16">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
@@ -343,5 +344,32 @@ function handleClientSelect(row: any) {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
 </style>

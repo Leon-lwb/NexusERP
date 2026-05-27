@@ -1,123 +1,123 @@
 <template>
   <div class="app-container">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-      <!-- 操作按钮区域 - 放在最上方 -->
-      <el-row :gutter="20" class="mb20">
-        <el-col :span="12">
-          <span class="bom-title">BOM清单</span>
-        </el-col>
-        <el-col :span="12" class="text-align-right">
-          <el-button type="primary" @click="handleSave" v-if="!isViewMode">保存</el-button>
-          <el-button @click="handleClose">关闭</el-button>
-        </el-col>
-      </el-row>
-      
-      <el-row :gutter="20">
-        <el-col :span="24">
-          <el-form-item label="父项物料信息" prop="parentMaterialName">
-            <el-input v-model="form.parentMaterialName" placeholder="父项物料信息" readonly />
-            <el-input v-model="form.parentMaterialId" style="display: none" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      
-      <el-row :gutter="20">
-        <el-col :span="12">
-          <el-form-item label="BOM版本号" prop="bomVersion">
-            <el-input v-model="form.bomVersion" placeholder="请输入BOM版本号" :readonly="isViewMode" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="BOM名称信息" prop="bomName">
-            <el-input v-model="form.bomName" placeholder="请输入BOM名称信息" :readonly="isViewMode" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      
-      <el-row :gutter="20">
-        <el-col :span="12">
-          <el-form-item label="生效日期" prop="effectiveDate">
-            <el-date-picker clearable
-                            v-model="form.effectiveDate"
-                            type="date"
-                            value-format="YYYY-MM-DD"
-                            placeholder="请选择生效日期"
-                            style="width: 100%"
-                            :readonly="isViewMode">
-            </el-date-picker>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="失效日期" prop="expiryDate">
-            <el-date-picker clearable
-                            v-model="form.expiryDate"
-                            type="date"
-                            value-format="YYYY-MM-DD"
-                            placeholder="请选择失效日期"
-                            style="width: 100%"
-                            :readonly="isViewMode">
-            </el-date-picker>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      
-      <el-row :gutter="20">
-        <el-col :span="12">
-          <el-form-item label="是否当前版本" prop="isCurrent">
-            <el-radio-group v-model="form.isCurrent" :disabled="isViewMode">
-              <el-radio
-                  v-for="dict in sys_true_or_false"
-                  :key="dict.value"
-                  :label="parseInt(dict.value)"
-              >{{dict.label}}</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="状态信息" prop="status">
-            <el-radio-group v-model="form.status" :disabled="isViewMode">
-              <el-radio
-                  v-for="dict in sys_core_status"
-                  :key="dict.value"
-                  :label="parseInt(dict.value)"
-              >{{dict.label}}</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      
-      <el-row :gutter="20">
-        <el-col :span="12">
-          <el-form-item label="来源类型" prop="sourceType">
-            <el-select v-model="form.sourceType" placeholder="请选择来源类型" :disabled="isViewMode" clearable>
-              <el-option
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span class="card-title">BOM清单</span>
+          <div class="card-actions">
+            <el-button type="primary" @click="handleSave" v-if="!isViewMode">保存</el-button>
+            <el-button @click="handleClose">关闭</el-button>
+          </div>
+        </div>
+      </template>
+
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <!-- 基本信息 -->
+        <el-divider content-position="left">基本信息</el-divider>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="父项物料" prop="parentMaterialName">
+              <el-input v-model="form.parentMaterialName" placeholder="父项物料信息" readonly />
+              <el-input v-model="form.parentMaterialId" style="display: none" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="BOM版本号" prop="bomVersion">
+              <el-input v-model="form.bomVersion" placeholder="请输入BOM版本号" :readonly="isViewMode" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="BOM名称" prop="bomName">
+              <el-input v-model="form.bomName" placeholder="请输入BOM名称" :readonly="isViewMode" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="生效日期" prop="effectiveDate">
+              <el-date-picker
+                v-model="form.effectiveDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择生效日期"
+                style="width: 100%"
+                :readonly="isViewMode"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="失效日期" prop="expiryDate">
+              <el-date-picker
+                v-model="form.expiryDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择失效日期"
+                style="width: 100%"
+                :readonly="isViewMode"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="来源类型" prop="sourceType">
+              <el-select v-model="form.sourceType" placeholder="请选择来源类型" :disabled="isViewMode" clearable style="width: 100%">
+                <el-option
                   v-for="dict in prd_material_source_type"
                   :key="dict.value"
                   :label="dict.label"
                   :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 状态信息 -->
+        <el-divider content-position="left">状态信息</el-divider>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="是否当前版本" prop="isCurrent">
+              <el-radio-group v-model="form.isCurrent" :disabled="isViewMode">
+                <el-radio
+                  v-for="dict in sys_true_or_false"
+                  :key="dict.value"
+                  :label="parseInt(dict.value)"
+                >{{ dict.label }}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="状态" prop="status">
+              <el-radio-group v-model="form.status" :disabled="isViewMode">
+                <el-radio
+                  v-for="dict in sys_core_status"
+                  :key="dict.value"
+                  :label="parseInt(dict.value)"
+                >{{ dict.label }}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 备注 -->
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" :readonly="isViewMode" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+
+      <!-- BOM子项物料信息表格 -->
+      <el-divider content-position="center">物料明细</el-divider>
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button type="primary" icon="Plus" @click="addMaterialRow" v-if="!isViewMode">添加物料</el-button>
         </el-col>
       </el-row>
 
-      <el-row :gutter="20">
-        <el-col :span="24">
-          <el-form-item label="备注信息" prop="remark">
-            <el-input v-model="form.remark" type="textarea" placeholder="请输入备注信息" :readonly="isViewMode" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
-    
-    <!-- BOM子项物料信息表格 -->
-    <div class="material-section">
-      <div class="section-header">
-        <span class="section-title">物料信息</span>
-        <el-button type="primary" @click="addMaterialRow" class="add-btn" v-if="!isViewMode">新增物料</el-button>
-      </div>
-      
-      <el-table :data="materialItems" style="width: 100%" class="material-table">
+      <el-table :data="materialItems" style="width: 100%">
         <el-table-column type="index" width="50" align="center" label="序号" />
         <el-table-column label="子项物料" align="center" prop="childMaterialName" min-width="200">
           <template #default="scope">
@@ -180,6 +180,22 @@
               style="width: 100%" />
           </template>
         </el-table-column>
+        <el-table-column label="来源类型" align="center" prop="sourceType" width="140">
+          <template #default="scope">
+            <el-select 
+              v-model="scope.row.sourceType" 
+              placeholder="请选择来源类型" 
+              :disabled="isViewMode" 
+              clearable 
+              style="width: 100%">
+              <el-option
+                v-for="dict in prd_material_source_type"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value" />
+            </el-select>
+          </template>
+        </el-table-column>
         <el-table-column label="生效日期" align="center" prop="effectiveDate" width="140">
           <template #default="scope">
             <el-date-picker
@@ -219,8 +235,8 @@
           </template>
         </el-table-column>
       </el-table>
-    </div>
-    
+    </el-card>
+
     <!-- 物料选择对话框 -->
     <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1200px" append-to-body>
       <el-row :gutter="20">
@@ -468,6 +484,7 @@ function getBomDetailsList(bomId) {
         leadTime: item.leadTime !== undefined ? item.leadTime : 0,
         effectiveDate: item.effectiveDate || null,
         expiryDate: item.expiryDate || null,
+        sourceType: item.sourceType || null,
         status: item.status !== undefined ? item.status : 1,
         remark: item.remark || ''
       }));
@@ -483,6 +500,7 @@ function getBomDetailsList(bomId) {
         leadTime: 0,
         effectiveDate: null,
         expiryDate: null,
+        sourceType: null,
         status: 1,
         remark: ''
       }];
@@ -788,43 +806,39 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.mb20 {
-  margin-bottom: 20px;
-}
-
-.text-align-right {
-  text-align: right;
-}
-
-.bom-title {
-  font-size: 18px;
-  font-weight: bold;
-  line-height: 32px;
-}
-
-.material-section {
-  margin-top: 30px;
-}
-
-.section-header {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: bold;
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
   color: #303133;
 }
 
-.add-btn {
-  float: right;
+.card-actions {
+  display: flex;
+  gap: 10px;
 }
 
-.material-table {
-  margin-top: 10px;
+.mb8 {
+  margin-bottom: 8px;
+}
+
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 
 :deep(.el-input-number .el-input__inner) {

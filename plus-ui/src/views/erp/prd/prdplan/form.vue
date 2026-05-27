@@ -3,8 +3,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ title }}</span>
-          <div>
+          <span class="card-title">{{ title }}</span>
+          <div class="card-actions">
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
@@ -12,8 +12,9 @@
       </template>
 
       <el-form ref="planRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="生产计划编号" prop="planNo">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <el-input v-model="form.planNo" placeholder="请输入生产计划编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
@@ -27,7 +28,7 @@
               </div>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="销售订单" prop="referenceNo">
               <el-input v-model="form.referenceNo" placeholder="请选择销售订单" readonly>
                 <template #append>
@@ -36,38 +37,39 @@
               </el-input>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划名称" prop="planName">
               <el-input v-model="form.planName" placeholder="请输入计划名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="版本号" prop="version">
               <el-input v-model="form.version" placeholder="请输入版本号" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="原始计划ID" prop="originalPlanId">
               <el-input v-model="form.originalPlanId" placeholder="请输入原始计划ID" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="物料需求单ID" prop="materialRequirementId">
               <el-input v-model="form.materialRequirementId" placeholder="请输入物料需求单ID" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="物料需求单编号" prop="materialRequirementNo">
               <el-input v-model="form.materialRequirementNo" placeholder="请输入物料需求单编号" />
             </el-form-item>
           </el-col>
         </el-row>
+        <el-divider content-position="left">计划信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划类型" prop="planType">
               <el-select v-model="form.planType" placeholder="请选择计划类型">
                 <el-option v-for="dict in prd_plan_type" :key="dict.value" :label="dict.label"
@@ -75,21 +77,23 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划日期" prop="planDate">
               <el-date-picker clearable v-model="form.planDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择计划日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划开始日期" prop="startDate">
               <el-date-picker clearable v-model="form.startDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择计划开始日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="计划结束日期" prop="endDate">
               <el-date-picker clearable v-model="form.endDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择计划结束日期">
@@ -97,8 +101,9 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-divider content-position="left">状态信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status">
                 <el-radio v-for="dict in prd_plan_status" :key="dict.value" :label="dict.value">{{ dict.label
@@ -106,7 +111,7 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="优先级" prop="priority">
               <el-select v-model="form.priority" placeholder="请选择优先级">
                 <el-option v-for="dict in so_order_priority" :key="dict.value" :label="dict.label"
@@ -114,62 +119,63 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划员ID" prop="plannerId">
               <el-input v-model="form.plannerId" placeholder="请输入计划员ID" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
-            <el-form-item label="计划员" prop="plannerName">
-              <el-input v-model="form.plannerName" placeholder="请输入计划员" />
-            </el-form-item>
-          </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划员" prop="plannerName">
               <el-input v-model="form.plannerName" placeholder="请输入计划员" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="生产部门ID" prop="departmentId">
               <el-input v-model="form.departmentId" placeholder="请输入生产部门ID" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="生产部门" prop="departmentName">
               <el-input v-model="form.departmentName" placeholder="请输入生产部门" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="计划总数量" prop="totalQuantity">
               <el-input v-model="form.totalQuantity" placeholder="请输入计划总数量" />
             </el-form-item>
           </el-col>
         </el-row>
+        <el-divider content-position="left">时间信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="确认时间" prop="confirmedTime">
               <el-date-picker clearable v-model="form.confirmedTime" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择确认时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="下达时间" prop="releasedTime">
               <el-date-picker clearable v-model="form.releasedTime" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择下达时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="关闭时间" prop="closedTime">
               <el-date-picker clearable v-model="form.closedTime" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择关闭时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-divider content-position="left">BOM信息</el-divider>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="BOM名称" prop="bomName">
               <el-input v-model="form.bomName" placeholder="BOM名称" readonly>
                 <template #append>
@@ -178,24 +184,24 @@
               </el-input>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="bomVersion" prop="bomVersion">
               <el-input v-model="form.bomVersion" placeholder="请输入bomVersion" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="BOM ID" prop="bomId">
               <el-input v-model="form.bomId" placeholder="BOM ID" readonly />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="预留字段4" prop="attr4">
               <el-input v-model="form.attr4" placeholder="请输入预留字段4" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
@@ -203,67 +209,59 @@
         </el-row>
 
         <!-- 订单信息 -->
-        <el-card class="box-card" shadow="never" style="margin-top: 20px;">
-          <template #header>
-            <div class="card-header">
-              <span>订单信息</span>
-            </div>
-          </template>
-          <el-table :data="orderLineList" v-loading="orderLineLoading" style="width: 100%; margin-top: 20px;">
-            <el-table-column label="行号" prop="lineNo" width="80" />
-            <el-table-column label="物料编码" prop="materialCode" width="150" />
-            <el-table-column label="物料名称" prop="materialName" min-width="200" />
-            <el-table-column label="单位" prop="unit" width="100" />
-            <el-table-column label="订单数量" prop="orderedQty" width="120" />
-            <el-table-column label="备注" prop="remark" min-width="150" />
-          </el-table>
-        </el-card>
+        <el-divider content-position="center">订单信息</el-divider>
+        <el-table :data="orderLineList" v-loading="orderLineLoading" style="width: 100%; margin-top: 20px;">
+          <el-table-column label="行号" prop="lineNo" width="80" />
+          <el-table-column label="物料编码" prop="materialCode" width="150" />
+          <el-table-column label="物料名称" prop="materialName" min-width="200" />
+          <el-table-column label="单位" prop="unit" width="100" />
+          <el-table-column label="订单数量" prop="orderedQty" width="120" />
+          <el-table-column label="备注" prop="remark" min-width="150" />
+        </el-table>
 
         <!-- 物料清单 -->
-        <el-card class="box-card" shadow="never" style="margin-top: 20px;">
-          <template #header>
-            <div class="card-header">
-              <span>物料清单</span>
-              <div>
-                <el-button type="primary" @click="handleBomCalculate" v-if="!isViewMode">BOM计算</el-button>
-                <el-button type="primary" @click="handleMaterialList" v-if="form.planNo">物料清单</el-button>
-              </div>
-            </div>
-          </template>
-          <el-table :data="materialTree" row-key="requirementId" style="width: 100%"
-            :tree-props="{ children: 'children' }" default-expand-all>
-            <el-table-column label="物料编码" prop="materialCode" width="180" />
-            <el-table-column label="物料名称" prop="materialName" min-width="200" />
-            <el-table-column label="规格型号" prop="materialSpec" width="150" />
-            <el-table-column label="需求总量" prop="totalRequiredQuantity" width="120" />
-            <el-table-column label="物料类型" width="100" align="center">
-              <template #default="scope">
-                <el-tag v-if="scope.row.sourceType === 'PROCUREMENT'" type="info" size="small">采购件</el-tag>
-                <el-tag v-else-if="scope.row.sourceType === 'PROCESS'" size="small">加工件</el-tag>
-                <span v-else>-</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="下级物料" width="100" align="center">
-              <template #default="scope">
-                <el-popover v-if="scope.row.prdMaterialRequirementDetailList?.length" placement="right" width="650" trigger="click">
-                  <template #reference>
-                    <el-button link type="primary" size="small">{{ scope.row.prdMaterialRequirementDetailList.length }}项</el-button>
-                  </template>
-                  <el-table :data="scope.row.prdMaterialRequirementDetailList" size="small" border>
-                    <el-table-column label="物料编码" prop="materialCode" width="150" />
-                    <el-table-column label="物料名称" prop="materialName" min-width="150" />
-                    <el-table-column label="规格型号" prop="materialSpec" width="150" />
-                    <el-table-column label="单位" prop="unit" width="80" />
-                    <el-table-column label="BOM用量" prop="bomQuantity" width="100" />
-                    <el-table-column label="损耗率(%)" prop="lossRate" width="100" />
-                    <el-table-column label="需求数量" prop="requiredQuantity" width="120" />
-                  </el-table>
-                </el-popover>
-                <span v-else>-</span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
+        <el-divider content-position="center">物料清单</el-divider>
+        <el-row :gutter="10" class="mb8">
+          <el-col :span="1.5">
+            <el-button type="primary" @click="handleBomCalculate" v-if="!isViewMode">BOM计算</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button type="primary" @click="handleMaterialList" v-if="form.planNo">物料清单</el-button>
+          </el-col>
+        </el-row>
+        <el-table :data="materialTree" row-key="requirementId" style="width: 100%"
+          :tree-props="{ children: 'children' }" default-expand-all>
+          <el-table-column label="物料编码" prop="materialCode" width="180" />
+          <el-table-column label="物料名称" prop="materialName" min-width="200" />
+          <el-table-column label="规格型号" prop="materialSpec" width="150" />
+          <el-table-column label="需求总量" prop="totalRequiredQuantity" width="120" />
+          <el-table-column label="物料类型" width="100" align="center">
+            <template #default="scope">
+              <el-tag v-if="scope.row.sourceType === 'PROCUREMENT'" type="info" size="small">采购件</el-tag>
+              <el-tag v-else-if="scope.row.sourceType === 'PROCESS'" size="small">加工件</el-tag>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="下级物料" width="100" align="center">
+            <template #default="scope">
+              <el-popover v-if="scope.row.prdMaterialRequirementDetailList?.length" placement="right" width="650" trigger="click">
+                <template #reference>
+                  <el-button link type="primary" size="small">{{ scope.row.prdMaterialRequirementDetailList.length }}项</el-button>
+                </template>
+                <el-table :data="scope.row.prdMaterialRequirementDetailList" size="small" border>
+                  <el-table-column label="物料编码" prop="materialCode" width="150" />
+                  <el-table-column label="物料名称" prop="materialName" min-width="150" />
+                  <el-table-column label="规格型号" prop="materialSpec" width="150" />
+                  <el-table-column label="单位" prop="unit" width="80" />
+                  <el-table-column label="BOM用量" prop="bomQuantity" width="100" />
+                  <el-table-column label="损耗率(%)" prop="lossRate" width="100" />
+                  <el-table-column label="需求数量" prop="requiredQuantity" width="120" />
+                </el-table>
+              </el-popover>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-form>
     </el-card>
 
@@ -866,11 +864,32 @@ function handleMaterialList() {
   align-items: center;
 }
 
-.box-card {
-  margin-bottom: 20px;
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
 }
 
-.box-card:last-child {
-  margin-bottom: 0;
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mb8 {
+  margin-bottom: 8px;
+}
+
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 </style>

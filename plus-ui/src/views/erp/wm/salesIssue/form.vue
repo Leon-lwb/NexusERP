@@ -17,6 +17,7 @@
 
       <el-form ref="salesIssueRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <!-- 基本信息 -->
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="出库单编号" prop="issueCode">
@@ -46,6 +47,7 @@
         </el-row>
 
         <!-- 来源信息 -->
+        <el-divider content-position="left">来源信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="销售订单" prop="soNo">
@@ -72,7 +74,8 @@
           </el-col>
         </el-row>
 
-        <!-- 状态、审批流程、备注 -->
+        <!-- 状态信息 -->
+        <el-divider content-position="left">状态信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="单据状态" prop="status">
@@ -101,6 +104,7 @@
         </el-row>
 
         <!-- 汇总信息 -->
+        <el-divider content-position="left">汇总信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="出库数量">
@@ -998,8 +1002,37 @@ function loadOrderLinesIntoIssue() {
   align-items: center;
 }
 
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mb8 {
+  margin-bottom: 8px;
+}
+
 .text-danger {
   color: #f56c6c;
   font-weight: bold;
+}
+
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 </style>

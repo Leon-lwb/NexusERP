@@ -3,8 +3,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ title }}</span>
-          <div>
+          <span class="card-title">{{ title }}</span>
+          <div class="card-actions">
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
@@ -12,6 +12,7 @@
       </template>
 
       <el-form ref="miscRecptRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="入库单编号" prop="recptCode">
@@ -35,8 +36,10 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-divider content-position="left">仓库信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="仓库" prop="warehouseName">
               <el-input v-model="form.warehouseName" placeholder="请选择仓库" readonly>
                 <template #append>
@@ -45,7 +48,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="库区" prop="areaName">
               <el-input v-model="form.areaName" placeholder="请选择库区" readonly>
                 <template #append>
@@ -55,6 +58,8 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-divider content-position="left">备注信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="备注" prop="remark">
@@ -343,5 +348,32 @@ function handleAreaSelect(row: any) {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
 </style>

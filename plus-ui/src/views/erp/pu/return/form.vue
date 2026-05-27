@@ -13,7 +13,9 @@
         </div>
       </template>
 
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" :disabled="formDisabled">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
+        <el-divider content-position="left">基本信息</el-divider>
+
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="退货单号" prop="returnNo">
@@ -60,6 +62,8 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-divider content-position="left">状态信息</el-divider>
 
         <el-row :gutter="20">
           <el-col :span="8">
@@ -362,5 +366,34 @@ function cancel() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mb8 {
+  margin-bottom: 8px;
+}
+
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 </style>

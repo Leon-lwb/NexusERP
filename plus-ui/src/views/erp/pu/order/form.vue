@@ -4,8 +4,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ title }}</span>
-          <div>
+          <span class="card-title">{{ title }}</span>
+          <div class="card-actions">
             <!-- 保存按钮，仅在非查看模式下显示 -->
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <!-- 提交审批按钮 -->
@@ -19,7 +19,9 @@
       </template>
 
       <!-- 表单区域 -->
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" :disabled="formDisabled">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
+        <!-- 基本信息 -->
+        <el-divider content-position="left">基本信息</el-divider>
         <!-- 第一行：订单号、采购申请号、订单日期 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -53,6 +55,8 @@
           </el-col>
         </el-row>
 
+        <!-- 供应商信息 -->
+        <el-divider content-position="left">供应商信息</el-divider>
         <!-- 第二行：供应商、预计到货日期、状态 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -89,6 +93,8 @@
           </el-col>
         </el-row>
 
+        <!-- 财务信息 -->
+        <el-divider content-position="left">财务信息</el-divider>
         <!-- 第三行：币别、汇率、备注 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -646,3 +652,34 @@ function cancel() {
   router.push('/erp/pu/order')
 }
 </script>
+
+<style scoped>
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
+</style>

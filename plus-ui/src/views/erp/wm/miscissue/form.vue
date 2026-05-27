@@ -12,6 +12,7 @@
       </template>
 
       <el-form ref="miscIssueRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="出库单编号" prop="issueCode">
@@ -36,7 +37,7 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="仓库" prop="warehouseName">
               <el-input v-model="form.warehouseName" placeholder="请选择仓库" readonly>
                 <template #append>
@@ -45,11 +46,9 @@
               </el-input>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="24">
+          <el-col :span="8">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+              <el-input v-model="form.remark" placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -296,5 +295,32 @@ function handleWarehouseSelect(row: any) {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
 </style>

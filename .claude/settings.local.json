@@ -130,7 +130,8 @@
       "Bash(echo === $\\(basename \"$f\"\\) === *)",
       "Bash(grep -oP 'CREATE TABLE\\\\s*`[^`]+`' \"script/sql/ry-erp.sql\")",
       "Bash(ls *)",
-      "Bash(\"/d/maven/apache-maven-3.6.3/bin/mvn\" compile *)"
+      "Bash(\"/d/maven/apache-maven-3.6.3/bin/mvn\" compile *)",
+      "Bash(GIT_SEQUENCE_EDITOR=\"sed -i 's/^pick e988734/edit e988734/'\" git rebase -i e477b7d)"
     ]
   }
 }

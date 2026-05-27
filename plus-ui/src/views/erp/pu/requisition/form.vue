@@ -4,8 +4,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ title }}</span>
-          <div>
+          <span class="card-title">{{ title }}</span>
+          <div class="card-actions">
             <!-- 保存按钮，仅在非查看模式下显示 -->
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <!-- 提交审批按钮 -->
@@ -19,7 +19,9 @@
       </template>
 
       <!-- 表单区域 -->
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" :disabled="formDisabled">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
+        <!-- 基本信息 -->
+        <el-divider content-position="left">基本信息</el-divider>
         <!-- 第一行：申请单号、申请名称、申请日期 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -49,6 +51,8 @@
           </el-col>
         </el-row>
 
+        <!-- 需求信息 -->
+        <el-divider content-position="left">需求信息</el-divider>
         <!-- 第二行：需求日期、来源类型、状态 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -88,6 +92,8 @@
           </el-col>
         </el-row>
 
+        <!-- 审批信息 -->
+        <el-divider content-position="left">审批信息</el-divider>
         <!-- 第三行：审批流程、备注 -->
         <el-row :gutter="20">
           <el-col :span="8">
@@ -110,7 +116,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="16">
+          <el-col :span="8">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
             </el-form-item>
@@ -573,3 +579,34 @@ function cancel() {
   router.push('/erp/pu/requisition')
 }
 </script>
+
+<style scoped>
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
+</style>

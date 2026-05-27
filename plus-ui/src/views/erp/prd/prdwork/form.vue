@@ -14,8 +14,9 @@
       </template>
 
       <el-form ref="workRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="工单编号" prop="woNo">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <el-input v-model="form.woNo" placeholder="请输入工单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
@@ -24,7 +25,7 @@
               </div>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="来源计划ID" prop="planId">
               <el-input v-model="form.planId" placeholder="请输入来源计划ID" readonly>
                 <template #append>
@@ -33,7 +34,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划名称" prop="planName">
               <el-input v-model="form.planName" placeholder="请输入计划名称" readonly>
                 <template #append>
@@ -42,7 +43,10 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="来源类型" prop="sourceType">
               <el-select v-model="form.sourceType" placeholder="请选择来源类型">
                 <el-option v-for="dict in prd_source_type" :key="dict.value" :label="dict.label"
@@ -50,48 +54,48 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="来源单据ID" prop="sourceId">
               <el-input v-model="form.sourceId" placeholder="请输入来源单据ID" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="销售订单编号" prop="sourceNo">
               <el-input v-model="form.sourceNo" placeholder="请输入销售订单编号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="来源单据行ID" prop="sourceLineId">
-              <el-input v-model="form.sourceLineId" placeholder="请输入来源单据行ID" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="产品物料ID" prop="materialId">
-              <el-input v-model="form.materialId" placeholder="请输入产品物料ID" />
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
+            <el-form-item label="来源单据行ID" prop="sourceLineId">
+              <el-input v-model="form.sourceLineId" placeholder="请输入来源单据行ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="产品物料ID" prop="materialId">
+              <el-input v-model="form.materialId" placeholder="请输入产品物料ID" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="产品编码" prop="materialCode">
               <el-input v-model="form.materialCode" placeholder="请输入产品编码" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="产品名称" prop="materialName">
               <el-input v-model="form.materialName" placeholder="请输入产品名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划数量" prop="plannedQty">
               <el-input v-model="form.plannedQty" placeholder="请输入计划数量" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="已完成数量" prop="completedQty">
               <el-input v-model="form.completedQty" placeholder="请输入已完成数量" />
             </el-form-item>
@@ -99,22 +103,25 @@
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="报废数量" prop="scrapQty">
               <el-input v-model="form.scrapQty" placeholder="请输入报废数量" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
-            <el-form-item label="单位id" prop="unitId">
-              <el-input v-model="form.unitId" placeholder="请输入单位id" />
+          <el-col :span="8">
+            <el-form-item label="单位ID" prop="unitId">
+              <el-input v-model="form.unitId" placeholder="请输入单位ID" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="单位名称" prop="unitName">
               <el-input v-model="form.unitName" placeholder="请输入单位名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="优先级" prop="priority">
               <el-select v-model="form.priority" placeholder="请选择优先级">
                 <el-option v-for="dict in so_order_priority" :key="dict.value" :label="dict.label"
@@ -122,20 +129,20 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item label="bomName" prop="bomName">
-              <el-input v-model="form.bomName" placeholder="请输入bomName" />
+          <el-col :span="8">
+            <el-form-item label="BOM名称" prop="bomName">
+              <el-input v-model="form.bomName" placeholder="请输入BOM名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="BOM版本" prop="bomVersion">
               <el-input v-model="form.bomVersion" placeholder="请输入BOM版本" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="主车间" prop="workshopName">
               <el-input v-model="form.workshopName" placeholder="请选择主车间" readonly>
                 <template #append>
@@ -146,7 +153,7 @@
           </el-col>
         </el-row>
 
-        <el-divider content-position="left">资源分配</el-divider>
+        <el-divider content-position="center">资源分配</el-divider>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="分配车间" prop="workshopList">
@@ -173,6 +180,15 @@
           </el-col>
         </el-row>
 
+        <el-divider content-position="center">分配工作站</el-divider>
+        <el-row :gutter="10" class="mb8">
+          <el-col :span="1.5">
+            <el-button type="primary" icon="Plus" @click="openWorkstationSelect" :disabled="isViewMode || !form.workshopList || form.workshopList.length === 0" v-if="!isViewMode">添加工作站</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <span v-if="!isViewMode && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
+          </el-col>
+        </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="分配工作站">
@@ -187,12 +203,19 @@
                   </template>
                 </el-table-column>
               </el-table>
-              <el-button type="primary" icon="Plus" @click="openWorkstationSelect" :disabled="isViewMode || !form.workshopList || form.workshopList.length === 0" v-if="!isViewMode">添加工作站</el-button>
-              <span v-if="!isViewMode && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399; margin-left: 10px;">请先选择车间</span>
             </el-form-item>
           </el-col>
         </el-row>
 
+        <el-divider content-position="center">分配班组</el-divider>
+        <el-row :gutter="10" class="mb8">
+          <el-col :span="1.5">
+            <el-button type="primary" icon="Plus" @click="openTeamSelect" :disabled="isViewMode || !form.workshopList || form.workshopList.length === 0" v-if="!isViewMode">添加班组</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <span v-if="!isViewMode && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
+          </el-col>
+        </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="分配班组">
@@ -207,14 +230,13 @@
                   </template>
                 </el-table-column>
               </el-table>
-              <el-button type="primary" icon="Plus" @click="openTeamSelect" :disabled="isViewMode || !form.workshopList || form.workshopList.length === 0" v-if="!isViewMode">添加班组</el-button>
-              <span v-if="!isViewMode && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399; margin-left: 10px;">请先选择车间</span>
             </el-form-item>
           </el-col>
         </el-row>
 
+        <el-divider content-position="left">计划信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="负责人" prop="responsibleName">
               <el-input v-model="form.responsibleName" placeholder="请选择负责人" readonly>
                 <template #append>
@@ -223,28 +245,31 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划开始日期" prop="planStartDate">
               <el-date-picker clearable v-model="form.planStartDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择计划开始日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="计划结束日期" prop="planEndDate">
               <el-date-picker clearable v-model="form.planEndDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择计划结束日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="实际开始时间" prop="actualStartDate">
               <el-date-picker clearable v-model="form.actualStartDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择实际开始时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="实际结束时间" prop="actualEndDate">
               <el-date-picker clearable v-model="form.actualEndDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择实际结束时间">
@@ -253,6 +278,7 @@
           </el-col>
         </el-row>
 
+        <el-divider content-position="left">其他信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="产品规格" prop="materialSpec">
@@ -269,8 +295,9 @@
           </el-col>
         </el-row>
 
+        <el-divider content-position="left">审批信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
               <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
                 :disabled="isViewMode || form.woStatus !== 'CREATED'" placeholder="请选择审批流程" style="width: 100%">
@@ -278,7 +305,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="工单状态" prop="woStatus">
               <el-tag :type="getStatusType(form.woStatus)">{{ getStatusLabel(form.woStatus) }}</el-tag>
             </el-form-item>
@@ -1398,5 +1425,28 @@ function onViewFlow() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 </style>

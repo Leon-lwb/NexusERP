@@ -15,6 +15,7 @@
       </template>
 
       <el-form ref="transferRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="调拨单编号" prop="transferNo">
@@ -38,8 +39,9 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-divider content-position="left">仓库信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="调出仓库" prop="fromWarehouseName">
               <el-input v-model="form.fromWarehouseName" placeholder="请选择调出仓库" readonly>
                 <template #append>
@@ -48,7 +50,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="调拨入库" prop="toWarehouseName">
               <el-input v-model="form.toWarehouseName" placeholder="请选择调拨入库" readonly>
                 <template #append>
@@ -58,6 +60,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-divider content-position="left">状态信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="单据状态" prop="status">
@@ -511,5 +514,32 @@ function handleWarehouseSelect(row: any) {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
 </style>

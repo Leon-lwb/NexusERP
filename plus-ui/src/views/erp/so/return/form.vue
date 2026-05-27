@@ -14,6 +14,7 @@
       </template>
 
       <el-form ref="returnRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="退货单编号" prop="returnNo">
@@ -54,8 +55,9 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-divider content-position="left">客户与仓库</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="客户" prop="clientName">
               <el-input v-model="form.clientName" placeholder="请选择客户" readonly>
                 <template #append>
@@ -64,7 +66,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="仓库" prop="warehouseName">
               <el-input v-model="form.warehouseName" placeholder="请选择退货仓库" readonly>
                 <template #append>
@@ -82,6 +84,7 @@
           </el-col>
         </el-row>
 
+        <el-divider content-position="left">状态信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
@@ -485,5 +488,32 @@ function handleWarehouseSelect(row: any) {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
 </style>

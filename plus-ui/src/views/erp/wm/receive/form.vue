@@ -14,8 +14,9 @@
       </template>
 
       <el-form ref="receiveRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="入库单编号" prop="receiveCode">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <el-input v-model="form.receiveCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
@@ -24,53 +25,56 @@
               </div>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="入库单名称" prop="receiveName">
               <el-input v-model="form.receiveName" placeholder="请输入入库单名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="来料检验单编号" prop="iqcCode">
               <el-input v-model="form.iqcCode" placeholder="请输入来料检验单编号" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="到货通知单编号" prop="noticeCode">
               <el-input v-model="form.noticeCode" placeholder="请输入到货通知单编号" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="采购订单编号" prop="purCode">
               <el-input v-model="form.purCode" placeholder="请输入采购订单编号" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="供应商编码" prop="vendorCode">
               <el-input v-model="form.vendorCode" placeholder="请输入供应商编码" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="供应商名称" prop="vendorName">
               <el-input v-model="form.vendorName" placeholder="请输入供应商名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="供应商简称" prop="vendorNick">
               <el-input v-model="form.vendorNick" placeholder="请输入供应商简称" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="入库日期" prop="receiveDate">
               <el-date-picker clearable v-model="form.receiveDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择入库日期" style="width: 100%">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-divider content-position="left">状态信息</el-divider>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
               <el-select
                 v-model="form.selectFlowId"
@@ -90,7 +94,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="单据状态" prop="status">
               <el-radio-group v-model="form.status">
                 <el-radio v-for="dict in wm_material_receive_status" :key="dict.value"
@@ -98,7 +102,7 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
@@ -1236,5 +1240,28 @@ function handleAutoGenChange(autoGenFlag: boolean) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 </style>

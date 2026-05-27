@@ -3,8 +3,8 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>{{ title }}</span>
-          <div>
+          <span class="card-title">{{ title }}</span>
+          <div class="card-actions">
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button type="success" @click="handleGenerateLines" v-if="!isViewMode && form.planId">生成盘点行</el-button>
             <el-button type="warning" @click="handlePostAdjustment" v-if="!isViewMode && form.planId">过账调整</el-button>
@@ -14,6 +14,7 @@
       </template>
 
       <el-form ref="stocktakingRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="盘点编号" prop="planCode">
@@ -36,7 +37,7 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="仓库" prop="warehouseName">
               <el-input v-model="form.warehouseName" placeholder="请选择仓库" readonly>
                 <template #append>
@@ -45,7 +46,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="库区" prop="areaName">
               <el-input v-model="form.areaName" placeholder="请选择库区" readonly>
                 <template #append>
@@ -54,16 +55,19 @@
               </el-input>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="24">
+          <el-col :span="8">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+              <el-input v-model="form.remark" placeholder="请输入备注" />
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-divider content-position="center">盘点行信息</el-divider>
+        <el-row :gutter="10" class="mb8">
+          <el-col :span="1.5">
+            <el-button type="primary" plain icon="Plus" @click="handleGenerateLines" v-if="!isViewMode && form.planId">生成盘点行</el-button>
+          </el-col>
+        </el-row>
         <el-table :data="lineList" :row-class-name="rowLineIndex" @selection-change="handleLineSelectionChange">
           <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
           <el-table-column label="序号" align="center" prop="index" width="50" />
@@ -270,5 +274,32 @@ function handleAreaSelect(row: any) {
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+.mb8 {
+  margin-bottom: 8px;
+}
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+:deep(.el-form-item__label) {
+  font-weight: 500;
+}
 </style>

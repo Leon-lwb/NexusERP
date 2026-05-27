@@ -12,8 +12,9 @@
       </template>
 
       <el-form ref="arrivalnoticeRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="通知单编号" prop="noticeCode">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
@@ -22,64 +23,66 @@
               </div>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="通知单名称" prop="noticeName">
               <el-input v-model="form.noticeName" placeholder="请输入通知单名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="采购订单编号" prop="purOrderCode">
               <el-input v-model="form.purOrderCode" placeholder="请输入采购订单编号" />
             </el-form-item>
           </el-col>
         </el-row>
+        <el-divider content-position="left">供应商信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="供应商ID" prop="vendorId">
               <el-input v-model="form.vendorId" placeholder="请输入供应商ID" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="供应商编码" prop="vendorCode">
               <el-input v-model="form.vendorCode" placeholder="请输入供应商编码" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="供应商名称" prop="vendorName">
               <el-input v-model="form.vendorName" placeholder="请输入供应商名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="供应商简称" prop="vendorNick">
               <el-input v-model="form.vendorNick" placeholder="请输入供应商简称" />
             </el-form-item>
           </el-col>
+          <el-col :span="8"></el-col>
+          <el-col :span="8"></el-col>
         </el-row>
+        <el-divider content-position="left">其他信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="到货日期" prop="arrivalDate">
               <el-date-picker clearable v-model="form.arrivalDate" type="date" value-format="YYYY-MM-DD"
                 placeholder="请选择到货日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="联系人" prop="contact">
               <el-input v-model="form.contact" placeholder="请输入联系人" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="联系方式" prop="phone">
               <el-input v-model="form.phone" placeholder="请输入联系方式" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
             <el-form-item label="单据状态" prop="status">
               <el-radio-group v-model="form.status">
                 <el-radio v-for="dict in wm_notice_status" :key="dict.value"
@@ -87,14 +90,12 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
           </el-col>
-          <el-col :span="12"></el-col>
+          <el-col :span="8"></el-col>
         </el-row>
 
         <!-- 子表部分开始 -->
@@ -672,6 +673,35 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mb8 {
+  margin-bottom: 8px;
+}
+
+:deep(.el-divider__text) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
 }
 
 .category-tree-container {
