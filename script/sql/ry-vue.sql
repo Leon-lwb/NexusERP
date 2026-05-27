@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 24/05/2026 23:41:19
+ Date: 28/05/2026 00:41:37
 */
 
 SET NAMES utf8mb4;
@@ -12329,6 +12329,26 @@ INSERT INTO `sys_dict_data` VALUES (3000034, '000000', 4, '已取消', 'CANCELLE
 INSERT INTO `sys_dict_data` VALUES (3000041, '000000', 1, '手工', 'MANUAL', 'pu_source_type', '', 'primary', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '手工来源');
 INSERT INTO `sys_dict_data` VALUES (3000042, '000000', 2, '需求转入', 'REQ_CONVERT', 'pu_source_type', '', 'success', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '需求转入');
 INSERT INTO `sys_dict_data` VALUES (3000043, '000000', 3, '到货联动', 'RECEIVE_LINK', 'pu_source_type', '', 'warning', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '到货联动');
+INSERT INTO `sys_dict_data` VALUES (3000051, '000000', 1, '优秀', 'A', 'pu_vendor_eval_level', '', 'success', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '综合评分>=90');
+INSERT INTO `sys_dict_data` VALUES (3000052, '000000', 2, '良好', 'B', 'pu_vendor_eval_level', '', 'primary', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '综合评分>=80');
+INSERT INTO `sys_dict_data` VALUES (3000053, '000000', 3, '合格', 'C', 'pu_vendor_eval_level', '', 'warning', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '综合评分>=60');
+INSERT INTO `sys_dict_data` VALUES (3000054, '000000', 4, '不合格', 'D', 'pu_vendor_eval_level', '', 'danger', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '综合评分<60');
+INSERT INTO `sys_dict_data` VALUES (3000061, '000000', 1, '待收货', 'PENDING', 'pu_receive_status', '', 'info', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '待收货');
+INSERT INTO `sys_dict_data` VALUES (3000062, '000000', 2, '全部到货', 'FULL_RECEIVED', 'pu_receive_status', '', 'success', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '全部到货');
+INSERT INTO `sys_dict_data` VALUES (3000063, '000000', 3, '部分到货', 'PARTIAL_RECEIVED', 'pu_receive_status', '', 'warning', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '部分到货');
+INSERT INTO `sys_dict_data` VALUES (3000064, '000000', 4, '超收', 'OVER_RECEIVED', 'pu_receive_status', '', 'danger', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '超收');
+INSERT INTO `sys_dict_data` VALUES (3000065, '000000', 5, '短收', 'SHORT_RECEIVED', 'pu_receive_status', '', 'warning', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '短收');
+INSERT INTO `sys_dict_data` VALUES (3000071, '000000', 1, '手工录入', 'MANUAL', 'pu_requisition_source_type', '', 'primary', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '手工录入');
+INSERT INTO `sys_dict_data` VALUES (3000072, '000000', 2, '低库存生成', 'LOW_STOCK', 'pu_requisition_source_type', '', 'warning', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '低库存自动生成');
+INSERT INTO `sys_dict_data` VALUES (3000073, '000000', 3, '生产需求', 'PRODUCTION', 'pu_requisition_source_type', '', 'success', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '生产需求转入');
+INSERT INTO `sys_dict_data` VALUES (3000074, '000000', 4, 'MRP运算', 'MRP', 'pu_requisition_source_type', '', 'info', 'N', 103, 1, '2026-05-27 23:47:21', NULL, NULL, 'MRP运算生成');
+INSERT INTO `sys_dict_data` VALUES (3000081, '000000', 1, '最近空库位', 'NEAREST_EMPTY', 'wm_putaway_strategy_type', '', 'primary', 'N', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '优先选择最近的空库位');
+INSERT INTO `sys_dict_data` VALUES (3000082, '000000', 2, '分类指定', 'CLASS_BASED', 'wm_putaway_strategy_type', '', 'success', 'N', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '按物料类别指定库区');
+INSERT INTO `sys_dict_data` VALUES (3000083, '000000', 3, 'FIFO库位', 'FIFO_LOCATION', 'wm_putaway_strategy_type', '', 'warning', 'N', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '按入库时间顺序使用库位');
+INSERT INTO `sys_dict_data` VALUES (3000091, '000000', 1, 'FIFO先进先出', 'FIFO', 'wm_picking_strategy_type', '', 'primary', 'N', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '先进先出');
+INSERT INTO `sys_dict_data` VALUES (3000092, '000000', 2, 'FEFO效期优先', 'FEFO', 'wm_picking_strategy_type', '', 'warning', 'N', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '先到期先出');
+INSERT INTO `sys_dict_data` VALUES (3000093, '000000', 3, '批次优先', 'BATCH_PRIORITY', 'wm_picking_strategy_type', '', 'success', 'N', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '按批次指定优先级');
+INSERT INTO `sys_dict_data` VALUES (3000094, '000000', 4, '库位路径优化', 'LOCATION_PATH', 'wm_picking_strategy_type', '', 'info', 'N', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '按库位路径优化拣货路线');
 INSERT INTO `sys_dict_data` VALUES (2047213325753827330, '000000', 1, 'OA流程', 'OA', 'wf_app_type', '', 'primary', 'N', 103, 1, '2026-04-23 15:17:47', 1, '2026-04-23 15:17:47', '');
 INSERT INTO `sys_dict_data` VALUES (2047213392552312834, '000000', 2, '自定义业务流程', 'ZDYYW', 'wf_app_type', '', 'success', 'N', 103, 1, '2026-04-23 15:18:03', 1, '2026-04-23 15:18:03', '');
 INSERT INTO `sys_dict_data` VALUES (2047213465952632833, '000000', 3, '钉钉流程', 'DINGDING', 'wf_app_type', '', 'info', 'N', 103, 1, '2026-04-23 15:18:20', 1, '2026-04-23 15:18:20', '');
@@ -12754,6 +12774,11 @@ INSERT INTO `sys_dict_type` VALUES (300001, '000000', '采购申请状态', 'pu_
 INSERT INTO `sys_dict_type` VALUES (300002, '000000', '采购订单状态', 'pu_purchase_order_status', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '采购订单状态');
 INSERT INTO `sys_dict_type` VALUES (300003, '000000', '采购退货状态', 'pu_purchase_return_status', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '采购退货状态');
 INSERT INTO `sys_dict_type` VALUES (300004, '000000', '采购来源类型', 'pu_source_type', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '采购来源类型');
+INSERT INTO `sys_dict_type` VALUES (300005, '000000', '供应商评估等级', 'pu_vendor_eval_level', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '供应商评估等级');
+INSERT INTO `sys_dict_type` VALUES (300006, '000000', '采购收货状态', 'pu_receive_status', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '采购订单行收货状态');
+INSERT INTO `sys_dict_type` VALUES (300007, '000000', '采购申请来源类型', 'pu_requisition_source_type', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '采购申请来源类型');
+INSERT INTO `sys_dict_type` VALUES (300008, '000000', '上架策略类型', 'wm_putaway_strategy_type', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '上架策略类型');
+INSERT INTO `sys_dict_type` VALUES (300009, '000000', '拣货策略类型', 'wm_picking_strategy_type', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '拣货策略类型');
 INSERT INTO `sys_dict_type` VALUES (2047213188084187137, '000000', '流程应用类型', 'wf_app_type', 103, 1, '2026-04-23 15:17:14', 1, '2026-04-23 15:17:14', '');
 INSERT INTO `sys_dict_type` VALUES (2054472457203412993, '240047', '用户性别', 'sys_user_sex', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59', '用户性别列表');
 INSERT INTO `sys_dict_type` VALUES (2054472457203412994, '240047', '菜单状态', 'sys_show_hide', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59', '菜单状态列表');
@@ -12865,6 +12890,8 @@ INSERT INTO `sys_logininfor` VALUES (2058567369521049601, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2058567384809287682, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-24 23:14:46');
 INSERT INTO `sys_logininfor` VALUES (2058569836753268738, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-05-24 23:24:30');
 INSERT INTO `sys_logininfor` VALUES (2058570007016845313, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-24 23:25:11');
+INSERT INTO `sys_logininfor` VALUES (2059629398478438402, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-27 21:34:49');
+INSERT INTO `sys_logininfor` VALUES (2059658548106932226, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-27 23:30:39');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -13147,7 +13174,14 @@ INSERT INTO `sys_menu` VALUES (2524, '采购退货删除', 2520, 4, '', NULL, NU
 INSERT INTO `sys_menu` VALUES (2525, '采购退货导出', 2520, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:export', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2526, '采购退货确认', 2520, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2527, '采购退货执行', 2520, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2531, '供应商评估', 2500, 5, 'vendorEvaluation', 'erp/pu/vendorEvaluation/index', NULL, 1, 0, 'C', '0', '0', 'pu:vendorEvaluation:list', 'star', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2530, '供应商评估', 2500, 5, 'vendorEvaluation', 'erp/pu/vendorEvaluation/index', NULL, 1, 0, 'C', '0', '0', 'pu:vendorEvaluation:list', 'star', 103, 1, '2026-05-27 23:48:41', NULL, NULL, '供应商评估菜单');
+INSERT INTO `sys_menu` VALUES (2531, '供应商评估查询', 2530, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:query', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2532, '供应商评估新增', 2530, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:add', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2533, '供应商评估修改', 2530, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:edit', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2534, '供应商评估删除', 2530, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:remove', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2535, '供应商评估导出', 2530, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:export', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2536, '供应商评估计算', 2530, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:calculate', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2537, '供应商评估批量计算', 2530, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:calculateAll', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2600, '条码管理', 2000, 10, 'barcode', NULL, NULL, 1, 0, 'M', '0', '0', '', 'price-tag', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '条码管理目录');
 INSERT INTO `sys_menu` VALUES (2601, '条码实例', 2600, 1, 'index', 'erp/wm/barcode/index', NULL, 1, 0, 'C', '0', '0', 'wm:barcode:list', 'ticket', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '条码实例菜单');
 INSERT INTO `sys_menu` VALUES (2602, '条码实例查询', 2601, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:query', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
@@ -13162,6 +13196,19 @@ INSERT INTO `sys_menu` VALUES (2612, '条码配置新增', 2610, 2, '', NULL, NU
 INSERT INTO `sys_menu` VALUES (2613, '条码配置修改', 2610, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:edit', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2614, '条码配置删除', 2610, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:remove', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2615, '条码配置导出', 2610, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:export', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2616, '上架规则', 2600, 6, 'putawayRule', 'erp/wm/putawayRule/index', NULL, 1, 0, 'C', '0', '0', 'wm:putawayRule:list', 'guide', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '上架规则菜单');
+INSERT INTO `sys_menu` VALUES (2617, '上架规则查询', 2616, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:query', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2618, '上架规则新增', 2616, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:add', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2619, '上架规则修改', 2616, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:edit', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2620, '上架规则删除', 2616, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:remove', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2621, '拣货规则', 2600, 7, 'pickingRule', 'erp/wm/pickingRule/index', NULL, 1, 0, 'C', '0', '0', 'wm:pickingRule:list', 'shopping', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '拣货规则菜单');
+INSERT INTO `sys_menu` VALUES (2622, '拣货规则查询', 2621, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:query', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2623, '拣货规则新增', 2621, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:add', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2624, '拣货规则修改', 2621, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:edit', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2625, '拣货规则删除', 2621, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:remove', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2631, '库存估值', 2600, 8, 'valuation', 'erp/wm/valuation/index', NULL, 1, 0, 'C', '0', '0', 'wm:valuation:list', 'money', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '库存估值菜单');
+INSERT INTO `sys_menu` VALUES (2632, '库存估值查询', 2631, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:valuation:query', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2633, '库存估值导出', 2631, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:valuation:export', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3000, '支付管理', 0, 7, 'pay', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:46:03', '支付管理目录');
 INSERT INTO `sys_menu` VALUES (3001, '订单管理', 3000, 1, 'order', 'pay/order/index', '', 1, 0, 'C', '0', '0', 'pay:order:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:14', '订单管理菜单');
 INSERT INTO `sys_menu` VALUES (3002, '订单查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:query', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
@@ -13909,7 +13956,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-24 23:25:11', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-24 23:25:11', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-27 23:30:39', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-27 23:30:39', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 11:54:44', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 11:54:44', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 1, '2025-10-23 17:03:16', 1, '2025-12-17 15:40:54', '耳朵聋');

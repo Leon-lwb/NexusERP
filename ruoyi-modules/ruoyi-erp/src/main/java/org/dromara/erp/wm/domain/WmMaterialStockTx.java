@@ -186,6 +186,18 @@ public class WmMaterialStockTx extends TenantEntity {
     private BigDecimal txQuantity;
 
     /**
+     * 单位成本
+     */
+    @ExcelProperty("单位成本")
+    private BigDecimal unitCost;
+
+    /**
+     * 事务金额
+     */
+    @ExcelProperty("事务金额")
+    private BigDecimal txAmount;
+
+    /**
      * 变动前数量
      */
     @ExcelProperty("变动前数量")

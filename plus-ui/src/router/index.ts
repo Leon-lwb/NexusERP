@@ -521,7 +521,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        component: () => import('@/views/erp/wm/putawayRule/form.vue'),
+        component: () => import('@/views/erp/wm/putawayrule/form.vue'),
         name: 'PutawayRuleForm',
         meta: { title: '上架规则表单', activeMenu: '/erp/wm/putawayRule' }
       }
@@ -535,7 +535,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        component: () => import('@/views/erp/wm/pickingRule/form.vue'),
+        component: () => import('@/views/erp/wm/pickingrule/form.vue'),
         name: 'PickingRuleForm',
         meta: { title: '拣货规则表单', activeMenu: '/erp/wm/pickingRule' }
       }
