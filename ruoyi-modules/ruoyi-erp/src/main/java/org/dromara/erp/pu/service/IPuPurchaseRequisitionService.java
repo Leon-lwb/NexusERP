@@ -138,4 +138,14 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      * @return 生成的采购订单ID
      */
     Long convertToPurchaseOrder(Long requisitionId);
+
+    /**
+     * 从低库存自动生成采购申请
+     * <p>
+     * 扫描所有物料，当 WmMaterialStock.stockQuantity < BdMaterial.safetyStock 时，
+     * 自动生成采购申请单和明细行，建议采购量 = maxStock - currentStock。
+     *
+     * @return 生成的采购申请ID列表
+     */
+    List<Long> generateFromLowStock();
 }

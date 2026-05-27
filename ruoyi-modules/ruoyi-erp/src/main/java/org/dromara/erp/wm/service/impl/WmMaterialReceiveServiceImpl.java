@@ -12,6 +12,11 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.bd.domain.vo.BdMaterialVo;
 import org.dromara.erp.bd.service.IBdMaterialService;
+import org.dromara.erp.bd.service.IBdMaterialService;
+import org.dromara.erp.pu.domain.PuPurchaseOrder;
+import org.dromara.erp.pu.domain.PuPurchaseOrderLine;
+import org.dromara.erp.pu.mapper.PuPurchaseOrderLineMapper;
+import org.dromara.erp.pu.mapper.PuPurchaseOrderMapper;
 import org.dromara.erp.wm.domain.WmArrivalNotice;
 import org.dromara.erp.wm.domain.WmMaterialReceive;
 import org.dromara.erp.wm.domain.WmMaterialReceiveDetail;
@@ -85,6 +90,8 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
     private final IWmBarcodeService wmBarcodeService;
+    private final PuPurchaseOrderMapper purchaseOrderMapper;
+    private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
 
     // ==================== 1. 基础 CRUD ====================
 
@@ -260,6 +267,11 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             }
         }
 
+        // R-009: 入库完成后回写采购订单行已收货数量
+        if (receive.getPurId() != null) {
+            writeBackPurchaseOrderReceivedQty(receiveId, receive.getPurId());
+        }
+
         // 入库完成后为每条库存生成条码，方便后续扫码追踪、拣货和盘点。
         // 这里先优先尝试默认配置；如果默认配置不存在，条码服务内部会自动回退到其它可用启用配置。
         for (WmMaterialStock stock : stockMap.values()) {
@@ -276,6 +288,85 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         }
 
         return true;
+    }
+
+    /**
+     * 回写采购订单行已收货数量
+     * <p>
+     * 根据入库单行的 materialId 和收货数量，匹配采购订单行并累加 receivedQuantity。
+     * 全部到货后自动更新采购订单状态为 RECEIVED。
+     */
+    private void writeBackPurchaseOrderReceivedQty(Long receiveId, Long orderId) {
+        List<WmMaterialReceiveLine> receiveLines = receiveLineMapper.selectList(
+            new LambdaQueryWrapper<WmMaterialReceiveLine>().eq(WmMaterialReceiveLine::getReceiveId, receiveId));
+        if (receiveLines == null || receiveLines.isEmpty()) {
+            return;
+        }
+
+        List<PuPurchaseOrderLine> orderLines = purchaseOrderLineMapper.selectList(
+            new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, orderId));
+        if (orderLines == null || orderLines.isEmpty()) {
+            return;
+        }
+
+        Map<Long, PuPurchaseOrderLine> materialLineMap = new HashMap<>();
+        for (PuPurchaseOrderLine orderLine : orderLines) {
+            if (orderLine.getMaterialId() != null) {
+                materialLineMap.put(orderLine.getMaterialId(), orderLine);
+            }
+        }
+
+        for (WmMaterialReceiveLine receiveLine : receiveLines) {
+            PuPurchaseOrderLine orderLine = materialLineMap.get(receiveLine.getMaterialId());
+            if (orderLine != null) {
+                BigDecimal receivedQty = orderLine.getReceivedQuantity() != null ? orderLine.getReceivedQuantity() : BigDecimal.ZERO;
+                BigDecimal newReceivedQty = receivedQty.add(receiveLine.getQuantityReceived() != null ? receiveLine.getQuantityReceived() : BigDecimal.ZERO);
+                orderLine.setReceivedQuantity(newReceivedQty);
+
+                BigDecimal orderQty = orderLine.getOrderQuantity() != null ? orderLine.getOrderQuantity() : BigDecimal.ZERO;
+                int cmp = newReceivedQty.compareTo(orderQty);
+                if (cmp == 0) {
+                    orderLine.setReceiveStatus("FULL_RECEIVED");
+                } else if (cmp > 0) {
+                    orderLine.setReceiveStatus("OVER_RECEIVED");
+                } else {
+                    orderLine.setReceiveStatus("PARTIAL_RECEIVED");
+                }
+
+                purchaseOrderLineMapper.updateById(orderLine);
+            }
+        }
+
+        updatePurchaseOrderStatus(orderId, orderLines);
+    }
+
+    /**
+     * 根据收货进度更新采购订单状态
+     */
+    private void updatePurchaseOrderStatus(Long orderId, List<PuPurchaseOrderLine> orderLines) {
+        boolean allReceived = true;
+        boolean anyReceived = false;
+        for (PuPurchaseOrderLine line : orderLines) {
+            BigDecimal orderQty = line.getOrderQuantity() != null ? line.getOrderQuantity() : BigDecimal.ZERO;
+            BigDecimal receivedQty = line.getReceivedQuantity() != null ? line.getReceivedQuantity() : BigDecimal.ZERO;
+            if (receivedQty.compareTo(BigDecimal.ZERO) > 0) {
+                anyReceived = true;
+            }
+            if (receivedQty.compareTo(orderQty) < 0) {
+                allReceived = false;
+            }
+        }
+
+        PuPurchaseOrder order = purchaseOrderMapper.selectById(orderId);
+        if (order == null) {
+            return;
+        }
+        if (allReceived) {
+            order.setStatus("RECEIVED");
+        } else if (anyReceived) {
+            order.setStatus("PARTIALLY_RECEIVED");
+        }
+        purchaseOrderMapper.updateById(order);
     }
 
     // ==================== 4. 工作流集成（提交审批 → Flowable流程引擎 → 审批回调同步状态） ====================
@@ -351,11 +442,13 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             return;
         }
         String actStatus = business.getActStatus();
-        // 根据流程状态同步到单据状态
         if (ActStatus.doing.equals(actStatus)) {
             receive.setStatus("APPROVING");
         } else if (ActStatus.pass.equals(actStatus)) {
             receive.setStatus("APPROVED");
+            baseMapper.updateById(receive);
+            executeReceive(receiveId);
+            return;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             receive.setStatus("REJECTED");
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {

@@ -487,6 +487,15 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      * @param bo 查询条件
      * @return 查询条件 Wrapper
      */
+    @Override
+    public List<PuPurchaseOrderLine> selectDiffLines() {
+        LambdaQueryWrapper<PuPurchaseOrderLine> lqw = new LambdaQueryWrapper<>();
+        lqw.ne(PuPurchaseOrderLine::getReceiveStatus, "PENDING");
+        lqw.ne(PuPurchaseOrderLine::getReceiveStatus, "FULL_RECEIVED");
+        lqw.isNotNull(PuPurchaseOrderLine::getReceiveStatus);
+        return lineMapper.selectList(lqw);
+    }
+
     private LambdaQueryWrapper<PuPurchaseOrder> buildQueryWrapper(PuPurchaseOrderBo bo) {
         LambdaQueryWrapper<PuPurchaseOrder> lqw = new LambdaQueryWrapper<>();
         lqw.eq(StringUtils.isNotBlank(bo.getOrderNo()), PuPurchaseOrder::getOrderNo, bo.getOrderNo());

@@ -247,4 +247,20 @@ public class PuPurchaseRequisitionController extends BaseController {
     public R<Void> remove(@PathVariable Long[] requisitionIds) {
         return toAjax(purchaseRequisitionService.deleteByIds(requisitionIds));
     }
+
+    /**
+     * 从低库存自动生成采购申请
+     * <p>
+     * 扫描所有物料，当库存低于安全库存时自动生成采购申请。</p>
+     * <p>权限标识：{@code pu:requisition:add}</p>
+     * <p>日志记录：title="采购申请-低库存生成"，businessType=INSERT</p>
+     *
+     * @return 生成的采购申请ID列表
+     */
+    @SaCheckPermission("pu:requisition:add")
+    @Log(title = "采购申请-低库存生成", businessType = BusinessType.INSERT)
+    @PostMapping("/generate-from-low-stock")
+    public R<List<Long>> generateFromLowStock() {
+        return R.ok(purchaseRequisitionService.generateFromLowStock());
+    }
 }

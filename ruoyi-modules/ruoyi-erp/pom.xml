@@ -72,6 +72,12 @@
             <artifactId>ruoyi-common-sensitive</artifactId>
         </dependency>
 
+        <!-- 定时任务支持 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-job</artifactId>
+        </dependency>
+
         <!-- Flowable工作流（若ERP业务需要流程审批） -->
         <dependency>
             <groupId>org.dromara</groupId>

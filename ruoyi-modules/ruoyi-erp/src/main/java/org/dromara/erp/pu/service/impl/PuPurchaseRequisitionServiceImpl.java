@@ -13,6 +13,8 @@ import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.erp.bd.domain.BdMaterial;
+import org.dromara.erp.bd.mapper.BdMaterialMapper;
 import org.dromara.erp.pu.domain.PuPurchaseRequisition;
 import org.dromara.erp.pu.domain.PuPurchaseRequisitionLine;
 import org.dromara.erp.pu.domain.PuPurchaseOrder;
@@ -24,6 +26,8 @@ import org.dromara.erp.pu.mapper.PuPurchaseOrderMapper;
 import org.dromara.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
 import org.dromara.erp.pu.mapper.PuPurchaseRequisitionMapper;
 import org.dromara.erp.pu.service.IPuPurchaseRequisitionService;
+import org.dromara.erp.wm.domain.WmMaterialStock;
+import org.dromara.erp.wm.mapper.WmMaterialStockMapper;
 import org.dromara.system.strategy.AutoCodeUtil;
 import org.dromara.workflow.domain.WfMyBusiness;
 import org.dromara.workflow.service.IWfProcessService;
@@ -36,6 +40,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +74,8 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     private final PuPurchaseRequisitionLineMapper lineMapper;
     private final PuPurchaseOrderMapper purchaseOrderMapper;
     private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
+    private final BdMaterialMapper bdMaterialMapper;
+    private final WmMaterialStockMapper materialStockMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
@@ -404,9 +412,88 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     /**
      * 确保采购申请存在，否则抛出异常
      *
-     * @param requisitionId 采购申请ID
      * @return 采购申请实体
      */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<Long> generateFromLowStock() {
+        List<BdMaterial> materials = bdMaterialMapper.selectList(
+            new LambdaQueryWrapper<BdMaterial>()
+                .eq(BdMaterial::getStatus, "ACTIVE")
+                .isNotNull(BdMaterial::getSafetyStock)
+                .gt(BdMaterial::getSafetyStock, BigDecimal.ZERO));
+
+        if (materials == null || materials.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Map<Long, BigDecimal> stockMap = new HashMap<>();
+        List<WmMaterialStock> stocks = materialStockMapper.selectList(new LambdaQueryWrapper<>());
+        if (stocks != null) {
+            for (WmMaterialStock stock : stocks) {
+                BigDecimal current = stockMap.getOrDefault(stock.getMaterialId(), BigDecimal.ZERO);
+                stockMap.put(stock.getMaterialId(), current.add(stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO));
+            }
+        }
+
+        Map<String, Long> existingRequisitionMap = new HashMap<>();
+        List<PuPurchaseRequisition> existingRequisitions = baseMapper.selectList(
+            new LambdaQueryWrapper<PuPurchaseRequisition>()
+                .in(PuPurchaseRequisition::getStatus, "DRAFT", "SUBMITTED", "APPROVED")
+                .eq(PuPurchaseRequisition::getSourceType, "LOW_STOCK"));
+        if (existingRequisitions != null) {
+            for (PuPurchaseRequisition req : existingRequisitions) {
+                existingRequisitionMap.put(req.getRequisitionNo(), req.getRequisitionId());
+            }
+        }
+
+        List<Long> generatedIds = new ArrayList<>();
+        List<PuPurchaseRequisitionLine> lowStockLines = new ArrayList<>();
+
+        for (BdMaterial material : materials) {
+            BigDecimal currentStock = stockMap.getOrDefault(material.getMaterialId(), BigDecimal.ZERO);
+            BigDecimal safetyStock = material.getSafetyStock();
+
+            if (currentStock.compareTo(safetyStock) < 0) {
+                BigDecimal maxStock = material.getMaxStock() != null ? material.getMaxStock() : safetyStock.multiply(new BigDecimal("2"));
+                BigDecimal suggestQty = maxStock.subtract(currentStock);
+
+                if (suggestQty.compareTo(BigDecimal.ZERO) > 0) {
+                    PuPurchaseRequisitionLine line = new PuPurchaseRequisitionLine();
+                    line.setMaterialId(material.getMaterialId());
+                    line.setMaterialCode(material.getMaterialCode());
+                    line.setMaterialName(material.getMaterialName());
+                    line.setMaterialSpec(material.getMaterialSpec());
+                    line.setApplyQuantity(suggestQty);
+                    line.setSourceType("LOW_STOCK");
+                    line.setSourceId(material.getMaterialId());
+                    lowStockLines.add(line);
+                }
+            }
+        }
+
+        if (lowStockLines.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        String reqCode = autoCodeUtil.genSerialCode("pu_purchase_requisition", "LOW");
+        PuPurchaseRequisition requisition = new PuPurchaseRequisition();
+        requisition.setRequisitionNo(reqCode);
+        requisition.setSourceType("LOW_STOCK");
+        requisition.setRequisitionDate(new Date());
+        requisition.setStatus("DRAFT");
+        baseMapper.insert(requisition);
+
+        for (int i = 0; i < lowStockLines.size(); i++) {
+            PuPurchaseRequisitionLine line = lowStockLines.get(i);
+            line.setRequisitionId(requisition.getRequisitionId());
+            lineMapper.insert(line);
+        }
+
+        generatedIds.add(requisition.getRequisitionId());
+        return generatedIds;
+    }
+
     private PuPurchaseRequisition ensureRequisition(Long requisitionId) {
         PuPurchaseRequisition requisition = baseMapper.selectById(requisitionId);
         if (requisition == null) {

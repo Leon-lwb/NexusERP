@@ -53,6 +53,9 @@ public class PuPurchaseOrderLine extends BaseEntity {
     /** 已收货数量 */
     private BigDecimal receivedQuantity;
 
+    /** 收货状态(PENDING/FULL_RECEIVED/PARTIAL_RECEIVED/OVER_RECEIVED/SHORT_RECEIVED) */
+    private String receiveStatus;
+
     /** 单价 */
     private BigDecimal unitPrice;
 

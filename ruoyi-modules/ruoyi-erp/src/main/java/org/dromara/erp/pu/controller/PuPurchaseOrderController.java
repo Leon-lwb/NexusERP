@@ -10,6 +10,7 @@ import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
+import org.dromara.erp.pu.domain.PuPurchaseOrderLine;
 import org.dromara.erp.pu.domain.bo.PuPurchaseOrderBo;
 import org.dromara.erp.pu.domain.vo.PuPurchaseOrderVo;
 import org.dromara.erp.pu.service.IPuPurchaseOrderService;
@@ -260,5 +261,19 @@ public class PuPurchaseOrderController extends BaseController {
     @DeleteMapping("/{orderIds}")
     public R<Void> remove(@PathVariable Long[] orderIds) {
         return toAjax(purchaseOrderService.deleteByIds(orderIds));
+    }
+
+    /**
+     * 查询收货差异报表
+     * <p>
+     * 返回所有存在收货差异（部分到货/超收/短收）的采购订单明细行。</p>
+     * <p>权限标识：{@code pu:order:list}</p>
+     *
+     * @return 存在差异的订单行列表
+     */
+    @SaCheckPermission("pu:order:list")
+    @GetMapping("/diff-report")
+    public R<List<PuPurchaseOrderLine>> diffReport() {
+        return R.ok(purchaseOrderService.selectDiffLines());
     }
 }

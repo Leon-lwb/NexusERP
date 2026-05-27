@@ -2,6 +2,7 @@ package org.dromara.erp.pu.service;
 
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.erp.pu.domain.PuPurchaseOrderLine;
 import org.dromara.erp.pu.domain.bo.PuPurchaseOrderBo;
 import org.dromara.erp.pu.domain.vo.PuPurchaseOrderVo;
 import org.dromara.workflow.service.WfCallBackServiceI;
@@ -160,4 +161,13 @@ public interface IPuPurchaseOrderService extends WfCallBackServiceI {
      * @param expectedArrivalDate 预计到货日期（可空）
      */
     void validateVendor(Long vendorId, Date expectedArrivalDate);
+
+    /**
+     * 查询存在收货差异的订单行
+     * <p>
+     * 返回 receiveStatus 不为 PENDING 且不为 FULL_RECEIVED 的明细行列表。
+     *
+     * @return 存在差异的采购订单行列表
+     */
+    List<PuPurchaseOrderLine> selectDiffLines();
 }
