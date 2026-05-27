@@ -130,6 +130,17 @@
           收货联动
         </el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button 
+          type="danger" 
+          plain 
+          icon="Warning" 
+          @click="handleDiffReport" 
+          v-hasPermi="['pu:order:list']"
+        >
+          差异报表
+        </el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
     
@@ -169,7 +180,7 @@
 
 <script setup lang="ts" name="PurchaseOrder">
 // 导入采购订单相关的API函数
-import { listPurchaseOrder, delPurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, receivePurchaseOrder } from '@/api/erp/pu/order'
+import { listPurchaseOrder, delPurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, receivePurchaseOrder, getDiffReport } from '@/api/erp/pu/order'
 
 // 获取当前实例并获取字典数据
 const { proxy } = getCurrentInstance() as any; 
@@ -300,6 +311,37 @@ function handleReceive(){
   receivePurchaseOrder(ids.value[0]).then(() => {
     proxy.$modal.msgSuccess('收货联动成功');
     getList()
+  })
+}
+
+/**
+ * 差异报表按钮操作 - 查询收货差异
+ */
+function handleDiffReport(){
+  getDiffReport().then((res: any) => {
+    const diffData = res.data || [];
+    if (diffData.length === 0) {
+      proxy.$modal.msgSuccess('暂无收货差异记录');
+    } else {
+      // 构建差异报表内容
+      let html = '<div style="max-height:400px;overflow-y:auto;">';
+      html += '<table style="width:100%;border-collapse:collapse;">';
+      html += '<tr style="background:#f5f7fa;"><th style="padding:8px;border:1px solid #ebeef5;">订单行ID</th><th style="padding:8px;border:1px solid #ebeef5;">物料编码</th><th style="padding:8px;border:1px solid #ebeef5;">订单数量</th><th style="padding:8px;border:1px solid #ebeef5;">已收数量</th><th style="padding:8px;border:1px solid #ebeef5;">状态</th></tr>';
+      diffData.forEach((item: any) => {
+        const statusMap: Record<string, string> = {
+          'PARTIAL_RECEIVED': '<span style="color:#e6a23c;">部分到货</span>',
+          'OVER_RECEIVED': '<span style="color:#f56c6c;">超收</span>',
+          'SHORT_RECEIVED': '<span style="color:#909399;">短收</span>'
+        };
+        html += `<tr><td style="padding:8px;border:1px solid #ebeef5;">${item.lineId || '-'}</td>`;
+        html += `<td style="padding:8px;border:1px solid #ebeef5;">${item.materialCode || '-'}</td>`;
+        html += `<td style="padding:8px;border:1px solid #ebeef5;">${item.orderQuantity || 0}</td>`;
+        html += `<td style="padding:8px;border:1px solid #ebeef5;">${item.receivedQuantity || 0}</td>`;
+        html += `<td style="padding:8px;border:1px solid #ebeef5;">${statusMap[item.receiveStatus] || item.receiveStatus}</td></tr>`;
+      });
+      html += '</table></div>';
+      proxy.$modal.alert(html, '收货差异报表', { dangerouslyUseHTMLString: true });
+    }
   })
 }
 

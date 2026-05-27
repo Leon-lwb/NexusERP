@@ -134,3 +134,14 @@ export const getRequisitionProcId = (id: string) =>
     url: BASE + '/' + id + '/proc',
     method: 'get'
   });
+
+/**
+ * 从低库存自动生成采购申请
+ * 扫描所有物料，当库存低于安全库存时自动生成采购申请
+ * @returns 生成的采购申请ID列表
+ */
+export const generateFromLowStock = (): AxiosPromise<number[]> =>
+  request({
+    url: BASE + '/generate-from-low-stock',
+    method: 'post'
+  });

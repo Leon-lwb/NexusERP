@@ -167,3 +167,14 @@ export const getOrderProcId = (id: string) =>
     url: BASE + '/' + id + '/proc',
     method: 'get'
   });
+
+/**
+ * 查询收货差异报表
+ * 返回所有存在收货差异（部分到货/超收/短收）的采购订单明细行
+ * @returns 存在差异的订单行列表
+ */
+export const getDiffReport = (): AxiosPromise<any[]> =>
+  request({
+    url: BASE + '/diff-report',
+    method: 'get'
+  });

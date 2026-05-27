@@ -498,6 +498,62 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '采购退货表单', activeMenu: '/erp/pu/return' }
       }
     ]
+  },
+  {
+    path: '/erp/pu/vendorEvaluation/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['pu:vendorEvaluation:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/pu/vendorEvaluation/form.vue'),
+        name: 'VendorEvaluationForm',
+        meta: { title: '供应商评估表单', activeMenu: '/erp/pu/vendorEvaluation' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/putawayRule/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:putawayRule:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/putawayRule/form.vue'),
+        name: 'PutawayRuleForm',
+        meta: { title: '上架规则表单', activeMenu: '/erp/wm/putawayRule' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/pickingRule/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:pickingRule:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/pickingRule/form.vue'),
+        name: 'PickingRuleForm',
+        meta: { title: '拣货规则表单', activeMenu: '/erp/wm/pickingRule' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/valuation/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:valuation:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/valuation/form.vue'),
+        name: 'ValuationForm',
+        meta: { title: '库存估值详情', activeMenu: '/erp/wm/valuation' }
+      }
+    ]
   }
 ];
 

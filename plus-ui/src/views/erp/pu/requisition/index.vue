@@ -130,6 +130,17 @@
           转单
         </el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button 
+          type="warning" 
+          plain 
+          icon="Download" 
+          @click="handleGenerateFromLowStock" 
+          v-hasPermi="['pu:requisition:add']"
+        >
+          低库存生成
+        </el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
     
@@ -174,7 +185,8 @@ import {
   delPurchaseRequisition, 
   submitPurchaseRequisition, 
   approvePurchaseRequisition, 
-  convertPurchaseRequisition 
+  convertPurchaseRequisition,
+  generateFromLowStock
 } from '@/api/erp/pu/requisition'
 
 // 获取当前实例并获取字典数据
@@ -305,6 +317,23 @@ function handleApprove(){
 function handleConvert(){
   convertPurchaseRequisition(ids.value[0]).then(() => {
     proxy.$modal.msgSuccess('转单成功');
+    getList()
+  })
+}
+
+/**
+ * 低库存生成按钮操作 - 扫描安全库存自动生成采购申请
+ */
+function handleGenerateFromLowStock(){
+  proxy.$modal.confirm('是否确认从低库存自动生成采购申请？').then(() => 
+    generateFromLowStock()
+  ).then((res: any) => {
+    const count = res.data ? res.data.length : 0;
+    if (count > 0) {
+      proxy.$modal.msgSuccess('成功生成 ' + count + ' 条采购申请');
+    } else {
+      proxy.$modal.msgWarning('未发现低库存物料，无需生成采购申请');
+    }
     getList()
   })
 }
