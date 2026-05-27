@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -109,10 +110,10 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         PuPurchaseReturn entity = MapstructUtils.convert(bo, PuPurchaseReturn.class);
         PuPurchaseReturn current = baseMapper.selectById(entity.getReturnId());
         if (current == null) {
-            throw new RuntimeException("采购退货单不存在");
+            throw new ServiceException("采购退货单不存在");
         }
         if (!STATUS_DRAFT.equals(current.getStatus())) {
-            throw new RuntimeException("只有草稿状态的采购退货单才能编辑");
+            throw new ServiceException("只有草稿状态的采购退货单才能编辑");
         }
         deleteLines(entity.getReturnId());
         insertLines(entity.getReturnId(), bo.getPuPurchaseReturnLineList());
@@ -148,7 +149,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         }
         List<PuPurchaseReturnLine> lines = lineMapper.selectList(Wrappers.lambdaQuery(PuPurchaseReturnLine.class).eq(PuPurchaseReturnLine::getReturnId, returnId));
         if (lines == null || lines.isEmpty()) {
-            throw new RuntimeException("采购退货单无明细行");
+            throw new ServiceException("采购退货单无明细行");
         }
         for (PuPurchaseReturnLine line : lines) {
             postReturnOut(purchaseReturn, line, new Date());
@@ -165,16 +166,16 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         Long returnId = Long.parseLong(returnIdStr);
         PuPurchaseReturn entity = baseMapper.selectById(returnId);
         if (entity == null) {
-            throw new RuntimeException("采购退货单不存在");
+            throw new ServiceException("采购退货单不存在");
         }
         if (!STATUS_DRAFT.equals(entity.getStatus())) {
-            throw new RuntimeException("只有草稿状态的采购退货单才能提交审批");
+            throw new ServiceException("只有草稿状态的采购退货单才能提交审批");
         }
         if (StringUtils.isBlank(selectFlowId)) {
             if (entity.getSelectFlowId() != null) {
                 selectFlowId = String.valueOf(entity.getSelectFlowId());
             } else {
-                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+                throw new ServiceException("请先在编辑页选择审批流程并保存");
             }
         }
 
@@ -246,14 +247,14 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
 
     private void postReturnOut(PuPurchaseReturn purchaseReturn, PuPurchaseReturnLine line, Date now) {
         if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("退货数量必须大于0");
+            throw new ServiceException("退货数量必须大于0");
         }
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         WmMaterialStock stock = stockMapper.selectOne(lqw);
         if (stock == null || stock.getStockQuantity() == null || stock.getStockQuantity().compareTo(line.getReturnQuantity()) < 0) {
-            throw new RuntimeException("库存不足，无法执行采购退货");
+            throw new ServiceException("库存不足，无法执行采购退货");
         }
         BigDecimal beforeQuantity = stock.getStockQuantity();
         BigDecimal afterQuantity = beforeQuantity.subtract(line.getReturnQuantity());
@@ -312,7 +313,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     private PuPurchaseReturn ensureReturn(Long returnId) {
         PuPurchaseReturn purchaseReturn = baseMapper.selectById(returnId);
         if (purchaseReturn == null) {
-            throw new RuntimeException("采购退货单不存在");
+            throw new ServiceException("采购退货单不存在");
         }
         return purchaseReturn;
     }

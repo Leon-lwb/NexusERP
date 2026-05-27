@@ -2,6 +2,7 @@ package org.dromara.erp.pu.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.erp.pu.service.IPuVendorEvaluationService;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +29,7 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
     @Override
     public void calculateByVendor(Long vendorId) {
         if (vendorId == null) {
-            throw new RuntimeException("供应商ID不能为空");
+            throw new ServiceException("供应商ID不能为空");
         }
         // 预留：后续根据交货及时率、质量合格率、价格波动计算供应商评分
     }

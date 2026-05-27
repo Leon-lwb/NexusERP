@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -79,10 +80,10 @@ public class BdBomServiceImpl implements IBdBomService {
     public void activateVersion(Long bomId) {
         BdBom bom = baseMapper.selectById(bomId);
         if (bom == null) {
-            throw new RuntimeException("BOM不存在");
+            throw new ServiceException("BOM不存在");
         }
         if (bom.getParentMaterialId() == null) {
-            throw new RuntimeException("BOM父项物料为空，无法激活");
+            throw new ServiceException("BOM父项物料为空，无法激活");
         }
         // 将该物料所有BOM版本设为非当前
         List<BdBom> sameParentBoms = baseMapper.selectList(

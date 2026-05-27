@@ -1,6 +1,8 @@
 package org.dromara.erp.wm.barcode;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -24,7 +26,7 @@ public class BarcodeGenerator {
             code.append(rule.getPrefix());
         }
         String datePattern = rule.getDatePattern() == null ? "yyyyMMdd" : rule.getDatePattern();
-        code.append(new SimpleDateFormat(datePattern).format(bizDate == null ? new Date() : bizDate));
+        code.append((bizDate == null ? new Date() : bizDate).toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern(datePattern)));
         code.append(String.format("%0" + rule.getSequenceLength() + "d", sequence.incrementAndGet()));
         if (rule.isWithCheckDigit()) {
             code.append(calculateCheckDigit(code.toString()));

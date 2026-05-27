@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -98,10 +99,10 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
         lqw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
         BdSerialNumberRule rule = baseMapper.selectOne(lqw);
         if (rule == null) {
-            throw new RuntimeException("序列号规则不存在: " + ruleCode);
+            throw new ServiceException("序列号规则不存在: {}", ruleCode);
         }
         if (!"ACTIVE".equals(rule.getStatus())) {
-            throw new RuntimeException("序列号规则未启用: " + ruleCode);
+            throw new ServiceException("序列号规则未启用: {}", ruleCode);
         }
 
         // 构建日期段

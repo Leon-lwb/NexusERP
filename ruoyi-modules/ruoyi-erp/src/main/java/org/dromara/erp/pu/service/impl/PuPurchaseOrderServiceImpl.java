@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.domain.R;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.flowable.core.domain.ActStatus;
@@ -151,10 +152,10 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
         PuPurchaseOrder current = baseMapper.selectById(entity.getOrderId());
         if (current == null) {
-            throw new RuntimeException("采购订单不存在");
+            throw new ServiceException("采购订单不存在");
         }
         if (!STATUS_DRAFT.equals(current.getStatus()) && !STATUS_SUBMITTED.equals(current.getStatus())) {
-            throw new RuntimeException("当前状态不允许编辑采购订单");
+            throw new ServiceException("当前状态不允许编辑采购订单");
         }
         deleteLines(entity.getOrderId());
         saveLines(entity.getOrderId(), bo.getLineList());
@@ -183,7 +184,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     public void submit(Long orderId) {
         PuPurchaseOrder order = ensureOrder(orderId);
         if (!STATUS_DRAFT.equals(order.getStatus())) {
-            throw new RuntimeException("只有草稿状态的采购订单才能提交");
+            throw new ServiceException("只有草稿状态的采购订单才能提交");
         }
         order.setStatus(STATUS_SUBMITTED);
         baseMapper.updateById(order);
@@ -197,14 +198,14 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         Long orderId = Long.parseLong(orderIdStr);
         PuPurchaseOrder order = baseMapper.selectById(orderId);
         if (order == null) {
-            throw new RuntimeException("采购订单不存在");
+            throw new ServiceException("采购订单不存在");
         }
 
         if (StringUtils.isBlank(selectFlowId)) {
             if (order.getSelectFlowId() != null) {
                 selectFlowId = String.valueOf(order.getSelectFlowId());
             } else {
-                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+                throw new ServiceException("请先在编辑页选择审批流程并保存");
             }
         }
 
@@ -219,7 +220,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         if (R.isSuccess(result)) {
             return true;
         }
-        throw new RuntimeException(result.getMsg());
+        throw new ServiceException(result.getMsg());
     }
 
     @Override
@@ -286,7 +287,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     public void approve(Long orderId) {
         PuPurchaseOrder order = ensureOrder(orderId);
         if (!STATUS_SUBMITTED.equals(order.getStatus()) && !STATUS_APPROVING.equals(order.getStatus())) {
-            throw new RuntimeException("当前状态不允许审批采购订单");
+            throw new ServiceException("当前状态不允许审批采购订单");
         }
         order.setStatus(STATUS_APPROVED);
         baseMapper.updateById(order);
@@ -314,7 +315,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     public void cancel(Long orderId) {
         PuPurchaseOrder order = ensureOrder(orderId);
         if (STATUS_RECEIVED.equals(order.getStatus())) {
-            throw new RuntimeException("已全部到货的采购订单不能作废");
+            throw new ServiceException("已全部到货的采购订单不能作废");
         }
         order.setStatus(STATUS_CANCELLED);
         baseMapper.updateById(order);
@@ -331,7 +332,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     public Long generateReceivingLink(Long orderId) {
         PuPurchaseOrder order = ensureOrder(orderId);
         if (!STATUS_APPROVED.equals(order.getStatus()) && !STATUS_PARTIALLY_RECEIVED.equals(order.getStatus())) {
-            throw new RuntimeException("只有已批准或部分到货的采购订单才能生成收货联动单据");
+            throw new ServiceException("只有已批准或部分到货的采购订单才能生成收货联动单据");
         }
         return purchaseReceivingService.createArrivalNoticeAndReceive(orderId);
     }
@@ -347,13 +348,13 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     public PuPurchaseOrderBo generateFromRequisition(Long requisitionId) {
         PuPurchaseRequisition requisition = requisitionMapper.selectById(requisitionId);
         if (requisition == null) {
-            throw new RuntimeException("采购申请不存在");
+            throw new ServiceException("采购申请不存在");
         }
         List<PuPurchaseRequisitionLine> reqLines = requisitionLineMapper.selectList(
             new LambdaQueryWrapper<PuPurchaseRequisitionLine>().eq(PuPurchaseRequisitionLine::getRequisitionId, requisitionId)
         );
         if (reqLines == null || reqLines.isEmpty()) {
-            throw new RuntimeException("采购申请没有明细，无法生成采购订单");
+            throw new ServiceException("采购申请没有明细，无法生成采购订单");
         }
 
         PuPurchaseOrderBo bo = new PuPurchaseOrderBo();
@@ -440,7 +441,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     private PuPurchaseOrder ensureOrder(Long orderId) {
         PuPurchaseOrder order = baseMapper.selectById(orderId);
         if (order == null) {
-            throw new RuntimeException("采购订单不存在");
+            throw new ServiceException("采购订单不存在");
         }
         return order;
     }
@@ -461,20 +462,20 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     public void validateVendor(Long vendorId, Date expectedArrivalDate) {
         if (vendorId == null) {
-            throw new RuntimeException("供应商ID不能为空");
+            throw new ServiceException("供应商ID不能为空");
         }
         BdVendor vendor = vendorMapper.selectById(vendorId);
         if (vendor == null) {
-            throw new RuntimeException("供应商不存在(ID=" + vendorId + ")");
+            throw new ServiceException("供应商不存在(ID={})", vendorId);
         }
         if ("FROZEN".equals(vendor.getStatus())) {
-            throw new RuntimeException("供应商【" + vendor.getVendorName() + "】已被冻结（黑名单），不可下单");
+            throw new ServiceException("供应商【{}】已被冻结（黑名单），不可下单", vendor.getVendorName());
         }
         if (!"ACTIVE".equals(vendor.getStatus())) {
-            throw new RuntimeException("供应商【" + vendor.getVendorName() + "】状态异常（" + vendor.getStatus() + "），不可下单");
+            throw new ServiceException("供应商【{}】状态异常（{}），不可下单", vendor.getVendorName(), vendor.getStatus());
         }
         if (expectedArrivalDate != null && expectedArrivalDate.before(new Date())) {
-            throw new RuntimeException("预计到货日期不能早于当前日期");
+            throw new ServiceException("预计到货日期不能早于当前日期");
         }
     }
 

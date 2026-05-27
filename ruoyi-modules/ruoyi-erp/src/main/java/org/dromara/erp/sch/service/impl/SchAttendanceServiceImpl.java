@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.utils.DateUtils;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.erp.sch.domain.SchAttendance;
@@ -25,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -86,14 +89,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      */
     @Override
     public Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String todayStr = sdf.format(new Date());
-        Date today;
-        try {
-            today = sdf.parse(todayStr);
-        } catch (Exception e) {
-            throw new RuntimeException("日期格式错误", e);
-        }
+        LocalDate todayLd = LocalDate.now();
+        Date today = Date.from(todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         SchAttendance attendance = new SchAttendance();
         attendance.setWorkerId(workerId);
@@ -163,14 +160,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      */
     @Override
     public Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName, Double overtimeHours) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String todayStr = sdf.format(new Date());
-        Date today;
-        try {
-            today = sdf.parse(todayStr);
-        } catch (Exception e) {
-            throw new RuntimeException("日期格式错误", e);
-        }
+        LocalDate todayLd = LocalDate.now();
+        Date today = Date.from(todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         LambdaQueryWrapper<SchAttendance> existLqw = Wrappers.lambdaQuery();
         existLqw.eq(SchAttendance::getWorkerId, workerId);
@@ -280,14 +271,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      */
     @Override
     public Map<String, Object> getTodayAttendanceStatus(Long workerId) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String todayStr = sdf.format(new Date());
-        Date today;
-        try {
-            today = sdf.parse(todayStr);
-        } catch (Exception e) {
-            throw new RuntimeException("日期格式错误", e);
-        }
+        LocalDate todayLd = LocalDate.now();
+        Date today = Date.from(todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         LambdaQueryWrapper<SchAttendance> lqw = Wrappers.lambdaQuery();
         lqw.eq(SchAttendance::getWorkerId, workerId);
@@ -346,11 +331,11 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         try {
             SchPunchRuleVo punchRule = schPunchRuleService.selectById(1L);
             if (punchRule == null) {
-                throw new RuntimeException("未找到打卡规则");
+                throw new ServiceException("未找到打卡规则");
             }
 
             if (punchRule.getIsEnabled() != null && punchRule.getIsEnabled() == 0) {
-                throw new RuntimeException("打卡规则已禁用");
+                throw new ServiceException("打卡规则已禁用");
             }
 
             java.math.BigDecimal ruleLat = punchRule.getLocationLat();
@@ -358,7 +343,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             Long ruleRadius = punchRule.getLocationRadius();
 
             if (ruleLat == null || ruleLng == null || ruleRadius == null) {
-                throw new RuntimeException("打卡规则配置不完整");
+                throw new ServiceException("打卡规则配置不完整");
             }
 
             double centerLat = ruleLat.doubleValue();
@@ -391,7 +376,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
             return data;
         } catch (Exception e) {
-            throw new RuntimeException("位置验证失败：" + e.getMessage(), e);
+            throw new ServiceException("位置验证失败：" + e.getMessage(), e);
         }
     }
 

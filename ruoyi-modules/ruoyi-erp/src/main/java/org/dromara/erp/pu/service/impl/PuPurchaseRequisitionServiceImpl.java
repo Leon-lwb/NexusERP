@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.MapstructUtils;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.flowable.core.domain.ActStatus;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -143,10 +144,10 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         PuPurchaseRequisition entity = MapstructUtils.convert(bo, PuPurchaseRequisition.class);
         PuPurchaseRequisition current = baseMapper.selectById(entity.getRequisitionId());
         if (current == null) {
-            throw new RuntimeException("采购申请单不存在");
+            throw new ServiceException("采购申请单不存在");
         }
         if (!STATUS_DRAFT.equals(current.getStatus()) && !STATUS_SUBMITTED.equals(current.getStatus())) {
-            throw new RuntimeException("当前状态不允许编辑采购申请单");
+            throw new ServiceException("当前状态不允许编辑采购申请单");
         }
         deleteLinesByRequisitionId(entity.getRequisitionId());
         insertLines(entity.getRequisitionId(), bo.getPuPurchaseRequisitionLineList());
@@ -173,7 +174,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     public void submit(Long requisitionId) {
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
         if (!STATUS_DRAFT.equals(requisition.getStatus())) {
-            throw new RuntimeException("只有草稿状态的采购申请才能提交");
+            throw new ServiceException("只有草稿状态的采购申请才能提交");
         }
         requisition.setStatus(STATUS_SUBMITTED);
         baseMapper.updateById(requisition);
@@ -190,7 +191,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         Long requisitionId = Long.parseLong(requisitionIdStr);
         PuPurchaseRequisition requisition = baseMapper.selectById(requisitionId);
         if (requisition == null) {
-            throw new RuntimeException("采购申请单不存在");
+            throw new ServiceException("采购申请单不存在");
         }
 
         // 如果前端没传 selectFlowId，从数据库已保存记录中读取
@@ -198,7 +199,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
             if (requisition.getSelectFlowId() != null) {
                 selectFlowId = String.valueOf(requisition.getSelectFlowId());
             } else {
-                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+                throw new ServiceException("请先在编辑页选择审批流程并保存");
             }
         }
 
@@ -215,7 +216,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         if (R.isSuccess(result)) {
             return true;
         }
-        throw new RuntimeException(result.getMsg());
+        throw new ServiceException(result.getMsg());
     }
 
     @Override
@@ -285,7 +286,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     public void approve(Long requisitionId) {
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
         if (!STATUS_SUBMITTED.equals(requisition.getStatus()) && !STATUS_APPROVING.equals(requisition.getStatus())) {
-            throw new RuntimeException("当前状态不允许审批采购申请");
+            throw new ServiceException("当前状态不允许审批采购申请");
         }
         requisition.setStatus(STATUS_APPROVED);
         baseMapper.updateById(requisition);
@@ -310,7 +311,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     public void cancel(Long requisitionId) {
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
         if (STATUS_ORDERED.equals(requisition.getStatus())) {
-            throw new RuntimeException("已转单的采购申请不能作废");
+            throw new ServiceException("已转单的采购申请不能作废");
         }
         requisition.setStatus(STATUS_CANCELLED);
         baseMapper.updateById(requisition);
@@ -330,11 +331,11 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     public Long convertToPurchaseOrder(Long requisitionId) {
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
         if (!STATUS_APPROVED.equals(requisition.getStatus())) {
-            throw new RuntimeException("只有已批准的采购申请才能转采购订单");
+            throw new ServiceException("只有已批准的采购申请才能转采购订单");
         }
         List<PuPurchaseRequisitionLine> lines = lineMapper.selectList(Wrappers.lambdaQuery(PuPurchaseRequisitionLine.class).eq(PuPurchaseRequisitionLine::getRequisitionId, requisitionId));
         if (lines == null || lines.isEmpty()) {
-            throw new RuntimeException("采购申请无明细行");
+            throw new ServiceException("采购申请无明细行");
         }
 
         // 创建采购订单主表
@@ -409,7 +410,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     private PuPurchaseRequisition ensureRequisition(Long requisitionId) {
         PuPurchaseRequisition requisition = baseMapper.selectById(requisitionId);
         if (requisition == null) {
-            throw new RuntimeException("采购申请单不存在");
+            throw new ServiceException("采购申请单不存在");
         }
         return requisition;
     }

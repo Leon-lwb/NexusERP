@@ -21,7 +21,9 @@ import org.dromara.erp.sch.service.ISchWorkerService;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -58,18 +60,12 @@ public class AppSchAttendanceController {
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String todayStr = sdf.format(new Date());
-        Date today;
-        try {
-            today = sdf.parse(todayStr);
-        } catch (Exception e) {
-            return R.fail("日期格式错误");
-        }
+        LocalDate today = LocalDate.now();
+        Date todayDate = Date.from(today.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         LambdaQueryWrapper<SchEmployeeSchedule> lqw = Wrappers.lambdaQuery();
         lqw.eq(SchEmployeeSchedule::getWorkerId, workerId);
-        lqw.eq(SchEmployeeSchedule::getScheduledDate, today);
+        lqw.eq(SchEmployeeSchedule::getScheduledDate, todayDate);
         List<SchEmployeeSchedule> scheduleList = employeeScheduleMapper.selectList(lqw);
 
         if (!scheduleList.isEmpty()) {
@@ -255,7 +251,7 @@ public class AppSchAttendanceController {
             }
 
             if (attendance.getRecordDate() != null) {
-                String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(attendance.getRecordDate());
+                String dateStr = attendance.getRecordDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                 Map<String, Object> dayDetail = new HashMap<>();
                 dayDetail.put("attendanceStatus", status);
                 dayDetail.put("clockInTime", attendance.getClockInTime());

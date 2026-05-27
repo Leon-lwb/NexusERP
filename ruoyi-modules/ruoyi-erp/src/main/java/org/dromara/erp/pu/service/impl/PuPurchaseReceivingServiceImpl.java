@@ -3,6 +3,7 @@ package org.dromara.erp.pu.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.erp.pu.domain.PuPurchaseOrder;
 import org.dromara.erp.pu.domain.PuPurchaseOrderLine;
@@ -69,16 +70,16 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
     public Long createArrivalNoticeAndReceive(Long orderId) {
         PuPurchaseOrder order = purchaseOrderMapper.selectById(orderId);
         if (order == null) {
-            throw new RuntimeException("采购订单不存在");
+            throw new ServiceException("采购订单不存在");
         }
         if (StringUtils.isBlank(order.getOrderNo())) {
-            throw new RuntimeException("采购订单号不能为空");
+            throw new ServiceException("采购订单号不能为空");
         }
 
         List<PuPurchaseOrderLine> orderLines = purchaseOrderLineMapper.selectList(
             new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, orderId));
         if (orderLines == null || orderLines.isEmpty()) {
-            throw new RuntimeException("采购订单没有明细，无法生成到货通知");
+            throw new ServiceException("采购订单没有明细，无法生成到货通知");
         }
 
         // 1. 创建到货通知单
