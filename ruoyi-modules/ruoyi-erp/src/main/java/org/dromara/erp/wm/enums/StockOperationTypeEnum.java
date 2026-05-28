@@ -11,7 +11,11 @@ public enum StockOperationTypeEnum {
     COUNT_ADJUST("COUNT_ADJUST", "盘点调整"),
     MISC_ISSUE("MISC_ISSUE", "杂项出库"),
     MISC_RECPT("MISC_RECPT", "杂项入库"),
-    PRODUCTION_ISSUE("PRODUCTION_ISSUE", "生产领料");
+    PRODUCTION_ISSUE("PRODUCTION_ISSUE", "生产领料"),
+    SUBCONTRACT_ISSUE("SUBCONTRACT_ISSUE", "委外发料"),
+    SUBCONTRACT_RECEIVE("SUBCONTRACT_RECEIVE", "委外收货"),
+    REWORK_ISSUE("REWORK_ISSUE", "返工出库"),
+    REWORK_RECEIVE("REWORK_RECEIVE", "返工入库");
 
     private final String code;
     private final String desc;
