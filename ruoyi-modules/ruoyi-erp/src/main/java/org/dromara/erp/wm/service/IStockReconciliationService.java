@@ -36,12 +36,12 @@ public interface IStockReconciliationService {
 
     /**
      * 执行全量库存台账校验
-     * 比对 WmMaterialStock 库存数量�?WmMaterialStockTx 事务流水汇总的差异
+     * 比对 WmMaterialStock 库存数量和WmMaterialStockTx 事务流水汇总的差异
      */
     void reconcile();
 
     /**
-     * 按物料执行库存台账校�?     *
+     * 按物料执行库存台账校验
      * @param materialId 物料ID
      */
     void reconcileByMaterial(Long materialId);

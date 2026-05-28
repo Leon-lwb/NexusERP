@@ -113,8 +113,8 @@
   </div>
 </template>
 
-<script setup lang="ts" name="PutawayRule">
-import { listPutawayRule, getPutawayRule, delPutawayRule, addPutawayRule, updatePutawayRule } from "@/api/erp/wm/putawayRule"
+<script setup lang="ts" name="Putawayrule">
+import { listPutawayRule, getPutawayRule, delPutawayRule, addPutawayRule, updatePutawayRule } from "@/api/erp/wm/putawayrule"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 
 const { proxy } = getCurrentInstance() as any

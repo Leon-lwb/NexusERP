@@ -113,8 +113,8 @@
   </div>
 </template>
 
-<script setup lang="ts" name="PickingRule">
-import { listPickingRule, getPickingRule, delPickingRule, addPickingRule, updatePickingRule } from "@/api/erp/wm/pickingRule"
+<script setup lang="ts" name="Pickingrule">
+import { listPickingRule, getPickingRule, delPickingRule, addPickingRule, updatePickingRule } from "@/api/erp/wm/pickingrule"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 
 const { proxy } = getCurrentInstance() as any

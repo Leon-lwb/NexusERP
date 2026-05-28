@@ -53,13 +53,13 @@ public interface IPrdSubcontractService {
 
     /**
      * 下达委外订单
-     * 创建关联工单并更新状态为进行�?     *
+     * 创建关联工单并更新状态为进行中
      * @param subcontractId 委外单ID
      */
     void release(Long subcontractId);
 
     /**
-     * 开始委外订�?     *
+     * 开始委外订单
      * @param subcontractId 委外单ID
      */
     void start(Long subcontractId);

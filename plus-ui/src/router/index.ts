@@ -514,7 +514,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
-    path: '/erp/wm/putawayRule/form',
+    path: '/erp/wm/putawayrule/form',
     component: Layout,
     hidden: true,
     permissions: ['wm:putawayRule:query'],
@@ -523,12 +523,12 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/putawayrule/form.vue'),
         name: 'PutawayRuleForm',
-        meta: { title: '上架规则表单', activeMenu: '/erp/wm/putawayRule' }
+        meta: { title: '上架规则表单', activeMenu: '/erp/wm/putawayrule' }
       }
     ]
   },
   {
-    path: '/erp/wm/pickingRule/form',
+    path: '/erp/wm/pickingrule/form', 
     component: Layout,
     hidden: true,
     permissions: ['wm:pickingRule:query'],
@@ -537,7 +537,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/pickingrule/form.vue'),
         name: 'PickingRuleForm',
-        meta: { title: '拣货规则表单', activeMenu: '/erp/wm/pickingRule' }
+        meta: { title: '拣货规则表单', activeMenu: '/erp/wm/pickingrule' }
       }
     ]
   },

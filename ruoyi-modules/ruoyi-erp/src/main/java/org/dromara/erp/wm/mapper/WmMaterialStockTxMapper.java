@@ -1,5 +1,6 @@
 package org.dromara.erp.wm.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 import org.dromara.erp.wm.domain.WmMaterialStockTx;
 import org.dromara.erp.wm.domain.vo.WmMaterialStockTxVo;
@@ -10,6 +11,7 @@ import org.dromara.erp.wm.domain.vo.WmMaterialStockTxVo;
  * @author ruoyi
  * @date 2025-12-12
  */
+@Mapper
 public interface WmMaterialStockTxMapper extends BaseMapperPlus<WmMaterialStockTx, WmMaterialStockTxVo> {
 
 }

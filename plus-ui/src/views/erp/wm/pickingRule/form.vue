@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts" name="PickingRuleForm">
-import { getPickingRule, addPickingRule, updatePickingRule } from '@/api/erp/wm/pickingRule'
+import { getPickingRule, addPickingRule, updatePickingRule } from '@/api/erp/wm/pickingrule'
 import { listWarehouse } from '@/api/erp/wm/warehouse'
 import { useRoute, useRouter } from 'vue-router'
 

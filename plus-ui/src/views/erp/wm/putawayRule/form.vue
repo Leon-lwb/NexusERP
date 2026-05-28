@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts" name="PutawayRuleForm">
-import { getPutawayRule, addPutawayRule, updatePutawayRule } from '@/api/erp/wm/putawayRule'
+import { getPutawayRule, addPutawayRule, updatePutawayRule } from '@/api/erp/wm/putawayrule'
 import { listWarehouse } from '@/api/erp/wm/warehouse'
 import { useRoute, useRouter } from 'vue-router'
 

@@ -45,7 +45,8 @@ public interface IWmStockAlertService {
     int deleteByIds(Long[] ids);
 
     /**
-     * 执行安全库存预警检�?     * 扫描所有设置了安全库存/最低库存的物料，对比当前库存，生成预警记录
+     * 执行安全库存预警检查
+     * 扫描所有设置了安全库存/最低库存的物料，对比当前库存，生成预警记录
      */
     void checkStockAlerts();
 

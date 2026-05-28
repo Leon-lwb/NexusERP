@@ -49,14 +49,14 @@ public interface IPrdReworkOrderService {
     int deleteByIds(Long[] ids);
 
     /**
-     * 开始返工订�?     *
+     * 开始返工订单
      * @param reworkId 返工单ID
      */
     void start(Long reworkId);
 
     /**
      * 完成返工订单
-     * 完成时将报废数量回写到来源工�?     *
+     * 完成时将报废数量回写到来源工单
      * @param reworkId 返工单ID
      */
     void complete(Long reworkId);
