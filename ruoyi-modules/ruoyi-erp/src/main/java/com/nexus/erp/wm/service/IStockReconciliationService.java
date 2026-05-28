@@ -1,0 +1,48 @@
+package com.nexus.erp.wm.service;
+
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.wm.domain.bo.WmStockReconciliationBo;
+import com.nexus.erp.wm.domain.vo.WmStockReconciliationVo;
+
+import java.util.List;
+
+/**
+ * 库存台账校验Service接口
+ *
+ * @author nexus
+ */
+public interface IStockReconciliationService {
+
+    /**
+     * 分页查询库存校验记录列表
+     */
+    TableDataInfo<WmStockReconciliationVo> selectPageList(WmStockReconciliationBo bo, PageQuery pageQuery);
+
+    /**
+     * 查询库存校验记录列表
+     */
+    List<WmStockReconciliationVo> selectList(WmStockReconciliationBo bo);
+
+    /**
+     * 查询库存校验记录详情
+     */
+    WmStockReconciliationVo selectById(Long id);
+
+    /**
+     * 删除库存校验记录
+     */
+    int deleteByIds(Long[] ids);
+
+    /**
+     * 执行全量库存台账校验
+     * 比对 WmMaterialStock 库存数量和WmMaterialStockTx 事务流水汇总的差异
+     */
+    void reconcile();
+
+    /**
+     * 按物料执行库存台账校验
+     * @param materialId 物料ID
+     */
+    void reconcileByMaterial(Long materialId);
+}

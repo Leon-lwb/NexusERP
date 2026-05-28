@@ -1,1 +1,1 @@
-org.dromara.common.websocket.config.WebSocketConfig
+com.nexus.common.websocket.config.WebSocketConfig

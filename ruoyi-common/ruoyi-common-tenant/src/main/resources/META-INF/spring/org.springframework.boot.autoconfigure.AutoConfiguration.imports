@@ -1,1 +1,1 @@
-org.dromara.common.tenant.config.TenantConfig
+com.nexus.common.tenant.config.TenantConfig

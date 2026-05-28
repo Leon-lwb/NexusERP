@@ -1,0 +1,73 @@
+package com.nexus.erp.prd.service;
+
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.prd.domain.PrdMaterialRequirement;
+import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
+import com.nexus.erp.prd.domain.bo.PrdMaterialRequirementBo;
+import com.nexus.erp.prd.domain.vo.PrdMaterialRequirementVo;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+/**
+ * 物料清单Service接口
+ *
+ * @author ruoyi
+ */
+public interface IPrdMaterialRequirementService {
+
+    TableDataInfo<PrdMaterialRequirementVo> selectPageList(PrdMaterialRequirementBo bo, PageQuery pageQuery);
+
+    List<PrdMaterialRequirementVo> selectList(PrdMaterialRequirementBo bo);
+
+    PrdMaterialRequirementVo selectById(Long id);
+
+    PrdMaterialRequirement selectPrdMaterialRequirementByRequirementId(Long requirementId);
+
+    List<PrdMaterialRequirement> selectPrdMaterialRequirementList(PrdMaterialRequirement prdMaterialRequirement);
+
+    List<PrdMaterialRequirement> selectPrdMaterialRequirementListWithDetails(PrdMaterialRequirement prdMaterialRequirement);
+
+    int insertPrdMaterialRequirement(PrdMaterialRequirement prdMaterialRequirement);
+
+    int insertByBo(PrdMaterialRequirementBo bo);
+
+    int updateByBo(PrdMaterialRequirementBo bo);
+
+    int updatePrdMaterialRequirement(PrdMaterialRequirement prdMaterialRequirement);
+
+    int deleteByIds(Long[] ids);
+
+    int deletePrdMaterialRequirementByRequirementIds(Long[] requirementIds);
+
+    int deletePrdMaterialRequirementByRequirementId(Long requirementId);
+
+    int insertPrdMaterialRequirementDetails(List<PrdMaterialRequirementDetail> detailList);
+
+    /**
+     * 根据BOM ID导入物料需求明细
+     *
+     * @param bomId BOM ID
+     * @param totalRequiredQuantity 需求总量
+     * @return 物料需求明细列表
+     */
+    List<PrdMaterialRequirementDetail> importBomDetails(Long bomId, BigDecimal totalRequiredQuantity);
+
+    /**
+     * 根据计划编号查询物料需求树（含父子关系嵌套）
+     *
+     * @param planNo 生产计划编号
+     * @return 物料需求树形列表（顶层节点）
+     */
+    List<PrdMaterialRequirementVo> selectPrdMaterialRequirementTreeByPlanNo(String planNo);
+
+    /**
+     * 计算单个物料明细的净需求
+     * 逻辑：毛需求 - 现有库存 - 安全库存 = 净需求(短缺量)
+     * 更新明细的 stockQuantity 和 shortageQuantity 字段
+     *
+     * @param detail 物料需求明细（需已设置 materialId 和 requiredQuantity）
+     */
+    void calculateNetRequirements(PrdMaterialRequirementDetail detail);
+}

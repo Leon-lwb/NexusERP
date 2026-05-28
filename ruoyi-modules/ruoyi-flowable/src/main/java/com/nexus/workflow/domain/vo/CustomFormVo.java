@@ -1,0 +1,17 @@
+package com.nexus.workflow.domain.vo;
+
+import lombok.Data;
+
+
+/**
+ * @Author wanghuan
+ * @Date 2022/5/3
+ * @Description:
+ * @Version 1.0
+ */
+@Data
+public class CustomFormVo {
+	private String id;
+	private String deployId;
+	private String flowName;
+}

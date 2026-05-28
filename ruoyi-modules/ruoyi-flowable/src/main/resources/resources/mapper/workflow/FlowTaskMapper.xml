@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.dromara.workflow.mapper.FlowTaskMapper">
+<mapper namespace="com.nexus.workflow.mapper.FlowTaskMapper">
   <select id="queryActivityInstance" resultType="org.flowable.engine.impl.persistence.entity.ActivityInstanceEntityImpl">
         select t.* from
         act_ru_actinst t

@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.dromara.workflow.mapper.WfMyBusinessMapper">
+<mapper namespace="com.nexus.workflow.mapper.WfMyBusinessMapper">
 
-    <resultMap type="org.dromara.workflow.domain.WfMyBusiness" id="WfMyBusinessResult">
+    <resultMap type="com.nexus.workflow.domain.WfMyBusiness" id="WfMyBusinessResult">
         <result property="id" column="id"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>

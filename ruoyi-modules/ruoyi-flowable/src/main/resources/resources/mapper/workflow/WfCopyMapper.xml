@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.dromara.workflow.mapper.WfCopyMapper">
+<mapper namespace="com.nexus.workflow.mapper.WfCopyMapper">
 
-    <resultMap type="org.dromara.workflow.domain.WfCopy" id="WfCopyResult">
+    <resultMap type="com.nexus.workflow.domain.WfCopy" id="WfCopyResult">
         <result property="copyId" column="copy_id"/>
         <result property="title" column="title"/>
         <result property="processId" column="process_id"/>
@@ -20,7 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="state" column="state"/>
     </resultMap>
 
-    <update id="updateState" parameterType="org.dromara.workflow.domain.WfCopy">
+    <update id="updateState" parameterType="com.nexus.workflow.domain.WfCopy">
         update wf_copy
         set state = '已读'
             WHERE copy_id=#{id}

@@ -1,2 +1,2 @@
-org.dromara.common.security.handler.AllUrlHandler
-org.dromara.common.security.config.SecurityConfig
+com.nexus.common.security.handler.AllUrlHandler
+com.nexus.common.security.config.SecurityConfig

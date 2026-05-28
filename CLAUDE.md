@@ -64,7 +64,7 @@ ruoyi-extend/             — 独立服务
 
 ### 分层架构 (每个业务模块)
 
-每个业务模块在 `org.dromara.<module>` 下均遵循相同结构:
+每个业务模块在 `com.nexus.<module>` 下均遵循相同结构:
 
 ```
 controller/               — REST 控制器

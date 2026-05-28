@@ -1,1 +1,1 @@
-org.dromara.common.sse.config.SseAutoConfiguration
+com.nexus.common.sse.config.SseAutoConfiguration

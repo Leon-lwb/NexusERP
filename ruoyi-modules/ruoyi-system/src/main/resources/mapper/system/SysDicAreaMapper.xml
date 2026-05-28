@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.dromara.system.mapper.SysDicAreaMapper">
+<mapper namespace="com.nexus.system.mapper.SysDicAreaMapper">
 
-    <resultMap type="org.dromara.system.domain.SysDicArea" id="SysDicAreaResult">
+    <resultMap type="com.nexus.system.domain.SysDicArea" id="SysDicAreaResult">
         <id property="pkid" column="pkid"/>
         <result property="areaId" column="area_id"/>
         <result property="parentAreaId" column="parent_area_id"/>

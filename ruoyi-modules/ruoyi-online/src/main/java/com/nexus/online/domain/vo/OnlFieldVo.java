@@ -1,0 +1,25 @@
+package com.nexus.online.domain.vo;
+
+import java.util.List;
+
+import com.nexus.generator.domain.GenTableColumn;
+
+import lombok.Data;
+
+/**
+ * 在线表单字段视图
+ *
+ * @author wanghuan
+ */
+
+@Data
+public class OnlFieldVo extends GenTableColumn {
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+	/**
+	 * 返回字段的字典数据
+	 */
+	private List<DictVo> commonDictCode;
+}

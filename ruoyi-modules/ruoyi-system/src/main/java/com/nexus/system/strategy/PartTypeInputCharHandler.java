@@ -1,0 +1,24 @@
+package com.nexus.system.strategy;
+
+import cn.hutool.core.lang.Assert;
+import com.nexus.system.domain.SysAutoCodePart;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+/**
+ * 输入字符处理器
+ *
+ * @author wanghuan
+ */
+@Component
+@Order(0)
+public class PartTypeInputCharHandler implements PartTypeTemplate {
+
+    @Override
+    public String partHandle(SysAutoCodePart sysAutoCodePart) {
+        String inputCharacter = sysAutoCodePart.getInputCharacter();
+        Assert.notNull(inputCharacter, "编码规则传入字符不能为空！");
+        Assert.isTrue(inputCharacter.length() <= sysAutoCodePart.getPartLength(), "传入字符的长度错误！");
+        return inputCharacter;
+    }
+}

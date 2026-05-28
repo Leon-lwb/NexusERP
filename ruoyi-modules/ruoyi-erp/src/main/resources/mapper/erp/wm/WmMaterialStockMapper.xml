@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.dromara.erp.wm.mapper.WmMaterialStockMapper">
+<mapper namespace="com.nexus.erp.wm.mapper.WmMaterialStockMapper">
 
-    <select id="selectByCategoryIds" resultType="org.dromara.erp.wm.domain.vo.WmMaterialStockVo">
+    <select id="selectByCategoryIds" resultType="com.nexus.erp.wm.domain.vo.WmMaterialStockVo">
         SELECT stock_id, category_id, material_id, material_code, material_name, material_spec,
                base_uom_id, base_uom_name, batch_id, batch_code,
                warehouse_id, warehouse_code, warehouse_name,

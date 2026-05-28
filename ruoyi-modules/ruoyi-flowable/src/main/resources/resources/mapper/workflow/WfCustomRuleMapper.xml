@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.dromara.workflow.mapper.WfCustomRuleMapper">
+<mapper namespace="com.nexus.workflow.mapper.WfCustomRuleMapper">
 
-    <resultMap type="org.dromara.workflow.domain.WfCustomRule" id="WfCustomRuleResult">
+    <resultMap type="com.nexus.workflow.domain.WfCustomRule" id="WfCustomRuleResult">
         <result property="id" column="id"/>
         <result property="configId" column="config_id"/>
         <result property="colCode" column="col_code"/>

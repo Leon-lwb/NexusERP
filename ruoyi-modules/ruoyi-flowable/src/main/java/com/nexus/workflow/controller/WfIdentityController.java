@@ -1,0 +1,46 @@
+package com.nexus.workflow.controller;
+
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.hutool.core.lang.tree.Tree;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.nexus.common.core.domain.R;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.workflow.service.IWfIdentityService;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 身份控制器
+ *
+ * @author wanghuan
+ */
+@Validated
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/workflow/identity")
+public class WfIdentityController {
+
+    private final IWfIdentityService identityService;
+
+    @GetMapping("deptTree")
+    public R<List<Tree<Long>>> deptTree() {
+        return R.ok(identityService.selectDeptTreeList());
+    }
+
+    /**
+     * 查询用户列表，用于用户选择场景
+     */
+    @SaCheckLogin
+    @GetMapping("/selectUser")
+    public TableDataInfo<Map<String, Object>> selectUser(Long deptId, PageQuery pageQuery) {
+        return identityService.selectPageUserList(deptId, pageQuery);
+    }
+}
