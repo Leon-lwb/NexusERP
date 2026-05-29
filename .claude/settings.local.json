@@ -131,7 +131,16 @@
       "Bash(grep -oP 'CREATE TABLE\\\\s*`[^`]+`' \"script/sql/ry-erp.sql\")",
       "Bash(ls *)",
       "Bash(\"/d/maven/apache-maven-3.6.3/bin/mvn\" compile *)",
-      "Bash(GIT_SEQUENCE_EDITOR=\"sed -i 's/^pick e988734/edit e988734/'\" git rebase -i e477b7d)"
+      "Bash(GIT_SEQUENCE_EDITOR=\"sed -i 's/^pick e988734/edit e988734/'\" git rebase -i e477b7d)",
+      "Bash(cd *)",
+      "Bash(javap -p \"ruoyi-common/ruoyi-common-core/target/classes/com/nexus/common/core/domain/model/LoginUser.class\")",
+      "Bash(ls -la ruoyi-modules/ruoyi-flowable/src/main/java/org/dromara/)",
+      "Bash(ls -la ruoyi-modules/ruoyi-flowable/src/main/resources/resources/)",
+      "Bash(javap -p ruoyi-modules/ruoyi-system/target/classes/com/nexus/system/service/CommonService.class)",
+      "Bash(javap -p ~/.m2/repository/org/dromara/ruoyi-system/5.6.0/ruoyi-system-5.6.0.jar)",
+      "Bash(javap -cp ~/.m2/repository/org/dromara/ruoyi-system/5.6.0/ruoyi-system-5.6.0.jar org.dromara.system.service.CommonService)",
+      "Bash(grep -rn \"org\\\\.dromara\" ruoyi-modules/ruoyi-system/pom.xml ruoyi-modules/ruoyi-flowable/pom.xml ruoyi-common/ruoyi-common-flowable/pom.xml ruoyi-modules/ruoyi-online/pom.xml ruoyi-modules/ruoyi-generator/pom.xml)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

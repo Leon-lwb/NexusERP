@@ -2,6 +2,7 @@ package com.nexus.erp.prd.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
@@ -45,7 +46,8 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     @Override
     public TableDataInfo<PrdCapacityCalendarVo> selectPageList(PrdCapacityCalendarBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdCapacityCalendar> lqw = buildQueryWrapper(bo);
-        return TableDataInfo.build(baseMapper.selectVoPage(pageQuery.build(), lqw));
+        IPage<PrdCapacityCalendarVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(page);
     }
 
     @Override

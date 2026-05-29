@@ -3,6 +3,8 @@ package com.nexus.erp.prd.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.erp.prd.domain.PrdMaterialRequirement;
+import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.utils.MapstructUtils;
@@ -25,6 +27,7 @@ import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.history.HistoricProcessInstance;
@@ -45,6 +48,7 @@ import java.util.Map;
  *
  * @author ruoyi
  */
+@Slf4j
 @RequiredArgsConstructor
 @DS("erp")
 @Service("prdWorkOrderService")

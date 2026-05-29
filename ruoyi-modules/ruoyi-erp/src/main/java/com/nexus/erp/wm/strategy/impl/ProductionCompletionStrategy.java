@@ -90,7 +90,7 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
             stock.setWarehouseId(warehouseId);
             stock.setLocationId(locationId);
             stock.setStockQuantity(BigDecimal.ZERO);
-            stock.setIsQualityInspected("N");
+            //stock.setIsQualityInspected("N");
             stockMapper.insert(stock);
         }
         return stock;
