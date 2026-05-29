@@ -51,6 +51,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 采购申请服务实现类
@@ -428,11 +429,21 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         }
 
         Map<Long, BigDecimal> stockMap = new HashMap<>();
-        List<WmMaterialStock> stocks = materialStockMapper.selectList(new LambdaQueryWrapper<>());
-        if (stocks != null) {
-            for (WmMaterialStock stock : stocks) {
-                BigDecimal current = stockMap.getOrDefault(stock.getMaterialId(), BigDecimal.ZERO);
-                stockMap.put(stock.getMaterialId(), current.add(stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO));
+        List<Long> materialIds = materials.stream()
+            .map(BdMaterial::getMaterialId)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (!materialIds.isEmpty()) {
+            List<WmMaterialStock> stocks = materialStockMapper.selectList(
+                new LambdaQueryWrapper<WmMaterialStock>()
+                    .in(WmMaterialStock::getMaterialId, materialIds)
+                    .eq(WmMaterialStock::getFrozenFlag, 0L));
+            if (stocks != null) {
+                for (WmMaterialStock stock : stocks) {
+                    BigDecimal current = stockMap.getOrDefault(stock.getMaterialId(), BigDecimal.ZERO);
+                    stockMap.put(stock.getMaterialId(), current.add(stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO));
+                }
             }
         }
 

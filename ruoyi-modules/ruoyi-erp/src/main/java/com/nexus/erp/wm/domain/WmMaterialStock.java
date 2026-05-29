@@ -4,6 +4,7 @@ import cn.idev.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -242,4 +243,10 @@ public class WmMaterialStock extends TenantEntity {
      * 备注
      */
     private String remark;
+
+    /**
+     * 乐观锁版本号
+     */
+    @Version
+    private Integer version;
 }

@@ -3,6 +3,7 @@ package com.nexus.erp.wm.strategy.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.domain.PrdSubcontract;
 import com.nexus.erp.prd.mapper.PrdSubcontractMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -12,6 +13,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -48,18 +50,19 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         Long subcontractId = (Long) args[0];
         PrdSubcontract subcontract = subcontractMapper.selectById(subcontractId);
         if (subcontract == null) {
-            throw new RuntimeException("委外订单不存在");
+            throw new ServiceException("委外订单不存在");
         }
         if (hasPosted(SOURCE_DOC_TYPE_SUBCONTRACT, subcontractId)) {
             return;
         }
 
         if (subcontract.getMaterialId() == null || subcontract.getPlannedQty() == null) {
-            throw new RuntimeException("委外订单物料信息不完整");
+            throw new ServiceException("委外订单物料信息不完整");
         }
 
         Date now = new Date();
@@ -72,7 +75,7 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
                 .orderByAsc(WmMaterialStock::getRecptDate));
 
         if (stockList == null || stockList.isEmpty()) {
-            throw new RuntimeException("物料【" + subcontract.getMaterialName() + "】库存不足");
+            throw new ServiceException("物料【" + subcontract.getMaterialName() + "】库存不足");
         }
 
         BigDecimal remaining = issueQty;
@@ -85,8 +88,10 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
             BigDecimal beforeQty = stockQty;
             BigDecimal afterQty = stockQty.subtract(deductQty);
 
-            stock.setStockQuantity(afterQty);
-            stockMapper.updateById(stock);
+            int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+            if (affected == 0) {
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + subcontract.getMaterialName() + "】");
+            }
 
             WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_SUBCONTRACT_ISSUE, TX_FLAG_OUT,
                 deductQty, beforeQty, afterQty, now);
@@ -100,7 +105,7 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
         }
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            throw new RuntimeException("物料【" + subcontract.getMaterialName() + "】库存不足，缺少" + remaining);
+            throw new ServiceException("物料【" + subcontract.getMaterialName() + "】库存不足，缺少" + remaining);
         }
     }
 }

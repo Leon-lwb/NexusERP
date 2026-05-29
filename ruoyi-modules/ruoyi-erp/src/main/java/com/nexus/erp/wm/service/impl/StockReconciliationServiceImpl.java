@@ -76,54 +76,48 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         log.info("开始执行全量库存台账校验");
         Date now = new Date();
 
-        List<WmMaterialStock> allStocks = stockMapper.selectList(
-            new LambdaQueryWrapper<WmMaterialStock>()
-                .eq(WmMaterialStock::getFrozenFlag, 0L));
+        // 使用SQL聚合查询账面库存（按物料汇总），避免全量加载
+        List<Map<String, Object>> bookQtyList = stockMapper.selectMaps(
+            Wrappers.<WmMaterialStock>query()
+                .select("material_id", "SUM(stock_quantity) as total_qty")
+                .eq("frozen_flag", 0)
+                .groupBy("material_id"));
 
-        if (allStocks == null || allStocks.isEmpty()) {
+        if (bookQtyList == null || bookQtyList.isEmpty()) {
             log.info("无库存记录需要校验");
             return;
         }
 
-        Map<Long, BigDecimal> stockByMaterial = allStocks.stream()
-            .filter(s -> s.getMaterialId() != null)
-            .collect(Collectors.groupingBy(
-                WmMaterialStock::getMaterialId,
-                Collectors.reducing(BigDecimal.ZERO,
-                    s -> s.getStockQuantity() != null ? s.getStockQuantity() : BigDecimal.ZERO,
-                    BigDecimal::add)));
+        // 使用SQL聚合查询事务流水（按物料汇总入库和出库）
+        List<Map<String, Object>> txList = stockTxMapper.selectMaps(
+            Wrappers.<WmMaterialStockTx>query()
+                .select("material_id",
+                        "SUM(CASE WHEN tx_flag > 0 THEN tx_quantity ELSE 0 END) as total_in",
+                        "SUM(CASE WHEN tx_flag < 0 THEN tx_quantity ELSE 0 END) as total_out")
+                .groupBy("material_id"));
 
-        List<WmMaterialStockTx> allTx = stockTxMapper.selectList(new LambdaQueryWrapper<>());
-
-        Map<Long, BigDecimal> txInByMaterial = new java.util.HashMap<>();
-        Map<Long, BigDecimal> txOutByMaterial = new java.util.HashMap<>();
-
-        if (allTx != null) {
-            for (WmMaterialStockTx tx : allTx) {
-                if (tx.getMaterialId() == null || tx.getTxQuantity() == null) {
-                    continue;
-                }
-                BigDecimal qty = tx.getTxQuantity().abs();
-                if (tx.getTxFlag() != null && tx.getTxFlag() > 0) {
-                    txInByMaterial.merge(tx.getMaterialId(), qty, BigDecimal::add);
-                } else if (tx.getTxFlag() != null && tx.getTxFlag() < 0) {
-                    txOutByMaterial.merge(tx.getMaterialId(), qty, BigDecimal::add);
-                }
+        Map<Long, BigDecimal> txInMap = new java.util.HashMap<>();
+        Map<Long, BigDecimal> txOutMap = new java.util.HashMap<>();
+        if (txList != null) {
+            for (Map<String, Object> row : txList) {
+                Long materialId = ((Number) row.get("material_id")).longValue();
+                BigDecimal totalIn = toBigDecimal(row.get("total_in"));
+                BigDecimal totalOut = toBigDecimal(row.get("total_out"));
+                txInMap.put(materialId, totalIn);
+                txOutMap.put(materialId, totalOut);
             }
         }
 
         List<WmStockReconciliation> results = new ArrayList<>();
-        for (Map.Entry<Long, BigDecimal> entry : stockByMaterial.entrySet()) {
-            Long materialId = entry.getKey();
-            BigDecimal bookQty = entry.getValue();
-
-            BigDecimal txIn = txInByMaterial.getOrDefault(materialId, BigDecimal.ZERO);
-            BigDecimal txOut = txOutByMaterial.getOrDefault(materialId, BigDecimal.ZERO);
+        for (Map<String, Object> row : bookQtyList) {
+            Long materialId = ((Number) row.get("material_id")).longValue();
+            BigDecimal bookQty = toBigDecimal(row.get("total_qty"));
+            BigDecimal txIn = txInMap.getOrDefault(materialId, BigDecimal.ZERO);
+            BigDecimal txOut = txOutMap.getOrDefault(materialId, BigDecimal.ZERO);
             BigDecimal txBalance = txIn.subtract(txOut);
-
             BigDecimal diffQty = bookQty.subtract(txBalance);
 
-            if (diffQty.compareTo(new BigDecimal("0.001")) > 0 || diffQty.compareTo(new BigDecimal("-0.001")) < 0) {
+            if (diffQty.abs().compareTo(new BigDecimal("0.001")) > 0) {
                 WmStockReconciliation recon = new WmStockReconciliation();
                 recon.setMaterialId(materialId);
                 recon.setBookQty(bookQty);
@@ -141,6 +135,13 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         } else {
             log.info("库存台账校验通过，无差异");
         }
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof BigDecimal) return (BigDecimal) value;
+        if (value instanceof Number) return BigDecimal.valueOf(((Number) value).doubleValue());
+        return new BigDecimal(value.toString());
     }
 
     @Override
@@ -191,7 +192,7 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         recon.setBookQty(bookQty);
         recon.setTxBalance(txBalance);
         recon.setDiffQty(diffQty);
-        recon.setStatus(Math.abs(diffQty.doubleValue()) < 0.001 ? STATUS_MATCH : STATUS_DIFF);
+        recon.setStatus(diffQty.abs().compareTo(new BigDecimal("0.001")) <= 0 ? STATUS_MATCH : STATUS_DIFF);
         recon.setReconTime(now);
         baseMapper.insert(recon);
     }

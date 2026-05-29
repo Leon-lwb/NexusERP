@@ -17,6 +17,7 @@ public interface IPrdSubcontractService {
     String STATUS_DRAFT = "DRAFT";
     String STATUS_SUBMITTED = "SUBMITTED";
     String STATUS_APPROVED = "APPROVED";
+    String STATUS_RELEASED = "RELEASED";
     String STATUS_IN_PROGRESS = "IN_PROGRESS";
     String STATUS_COMPLETED = "COMPLETED";
     String STATUS_CLOSED = "CLOSED";

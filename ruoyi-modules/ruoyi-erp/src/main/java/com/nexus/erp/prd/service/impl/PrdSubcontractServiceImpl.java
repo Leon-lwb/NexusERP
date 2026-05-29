@@ -93,6 +93,8 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         if (!STATUS_DRAFT.equals(subcontract.getStatus()) && !STATUS_APPROVED.equals(subcontract.getStatus())) {
             throw new ServiceException("仅草稿或已批准状态可下达，当前状态：" + subcontract.getStatus());
         }
+        subcontract.setStatus(STATUS_RELEASED);
+        baseMapper.updateById(subcontract);
 
         PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoNo("WO-SC-" + subcontract.getSubcontractNo());
@@ -111,7 +113,6 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
 
         subcontract.setWoId(wo.getWoId());
         subcontract.setWoNo(wo.getWoNo());
-        subcontract.setStatus(STATUS_IN_PROGRESS);
         baseMapper.updateById(subcontract);
     }
 
@@ -122,8 +123,8 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         if (subcontract == null) {
             throw new ServiceException("委外订单不存在");
         }
-        if (!STATUS_APPROVED.equals(subcontract.getStatus())) {
-            throw new ServiceException("仅已批准状态可开始，当前状态：" + subcontract.getStatus());
+        if (!STATUS_RELEASED.equals(subcontract.getStatus()) && !STATUS_APPROVED.equals(subcontract.getStatus())) {
+            throw new ServiceException("仅已下达或已批准状态可开始，当前状态：" + subcontract.getStatus());
         }
         subcontract.setStatus(STATUS_IN_PROGRESS);
         subcontract.setActualStartDate(new Date());

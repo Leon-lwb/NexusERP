@@ -30,9 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -106,7 +107,7 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         if (vendor == null) {
             throw new ServiceException("供应商不存在(ID={})", vendorId);
         }
-        String evalPeriod = new SimpleDateFormat("yyyy-MM").format(new Date());
+        String evalPeriod = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         doCalculate(vendor, evalPeriod);
     }
 
@@ -118,7 +119,7 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         if (vendors == null || vendors.isEmpty()) {
             return;
         }
-        String evalPeriod = new SimpleDateFormat("yyyy-MM").format(new Date());
+        String evalPeriod = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         for (BdVendor vendor : vendors) {
             try {
                 doCalculate(vendor, evalPeriod);
@@ -206,7 +207,7 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
                 .divide(totalReceivedQty, SCORE_SCALE, RoundingMode.HALF_UP);
         }
 
-        BigDecimal priceScore = DEFAULT_PRICE_SCORE;
+        BigDecimal priceScore = calculatePriceScore(orderIds);
 
         BigDecimal totalScore = deliveryRate.multiply(DELIVERY_WEIGHT)
             .add(qualityRate.multiply(QUALITY_WEIGHT))
@@ -275,17 +276,64 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         }
     }
 
+    private static final DateTimeFormatter PERIOD_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
+
     private Date[] parsePeriod(String evalPeriod) {
-        String[] parts = evalPeriod.split("-");
-        int year = Integer.parseInt(parts[0]);
-        int month = Integer.parseInt(parts[1]);
-        Calendar cal = Calendar.getInstance();
-        cal.set(year, month - 1, 1, 0, 0, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        Date startDate = cal.getTime();
-        cal.add(Calendar.MONTH, 1);
-        Date endDate = cal.getTime();
+        YearMonth ym = YearMonth.parse(evalPeriod, PERIOD_FORMATTER);
+        java.sql.Date startDate = java.sql.Date.valueOf(ym.atDay(1));
+        java.sql.Date endDate = java.sql.Date.valueOf(ym.atEndOfMonth());
         return new Date[]{startDate, endDate};
+    }
+
+    private BigDecimal calculatePriceScore(List<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return DEFAULT_PRICE_SCORE;
+        }
+        List<PuPurchaseOrderLine> priceLines = orderLineMapper.selectList(
+            new LambdaQueryWrapper<PuPurchaseOrderLine>()
+                .in(PuPurchaseOrderLine::getOrderId, orderIds)
+                .isNotNull(PuPurchaseOrderLine::getUnitPrice)
+                .gt(PuPurchaseOrderLine::getUnitPrice, BigDecimal.ZERO));
+        if (priceLines == null || priceLines.isEmpty()) {
+            return DEFAULT_PRICE_SCORE;
+        }
+        BigDecimal vendorTotal = BigDecimal.ZERO;
+        int vendorCount = 0;
+        for (PuPurchaseOrderLine line : priceLines) {
+            vendorTotal = vendorTotal.add(line.getUnitPrice());
+            vendorCount++;
+        }
+        BigDecimal vendorAvg = vendorTotal.divide(new BigDecimal(vendorCount), SCORE_SCALE, RoundingMode.HALF_UP);
+
+        List<Long> materialIds = priceLines.stream()
+            .map(PuPurchaseOrderLine::getMaterialId)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .collect(java.util.stream.Collectors.toList());
+        BigDecimal marketAvg = BigDecimal.ZERO;
+        int marketCount = 0;
+        if (!materialIds.isEmpty()) {
+            List<PuPurchaseOrderLine> marketLines = orderLineMapper.selectList(
+                new LambdaQueryWrapper<PuPurchaseOrderLine>()
+                    .in(PuPurchaseOrderLine::getMaterialId, materialIds)
+                    .isNotNull(PuPurchaseOrderLine::getUnitPrice)
+                    .gt(PuPurchaseOrderLine::getUnitPrice, BigDecimal.ZERO));
+            if (marketLines != null) {
+                for (PuPurchaseOrderLine line : marketLines) {
+                    marketAvg = marketAvg.add(line.getUnitPrice());
+                    marketCount++;
+                }
+            }
+        }
+
+        if (marketCount > 0 && marketAvg.compareTo(BigDecimal.ZERO) > 0) {
+            marketAvg = marketAvg.divide(new BigDecimal(marketCount), SCORE_SCALE, RoundingMode.HALF_UP);
+            BigDecimal ratio = marketAvg.divide(vendorAvg, 4, RoundingMode.HALF_UP);
+            BigDecimal score = ratio.multiply(new BigDecimal("100"));
+            score = score.min(new BigDecimal("100")).max(BigDecimal.ZERO);
+            return score.setScale(SCORE_SCALE, RoundingMode.HALF_UP);
+        }
+        return DEFAULT_PRICE_SCORE;
     }
 
     private LambdaQueryWrapper<PuVendorEvaluation> buildQueryWrapper(PuVendorEvaluationBo bo) {

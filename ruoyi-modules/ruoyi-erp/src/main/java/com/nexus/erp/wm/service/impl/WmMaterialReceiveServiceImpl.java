@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
@@ -167,7 +168,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     public boolean updateWithValidation(WmMaterialReceiveBo bo) {
         // 校验入库单编号不能为空
         if (StringUtils.isBlank(bo.getReceiveCode())) {
-            throw new RuntimeException("编号不能为空！");
+            throw new ServiceException("编号不能为空！");
         }
 
         // 校验入库单编号唯一性
@@ -179,14 +180,14 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             WmMaterialReceive existingReceive = existingReceives.get(0);
             Long receiveId = bo.getReceiveId() == null ? -1L : bo.getReceiveId();
             if (!existingReceive.getReceiveId().equals(receiveId)) {
-                throw new RuntimeException("编号已存在！");
+                throw new ServiceException("编号已存在！");
             }
         }
 
         // 如果状态为审批中，校验入库单行不能为空
         if ("APPROVING".equals(bo.getStatus())) {
             if (bo.getWmMaterialReceiveLineList() == null || bo.getWmMaterialReceiveLineList().isEmpty()) {
-                throw new RuntimeException("入库单行不能为空！");
+                throw new ServiceException("入库单行不能为空！");
             }
         }
 
@@ -209,15 +210,15 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     public boolean executeReceive(Long receiveId) {
         WmMaterialReceiveVo receiveVo = selectById(receiveId);
         if (receiveVo == null) {
-            throw new RuntimeException("入库单不存在");
+            throw new ServiceException("入库单不存在");
         }
         if (!ORDER_STATUS_APPROVED.equals(receiveVo.getStatus())) {
-            throw new RuntimeException("只有已审核的入库单才能执行入库操作");
+            throw new ServiceException("只有已审核的入库单才能执行入库操作");
         }
 
         List<WmMaterialReceiveLineVo> lines = receiveVo.getWmMaterialReceiveLineList();
         if (lines == null || lines.isEmpty()) {
-            throw new RuntimeException("入库单行不能为空");
+            throw new ServiceException("入库单行不能为空");
         }
 
         Map<String, WmMaterialStock> stockMap = new LinkedHashMap<>();
@@ -309,15 +310,17 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             return;
         }
 
-        Map<Long, PuPurchaseOrderLine> materialLineMap = new HashMap<>();
+        Map<Long, java.util.List<PuPurchaseOrderLine>> materialLineMap = new LinkedHashMap<>();
         for (PuPurchaseOrderLine orderLine : orderLines) {
-            if (orderLine.getMaterialId() != null) {
-                materialLineMap.put(orderLine.getMaterialId(), orderLine);
-            }
+            materialLineMap.computeIfAbsent(orderLine.getMaterialId(), k -> new java.util.ArrayList<>()).add(orderLine);
         }
 
         for (WmMaterialReceiveLine receiveLine : receiveLines) {
-            PuPurchaseOrderLine orderLine = materialLineMap.get(receiveLine.getMaterialId());
+            java.util.List<PuPurchaseOrderLine> candidates = materialLineMap.get(receiveLine.getMaterialId());
+            PuPurchaseOrderLine orderLine = null;
+            if (candidates != null && !candidates.isEmpty()) {
+                orderLine = candidates.remove(0);
+            }
             if (orderLine != null) {
                 BigDecimal receivedQty = orderLine.getReceivedQuantity() != null ? orderLine.getReceivedQuantity() : BigDecimal.ZERO;
                 BigDecimal newReceivedQty = receivedQty.add(receiveLine.getQuantityReceived() != null ? receiveLine.getQuantityReceived() : BigDecimal.ZERO);
@@ -377,7 +380,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         Long receiveId = Long.parseLong(receiveIdStr);
         WmMaterialReceive receive = baseMapper.selectById(receiveId);
         if (receive == null) {
-            throw new RuntimeException("入库单不存在");
+            throw new ServiceException("入库单不存在");
         }
 
         // 如果前端没传 selectFlowId，从数据库已保存记录中读取
@@ -385,7 +388,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             if (receive.getSelectFlowId() != null) {
                 selectFlowId = String.valueOf(receive.getSelectFlowId());
             } else {
-                throw new RuntimeException("请先在编辑页选择审批流程并保存");
+                throw new ServiceException("请先在编辑页选择审批流程并保存");
             }
         }
 
@@ -406,7 +409,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         if (R.isSuccess(result)) {
             return true;
         }
-        throw new RuntimeException(result.getMsg());
+        throw new ServiceException(result.getMsg());
     }
 
     @Override
@@ -477,13 +480,13 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
 
     private WmMaterialStock buildStockFromDetail(WmMaterialReceiveVo receive, WmMaterialReceiveDetailVo detail) {
         if (detail.getMaterialId() == null) {
-            throw new RuntimeException("物料ID不能为空");
+            throw new ServiceException("物料ID不能为空");
         }
         if (detail.getWarehouseId() == null) {
-            throw new RuntimeException("仓库ID不能为空");
+            throw new ServiceException("仓库ID不能为空");
         }
         if (detail.getQuantity() == null) {
-            throw new RuntimeException("入库数量不能为空");
+            throw new ServiceException("入库数量不能为空");
         }
 
         WmMaterialStock stock = new WmMaterialStock();
@@ -513,13 +516,13 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
 
     private WmMaterialStock buildStockFromLine(WmMaterialReceiveVo receive, WmMaterialReceiveLineVo line) {
         if (line.getMaterialId() == null) {
-            throw new RuntimeException("物料ID不能为空");
+            throw new ServiceException("物料ID不能为空");
         }
         if (line.getWarehouseId() == null) {
-            throw new RuntimeException("仓库ID不能为空，物料ID: " + line.getMaterialId() + ", 物料编码: " + line.getMaterialCode());
+            throw new ServiceException("仓库ID不能为空，物料ID: " + line.getMaterialId() + ", 物料编码: " + line.getMaterialCode());
         }
         if (line.getQuantityReceived() == null) {
-            throw new RuntimeException("入库数量不能为空");
+            throw new ServiceException("入库数量不能为空");
         }
 
         WmMaterialStock stock = new WmMaterialStock();
@@ -561,7 +564,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private void putUniqueStock(Map<String, WmMaterialStock> stockMap, WmMaterialStock stock, String sourceType) {
         String key = buildStockKey(stock);
         if (stockMap.containsKey(key)) {
-            throw new RuntimeException(sourceType + "存在重复库存维度，无法执行入库：" + key);
+            throw new ServiceException(sourceType + "存在重复库存维度，无法执行入库：" + key);
         }
         stockMap.put(key, stock);
     }
@@ -569,13 +572,13 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private String buildStockKey(WmMaterialStock stock) {
         return String.join("|",
             String.valueOf(stock.getMaterialId()),
-            String.valueOf(stock.getBatchId()),
-            String.valueOf(stock.getWarehouseId()),
-            String.valueOf(stock.getAreaId()),
-            String.valueOf(stock.getLocationId()),
-            String.valueOf(stock.getVendorId()),
-            String.valueOf(stock.getWoId()),
-            String.valueOf(stock.getProductionDate())
+            stock.getBatchId() != null ? stock.getBatchId().toString() : "",
+            stock.getWarehouseId() != null ? stock.getWarehouseId().toString() : "",
+            stock.getAreaId() != null ? stock.getAreaId().toString() : "",
+            stock.getLocationId() != null ? stock.getLocationId().toString() : "",
+            stock.getVendorId() != null ? stock.getVendorId().toString() : "",
+            stock.getWoId() != null ? stock.getWoId().toString() : "",
+            stock.getProductionDate() != null ? stock.getProductionDate().toString() : ""
         );
     }
 
@@ -583,7 +586,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
 
     private void processStockTransferTransaction(WmMaterialReceiveVo receive, WmMaterialStock stock, BigDecimal transactionQuantity) {
         if (transactionQuantity == null || transactionQuantity.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("入库数量必须大于0");
+            throw new ServiceException("入库数量必须大于0");
         }
 
         WmMaterialStock virtualCondition = copyStockCondition(stock);
@@ -607,7 +610,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         BigDecimal virtualBeforeQuantity = nvl(virtualStock.getStockQuantity());
         BigDecimal virtualAfterQuantity = virtualBeforeQuantity.subtract(transactionQuantity);
         if (virtualAfterQuantity.compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException("虚拟库位库存不足！");
+            throw new ServiceException("虚拟库位库存不足！");
         }
         virtualStock.setStockQuantity(virtualAfterQuantity);
         virtualStock.setUpdateTime(now);
@@ -778,7 +781,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         boolean isValid = true;
 
         if (bo.getWmMaterialReceiveLineList() == null || bo.getWmMaterialReceiveLineList().isEmpty()) {
-            throw new RuntimeException("入库单行不能为空！");
+            throw new ServiceException("入库单行不能为空！");
         }
 
         for (WmMaterialReceiveLineBo line : bo.getWmMaterialReceiveLineList()) {
@@ -799,7 +802,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         }
 
         if (!isValid) {
-            throw new RuntimeException(errorMsg.toString());
+            throw new ServiceException(errorMsg.toString());
         }
     }
 

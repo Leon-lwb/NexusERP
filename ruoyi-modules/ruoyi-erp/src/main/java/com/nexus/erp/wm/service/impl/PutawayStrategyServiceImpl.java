@@ -66,6 +66,7 @@ public class PutawayStrategyServiceImpl implements IPutawayStrategyService {
 
     private List<WmStorageLocation> getCandidateLocations(Long warehouseId) {
         LambdaQueryWrapper<WmStorageLocation> lqw = Wrappers.lambdaQuery();
+        lqw.eq(warehouseId != null, WmStorageLocation::getWarehouseId, warehouseId);
         lqw.eq(WmStorageLocation::getEnableFlag, 1L);
         lqw.eq(WmStorageLocation::getFrozenFlag, 0L);
         return storageLocationMapper.selectList(lqw);
@@ -85,6 +86,7 @@ public class PutawayStrategyServiceImpl implements IPutawayStrategyService {
     private WmStorageLocation classBased(List<WmStorageLocation> candidates, Long categoryId) {
         return candidates.stream()
             .filter(l -> l.getOccupancyRate() == null || l.getOccupancyRate().compareTo(new BigDecimal("100")) < 0)
+            .filter(l -> categoryId == null || categoryId.equals(l.getCategoryId()))
             .min(Comparator.comparing(WmStorageLocation::getOccupancyRate, Comparator.nullsFirst(Comparator.naturalOrder())))
             .orElseThrow(() -> new ServiceException("未找到匹配物料类别的可用库位"));
     }

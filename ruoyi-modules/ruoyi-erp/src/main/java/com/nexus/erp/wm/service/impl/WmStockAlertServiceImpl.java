@@ -169,6 +169,7 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         WmStockAlert existing = baseMapper.selectOne(lqw);
         if (existing != null) {
             existing.setCurrentQty(currentQty);
+            existing.setAlertLevel(alertLevel);
             existing.setUpdateTime(now);
             baseMapper.updateById(existing);
         } else {

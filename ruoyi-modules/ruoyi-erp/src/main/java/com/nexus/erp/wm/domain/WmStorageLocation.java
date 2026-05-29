@@ -43,9 +43,21 @@ public class WmStorageLocation extends TenantEntity {
     private String locationName;
 
     /**
+     * 仓库ID
+     */
+    @ExcelProperty(value = "仓库ID")
+    private Long warehouseId;
+
+    /**
      * 库区ID
      */
     private Long areaId;
+
+    /**
+     * 绑定的物料类别ID
+     */
+    @ExcelProperty(value = "物料类别ID")
+    private Long categoryId;
 
     /**
      * 面积

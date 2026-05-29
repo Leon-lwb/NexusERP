@@ -2,6 +2,7 @@ package com.nexus.erp.wm.strategy.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.domain.PrdReworkOrder;
 import com.nexus.erp.prd.mapper.PrdReworkOrderMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -11,6 +12,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -47,18 +49,19 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         Long reworkId = (Long) args[0];
         PrdReworkOrder rework = reworkOrderMapper.selectById(reworkId);
         if (rework == null) {
-            throw new RuntimeException("返工订单不存在");
+            throw new ServiceException("返工订单不存在");
         }
         if (hasPosted(SOURCE_DOC_TYPE_REWORK, reworkId)) {
             return;
         }
 
         if (rework.getMaterialId() == null || rework.getReworkQty() == null) {
-            throw new RuntimeException("返工订单物料信息不完整");
+            throw new ServiceException("返工订单物料信息不完整");
         }
 
         Date now = new Date();
@@ -71,7 +74,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
                 .orderByAsc(WmMaterialStock::getRecptDate));
 
         if (stockList == null || stockList.isEmpty()) {
-            throw new RuntimeException("物料【" + rework.getMaterialName() + "】库存不足");
+            throw new ServiceException("物料【" + rework.getMaterialName() + "】库存不足");
         }
 
         BigDecimal remaining = issueQty;
@@ -84,8 +87,10 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
             BigDecimal beforeQty = stockQty;
             BigDecimal afterQty = stockQty.subtract(deductQty);
 
-            stock.setStockQuantity(afterQty);
-            stockMapper.updateById(stock);
+            int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+            if (affected == 0) {
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + rework.getMaterialName() + "】");
+            }
 
             WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_REWORK_ISSUE, TX_FLAG_OUT,
                 deductQty, beforeQty, afterQty, now);
@@ -99,7 +104,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         }
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            throw new RuntimeException("物料【" + rework.getMaterialName() + "】库存不足，缺少" + remaining);
+            throw new ServiceException("物料【" + rework.getMaterialName() + "】库存不足，缺少" + remaining);
         }
     }
 }

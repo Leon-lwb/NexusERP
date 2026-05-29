@@ -3,6 +3,7 @@ package com.nexus.erp.wm.strategy.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.domain.PrdSubcontract;
 import com.nexus.erp.prd.mapper.PrdSubcontractMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -12,6 +13,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -48,19 +50,20 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         Long subcontractId = (Long) args[0];
         PrdSubcontract subcontract = subcontractMapper.selectById(subcontractId);
         if (subcontract == null) {
-            throw new RuntimeException("委外订单不存在");
+            throw new ServiceException("委外订单不存在");
         }
-        if (hasPosted(SOURCE_DOC_TYPE_SUBCONTRACT + "_IN", subcontractId)) {
+        if (hasPosted(SOURCE_DOC_TYPE_SUBCONTRACT + "_RECEIVE", subcontractId)) {
             return;
         }
 
         BigDecimal receiveQty = subcontract.getActualQty() != null ? subcontract.getActualQty() : subcontract.getPlannedQty();
         if (receiveQty == null || receiveQty.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("委外收货数量必须大于0");
+            throw new ServiceException("委外收货数量必须大于0");
         }
 
         Date now = new Date();
@@ -82,7 +85,10 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
             BigDecimal afterQty = beforeQty.add(receiveQty);
             stock.setStockQuantity(afterQty);
             stock.setRecptDate(now);
-            stockMapper.updateById(stock);
+            int affected = stockMapper.updateById(stock);
+            if (affected == 0) {
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + subcontract.getMaterialName() + "】");
+            }
         } else {
             stock = new WmMaterialStock();
             stock.setMaterialId(subcontract.getMaterialId());
