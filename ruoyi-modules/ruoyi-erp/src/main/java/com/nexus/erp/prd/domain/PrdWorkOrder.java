@@ -255,6 +255,18 @@ public class PrdWorkOrder extends TenantEntity {
     private Long selectFlowId;
 
     /**
+     * 是否倒冲工单: 0-否, 1-是
+     */
+    @ExcelProperty("是否倒冲")
+    private Integer backflushFlag;
+
+    /**
+     * 累计发料数量
+     */
+    @ExcelProperty("累计发料数量")
+    private BigDecimal issuedQty;
+
+    /**
      * 删除标志
      */
     @TableLogic

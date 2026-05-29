@@ -144,4 +144,16 @@ public class PrdMaterialRequirementDetail extends TenantEntity {
      * 来源类型（PROCUREMENT-采购, PROCESS-加工）
      */
     private String sourceType;
+
+    /**
+     * 是否倒冲物料: 0-否, 1-是
+     */
+    @ExcelProperty("是否倒冲")
+    private Integer backflushFlag;
+
+    /**
+     * 实际消耗数量
+     */
+    @ExcelProperty("实际消耗数量")
+    private BigDecimal actualConsumedQty;
 }

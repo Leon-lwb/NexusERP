@@ -68,4 +68,12 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
     public void postProductionIssue(WmProductionIssueLine line, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.PRODUCTION_ISSUE).execute(line, now);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void postProductionCompletion(Long woId, Long materialId, String materialCode, String materialName,
+                                          BigDecimal quantity, Long warehouseId, Long locationId, Date now) {
+        strategyFactory.getStrategy(StockOperationTypeEnum.PRODUCTION_IN)
+            .execute(woId, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
+    }
 }

@@ -1314,7 +1314,7 @@ public class MesAutoConfiguration {
 
 创建 `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`:
 ```
-com.nexus.mes.config.MesAutoConfiguration
+org.dromara.mes.config.MesAutoConfiguration
 ```
 
 #### Step 3: 按子模块创建分层代码
@@ -1345,12 +1345,12 @@ md/
 #### 实体类模板
 
 ```java
-package com.nexus.mes.md.domain;
+package org.dromara.mes.md.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import com.nexus.common.core.domain.TenantEntity;
+import org.dromara.common.core.domain.TenantEntity;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -1372,17 +1372,17 @@ public class MesWorkstation extends TenantEntity {
 #### Service实现模板
 
 ```java
-package com.nexus.mes.md.service.impl;
+package org.dromara.mes.md.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import com.nexus.common.core.utils.MapstructUtils;
-import com.nexus.mes.md.domain.MesWorkstation;
-import com.nexus.mes.md.domain.bo.MesWorkstationBo;
-import com.nexus.mes.md.domain.vo.MesWorkstationVo;
-import com.nexus.mes.md.mapper.MesWorkstationMapper;
-import com.nexus.mes.md.service.IMesWorkstationService;
+import org.dromara.common.core.utils.MapstructUtils;
+import org.dromara.mes.md.domain.MesWorkstation;
+import org.dromara.mes.md.domain.bo.MesWorkstationBo;
+import org.dromara.mes.md.domain.vo.MesWorkstationVo;
+import org.dromara.mes.md.mapper.MesWorkstationMapper;
+import org.dromara.mes.md.service.IMesWorkstationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -1406,15 +1406,15 @@ public class MesWorkstationServiceImpl
 #### Controller模板
 
 ```java
-package com.nexus.mes.md.controller;
+package org.dromara.mes.md.controller;
 
 import lombok.RequiredArgsConstructor;
-import com.nexus.common.core.domain.R;
-import com.nexus.common.satoken.utils.LoginHelper;
-import com.nexus.common.web.core.BaseController;
-import com.nexus.mes.md.domain.bo.MesWorkstationBo;
-import com.nexus.mes.md.domain.vo.MesWorkstationVo;
-import com.nexus.mes.md.service.IMesWorkstationService;
+import org.dromara.common.core.domain.R;
+import org.dromara.common.satoken.utils.LoginHelper;
+import org.dromara.common.web.core.BaseController;
+import org.dromara.mes.md.domain.bo.MesWorkstationBo;
+import org.dromara.mes.md.domain.vo.MesWorkstationVo;
+import org.dromara.mes.md.service.IMesWorkstationService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

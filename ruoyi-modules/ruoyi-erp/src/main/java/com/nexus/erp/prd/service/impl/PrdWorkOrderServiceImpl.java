@@ -15,6 +15,13 @@ import com.nexus.erp.prd.domain.bo.PrdWorkOrderBo;
 import com.nexus.erp.prd.domain.vo.PrdWorkOrderVo;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.IPrdWorkOrderService;
+import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
+import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
+import com.nexus.erp.wm.domain.WmProductionIssue;
+import com.nexus.erp.wm.domain.WmProductionIssueLine;
+import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
+import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
+import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -27,6 +34,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +55,12 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final PrdBackflushServiceImpl backflushService;
+    private final PrdMaterialRequirementMapper requirementMapper;
+    private final PrdMaterialRequirementDetailMapper detailMapper;
+    private final WmProductionIssueMapper productionIssueMapper;
+    private final WmProductionIssueLineMapper productionIssueLineMapper;
+    private final IWmStockOperationService stockOperationService;
 
     @Override
     public TableDataInfo<PrdWorkOrderVo> selectPageList(PrdWorkOrderBo bo, PageQuery pageQuery) {
@@ -133,6 +147,66 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
         wo.setWoStatus(STATUS_RELEASED);
         baseMapper.updateById(wo);
+
+        // ★ 新增：工单下达时自动生成生产领料单（排除倒冲物料）
+        createProductionIssueOnRelease(wo);
+    }
+
+    /**
+     * 工单下达时创建生产领料单
+     */
+    private void createProductionIssueOnRelease(PrdWorkOrder wo) {
+        if (wo.getPlanId() == null) {
+            return;
+        }
+        LambdaQueryWrapper<PrdMaterialRequirement> reqLqw = Wrappers.lambdaQuery();
+        reqLqw.eq(PrdMaterialRequirement::getPlanId, wo.getPlanId());
+        List<PrdMaterialRequirement> reqs = requirementMapper.selectList(reqLqw);
+        if (reqs.isEmpty()) {
+            return;
+        }
+
+        // 创建领料单头
+        WmProductionIssue issue = new WmProductionIssue();
+        issue.setWoId(wo.getWoId());
+        issue.setWoNo(wo.getWoNo());
+        issue.setIssueDate(new Date());
+        issue.setStatus("CREATED");
+        issue.setWarehouseId(wo.getWorkshopId());
+        issue.setRemark("工单下达自动生成");
+        productionIssueMapper.insert(issue);
+
+        // 创建领料单行（排除倒冲物料）
+        boolean hasLines = false;
+        for (PrdMaterialRequirement req : reqs) {
+            LambdaQueryWrapper<PrdMaterialRequirementDetail> detailLqw = Wrappers.lambdaQuery();
+            detailLqw.eq(PrdMaterialRequirementDetail::getRequirementId, req.getRequirementId());
+            List<PrdMaterialRequirementDetail> details = detailMapper.selectList(detailLqw);
+
+            for (PrdMaterialRequirementDetail detail : details) {
+                // 倒冲物料不生成领料单行（完工时自动倒冲）
+                if (detail.getBackflushFlag() != null && detail.getBackflushFlag() == 1) {
+                    continue;
+                }
+                WmProductionIssueLine line = new WmProductionIssueLine();
+                line.setIssueId(issue.getIssueId());
+                line.setMaterialId(detail.getMaterialId());
+                line.setMaterialCode(detail.getMaterialCode());
+                line.setMaterialName(detail.getMaterialName());
+                line.setMaterialSpec(detail.getMaterialSpec());
+                line.setBaseUomId(detail.getUnit());
+                line.setQuantity(detail.getRequiredQuantity());
+                productionIssueLineMapper.insert(line);
+                hasLines = true;
+            }
+        }
+
+        if (hasLines) {
+            log.info("工单[{}]下达后自动生成领料单[{}]", wo.getWoNo(), issue.getIssueCode());
+        } else {
+            // 无领料行则删除空领料单
+            productionIssueMapper.deleteById(issue.getIssueId());
+        }
     }
 
     @Override
@@ -145,6 +219,17 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (!STATUS_RELEASED.equals(wo.getWoStatus())) {
             throw new RuntimeException("仅已下达状态工单可开始生产,当前状态:" + wo.getWoStatus());
         }
+
+        // ★ 新增：校验非倒冲工单是否已生成领料单
+        if (wo.getBackflushFlag() == null || wo.getBackflushFlag() != 1) {
+            LambdaQueryWrapper<WmProductionIssue> issueLqw = Wrappers.lambdaQuery();
+            issueLqw.eq(WmProductionIssue::getWoId, wo.getWoId());
+            long issueCount = productionIssueMapper.selectCount(issueLqw);
+            if (issueCount == 0) {
+                throw new RuntimeException("工单未生成领料单，请先下达工单或手动创建领料单");
+            }
+        }
+
         wo.setWoStatus(STATUS_IN_PROGRESS);
         wo.setActualStartDate(new Date());
         baseMapper.updateById(wo);
@@ -160,9 +245,27 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus())) {
             throw new RuntimeException("仅生产中状态工单可完工,当前状态:" + wo.getWoStatus());
         }
+
+        // 完工数量：取计划数量（方案A：工单级倒冲）
+        BigDecimal completionQty = wo.getPlannedQty() != null ? wo.getPlannedQty() : BigDecimal.ZERO;
+
         wo.setWoStatus(STATUS_COMPLETED);
         wo.setActualEndDate(new Date());
+        wo.setCompletedQty(
+            wo.getCompletedQty() != null
+                ? wo.getCompletedQty().add(completionQty)
+                : completionQty);
         baseMapper.updateById(wo);
+
+        // ★ 新增：完工倒冲领料
+        backflushService.backflushOnCompletion(woId, completionQty);
+
+        // ★ 新增：成品入库
+        if (wo.getMaterialId() != null && completionQty.compareTo(BigDecimal.ZERO) > 0) {
+            stockOperationService.postProductionCompletion(
+                woId, wo.getMaterialId(), wo.getMaterialCode(), wo.getMaterialName(),
+                completionQty, wo.getWorkshopId(), null, new Date());
+        }
     }
 
     @Override

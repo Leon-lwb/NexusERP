@@ -17,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
+import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -30,12 +33,13 @@ import java.util.List;
 public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
 
     private final PrdWorkReportMapper baseMapper;
+    private final PrdWorkOrderMapper workOrderMapper;
 
     @Override
     public TableDataInfo<PrdWorkReportVo> selectPageList(PrdWorkReportBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdWorkReport> lqw = buildQueryWrapper(bo);
-        Page<PrdWorkReportVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        return TableDataInfo.build(page);
+        Page<PrdWorkReportVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(result);
     }
 
     @Override
@@ -76,7 +80,41 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdWorkReportBo bo) {
         PrdWorkReport entity = MapstructUtils.convert(bo, PrdWorkReport.class);
+
+        // ★ 新增：状态从SUBMITTED变为APPROVED时，回写工单产量
+        if ("APPROVED".equals(entity.getReportStatus())) {
+            PrdWorkReport old = baseMapper.selectById(entity.getReportId());
+            if (old != null && !"APPROVED".equals(old.getReportStatus())) {
+                syncWorkOrderQuantity(old);
+            }
+        }
+
         return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 报工审核通过后回写工单累计产量
+     */
+    private void syncWorkOrderQuantity(PrdWorkReport report) {
+        if (report.getWoId() == null || report.getReportedQty() == null) {
+            return;
+        }
+        PrdWorkOrder wo = workOrderMapper.selectById(report.getWoId());
+        if (wo == null) {
+            return;
+        }
+
+        // 累计完工数量
+        BigDecimal completedQty = wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
+        wo.setCompletedQty(completedQty.add(report.getReportedQty()));
+
+        // 累计报废数量
+        if (report.getScrapQty() != null) {
+            BigDecimal scrapQty = wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
+            wo.setScrapQty(scrapQty.add(report.getScrapQty()));
+        }
+
+        workOrderMapper.updateById(wo);
     }
 
     @Override
