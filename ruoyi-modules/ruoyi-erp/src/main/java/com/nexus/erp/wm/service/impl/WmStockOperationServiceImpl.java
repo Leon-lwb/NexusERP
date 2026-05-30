@@ -133,4 +133,46 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
         strategyFactory.getStrategy(StockOperationTypeEnum.PRODUCTION_IN)
             .execute(woId, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
     }
+
+    /**
+     * 返工出库过账
+     * <p>
+     * 通过策略工厂获取 REWORK_ISSUE 策略执行返工出库操作。
+     *
+     * @param reworkId     返工订单ID
+     * @param materialId   物料ID
+     * @param materialCode 物料编码
+     * @param materialName 物料名称
+     * @param quantity     出库数量
+     * @param warehouseId  仓库ID
+     * @param locationId   库位ID
+     * @param now          操作时间
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void postReworkIssue(Long reworkId, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now) {
+        strategyFactory.getStrategy(StockOperationTypeEnum.REWORK_ISSUE)
+            .execute(reworkId, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
+    }
+
+    /**
+     * 返工入库过账
+     * <p>
+     * 通过策略工厂获取 REWORK_RECEIVE 策略执行返工入库操作。
+     *
+     * @param reworkId     返工订单ID
+     * @param materialId   物料ID
+     * @param materialCode 物料编码
+     * @param materialName 物料名称
+     * @param quantity     入库数量
+     * @param warehouseId  仓库ID
+     * @param locationId   库位ID
+     * @param now          操作时间
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void postReworkReceive(Long reworkId, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now) {
+        strategyFactory.getStrategy(StockOperationTypeEnum.REWORK_RECEIVE)
+            .execute(reworkId, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
+    }
 }

@@ -90,4 +90,22 @@ public interface IPrdReworkOrderService {
      * @param reworkId 返工订单 ID
      */
     void complete(Long reworkId);
+
+    /**
+     * 返工订单出库（领料）
+     * <p>
+     * 校验返工订单状态为进行中，调用库存过账服务执行返工出库操作。
+     *
+     * @param reworkId 返工订单 ID
+     */
+    void issueMaterial(Long reworkId);
+
+    /**
+     * 返工订单入库（收货）
+     * <p>
+     * 校验返工订单状态为进行中，调用库存过账服务执行返工入库操作。
+     *
+     * @param reworkId 返工订单 ID
+     */
+    void receiveMaterial(Long reworkId);
 }

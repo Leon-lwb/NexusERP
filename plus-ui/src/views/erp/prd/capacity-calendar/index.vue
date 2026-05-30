@@ -23,59 +23,77 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:capacityCalendar:add']">新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:capacityCalendar:edit']">修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:capacityCalendar:remove']">删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="info" plain icon="Calendar" @click="handleGenerate" v-hasPermi="['prd:capacityCalendar:add']">生成</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:capacityCalendar:export']">导出</el-button>
-      </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
-    </el-row>
+    <el-tabs v-model="activeView" class="mt10">
+      <el-tab-pane label="列表视图" name="list">
+        <el-row :gutter="10" class="mb8">
+          <el-col :span="1.5">
+            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:capacityCalendar:add']">新增</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:capacityCalendar:edit']">修改</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:capacityCalendar:remove']">删除</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button type="info" plain icon="Calendar" @click="handleGenerate" v-hasPermi="['prd:capacityCalendar:add']">生成</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:capacityCalendar:export']">导出</el-button>
+          </el-col>
+          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+        </el-row>
 
-    <el-table v-loading="loading" :data="calendarList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="日期" align="center" prop="calendarDate" width="120" />
-      <el-table-column label="对象类型" align="center" prop="objectType" width="100">
-        <template #default="scope">
-          <dict-tag :options="prd_capacity_object_type" :value="scope.row.objectType" />
-        </template>
-      </el-table-column>
-      <el-table-column label="对象编码" align="center" prop="objectCode" width="120" />
-      <el-table-column label="对象名称" align="center" prop="objectName" min-width="140" show-overflow-tooltip />
-      <el-table-column label="班次编码" align="center" prop="shiftCode" width="100" />
-      <el-table-column label="班次名称" align="center" prop="shiftName" width="100" />
-      <el-table-column label="可用工时" align="center" prop="availableHours" width="100" />
-      <el-table-column label="已计划工时" align="center" prop="plannedHours" width="100" />
-      <el-table-column label="剩余工时" align="center" prop="remainingHours" width="100" />
-      <el-table-column label="效率(%)" align="center" prop="efficiency" width="90" />
-      <el-table-column label="状态" align="center" prop="status" width="100">
-        <template #default="scope">
-          <dict-tag :options="prd_capacity_calendar_status" :value="scope.row.status" />
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
-        <template #default="scope">
-          <el-tooltip content="修改" placement="top">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:capacityCalendar:edit']" />
-          </el-tooltip>
-          <el-tooltip content="删除" placement="top">
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['prd:capacityCalendar:remove']" />
-          </el-tooltip>
-        </template>
-      </el-table-column>
-    </el-table>
+        <el-table v-loading="loading" :data="calendarList" @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="日期" align="center" prop="calendarDate" width="120" />
+          <el-table-column label="对象类型" align="center" prop="objectType" width="100">
+            <template #default="scope">
+              <dict-tag :options="prd_capacity_object_type" :value="scope.row.objectType" />
+            </template>
+          </el-table-column>
+          <el-table-column label="对象编码" align="center" prop="objectCode" width="120" />
+          <el-table-column label="对象名称" align="center" prop="objectName" min-width="140" show-overflow-tooltip />
+          <el-table-column label="班次编码" align="center" prop="shiftCode" width="100" />
+          <el-table-column label="班次名称" align="center" prop="shiftName" width="100" />
+          <el-table-column label="可用工时" align="center" prop="availableHours" width="100" />
+          <el-table-column label="已计划工时" align="center" prop="plannedHours" width="100" />
+          <el-table-column label="剩余工时" align="center" prop="remainingHours" width="100" />
+          <el-table-column label="效率(%)" align="center" prop="efficiency" width="90" />
+          <el-table-column label="状态" align="center" prop="status" width="100">
+            <template #default="scope">
+              <dict-tag :options="prd_capacity_calendar_status" :value="scope.row.status" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
+            <template #default="scope">
+              <el-tooltip content="修改" placement="top">
+                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:capacityCalendar:edit']" />
+              </el-tooltip>
+              <el-tooltip content="删除" placement="top">
+                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['prd:capacityCalendar:remove']" />
+              </el-tooltip>
+            </template>
+          </el-table-column>
+        </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      </el-tab-pane>
+      <el-tab-pane label="日历视图" name="calendar">
+        <el-calendar v-model="calendarDate">
+          <template #date-cell="{ data }">
+            <div class="calendar-cell">
+              <div class="calendar-day">{{ data.day.split('-')[2] }}</div>
+              <div v-for="item in getCalendarItems(data.day)" :key="item.calendarId" class="calendar-item">
+                <el-tag :type="getCapacityTagType(item)" size="small" style="width: 100%; margin: 1px 0;">
+                  {{ item.shiftName || '' }}: {{ item.remainingHours || 0 }}h/{{ item.availableHours || 0 }}h
+                </el-tag>
+              </div>
+            </div>
+          </template>
+        </el-calendar>
+      </el-tab-pane>
+    </el-tabs>
 
     <el-dialog :title="title" v-model="open" width="680px" append-to-body>
       <el-form ref="calendarRef" :model="form" :rules="rules" label-width="120px">
@@ -330,7 +348,75 @@ const submitGenerate = () => {
 
 const cancel = () => { open.value = false; reset(); };
 
+const activeView = ref('list');
+const calendarDate = ref(new Date());
+const calendarData = ref<any[]>([]);
+
+const loadCalendarData = async () => {
+  const year = calendarDate.value.getFullYear();
+  const month = calendarDate.value.getMonth();
+  const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`;
+  try {
+    const res = await listCapacityCalendar({
+      calendarDate: startDate,
+      objectType: queryParams.value.objectType,
+      objectId: queryParams.value.objectId,
+      pageNum: 1,
+      pageSize: 999
+    });
+    calendarData.value = res.rows || [];
+  } catch {
+    calendarData.value = [];
+  }
+};
+
+const getCalendarItems = (day: string): any[] => {
+  return calendarData.value.filter((item: any) => {
+    if (!item.calendarDate) return false;
+    return item.calendarDate.substring(0, 10) === day;
+  });
+};
+
+const getCapacityTagType = (item: any): string => {
+  if (!item.availableHours || item.availableHours === 0) return 'info';
+  const ratio = (item.remainingHours || 0) / item.availableHours;
+  if (ratio >= 0.8) return 'success';
+  if (ratio >= 0.5) return 'primary';
+  if (ratio >= 0.2) return 'warning';
+  return 'danger';
+};
+
+watch(activeView, (val) => {
+  if (val === 'calendar') {
+    loadCalendarData();
+  }
+});
+
+watch(calendarDate, () => {
+  if (activeView.value === 'calendar') {
+    loadCalendarData();
+  }
+});
+
 const handleExport = () => { proxy?.download('erp/prd/capacityCalendar/export', { ...queryParams.value }, `产能日历_${new Date().getTime()}.xlsx`); };
 
 onMounted(() => { getList(); });
 </script>
+
+<style scoped>
+.calendar-cell {
+  height: 100%;
+  min-height: 60px;
+  overflow: hidden;
+}
+.calendar-day {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.calendar-item {
+  font-size: 11px;
+  line-height: 1.2;
+}
+</style>

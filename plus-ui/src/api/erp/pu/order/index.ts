@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { PurchaseOrderQuery, PurchaseOrderVO, PurchaseOrderForm } from './types';
+import { PurchaseOrderQuery, PurchaseOrderVO, PurchaseOrderForm, PurchaseOrderLineVO } from './types';
 
 /**
  * 采购订单模块API
@@ -176,5 +176,11 @@ export const getOrderProcId = (id: string) =>
 export const getDiffReport = (): AxiosPromise<any[]> =>
   request({
     url: BASE + '/diff-report',
+    method: 'get'
+  });
+
+export const listOrderLines = (orderId: number): AxiosPromise<PurchaseOrderLineVO[]> =>
+  request({
+    url: BASE + '/' + orderId + '/lines',
     method: 'get'
   });

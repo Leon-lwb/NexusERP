@@ -18,10 +18,12 @@ import com.nexus.erp.prd.domain.vo.PrdReworkOrderVo;
 import com.nexus.erp.prd.mapper.PrdReworkOrderMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.IPrdReworkOrderService;
+import com.nexus.erp.wm.service.IWmStockOperationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -39,6 +41,7 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
 
     private final PrdReworkOrderMapper baseMapper;
     private final PrdWorkOrderMapper workOrderMapper;
+    private final IWmStockOperationService stockOperationService;
 
     /**
      * 分页查询返工订单列表
@@ -164,6 +167,58 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
                 workOrderMapper.updateById(sourceWo);
             }
         }
+    }
+
+    /**
+     * 返工订单出库（领料）
+     * <p>
+     * 校验返工订单状态为进行中且物料信息完整，调用 {@link IWmStockOperationService#postReworkIssue}
+     * 执行返工出库过账。
+     *
+     * @param reworkId 返工订单 ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void issueMaterial(Long reworkId) {
+        PrdReworkOrder rework = baseMapper.selectById(reworkId);
+        if (rework == null) {
+            throw new ServiceException("返工订单不存在");
+        }
+        if (!STATUS_IN_PROGRESS.equals(rework.getStatus())) {
+            throw new ServiceException("只有进行中的返工订单才能执行出库操作");
+        }
+        if (rework.getMaterialId() == null || rework.getReworkQty() == null) {
+            throw new ServiceException("返工订单物料信息不完整");
+        }
+        stockOperationService.postReworkIssue(reworkId, rework.getMaterialId(), rework.getMaterialCode(),
+            rework.getMaterialName(), rework.getReworkQty(), null, null, new Date());
+        log.info("返工订单[{}]出库完成，物料[{}]，数量[{}]", rework.getReworkNo(), rework.getMaterialCode(), rework.getReworkQty());
+    }
+
+    /**
+     * 返工订单入库（收货）
+     * <p>
+     * 校验返工订单状态为进行中且物料信息和实际数量完整，调用 {@link IWmStockOperationService#postReworkReceive}
+     * 执行返工入库过账。
+     *
+     * @param reworkId 返工订单 ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void receiveMaterial(Long reworkId) {
+        PrdReworkOrder rework = baseMapper.selectById(reworkId);
+        if (rework == null) {
+            throw new ServiceException("返工订单不存在");
+        }
+        if (!STATUS_IN_PROGRESS.equals(rework.getStatus())) {
+            throw new ServiceException("只有进行中的返工订单才能执行入库操作");
+        }
+        if (rework.getMaterialId() == null || rework.getActualQty() == null) {
+            throw new ServiceException("返工订单物料信息或实际数量不完整");
+        }
+        stockOperationService.postReworkReceive(reworkId, rework.getMaterialId(), rework.getMaterialCode(),
+            rework.getMaterialName(), rework.getActualQty(), null, null, new Date());
+        log.info("返工订单[{}]入库完成，物料[{}]，数量[{}]", rework.getReworkNo(), rework.getMaterialCode(), rework.getActualQty());
     }
 
     private LambdaQueryWrapper<PrdReworkOrder> buildQueryWrapper(PrdReworkOrderBo bo) {

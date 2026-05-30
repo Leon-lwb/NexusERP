@@ -29,3 +29,11 @@ export function startReworkOrder(reworkId: number) {
 export function completeReworkOrder(reworkId: number) {
   return request({ url: '/erp/prd/rework/complete/' + reworkId, method: 'put' });
 }
+
+const BASE = '/erp/prd/rework';
+
+export const issueReworkMaterial = (reworkId: number) =>
+  request({ url: BASE + '/issue/' + reworkId, method: 'put' });
+
+export const receiveReworkMaterial = (reworkId: number) =>
+  request({ url: BASE + '/receive/' + reworkId, method: 'put' });

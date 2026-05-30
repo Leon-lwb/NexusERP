@@ -145,8 +145,31 @@
     </el-row>
     
     <!-- 数据表格 -->
-    <el-table v-loading="loading" :data="orderList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="orderList" @selection-change="handleSelectionChange" row-key="orderId" :expand-row-keys="expandedRows" @expand-change="handleExpandChange">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column type="expand">
+        <template #default="props">
+          <el-table :data="orderLinesMap[props.row.orderId] || []" border size="small" style="margin: 8px 20px;">
+            <el-table-column label="物料编码" prop="materialCode" width="120" />
+            <el-table-column label="物料名称" prop="materialName" min-width="150" />
+            <el-table-column label="规格型号" prop="materialSpec" width="120" />
+            <el-table-column label="订单数量" prop="orderQuantity" width="100" />
+            <el-table-column label="已收数量" prop="receivedQuantity" width="100" />
+            <el-table-column label="收货状态" prop="receiveStatus" width="120">
+              <template #default="scope">
+                <el-tag :type="getReceiveStatusType(scope.row.receiveStatus)" size="small">
+                  {{ getReceiveStatusLabel(scope.row.receiveStatus) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="收货进度" width="150">
+              <template #default="scope">
+                <el-progress :percentage="calcReceiveProgress(scope.row)" :color="getProgressColor(scope.row)" :stroke-width="10" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </el-table-column>
       <el-table-column label="订单号" prop="orderNo" />
       <el-table-column label="供应商" prop="vendorName" />
       <el-table-column label="订单日期" prop="orderDate">
@@ -180,7 +203,7 @@
 
 <script setup lang="ts" name="PurchaseOrder">
 // 导入采购订单相关的API函数
-import { listPurchaseOrder, delPurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, receivePurchaseOrder, getDiffReport } from '@/api/erp/pu/order'
+import { listPurchaseOrder, delPurchaseOrder, submitPurchaseOrder, approvePurchaseOrder, receivePurchaseOrder, getDiffReport, listOrderLines } from '@/api/erp/pu/order'
 
 // 获取当前实例并获取字典数据
 const { proxy } = getCurrentInstance() as any; 
@@ -194,6 +217,57 @@ const ids = ref([]);           // 选中的ID数组
 const single = ref(true);      // 单选状态
 const multiple = ref(true);    // 多选状态
 const total = ref(0)           // 总记录数
+
+const orderLinesMap = ref<Record<number, any[]>>({});
+const expandedRows = ref<number[]>([]);
+
+const loadOrderLines = async (orderId: number) => {
+  if (orderLinesMap.value[orderId]) return;
+  const res = await listOrderLines(orderId);
+  orderLinesMap.value[orderId] = res.data || [];
+};
+
+const handleExpandChange = (row: any, expandedRows: any[]) => {
+  if (expandedRows.includes(row)) {
+    loadOrderLines(row.orderId);
+  }
+};
+
+const getReceiveStatusType = (status: string): string => {
+  const map: Record<string, string> = {
+    'NOT_RECEIVED': 'info',
+    'PENDING': 'info',
+    'PARTIAL_RECEIVED': 'warning',
+    'FULL_RECEIVED': 'success',
+    'OVER_RECEIVED': 'danger'
+  };
+  return map[status] || 'info';
+};
+
+const getReceiveStatusLabel = (status: string): string => {
+  const map: Record<string, string> = {
+    'NOT_RECEIVED': '未收货',
+    'PENDING': '待收货',
+    'PARTIAL_RECEIVED': '部分到货',
+    'FULL_RECEIVED': '全部到货',
+    'OVER_RECEIVED': '超收'
+  };
+  return map[status] || status || '未知';
+};
+
+const calcReceiveProgress = (row: any): number => {
+  if (!row.orderQuantity || row.orderQuantity === 0) return 0;
+  const received = row.receivedQuantity || 0;
+  return Math.min(Math.round((received / row.orderQuantity) * 100), 100);
+};
+
+const getProgressColor = (row: any): string => {
+  const progress = calcReceiveProgress(row);
+  if (progress >= 100) return '#67c23a';
+  if (progress >= 50) return '#409eff';
+  if (progress > 0) return '#e6a23c';
+  return '#909399';
+};
 
 // 查询参数
 const data = reactive({ 
@@ -308,8 +382,8 @@ function handleApprove(){
  * 收货联动按钮操作
  */
 function handleReceive(){
-  receivePurchaseOrder(ids.value[0]).then(() => {
-    proxy.$modal.msgSuccess('收货联动成功');
+  receivePurchaseOrder(ids.value[0]).then((res: any) => {
+    proxy.$modal.msgSuccess('收货联动成功，到货通知单ID: ' + (res.data || ''));
     getList()
   })
 }

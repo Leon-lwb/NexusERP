@@ -68,6 +68,12 @@
           <el-tooltip content="完工" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
             <el-button link type="primary" icon="Select" @click="handleComplete(scope.row)" v-hasPermi="['prd:rework:edit']" />
           </el-tooltip>
+          <el-tooltip content="返工出库" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
+            <el-button link type="warning" icon="Van" @click="handleIssue(scope.row)" v-hasPermi="['prd:rework:edit']" />
+          </el-tooltip>
+          <el-tooltip content="返工入库" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
+            <el-button link type="success" icon="Box" @click="handleReceive(scope.row)" v-hasPermi="['prd:rework:edit']" />
+          </el-tooltip>
           <el-tooltip content="修改" placement="top" v-if="scope.row.status === 'DRAFT'">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:rework:edit']" />
           </el-tooltip>
@@ -89,8 +95,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="来源工单ID" prop="sourceWoId">
-              <el-input-number v-model="form.sourceWoId" placeholder="请输入来源工单ID" style="width: 100%" />
+            <el-form-item label="来源工单" prop="sourceWoId">
+              <el-select v-model="form.sourceWoId" filterable remote :remote-method="searchWorkOrder" placeholder="请选择来源工单" @change="onSourceWoChange" style="width: 100%">
+                <el-option v-for="wo in woOptions" :key="wo.woId" :label="`${wo.woNo} - ${wo.materialName || ''}`" :value="wo.woId" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -133,8 +141,9 @@
 </template>
 
 <script setup name="PrdRework" lang="ts">
-import { listReworkOrder, getReworkOrder, addReworkOrder, updateReworkOrder, delReworkOrder, startReworkOrder, completeReworkOrder } from '@/api/erp/prd/rework';
+import { listReworkOrder, getReworkOrder, addReworkOrder, updateReworkOrder, delReworkOrder, startReworkOrder, completeReworkOrder, issueReworkMaterial, receiveReworkMaterial } from '@/api/erp/prd/rework';
 import { PrdReworkOrderVO, PrdReworkOrderQuery, PrdReworkOrderForm } from '@/api/erp/prd/rework/types';
+import { listWork } from '@/api/erp/prd/work';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_rework_status, prd_rework_reason } = toRefs<any>(proxy?.useDict('prd_rework_status', 'prd_rework_reason'));
@@ -153,6 +162,27 @@ const queryRef = ref<ElFormInstance>();
 const reworkRef = ref<ElFormInstance>();
 const queryParams = ref<PrdReworkOrderQuery>({ pageNum: 1, pageSize: 10 });
 const form = ref<PrdReworkOrderForm>({});
+
+const woOptions = ref<any[]>([]);
+
+const searchWorkOrder = async (query: string) => {
+  try {
+    const res = await listWork({ woNo: query || undefined, pageNum: 1, pageSize: 20 });
+    woOptions.value = res.rows || [];
+  } catch { woOptions.value = []; }
+};
+
+const onSourceWoChange = (woId: number) => {
+  const wo = woOptions.value.find((i: any) => i.woId === woId);
+  if (wo) {
+    form.value.sourceWoNo = wo.woNo;
+    form.value.materialId = wo.materialId;
+    form.value.materialCode = wo.materialCode;
+    form.value.materialName = wo.materialName;
+    form.value.materialSpec = wo.materialSpec;
+    form.value.baseUomName = wo.baseUomName;
+  }
+};
 
 const rules = {
   reworkNo: [{ required: true, message: '返工单号不能为空', trigger: 'blur' }],
@@ -226,6 +256,20 @@ const handleComplete = async (row: PrdReworkOrderVO) => {
   await proxy?.$modal.confirm('是否确认完工返工订单"' + row.reworkNo + '"？');
   await completeReworkOrder(row.reworkId);
   proxy?.$modal.msgSuccess('完工成功');
+  getList();
+};
+
+const handleIssue = async (row: PrdReworkOrderVO) => {
+  await proxy?.$modal.confirm('是否确认对返工订单"' + row.reworkNo + '"执行出库？');
+  await issueReworkMaterial(row.reworkId);
+  proxy?.$modal.msgSuccess('出库成功');
+  getList();
+};
+
+const handleReceive = async (row: PrdReworkOrderVO) => {
+  await proxy?.$modal.confirm('是否确认对返工订单"' + row.reworkNo + '"执行入库？');
+  await receiveReworkMaterial(row.reworkId);
+  proxy?.$modal.msgSuccess('入库成功');
   getList();
 };
 

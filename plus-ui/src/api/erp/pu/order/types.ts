@@ -32,7 +32,7 @@ export interface PurchaseOrderVO {
   /** 备注 */
   remark?: string;
   /** 订单行列表 */
-  lineList?: any[];
+  lineList?: PurchaseOrderLineVO[];
 }
 
 /**
@@ -57,3 +57,20 @@ export interface PurchaseOrderQuery {
  * 继承自PurchaseOrderVO，用于新增和编辑操作
  */
 export interface PurchaseOrderForm extends PurchaseOrderVO {}
+
+export interface PurchaseOrderLineVO {
+  lineId?: number;
+  materialId?: number;
+  materialCode?: string;
+  materialName?: string;
+  materialSpec?: string;
+  unit?: string;
+  unitName?: string;
+  orderQuantity?: number;
+  receivedQuantity?: number;
+  receiveStatus?: string;
+  unitPrice?: number;
+  taxRate?: number;
+  lineAmount?: number;
+  sortOrder?: number;
+}

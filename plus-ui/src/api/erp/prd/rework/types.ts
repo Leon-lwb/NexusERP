@@ -30,6 +30,12 @@ export interface PrdReworkOrderForm {
   reworkId?: number;
   reworkNo?: string;
   sourceWoId?: number;
+  sourceWoNo?: string;
+  materialId?: number;
+  materialCode?: string;
+  materialName?: string;
+  materialSpec?: string;
+  baseUomName?: string;
   reworkQty?: number;
   reworkReason?: string;
   actualQty?: number;

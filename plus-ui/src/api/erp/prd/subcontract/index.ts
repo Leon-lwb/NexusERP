@@ -37,3 +37,11 @@ export function completeSubcontract(subcontractId: number) {
 export function closeSubcontract(subcontractId: number) {
   return request({ url: '/erp/prd/subcontract/close/' + subcontractId, method: 'put' });
 }
+
+const BASE = '/erp/prd/subcontract';
+
+export const issueSubcontractMaterial = (subcontractId: number) =>
+  request({ url: BASE + '/issue/' + subcontractId, method: 'put' });
+
+export const receiveSubcontractMaterial = (subcontractId: number) =>
+  request({ url: BASE + '/receive/' + subcontractId, method: 'put' });

@@ -67,4 +67,32 @@ public interface IWmStockOperationService {
      */
     void postProductionCompletion(Long woId, Long materialId, String materialCode, String materialName,
                                    BigDecimal quantity, Long warehouseId, Long locationId, Date now);
+
+    /**
+     * 返工出库过账（扣减库存）
+     *
+     * @param reworkId     返工订单ID
+     * @param materialId   物料ID
+     * @param materialCode 物料编码
+     * @param materialName 物料名称
+     * @param quantity     出库数量
+     * @param warehouseId  仓库ID
+     * @param locationId   库位ID
+     * @param now          操作时间
+     */
+    void postReworkIssue(Long reworkId, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now);
+
+    /**
+     * 返工入库过账（增加库存）
+     *
+     * @param reworkId     返工订单ID
+     * @param materialId   物料ID
+     * @param materialCode 物料编码
+     * @param materialName 物料名称
+     * @param quantity     入库数量
+     * @param warehouseId  仓库ID
+     * @param locationId   库位ID
+     * @param now          操作时间
+     */
+    void postReworkReceive(Long reworkId, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now);
 }

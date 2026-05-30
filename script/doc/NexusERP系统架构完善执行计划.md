@@ -158,8 +158,8 @@ Phase 3: IoT 建设 (第33-48周)
 | Week 5 | F-023 | 领料联动+完工入库前端 | 前端 | 3.5 | 领料单BOM自动填充+生产入库页面 | ✅ 已完成 |
 | Week 4 | R-024 | 委外加工前端 | 前端 | 1 | 列表+表单页面 | ✅ 已完成 |
 | Week 4 | R-025 | 返工前端 | 前端 | 1 | 页面开发 | ✅ 已完成 |
-| Week 6 | R-026 | 采购收货联动入口 | 前端 | 0.5 | 进度展示 |
-| Week 6 | R-027 | 供应商评估前端 | 前端 | 1 | 评估报表+趋势图 |
+| Week 6 | R-026 | 采购收货联动入口 | 前端 | 0.5 | 进度展示 | ✅ 已完成 |
+| Week 6 | R-027 | 供应商评估前端 | 前端 | 1 | 评估报表+趋势图 | ✅ 已完成 |
 | Week 6 | R-028 | 产能日历前端 | 前端 | 1 | 产能日历可视化页面 | ✅ 已提前至Week5(F-022) |
 | Week 7-8 | I-001 | MQ基础设施搭建 | infra | 3 | RabbitMQ/Kafka集成+Spring Cloud Stream |
 | Week 7-8 | I-002 | 跨库事务补偿框架 | infra | 2 | 最终一致性+补偿任务调度+对账机制 |
@@ -326,6 +326,84 @@ Phase 3: IoT 建设 (第33-48周)
 - 修复 StockOperationTypeEnum 缺失枚举值: 新增 SUBCONTRACT_ISSUE/SUBCONTRACT_RECEIVE/REWORK_ISSUE/REWORK_RECEIVE
 - 修复 @AutoMapper 注解导入路径: 7个文件从 org.dromara.common.core.annotation.AutoMapper 改为 io.github.linpeilie.annotations.AutoMapper
 - 修复 WmStockAlertServiceImpl 单位名称获取: 通过 BdUnitOfMeasureMapper 查询单位名称而非直接获取
+
+#### 3.1.8 Week 5 执行记录
+
+**执行日期**: 2026-05-29
+
+**已完成任务汇总**:
+
+| 任务编号 | 任务内容 | 涉及文件 | 变更类型 | 说明 |
+|---------|---------|---------|---------|------|
+| R-021 | 生产消耗自动过账 | PrdWorkOrderServiceImpl, WmStockOperationServiceImpl | 修改 | 完工倒冲领料，自动扣减BOM物料库存 |
+| R-022 | 产能日历 | PrdCapacityCalendar*.java (8文件), PrdCapacityCalendarController | 新增 | prd_capacity_calendar表+Controller核心接口(生成/占用/释放) |
+| R-023 | 领料与完工入库联动 | PrdWorkOrderServiceImpl, IWmStockOperationService | 修改 | 状态变更同步库存，完工自动入库 |
+| F-021 | 倒冲领料前端 | prd/work-order/index.vue | 修改 | 工单/BOM倒冲标识+表单控件 |
+| F-022 | 产能日历前端 | prd/capacity-calendar/index.vue, API+类型定义 | 新增 | API+类型定义+列表页+生成/占用/释放操作 |
+| F-023 | 领料联动+完工入库前端 | prd/material-issue/index.vue, prd/production-receipt/index.vue | 新增 | 领料单BOM自动填充+生产入库页面 |
+
+**SQL DDL 变更**:
+- 新增表: `prd_capacity_calendar` (产能日历)
+- 字典: `prd_capacity_calendar_status`
+- 菜单: 产能日历(5501)
+
+**代码变更统计**:
+- 新增后端文件: **~8个** (含实体/Bo/Vo/Mapper/Service/Controller)
+- 新增前端文件: **~6个** (API + 页面 + 类型定义)
+- 修改后端文件: **2个** (PrdWorkOrderServiceImpl, WmStockOperationServiceImpl)
+- SQL脚本: **1个** (week5_production_enhancement.sql)
+
+**关键实现细节**:
+- R-021: 完工时自动按BOM计算消耗量，通过WmStockOperationService.postProductionIssue()执行倒冲出库
+- R-022: 产能日历支持按车间/工作中心生成日历，记录每日可用产能、已占用产能和剩余产能
+- R-023: 工单状态流转(开工→完工)时自动触发库存联动操作
+
+#### 3.1.9 Week 6 执行记录
+
+**执行日期**: 2026-05-31
+
+**已完成任务汇总**:
+
+| 任务编号 | 任务内容 | 涉及文件 | 变更类型 | 说明 |
+|---------|---------|---------|---------|------|
+| R-026 | 采购收货联动入口 | PuPurchaseOrderController, pu/order/index.vue | 修改 | 订单行明细展开+收货进度条+收货状态Tag |
+| R-027 | 供应商评估前端 | PuVendorEvaluationController, vendor-evaluation/report.vue | 修改+新增 | 评估报表页面(雷达图+趋势折线图+等级分布饼图) |
+| F-029 | 委外发料/收货+远程搜索 | PrdSubcontractController, subcontract/index.vue | 修改 | 供应商/物料远程搜索选择器+委外发料/收货操作按钮 |
+| F-030 | 返工出库/入库+远程搜索 | PrdReworkOrderController, PrdReworkOrderServiceImpl, IWmStockOperationService/Impl, rework/index.vue | 修改 | 来源工单远程搜索+返工出库/入库操作+库存联动 |
+| F-031 | 产能日历可视化 | capacity-calendar/index.vue | 修改 | 列表视图+日历视图双Tab，产能颜色标识(≥80%绿/≥50%蓝/≥20%橙/<20%红) |
+| F-032 | 工单资源分配管理 | work-order-resource/index.vue, API+类型定义 | 新增 | 工单选择器+可编辑表格+批量保存 |
+
+**后端新增接口**:
+
+| 接口 | Controller | 权限标识 | 说明 |
+|------|-----------|---------|------|
+| GET /{orderId}/lines | PuPurchaseOrderController | pu:order:query | 查询采购订单明细行 |
+| GET /trend/{vendorId} | PuVendorEvaluationController | pu:vendorEvaluation:query | 供应商评估趋势数据 |
+| GET /distribution | PuVendorEvaluationController | pu:vendorEvaluation:list | 供应商等级分布统计 |
+| PUT /issue/{reworkId} | PrdReworkOrderController | prd:rework:edit | 返工订单出库(领料) |
+| PUT /receive/{reworkId} | PrdReworkOrderController | prd:rework:edit | 返工订单入库(收货) |
+
+**前端变更**:
+- 新增页面: vendor-evaluation/report.vue (供应商评估报表), work-order-resource/index.vue (工单资源分配)
+- 修改页面: pu/order/index.vue (订单行展开), subcontract/index.vue (远程搜索+操作按钮), rework/index.vue (远程搜索+操作按钮), capacity-calendar/index.vue (日历视图)
+- 新增API: listOrderLines, getVendorEvaluationTrend, getVendorEvaluationDistribution, issueReworkMaterial, receiveReworkMaterial, issueSubcontractMaterial, receiveSubcontractMaterial
+- 路由: 新增2个动态路由(vendor-evaluation/report, work-order-resource/index)
+
+**SQL DDL 变更**:
+- 菜单: 供应商评估报表(2801), 工单资源分配(2802), 委外发料(2803), 委外收货(2804), 返工出库(2805), 返工入库(2806)
+- SQL脚本: **1个** (week6_frontend_enhancement.sql)
+
+**代码变更统计**:
+- 修改后端文件: **7个** (PuPurchaseOrderController, PuVendorEvaluationController/Service/Impl, PrdReworkOrderController/Service/Impl, IWmStockOperationService/Impl)
+- 新增前端文件: **4个** (report.vue, work-order-resource/index.vue, vendor-evaluation/types.ts, work-order-resource API)
+- 修改前端文件: **9个** (order/index.vue, subcontract/index.vue, rework/index.vue, capacity-calendar/index.vue, API文件, types文件, router)
+
+**修复记录**:
+- 修复 PuVendorEvaluationServiceImpl 缺少 `import java.util.Map`
+- 修复 subcontract/types.ts 缺少 `woId` 字段定义
+- 修复 rework/types.ts 缺少 6 个字段定义(sourceWoNo/materialId/materialCode/materialName/materialSpec/baseUomName)
+- 修复 router/index.ts 引用不存在的 rework/form.vue 路由
+- 修复 SQL 脚本: create_by 改为 bigint、is_frame 改为 1(内部菜单)、主键手动指定、parent_id 使用真实值、补充 query_param 和 create_dept 字段
 
 ### 3.2 Phase 2: MES 建设 (第13-34周)
 
@@ -1084,13 +1162,17 @@ Month 12-13 ████ IoT Phase 3: 智能+集成 (Week 45-50)
 
 ---
 
-> **文档版本**: v1.1 (优化版)
+> **文档版本**: v1.2
 > **编制日期**: 2026-05-27
-> **优化日期**: 2026-05-29
+> **优化日期**: 2026-05-31
 > **编制依据**: nexus-erp代码库深度分析 + ERP/MES边界梳理 + 重复建设消除
 > **总工期**: 50周 (约12.5个月)
 > **总工作量**: ~295人天
 > **推荐团队**: 3-4人 (1架构+2后端+1前端)
+>
+> **v1.2 关键变更**:
+> - Week 5 执行记录已补充 (3.1.8)
+> - Week 6 执行记录已补充 (3.1.9)，R-026/R-027 标记为已完成
 >
 > **v1.1 关键变更**:
 > - ERP qc/eq模块删除，由MES统一实现，消除重复建设，节省~17人天

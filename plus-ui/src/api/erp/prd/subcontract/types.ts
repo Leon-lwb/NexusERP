@@ -47,5 +47,6 @@ export interface PrdSubcontractForm {
   unitPrice?: number;
   planStartDate?: string;
   planEndDate?: string;
+  woId?: number;
   remark?: string;
 }

@@ -10,7 +10,9 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.domain.bo.PuPurchaseOrderBo;
 import com.nexus.erp.pu.domain.vo.PuPurchaseOrderVo;
 import com.nexus.erp.pu.service.IPuPurchaseOrderService;
@@ -40,6 +42,7 @@ import java.util.List;
 public class PuPurchaseOrderController extends BaseController {
 
     private final IPuPurchaseOrderService purchaseOrderService;
+    private final PuPurchaseOrderLineMapper lineMapper;
 
     /**
      * 分页查询采购订单列表
@@ -275,5 +278,23 @@ public class PuPurchaseOrderController extends BaseController {
     @GetMapping("/diff-report")
     public R<List<PuPurchaseOrderLine>> diffReport() {
         return R.ok(purchaseOrderService.selectDiffLines());
+    }
+
+    /**
+     * 查询采购订单明细行列表
+     * <p>
+     * 根据订单ID查询该订单下所有明细行，按排序号升序返回。</p>
+     * <p>权限标识：{@code pu:order:query}</p>
+     *
+     * @param orderId 采购订单 ID
+     * @return 采购订单明细行列表
+     */
+    @SaCheckPermission("pu:order:query")
+    @GetMapping("/{orderId}/lines")
+    public R<List<PuPurchaseOrderLine>> listLines(@PathVariable Long orderId) {
+        LambdaQueryWrapper<PuPurchaseOrderLine> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(PuPurchaseOrderLine::getOrderId, orderId);
+        lqw.orderByAsc(PuPurchaseOrderLine::getSortOrder);
+        return R.ok(lineMapper.selectList(lqw));
     }
 }

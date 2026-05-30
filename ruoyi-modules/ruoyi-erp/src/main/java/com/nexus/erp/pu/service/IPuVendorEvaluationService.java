@@ -6,6 +6,7 @@ import com.nexus.erp.pu.domain.bo.PuVendorEvaluationBo;
 import com.nexus.erp.pu.domain.vo.PuVendorEvaluationVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 供应商评估服务接口
@@ -84,4 +85,23 @@ public interface IPuVendorEvaluationService {
      * 通常由定时任务调用。
      */
     void batchCalculateAll();
+
+    /**
+     * 按供应商查询评估趋势
+     * <p>
+     * 查询指定供应商的所有评估记录，按评估周期升序排列，用于趋势图展示。
+     *
+     * @param vendorId 供应商ID
+     * @return 供应商评估趋势列表
+     */
+    List<PuVendorEvaluationVo> selectTrendByVendorId(Long vendorId);
+
+    /**
+     * 查询供应商评估等级分布
+     * <p>
+     * 统计所有评估记录中 A/B/C/D 四个等级的供应商数量。
+     *
+     * @return 等级分布统计，key 为等级，value 为数量
+     */
+    Map<String, Integer> selectLevelDistribution();
 }

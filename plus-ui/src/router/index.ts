@@ -554,7 +554,35 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '库存估值详情', activeMenu: '/erp/wm/valuation' }
       }
     ]
-  }
+  },
+  {
+    path: '/erp/pu/vendor-evaluation/report',
+    component: Layout,
+    hidden: true,
+    permissions: ['pu:vendorEvaluation:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/pu/vendor-evaluation/report.vue'),
+        name: 'VendorEvaluationReport',
+        meta: { title: '供应商评估报表', activeMenu: '/erp/pu/vendor-evaluation' }
+      }
+    ]
+  },
+  {
+    path: '/erp/prd/work-order-resource',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:workOrderResource:list'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/erp/prd/work-order-resource/index.vue'),
+        name: 'WorkOrderResource',
+        meta: { title: '工单资源分配', activeMenu: '/erp/prd/work-order-resource' }
+      }
+    ]
+  },
 ];
 
 /**

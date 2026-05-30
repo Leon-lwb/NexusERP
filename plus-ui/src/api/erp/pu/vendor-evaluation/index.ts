@@ -1,5 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
+import { VendorEvaluationVO, VendorEvaluationQuery, VendorEvaluationForm } from './types';
 
 /**
  * 供应商评估模块API
@@ -12,7 +13,7 @@ const BASE = '/erp/pu/vendor-evaluation';
  * @param query 供应商评估查询条件
  * @returns 供应商评估列表及总数
  */
-export const listVendorEvaluation = (query: any): AxiosPromise<{ rows: any[]; total: number }> =>
+export const listVendorEvaluation = (query: VendorEvaluationQuery): AxiosPromise<{ rows: VendorEvaluationVO[]; total: number }> =>
   request({
     url: BASE + '/list',
     method: 'get',
@@ -24,7 +25,7 @@ export const listVendorEvaluation = (query: any): AxiosPromise<{ rows: any[]; to
  * @param id 供应商评估ID
  * @returns 供应商评估详细信息
  */
-export const getVendorEvaluation = (id: string | number): AxiosPromise<any> =>
+export const getVendorEvaluation = (id: string | number): AxiosPromise<VendorEvaluationVO> =>
   request({
     url: BASE + '/' + id,
     method: 'get'
@@ -35,7 +36,7 @@ export const getVendorEvaluation = (id: string | number): AxiosPromise<any> =>
  * @param data 供应商评估表单数据
  * @returns 请求结果
  */
-export const addVendorEvaluation = (data: any) =>
+export const addVendorEvaluation = (data: VendorEvaluationForm) =>
   request({
     url: BASE,
     method: 'post',
@@ -47,7 +48,7 @@ export const addVendorEvaluation = (data: any) =>
  * @param data 供应商评估表单数据
  * @returns 请求结果
  */
-export const updateVendorEvaluation = (data: any) =>
+export const updateVendorEvaluation = (data: VendorEvaluationForm) =>
   request({
     url: BASE,
     method: 'put',
@@ -84,4 +85,16 @@ export const batchCalculateAll = () =>
   request({
     url: BASE + '/calculate-all',
     method: 'post'
+  });
+
+export const getVendorEvaluationTrend = (vendorId: number): AxiosPromise<VendorEvaluationVO[]> =>
+  request({
+    url: BASE + '/trend/' + vendorId,
+    method: 'get'
+  });
+
+export const getVendorEvaluationDistribution = (): AxiosPromise<Record<string, number>> =>
+  request({
+    url: BASE + '/distribution',
+    method: 'get'
   });

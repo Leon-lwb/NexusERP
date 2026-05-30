@@ -59,6 +59,12 @@
           <el-tooltip content="完工" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
             <el-button link type="primary" icon="Select" @click="handleComplete(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
           </el-tooltip>
+          <el-tooltip content="委外发料" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
+            <el-button link type="warning" icon="Van" @click="handleSubcontractIssue(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
+          </el-tooltip>
+          <el-tooltip content="委外收货" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
+            <el-button link type="success" icon="Box" @click="handleSubcontractReceive(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
+          </el-tooltip>
           <el-tooltip content="修改" placement="top" v-if="scope.row.status === 'DRAFT'">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
           </el-tooltip>
@@ -80,51 +86,33 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="供应商ID" prop="vendorId">
-              <el-input-number v-model="form.vendorId" placeholder="请输入供应商ID" style="width: 100%" />
+            <el-form-item label="供应商" prop="vendorId">
+              <el-select v-model="form.vendorId" filterable remote :remote-method="searchVendor" placeholder="请选择供应商" @change="onVendorChange" style="width: 100%">
+                <el-option v-for="v in vendorOptions" :key="v.vendorId" :label="v.vendorName" :value="v.vendorId" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="供应商编码" prop="vendorCode">
-              <el-input v-model="form.vendorCode" placeholder="请输入供应商编码" />
+            <el-form-item label="物料" prop="materialId">
+              <el-select v-model="form.materialId" filterable remote :remote-method="searchMaterial" placeholder="请选择物料" @change="onMaterialChange" style="width: 100%">
+                <el-option v-for="m in materialOptions" :key="m.materialId" :label="`${m.materialCode} - ${m.materialName}`" :value="m.materialId" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="供应商名称" prop="vendorName">
-              <el-input v-model="form.vendorName" placeholder="请输入供应商名称" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="物料ID" prop="materialId">
-              <el-input-number v-model="form.materialId" placeholder="请输入物料ID" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="物料编码" prop="materialCode">
-              <el-input v-model="form.materialCode" placeholder="请输入物料编码" />
+            <el-form-item label="单价" prop="unitPrice">
+              <el-input-number v-model="form.unitPrice" :precision="4" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="物料名称" prop="materialName">
-              <el-input v-model="form.materialName" placeholder="请输入物料名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="规格型号" prop="materialSpec">
-              <el-input v-model="form.materialSpec" placeholder="请输入规格型号" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="单位" prop="baseUomName">
-              <el-input v-model="form.baseUomName" placeholder="请输入单位" />
+            <el-form-item label="关联工单" prop="woId">
+              <el-select v-model="form.woId" filterable remote :remote-method="searchWorkOrder" placeholder="请选择关联工单" style="width: 100%">
+                <el-option v-for="wo in woOptions" :key="wo.woId" :label="`${wo.woNo} - ${wo.materialName || ''}`" :value="wo.woId" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -135,17 +123,10 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="单价" prop="unitPrice">
-              <el-input-number v-model="form.unitPrice" :precision="4" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="计划开始日期" prop="planStartDate">
               <el-date-picker v-model="form.planStartDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择计划开始日期" style="width: 100%" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="计划结束日期" prop="planEndDate">
               <el-date-picker v-model="form.planEndDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择计划结束日期" style="width: 100%" />
@@ -165,8 +146,11 @@
 </template>
 
 <script setup name="PrdSubcontract" lang="ts">
-import { listSubcontract, getSubcontract, addSubcontract, updateSubcontract, delSubcontract, releaseSubcontract, completeSubcontract } from '@/api/erp/prd/subcontract';
+import { listSubcontract, getSubcontract, addSubcontract, updateSubcontract, delSubcontract, releaseSubcontract, completeSubcontract, issueSubcontractMaterial, receiveSubcontractMaterial } from '@/api/erp/prd/subcontract';
 import { PrdSubcontractVO, PrdSubcontractQuery, PrdSubcontractForm } from '@/api/erp/prd/subcontract/types';
+import { listVendor } from '@/api/erp/bd/vendor';
+import { listMaterial } from '@/api/erp/bd/material';
+import { listWork } from '@/api/erp/prd/work';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_subcontract_status } = toRefs<any>(proxy?.useDict('prd_subcontract_status'));
@@ -185,6 +169,51 @@ const queryRef = ref<ElFormInstance>();
 const subcontractRef = ref<ElFormInstance>();
 const queryParams = ref<PrdSubcontractQuery>({ pageNum: 1, pageSize: 10 });
 const form = ref<PrdSubcontractForm>({});
+
+const vendorOptions = ref<any[]>([]);
+const materialOptions = ref<any[]>([]);
+const woOptions = ref<any[]>([]);
+
+const searchVendor = async (query: string) => {
+  if (!query && query !== '') return;
+  try {
+    const res = await listVendor({ vendorName: query || undefined, pageNum: 1, pageSize: 20 });
+    vendorOptions.value = res.rows || [];
+  } catch { vendorOptions.value = []; }
+};
+
+const searchMaterial = async (query: string) => {
+  if (!query && query !== '') return;
+  try {
+    const res = await listMaterial({ materialName: query || undefined, pageNum: 1, pageSize: 20 });
+    materialOptions.value = res.rows || [];
+  } catch { materialOptions.value = []; }
+};
+
+const searchWorkOrder = async (query: string) => {
+  try {
+    const res = await listWork({ woNo: query || undefined, pageNum: 1, pageSize: 20 });
+    woOptions.value = res.rows || [];
+  } catch { woOptions.value = []; }
+};
+
+const onVendorChange = (vendorId: number) => {
+  const v = vendorOptions.value.find((i: any) => i.vendorId === vendorId);
+  if (v) {
+    form.value.vendorCode = v.vendorCode;
+    form.value.vendorName = v.vendorName;
+  }
+};
+
+const onMaterialChange = (materialId: number) => {
+  const m = materialOptions.value.find((i: any) => i.materialId === materialId);
+  if (m) {
+    form.value.materialCode = m.materialCode;
+    form.value.materialName = m.materialName;
+    form.value.materialSpec = m.materialSpec;
+    form.value.baseUomName = m.baseUomName;
+  }
+};
 
 const rules = {
   subcontractNo: [{ required: true, message: '委外单号不能为空', trigger: 'blur' }],
@@ -259,6 +288,20 @@ const handleComplete = async (row: PrdSubcontractVO) => {
   await proxy?.$modal.confirm('是否确认完工委外订单"' + row.subcontractNo + '"？');
   await completeSubcontract(row.subcontractId);
   proxy?.$modal.msgSuccess('完工成功');
+  getList();
+};
+
+const handleSubcontractIssue = async (row: PrdSubcontractVO) => {
+  await proxy?.$modal.confirm('是否确认对委外订单"' + row.subcontractNo + '"执行发料？');
+  await issueSubcontractMaterial(row.subcontractId);
+  proxy?.$modal.msgSuccess('发料成功');
+  getList();
+};
+
+const handleSubcontractReceive = async (row: PrdSubcontractVO) => {
+  await proxy?.$modal.confirm('是否确认对委外订单"' + row.subcontractNo + '"执行收货？');
+  await receiveSubcontractMaterial(row.subcontractId);
+  proxy?.$modal.msgSuccess('收货成功');
   getList();
 };
 

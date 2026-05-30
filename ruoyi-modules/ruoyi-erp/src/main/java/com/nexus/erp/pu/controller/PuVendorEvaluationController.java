@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 供应商评估控制器
@@ -167,5 +168,34 @@ public class PuVendorEvaluationController extends BaseController {
     public R<Void> calculateAll() {
         vendorEvaluationService.batchCalculateAll();
         return R.ok();
+    }
+
+    /**
+     * 查询供应商评估趋势数据
+     * <p>
+     * 根据供应商ID查询其历史评估记录，按评估周期升序返回，用于前端趋势折线图展示。</p>
+     * <p>权限标识：{@code pu:vendorEvaluation:query}</p>
+     *
+     * @param vendorId 供应商 ID
+     * @return 供应商评估趋势列表
+     */
+    @SaCheckPermission("pu:vendorEvaluation:query")
+    @GetMapping("/trend/{vendorId}")
+    public R<List<PuVendorEvaluationVo>> trend(@PathVariable Long vendorId) {
+        return R.ok(vendorEvaluationService.selectTrendByVendorId(vendorId));
+    }
+
+    /**
+     * 查询供应商评估等级分布
+     * <p>
+     * 统计所有评估记录中 A/B/C/D 四个等级的供应商数量，用于前端饼图展示。</p>
+     * <p>权限标识：{@code pu:vendorEvaluation:list}</p>
+     *
+     * @return 等级分布统计，key 为等级(A/B/C/D)，value 为供应商数量
+     */
+    @SaCheckPermission("pu:vendorEvaluation:list")
+    @GetMapping("/distribution")
+    public R<Map<String, Integer>> distribution() {
+        return R.ok(vendorEvaluationService.selectLevelDistribution());
     }
 }

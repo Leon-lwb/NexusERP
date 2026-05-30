@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 供应商评估服务实现类
@@ -399,6 +400,44 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
             return score.setScale(SCORE_SCALE, RoundingMode.HALF_UP);
         }
         return DEFAULT_PRICE_SCORE;
+    }
+
+    /**
+     * 按供应商查询评估趋势
+     *
+     * @param vendorId 供应商ID
+     * @return 供应商评估趋势列表
+     */
+    @Override
+    public List<PuVendorEvaluationVo> selectTrendByVendorId(Long vendorId) {
+        LambdaQueryWrapper<PuVendorEvaluation> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(PuVendorEvaluation::getVendorId, vendorId);
+        lqw.orderByAsc(PuVendorEvaluation::getEvalPeriod);
+        return baseMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 查询供应商评估等级分布
+     *
+     * @return 等级分布统计，key 为等级，value 为数量
+     */
+    @Override
+    public Map<String, Integer> selectLevelDistribution() {
+        List<PuVendorEvaluation> all = baseMapper.selectList(new LambdaQueryWrapper<>());
+        Map<String, Integer> distribution = new java.util.LinkedHashMap<>();
+        distribution.put("A", 0);
+        distribution.put("B", 0);
+        distribution.put("C", 0);
+        distribution.put("D", 0);
+        if (all != null) {
+            for (PuVendorEvaluation eval : all) {
+                String level = eval.getEvalLevel();
+                if (level != null && distribution.containsKey(level)) {
+                    distribution.put(level, distribution.get(level) + 1);
+                }
+            }
+        }
+        return distribution;
     }
 
     private LambdaQueryWrapper<PuVendorEvaluation> buildQueryWrapper(PuVendorEvaluationBo bo) {
