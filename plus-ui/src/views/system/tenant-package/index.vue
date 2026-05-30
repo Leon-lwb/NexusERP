@@ -107,9 +107,9 @@ import {
   addTenantPackage,
   updateTenantPackage,
   changePackageStatus
-} from '@/api/system/tenantPackage';
+} from '@/api/system/tenant-package';
 import { tenantPackageMenuTreeselect } from '@/api/system/menu';
-import { TenantPkgForm, TenantPkgQuery, TenantPkgVO } from '@/api/system/tenantPackage/types';
+import { TenantPkgForm, TenantPkgQuery, TenantPkgVO } from '@/api/system/tenant-package/types';
 import { MenuTreeOption } from '@/api/system/menu/types';
 import to from 'await-to-js';
 
@@ -319,7 +319,7 @@ const handleExport = () => {
     {
       ...queryParams.value
     },
-    `tenantPackage_${new Date().getTime()}.xlsx`
+    `tenant-package_${new Date().getTime()}.xlsx`
   );
 };
 

@@ -310,6 +310,11 @@
               <el-tag :type="getStatusType(form.woStatus)">{{ getStatusLabel(form.woStatus) }}</el-tag>
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="是否倒冲" prop="backflushFlag">
+              <el-switch v-model="form.backflushFlag" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <el-row :gutter="20" v-if="form.woStatus === 'CREATED' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
@@ -569,11 +574,11 @@ import { listWorkshop } from "@/api/erp/bd/workshop"
 import { listWorkstation } from "@/api/erp/bd/workstation"
 import { listTeam } from "@/api/erp/sch/team"
 import { listUserByPostId } from "@/api/system/user"
-import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, RESOURCE_TYPE } from "@/api/erp/prd/workOrderResource"
+import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, RESOURCE_TYPE } from "@/api/erp/prd/work-order-resource"
 import { getProcesss } from '@/api/workflow/process'
 
 const { proxy } = getCurrentInstance()
-const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status } = toRefs<any>(proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status'))
+const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status, prd_backflush_flag } = toRefs<any>(proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status', 'prd_backflush_flag'))
 const route = useRoute()
 const router = useRouter()
 
@@ -834,6 +839,7 @@ function reset() {
     bomVersion: null,
     remark: null,
     bomName: null,
+    backflushFlag: 0,
     attr2: null,
     attr3: null,
     attr4: null,

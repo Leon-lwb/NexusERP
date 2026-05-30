@@ -229,6 +229,12 @@
             </el-select>
           </template>
         </el-table-column>
+        <el-table-column label="是否倒冲" align="center" width="100">
+          <template #default="scope">
+            <el-switch v-model="scope.row.backflushFlag" :active-value="1" :inactive-value="0" v-if="!isViewMode" />
+            <span v-else>{{ scope.row.backflushFlag === 1 ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" align="center" width="100" v-if="!isViewMode">
           <template #default="scope">
             <el-button link type="danger" @click="removeMaterialRow(scope.$index)">删除</el-button>
@@ -351,7 +357,7 @@ import { debounce } from 'lodash'
 const router = useRouter()
 const route = useRoute()
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type'))
+const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, prd_backflush_flag } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type', 'prd_backflush_flag'))
 
 // 表单相关
 const formRef = ref(null)
@@ -389,7 +395,6 @@ const rules = ref({
 
 // 物料子项表格数据
 const materialItems = ref([
-  // 默认添加一行空数据
   {
     detailId: null,
     childMaterialId: null,
@@ -402,7 +407,8 @@ const materialItems = ref([
     expiryDate: null,
     sourceType: null,
     status: 1,
-    remark: ''
+    remark: '',
+    backflushFlag: 0
   }
 ])
 
@@ -486,7 +492,8 @@ function getBomDetailsList(bomId) {
         expiryDate: item.expiryDate || null,
         sourceType: item.sourceType || null,
         status: item.status !== undefined ? item.status : 1,
-        remark: item.remark || ''
+        remark: item.remark || '',
+        backflushFlag: item.backflushFlag !== undefined ? item.backflushFlag : 0
       }));
     } else {
       // 如果没有子表数据，保持默认的一行空数据
@@ -502,7 +509,8 @@ function getBomDetailsList(bomId) {
         expiryDate: null,
         sourceType: null,
         status: 1,
-        remark: ''
+        remark: '',
+        backflushFlag: 0
       }];
     }
   }).catch(() => {
@@ -619,7 +627,8 @@ function addMaterialRow() {
     expiryDate: null,
     sourceType: null,
     status: 1,
-    remark: ''
+    remark: '',
+    backflushFlag: 0
   })
 }
 

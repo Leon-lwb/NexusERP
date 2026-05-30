@@ -1,5 +1,6 @@
 package com.nexus.erp.prd.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.validate.AddGroup;
 import com.nexus.common.core.validate.EditGroup;
@@ -16,9 +17,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,7 +33,7 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/prd/capacityCalendar")
+@RequestMapping("/erp/prd/capacityCalendar")
 public class PrdCapacityCalendarController extends BaseController {
 
     private final IPrdCapacityCalendarService capacityCalendarService;
@@ -85,5 +89,44 @@ public class PrdCapacityCalendarController extends BaseController {
     @DeleteMapping("/{calendarIds}")
     public R<Void> remove(@NotEmpty(message = "日历ID不能为空") @PathVariable Long[] calendarIds) {
         return toAjax(capacityCalendarService.deleteWithValidByIds(List.of(calendarIds), true));
+    }
+
+    @SaCheckPermission("prd:capacityCalendar:edit")
+    @Log(title = "产能日历-生成", businessType = BusinessType.INSERT)
+    @PostMapping("/generate")
+    public R<Void> generate(@RequestParam Long planId,
+                            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+                            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate,
+                            @RequestParam String objectType,
+                            @RequestParam Long objectId,
+                            @RequestParam String objectCode,
+                            @RequestParam String objectName) {
+        capacityCalendarService.generateFromSchedule(planId, startDate, endDate, objectType, objectId, objectCode, objectName);
+        return R.ok();
+    }
+
+    @SaCheckPermission("prd:capacityCalendar:query")
+    @GetMapping("/available")
+    public R<List<PrdCapacityCalendarVo>> available(@RequestParam String objectType,
+                                                    @RequestParam Long objectId,
+                                                    @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+                                                    @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
+        return R.ok(capacityCalendarService.queryAvailableCapacity(objectType, objectId, startDate, endDate));
+    }
+
+    @SaCheckPermission("prd:capacityCalendar:edit")
+    @Log(title = "产能日历-占用", businessType = BusinessType.UPDATE)
+    @PutMapping("/occupy")
+    public R<Void> occupy(@RequestParam Long calendarId, @RequestParam BigDecimal hours) {
+        capacityCalendarService.occupyCapacity(calendarId, hours);
+        return R.ok();
+    }
+
+    @SaCheckPermission("prd:capacityCalendar:edit")
+    @Log(title = "产能日历-释放", businessType = BusinessType.UPDATE)
+    @PutMapping("/release")
+    public R<Void> release(@RequestParam Long calendarId, @RequestParam BigDecimal hours) {
+        capacityCalendarService.releaseCapacity(calendarId, hours);
+        return R.ok();
     }
 }

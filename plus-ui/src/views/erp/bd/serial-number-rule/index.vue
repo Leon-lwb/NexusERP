@@ -205,7 +205,7 @@
 import {
   listSerialNumberRule, getSerialNumberRule, delSerialNumberRule,
   addSerialNumberRule, updateSerialNumberRule, generateSerialNumber
-} from '@/api/erp/bd/serialNumberRule';
+} from '@/api/erp/bd/serial-number-rule';
 
 const { proxy } = getCurrentInstance();
 

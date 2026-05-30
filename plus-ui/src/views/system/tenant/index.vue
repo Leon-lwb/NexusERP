@@ -158,10 +158,10 @@ import {
   syncTenantDict,
   syncTenantConfig
 } from '@/api/system/tenant';
-import { selectTenantPackage } from '@/api/system/tenantPackage';
+import { selectTenantPackage } from '@/api/system/tenant-package';
 import { useUserStore } from '@/store/modules/user';
 import { TenantForm, TenantQuery, TenantVO } from '@/api/system/tenant/types';
-import { TenantPkgVO } from '@/api/system/tenantPackage/types';
+import { TenantPkgVO } from '@/api/system/tenant-package/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 

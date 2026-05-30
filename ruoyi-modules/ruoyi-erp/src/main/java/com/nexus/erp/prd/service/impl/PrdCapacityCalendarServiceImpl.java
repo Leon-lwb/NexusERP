@@ -92,7 +92,7 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void generateFromSchedule(Long planId, Date startDate, Date endDate) {
+    public void generateFromSchedule(Long planId, Date startDate, Date endDate, String objectType, Long objectId, String objectCode, String objectName) {
         SchPlan plan = schPlanMapper.selectById(planId);
         if (plan == null) {
             throw new ServiceException("排班计划不存在");
@@ -137,9 +137,11 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
                 calendar.setRemainingHours(availableHours);
                 calendar.setPlannedHours(BigDecimal.ZERO);
                 calendar.setActualHours(BigDecimal.ZERO);
+                calendar.setObjectType(objectType);
+                calendar.setObjectId(objectId);
+                calendar.setObjectCode(objectCode);
+                calendar.setObjectName(objectName);
                 calendar.setStatus("ACTIVE");
-                // object_type/object_id 需要后续根据实际业务关联填充
-                // 当前版本留空，由前端传入或后续扩展
 
                 try {
                     baseMapper.insert(calendar);

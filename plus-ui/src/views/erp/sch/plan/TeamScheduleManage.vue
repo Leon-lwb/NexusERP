@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts" name="TeamScheduleManage">
-import { listTeamSchedule, getTeamSchedule, delTeamSchedule, addTeamSchedule, updateTeamSchedule } from "@/api/erp/sch/teamSchedule"
+import { listTeamSchedule, getTeamSchedule, delTeamSchedule, addTeamSchedule, updateTeamSchedule } from "@/api/erp/sch/team-schedule"
 import { listTeam } from "@/api/erp/sch/team"
 import { listShift } from "@/api/erp/sch/shift"
 import { listPlanteam } from "@/api/erp/sch/planteam"

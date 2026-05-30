@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts" name="VendorEvaluationForm">
-import { addVendorEvaluation, getVendorEvaluation, updateVendorEvaluation, calculateVendorEvaluation } from '@/api/erp/pu/vendorEvaluation'
+import { addVendorEvaluation, getVendorEvaluation, updateVendorEvaluation, calculateVendorEvaluation } from '@/api/erp/pu/vendor-evaluation'
 import { listVendor } from '@/api/erp/bd/vendor'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -210,12 +210,12 @@ function submitForm() {
   const isEdit = route.query.action === 'edit' || form.value.evaluationId != null
   ;(isEdit ? updateVendorEvaluation(form.value) : addVendorEvaluation(form.value)).then(() => {
     proxy.$modal.msgSuccess('保存成功')
-    router.push('/erp/pu/vendorEvaluation')
+    router.push('/erp/pu/vendor-evaluation')
   })
 }
 
 function cancel() {
-  router.push('/erp/pu/vendorEvaluation')
+  router.push('/erp/pu/vendor-evaluation')
 }
 </script>
 

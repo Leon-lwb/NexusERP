@@ -188,7 +188,7 @@
 </template>
 
 <script setup lang="ts" name="SalesIssue">
-import { listSalesIssue, delSalesIssue, confirmSalesIssue, completeSalesIssue, submitSalesIssueFlow, getSalesIssueProcId } from "@/api/erp/wm/salesIssue"
+import { listSalesIssue, delSalesIssue, confirmSalesIssue, completeSalesIssue, submitSalesIssueFlow, getSalesIssueProcId } from "@/api/erp/wm/sales-issue"
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -253,7 +253,7 @@ function handleSelectionChange(selection: any[]) {
 /** 新增按钮操作 */
 function handleAdd() {
   router.push({
-    path: '/erp/wm/salesIssue/form',
+    path: '/erp/wm/sales-issue/form',
     query: { action: 'add' }
   })
 }
@@ -262,7 +262,7 @@ function handleAdd() {
 function handleUpdate(row: any) {
   const issueId = row.issueId || ids.value[0]
   router.push({
-    path: '/erp/wm/salesIssue/form',
+    path: '/erp/wm/sales-issue/form',
     query: { id: issueId, action: 'edit' }
   })
 }
@@ -271,7 +271,7 @@ function handleUpdate(row: any) {
 function handleView(row: any) {
   const issueId = row.issueId
   router.push({
-    path: '/erp/wm/salesIssue/form',
+    path: '/erp/wm/sales-issue/form',
     query: { id: issueId, action: 'view' }
   })
 }
@@ -332,9 +332,9 @@ function handleDelete(row: any) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('/erp/wm/salesIssue/export', {
+  proxy.download('/erp/wm/sales-issue/export', {
     ...queryParams.value
-  }, `salesIssue_${new Date().getTime()}.xlsx`)
+  }, `sales-issue_${new Date().getTime()}.xlsx`)
 }
 
 /** 格式化金额 */

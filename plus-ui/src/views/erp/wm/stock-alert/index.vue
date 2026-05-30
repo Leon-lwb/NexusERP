@@ -99,8 +99,8 @@
 </template>
 
 <script setup name="WmStockAlert" lang="ts">
-import { listStockAlert, delStockAlert, checkStockAlert, handleStockAlert } from '@/api/erp/wm/stockAlert';
-import { WmStockAlertVO, WmStockAlertQuery } from '@/api/erp/wm/stockAlert/types';
+import { listStockAlert, delStockAlert, checkStockAlert, handleStockAlert } from '@/api/erp/wm/stock-alert';
+import { WmStockAlertVO, WmStockAlertQuery } from '@/api/erp/wm/stock-alert/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_stock_alert_type, wm_alert_level } = toRefs<any>(proxy?.useDict('wm_stock_alert_type', 'wm_alert_level'));

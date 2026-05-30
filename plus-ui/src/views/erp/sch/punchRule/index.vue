@@ -190,7 +190,7 @@
 </template>
 
 <script setup lang="ts" name="PunchRule">
-import { listPunchRule, getPunchRule, delPunchRule, addPunchRule, updatePunchRule } from "@/api/erp/sch/punchRule"
+import { listPunchRule, getPunchRule, delPunchRule, addPunchRule, updatePunchRule } from "@/api/erp/sch/punch-rule"
 import { ref, reactive, toRefs } from "vue"
 import { getCurrentInstance } from "vue"
 

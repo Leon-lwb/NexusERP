@@ -36,6 +36,7 @@ export interface BomForm {
   status?: number;
   remark?: string;
   sourceType?: string;
+  backflushFlag?: number;
 }
 
 export interface BomDetailVO {
@@ -64,7 +65,9 @@ export interface BomDetailVO {
   statusDesc: string;
   remark: string;
   sourceType?: string;
+  backflushFlag?: number;
 }
+
 export interface BomDetailForm {
   detailId?: number;
   bomId: number;

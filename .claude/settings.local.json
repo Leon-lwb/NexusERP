@@ -140,7 +140,13 @@
       "Bash(javap -p ~/.m2/repository/org/dromara/ruoyi-system/5.6.0/ruoyi-system-5.6.0.jar)",
       "Bash(javap -cp ~/.m2/repository/org/dromara/ruoyi-system/5.6.0/ruoyi-system-5.6.0.jar org.dromara.system.service.CommonService)",
       "Bash(grep -rn \"org\\\\.dromara\" ruoyi-modules/ruoyi-system/pom.xml ruoyi-modules/ruoyi-flowable/pom.xml ruoyi-common/ruoyi-common-flowable/pom.xml ruoyi-modules/ruoyi-online/pom.xml ruoyi-modules/ruoyi-generator/pom.xml)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(mvn -pl ruoyi-modules/ruoyi-flowable -am dependency:tree -DskipTests)",
+      "Bash(javac -version)",
+      "Bash(rm *)",
+      "Bash(dir \"D:\\\\apache-maven*\")",
+      "Bash(dir \"D:\\\\maven*\")",
+      "Bash(powershell.exe *)"
     ]
   }
 }

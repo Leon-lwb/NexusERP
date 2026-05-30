@@ -259,9 +259,9 @@ function handleDelete(row: any) {
 }
 
 function handleExport() {
-  proxy.download('/erp/wm/pickingRule/export', {
+  proxy.download('/erp/wm/pickingrule/export', {
     ...queryParams.value
-  }, `pickingRule_${new Date().getTime()}.xlsx`)
+  }, `pickingrule_${new Date().getTime()}.xlsx`)
 }
 
 function getWarehouseOptions() {

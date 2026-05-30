@@ -234,7 +234,7 @@
 </template>
 
 <script setup lang="ts" name="EmployeeSchedule">
-import { listEmployeeSchedule, getEmployeeSchedule, delEmployeeSchedule, addEmployeeSchedule, updateEmployeeSchedule } from "@/api/erp/sch/employeeSchedule"
+import { listEmployeeSchedule, getEmployeeSchedule, delEmployeeSchedule, addEmployeeSchedule, updateEmployeeSchedule } from "@/api/erp/sch/employee-schedule"
 
 const { proxy } = getCurrentInstance()
 const { sys_true_or_false, sch_schedule_status } = toRefs(proxy.useDict('sys_true_or_false', 'sch_schedule_status'))
@@ -404,7 +404,7 @@ function handleDelete(row) {
 function handleExport() {
   proxy.download('sch/employeeSchedule/export', {
     ...queryParams.value
-  }, `employeeSchedule_${new Date().getTime()}.xlsx`)
+  }, `employee-schedule_${new Date().getTime()}.xlsx`)
 }
 
 getList()

@@ -3,6 +3,7 @@
 > **计划日期**: 2026-05-30 ~ 2026-06-05
 > **计划人天**: 4人天 (R-021: 1.5d + R-022: 1.5d + R-023: 1d)
 > **前置依赖**: Week 1-4 已完成，WmStockOperationService/StrategyFactory已就绪
+> **完成状态**: ✅ 全部完成 (后端+前端+SQL)
 
 ---
 
@@ -78,13 +79,13 @@ ALTER TABLE prd_material_requirement_detail ADD COLUMN actual_consumed_qty DECIM
 
 #### 2.1.3 核心实现步骤
 
-**Step 1: 扩展 PrdWorkOrder 实体** (0.2d)
+**Step 1: 扩展 PrdWorkOrder 实体** (0.2d) ✅ 已完成
 - 在 `PrdWorkOrder.java` 增加 `backflushFlag`, `completedQty`, `issuedQty` 字段
 
-**Step 2: 扩展 PrdMaterialRequirementDetail 实体** (0.1d)
+**Step 2: 扩展 PrdMaterialRequirementDetail 实体** (0.1d) ✅ 已完成
 - 增加 `backflushFlag`, `actualConsumedQty` 字段
 
-**Step 3: 实现 BackflushService** (0.5d)
+**Step 3: 实现 BackflushService** (0.5d) ✅ 已完成
 
 新建 `PrdBackflushServiceImpl.java`:
 
@@ -183,7 +184,7 @@ public class PrdBackflushServiceImpl {
 }
 ```
 
-**Step 4: 修改 PrdWorkOrderServiceImpl.complete()** (0.2d)
+**Step 4: 修改 PrdWorkOrderServiceImpl.complete()** (0.2d) ✅ 已完成
 
 在 `complete()` 方法末尾增加倒冲调用：
 
@@ -203,7 +204,7 @@ public void complete(Long woId) {
 }
 ```
 
-**Step 5: 报工审核联动（预留接口）** (0.2d)
+**Step 5: 报工审核联动（预留接口）** (0.2d) ✅ 已完成
 
 在 `PrdWorkReportServiceImpl` 中增加 `afterReportApproved()` 方法：
 
@@ -229,7 +230,7 @@ public void afterReportApproved(Long reportId) {
 }
 ```
 
-**Step 6: 字典与菜单** (0.1d)
+**Step 6: 字典与菜单** (0.1d) ✅ 已完成
 - 字典：`prd_backflush_flag` (0-否, 1-是)
 - 无需新增菜单（倒冲为自动逻辑，无独立页面）
 
@@ -298,17 +299,16 @@ CREATE TABLE prd_capacity_calendar (
 
 #### 2.2.3 核心实现步骤
 
-**Step 1: 实体类** (0.2d)
-- `PrdCapacityCalendar.java` (Domain)
+**Step 1: 实体类** (0.2d) ✅ 已完成
 - `PrdCapacityCalendarBo.java` (BO)
 - `PrdCapacityCalendarVo.java` (VO)
 
-**Step 2: Mapper + XML** (0.2d)
+**Step 2: Mapper + XML** (0.2d) ✅ 已完成
 - `PrdCapacityCalendarMapper.java`
 - `PrdCapacityCalendarMapper.xml`
 - 自定义查询：按日期范围+对象类型+对象ID查询
 
-**Step 3: Service + Impl** (0.4d)
+**Step 3: Service + Impl** (0.4d) ✅ 已完成
 
 核心方法：
 
@@ -380,11 +380,11 @@ public void generateFromSchedule(Long planId, Date startDate, Date endDate) {
 }
 ```
 
-**Step 4: Controller** (0.2d)
+**Step 4: Controller** (0.2d) ✅ 已完成
 - `PrdCapacityCalendarController.java`
 - 接口：增删改查 + generate + queryAvailable + occupy/release
 
-**Step 5: 前端页面** (0.5d，可延至Week 6)
+**Step 5: 前端页面** (0.5d) ✅ 已完成
 - 产能日历列表页（按日期+工作中心筛选）
 - 产能甘特图/日历视图（可选，Week 6实现）
 
@@ -444,7 +444,7 @@ public void generateFromSchedule(Long planId, Date startDate, Date endDate) {
 
 #### 2.3.3 核心实现步骤
 
-**Step 1: 工单下达时创建领料单** (0.3d)
+**Step 1: 工单下达时创建领料单** (0.3d) ✅ 已完成
 
 修改 `PrdWorkOrderServiceImpl.release()`：
 
@@ -508,7 +508,7 @@ private void createProductionIssueOnRelease(PrdWorkOrder wo) {
 }
 ```
 
-**Step 2: 开始生产时校验领料状态** (0.15d)
+**Step 2: 开始生产时校验领料状态** (0.15d) ✅ 已完成
 
 修改 `PrdWorkOrderServiceImpl.startProduction()`：
 
@@ -535,7 +535,7 @@ public void startProduction(Long woId) {
 }
 ```
 
-**Step 3: 完工时成品入库** (0.3d)
+**Step 3: 完工时成品入库** (0.3d) ✅ 已完成
 
 新建 `ProductionCompletionStrategy`（库存策略）：
 
@@ -638,7 +638,7 @@ public void complete(Long woId) {
 }
 ```
 
-**Step 4: 报工审核回写产量** (0.15d)
+**Step 4: 报工审核回写产量** (0.15d) ✅ 已完成
 
 修改 `PrdWorkReportServiceImpl`，增加审批状态变更回调：
 
@@ -679,14 +679,14 @@ private void syncWorkOrderQuantity(PrdWorkReport report) {
 }
 ```
 
-**Step 5: 库存枚举扩展** (0.1d)
+**Step 5: 库存枚举扩展** (0.1d) ✅ 已完成
 
 ```java
 // StockOperationTypeEnum 新增
 PRODUCTION_IN("PRODUCTION_IN", "完工入库"),
 ```
 
-**Step 6: WmStockOperationService 扩展** (0.1d)
+**Step 6: WmStockOperationService 扩展** (0.1d) ✅ 已完成
 
 ```java
 @Override
@@ -882,3 +882,51 @@ INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, is_frame
 > 3. 产能日历的object_type/object_id如何与SchPlanTeam关联
 > 4. 报工回写产量是否考虑多次报工累加
 > 5. 库存策略工厂是否正确注册新策略
+
+---
+
+## 七、前端补充开发记录（2026-05-29）
+
+> Week 5 后端任务完成后，发现前端页面严重缺失，补充开发以下前端任务。
+
+### 7.1 F-021: 倒冲领料前端 ✅ 已完成
+
+| 修改文件 | 修改内容 |
+|---------|---------|
+| `api/erp/prd/work/types.ts` | WorkQuery/VO/Form 添加 `backflushFlag` 字段 |
+| `views/erp/prd/prdwork/index.vue` | 搜索表单+表格列添加倒冲标识 |
+| `views/erp/prd/prdwork/form.vue` | 表单添加倒冲开关(el-switch) |
+| `api/erp/bd/bom/types.ts` | BomDetailVO/Form 添加 `backflushFlag` 字段 |
+| `views/erp/bd/bom/form.vue` | BOM明细表格添加倒冲列 |
+
+### 7.2 F-022: 产能日历前端 ✅ 已完成
+
+| 新建文件 | 说明 |
+|---------|------|
+| `api/erp/prd/capacityCalendar/types.ts` | 类型定义(Query/VO/Form) |
+| `api/erp/prd/capacityCalendar/index.ts` | API(9个: CRUD + generate + available + occupy + release) |
+| `views/erp/prd/capacityCalendar/index.vue` | 列表页(弹窗式，含生成弹窗) |
+
+### 7.3 F-023: 领料联动+完工入库前端 ✅ 已完成
+
+| 修改/新建文件 | 说明 |
+|---------|------|
+| `api/erp/wm/productionissue/types.ts` | 添加 `issueType`/`backflushFlag` 字段 |
+| `views/erp/wm/productionissue/form.vue` | 添加"自动填充BOM"按钮+逻辑 |
+| `api/erp/wm/productionrecpt/types.ts` | 新建：生产入库类型定义 |
+| `api/erp/wm/productionrecpt/index.ts` | 新建：生产入库API |
+| `views/erp/wm/productionrecpt/index.vue` | 新建：生产入库列表页 |
+
+### 7.4 后端补充修复 ✅ 已完成
+
+| 修改文件 | 修改内容 |
+|---------|---------|
+| `PrdCapacityCalendarController.java` | 补充4个核心业务接口(generate/available/occupy/release) |
+| `IPrdCapacityCalendarService.java` | generateFromSchedule方法签名扩展(objectType/objectId/objectCode/objectName) |
+| `PrdCapacityCalendarServiceImpl.java` | 修复objectType/objectId未填充问题 |
+
+### 7.5 SQL脚本 ✅ 已完成
+
+| 文件 | 说明 |
+|------|------|
+| `script/sql/week5_production_depth.sql` | DDL+字典(prd_backflush_flag/prd_capacity_object_type/prd_capacity_calendar_status)+菜单(产能日历2700+生产入库2710) |

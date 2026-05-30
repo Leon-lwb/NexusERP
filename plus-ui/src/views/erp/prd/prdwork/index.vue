@@ -47,6 +47,11 @@
           <el-option v-for="dict in so_order_priority" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
+      <el-form-item label="是否倒冲" prop="backflushFlag">
+        <el-select v-model="queryParams.backflushFlag" placeholder="请选择" clearable>
+          <el-option v-for="dict in prd_backflush_flag" :key="dict.value" :label="dict.label" :value="dict.value" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -123,6 +128,11 @@
           <dict-tag :options="prd_wo_status" :value="scope.row.woStatus" />
         </template>
       </el-table-column>
+      <el-table-column label="是否倒冲" align="center" prop="backflushFlag">
+        <template #default="scope">
+          <dict-tag :options="prd_backflush_flag" :value="scope.row.backflushFlag" />
+        </template>
+      </el-table-column>
       <el-table-column label="车间名称" align="center" prop="workshopName" />
       <el-table-column label="负责人" align="center" prop="responsibleName" />
       <el-table-column label="优先级" align="center" prop="priority">
@@ -158,7 +168,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance()
-const { prd_source_type, so_order_priority, prd_wo_status } = toRefs<any>(proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status'))
+const { prd_source_type, so_order_priority, prd_wo_status, prd_backflush_flag } = toRefs<any>(proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_backflush_flag'))
 
 const workList = ref([])
 const loading = ref(true)
@@ -188,6 +198,7 @@ const data = reactive({
     responsibleName: null,
     teamName: null,
     priority: null,
+    backflushFlag: null,
   }
 })
 

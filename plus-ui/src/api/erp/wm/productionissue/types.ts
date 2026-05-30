@@ -17,6 +17,7 @@ export interface ProductionIssueForm {
   warehouseCode?: string;
   warehouseName?: string;
   issueDate?: string;
+  issueType?: string;
   status?: string;
   remark?: string;
   wmProductionIssueLineList?: ProductionIssueLineForm[];
@@ -37,6 +38,7 @@ export interface ProductionIssueLineForm {
   locationCode?: string;
   locationName?: string;
   quantity?: number;
+  backflushFlag?: number;
   unitPrice?: number;
   amount?: number;
   remark?: string;

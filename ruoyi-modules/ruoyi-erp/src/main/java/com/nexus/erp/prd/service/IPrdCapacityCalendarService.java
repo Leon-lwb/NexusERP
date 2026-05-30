@@ -49,7 +49,7 @@ public interface IPrdCapacityCalendarService {
     /**
      * 根据排班计划生成产能日历
      */
-    void generateFromSchedule(Long planId, Date startDate, Date endDate);
+    void generateFromSchedule(Long planId, Date startDate, Date endDate, String objectType, Long objectId, String objectCode, String objectName);
 
     /**
      * 查询可用产能

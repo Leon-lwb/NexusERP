@@ -159,14 +159,14 @@ function submitForm() {
       const isEdit = route.query.action === 'edit' || form.value.ruleId != null
       ;(isEdit ? updatePickingRule(form.value) : addPickingRule(form.value)).then(() => {
         proxy.$modal.msgSuccess('保存成功')
-        router.push('/erp/wm/pickingRule')
+        router.push('/erp/wm/pickingrule')
       })
     }
   })
 }
 
 function cancel() {
-  router.push('/erp/wm/pickingRule')
+  router.push('/erp/wm/pickingrule')
 }
 </script>
 

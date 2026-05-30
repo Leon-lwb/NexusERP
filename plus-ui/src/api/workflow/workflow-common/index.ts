@@ -1,4 +1,4 @@
-import { RouterJumpVo } from '@/api/workflow/workflowCommon/types';
+import { RouterJumpVo } from '@/api/workflow/workflow-common/types';
 
 export default {
   routerJump(routerJumpVo: RouterJumpVo, proxy) {

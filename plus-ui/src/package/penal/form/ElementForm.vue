@@ -45,7 +45,7 @@
 
 <script lang="ts" setup>
   import { listNform } from "@/api/workflow/nform";
-  import { listCustomForm } from "@/api/workflow/customForm";
+  import { listCustomForm } from "@/api/workflow/custom-form";
 
   defineOptions({ name: 'ElementForm' })
   const props = defineProps({

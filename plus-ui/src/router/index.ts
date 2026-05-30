@@ -234,16 +234,16 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
-    path: '/erp/wm/salesIssue/form',
+    path: '/erp/wm/sales-issue/form',
     component: Layout,
     hidden: true,
     permissions: ['wm:salesIssue:query'],
     children: [
       {
         path: '',
-        component: () => import('@/views/erp/wm/salesIssue/form.vue'),
+        component: () => import('@/views/erp/wm/sales-issue/form.vue'),
         name: 'SalesIssueForm',
-        meta: { title: '销售出库单表单', activeMenu: '/erp/wm/salesIssue' }
+        meta: { title: '销售出库单表单', activeMenu: '/erp/wm/sales-issue' }
       }
     ]
   },
@@ -500,16 +500,16 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
-    path: '/erp/pu/vendorEvaluation/form',
+    path: '/erp/pu/vendor-evaluation/form',
     component: Layout,
     hidden: true,
     permissions: ['pu:vendorEvaluation:query'],
     children: [
       {
         path: '',
-        component: () => import('@/views/erp/pu/vendorEvaluation/form.vue'),
+        component: () => import('@/views/erp/pu/vendor-evaluation/form.vue'),
         name: 'VendorEvaluationForm',
-        meta: { title: '供应商评估表单', activeMenu: '/erp/pu/vendorEvaluation' }
+        meta: { title: '供应商评估表单', activeMenu: '/erp/pu/vendor-evaluation' }
       }
     ]
   },

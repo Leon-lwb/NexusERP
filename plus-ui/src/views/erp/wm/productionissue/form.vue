@@ -25,7 +25,12 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="关联工单" prop="woNo">
-              <el-input v-model="form.woNo" placeholder="请输入工单编号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.woNo" placeholder="请输入工单编号" style="flex: 1;" />
+                <el-button type="primary" link @click="handleAutoFillFromWorkOrder" v-if="!isViewMode && form.woId">
+                  <el-icon><MagicStick /></el-icon> 自动填充BOM
+                </el-button>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -142,6 +147,8 @@ import { getProductionIssue, addProductionIssue, updateProductionIssue } from "@
 import { listMaterial } from "@/api/erp/bd/material"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
+import { getWork } from "@/api/erp/prd/work"
+import { getCurrentBom, listBomDetails } from "@/api/erp/bd/bom"
 import { useRoute, useRouter } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
 
@@ -220,6 +227,43 @@ function handleAutoGenChange(autoGenFlag: boolean) {
     form.value.issueCode = null;
   }
 }
+
+const handleAutoFillFromWorkOrder = async () => {
+  if (!form.value.woId) {
+    proxy.$modal.msgWarning('请先选择关联工单');
+    return;
+  }
+  try {
+    const workRes: any = await getWork(form.value.woId);
+    const workData = workRes.data;
+    if (!workData.bomId) {
+      proxy.$modal.msgWarning('该工单未关联BOM，无法自动填充');
+      return;
+    }
+    const bomDetailRes: any = await listBomDetails(workData.bomId);
+    const bomDetails = bomDetailRes.data || bomDetailRes.rows || [];
+    const nonBackflushLines = bomDetails.filter((d: any) => d.sourceType !== 'BACKFLUSH');
+    if (nonBackflushLines.length === 0) {
+      proxy.$modal.msgWarning('该工单BOM中没有非倒冲物料');
+      return;
+    }
+    lineList.value = nonBackflushLines.map((d: any) => ({
+      materialId: d.childMaterialId,
+      materialCode: d.childMaterialCode,
+      materialName: d.childMaterialName,
+      materialSpec: d.childMaterialSpec || '',
+      baseUomId: d.baseUomId || '',
+      baseUomName: d.baseUomName || '',
+      quantity: d.quantityPerParent ? d.quantityPerParent * (workData.plannedQty || 1) : null,
+      backflushFlag: 0,
+      locationCode: '',
+      remark: ''
+    }));
+    proxy.$modal.msgSuccess('已根据工单BOM自动填充领料行');
+  } catch (e) {
+    proxy.$modal.msgError('自动填充失败，请检查工单信息');
+  }
+};
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/productionissue' }) }
 

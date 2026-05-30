@@ -12,6 +12,7 @@ export interface WorkQuery extends PageQuery {
   responsibleName?: string;
   teamName?: string;
   priority?: number;
+  backflushFlag?: number;
 }
 
 export interface WorkVO {
@@ -47,6 +48,7 @@ export interface WorkVO {
   teamId: number;
   teamName: string;
   priority: number;
+  backflushFlag: number;
   bomId: number;
   bomVersion: string;
   bomName: string;
@@ -94,6 +96,7 @@ export interface WorkForm {
   teamId?: number;
   teamName?: string;
   priority?: number;
+  backflushFlag?: number;
   bomId?: number;
   bomVersion?: string;
   bomName?: string;

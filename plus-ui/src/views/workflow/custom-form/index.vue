@@ -213,8 +213,8 @@
 </template>
 
 <script setup name="CustomForm" lang="ts">
-  import { listCustomForm, getCustomForm, delCustomForm, addCustomForm, updateCustomForm, updateCustom } from '@/api/workflow/customForm';
-  import { WfCustomFormVO, WfCustomFormQuery, WfCustomForm, CustomFormVO } from '@/api/workflow/customForm/types';
+  import { listCustomForm, getCustomForm, delCustomForm, addCustomForm, updateCustomForm, updateCustom } from '@/api/workflow/custom-form';
+  import { WfCustomFormVO, WfCustomFormQuery, WfCustomForm, CustomFormVO } from '@/api/workflow/custom-form/types';
   import { listAllCategory } from '@/api/workflow/category'
   import { listDeploy, getBpmnXml } from '@/api/workflow/deploy'
   import { DeployVO } from "@/api/workflow/deploy/types";
@@ -563,7 +563,7 @@
   const handleExport = () => {
     proxy?.download('system/customForm/export', {
       ...queryParams.value
-    }, `customForm_${new Date().getTime()}.xlsx`)
+    }, `custom-form_${new Date().getTime()}.xlsx`)
   }
 
   onMounted(() => {

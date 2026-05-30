@@ -323,7 +323,7 @@
 </template>
 
 <script setup lang="ts" name="CustomerOrder">
-import { listCustomerOrder, getCustomerOrder, delCustomerOrder, addCustomerOrder, updateCustomerOrder } from "@/api/erp/so/customerOrder"
+import { listCustomerOrder, getCustomerOrder, delCustomerOrder, addCustomerOrder, updateCustomerOrder } from "@/api/erp/so/customer-order"
 import { listBd } from "@/api/erp/bd/client"
 import { genCode } from "@/api/system/autocode/rule"
 import { listUser } from "@/api/system/user"

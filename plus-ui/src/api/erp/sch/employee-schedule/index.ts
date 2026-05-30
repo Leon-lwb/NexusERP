@@ -4,7 +4,7 @@ import { EmployeeScheduleQuery, EmployeeScheduleVO, EmployeeScheduleForm } from 
 
 export const listEmployeeSchedule = (query: EmployeeScheduleQuery): AxiosPromise<EmployeeScheduleVO[]> => {
   return request({
-    url: '/erp/sch/employeeSchedule/list',
+    url: '/erp/sch/employee-schedule/list',
     method: 'get',
     params: query
   });
@@ -12,14 +12,14 @@ export const listEmployeeSchedule = (query: EmployeeScheduleQuery): AxiosPromise
 
 export const getEmployeeSchedule = (scheduleId: string | number): AxiosPromise<EmployeeScheduleVO> => {
   return request({
-    url: '/erp/sch/employeeSchedule/' + scheduleId,
+    url: '/erp/sch/employee-schedule/' + scheduleId,
     method: 'get'
   });
 };
 
 export const addEmployeeSchedule = (data: EmployeeScheduleForm) => {
   return request({
-    url: '/erp/sch/employeeSchedule',
+    url: '/erp/sch/employee-schedule',
     method: 'post',
     data
   });
@@ -27,7 +27,7 @@ export const addEmployeeSchedule = (data: EmployeeScheduleForm) => {
 
 export const updateEmployeeSchedule = (data: EmployeeScheduleForm) => {
   return request({
-    url: '/erp/sch/employeeSchedule',
+    url: '/erp/sch/employee-schedule',
     method: 'put',
     data
   });
@@ -35,7 +35,7 @@ export const updateEmployeeSchedule = (data: EmployeeScheduleForm) => {
 
 export const delEmployeeSchedule = (scheduleId: string | number | (string | number)[]) => {
   return request({
-    url: '/erp/sch/employeeSchedule/' + scheduleId,
+    url: '/erp/sch/employee-schedule/' + scheduleId,
     method: 'delete'
   });
 };

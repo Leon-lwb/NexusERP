@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { WfCustomForm, WfCustomFormQuery, WfCustomFormVO, CustomFormVO } from '@/api/workflow/customForm/types';
+import { WfCustomForm, WfCustomFormQuery, WfCustomFormVO, CustomFormVO } from '@/api/workflow/custom-form/types';
 
 // 查询流程业务单列表
 export function listCustomForm(query: WfCustomFormQuery): AxiosPromise<WfCustomFormVO[]> {

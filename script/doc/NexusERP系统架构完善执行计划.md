@@ -151,20 +151,23 @@ Phase 3: IoT 建设 (第33-48周)
 | Week 4 | R-019 | 委外发料与收货 | prd | 1 | WmStockOperationService联动 | ✅ 已完成 |
 | Week 4 | R-020 | 返工订单 | prd | 1 | woType字段扩展 | ✅ 已完成 |
 | Week 5 | R-021 | 生产消耗自动过账 | prd | 1.5 | 完工倒冲领料 | ✅ 已完成 |
-| Week 5 | R-022 | 产能日历 | prd | 1.5 | prd_capacity_calendar表 | ✅ 已完成 |
+| Week 5 | R-022 | 产能日历 | prd | 1.5 | prd_capacity_calendar表+Controller核心接口 | ✅ 已完成 |
 | Week 5 | R-023 | 领料与完工入库联动 | prd | 1 | 状态变更同步库存 | ✅ 已完成 |
+| Week 5 | F-021 | 倒冲领料前端 | 前端 | 1 | 工单/BOM倒冲标识+表单控件 | ✅ 已完成 |
+| Week 5 | F-022 | 产能日历前端 | 前端 | 2.5 | API+类型定义+列表页+生成/占用/释放 | ✅ 已完成 |
+| Week 5 | F-023 | 领料联动+完工入库前端 | 前端 | 3.5 | 领料单BOM自动填充+生产入库页面 | ✅ 已完成 |
 | Week 4 | R-024 | 委外加工前端 | 前端 | 1 | 列表+表单页面 | ✅ 已完成 |
-| Week 4 | R-025 | 返工/产能日历前端 | 前端 | 1 | 页面开发 | ✅ 已完成(返工部分) |
+| Week 4 | R-025 | 返工前端 | 前端 | 1 | 页面开发 | ✅ 已完成 |
 | Week 6 | R-026 | 采购收货联动入口 | 前端 | 0.5 | 进度展示 |
 | Week 6 | R-027 | 供应商评估前端 | 前端 | 1 | 评估报表+趋势图 |
-| Week 6 | R-028 | 产能日历前端 | 前端 | 1 | 产能日历可视化页面 |
+| Week 6 | R-028 | 产能日历前端 | 前端 | 1 | 产能日历可视化页面 | ✅ 已提前至Week5(F-022) |
 | Week 7-8 | I-001 | MQ基础设施搭建 | infra | 3 | RabbitMQ/Kafka集成+Spring Cloud Stream |
 | Week 7-8 | I-002 | 跨库事务补偿框架 | infra | 2 | 最终一致性+补偿任务调度+对账机制 |
 | Week 7-8 | Q-003 | Service拆分重构 | quality | 2 | WmMaterialReceiveServiceImpl拆分为3个Service |
 | Week 7-8 | Q-004 | @AutoMapper注解统一替换 | quality | 1.5 | 消除手动MapstructUtils调用 |
 | Week 9-10 | Q-005 | LambdaQueryWrapper链式重构 | quality | 2 | 替换buildQueryWrapper重复代码 |
 | Week 9-10 | Q-006 | Service基类统一+Jasypt加密 | quality | 2 | 统一继承ServiceImpl，数据库密码加密 |
-| Week 9-10 | R-025 | 产能日历前端(续)+委外前端完善 | 前端 | 2 | 完善Week5遗漏前端 |
+| Week 9-10 | R-025 | 委外前端完善 | 前端 | 1 | 完善Week4委外前端 |
 | Week 9-10 | R-026 | 销售管理增强 | so | 2 | 价格引擎基础版+信用检查联动 |
 | Week 11-12 | R-041 | 序列号管理 | wm | 1.5 | wm_sn表，对接R-001 |
 | Week 11-12 | R-042 | 批次管理增强 | wm | 1 | wm_batch独立表 |

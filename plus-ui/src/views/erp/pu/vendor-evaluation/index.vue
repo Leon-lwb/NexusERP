@@ -141,7 +141,7 @@
 </template>
 
 <script setup lang="ts" name="VendorEvaluation">
-import { listVendorEvaluation, delVendorEvaluation, calculateVendorEvaluation, batchCalculateAll } from '@/api/erp/pu/vendorEvaluation'
+import { listVendorEvaluation, delVendorEvaluation, calculateVendorEvaluation, batchCalculateAll } from '@/api/erp/pu/vendor-evaluation'
 
 const { proxy } = getCurrentInstance() as any; 
 const { pu_vendor_eval_level } = toRefs<any>(proxy.useDict('pu_vendor_eval_level'))
@@ -191,7 +191,7 @@ function handleSelectionChange(selection: any[]){
 }
 
 function handleAdd(){
-  proxy.$router.push({ path: '/erp/pu/vendorEvaluation/form', query: { action: 'add' } })
+  proxy.$router.push({ path: '/erp/pu/vendor-evaluation/form', query: { action: 'add' } })
 }
 
 function handleDelete(){

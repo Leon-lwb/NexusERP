@@ -259,9 +259,9 @@ function handleDelete(row: any) {
 }
 
 function handleExport() {
-  proxy.download('/erp/wm/putawayRule/export', {
+  proxy.download('/erp/wm/putawayrule/export', {
     ...queryParams.value
-  }, `putawayRule_${new Date().getTime()}.xlsx`)
+  }, `putawayrule_${new Date().getTime()}.xlsx`)
 }
 
 function getWarehouseOptions() {
