@@ -178,22 +178,21 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
         return true;
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)/**
+    /**
      * 根据工单 ID 删除资源分配
      *
      * @param woId 生产工单 ID
      * @return 是否删除成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteByWoId(Long woId) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = Wrappers.lambdaQuery();
         lqw.eq(PrdWorkOrderResource::getWoId, woId);
         return baseMapper.delete(lqw) > 0;
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)/**
+    /**
      * 根据工单 ID 和资源类型删除资源分配
      *
      * @param woId         生产工单 ID
@@ -201,6 +200,7 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
      * @return 是否删除成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteByWoIdAndType(Long woId, String resourceType) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = Wrappers.lambdaQuery();
         lqw.eq(PrdWorkOrderResource::getWoId, woId);
