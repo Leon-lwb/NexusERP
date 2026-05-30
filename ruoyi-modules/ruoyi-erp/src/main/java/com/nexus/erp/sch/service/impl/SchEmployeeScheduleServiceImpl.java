@@ -39,6 +39,13 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
     private final SchTeamScheduleMapper schTeamScheduleMapper;
     private final SchShiftMapper schShiftMapper;
 
+    /**
+     * 分页查询员工排班明细列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 员工排班明细分页列表
+     */
     @Override
     public TableDataInfo<SchEmployeeScheduleVo> selectPageList(SchEmployeeScheduleBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchEmployeeSchedule> lqw = buildQueryWrapper(bo);
@@ -46,16 +53,34 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询员工排班明细列表
+     *
+     * @param bo 查询参数
+     * @return 员工排班明细列表
+     */
     @Override
     public List<SchEmployeeScheduleVo> selectList(SchEmployeeScheduleBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取员工排班明细详情
+     *
+     * @param id 排班明细ID
+     * @return 员工排班明细详情
+     */
     @Override
     public SchEmployeeScheduleVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增员工排班明细
+     *
+     * @param bo 员工排班明细业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchEmployeeScheduleBo bo) {
@@ -63,6 +88,12 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改员工排班明细
+     *
+     * @param bo 员工排班明细业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchEmployeeScheduleBo bo) {
@@ -70,6 +101,12 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除员工排班明细
+     *
+     * @param ids 排班明细ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -78,10 +115,16 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
 
     /**
      * 生成员工排班明细
-     * sch_plan_team 关联计划和班组，确定哪些班组参与计划
-     * sch_team_schedule 关联班组和班次，确定班组上哪个班次
-     * sch_shift 提供班次的开始和结束时间
-     * sch_plan 提供排班计划的开始和结束日期
+     * <p>根据排班计划、班组排班模板及班组成员自动生成所有员工的排班明细记录。</p>
+     * <p>涉及数据关联：</p>
+     * <ul>
+     *   <li>sch_plan_team：关联计划和班组，确定哪些班组参与计划</li>
+     *   <li>sch_team_schedule：关联班组和班次，确定班组上哪个班次</li>
+     *   <li>sch_shift：提供班次的开始和结束时间</li>
+     *   <li>sch_plan：提供排班计划的开始和结束日期</li>
+     * </ul>
+     *
+     * @return 生成记录数
      */
     @Override
     @Transactional(rollbackFor = Exception.class)

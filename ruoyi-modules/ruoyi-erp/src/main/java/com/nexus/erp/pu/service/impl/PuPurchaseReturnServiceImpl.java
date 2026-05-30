@@ -44,6 +44,13 @@ import java.util.Map;
 
 /**
  * 采购退货服务实现类
+ * <p>
+ * 实现采购退货单的核心业务逻辑，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页查询、新增（自动编号/默认状态）、修改（状态校验）、删除</li>
+ *   <li>状态流转：确认（草稿→已确认）、执行退货出库（扣减库存并生成库存交易记录）</li>
+ *   <li>流程审批集成：提交审批、流程实例查询、审批状态回调处理</li>
+ * </ul>
  *
  * @author ruoyi
  */
@@ -63,17 +70,26 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
 
+    /**
+     * 分页查询采购退货单列表
+     */
     @Override
     public TableDataInfo<PuPurchaseReturnVo> selectPageList(PuPurchaseReturnBo bo, PageQuery pageQuery) {
         Page<PuPurchaseReturnVo> page = baseMapper.selectVoPage(pageQuery.build(), buildQueryWrapper(bo));
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询采购退货单列表（不分页）
+     */
     @Override
     public List<PuPurchaseReturnVo> selectList(PuPurchaseReturnBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据主键查询采购退货单，附带明细行列表
+     */
     @Override
     public PuPurchaseReturnVo selectById(Long id) {
         PuPurchaseReturnVo vo = baseMapper.selectVoById(id);
@@ -86,6 +102,11 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         return vo;
     }
 
+    /**
+     * 新增采购退货单
+     * <p>
+     * 自动生成退货单号（如为空）、默认设为草稿状态、默认退货日期为当天，同时保存明细行。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseReturnBo bo) {
@@ -104,6 +125,11 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         return rows;
     }
 
+    /**
+     * 修改采购退货单
+     * <p>
+     * 仅草稿状态的退货单允许编辑。修改时先删除全部旧明细行，再插入新明细行。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuPurchaseReturnBo bo) {
@@ -120,6 +146,11 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除采购退货单
+     * <p>
+     * 先删除各退货单的明细行，再删除主表记录。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -129,6 +160,11 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 确认退货单：仅草稿状态允许确认，将状态改为已确认
+     *
+     * @param returnId 采购退货单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long returnId) {
@@ -140,6 +176,14 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         baseMapper.updateById(purchaseReturn);
     }
 
+    /**
+     * 执行退货出库：扣减库存并生成库存交易记录
+     * <p>
+     * 遍历退货单明细行，逐行扣减对应物料库存数量，并生成 WM_MATERIAL_STOCK_TX 库存交易记录。
+     * 仅已确认状态允许执行，已执行状态直接返回。
+     *
+     * @param returnId 采购退货单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Long returnId) {
@@ -160,6 +204,13 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 提交采购退货单审批（启动 Flowable 审批流）
+     *
+     * @param returnIdStr    退货单ID字符串
+     * @param selectFlowId   选择的审批流ID
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String returnIdStr, String selectFlowId) {
@@ -191,6 +242,12 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         throw new RuntimeException(result.getMsg());
     }
 
+    /**
+     * 获取采购退货单流程实例ID
+     *
+     * @param returnIdStr 退货单ID字符串
+     * @return 流程实例ID
+     */
     @Override
     public String getProcInsId(String returnIdStr) {
         try {
@@ -210,6 +267,19 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 流程审批状态变更回调
+     * <p>
+     * 根据 Flowable 流程审批结果更新退货单状态：
+     * <ul>
+     *   <li>审批中 → APPROVING</li>
+     *   <li>通过 → CONFIRMED</li>
+     *   <li>驳回/退回 → DRAFT</li>
+     *   <li>撤销/停止/召回 → DRAFT</li>
+     * </ul>
+     *
+     * @param business 流程业务对象
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -229,22 +299,52 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         baseMapper.updateById(entity);
     }
 
+    /**
+     * 根据业务数据ID获取采购退货单详情（供流程引擎调用）
+     *
+     * @param dataId 业务数据ID
+     * @return 采购退货单视图对象
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取流程任务变量值（供流程引擎调用）
+     *
+     * @param taskNameId 任务节点标识
+     * @param values     当前变量值
+     * @return 任务变量值映射
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取流程任务候选用户列表（供流程引擎调用）
+     *
+     * @param taskNameId 任务节点标识
+     * @param values     当前变量值
+     * @return 候选用户名列表
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 执行退货出库并生成库存交易记录
+     * <p>
+     * 扣减对应物料库存数量，并生成 WM_MATERIAL_STOCK_TX 库存交易记录用于追溯。
+     * 校验库存充足性，库存不足时抛出异常。
+     *
+     * @param purchaseReturn 采购退货单实体
+     * @param line           退货明细行
+     * @param now            当前时间
+     */
     private void postReturnOut(PuPurchaseReturn purchaseReturn, PuPurchaseReturnLine line, Date now) {
         if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("退货数量必须大于0");
@@ -292,6 +392,12 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         stockTxMapper.insert(tx);
     }
 
+    /**
+     * 批量插入采购退货明细行
+     *
+     * @param returnId 采购退货单ID
+     * @param lineList 明细行列表
+     */
     private void insertLines(Long returnId, List<PuPurchaseReturnLine> lineList) {
         if (returnId == null || lineList == null || lineList.isEmpty()) {
             return;
@@ -303,6 +409,11 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         }
     }
 
+    /**
+     * 删除指定采购退货单的所有明细行
+     *
+     * @param returnId 采购退货单ID
+     */
     private void deleteLines(Long returnId) {
         if (returnId == null) {
             return;
@@ -310,6 +421,12 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         lineMapper.delete(Wrappers.lambdaQuery(PuPurchaseReturnLine.class).eq(PuPurchaseReturnLine::getReturnId, returnId));
     }
 
+    /**
+     * 确保采购退货单存在，否则抛出异常
+     *
+     * @param returnId 采购退货单ID
+     * @return 采购退货单实体
+     */
     private PuPurchaseReturn ensureReturn(Long returnId) {
         PuPurchaseReturn purchaseReturn = baseMapper.selectById(returnId);
         if (purchaseReturn == null) {
@@ -318,6 +435,14 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         return purchaseReturn;
     }
 
+    /**
+     * 构建查询条件 Wrapper
+     * <p>
+     * 支持按退货单号精确匹配、按采购订单号精确匹配、按状态精确匹配、按供应商名称模糊查询，默认按创建时间降序排列。
+     *
+     * @param bo 查询条件
+     * @return 查询条件 Wrapper
+     */
     private LambdaQueryWrapper<PuPurchaseReturn> buildQueryWrapper(PuPurchaseReturnBo bo) {
         LambdaQueryWrapper<PuPurchaseReturn> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getReturnNo()), PuPurchaseReturn::getReturnNo, bo.getReturnNo());

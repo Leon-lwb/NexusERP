@@ -18,28 +18,52 @@ import java.util.List;
 
 /**
  * 杂项出库策略
+ * <p>
+ * 处理杂项出库业务，根据杂项出库单行数据扣减库存并生成库存流水记录。
+ * 支持按先进先出（FIFO）规则匹配库存，并处理多批次库存拆分扣减。
+ *
+ * @author ruoyi
  */
 @Slf4j
 @Component
 public class MiscIssueStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：杂项出库 */
     private static final String TX_TYPE_MISC_OUT = "MISC_OUT";
+    /** 来源单据类型：杂项出库单 */
     private static final String SOURCE_DOC_TYPE_MISC_ISSUE = "WM_MISC_ISSUE";
+    /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
 
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 构造杂项出库策略实例
+     *
+     * @param stockTxMapper 库存事务Mapper
+     * @param stockMapper   库存Mapper
+     */
     public MiscIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
                              WmMaterialStockMapper stockMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 杂项出库操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.MISC_ISSUE;
     }
 
+    /**
+     * 执行杂项出库操作
+     *
+     * @param args 操作参数，args[0]为出库单行对象（WmMiscIssueLine），args[1]为操作时间（Date）
+     */
     @Override
     public void execute(Object... args) {
         WmMiscIssueLine line = (WmMiscIssueLine) args[0];

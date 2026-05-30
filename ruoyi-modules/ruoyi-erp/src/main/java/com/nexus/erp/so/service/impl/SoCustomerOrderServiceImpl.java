@@ -31,6 +31,9 @@ public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
 
     private final SoCustomerOrderMapper baseMapper;
 
+    /**
+     * 分页查询客户订单列表
+     */
     @Override
     public TableDataInfo<SoCustomerOrderVo> selectPageList(SoCustomerOrderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SoCustomerOrder> lqw = buildQueryWrapper(bo);
@@ -38,16 +41,25 @@ public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询客户订单列表
+     */
     @Override
     public List<SoCustomerOrderVo> selectList(SoCustomerOrderBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID查询客户订单详情
+     */
     @Override
     public SoCustomerOrderVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增客户订单
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoCustomerOrderBo bo) {
@@ -55,6 +67,9 @@ public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改客户订单
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoCustomerOrderBo bo) {
@@ -62,12 +77,18 @@ public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除客户订单
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 构建查询条件
+     */
     private LambdaQueryWrapper<SoCustomerOrder> buildQueryWrapper(SoCustomerOrderBo bo) {
         LambdaQueryWrapper<SoCustomerOrder> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getCoNo()), SoCustomerOrder::getCoNo, bo.getCoNo());

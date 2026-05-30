@@ -33,6 +33,13 @@ public class WmMaterialStockServiceImpl implements IWmMaterialStockService {
 
     private final WmMaterialStockMapper baseMapper;
 
+    /**
+     * 分页查询库存清单列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 库存清单分页列表
+     */
     @Override
     public TableDataInfo<WmMaterialStockVo> selectPageList(WmMaterialStockBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmMaterialStock> lqw = buildQueryWrapper(bo);
@@ -40,16 +47,34 @@ public class WmMaterialStockServiceImpl implements IWmMaterialStockService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询库存清单列表
+     *
+     * @param bo 查询参数
+     * @return 库存清单列表
+     */
     @Override
     public List<WmMaterialStockVo> selectList(WmMaterialStockBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取库存清单详情
+     *
+     * @param id 库存ID
+     * @return 库存清单详情
+     */
     @Override
     public WmMaterialStockVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增库存清单
+     *
+     * @param bo 库存清单业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialStockBo bo) {
@@ -57,6 +82,12 @@ public class WmMaterialStockServiceImpl implements IWmMaterialStockService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改库存清单
+     *
+     * @param bo 库存清单业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialStockBo bo) {
@@ -64,12 +95,24 @@ public class WmMaterialStockServiceImpl implements IWmMaterialStockService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除库存清单
+     *
+     * @param ids 库存ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 根据物料分类ID查询库存清单
+     *
+     * @param categoryIds 物料分类ID列表
+     * @return 库存清单列表
+     */
     @Override
     public List<WmMaterialStockVo> selectByCategoryIds(List<Long> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -78,6 +121,12 @@ public class WmMaterialStockServiceImpl implements IWmMaterialStockService {
         return baseMapper.selectByCategoryIds(categoryIds);
     }
 
+    /**
+     * 构建查询条件
+     *
+     * @param bo 查询参数
+     * @return MyBatis查询包装器
+     */
     private LambdaQueryWrapper<WmMaterialStock> buildQueryWrapper(WmMaterialStockBo bo) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getCategoryId() != null, WmMaterialStock::getCategoryId, bo.getCategoryId());

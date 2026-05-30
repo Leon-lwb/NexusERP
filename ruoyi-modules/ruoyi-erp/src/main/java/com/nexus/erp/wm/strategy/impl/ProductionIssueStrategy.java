@@ -18,28 +18,52 @@ import java.util.List;
 
 /**
  * 生产领料策略
+ * <p>
+ * 处理生产领料出库业务，根据生产领料单行数据扣减库存并生成库存流水记录。
+ * 支持按先进先出（FIFO）规则匹配库存，并处理多批次库存拆分扣减。
+ *
+ * @author ruoyi
  */
 @Slf4j
 @Component
 public class ProductionIssueStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：生产领料 */
     private static final String TX_TYPE_PRODUCTION_ISSUE = "PRODUCTION_ISSUE";
+    /** 来源单据类型：生产领料单 */
     private static final String SOURCE_DOC_TYPE_PRODUCTION_ISSUE = "WM_PRODUCTION_ISSUE";
+    /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
 
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 构造生产领料策略实例
+     *
+     * @param stockTxMapper 库存事务Mapper
+     * @param stockMapper   库存Mapper
+     */
     public ProductionIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
                                    WmMaterialStockMapper stockMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 生产领料操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.PRODUCTION_ISSUE;
     }
 
+    /**
+     * 执行生产领料出库操作
+     *
+     * @param args 操作参数，args[0]为领料单行对象（WmProductionIssueLine），args[1]为操作时间（Date）
+     */
     @Override
     public void execute(Object... args) {
         WmProductionIssueLine line = (WmProductionIssueLine) args[0];

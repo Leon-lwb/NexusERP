@@ -21,6 +21,12 @@ public class StockAlertTask {
 
     private final IWmStockAlertService stockAlertService;
 
+    /**
+     * 执行安全库存预警检查任务
+     *
+     * @param jobArgs 任务参数
+     * @return 任务执行结果
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.REMOTE.info("开始执行安全库存预警检查任务");
         try {

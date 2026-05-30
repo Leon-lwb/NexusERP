@@ -25,7 +25,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 返工订单Service业务层处理 * 状态流转：DRAFT -> IN_PROGRESS -> COMPLETED
+ * 返工订单 Service 业务层实现
+ * <p>
+ * 实现返工订单相关的业务逻辑，包括返工订单的查询、新增、修改、删除及状态流转等。
  *
  * @author nexus
  */
@@ -38,6 +40,13 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
     private final PrdReworkOrderMapper baseMapper;
     private final PrdWorkOrderMapper workOrderMapper;
 
+    /**
+     * 分页查询返工订单列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 返工订单分页列表
+     */
     @Override
     public TableDataInfo<PrdReworkOrderVo> selectPageList(PrdReworkOrderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdReworkOrder> lqw = buildQueryWrapper(bo);
@@ -75,6 +84,14 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         return baseMapper.insert(rework);
     }
 
+    /**
+     * 修改返工订单
+     * <p>
+     * 仅 DRAFT 状态可编辑，已开工时只允许修改结束日期和备注。
+     *
+     * @param bo 返工订单业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdReworkOrderBo bo) {
@@ -82,12 +99,27 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         return baseMapper.updateById(rework);
     }
 
+    /**
+     * 批量删除返工订单
+     * <p>
+     * 仅 DRAFT 或 CLOSED 状态的返工订单可被删除。
+     *
+     * @param ids 要删除的返工订单 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 开始返工订单
+     * <p>
+     * 将返工订单状态从 DRAFT 更新为 IN_PROGRESS（进行中）。
+     *
+     * @param reworkId 返工订单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void start(Long reworkId) {
@@ -102,6 +134,14 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         baseMapper.updateById(rework);
     }
 
+    /**
+     * 完成返工订单
+     * <p>
+     * 将返工订单状态从 IN_PROGRESS 更新为 COMPLETED（已完成），
+     * 并将报废数量回写到来源工单。
+     *
+     * @param reworkId 返工订单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long reworkId) {

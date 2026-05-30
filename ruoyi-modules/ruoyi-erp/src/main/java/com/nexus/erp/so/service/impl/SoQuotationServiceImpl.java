@@ -31,6 +31,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 销售报价Service业务层处理
+ *
+ * @author ruoyi
+ */
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
@@ -43,6 +48,9 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     private final SoSalesOrderLineMapper salesOrderLineMapper;
     private final AutoCodeUtil autoCodeUtil;
 
+    /**
+     * 分页查询销售报价列表
+     */
     @Override
     public TableDataInfo<SoQuotationVo> selectPageList(SoQuotationBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SoQuotation> lqw = buildQueryWrapper(bo);
@@ -50,11 +58,17 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询销售报价列表
+     */
     @Override
     public List<SoQuotationVo> selectList(SoQuotationBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID查询销售报价详情（包含明细行）
+     */
     @Override
     public SoQuotationVo selectById(Long id) {
         SoQuotationVo vo = baseMapper.selectVoById(id);
@@ -67,6 +81,9 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         return vo;
     }
 
+    /**
+     * 新增销售报价（自动生成报价单号并保存明细行）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoQuotationBo bo) {
@@ -77,6 +94,9 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         return rows;
     }
 
+    /**
+     * 修改销售报价（先删除原明细行再重新插入）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoQuotationBo bo) {
@@ -86,6 +106,9 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除销售报价（同时删除明细行）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -95,6 +118,9 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 确认销售报价（仅草稿状态可确认）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long quotationId) {
@@ -109,6 +135,9 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         baseMapper.updateById(quotation);
     }
 
+    /**
+     * 将销售报价转换为销售订单
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long convertToSalesOrder(Long quotationId) {

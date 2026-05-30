@@ -20,17 +20,26 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
 
 /**
- * 生产工单资源分配Service业务层处理
+ * 生产工单资源分配 Service 业务层实现
+ * <p>
+ * 实现生产工单资源分配相关的业务逻辑，包括设备、工装、人力等资源的分配查询与管理。
  *
  * @author ruoyi
  */
-@RequiredArgsConstructor
 @DS("erp")
+@RequiredArgsConstructor
 @Service
 public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceService {
 
     private final PrdWorkOrderResourceMapper baseMapper;
 
+    /**
+     * 分页查询生产工单资源分配列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 资源分配分页列表
+     */
     @Override
     public TableDataInfo<PrdWorkOrderResourceVo> selectPageList(PrdWorkOrderResourceBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = buildQueryWrapper(bo);
@@ -38,22 +47,46 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询生产工单资源分配列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 资源分配列表
+     */
     @Override
     public List<PrdWorkOrderResourceVo> selectList(PrdWorkOrderResourceBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据 ID 查询资源分配详情
+     *
+     * @param id 资源分配记录 ID
+     * @return 资源分配详细信息
+     */
     @Override
     public PrdWorkOrderResourceVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 查询生产工单资源分配列表（按实体条件）
+     *
+     * @param prdWorkOrderResource 资源分配查询实体
+     * @return 资源分配列表
+     */
     @Override
     public List<PrdWorkOrderResource> selectPrdWorkOrderResourceList(PrdWorkOrderResource prdWorkOrderResource) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = buildEntityQueryWrapper(prdWorkOrderResource);
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 根据工单 ID 查询资源分配列表
+     *
+     * @param woId 生产工单 ID
+     * @return 资源分配列表
+     */
     @Override
     public List<PrdWorkOrderResource> selectByWoId(Long woId) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = Wrappers.lambdaQuery();
@@ -62,6 +95,13 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 根据工单 ID 和资源类型查询资源分配列表
+     *
+     * @param woId         生产工单 ID
+     * @param resourceType 资源类型
+     * @return 资源分配列表
+     */
     @Override
     public List<PrdWorkOrderResource> selectByWoIdAndType(Long woId, String resourceType) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = Wrappers.lambdaQuery();
@@ -71,6 +111,12 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 新增生产工单资源分配
+     *
+     * @param bo 资源分配业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdWorkOrderResourceBo bo) {
@@ -78,6 +124,12 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改生产工单资源分配
+     *
+     * @param bo 资源分配业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdWorkOrderResourceBo bo) {
@@ -85,12 +137,27 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除生产工单资源分配
+     *
+     * @param ids 要删除的资源分配记录 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 批量保存工单资源分配
+     * <p>
+     * 先删除该工单的原有资源分配，再保存新的资源分配列表。
+     *
+     * @param woId         生产工单 ID
+     * @param resourceList 资源分配列表
+     * @return 是否保存成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean saveBatch(Long woId, List<PrdWorkOrderResource> resourceList) {
@@ -112,7 +179,13 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)/**
+     * 根据工单 ID 删除资源分配
+     *
+     * @param woId 生产工单 ID
+     * @return 是否删除成功
+     */
+    @Override
     public boolean deleteByWoId(Long woId) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = Wrappers.lambdaQuery();
         lqw.eq(PrdWorkOrderResource::getWoId, woId);
@@ -120,7 +193,14 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)/**
+     * 根据工单 ID 和资源类型删除资源分配
+     *
+     * @param woId         生产工单 ID
+     * @param resourceType 资源类型
+     * @return 是否删除成功
+     */
+    @Override
     public boolean deleteByWoIdAndType(Long woId, String resourceType) {
         LambdaQueryWrapper<PrdWorkOrderResource> lqw = Wrappers.lambdaQuery();
         lqw.eq(PrdWorkOrderResource::getWoId, woId);

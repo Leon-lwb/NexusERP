@@ -35,6 +35,13 @@ public class SchTeamServiceImpl implements ISchTeamService {
     private final SchTeamMapper baseMapper;
     private final SchTeamMemberMapper schTeamMemberMapper;
 
+    /**
+     * 分页查询班组设置列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 班组设置分页列表
+     */
     @Override
     public TableDataInfo<SchTeamVo> selectPageList(SchTeamBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchTeam> lqw = buildQueryWrapper(bo);
@@ -42,16 +49,35 @@ public class SchTeamServiceImpl implements ISchTeamService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询班组设置列表
+     *
+     * @param bo 查询参数
+     * @return 班组设置列表
+     */
     @Override
     public List<SchTeamVo> selectList(SchTeamBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取班组设置详情
+     *
+     * @param id 班组ID
+     * @return 班组设置详情
+     */
     @Override
     public SchTeamVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增班组设置
+     * <p>若未指定班组编码，则自动生成以 "SC" 开头的时间戳编码</p>
+     *
+     * @param bo 班组设置业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchTeamBo bo) {
@@ -64,6 +90,12 @@ public class SchTeamServiceImpl implements ISchTeamService {
         return rows;
     }
 
+    /**
+     * 修改班组设置
+     *
+     * @param bo 班组设置业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchTeamBo bo) {
@@ -71,6 +103,12 @@ public class SchTeamServiceImpl implements ISchTeamService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除班组设置
+     *
+     * @param ids 班组ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

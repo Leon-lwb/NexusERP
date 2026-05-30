@@ -29,7 +29,9 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 产能日历Service实现
+ * 产能日历 Service 业务层实现
+ * <p>
+ * 实现产能日历相关的业务逻辑，包括产能日历的查询、生成、占用与释放等操作。
  *
  * @author nexus
  */
@@ -43,6 +45,13 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     private final SchPlanMapper schPlanMapper;
     private final SchShiftMapper schShiftMapper;
 
+    /**
+     * 分页查询产能日历列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 产能日历分页列表
+     */
     @Override
     public TableDataInfo<PrdCapacityCalendarVo> selectPageList(PrdCapacityCalendarBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdCapacityCalendar> lqw = buildQueryWrapper(bo);
@@ -50,17 +59,37 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询产能日历列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 产能日历列表
+     */
     @Override
     public List<PrdCapacityCalendarVo> selectList(PrdCapacityCalendarBo bo) {
         LambdaQueryWrapper<PrdCapacityCalendar> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 根据 ID 查询产能日历详情
+     *
+     * @param calendarId 产能日历 ID
+     * @return 产能日历详细信息
+     */
     @Override
     public PrdCapacityCalendarVo selectById(Long calendarId) {
         return baseMapper.selectVoById(calendarId);
     }
 
+    /**
+     * 新增产能日历
+     * <p>
+     * 计算有效产能和剩余产能后保存。
+     *
+     * @param bo 产能日历业务对象
+     * @return 是否新增成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(PrdCapacityCalendarBo bo) {
@@ -72,6 +101,14 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         return baseMapper.insert(entity) > 0;
     }
 
+    /**
+     * 修改产能日历
+     * <p>
+     * 重新计算有效产能后更新。
+     *
+     * @param bo 产能日历业务对象
+     * @return 是否更新成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(PrdCapacityCalendarBo bo) {
@@ -81,6 +118,13 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         return baseMapper.updateById(entity) > 0;
     }
 
+    /**
+     * 批量删除产能日历
+     *
+     * @param ids     要删除的产能日历 ID 集合
+     * @param isValid 是否进行业务校验
+     * @return 是否删除成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
@@ -90,6 +134,19 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         return baseMapper.deleteByIds(ids) > 0;
     }
 
+    /**
+     * 根据排班计划生成产能日历
+     * <p>
+     * 遍历日期范围内的每一天，根据排班计划的班次定义生成产能日历记录。
+     *
+     * @param planId     排班计划 ID
+     * @param startDate  开始日期
+     * @param endDate    结束日期
+     * @param objectType 对象类型
+     * @param objectId   对象 ID
+     * @param objectCode 对象编码
+     * @param objectName 对象名称
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void generateFromSchedule(Long planId, Date startDate, Date endDate, String objectType, Long objectId, String objectCode, String objectName) {
@@ -156,12 +213,29 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         log.info("排班计划[{}]生成产能日历完成，共生成{}条记录", plan.getPlanName(), generatedCount);
     }
 
+    /**
+     * 查询指定对象的可用产能列表
+     *
+     * @param objectType 对象类型
+     * @param objectId   对象 ID
+     * @param startDate  开始日期
+     * @param endDate    结束日期
+     * @return 可用产能日历列表
+     */
     @Override
     public List<PrdCapacityCalendarVo> queryAvailableCapacity(String objectType, Long objectId,
                                                                Date startDate, Date endDate) {
         return baseMapper.selectAvailableCapacity(objectType, objectId, startDate, endDate);
     }
 
+    /**
+     * 占用产能
+     * <p>
+     * 校验剩余产能是否充足，更新已计划工时和剩余工时。
+     *
+     * @param calendarId 产能日历 ID
+     * @param hours      占用工时数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void occupyCapacity(Long calendarId, BigDecimal hours) {
@@ -182,6 +256,14 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
         baseMapper.updateById(calendar);
     }
 
+    /**
+     * 释放产能
+     * <p>
+     * 将已占用的工时释放回剩余产能，已计划工时不会小于零。
+     *
+     * @param calendarId 产能日历 ID
+     * @param hours      释放工时数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void releaseCapacity(Long calendarId, BigDecimal hours) {

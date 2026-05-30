@@ -46,17 +46,37 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询委外订单列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 委外订单列表
+     */
     @Override
     public List<PrdSubcontractVo> selectList(PrdSubcontractBo bo) {
         LambdaQueryWrapper<PrdSubcontract> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 根据 ID 查询委外订单详情
+     *
+     * @param id 委外订单 ID
+     * @return 委外订单详细信息
+     */
     @Override
     public PrdSubcontractVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增委外订单
+     * <p>
+     * 校验供应商是否存在、物料是否被禁用、数量大于零，初始状态设为 DRAFT。
+     *
+     * @param bo 委外订单业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdSubcontractBo bo) {
@@ -67,6 +87,14 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         return baseMapper.insert(subcontract);
     }
 
+    /**
+     * 修改委外订单
+     * <p>
+     * 仅 DRAFT 状态可编辑，已开工时只允许修改结束日期和备注。
+     *
+     * @param bo 委外订单业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdSubcontractBo bo) {
@@ -77,12 +105,27 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         return baseMapper.updateById(subcontract);
     }
 
+    /**
+     * 批量删除委外订单
+     * <p>
+     * 仅 DRAFT 或 CLOSED 状态的委外订单可被删除。
+     *
+     * @param ids 要删除的委外订单 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 下达委外订单
+     * <p>
+     * 校验供应商启用状态后，更新状态为 RELEASED，并自动生成关联生产工单。
+     *
+     * @param subcontractId 委外订单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void release(Long subcontractId) {
@@ -116,6 +159,13 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         baseMapper.updateById(subcontract);
     }
 
+    /**
+     * 开始委外订单
+     * <p>
+     * 更新状态为 IN_PROGRESS，并记录实际开始时间。
+     *
+     * @param subcontractId 委外订单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void start(Long subcontractId) {
@@ -131,6 +181,13 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         baseMapper.updateById(subcontract);
     }
 
+    /**
+     * 完工委外订单
+     * <p>
+     * 更新状态为 COMPLETED，记录实际结束时间；若完工数量小于订单数量，记录部分完工。
+     *
+     * @param subcontractId 委外订单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long subcontractId) {
@@ -146,6 +203,13 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         baseMapper.updateById(subcontract);
     }
 
+    /**
+     * 关闭委外订单
+     * <p>
+     * 更新状态为 CLOSED，关闭后不可再操作。
+     *
+     * @param subcontractId 委外订单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void close(Long subcontractId) {

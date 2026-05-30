@@ -12,12 +12,27 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 先到期先出（FEFO）拣货策略实现
+ * <p>
+ * 按库存有效期从早到晚排序，优先拣选最早到期的库存，避免物料过期浪费。
+ *
+ * @author ruoyi
+ */
 @RequiredArgsConstructor
 @Service("fefoPickingStrategy")
 public class FefoPickingStrategy implements IPickingStrategyService {
 
     private final WmMaterialStockMapper materialStockMapper;
 
+    /**
+     * 根据FEFO策略查询并分配库存
+     *
+     * @param materialId  物料ID
+     * @param warehouseId 仓库ID
+     * @param quantity    需求数量
+     * @return 分配到的库存列表
+     */
     @Override
     public List<WmMaterialStock> selectStocks(Long materialId, Long warehouseId, BigDecimal quantity) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();

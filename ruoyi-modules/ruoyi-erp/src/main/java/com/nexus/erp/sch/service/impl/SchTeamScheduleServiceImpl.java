@@ -31,6 +31,13 @@ public class SchTeamScheduleServiceImpl implements ISchTeamScheduleService {
 
     private final SchTeamScheduleMapper baseMapper;
 
+    /**
+     * 分页查询班组排班模板列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 班组排班模板分页列表
+     */
     @Override
     public TableDataInfo<SchTeamScheduleVo> selectPageList(SchTeamScheduleBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchTeamSchedule> lqw = buildQueryWrapper(bo);
@@ -38,16 +45,34 @@ public class SchTeamScheduleServiceImpl implements ISchTeamScheduleService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询班组排班模板列表
+     *
+     * @param bo 查询参数
+     * @return 班组排班模板列表
+     */
     @Override
     public List<SchTeamScheduleVo> selectList(SchTeamScheduleBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取班组排班模板详情
+     *
+     * @param id 排班模板ID
+     * @return 班组排班模板详情
+     */
     @Override
     public SchTeamScheduleVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增班组排班模板
+     *
+     * @param bo 班组排班模板业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchTeamScheduleBo bo) {
@@ -55,6 +80,12 @@ public class SchTeamScheduleServiceImpl implements ISchTeamScheduleService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改班组排班模板
+     *
+     * @param bo 班组排班模板业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchTeamScheduleBo bo) {
@@ -62,6 +93,12 @@ public class SchTeamScheduleServiceImpl implements ISchTeamScheduleService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除班组排班模板
+     *
+     * @param ids 排班模板ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

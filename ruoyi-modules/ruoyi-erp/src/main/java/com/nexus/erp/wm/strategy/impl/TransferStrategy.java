@@ -17,31 +17,57 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 调拨策略（来源库存扣减 + 目标库存增加）
+ * 调拨策略
+ * <p>
+ * 处理库存调拨业务，包括来源库存扣减和目标库存增加两个步骤。
+ * 支持按先进先出（FIFO）规则匹配来源库存，并在目标库位创建或更新库存记录。
+ *
+ * @author ruoyi
  */
 @Slf4j
 @Component
 public class TransferStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：调拨出库 */
     private static final String TX_TYPE_TRANSFER_OUT = "TRANSFER_OUT";
+    /** 事务类型：调拨入库 */
     private static final String TX_TYPE_TRANSFER_IN = "TRANSFER_IN";
+    /** 来源单据类型：库存调拨单 */
     private static final String SOURCE_DOC_TYPE_TRANSFER = "WM_TRANSFER";
+    /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
+    /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 构造调拨策略实例
+     *
+     * @param stockTxMapper 库存事务Mapper
+     * @param stockMapper   库存Mapper
+     */
     public TransferStrategy(WmMaterialStockTxMapper stockTxMapper,
                             WmMaterialStockMapper stockMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 调拨操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.TRANSFER;
     }
 
+    /**
+     * 执行调拨操作
+     *
+     * @param args 操作参数，args[0]为调拨单行对象（WmTransferLine）
+     */
     @Override
     public void execute(Object... args) {
         WmTransferLine line = (WmTransferLine) args[0];

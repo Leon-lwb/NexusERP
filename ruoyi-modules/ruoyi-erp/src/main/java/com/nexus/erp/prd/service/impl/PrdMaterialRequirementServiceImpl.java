@@ -42,7 +42,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 物料清单Service业务层处理
+ * 物料清单 Service 业务层实现
+ * <p>
+ * 实现物料需求清单相关的业务逻辑，包括物料需求的查询、BOM 导入、净需求计算及树形展示等。
  *
  * @author ruoyi
  */
@@ -59,6 +61,13 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     private final BdBomMapper bdBomMapper;
     private final WmMaterialStockMapper wmMaterialStockMapper;
 
+    /**
+     * 分页查询物料需求清单列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 物料需求清单分页列表
+     */
     @Override
     public TableDataInfo<PrdMaterialRequirementVo> selectPageList(PrdMaterialRequirementBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdMaterialRequirement> lqw = buildQueryWrapper(bo);
@@ -94,6 +103,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 查询物料需求清单列表（含明细）
+     *
+     * @param prdMaterialRequirement 物料需求查询实体
+     * @return 物料需求清单列表（每条记录含明细列表）
+     */
     @Override
     public List<PrdMaterialRequirement> selectPrdMaterialRequirementListWithDetails(PrdMaterialRequirement prdMaterialRequirement) {
         LambdaQueryWrapper<PrdMaterialRequirement> lqw = buildEntityQueryWrapper(prdMaterialRequirement);
@@ -109,6 +124,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return list;
     }
 
+    /**
+     * 新增物料需求清单（含明细）
+     *
+     * @param prdMaterialRequirement 物料需求实体（含明细列表）
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertPrdMaterialRequirement(PrdMaterialRequirement prdMaterialRequirement) {
@@ -117,6 +138,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return rows;
     }
 
+    /**
+     * 新增物料需求清单（通过 BO，含明细）
+     *
+     * @param bo 物料需求业务对象（含明细列表）
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdMaterialRequirementBo bo) {
@@ -131,6 +158,14 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return rows;
     }
 
+    /**
+     * 修改物料需求清单（通过 BO，含明细）
+     * <p>
+     * 先删除原有明细，再插入新的明细列表。
+     *
+     * @param bo 物料需求业务对象（含明细列表）
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdMaterialRequirementBo bo) {
@@ -147,6 +182,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 修改物料需求清单（含明细）
+     *
+     * @param prdMaterialRequirement 物料需求实体（含明细列表）
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updatePrdMaterialRequirement(PrdMaterialRequirement prdMaterialRequirement) {
@@ -155,6 +196,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return baseMapper.updateById(prdMaterialRequirement);
     }
 
+    /**
+     * 批量删除物料需求清单（含明细）
+     *
+     * @param ids 要删除的物料需求 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -164,6 +211,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 根据物料需求 ID 数组批量删除物料需求清单（含明细）
+     *
+     * @param requirementIds 物料需求 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deletePrdMaterialRequirementByRequirementIds(Long[] requirementIds) {
@@ -173,6 +226,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return baseMapper.deleteBatchIds(List.of(requirementIds));
     }
 
+    /**
+     * 根据物料需求 ID 删除物料需求清单（含明细）
+     *
+     * @param requirementId 物料需求 ID
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deletePrdMaterialRequirementByRequirementId(Long requirementId) {
@@ -180,6 +239,15 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return baseMapper.deleteById(requirementId);
     }
 
+    /**
+     * 根据 BOM ID 导入物料需求明细
+     * <p>
+     * 根据 BOM 展开计算各子项物料的需求数量，并补充物料基础信息。
+     *
+     * @param bomId                 BOM ID
+     * @param totalRequiredQuantity 需求总量
+     * @return 物料需求明细列表
+     */
     @Override
     public List<PrdMaterialRequirementDetail> importBomDetails(Long bomId, BigDecimal totalRequiredQuantity) {
         if (bomId == null) {
@@ -254,6 +322,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         }).collect(Collectors.toList());
     }
 
+    /**
+     * 根据计划编号查询物料需求树（含父子关系嵌套）
+     *
+     * @param planNo 生产计划编号
+     * @return 物料需求树形列表（顶层节点）
+     */
     @Override
     public List<PrdMaterialRequirementVo> selectPrdMaterialRequirementTreeByPlanNo(String planNo) {
         PrdMaterialRequirement queryParam = new PrdMaterialRequirement();
@@ -296,6 +370,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return treeRoots;
     }
 
+    /**
+     * 批量新增物料需求明细
+     *
+     * @param detailList 物料需求明细列表
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertPrdMaterialRequirementDetails(List<PrdMaterialRequirementDetail> detailList) {

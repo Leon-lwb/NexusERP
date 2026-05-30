@@ -21,27 +21,46 @@ import java.math.BigDecimal;
 @TableName("wm_arrival_notice_line")
 public class WmArrivalNoticeLine extends TenantEntity {
 
+    /** 行ID */
     @TableId(value = "line_id")
     private Long lineId;
 
+    /** 通知单ID */
     private Long noticeId;
+    /** 物料ID */
     private Long materialId;
+    /** 物料编码 */
     private String materialCode;
+    /** 物料名称 */
     private String materialName;
+    /** 规格型号 */
     private String materialSpec;
+    /** 单位ID */
     private String baseUomId;
+    /** 单位名称 */
     private String baseUomName;
+    /** 到货数量 */
     private BigDecimal quantityArrival;
+    /** 合格数量 */
     private BigDecimal quantityQuanlified;
+    /** 质检标志 */
     private String iqcCheck;
+    /** 质检单ID */
     private Long iqcId;
+    /** 质检单编号 */
     private String iqcCode;
+    /** 备注 */
     private String remark;
+    /** 预留字段1 */
     private String attr1;
+    /** 预留字段2 */
     private String attr2;
+    /** 预留字段3 */
     private Long attr3;
+    /** 预留字段4 */
     private Long attr4;
 
+    /** 删除标志 */
     @TableLogic
     private String delFlag;
 }

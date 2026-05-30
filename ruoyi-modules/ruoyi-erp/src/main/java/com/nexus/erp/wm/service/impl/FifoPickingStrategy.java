@@ -13,12 +13,27 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 先进先出（FIFO）拣货策略实现
+ * <p>
+ * 按入库日期从早到晚排序，优先拣选最早入库的库存。
+ *
+ * @author ruoyi
+ */
 @RequiredArgsConstructor
 @Service("fifoPickingStrategy")
 public class FifoPickingStrategy implements IPickingStrategyService {
 
     private final WmMaterialStockMapper materialStockMapper;
 
+    /**
+     * 根据FIFO策略查询并分配库存
+     *
+     * @param materialId  物料ID
+     * @param warehouseId 仓库ID
+     * @param quantity    需求数量
+     * @return 分配到的库存列表
+     */
     @Override
     public List<WmMaterialStock> selectStocks(Long materialId, Long warehouseId, BigDecimal quantity) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();

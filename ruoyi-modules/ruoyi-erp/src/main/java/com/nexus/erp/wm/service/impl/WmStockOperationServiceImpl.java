@@ -18,7 +18,9 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 库存过账服务实现 — 委派策略模式
+ * 库存过账服务实现
+ * <p>
+ * 采用策略模式委派各类库存操作到对应的策略实现，统一处理入库、出库、调拨、盘点等业务。
  *
  * @author ruoyi
  */
@@ -29,24 +31,48 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
 
     private final StockOperationStrategyFactory strategyFactory;
 
+    /**
+     * 物料入库过账
+     *
+     * @param receiveId 入库单ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void postMaterialReceive(Long receiveId) {
         strategyFactory.getStrategy(StockOperationTypeEnum.RECEIVE_IN).execute(receiveId);
     }
 
+    /**
+     * 销售出库过账
+     *
+     * @param issueId 销售出库单ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void postSalesIssue(Long issueId) {
         strategyFactory.getStrategy(StockOperationTypeEnum.SALES_OUT).execute(issueId);
     }
 
+    /**
+     * 库存调拨过账
+     *
+     * @param line 调拨单行对象
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void postTransfer(WmTransferLine line) {
         strategyFactory.getStrategy(StockOperationTypeEnum.TRANSFER).execute(line);
     }
 
+    /**
+     * 盘点调整过账
+     *
+     * @param line          盘点单行对象
+     * @param actualQuantity 实际盘点数量
+     * @param bookQuantity  账面数量
+     * @param diffQuantity  差异数量
+     * @param now           操作时间
+     */
     @Override
     public void postCountAdjust(WmStockTakingLine line, BigDecimal actualQuantity,
                                 BigDecimal bookQuantity, BigDecimal diffQuantity, Date now) {
@@ -54,21 +80,52 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
             .execute(line, actualQuantity, bookQuantity, diffQuantity, now);
     }
 
+    /**
+     * 杂项出库过账
+     *
+     * @param line 杂项出库单行对象
+     * @param now  操作时间
+     */
     @Override
     public void postMiscIssue(WmMiscIssueLine line, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.MISC_ISSUE).execute(line, now);
     }
 
+    /**
+     * 杂项入库过账
+     *
+     * @param line  杂项入库单行对象
+     * @param recpt 杂项入库单对象
+     * @param now   操作时间
+     */
     @Override
     public void postMiscRecpt(WmMiscRecptLine line, WmMiscRecpt recpt, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.MISC_RECPT).execute(line, recpt, now);
     }
 
+    /**
+     * 生产领料过账
+     *
+     * @param line 生产领料单行对象
+     * @param now  操作时间
+     */
     @Override
     public void postProductionIssue(WmProductionIssueLine line, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.PRODUCTION_ISSUE).execute(line, now);
     }
 
+    /**
+     * 生产完工入库过账
+     *
+     * @param woId         工单ID
+     * @param materialId   物料ID
+     * @param materialCode 物料编码
+     * @param materialName 物料名称
+     * @param quantity     入库数量
+     * @param warehouseId  仓库ID
+     * @param locationId   库位ID
+     * @param now          操作时间
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void postProductionCompletion(Long woId, Long materialId, String materialCode, String materialName,

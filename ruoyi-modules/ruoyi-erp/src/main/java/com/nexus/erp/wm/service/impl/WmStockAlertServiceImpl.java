@@ -30,7 +30,11 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 安全库存预警Service业务层处理 *
+ * 安全库存预警Service业务层处理
+ * <p>
+ * 提供安全库存预警的分页查询、列表查询、新增、修改、删除等业务操作。
+ * 支持定时扫描物料库存，自动生成低于安全库存、最低库存或超出最高库存的预警记录。
+ *
  * @author nexus
  */
 @Slf4j
@@ -39,11 +43,17 @@ import java.util.List;
 @Service
 public class WmStockAlertServiceImpl implements IWmStockAlertService {
 
+    /** 预警类型：低于最低库存 */
     public static final String ALERT_TYPE_BELOW_MIN = "BELOW_MIN";
+    /** 预警类型：低于安全库存 */
     public static final String ALERT_TYPE_BELOW_SAFETY = "BELOW_SAFETY";
+    /** 预警类型：超出最高库存 */
     public static final String ALERT_TYPE_ABOVE_MAX = "ABOVE_MAX";
+    /** 预警级别：严重 */
     public static final String ALERT_LEVEL_CRITICAL = "CRITICAL";
+    /** 预警级别：警告 */
     public static final String ALERT_LEVEL_WARNING = "WARNING";
+    /** 预警级别：提示 */
     public static final String ALERT_LEVEL_INFO = "INFO";
 
     private final WmStockAlertMapper baseMapper;
@@ -51,6 +61,13 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
     private final BdUnitOfMeasureMapper uomMapper;
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 分页查询安全库存预警列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 安全库存预警分页列表
+     */
     @Override
     public TableDataInfo<WmStockAlertVo> selectPageList(WmStockAlertBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmStockAlert> lqw = buildQueryWrapper(bo);
@@ -58,17 +75,35 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询安全库存预警列表
+     *
+     * @param bo 查询参数
+     * @return 安全库存预警列表
+     */
     @Override
     public List<WmStockAlertVo> selectList(WmStockAlertBo bo) {
         LambdaQueryWrapper<WmStockAlert> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 根据ID获取安全库存预警详情
+     *
+     * @param id 预警ID
+     * @return 安全库存预警详情
+     */
     @Override
     public WmStockAlertVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增安全库存预警
+     *
+     * @param bo 安全库存预警业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmStockAlertBo bo) {
@@ -76,6 +111,12 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         return baseMapper.insert(alert);
     }
 
+    /**
+     * 修改安全库存预警
+     *
+     * @param bo 安全库存预警业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmStockAlertBo bo) {
@@ -83,12 +124,23 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         return baseMapper.updateById(alert);
     }
 
+    /**
+     * 批量删除安全库存预警
+     *
+     * @param ids 预警ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 执行安全库存预警检查
+     * <p>
+     * 扫描所有设置了安全库存或最低库存的物料，根据当前库存生成预警记录。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void checkStockAlerts() {
@@ -196,6 +248,12 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         }
     }
 
+    /**
+     * 处理安全库存预警
+     *
+     * @param alertId       预警ID
+     * @param handledRemark 处理备注
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void handleAlert(Long alertId, String handledRemark) {
@@ -209,6 +267,12 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         baseMapper.updateById(alert);
     }
 
+    /**
+     * 构建查询条件
+     *
+     * @param bo 查询参数
+     * @return MyBatis查询包装器
+     */
     private LambdaQueryWrapper<WmStockAlert> buildQueryWrapper(WmStockAlertBo bo) {
         LambdaQueryWrapper<WmStockAlert> lqw = Wrappers.lambdaQuery();
         lqw.like(StringUtils.isNotBlank(bo.getMaterialCode()), WmStockAlert::getMaterialCode, bo.getMaterialCode());

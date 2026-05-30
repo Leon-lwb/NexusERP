@@ -31,6 +31,13 @@ public class SchPlanTeamServiceImpl implements ISchPlanTeamService {
 
     private final SchPlanTeamMapper baseMapper;
 
+    /**
+     * 分页查询计划班组关联列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 计划班组关联分页列表
+     */
     @Override
     public TableDataInfo<SchPlanTeamVo> selectPageList(SchPlanTeamBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchPlanTeam> lqw = buildQueryWrapper(bo);
@@ -38,16 +45,34 @@ public class SchPlanTeamServiceImpl implements ISchPlanTeamService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询计划班组关联列表
+     *
+     * @param bo 查询参数
+     * @return 计划班组关联列表
+     */
     @Override
     public List<SchPlanTeamVo> selectList(SchPlanTeamBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取计划班组关联详情
+     *
+     * @param id 关联记录ID
+     * @return 计划班组关联详情
+     */
     @Override
     public SchPlanTeamVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增计划班组关联
+     *
+     * @param bo 计划班组关联业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchPlanTeamBo bo) {
@@ -55,6 +80,12 @@ public class SchPlanTeamServiceImpl implements ISchPlanTeamService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改计划班组关联
+     *
+     * @param bo 计划班组关联业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchPlanTeamBo bo) {
@@ -62,6 +93,12 @@ public class SchPlanTeamServiceImpl implements ISchPlanTeamService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除计划班组关联
+     *
+     * @param ids 关联记录ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

@@ -35,6 +35,13 @@ public class SchShiftServiceImpl implements ISchShiftService {
     private final SchShiftMapper baseMapper;
     private final SchPlanMapper schPlanMapper;
 
+    /**
+     * 分页查询班次定义列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 班次定义分页列表
+     */
     @Override
     public TableDataInfo<SchShiftVo> selectPageList(SchShiftBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchShift> lqw = buildQueryWrapper(bo);
@@ -42,16 +49,35 @@ public class SchShiftServiceImpl implements ISchShiftService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询班次定义列表
+     *
+     * @param bo 查询参数
+     * @return 班次定义列表
+     */
     @Override
     public List<SchShiftVo> selectList(SchShiftBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取班次定义详情
+     *
+     * @param id 班次ID
+     * @return 班次定义详情
+     */
     @Override
     public SchShiftVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增班次定义
+     * <p>新增时自动生成班次编码，规则为：计划编码 + "-" + 序号（如 PLAN001-1）</p>
+     *
+     * @param bo 班次定义业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchShiftBo bo) {
@@ -67,6 +93,12 @@ public class SchShiftServiceImpl implements ISchShiftService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改班次定义
+     *
+     * @param bo 班次定义业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchShiftBo bo) {
@@ -74,6 +106,12 @@ public class SchShiftServiceImpl implements ISchShiftService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除班次定义
+     *
+     * @param ids 班次ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

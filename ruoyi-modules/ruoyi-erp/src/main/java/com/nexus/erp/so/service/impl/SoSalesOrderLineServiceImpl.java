@@ -31,6 +31,9 @@ public class SoSalesOrderLineServiceImpl implements ISoSalesOrderLineService {
 
     private final SoSalesOrderLineMapper baseMapper;
 
+    /**
+     * 分页查询销售订单行列表
+     */
     @Override
     public TableDataInfo<SoSalesOrderLineVo> selectPageList(SoSalesOrderLineBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SoSalesOrderLine> lqw = buildQueryWrapper(bo);
@@ -38,16 +41,25 @@ public class SoSalesOrderLineServiceImpl implements ISoSalesOrderLineService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询销售订单行列表
+     */
     @Override
     public List<SoSalesOrderLineVo> selectList(SoSalesOrderLineBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID查询销售订单行详情
+     */
     @Override
     public SoSalesOrderLineVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增销售订单行
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoSalesOrderLineBo bo) {
@@ -55,6 +67,9 @@ public class SoSalesOrderLineServiceImpl implements ISoSalesOrderLineService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改销售订单行
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoSalesOrderLineBo bo) {
@@ -62,12 +77,18 @@ public class SoSalesOrderLineServiceImpl implements ISoSalesOrderLineService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除销售订单行
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 构建查询条件
+     */
     private LambdaQueryWrapper<SoSalesOrderLine> buildQueryWrapper(SoSalesOrderLineBo bo) {
         LambdaQueryWrapper<SoSalesOrderLine> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getSoId() != null, SoSalesOrderLine::getSoId, bo.getSoId());

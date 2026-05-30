@@ -37,16 +37,34 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 供应商评估服务实现类
+ * <p>
+ * 实现供应商绩效评估的核心业务逻辑，包括：
+ * <ul>
+ *   <li>CRUD 操作：分页查询、新增、修改、删除</li>
+ *   <li>评估计算：按供应商单条计算、批量全量计算</li>
+ * </ul>
+ * 评估算法基于交货及时率（40%）、质量合格率（35%）、价格竞争力（25%）加权计算综合评分，
+ * 并按得分划分为 A/B/C/D 四个等级。
+ *
+ * @author ruoyi
+ */
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
 @Service
 public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService {
 
+    /** 交货及时率权重 40% */
     private static final BigDecimal DELIVERY_WEIGHT = new BigDecimal("0.40");
+    /** 质量合格率权重 35% */
     private static final BigDecimal QUALITY_WEIGHT = new BigDecimal("0.35");
+    /** 价格竞争力权重 25% */
     private static final BigDecimal PRICE_WEIGHT = new BigDecimal("0.25");
+    /** 默认价格得分（无市场对比数据时） */
     private static final BigDecimal DEFAULT_PRICE_SCORE = new BigDecimal("80");
+    /** 得分保留小数位 */
     private static final int SCORE_SCALE = 2;
 
     private final PuVendorEvaluationMapper baseMapper;
@@ -56,6 +74,9 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
     private final PuPurchaseReturnLineMapper returnLineMapper;
     private final BdVendorMapper vendorMapper;
 
+    /**
+     * 分页查询供应商评估列表
+     */
     @Override
     public TableDataInfo<PuVendorEvaluationVo> selectPageList(PuVendorEvaluationBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PuVendorEvaluation> lqw = buildQueryWrapper(bo);
@@ -63,16 +84,25 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询供应商评估列表（不分页）
+     */
     @Override
     public List<PuVendorEvaluationVo> selectList(PuVendorEvaluationBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据主键查询供应商评估详情
+     */
     @Override
     public PuVendorEvaluationVo selectById(Long evaluationId) {
         return baseMapper.selectVoById(evaluationId);
     }
 
+    /**
+     * 新增供应商评估记录
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuVendorEvaluationBo bo) {
@@ -80,6 +110,9 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改供应商评估记录
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuVendorEvaluationBo bo) {
@@ -91,12 +124,22 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除供应商评估记录
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] evaluationIds) {
         return baseMapper.deleteBatchIds(List.of(evaluationIds));
     }
 
+    /**
+     * 按供应商计算绩效评估
+     * <p>
+     * 校验供应商有效性，取当前月份作为评估周期，调用核心计算逻辑。
+     *
+     * @param vendorId 供应商ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void calculateByVendor(Long vendorId) {
@@ -111,6 +154,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         doCalculate(vendor, evalPeriod);
     }
 
+    /**
+     * 批量计算所有供应商绩效评估
+     * <p>
+     * 遍历所有状态为 ACTIVE 的供应商，逐条执行评估计算。
+     * 单个供应商计算失败时记录警告日志并继续处理其他供应商。
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void batchCalculateAll() {
@@ -129,6 +178,22 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         }
     }
 
+    /**
+     * 执行供应商绩效评估核心计算
+     * <p>
+     * 计算流程：
+     * <ol>
+     *   <li>查询评估周期内该供应商的有效采购订单，统计订单总数和按时交货数</li>
+     *   <li>查询采购订单明细，统计总收货数量</li>
+     *   <li>查询退货单明细，统计退货总数量</li>
+     *   <li>计算交货及时率、质量合格率、价格竞争力得分</li>
+     *   <li>按权重加权计算综合评分，划分等级</li>
+     *   <li>保存或更新评估记录</li>
+     * </ol>
+     *
+     * @param vendor     供应商实体
+     * @param evalPeriod 评估周期，格式 yyyy-MM
+     */
     private void doCalculate(BdVendor vendor, String evalPeriod) {
         Date[] range = parsePeriod(evalPeriod);
         Date startDate = range[0];

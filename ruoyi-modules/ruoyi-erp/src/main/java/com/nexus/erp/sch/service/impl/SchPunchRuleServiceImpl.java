@@ -32,6 +32,13 @@ public class SchPunchRuleServiceImpl implements ISchPunchRuleService {
 
     private final SchPunchRuleMapper baseMapper;
 
+    /**
+     * 分页查询打卡规则列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 打卡规则分页列表
+     */
     @Override
     public TableDataInfo<SchPunchRuleVo> selectPageList(SchPunchRuleBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchPunchRule> lqw = buildQueryWrapper(bo);
@@ -39,16 +46,34 @@ public class SchPunchRuleServiceImpl implements ISchPunchRuleService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询打卡规则列表
+     *
+     * @param bo 查询参数
+     * @return 打卡规则列表
+     */
     @Override
     public List<SchPunchRuleVo> selectList(SchPunchRuleBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取打卡规则详情
+     *
+     * @param id 打卡规则ID
+     * @return 打卡规则详情
+     */
     @Override
     public SchPunchRuleVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增打卡规则
+     *
+     * @param bo 打卡规则业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchPunchRuleBo bo) {
@@ -56,6 +81,12 @@ public class SchPunchRuleServiceImpl implements ISchPunchRuleService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改打卡规则
+     *
+     * @param bo 打卡规则业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchPunchRuleBo bo) {
@@ -63,6 +94,12 @@ public class SchPunchRuleServiceImpl implements ISchPunchRuleService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除打卡规则
+     *
+     * @param ids 打卡规则ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

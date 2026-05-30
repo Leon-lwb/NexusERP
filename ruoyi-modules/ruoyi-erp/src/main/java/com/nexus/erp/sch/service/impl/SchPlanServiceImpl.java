@@ -32,6 +32,13 @@ public class SchPlanServiceImpl implements ISchPlanService {
 
     private final SchPlanMapper baseMapper;
 
+    /**
+     * 分页查询排班计划列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 排班计划分页列表
+     */
     @Override
     public TableDataInfo<SchPlanVo> selectPageList(SchPlanBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchPlan> lqw = buildQueryWrapper(bo);
@@ -39,16 +46,34 @@ public class SchPlanServiceImpl implements ISchPlanService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询排班计划列表
+     *
+     * @param bo 查询参数
+     * @return 排班计划列表
+     */
     @Override
     public List<SchPlanVo> selectList(SchPlanBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取排班计划详情
+     *
+     * @param id 排班计划ID
+     * @return 排班计划详情
+     */
     @Override
     public SchPlanVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增排班计划
+     *
+     * @param bo 排班计划业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchPlanBo bo) {
@@ -56,6 +81,12 @@ public class SchPlanServiceImpl implements ISchPlanService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改排班计划
+     *
+     * @param bo 排班计划业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchPlanBo bo) {
@@ -63,6 +94,12 @@ public class SchPlanServiceImpl implements ISchPlanService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除排班计划
+     *
+     * @param ids 排班计划ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

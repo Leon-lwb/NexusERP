@@ -83,6 +83,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询生产计划列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 生产计划列表
+     */
     @Override
     public List<PrdProductionPlanVo> selectList(PrdProductionPlanBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
@@ -93,11 +99,23 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 根据生产计划 ID 查询生产计划实体
+     *
+     * @param planId 生产计划 ID
+     * @return 生产计划实体
+     */
     @Override
     public PrdProductionPlan selectPrdProductionPlanByPlanId(Long planId) {
         return baseMapper.selectById(planId);
     }
 
+    /**
+     * 查询生产计划列表（按实体条件）
+     *
+     * @param prdProductionPlan 生产计划查询实体
+     * @return 生产计划列表
+     */
     @Override
     public List<PrdProductionPlan> selectPrdProductionPlanList(PrdProductionPlan prdProductionPlan) {
         LambdaQueryWrapper<PrdProductionPlan> lqw = buildEntityQueryWrapper(prdProductionPlan);
@@ -110,6 +128,14 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.insert(prdProductionPlan);
     }
 
+    /**
+     * 新增生产计划（通过 BO）
+     * <p>
+     * 自动生成生产计划编号，默认版本号为 1，计划状态设为 DRAFT（草稿）。
+     *
+     * @param bo 生产计划业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdProductionPlanBo bo) {
@@ -117,6 +143,14 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改生产计划（通过 BO）
+     * <p>
+     * 仅 DRAFT 状态的生产计划可编辑。
+     *
+     * @param bo 生产计划业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdProductionPlanBo bo) {
@@ -124,6 +158,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 修改生产计划
+     *
+     * @param prdProductionPlan 生产计划实体
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updatePrdProductionPlan(PrdProductionPlan prdProductionPlan) {
@@ -136,12 +176,24 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 根据生产计划 ID 数组批量删除生产计划（含明细）
+     *
+     * @param planIds 生产计划 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deletePrdProductionPlanByPlanIds(Long[] planIds) {
         return baseMapper.deleteBatchIds(List.of(planIds));
     }
 
+    /**
+     * 根据生产计划 ID 删除生产计划（含明细）
+     *
+     * @param planId 生产计划 ID
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deletePrdProductionPlanByPlanId(Long planId) {
@@ -150,6 +202,14 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
     /**
      * 更新生产计划版本
+     */
+    /**
+     * 更新生产计划版本
+     * <p>
+     * 仅草稿状态的生产计划可更新版本，更新后版本号递增。
+     *
+     * @param prdProductionPlan 包含版本更新信息的生产计划实体
+     * @return 影响的行数
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -178,6 +238,14 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
     /**
      * BOM计算 - 根据生产计划中的订单行物料计算BOM树
+     */
+    /**
+     * 根据生产计划计算 BOM 树
+     * <p>
+     * 查询生产计划关联订单行的物料对应的有效 BOM，并返回 BOM 明细树。
+     *
+     * @param planId 生产计划 ID
+     * @return BOM 详情树节点列表
      */
     @Override
     public List<BdBomDetailVo> calculateBomTree(Long planId) {
@@ -231,6 +299,15 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     /**
      * 根据生产计划ID生成物料需求清单及明细（按节点拆分BOM树）
      * 规则：每个有BOM的节点生成一条主表，其底层物料作为子表；子节点BOM递归拆分
+     */
+    /**
+     * 根据生产计划 ID 生成物料需求清单及明细
+     * <p>
+     * 按节点拆分 BOM 树，每个有 BOM 的节点生成一条主表，其底层物料作为子表；
+     * 子节点 BOM 递归拆分。
+     *
+     * @param planId 生产计划 ID
+     * @return 生成的物料需求主表记录列表
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -398,6 +475,15 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
     /**
      * 获取当前物料的BOM
+     */
+    /**
+     * 从物料需求单生成生产工单
+     * <p>
+     * 选中物料需求记录，一键生成对应的生产工单（状态=CREATED）。
+     *
+     * @param planId         生产计划 ID
+     * @param requirementIds 物料需求单 ID 列表
+     * @return 生成的工单数量
      */
     @Override
     @Transactional(rollbackFor = Exception.class)

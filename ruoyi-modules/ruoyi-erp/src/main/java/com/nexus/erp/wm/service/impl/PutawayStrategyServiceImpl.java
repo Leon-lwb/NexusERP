@@ -18,6 +18,14 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * 上架策略服务实现
+ * <p>
+ * 根据物料信息和仓库配置，推荐最合适的上架库位。
+ * 支持最近空位、分类存放、先进先出等多种策略。
+ *
+ * @author ruoyi
+ */
 @RequiredArgsConstructor
 @DS("erp")
 @Service
@@ -27,6 +35,14 @@ public class PutawayStrategyServiceImpl implements IPutawayStrategyService {
     private final WmStorageLocationMapper storageLocationMapper;
     private final BdMaterialMapper bdMaterialMapper;
 
+    /**
+     * 推荐上架库位
+     *
+     * @param materialId  物料ID
+     * @param warehouseId 仓库ID
+     * @param quantity    上架数量
+     * @return 推荐的库位信息
+     */
     @Override
     public WmStorageLocation recommendLocation(Long materialId, Long warehouseId, BigDecimal quantity) {
         BdMaterial material = bdMaterialMapper.selectById(materialId);

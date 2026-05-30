@@ -21,19 +21,35 @@ import java.util.List;
 
 /**
  * 销售出库策略
+ * <p>
+ * 处理销售出库业务，根据销售出库单明细扣减库存并生成库存流水记录。
+ * 支持按仓库、批次、库位等维度匹配库存，并按先进先出（FIFO）规则出库。
+ *
+ * @author ruoyi
  */
 @Slf4j
 @Component
 public class SalesOutStrategy extends BaseStockOperationStrategy {
 
+    /** 来源单据类型：销售出库单 */
     private static final String SOURCE_DOC_TYPE_SALES_ISSUE = "WM_SALES_ISSUE";
+    /** 事务类型：销售出库 */
     private static final String TX_TYPE_SALES_OUT = "SALES_OUT";
+    /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
 
     private final WmSalesIssueMapper salesIssueMapper;
     private final WmSalesIssueLineMapper salesIssueLineMapper;
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 构造销售出库策略实例
+     *
+     * @param stockTxMapper        库存事务Mapper
+     * @param salesIssueMapper     销售出库单Mapper
+     * @param salesIssueLineMapper 销售出库单行Mapper
+     * @param stockMapper          库存Mapper
+     */
     public SalesOutStrategy(WmMaterialStockTxMapper stockTxMapper,
                             WmSalesIssueMapper salesIssueMapper,
                             WmSalesIssueLineMapper salesIssueLineMapper,
@@ -44,11 +60,21 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
         this.stockMapper = stockMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 销售出库操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.SALES_OUT;
     }
 
+    /**
+     * 执行销售出库操作
+     *
+     * @param args 操作参数，args[0]为销售出库单ID（Long）
+     */
     @Override
     public void execute(Object... args) {
         Long issueId = (Long) args[0];

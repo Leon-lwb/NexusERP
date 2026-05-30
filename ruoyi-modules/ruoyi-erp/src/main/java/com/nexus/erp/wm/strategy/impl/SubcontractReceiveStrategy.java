@@ -21,7 +21,9 @@ import java.util.List;
 
 /**
  * 委外收货策略实现
- * 处理委外订单收货入库，增加库存并记录事务流水
+ * <p>
+ * 处理委外订单收货入库业务，增加库存并记录事务流水。
+ * 支持按物料和供应商维度查询或创建库存记录，并处理库存并发冲突。
  *
  * @author nexus
  */
@@ -29,13 +31,23 @@ import java.util.List;
 @Component
 public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：委外收货 */
     private static final String TX_TYPE_SUBCONTRACT_RECEIVE = "SUBCONTRACT_RECEIVE";
+    /** 来源单据类型：委外订单 */
     private static final String SOURCE_DOC_TYPE_SUBCONTRACT = "PRD_SUBCONTRACT";
+    /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
     private final WmMaterialStockMapper stockMapper;
     private final PrdSubcontractMapper subcontractMapper;
 
+    /**
+     * 构造委外收货策略实例
+     *
+     * @param stockTxMapper      库存事务Mapper
+     * @param stockMapper        库存Mapper
+     * @param subcontractMapper  委外订单Mapper
+     */
     public SubcontractReceiveStrategy(WmMaterialStockTxMapper stockTxMapper,
                                       WmMaterialStockMapper stockMapper,
                                       PrdSubcontractMapper subcontractMapper) {
@@ -44,11 +56,21 @@ public class SubcontractReceiveStrategy extends BaseStockOperationStrategy {
         this.subcontractMapper = subcontractMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 委外收货操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.SUBCONTRACT_RECEIVE;
     }
 
+    /**
+     * 执行委外收货入库操作
+     *
+     * @param args 操作参数，args[0]为委外订单ID（Long）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {

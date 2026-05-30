@@ -20,7 +20,9 @@ import java.util.List;
 
 /**
  * 返工领料策略实现
- * 处理返工订单领料出库，扣减库存并记录事务流水
+ * <p>
+ * 处理返工订单领料出库业务，扣减库存并记录事务流水。
+ * 支持按先进先出（FIFO）规则匹配库存，并处理库存并发冲突。
  *
  * @author nexus
  */
@@ -28,13 +30,23 @@ import java.util.List;
 @Component
 public class ReworkIssueStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：返工领料 */
     private static final String TX_TYPE_REWORK_ISSUE = "REWORK_ISSUE";
+    /** 来源单据类型：返工订单 */
     private static final String SOURCE_DOC_TYPE_REWORK = "PRD_REWORK_ORDER";
+    /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
 
     private final WmMaterialStockMapper stockMapper;
     private final PrdReworkOrderMapper reworkOrderMapper;
 
+    /**
+     * 构造返工领料策略实例
+     *
+     * @param stockTxMapper      库存事务Mapper
+     * @param stockMapper        库存Mapper
+     * @param reworkOrderMapper  返工订单Mapper
+     */
     public ReworkIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
                                WmMaterialStockMapper stockMapper,
                                PrdReworkOrderMapper reworkOrderMapper) {
@@ -43,11 +55,21 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         this.reworkOrderMapper = reworkOrderMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 返工领料操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.REWORK_ISSUE;
     }
 
+    /**
+     * 执行返工领料出库操作
+     *
+     * @param args 操作参数，args[0]为返工订单ID（Long）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {

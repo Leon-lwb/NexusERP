@@ -15,8 +15,16 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class BarcodeGenerator {
 
+    /** 原子序列计数器，用于生成流水号 */
     private final AtomicLong sequence = new AtomicLong(0L);
 
+    /**
+     * 根据条码规则生成条码
+     *
+     * @param rule    条码规则配置
+     * @param bizDate 业务日期
+     * @return 生成的条码字符串
+     */
     public String generate(BarcodeRule rule, Date bizDate) {
         if (rule == null) {
             throw new IllegalArgumentException("条码规则不能为空");

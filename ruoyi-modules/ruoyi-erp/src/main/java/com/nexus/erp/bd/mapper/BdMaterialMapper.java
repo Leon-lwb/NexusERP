@@ -14,5 +14,11 @@ import java.util.List;
  */
 public interface BdMaterialMapper extends BaseMapperPlus<BdMaterial, BdMaterialVo> {
 
+    /**
+     * 根据分类ID列表查询物料产品主
+     *
+     * @param categoryIds 分类ID列表
+     * @return 物料产品主列表
+     */
     List<BdMaterialVo> selectByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
 }

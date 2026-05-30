@@ -18,28 +18,52 @@ import java.util.Date;
 
 /**
  * 杂项入库策略
+ * <p>
+ * 处理杂项入库业务，根据杂项入库单行数据增加库存并生成库存流水记录。
+ * 支持按物料、批次、库位等维度查询或创建库存记录。
+ *
+ * @author ruoyi
  */
 @Slf4j
 @Component
 public class MiscRecptStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：杂项入库 */
     private static final String TX_TYPE_MISC_IN = "MISC_IN";
+    /** 来源单据类型：杂项入库单 */
     private static final String SOURCE_DOC_TYPE_MISC_RECPT = "WM_MISC_RECPT";
+    /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 构造杂项入库策略实例
+     *
+     * @param stockTxMapper 库存事务Mapper
+     * @param stockMapper   库存Mapper
+     */
     public MiscRecptStrategy(WmMaterialStockTxMapper stockTxMapper,
                              WmMaterialStockMapper stockMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 杂项入库操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.MISC_RECPT;
     }
 
+    /**
+     * 执行杂项入库操作
+     *
+     * @param args 操作参数，args[0]为入库单行对象（WmMiscRecptLine），args[1]为入库单对象（WmMiscRecpt），args[2]为操作时间（Date）
+     */
     @Override
     public void execute(Object... args) {
         WmMiscRecptLine line = (WmMiscRecptLine) args[0];

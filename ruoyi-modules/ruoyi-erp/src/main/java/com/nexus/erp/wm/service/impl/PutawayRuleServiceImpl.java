@@ -19,6 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 上架规则Service业务层处理
+ * <p>
+ * 提供上架规则的分页查询、列表查询、新增、修改、删除等业务操作。
+ *
+ * @author ruoyi
+ */
 @RequiredArgsConstructor
 @DS("erp")
 @Service
@@ -26,6 +33,13 @@ public class PutawayRuleServiceImpl implements IPutawayRuleService {
 
     private final WmPutawayRuleMapper baseMapper;
 
+    /**
+     * 分页查询上架规则列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 上架规则分页列表
+     */
     @Override
     public TableDataInfo<WmPutawayRuleVo> selectPageList(WmPutawayRuleBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmPutawayRule> lqw = buildQueryWrapper(bo);
@@ -33,16 +47,34 @@ public class PutawayRuleServiceImpl implements IPutawayRuleService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询上架规则列表
+     *
+     * @param bo 查询参数
+     * @return 上架规则列表
+     */
     @Override
     public List<WmPutawayRuleVo> selectList(WmPutawayRuleBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取上架规则详情
+     *
+     * @param id 上架规则ID
+     * @return 上架规则详情
+     */
     @Override
     public WmPutawayRuleVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增上架规则
+     *
+     * @param bo 上架规则业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmPutawayRuleBo bo) {
@@ -50,6 +82,12 @@ public class PutawayRuleServiceImpl implements IPutawayRuleService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改上架规则
+     *
+     * @param bo 上架规则业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmPutawayRuleBo bo) {
@@ -57,12 +95,24 @@ public class PutawayRuleServiceImpl implements IPutawayRuleService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除上架规则
+     *
+     * @param ids 上架规则ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 构建查询条件
+     *
+     * @param bo 查询参数
+     * @return MyBatis查询包装器
+     */
     private LambdaQueryWrapper<WmPutawayRule> buildQueryWrapper(WmPutawayRuleBo bo) {
         LambdaQueryWrapper<WmPutawayRule> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getRuleCode()), WmPutawayRule::getRuleCode, bo.getRuleCode());

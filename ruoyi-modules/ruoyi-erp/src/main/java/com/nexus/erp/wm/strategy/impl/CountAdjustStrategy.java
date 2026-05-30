@@ -16,30 +16,55 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 盘点调整策略（盘盈/盘亏调整库存）
+ * 盘点调整策略
+ * <p>
+ * 处理库存盘点调整业务，根据盘点差异进行盘盈入库或盘亏出库。
+ * 支持通过库存ID直接定位库存记录，或按物料、批次、库位等维度匹配库存。
+ *
+ * @author ruoyi
  */
 @Slf4j
 @Component
 public class CountAdjustStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：盘点调整 */
     private static final String TX_TYPE_COUNT_ADJUST = "COUNT_ADJUST";
+    /** 来源单据类型：库存盘点单 */
     private static final String SOURCE_DOC_TYPE_STOCK_TAKING = "WM_STOCK_TAKING";
+    /** 事务标志：入库（正数，盘盈） */
     private static final int TX_FLAG_IN = 1;
+    /** 事务标志：出库（负数，盘亏） */
     private static final int TX_FLAG_OUT = -1;
 
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 构造盘点调整策略实例
+     *
+     * @param stockTxMapper 库存事务Mapper
+     * @param stockMapper   库存Mapper
+     */
     public CountAdjustStrategy(WmMaterialStockTxMapper stockTxMapper,
                                WmMaterialStockMapper stockMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 盘点调整操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.COUNT_ADJUST;
     }
 
+    /**
+     * 执行盘点调整操作
+     *
+     * @param args 操作参数，依次为：盘点单行对象（WmStockTakingLine）、实际数量、账面数量、差异数量、操作时间（Date）
+     */
     @Override
     public void execute(Object... args) {
         WmStockTakingLine line = (WmStockTakingLine) args[0];

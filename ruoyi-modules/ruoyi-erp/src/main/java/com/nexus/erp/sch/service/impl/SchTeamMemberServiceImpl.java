@@ -31,6 +31,13 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
 
     private final SchTeamMemberMapper baseMapper;
 
+    /**
+     * 分页查询班组成员列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 班组成员分页列表
+     */
     @Override
     public TableDataInfo<SchTeamMemberVo> selectPageList(SchTeamMemberBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchTeamMember> lqw = buildQueryWrapper(bo);
@@ -38,16 +45,34 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询班组成员列表
+     *
+     * @param bo 查询参数
+     * @return 班组成员列表
+     */
     @Override
     public List<SchTeamMemberVo> selectList(SchTeamMemberBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取班组成员详情
+     *
+     * @param id 成员ID
+     * @return 班组成员详情
+     */
     @Override
     public SchTeamMemberVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增班组成员
+     *
+     * @param bo 班组成员业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchTeamMemberBo bo) {
@@ -55,6 +80,12 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改班组成员
+     *
+     * @param bo 班组成员业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchTeamMemberBo bo) {
@@ -62,6 +93,12 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除班组成员
+     *
+     * @param ids 成员ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

@@ -71,6 +71,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
 
+    /**
+     * 分页查询销售订单列表
+     */
     @Override
     public TableDataInfo<SoSalesOrderHeaderVo> selectPageList(SoSalesOrderHeaderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SoSalesOrderHeader> lqw = buildQueryWrapper(bo);
@@ -78,11 +81,17 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询销售订单列表
+     */
     @Override
     public List<SoSalesOrderHeaderVo> selectList(SoSalesOrderHeaderBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID查询销售订单详情（包含行明细及关联生产计划）
+     */
     @Override
     public SoSalesOrderHeaderVo selectById(Long id) {
         SoSalesOrderHeaderVo vo = baseMapper.selectVoById(id);
@@ -109,6 +118,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         return vo;
     }
 
+    /**
+     * 新增销售订单（默认草稿状态并保存行明细）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoSalesOrderHeaderBo bo) {
@@ -121,6 +133,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         return rows;
     }
 
+    /**
+     * 修改销售订单（先删除原行明细再重新插入）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoSalesOrderHeaderBo bo) {
@@ -131,6 +146,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除销售订单（同时删除行明细）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -139,6 +157,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 根据销售订单编号查询行明细
+     */
     @Override
     public List<SoSalesOrderLineVo> selectLineListBySoNo(String soNo) {
         LambdaQueryWrapper<SoSalesOrderHeader> headerWrapper = Wrappers.lambdaQuery();
@@ -154,6 +175,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         return MapstructUtils.convert(lineList, SoSalesOrderLineVo.class);
     }
 
+    /**
+     * 确认销售订单（包含信用检查，通过后自动创建生产计划）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long soId) {
@@ -186,6 +210,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         createProductionPlansFromSalesOrder(soId, header.getSoNo());
     }
 
+    /**
+     * 履行销售订单
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void fulfill(Long soId) {
@@ -201,6 +228,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         baseMapper.updateById(header);
     }
 
+    /**
+     * 关闭销售订单
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void close(Long soId) {
@@ -216,6 +246,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         baseMapper.updateById(header);
     }
 
+    /**
+     * 取消销售订单
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long soId, String reason) {
@@ -234,6 +267,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 提交审批流程
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String soIdStr, String selectFlowId) {
@@ -267,6 +303,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         throw new RuntimeException(result.getMsg());
     }
 
+    /**
+     * 获取流程实例ID
+     */
     @Override
     public String getProcInsId(String soIdStr) {
         try {
@@ -288,6 +327,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 流程审批后处理（更新销售订单状态）
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -309,17 +351,26 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         baseMapper.updateById(order);
     }
 
+    /**
+     * 根据数据ID获取业务数据
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取流程任务变量
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取流程任务候选用户
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

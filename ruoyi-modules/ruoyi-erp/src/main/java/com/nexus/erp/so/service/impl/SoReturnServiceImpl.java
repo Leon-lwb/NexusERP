@@ -40,6 +40,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 销售退货Service业务层处理
+ *
+ * @author ruoyi
+ */
 @Slf4j
 @RequiredArgsConstructor
 @DS("erp")
@@ -56,6 +61,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
 
+    /**
+     * 分页查询销售退货列表
+     */
     @Override
     public TableDataInfo<SoReturnVo> selectPageList(SoReturnBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SoReturn> lqw = buildQueryWrapper(bo);
@@ -63,11 +71,17 @@ public class SoReturnServiceImpl implements ISoReturnService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询销售退货列表
+     */
     @Override
     public List<SoReturnVo> selectList(SoReturnBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID查询销售退货详情（包含明细行）
+     */
     @Override
     public SoReturnVo selectById(Long id) {
         SoReturnVo vo = baseMapper.selectVoById(id);
@@ -80,6 +94,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         return vo;
     }
 
+    /**
+     * 新增销售退货（自动生成退货单号并保存明细行）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoReturnBo bo) {
@@ -90,6 +107,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         return rows;
     }
 
+    /**
+     * 修改销售退货（先删除原明细行再重新插入）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoReturnBo bo) {
@@ -99,6 +119,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除销售退货（同时删除明细行）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -108,6 +131,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 确认销售退货单（仅草稿状态可确认）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long returnId) {
@@ -122,6 +148,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         baseMapper.updateById(soReturn);
     }
 
+    /**
+     * 执行退货入库（扣减库存并生成库存交易记录）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Long returnId) {
@@ -152,6 +181,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 提交审批流程
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String returnIdStr, String selectFlowId) {
@@ -183,6 +215,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         throw new RuntimeException(result.getMsg());
     }
 
+    /**
+     * 获取流程实例ID
+     */
     @Override
     public String getProcInsId(String returnIdStr) {
         try {
@@ -202,6 +237,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 流程审批后处理（更新退货单状态）
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -221,17 +259,26 @@ public class SoReturnServiceImpl implements ISoReturnService {
         baseMapper.updateById(entity);
     }
 
+    /**
+     * 根据数据ID获取业务数据
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取流程任务变量
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取流程任务候选用户
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

@@ -21,7 +21,9 @@ import java.util.List;
 
 /**
  * 返工入库策略实现
- * 处理返工订单完工入库，增加库存并记录事务流水
+ * <p>
+ * 处理返工订单完工入库业务，增加库存并记录事务流水。
+ * 支持查询或创建库存记录，并处理库存并发冲突。
  *
  * @author nexus
  */
@@ -29,13 +31,23 @@ import java.util.List;
 @Component
 public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
 
+    /** 事务类型：返工入库 */
     private static final String TX_TYPE_REWORK_RECEIVE = "REWORK_RECEIVE";
+    /** 来源单据类型：返工订单 */
     private static final String SOURCE_DOC_TYPE_REWORK = "PRD_REWORK_ORDER";
+    /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
     private final WmMaterialStockMapper stockMapper;
     private final PrdReworkOrderMapper reworkOrderMapper;
 
+    /**
+     * 构造返工入库策略实例
+     *
+     * @param stockTxMapper      库存事务Mapper
+     * @param stockMapper        库存Mapper
+     * @param reworkOrderMapper  返工订单Mapper
+     */
     public ReworkReceiveStrategy(WmMaterialStockTxMapper stockTxMapper,
                                  WmMaterialStockMapper stockMapper,
                                  PrdReworkOrderMapper reworkOrderMapper) {
@@ -44,11 +56,21 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
         this.reworkOrderMapper = reworkOrderMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 返工入库操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.REWORK_RECEIVE;
     }
 
+    /**
+     * 执行返工入库操作
+     *
+     * @param args 操作参数，args[0]为返工订单ID（Long）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {

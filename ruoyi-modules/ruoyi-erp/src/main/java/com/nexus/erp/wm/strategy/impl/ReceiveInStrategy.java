@@ -20,19 +20,35 @@ import java.util.List;
 
 /**
  * 采购入库策略
+ * <p>
+ * 处理物料采购入库业务，根据入库单明细增加库存数量并生成库存流水记录。
+ * 支持按物料、批次、仓库、库位等维度精确匹配库存记录。
+ *
+ * @author ruoyi
  */
 @Slf4j
 @Component
 public class ReceiveInStrategy extends BaseStockOperationStrategy {
 
+    /** 来源单据类型：物料入库单 */
     private static final String SOURCE_DOC_TYPE_RECEIVE = "WM_MATERIAL_RECEIVE";
+    /** 事务类型：采购入库 */
     private static final String TX_TYPE_RECEIVE_IN = "RECEIVE_IN";
+    /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
     private final WmMaterialReceiveMapper receiveMapper;
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
     private final WmMaterialStockMapper stockMapper;
 
+    /**
+     * 构造采购入库策略实例
+     *
+     * @param stockTxMapper        库存事务Mapper
+     * @param receiveMapper        物料入库单Mapper
+     * @param receiveDetailMapper  入库单明细Mapper
+     * @param stockMapper          库存Mapper
+     */
     public ReceiveInStrategy(WmMaterialStockTxMapper stockTxMapper,
                              WmMaterialReceiveMapper receiveMapper,
                              WmMaterialReceiveDetailMapper receiveDetailMapper,
@@ -43,11 +59,21 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
         this.stockMapper = stockMapper;
     }
 
+    /**
+     * 获取策略支持的操作类型
+     *
+     * @return 采购入库操作类型枚举
+     */
     @Override
     public StockOperationTypeEnum getSupportedType() {
         return StockOperationTypeEnum.RECEIVE_IN;
     }
 
+    /**
+     * 执行采购入库操作
+     *
+     * @param args 操作参数，args[0]为入库单ID（Long）
+     */
     @Override
     public void execute(Object... args) {
         Long receiveId = (Long) args[0];

@@ -49,6 +49,9 @@ public class AppSchAttendanceController {
 
     /**
      * 获取今日排班
+     * <p>查询当前登录工人当天的排班信息，包括班次、时间、工作状态等</p>
+     *
+     * @return 今日排班详情数据
      */
     @GetMapping("/employee-schedule/today")
     public R<?> getTodaySchedule() {
@@ -93,6 +96,9 @@ public class AppSchAttendanceController {
 
     /**
      * 获取今日打卡状态
+     * <p>查询当前登录工人当天的考勤打卡状态，包括上下班打卡时间、迟到早退情况等</p>
+     *
+     * @return 今日打卡状态数据
      */
     @GetMapping("/attendance/today-status")
     public R<?> getTodayStatus() {
@@ -113,6 +119,10 @@ public class AppSchAttendanceController {
 
     /**
      * 上班打卡
+     * <p>记录工人的上班打卡时间、设备信息，并计算考勤状态</p>
+     *
+     * @param params 打卡参数，包含 deviceId（设备ID）、deviceName（设备名称）等
+     * @return 打卡结果数据
      */
     @PostMapping("/attendance/clock-in")
     public R<?> clockIn(@RequestBody Map<String, Object> params) {
@@ -140,6 +150,10 @@ public class AppSchAttendanceController {
 
     /**
      * 下班打卡
+     * <p>记录工人的下班打卡时间、设备信息及加班时长，并计算考勤状态</p>
+     *
+     * @param params 打卡参数，包含 deviceId（设备ID）、deviceName（设备名称）、overtimeHours（加班时长）等
+     * @return 打卡结果数据
      */
     @PostMapping("/attendance/clock-out")
     public R<?> clockOut(@RequestBody Map<String, Object> params) {
@@ -169,6 +183,10 @@ public class AppSchAttendanceController {
 
     /**
      * 获取月度考勤统计
+     * <p>统计指定月份工人的出勤天数、请假天数、迟到次数、早退次数、加班时长及出勤率</p>
+     *
+     * @param month 月份，格式为 YYYY-MM
+     * @return 月度考勤统计数据
      */
     @GetMapping("/attendance/monthly/{month}")
     public R<?> getMonthlyAttendance(@PathVariable String month) {
@@ -289,6 +307,13 @@ public class AppSchAttendanceController {
 
     /**
      * 获取我的排班列表
+     * <p>查询当前登录工人的排班记录列表</p>
+     *
+     * @param startDate 开始日期（可选）
+     * @param endDate   结束日期（可选）
+     * @param pageNum   页码，默认为1
+     * @param pageSize  每页条数，默认为10
+     * @return 排班列表数据
      */
     @GetMapping("/employee-schedule/my-schedule")
     public R<?> getMyScheduleList(
@@ -318,7 +343,11 @@ public class AppSchAttendanceController {
     }
 
     /**
-     * 验证位置
+     * 验证打卡位置
+     * <p>验证用户当前位置是否在允许的打卡范围内</p>
+     *
+     * @param params 位置参数，包含 latitude（纬度）、longitude（经度）
+     * @return 位置验证结果
      */
     @PostMapping("/attendance/validate-location")
     public R<?> validateLocation(@RequestBody Map<String, Object> params) {
@@ -343,7 +372,10 @@ public class AppSchAttendanceController {
     }
 
     /**
-     * 获取打卡规则
+     * 获取打卡规则列表
+     * <p>查询系统配置的所有打卡规则</p>
+     *
+     * @return 打卡规则列表
      */
     @GetMapping("/punch-rule/list")
     public R<?> getPunchRuleList() {
@@ -353,6 +385,10 @@ public class AppSchAttendanceController {
 
     /**
      * 获取最近打卡记录
+     * <p>查询当前登录工人最近的考勤打卡记录</p>
+     *
+     * @param limit 返回记录数量限制，默认为10条
+     * @return 最近打卡记录列表
      */
     @GetMapping("/attendance/recent")
     public R<?> getRecentAttendance(@RequestParam(defaultValue = "10") Integer limit) {
@@ -376,6 +412,10 @@ public class AppSchAttendanceController {
 
     /**
      * 提交补卡申请
+     * <p>提交考勤补卡申请，包含补卡日期、补卡类型等信息</p>
+     *
+     * @param params 补卡申请参数，包含 applyDate（申请日期）、applyType（申请类型）等
+     * @return 补卡申请结果
      */
     @PostMapping("/supplement-apply")
     public R<?> submitSupplementApply(@RequestBody Map<String, Object> params) {
@@ -391,6 +431,14 @@ public class AppSchAttendanceController {
 
     /**
      * 获取补卡申请列表
+     * <p>查询当前登录工人的补卡申请记录</p>
+     *
+     * @param startDate  开始日期（可选）
+     * @param endDate    结束日期（可选）
+     * @param applyStatus 申请状态（可选）
+     * @param pageNum    页码，默认为1
+     * @param pageSize   每页条数，默认为10
+     * @return 补卡申请列表数据
      */
     @GetMapping("/supplement-apply/list")
     public R<?> getSupplementApplyList(
@@ -407,6 +455,13 @@ public class AppSchAttendanceController {
 
     /**
      * 获取外勤打卡记录
+     * <p>查询当前登录工人的外勤打卡记录</p>
+     *
+     * @param startDate 开始日期（可选）
+     * @param endDate   结束日期（可选）
+     * @param pageNum   页码，默认为1
+     * @param pageSize  每页条数，默认为10
+     * @return 外勤打卡记录列表数据
      */
     @GetMapping("/outdoor-punch/list")
     public R<?> getOutdoorPunchList(
@@ -422,6 +477,14 @@ public class AppSchAttendanceController {
 
     /**
      * 获取我的考勤记录
+     * <p>查询当前登录工人的考勤记录列表，支持按日期范围和考勤状态筛选</p>
+     *
+     * @param startDate       开始日期（可选）
+     * @param endDate         结束日期（可选）
+     * @param attendanceStatus 考勤状态（可选）
+     * @param pageNum         页码，默认为1
+     * @param pageSize        每页条数，默认为20
+     * @return 考勤记录列表数据
      */
     @GetMapping("/attendance/my")
     public R<?> getMyAttendance(

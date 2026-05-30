@@ -44,7 +44,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 生产工单Service业务层处理
+ * 生产工单 Service 业务层实现
+ * <p>
+ * 实现生产工单相关的业务逻辑，包括工单的查询、新增、修改、删除、状态流转及工作流审批等。
  *
  * @author ruoyi
  */
@@ -66,6 +68,13 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final WmProductionIssueLineMapper productionIssueLineMapper;
     private final IWmStockOperationService stockOperationService;
 
+    /**
+     * 分页查询生产工单列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 生产工单分页列表
+     */
     @Override
     public TableDataInfo<PrdWorkOrderVo> selectPageList(PrdWorkOrderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdWorkOrder> lqw = buildQueryWrapper(bo);
@@ -73,33 +82,71 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询生产工单列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 生产工单列表
+     */
     @Override
     public List<PrdWorkOrderVo> selectList(PrdWorkOrderBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据 ID 查询生产工单详情
+     *
+     * @param id 工单 ID
+     * @return 生产工单详细信息
+     */
     @Override
     public PrdWorkOrderVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 根据工单 ID 查询工单实体
+     *
+     * @param woId 工单 ID
+     * @return 生产工单实体
+     */
     @Override
     public PrdWorkOrder selectPrdWorkOrderByWoId(Long woId) {
         return baseMapper.selectById(woId);
     }
 
+    /**
+     * 查询生产工单列表（按实体条件）
+     *
+     * @param prdWorkOrder 工单查询实体
+     * @return 生产工单列表
+     */
     @Override
     public List<PrdWorkOrder> selectPrdWorkOrderList(PrdWorkOrder prdWorkOrder) {
         LambdaQueryWrapper<PrdWorkOrder> lqw = buildEntityQueryWrapper(prdWorkOrder);
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 新增生产工单
+     *
+     * @param prdWorkOrder 生产工单实体
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertPrdWorkOrder(PrdWorkOrder prdWorkOrder) {
         return baseMapper.insert(prdWorkOrder);
     }
 
+    /**
+     * 新增生产工单（通过 BO）
+     * <p>
+     * 初始状态设为 CREATED，自动生成工单编号。
+     *
+     * @param bo 生产工单业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdWorkOrderBo bo) {
@@ -108,6 +155,14 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改生产工单（通过 BO）
+     * <p>
+     * 仅 CREATED 或 APPROVED 状态可编辑。
+     *
+     * @param bo 生产工单业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdWorkOrderBo bo) {
@@ -115,30 +170,61 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 修改生产工单
+     *
+     * @param prdWorkOrder 生产工单实体
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updatePrdWorkOrder(PrdWorkOrder prdWorkOrder) {
         return baseMapper.updateById(prdWorkOrder);
     }
 
+    /**
+     * 批量删除生产工单
+     *
+     * @param ids 要删除的工单 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 根据工单 ID 数组批量删除生产工单
+     *
+     * @param woIds 工单 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deletePrdWorkOrderByWoIds(Long[] woIds) {
         return baseMapper.deleteBatchIds(List.of(woIds));
     }
 
+    /**
+     * 根据工单 ID 删除生产工单
+     *
+     * @param woId 工单 ID
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deletePrdWorkOrderByWoId(Long woId) {
         return baseMapper.deleteById(woId);
     }
 
+    /**
+     * 下达工单
+     * <p>
+     * 将工单状态从 CREATED 或 APPROVED 更新为 RELEASED，自动生成生产领料单（排除倒冲物料）。
+     *
+     * @param woId 工单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void release(Long woId) {
@@ -213,6 +299,13 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
     }
 
+    /**
+     * 开始生产
+     * <p>
+     * 将工单状态从 RELEASED 更新为 IN_PROGRESS，非倒冲工单需校验是否已生成领料单。
+     *
+     * @param woId 工单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void startProduction(Long woId) {
@@ -239,6 +332,13 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         baseMapper.updateById(wo);
     }
 
+    /**
+     * 完工
+     * <p>
+     * 将工单状态从 IN_PROGRESS 更新为 COMPLETED，执行完工倒冲领料并生成成品入库记录。
+     *
+     * @param woId 工单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long woId) {
@@ -272,6 +372,13 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
     }
 
+    /**
+     * 关闭工单
+     * <p>
+     * 将工单状态更新为 CLOSED，生产中状态工单不能直接关闭，需先完工。
+     *
+     * @param woId 工单 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void close(Long woId) {
@@ -291,6 +398,15 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 发起审批流程
+     * <p>
+     * 仅新建状态的工单可提交审批，启动 Flowable 流程实例。
+     *
+     * @param woIdStr      工单 ID 字符串
+     * @param selectFlowId 选择的流程模板 ID
+     * @return 是否提交成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String woIdStr, String selectFlowId) {
@@ -322,6 +438,14 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         throw new RuntimeException(result.getMsg());
     }
 
+    /**
+     * 获取流程实例 ID
+     * <p>
+     * 依次从业务表、运行时流程实例、历史流程实例中查询流程实例 ID。
+     *
+     * @param woIdStr 工单 ID 字符串
+     * @return 流程实例 ID，未找到返回 {@code null}
+     */
     @Override
     public String getProcInsId(String woIdStr) {
         try {

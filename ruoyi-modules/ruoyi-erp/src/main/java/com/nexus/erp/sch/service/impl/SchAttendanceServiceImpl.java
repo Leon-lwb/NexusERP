@@ -47,6 +47,13 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
     private final SchShiftMapper shiftMapper;
     private final ISchPunchRuleService schPunchRuleService;
 
+    /**
+     * 分页查询考勤记录列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 考勤记录分页列表
+     */
     @Override
     public TableDataInfo<SchAttendanceVo> selectPageList(SchAttendanceBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchAttendance> lqw = buildQueryWrapper(bo);
@@ -54,16 +61,34 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询考勤记录列表
+     *
+     * @param bo 查询参数
+     * @return 考勤记录列表
+     */
     @Override
     public List<SchAttendanceVo> selectList(SchAttendanceBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取考勤记录详情
+     *
+     * @param id 考勤记录ID
+     * @return 考勤记录详情
+     */
     @Override
     public SchAttendanceVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增考勤记录
+     *
+     * @param bo 考勤记录业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchAttendanceBo bo) {
@@ -71,6 +96,12 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改考勤记录
+     *
+     * @param bo 考勤记录业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchAttendanceBo bo) {
@@ -78,6 +109,12 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除考勤记录
+     *
+     * @param ids 考勤记录ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -86,6 +123,14 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
     /**
      * 执行上班打卡
+     * <p>根据工人ID和打卡时间记录上班考勤，计算迟到分钟数并判定考勤状态</p>
+     *
+     * @param workerId   工人ID
+     * @param workerName 工人姓名
+     * @param clockInTime 上班打卡时间
+     * @param deviceId   打卡设备ID
+     * @param deviceName 打卡设备名称
+     * @return 打卡结果数据，包含考勤ID、打卡时间、是否迟到、迟到分钟数等
      */
     @Override
     public Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName) {
@@ -157,6 +202,15 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
     /**
      * 执行下班打卡
+     * <p>根据工人ID和打卡时间记录下班考勤，计算早退分钟数、加班时长并综合判定考勤状态</p>
+     *
+     * @param workerId      工人ID
+     * @param workerName    工人姓名
+     * @param clockOutTime  下班打卡时间
+     * @param deviceId      打卡设备ID
+     * @param deviceName    打卡设备名称
+     * @param overtimeHours 加班时长（小时）
+     * @return 打卡结果数据，包含考勤ID、打卡时间、是否早退、早退分钟数、考勤状态等
      */
     @Override
     public Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName, Double overtimeHours) {
@@ -268,6 +322,10 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
     /**
      * 获取今日打卡状态
+     * <p>查询指定工人当天的考勤记录，返回上班/下班打卡状态、迟到/早退分钟数、加班时长等</p>
+     *
+     * @param workerId 工人ID
+     * @return 今日打卡状态数据
      */
     @Override
     public Map<String, Object> getTodayAttendanceStatus(Long workerId) {
@@ -325,6 +383,11 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
     /**
      * 验证打卡位置
+     * <p>根据用户当前经纬度与打卡规则中配置的中心点位置进行距离计算，判断是否在规定打卡半径内</p>
+     *
+     * @param latitude  纬度
+     * @param longitude 经度
+     * @return 位置验证结果，包含是否在范围内、实际距离、允许半径及打卡规则信息
      */
     @Override
     public Map<String, Object> validatePunchLocation(double latitude, double longitude) {
@@ -382,6 +445,13 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
     /**
      * 根据打卡时间和排班时间确定考勤状态
+     * <p>比对实际打卡时间与排班计划的上下班时间，结合迟到/早退阈值判定考勤结果</p>
+     *
+     * @param clockTime  打卡时间
+     * @param workerId   工人ID
+     * @param recordDate 考勤日期
+     * @param isClockIn  是否为上班打卡（true上班，false下班）
+     * @return 考勤状态（normal正常, late迟到, early_leave早退等）
      */
     @Override
     public String determineAttendanceStatus(Date clockTime, Long workerId, Date recordDate, boolean isClockIn) {

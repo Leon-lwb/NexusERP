@@ -32,6 +32,13 @@ public class SchHolidayServiceImpl implements ISchHolidayService {
 
     private final SchHolidayMapper baseMapper;
 
+    /**
+     * 分页查询节假日设置列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 节假日设置分页列表
+     */
     @Override
     public TableDataInfo<SchHolidayVo> selectPageList(SchHolidayBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SchHoliday> lqw = buildQueryWrapper(bo);
@@ -39,16 +46,34 @@ public class SchHolidayServiceImpl implements ISchHolidayService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询节假日设置列表
+     *
+     * @param bo 查询参数
+     * @return 节假日设置列表
+     */
     @Override
     public List<SchHolidayVo> selectList(SchHolidayBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID获取节假日设置详情
+     *
+     * @param id 节假日ID
+     * @return 节假日设置详情
+     */
     @Override
     public SchHolidayVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增节假日设置
+     *
+     * @param bo 节假日设置业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchHolidayBo bo) {
@@ -56,6 +81,12 @@ public class SchHolidayServiceImpl implements ISchHolidayService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改节假日设置
+     *
+     * @param bo 节假日设置业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchHolidayBo bo) {
@@ -63,6 +94,12 @@ public class SchHolidayServiceImpl implements ISchHolidayService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量删除节假日设置
+     *
+     * @param ids 节假日ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
