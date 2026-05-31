@@ -9,11 +9,15 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 import com.nexus.erp.bd.service.IBdMaterialService;
 import com.nexus.erp.bd.service.IBdMaterialService;
+import com.nexus.erp.mq.message.StockInMessage;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
@@ -93,6 +97,7 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private final IWmBarcodeService wmBarcodeService;
     private final PuPurchaseOrderMapper purchaseOrderMapper;
     private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
+    private final ReliableMessageProducer messageProducer;
 
     // ==================== 1. 基础 CRUD ====================
 
@@ -268,11 +273,6 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
             }
         }
 
-        // R-009: 入库完成后回写采购订单行已收货数量
-        if (receive.getPurId() != null) {
-            writeBackPurchaseOrderReceivedQty(receiveId, receive.getPurId());
-        }
-
         // 入库完成后为每条库存生成条码，方便后续扫码追踪、拣货和盘点。
         // 这里先优先尝试默认配置；如果默认配置不存在，条码服务内部会自动回退到其它可用启用配置。
         for (WmMaterialStock stock : stockMap.values()) {
@@ -297,7 +297,14 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
      * 根据入库单行的 materialId 和收货数量，匹配采购订单行并累加 receivedQuantity。
      * 全部到货后自动更新采购订单状态为 RECEIVED。
      */
-    private void writeBackPurchaseOrderReceivedQty(Long receiveId, Long orderId) {
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void writeBackPurchaseOrderReceivedQty(Long receiveId) {
+        WmMaterialReceive receive = baseMapper.selectById(receiveId);
+        if (receive == null || receive.getPurId() == null) {
+            return;
+        }
+        Long orderId = receive.getPurId();
         List<WmMaterialReceiveLine> receiveLines = receiveLineMapper.selectList(
             new LambdaQueryWrapper<WmMaterialReceiveLine>().eq(WmMaterialReceiveLine::getReceiveId, receiveId));
         if (receiveLines == null || receiveLines.isEmpty()) {
@@ -450,7 +457,12 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
         } else if (ActStatus.pass.equals(actStatus)) {
             receive.setStatus("APPROVED");
             baseMapper.updateById(receive);
-            executeReceive(receiveId);
+            StockInMessage stockInMsg = new StockInMessage();
+            stockInMsg.setReceiveId(receiveId);
+            stockInMsg.setSourceType("PURCHASE");
+            stockInMsg.setSourceModule("wm");
+            messageProducer.send(ExchangeConstants.DIRECT_EXCHANGE,
+                RoutingKeyConstants.STOCK_IN_RECEIVE, stockInMsg);
             return;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             receive.setStatus("REJECTED");

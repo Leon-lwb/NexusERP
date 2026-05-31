@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.erp.prd.domain.PrdReworkOrder;
-import com.nexus.erp.prd.mapper.PrdReworkOrderMapper;
+import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.erp.mq.message.ReworkStockMessage;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
@@ -39,21 +41,21 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
     private static final int TX_FLAG_IN = 1;
 
     private final WmMaterialStockMapper stockMapper;
-    private final PrdReworkOrderMapper reworkOrderMapper;
+    private final ReliableMessageProducer messageProducer;
 
     /**
      * 构造返工入库策略实例
      *
      * @param stockTxMapper      库存事务Mapper
      * @param stockMapper        库存Mapper
-     * @param reworkOrderMapper  返工订单Mapper
+     * @param messageProducer    消息生产者
      */
     public ReworkReceiveStrategy(WmMaterialStockTxMapper stockTxMapper,
                                  WmMaterialStockMapper stockMapper,
-                                 PrdReworkOrderMapper reworkOrderMapper) {
+                                 ReliableMessageProducer messageProducer) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
-        this.reworkOrderMapper = reworkOrderMapper;
+        this.messageProducer = messageProducer;
     }
 
     /**
@@ -69,29 +71,35 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
     /**
      * 执行返工入库操作
      *
-     * @param args 操作参数，args[0]为返工订单ID（Long）
+     * @param args 操作参数，args[0]为返工订单ID（Long），args[1]为物料ID（Long），
+     *             args[2]为入库数量（BigDecimal），args[3]为物料名称（String），
+     *             args[4]为返工订单编号（String），args[5]为物料编码（String），
+     *             args[6]为物料规格（String），args[7]为基本单位名称（String）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         Long reworkId = (Long) args[0];
-        PrdReworkOrder rework = reworkOrderMapper.selectById(reworkId);
-        if (rework == null) {
-            throw new ServiceException("返工订单不存在");
-        }
+        Long materialId = (Long) args[1];
+        BigDecimal quantity = (BigDecimal) args[2];
+        String materialName = (String) args[3];
+        String reworkNo = (String) args[4];
+        String materialCode = (String) args[5];
+        String materialSpec = (String) args[6];
+        String baseUomName = (String) args[7];
+
         if (hasPosted(SOURCE_DOC_TYPE_REWORK + "_RECEIVE", reworkId)) {
             return;
         }
 
-        BigDecimal receiveQty = rework.getActualQty() != null ? rework.getActualQty() : rework.getReworkQty();
-        if (receiveQty == null || receiveQty.compareTo(BigDecimal.ZERO) <= 0) {
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServiceException("返工入库数量必须大于0");
         }
 
         Date now = new Date();
 
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
-        lqw.eq(WmMaterialStock::getMaterialId, rework.getMaterialId());
+        lqw.eq(WmMaterialStock::getMaterialId, materialId);
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);
 
@@ -103,32 +111,41 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
         BigDecimal beforeQty = BigDecimal.ZERO;
         if (stock != null) {
             beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-            BigDecimal afterQty = beforeQty.add(receiveQty);
+            BigDecimal afterQty = beforeQty.add(quantity);
             stock.setStockQuantity(afterQty);
             stock.setRecptDate(now);
             int affected = stockMapper.updateById(stock);
             if (affected == 0) {
-                throw new ServiceException("库存并发冲突，请重试: 物料【" + rework.getMaterialName() + "】");
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + materialName + "】");
             }
         } else {
             stock = new WmMaterialStock();
-            stock.setMaterialId(rework.getMaterialId());
-            stock.setMaterialCode(rework.getMaterialCode());
-            stock.setMaterialName(rework.getMaterialName());
-            stock.setMaterialSpec(rework.getMaterialSpec());
-            stock.setBaseUomName(rework.getBaseUomName());
-            stock.setStockQuantity(receiveQty);
+            stock.setMaterialId(materialId);
+            stock.setMaterialCode(materialCode);
+            stock.setMaterialName(materialName);
+            stock.setMaterialSpec(materialSpec);
+            stock.setBaseUomName(baseUomName);
+            stock.setStockQuantity(quantity);
             stock.setRecptDate(now);
             stock.setFrozenFlag(0L);
             stockMapper.insert(stock);
         }
 
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_REWORK_RECEIVE, TX_FLAG_IN,
-            receiveQty, beforeQty, beforeQty.add(receiveQty), now);
+            quantity, beforeQty, beforeQty.add(quantity), now);
         tx.setSourceDocType(SOURCE_DOC_TYPE_REWORK);
-        tx.setSourceDocId(rework.getReworkId());
-        tx.setSourceDocCode(rework.getReworkNo());
+        tx.setSourceDocId(reworkId);
+        tx.setSourceDocCode(reworkNo);
         tx.setRemark("返工入库");
         stockTxMapper.insert(tx);
+
+        ReworkStockMessage msg = new ReworkStockMessage();
+        msg.setReworkId(reworkId);
+        msg.setOperationType("RECEIVE");
+        msg.setMaterialId(materialId);
+        msg.setQuantity(quantity);
+        msg.setSourceModule("wm");
+        messageProducer.send(ExchangeConstants.DIRECT_EXCHANGE,
+            RoutingKeyConstants.REWORK_STOCK, msg);
     }
 }

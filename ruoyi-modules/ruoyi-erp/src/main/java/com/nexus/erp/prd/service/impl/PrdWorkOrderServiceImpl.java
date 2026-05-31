@@ -23,6 +23,10 @@ import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
+import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -67,6 +71,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final WmProductionIssueMapper productionIssueMapper;
     private final WmProductionIssueLineMapper productionIssueLineMapper;
     private final IWmStockOperationService stockOperationService;
+    private final ReliableMessageProducer messageProducer;
 
     /**
      * 分页查询生产工单列表
@@ -361,15 +366,16 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
                 : completionQty);
         baseMapper.updateById(wo);
 
-        // ★ 新增：完工倒冲领料
-        backflushService.backflushOnCompletion(woId, completionQty);
-
-        // ★ 新增：成品入库
-        if (wo.getMaterialId() != null && completionQty.compareTo(BigDecimal.ZERO) > 0) {
-            stockOperationService.postProductionCompletion(
-                woId, wo.getMaterialId(), wo.getMaterialCode(), wo.getMaterialName(),
-                completionQty, wo.getWorkshopId(), null, new Date());
-        }
+        ProductionCompleteMessage completeMsg = new ProductionCompleteMessage();
+        completeMsg.setWoId(woId);
+        completeMsg.setCompletionQty(completionQty);
+        completeMsg.setMaterialId(wo.getMaterialId());
+        completeMsg.setMaterialCode(wo.getMaterialCode());
+        completeMsg.setMaterialName(wo.getMaterialName());
+        completeMsg.setWorkshopId(wo.getWorkshopId());
+        completeMsg.setSourceModule("prd");
+        messageProducer.send(ExchangeConstants.DIRECT_EXCHANGE,
+            RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH, completeMsg);
     }
 
     /**

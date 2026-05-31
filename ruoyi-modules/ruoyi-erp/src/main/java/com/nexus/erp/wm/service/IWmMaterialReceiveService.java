@@ -46,4 +46,9 @@ public interface IWmMaterialReceiveService extends WfCallBackServiceI {
      * 获取流程实例ID
      */
     String getProcInsId(String receiveIdStr);
+
+    /**
+     * 回写采购订单行已收货数量
+     */
+    void writeBackPurchaseOrderReceivedQty(Long receiveId);
 }

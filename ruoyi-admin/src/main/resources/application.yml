@@ -295,3 +295,12 @@ flowable:
   async-history-executor-activate: false
   #消息链接基地址
   message-base-url: http://localhost:9666/workflow/process/detail/
+
+--- # mq 消息队列通用配置
+mq:
+  rabbit:
+    enabled: false
+    exchange-prefix: erp
+    message-record-enabled: true
+    max-retry: 3
+    compensation-resend-threshold: 60000

@@ -37,7 +37,7 @@
 | **数据库** | MySQL + HikariCP | 8.x | ✅ 运行中 |
 | **前端框架** | Vue 3 + Element Plus | 3.5 | ✅ 现代化 |
 | **移动端** | uni-app | - | ⚠️ 基础框架 |
-| **消息队列** | - | - | ❌ 未集成 |
+| **消息队列** | RabbitMQ + Spring AMQP | 3.13+ | ✅ 已集成 (Week 7-8) |
 | **时序数据库** | - | - | ❌ 未集成 |
 | **协议适配** | - | - | ❌ 无 |
 
@@ -45,17 +45,17 @@
 
 | 模块 | 完成度 | 已有功能 | 关键缺口 | 优先级 |
 |------|--------|---------|----------|--------|
-| **bd** 基础数据 | 65% | 物料/BOM/客户/供应商/车间 | 工艺路线/ECN/替代BOM | P1 |
-| **prd** 生产管理 | 45% | 工单/报工/物料需求 | 委外/返工/产能/倒冲 | P1 |
-| **pu** 采购管理 | 30% | 采购申请/订单/退货 | 评估/收货差异/自动过账 | P1 |
+| **bd** 基础数据 | 70% | 物料/BOM/客户/供应商/车间/序列号规则 | 工艺路线/ECN/替代BOM | P1 |
+| **prd** 生产管理 | 75% | 工单/报工/物料需求/委外/返工/产能/倒冲 | 高级排产/甘特图 | P1 |
+| **pu** 采购管理 | 70% | 采购申请/订单/退货/评估/收货差异/自动过账 | 价格引擎/信用/发货 | P1 |
 | **so** 销售管理 | 25% | 订单/报价/退货 | 价格引擎/信用/发货 | P2 |
-| **wm** 仓储管理 | 50% | 仓库/库存/出入库/条码 | 策略/估值/盘点/追溯 | P1 |
-| **sch** 排产调度 | 50% | 排班/考勤/移动端 | 高级排产/甘特图 | P2 |
+| **wm** 仓储管理 | 75% | 仓库/库存/出入库/条码/上架/拣货/估值/预警/校验 | 盘点/追溯 | P1 |
+| **sch** 排产调度 | 55% | 排班/考勤/移动端/产能日历 | 高级排产/甘特图 | P2 |
 | **qc** 质量管理 | 0% | - | IQC/IPQC/OQC/缺陷 | P1 | **由MES统一实现，ERP不重复建设** |
 | **eq** 设备管理 | 0% | - | 台账/点检/保养/维修 | P1 | **由MES统一实现，ERP不重复建设** |
 | **fi** 财务管理 | 0% | - | AR/AP/成本核算 | P3 |
 
-**综合评估**: 对标企业级ERP (SAP B1/金蝶K/3)，当前完成度约 **35-40%**
+**综合评估**: 对标企业级ERP (SAP B1/金蝶K/3)，当前完成度约 **60-65%**
 
 ### 1.4 与目标架构差距分析
 
@@ -112,9 +112,9 @@ Phase 3: IoT 建设 (第33-48周)
 |--------|--------|--------|----------|------|
 | **M1: ERP P0清零** | Week 1 | 序列号规则/供应商校验完成 | 编译通过，功能可用 | ✅ 已达成 |
 | **M2: 采购闭环** | Week 2 | 采购全流程完整 | 申请→订单→收货→评估 | ✅ 已达成 |
-| **M3: 仓储策略层** | Week 3 | 上架/拣货/估值策略 | 策略可配置，库存准确 |
-| **M4: 生产深度** | Week 5 | 委外/返工/倒冲/产能 | 生产全流程闭环 |
-| **M5: MQ基建完成** | Week 8 | RabbitMQ/Kafka集成+跨库事务框架 | MQ可用，补偿机制就绪 |
+| **M3: 仓储策略层** | Week 3 | 上架/拣货/估值策略 | 策略可配置，库存准确 | ✅ 已达成 |
+| **M4: 生产深度** | Week 5 | 委外/返工/倒冲/产能 | 生产全流程闭环 | ✅ 已达成 |
+| **M5: MQ基建完成** | Week 8 | RabbitMQ集成+跨库事务框架 | MQ可用，补偿机制就绪 | ✅ 已达成 |
 | **M6: ERP代码重构完成** | Week 10 | Service拆分/AutoMapper/QueryWrapper优化 | 代码质量达标 |
 | **M7: ERP全部交付** | Week 12 | 追溯/盘点审批流 | ERP功能100%完成 |
 | **M8: MES基础上线** | Week 20 | 主数据/工单/工序/路线 | 工单可下达执行 |
@@ -161,12 +161,12 @@ Phase 3: IoT 建设 (第33-48周)
 | Week 6 | R-026 | 采购收货联动入口 | 前端 | 0.5 | 进度展示 | ✅ 已完成 |
 | Week 6 | R-027 | 供应商评估前端 | 前端 | 1 | 评估报表+趋势图 | ✅ 已完成 |
 | Week 6 | R-028 | 产能日历前端 | 前端 | 1 | 产能日历可视化页面 | ✅ 已提前至Week5(F-022) |
-| Week 7-8 | I-001 | MQ基础设施搭建 | infra | 3 | RabbitMQ/Kafka集成+Spring Cloud Stream |
-| Week 7-8 | I-002 | 跨库事务补偿框架 | infra | 2 | 最终一致性+补偿任务调度+对账机制 |
-| Week 7-8 | Q-003 | Service拆分重构 | quality | 2 | WmMaterialReceiveServiceImpl拆分为3个Service |
-| Week 7-8 | Q-004 | @AutoMapper注解统一替换 | quality | 1.5 | 消除手动MapstructUtils调用 |
-| Week 9-10 | Q-005 | LambdaQueryWrapper链式重构 | quality | 2 | 替换buildQueryWrapper重复代码 |
-| Week 9-10 | Q-006 | Service基类统一+Jasypt加密 | quality | 2 | 统一继承ServiceImpl，数据库密码加密 |
+| Week 7-8 | I-001 | MQ基础设施搭建 | infra | 3 | RabbitMQ集成+Spring AMQP+异步化改造 | ✅ 已完成 |
+| Week 7-8 | I-002 | 跨库事务补偿框架 | infra | 2 | 最终一致性+补偿任务调度+对账机制 | ✅ 已完成 |
+| Week 9-10 | Q-003 | Service拆分重构 | quality | 2 | WmMaterialReceiveServiceImpl拆分为3个Service | ⏳ 待执行 |
+| Week 9-10 | Q-004 | @AutoMapper注解统一替换 | quality | 1.5 | 消除手动MapstructUtils调用 | ⏳ 待执行 |
+| Week 9-10 | Q-005 | LambdaQueryWrapper链式重构 | quality | 2 | 替换buildQueryWrapper重复代码 | ⏳ 待执行 |
+| Week 9-10 | Q-006 | Service基类统一+Jasypt加密 | quality | 2 | 统一继承ServiceImpl，数据库密码加密 | ⏳ 待执行 |
 | Week 9-10 | R-025 | 委外前端完善 | 前端 | 1 | 完善Week4委外前端 |
 | Week 9-10 | R-026 | 销售管理增强 | so | 2 | 价格引擎基础版+信用检查联动 |
 | Week 11-12 | R-041 | 序列号管理 | wm | 1.5 | wm_sn表，对接R-001 |
@@ -195,7 +195,7 @@ Phase 3: IoT 建设 (第33-48周)
 | **对象映射** | 手动调用MapstructUtils | 使用@AutoMapper注解自动映射 | 中 | ⏳ Week 7-8 Q-004 |
 | **查询条件** | buildQueryWrapper重复 | 使用LambdaQueryWrapper链式调用 | 中 | ⏳ Week 9-10 Q-005 |
 | **异常处理** | RuntimeException | 统一使用ServiceException | 高 | ✅ bd/pu模块已完成(43处) |
-| **Service拆分** | WmMaterialReceiveServiceImpl 787行 | 拆分为CRUD/审批/库存转移三个Service | 高 | ⏳ Week 7-8 Q-003 |
+| **Service拆分** | WmMaterialReceiveServiceImpl 787行 | 拆分为CRUD/审批/库存转移三个Service | 高 | ⏳ Week 9-10 Q-003 |
 | **对象拷贝** | 手动逐字段拷贝 | 使用BeanUtils或MapStruct | 中 | 待处理 |
 | **日期处理** | SimpleDateFormat非线程安全 | 改用DateTimeFormatter | 中 | ✅ 全部完成(3文件5处) |
 | **数据库密码** | 明文存储 | 使用Jasypt加密 | 中 | ⏳ Week 9-10 Q-006 |
@@ -404,6 +404,75 @@ Phase 3: IoT 建设 (第33-48周)
 - 修复 rework/types.ts 缺少 6 个字段定义(sourceWoNo/materialId/materialCode/materialName/materialSpec/baseUomName)
 - 修复 router/index.ts 引用不存在的 rework/form.vue 路由
 - 修复 SQL 脚本: create_by 改为 bigint、is_frame 改为 1(内部菜单)、主键手动指定、parent_id 使用真实值、补充 query_param 和 create_dept 字段
+
+#### 3.1.10 Week 7-8 执行记录
+
+**执行日期**: 2026-05-31
+
+**已完成任务汇总**:
+
+| 任务编号 | 任务内容 | 涉及文件 | 变更类型 | 说明 |
+|---------|---------|---------|---------|------|
+| I-001 | MQ基础设施搭建 | ruoyi-common-mq (20文件), ruoyi-erp/mq (10文件) | 新增 | RabbitMQ + Spring AMQP + 消息框架 + 业务异步化改造 |
+| I-002 | 跨库事务补偿框架 | CompensationService/Task (6文件) | 新增 | 补偿注册+执行+对账+指数退避重试 |
+
+**技术选型决策**:
+- 选型: RabbitMQ + Spring AMQP（不选 Kafka/SCS）
+- 理由: ERP业务场景是解耦/异步任务，非大数据流处理；原生支持延迟消息和死信队列；单节点运维成本低
+
+**新增模块: ruoyi-common-mq**:
+
+| 子包 | 类 | 说明 |
+|------|---|------|
+| config | RabbitMqAutoConfiguration, RabbitMqProperties, RabbitMqInitializer | 自动配置+属性+交换机/队列声明 |
+| constant | ExchangeConstants, QueueConstants, RoutingKeyConstants | 4个交换机+10个队列+12个路由键 |
+| domain | BaseMessage, MessageRecord, DeadLetterRecord | 消息基类+本地消息表+死信记录 |
+| producer | ReliableMessageProducer | 可靠消息生产者(ConfirmCallback+CorrelationData) |
+| consumer | BaseMessageConsumer, DeadLetterMessageConsumer | 消费者基类(幂等+手动ACK)+死信消费者 |
+| compensation | CompensationService/Impl, CompensationRecord, CompensationTask, ReconciliationTask, MessageCompensationTask | 补偿框架(注册+执行+对账) |
+
+**业务异步化改造**:
+
+| 场景 | 改造前 | 改造后 | 解耦效果 |
+|------|--------|--------|---------|
+| 采购收货→库存过账 | afterFlowHandle同步5-6层调用 | 审批通过→发StockInMessage→StockInConsumer异步过账 | wm→pu Mapper依赖可由消费者独立管理 |
+| 工单完工→倒冲→入库 | complete()同步大事务 | 完工→发ProductionCompleteMessage→BackflushConsumer异步 | prd→wm 同步调用链拆分 |
+| 委外发料/收货 | 策略类直接注入PrdSubcontractMapper | 库存操作后发SubcontractStockMessage | 消除wm→prd Mapper依赖 |
+| 返工出库/入库 | 策略类直接注入PrdReworkOrderMapper | 库存操作后发ReworkStockMessage | 消除wm→prd Mapper依赖 |
+
+**可靠消息保障机制**:
+1. Publisher Confirm + CorrelationData 确认投递
+2. 消息持久化 (Exchange/Queue durable=true)
+3. 手动 ACK (AcknowledgeMode.MANUAL)
+4. 幂等消费 (Redis SETNX, 24h TTL)
+5. 死信队列 (DLX, 消费失败3次自动进入)
+6. 补偿任务 (SnailJob, 扫描超时未确认消息)
+7. 对账任务 (SnailJob, 每日对比消息状态与业务状态)
+
+**SQL DDL 变更**:
+- 新增表: `mq_message_record` (本地消息表), `mq_dead_letter_record` (死信记录), `mq_compensation_record` (补偿记录)
+- SQL脚本: **1个** (week7_mq_infrastructure.sql)
+
+**代码变更统计**:
+- 新增模块: **1个** (ruoyi-common-mq)
+- 新增后端文件: **~30个** (mq公共模块20个 + erp消息/消费者10个)
+- 修改后端文件: **7个** (WmMaterialReceiveServiceImpl, PrdWorkOrderServiceImpl, SubcontractIssue/ReceiveStrategy, ReworkIssue/ReceiveStrategy, IWmMaterialReceiveService)
+- 新增前端文件: **0个** (纯后端改造)
+- 修改配置文件: **2个** (application-dev.yml, application.yml)
+- 新增Docker: **1个** (docker-compose-rabbitmq.yml)
+
+**架构改进**:
+- 消除了4个策略类(SubcontractIssue/Receive, ReworkIssue/Receive)对 prd 模块 Mapper 的直接依赖
+- 采购收货审批→入库过账→采购回写 的同步调用链拆分为3个独立事务
+- 工单完工→倒冲领料→成品入库 的同步大事务拆分为2个独立事务
+- 建立了完整的消息可靠性保障体系(7层保障)
+
+**Week 9-10 准备事项**:
+- Q-003 Service拆分重构: WmMaterialReceiveServiceImpl 787行拆分为3个Service，需梳理审批流/库存转移/CRUD边界
+- Q-004 @AutoMapper注解统一替换: 扫描所有手动MapstructUtils调用，统一改为@AutoMapper注解
+- Q-005 LambdaQueryWrapper链式重构: 替换buildQueryWrapper重复代码，提升查询条件可读性
+- Q-006 Service基类统一+Jasypt加密: 统一继承ServiceImpl<Mapper, Entity>，数据库密码加密配置
+- R-026 销售管理增强: 设计价格引擎基础版数据结构(so_price_list)和信用检查联动逻辑
 
 ### 3.2 Phase 2: MES 建设 (第13-34周)
 
@@ -1162,13 +1231,19 @@ Month 12-13 ████ IoT Phase 3: 智能+集成 (Week 45-50)
 
 ---
 
-> **文档版本**: v1.2
+> **文档版本**: v1.3
 > **编制日期**: 2026-05-27
-> **优化日期**: 2026-05-31
+> **优化日期**: 2026-06-01
 > **编制依据**: nexus-erp代码库深度分析 + ERP/MES边界梳理 + 重复建设消除
 > **总工期**: 50周 (约12.5个月)
 > **总工作量**: ~295人天
 > **推荐团队**: 3-4人 (1架构+2后端+1前端)
+>
+> **v1.3 关键变更**:
+> - Week 7-8 执行记录已补充 (3.1.10)，I-001/I-002 标记为已完成
+> - ERP综合完成度更新: 35-40% → 60-65%，MQ基建已集成
+> - 里程碑M3/M4/M5 标记为已达成
+> - Q-003/Q-004 调整至Week 9-10，Week 9-10准备事项已补充
 >
 > **v1.2 关键变更**:
 > - Week 5 执行记录已补充 (3.1.8)

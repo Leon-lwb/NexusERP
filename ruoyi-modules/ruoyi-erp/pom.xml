@@ -84,6 +84,12 @@
             <artifactId>ruoyi-flowable</artifactId>
         </dependency>
 
+        <!-- 消息队列 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-mq</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-system</artifactId>

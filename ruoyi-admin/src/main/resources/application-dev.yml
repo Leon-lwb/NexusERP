@@ -312,3 +312,17 @@ pay:
     vendorKey: your_vendor_key
     notifyUrl: http://your-domain/pay/sqb/notify
     publicKey: classpath:cert/sqb/public_key.pem
+
+--- # rabbitmq 消息队列配置
+spring.rabbitmq:
+  host: localhost
+  port: 5672
+  username: nexus
+  password: nexus
+  virtual-host: /erp
+  publisher-confirm-type: correlated
+  publisher-returns: true
+  listener:
+    simple:
+      acknowledge-mode: manual
+      prefetch: 10
