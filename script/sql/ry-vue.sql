@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 30/05/2026 23:43:31
+ Date: 01/06/2026 00:24:17
 */
 
 SET NAMES utf8mb4;
@@ -4969,6 +4969,81 @@ INSERT INTO `jimu_report_sheet` VALUES ('1171977152943390720', '1168809270466084
 INSERT INTO `jimu_report_sheet` VALUES ('1191265382377226240', '1168809270466084864', 'sqlserver2', 2, '{\"loopBlockList\":[],\"querySetting\":{\"izOpenQueryBar\":false,\"izDefaultQuery\":true},\"recordSubTableOrCollection\":{\"group\":[],\"record\":[],\"range\":[]},\"printConfig\":{\"paper\":\"A4\",\"width\":210,\"height\":297,\"definition\":1,\"isBackend\":false,\"marginX\":10,\"marginY\":10,\"layout\":\"portrait\",\"printCallBackUrl\":\"\"},\"hidden\":{\"rows\":[],\"cols\":[],\"conditions\":{\"rows\":{},\"cols\":{}}},\"queryFormSetting\":{\"useQueryForm\":false,\"dbKey\":\"\",\"idField\":\"\"},\"dbexps\":[],\"dicts\":[],\"fillFormToolbar\":{\"show\":true,\"btnList\":[\"save\",\"subTable_add\",\"verify\",\"subTable_del\",\"print\",\"close\",\"first\",\"prev\",\"next\",\"paging\",\"total\",\"last\",\"exportPDF\",\"exportExcel\",\"exportWord\"]},\"freeze\":\"A1\",\"dataRectWidth\":200,\"isViewContentHorizontalCenter\":false,\"autofilter\":{},\"validations\":[],\"cols\":{\"len\":100},\"area\":false,\"pyGroupEngine\":false,\"submitHandlers\":[],\"excel_config_id\":\"1168809270466084864\",\"hiddenCells\":[],\"zonedEditionList\":[],\"rows\":{\"3\":{\"cells\":{\"0\":{\"text\":\"合计值：\"},\"1\":{\"text\":\"#{count.total}\"}}},\"len\":200},\"rpbar\":{\"show\":true,\"pageSize\":\"\",\"btnList\":[]},\"fixedPrintHeadRows\":[],\"fixedPrintTailRows\":[],\"displayConfig\":{},\"fillFormInfo\":{\"layout\":{\"direction\":\"horizontal\",\"width\":200,\"height\":45}},\"background\":false,\"name\":\"sheet1\",\"styles\":[],\"freezeLineColor\":\"rgb(185, 185, 185)\",\"merges\":[]}', '2026-03-10 16:30:26', '2026-03-10 16:43:25', 'admin', 'admin');
 
 -- ----------------------------
+-- Table structure for mq_compensation_record
+-- ----------------------------
+DROP TABLE IF EXISTS `mq_compensation_record`;
+CREATE TABLE `mq_compensation_record`  (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `message_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关联消息ID',
+  `business_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '业务类型',
+  `business_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '业务ID',
+  `compensation_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT '补偿状态: PENDING/SUCCESS/FAILED',
+  `compensation_method` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '补偿方法(全限定类名.方法名)',
+  `compensation_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '补偿参数JSON',
+  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
+  `max_retry` int(11) NOT NULL DEFAULT 5 COMMENT '最大重试次数',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_compensation_status`(`compensation_status`, `next_retry_time`) USING BTREE,
+  INDEX `idx_business`(`business_type`, `business_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of mq_compensation_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for mq_dead_letter_record
+-- ----------------------------
+DROP TABLE IF EXISTS `mq_dead_letter_record`;
+CREATE TABLE `mq_dead_letter_record`  (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `message_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '原始消息ID',
+  `exchange` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '原始交换机',
+  `routing_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '原始路由键',
+  `message_body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '消息体JSON',
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
+  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/RESOLVED/RESENT',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of mq_dead_letter_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for mq_message_record
+-- ----------------------------
+DROP TABLE IF EXISTS `mq_message_record`;
+CREATE TABLE `mq_message_record`  (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `message_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '消息唯一ID',
+  `exchange` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '交换机名称',
+  `routing_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '路由键',
+  `message_body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '消息体JSON',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'SENDING' COMMENT '状态: SENDING/SENT/CONSUMED/FAILED',
+  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
+  `max_retry` int(11) NOT NULL DEFAULT 3 COMMENT '最大重试次数',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_message_id`(`message_id`) USING BTREE,
+  INDEX `idx_status_create`(`status`, `create_time`) USING BTREE,
+  INDEX `idx_next_retry`(`next_retry_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of mq_message_record
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for onl_drag_comp
 -- ----------------------------
 DROP TABLE IF EXISTS `onl_drag_comp`;
@@ -8004,7 +8079,7 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
@@ -11195,6 +11270,7 @@ INSERT INTO `sys_logininfor` VALUES (2060602301579776002, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2060602314842165250, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'MSEdge', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-30 14:00:51');
 INSERT INTO `sys_logininfor` VALUES (2060620594902454273, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-30 15:13:29');
 INSERT INTO `sys_logininfor` VALUES (2060638351672975361, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-30 16:24:03');
+INSERT INTO `sys_logininfor` VALUES (2060760515168305153, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-31 00:29:29');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -11547,6 +11623,16 @@ INSERT INTO `sys_menu` VALUES (2711, '生产入库查询', 2710, 1, '', '', NULL
 INSERT INTO `sys_menu` VALUES (2712, '生产入库新增', 2710, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:add', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2713, '生产入库修改', 2710, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:edit', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2714, '生产入库删除', 2710, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:remove', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2800, '供应商评估报表', 2530, 8, 'report', 'erp/pu/vendor-evaluation/report', NULL, 1, 0, 'C', '0', '0', 'pu:vendorEvaluation:query', 'chart', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '供应商评估报表与趋势分析');
+INSERT INTO `sys_menu` VALUES (2810, '工单资源分配', 2300, 8, 'workOrderResource', 'erp/prd/work-order-resource/index', NULL, 1, 0, 'C', '0', '0', 'prd:workOrderResource:list', 'peoples', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '工单资源分配管理');
+INSERT INTO `sys_menu` VALUES (2811, '工单资源查询', 2810, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:query', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2812, '工单资源新增', 2810, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:add', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2813, '工单资源修改', 2810, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:edit', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2814, '工单资源删除', 2810, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:remove', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2820, '返工出库', 2150, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:rework:issue', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2821, '返工入库', 2150, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:rework:receive', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2830, '委外发料', 2144, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:issue', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2831, '委外收货', 2144, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:receive', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3000, '支付管理', 0, 7, 'pay', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:46:03', '支付管理目录');
 INSERT INTO `sys_menu` VALUES (3001, '订单管理', 3000, 1, 'order', 'pay/order/index', '', 1, 0, 'C', '0', '0', 'pay:order:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:14', '订单管理菜单');
 INSERT INTO `sys_menu` VALUES (3002, '订单查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:query', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
@@ -11786,6 +11872,7 @@ INSERT INTO `sys_oper_log` VALUES (2059923789133611009, '000000', '库存台账�
 INSERT INTO `sys_oper_log` VALUES (2059926024693448706, '000000', '菜单管理', 2, 'org.dromara.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2026-05-28 00:23:23\",\"updateBy\":null,\"updateTime\":null,\"menuId\":2616,\"parentId\":2600,\"menuName\":\"上架规则\",\"orderNum\":6,\"path\":\"putawayRule\",\"component\":\"erp/wm/putawayrule/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"wm:putawayRule:list\",\"icon\":\"guide\",\"remark\":\"上架规则菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-28 17:13:31', 25);
 INSERT INTO `sys_oper_log` VALUES (2059926065558552577, '000000', '菜单管理', 2, 'org.dromara.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2026-05-28 00:23:23\",\"updateBy\":null,\"updateTime\":null,\"menuId\":2621,\"parentId\":2600,\"menuName\":\"拣货规则\",\"orderNum\":7,\"path\":\"pickingRule\",\"component\":\"erp/wm/pickingrule/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"wm:pickingRule:list\",\"icon\":\"shopping\",\"remark\":\"拣货规则菜单\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-28 17:13:40', 10);
 INSERT INTO `sys_oper_log` VALUES (2060625048691265537, '000000', '菜单管理', 2, 'com.nexus.system.controller.system.SysMenuController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/menu', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":null,\"createTime\":\"2026-04-30 10:33:44\",\"updateBy\":null,\"updateTime\":null,\"menuId\":2406,\"parentId\":2400,\"menuName\":\"打卡规则\",\"orderNum\":6,\"path\":\"punchRule\",\"component\":\"erp/sch/punchrule/index\",\"queryParam\":null,\"isFrame\":\"1\",\"isCache\":\"0\",\"menuType\":\"C\",\"visible\":\"0\",\"status\":\"0\",\"perms\":\"sch:punchRule:list\",\"icon\":\"validCode\",\"remark\":\"\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-05-30 15:31:11', 21);
+INSERT INTO `sys_oper_log` VALUES (2060760711709196289, '000000', '产能日历', 1, 'com.nexus.erp.prd.controller.PrdCapacityCalendarController.add()', 'POST', 1, 'admin', '研发部门', '/erp/prd/capacityCalendar', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"calendarId\":null,\"calendarDate\":\"2026-05-31 00:00:00\",\"objectType\":\"WORKSHOP\",\"objectId\":1,\"shiftId\":2,\"availableHours\":\"3\",\"efficiency\":\"2\",\"status\":\"ACTIVE\",\"remark\":null}', '', 1, 'cannot find converter from PrdCapacityCalendarBo to PrdCapacityCalendar', '2026-05-31 00:30:15', 19);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -12300,7 +12387,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-30 16:24:03', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-30 16:24:03', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-31 00:29:29', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-31 00:29:29', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 11:54:44', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 11:54:44', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 1, '2025-10-23 17:03:16', 1, '2025-12-17 15:40:54', '耳朵聋');
