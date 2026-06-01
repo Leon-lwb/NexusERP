@@ -487,6 +487,7 @@ CREATE TABLE `bd_unit_of_measure`  (
   UNIQUE INDEX `uk_uom_code`(`uom_code`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_primary_id`(`primary_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = DYNAMIC;
 

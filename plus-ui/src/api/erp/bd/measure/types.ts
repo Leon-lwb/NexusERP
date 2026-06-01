@@ -4,6 +4,7 @@ export interface MeasureQuery extends PageQuery {
   category?: string;
   status?: number;
   isBase?: string;
+  excludeId?: number;
 }
 
 export interface MeasureVO {

@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 计量单位Service业务层处理
@@ -72,13 +74,10 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdUnitOfMeasureBo bo) {
+        // 校验编码唯一性
+        checkUomCodeUnique(bo);
         // 自动回填基本单位名称
-        if (bo.getPrimaryId() != null && StringUtils.isBlank(bo.getPrimaryName())) {
-            BdUnitOfMeasureVo primary = baseMapper.selectVoById(bo.getPrimaryId());
-            if (primary != null) {
-                bo.setPrimaryName(primary.getUomName());
-            }
-        }
+        fillPrimaryName(bo);
         BdUnitOfMeasure entity = MapstructUtils.convert(bo, BdUnitOfMeasure.class);
         return baseMapper.insert(entity);
     }
@@ -86,19 +85,18 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdUnitOfMeasureBo bo) {
+        // 校验编码唯一性
+        checkUomCodeUnique(bo);
         // 自动回填基本单位名称
-        if (bo.getPrimaryId() != null && StringUtils.isBlank(bo.getPrimaryName())) {
-            BdUnitOfMeasureVo primary = baseMapper.selectVoById(bo.getPrimaryId());
-            if (primary != null) {
-                bo.setPrimaryName(primary.getUomName());
-            }
-        }
+        fillPrimaryName(bo);
         // 如果是基本单位，清空关联字段
         if (Long.valueOf(1).equals(bo.getIsBase())) {
             bo.setPrimaryId(null);
             bo.setPrimaryName(null);
             bo.setConversionRate(null);
         }
+        // 如果基本单位名称发生变化，同步更新衍生单位的 primary_name
+        syncPrimaryNameIfChanged(bo);
         BdUnitOfMeasure entity = MapstructUtils.convert(bo, BdUnitOfMeasure.class);
         return baseMapper.updateById(entity);
     }
@@ -106,20 +104,87 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        // 校验是否有衍生单位引用待删除的记录
-        for (Long id : ids) {
-            BdUnitOfMeasureVo unit = baseMapper.selectVoById(id);
-            if (unit != null && Long.valueOf(1).equals(unit.getIsBase())) {
-                boolean hasChildren = baseMapper.exists(
-                    Wrappers.<BdUnitOfMeasure>lambdaQuery()
-                        .eq(BdUnitOfMeasure::getPrimaryId, id)
-                );
-                if (hasChildren) {
-                    throw new ServiceException("基本单位「" + unit.getUomName() + "」已被其他单位引用，无法删除");
-                }
+        // 一次性查询所有待删除记录
+        List<BdUnitOfMeasure> units = baseMapper.selectBatchIds(List.of(ids));
+        if (units.isEmpty()) {
+            return 0;
+        }
+
+        // 分离出基本单位ID
+        List<Long> baseUnitIds = units.stream()
+            .filter(u -> Long.valueOf(1).equals(u.getIsBase()))
+            .map(BdUnitOfMeasure::getUomId)
+            .toList();
+
+        if (!baseUnitIds.isEmpty()) {
+            // 一次性查询哪些基本单位被引用
+            List<BdUnitOfMeasure> children = baseMapper.selectList(
+                Wrappers.<BdUnitOfMeasure>lambdaQuery()
+                    .in(BdUnitOfMeasure::getPrimaryId, baseUnitIds)
+            );
+
+            if (!children.isEmpty()) {
+                Set<Long> referencedIds = children.stream()
+                    .map(BdUnitOfMeasure::getPrimaryId)
+                    .collect(Collectors.toSet());
+                String names = units.stream()
+                    .filter(u -> referencedIds.contains(u.getUomId()))
+                    .map(BdUnitOfMeasure::getUomName)
+                    .collect(Collectors.joining("、"));
+                throw new ServiceException("基本单位「" + names + "」已被其他单位引用，无法删除");
             }
         }
+
         return baseMapper.deleteBatchIds(List.of(ids));
+    }
+
+    /**
+     * 校验单位编码唯一性
+     */
+    private void checkUomCodeUnique(BdUnitOfMeasureBo bo) {
+        if (StringUtils.isBlank(bo.getUomCode())) {
+            return;
+        }
+        boolean exists = baseMapper.exists(
+            Wrappers.<BdUnitOfMeasure>lambdaQuery()
+                .eq(BdUnitOfMeasure::getUomCode, bo.getUomCode())
+                .ne(bo.getUomId() != null, BdUnitOfMeasure::getUomId, bo.getUomId())
+        );
+        if (exists) {
+            throw new ServiceException("单位编码「" + bo.getUomCode() + "」已存在");
+        }
+    }
+
+    /**
+     * 自动回填基本单位名称
+     */
+    private void fillPrimaryName(BdUnitOfMeasureBo bo) {
+        if (bo.getPrimaryId() != null && StringUtils.isBlank(bo.getPrimaryName())) {
+            BdUnitOfMeasureVo primary = baseMapper.selectVoById(bo.getPrimaryId());
+            if (primary != null) {
+                bo.setPrimaryName(primary.getUomName());
+            }
+        }
+    }
+
+    /**
+     * 如果基本单位名称发生变化，同步更新所有衍生单位的 primary_name
+     */
+    private void syncPrimaryNameIfChanged(BdUnitOfMeasureBo bo) {
+        if (bo.getUomId() == null || !Long.valueOf(1).equals(bo.getIsBase())) {
+            return;
+        }
+        BdUnitOfMeasure existing = baseMapper.selectById(bo.getUomId());
+        if (existing == null) {
+            return;
+        }
+        if (StringUtils.isNotBlank(bo.getUomName()) && !bo.getUomName().equals(existing.getUomName())) {
+            baseMapper.update(null,
+                Wrappers.<BdUnitOfMeasure>lambdaUpdate()
+                    .set(BdUnitOfMeasure::getPrimaryName, bo.getUomName())
+                    .eq(BdUnitOfMeasure::getPrimaryId, bo.getUomId())
+            );
+        }
     }
 
     private LambdaQueryWrapper<BdUnitOfMeasure> buildQueryWrapper(BdUnitOfMeasureBo bo) {
@@ -129,6 +194,7 @@ public class BdUnitOfMeasureServiceImpl implements IBdUnitOfMeasureService {
         lqw.eq(StringUtils.isNotBlank(bo.getCategory()), BdUnitOfMeasure::getCategory, bo.getCategory());
         lqw.eq(bo.getStatus() != null, BdUnitOfMeasure::getStatus, bo.getStatus());
         lqw.eq(bo.getIsBase() != null, BdUnitOfMeasure::getIsBase, bo.getIsBase());
+        lqw.ne(bo.getExcludeId() != null, BdUnitOfMeasure::getUomId, bo.getExcludeId());
         lqw.orderByAsc(BdUnitOfMeasure::getSortOrder);
         return lqw;
     }

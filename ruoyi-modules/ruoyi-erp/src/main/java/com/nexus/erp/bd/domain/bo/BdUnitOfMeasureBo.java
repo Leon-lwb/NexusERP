@@ -84,4 +84,9 @@ public class BdUnitOfMeasureBo extends BaseEntity {
      */
     private Long[] ids;
 
+    /**
+     * 排除的单位ID（用于选择基本单位时排除自身）
+     */
+    private Long excludeId;
+
 }
