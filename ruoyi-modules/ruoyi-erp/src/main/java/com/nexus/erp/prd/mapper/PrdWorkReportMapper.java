@@ -7,7 +7,7 @@ import com.nexus.erp.prd.domain.vo.PrdWorkReportVo;
 /**
  * 生产报工Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface PrdWorkReportMapper extends BaseMapperPlus<PrdWorkReport, PrdWorkReportVo> {
 }

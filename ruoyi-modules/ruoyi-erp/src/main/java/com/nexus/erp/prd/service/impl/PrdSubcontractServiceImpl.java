@@ -225,13 +225,13 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
     }
 
     private LambdaQueryWrapper<PrdSubcontract> buildQueryWrapper(PrdSubcontractBo bo) {
-        LambdaQueryWrapper<PrdSubcontract> lqw = Wrappers.lambdaQuery();
-        lqw.like(StringUtils.isNotBlank(bo.getSubcontractNo()), PrdSubcontract::getSubcontractNo, bo.getSubcontractNo());
-        lqw.like(StringUtils.isNotBlank(bo.getVendorName()), PrdSubcontract::getVendorName, bo.getVendorName());
-        lqw.like(StringUtils.isNotBlank(bo.getMaterialCode()), PrdSubcontract::getMaterialCode, bo.getMaterialCode());
-        lqw.like(StringUtils.isNotBlank(bo.getMaterialName()), PrdSubcontract::getMaterialName, bo.getMaterialName());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PrdSubcontract::getStatus, bo.getStatus());
-        lqw.orderByDesc(PrdSubcontract::getCreateTime);
+        LambdaQueryWrapper<PrdSubcontract> lqw = Wrappers.<PrdSubcontract>lambdaQuery()
+            .like(StringUtils.isNotBlank(bo.getSubcontractNo()), PrdSubcontract::getSubcontractNo, bo.getSubcontractNo())
+            .like(StringUtils.isNotBlank(bo.getVendorName()), PrdSubcontract::getVendorName, bo.getVendorName())
+            .like(StringUtils.isNotBlank(bo.getMaterialCode()), PrdSubcontract::getMaterialCode, bo.getMaterialCode())
+            .like(StringUtils.isNotBlank(bo.getMaterialName()), PrdSubcontract::getMaterialName, bo.getMaterialName())
+            .eq(StringUtils.isNotBlank(bo.getStatus()), PrdSubcontract::getStatus, bo.getStatus())
+            .orderByDesc(PrdSubcontract::getCreateTime);
         return lqw;
     }
 }

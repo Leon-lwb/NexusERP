@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 物料清单视图对象 prd_material_requirement
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @ExcelIgnoreUnannotated

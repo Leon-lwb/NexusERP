@@ -12,7 +12,7 @@ import java.io.Serializable;
 /**
  * 客户信息视图对象 bd_client
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-09-18
  */
 @Data

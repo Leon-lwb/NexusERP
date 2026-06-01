@@ -14,7 +14,7 @@ import java.util.List;
  * 定义采购退货单的业务操作，包括 CRUD、确认和执行退货出库等功能。
  * 执行退货时会扣减物料库存并生成库存交易记录。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IPuPurchaseReturnService extends WfCallBackServiceI {
 

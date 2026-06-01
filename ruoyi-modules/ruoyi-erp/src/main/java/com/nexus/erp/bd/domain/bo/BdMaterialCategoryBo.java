@@ -11,7 +11,7 @@ import com.nexus.erp.bd.domain.BdMaterialCategory;
 /**
  * 物料产品分类业务对象 bd_material_category
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-10-01
  */
 @Data

@@ -13,7 +13,7 @@ import java.util.Date;
 /**
  * 生产工单资源分配视图对象 prd_work_order_resource
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @ExcelIgnoreUnannotated

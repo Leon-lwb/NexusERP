@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 /**
  * 物料入库单明细视图对象 wm_material_receive_detail
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @ExcelIgnoreUnannotated

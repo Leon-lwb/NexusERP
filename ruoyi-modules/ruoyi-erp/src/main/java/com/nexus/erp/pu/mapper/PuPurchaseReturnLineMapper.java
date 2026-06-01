@@ -10,7 +10,7 @@ import com.nexus.erp.pu.domain.PuPurchaseReturnLine;
  * <p>
  * 提供采购退货明细行的基础增删改查功能，继承自 {@link BaseMapperPlus} 自动获得通用 CRUD 方法。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Mapper
 public interface PuPurchaseReturnLineMapper extends BaseMapperPlus<PuPurchaseReturnLine, PuPurchaseReturnLine>, BaseMapper<PuPurchaseReturnLine> {

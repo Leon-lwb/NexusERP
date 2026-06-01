@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * 库存清单视图对象 wm_material_stock
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-12-03
  */
 @Data

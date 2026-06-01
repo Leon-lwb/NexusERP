@@ -15,7 +15,7 @@ import java.util.List;
  * <p>
  * 定义物料需求清单相关的业务逻辑操作，包括物料需求的查询、BOM 导入、净需求计算及树形展示等。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IPrdMaterialRequirementService {
 

@@ -32,7 +32,7 @@ import java.util.List;
  *   <li>从 BOM 导入物料需求明细</li>
  * </ul>
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

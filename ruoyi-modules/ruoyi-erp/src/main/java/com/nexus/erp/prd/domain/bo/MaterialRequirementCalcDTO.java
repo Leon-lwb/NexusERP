@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 /**
  * 物料需求计算DTO
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @AllArgsConstructor

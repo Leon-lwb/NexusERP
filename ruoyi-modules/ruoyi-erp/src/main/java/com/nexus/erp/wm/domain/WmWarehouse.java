@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 仓库设置对象 wm_warehouse
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-09-30
  */
 @Data

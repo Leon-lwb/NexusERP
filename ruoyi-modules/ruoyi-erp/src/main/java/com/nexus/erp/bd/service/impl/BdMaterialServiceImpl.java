@@ -127,15 +127,15 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
      * @return 查询条件包装器
      */
     private LambdaQueryWrapper<BdMaterial> buildQueryWrapper(BdMaterialBo bo) {
-        LambdaQueryWrapper<BdMaterial> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getMaterialCode()), BdMaterial::getMaterialCode, bo.getMaterialCode());
-        lqw.like(StringUtils.isNotBlank(bo.getMaterialName()), BdMaterial::getMaterialName, bo.getMaterialName());
-        lqw.eq(StringUtils.isNotBlank(bo.getMaterialSpec()), BdMaterial::getMaterialSpec, bo.getMaterialSpec());
-        lqw.eq(bo.getMaterialType() != null, BdMaterial::getMaterialType, bo.getMaterialType());
-        lqw.eq(bo.getSourceType() != null, BdMaterial::getSourceType, bo.getSourceType());
-        lqw.eq(bo.getCategoryId() != null, BdMaterial::getCategoryId, bo.getCategoryId());
-        lqw.eq(bo.getStatus() != null, BdMaterial::getStatus, bo.getStatus());
-        lqw.eq(StringUtils.isNotBlank(bo.getQualityStatus()), BdMaterial::getQualityStatus, bo.getQualityStatus());
+        LambdaQueryWrapper<BdMaterial> lqw = Wrappers.<BdMaterial>lambdaQuery()
+            .eq(StringUtils.isNotBlank(bo.getMaterialCode()), BdMaterial::getMaterialCode, bo.getMaterialCode())
+            .like(StringUtils.isNotBlank(bo.getMaterialName()), BdMaterial::getMaterialName, bo.getMaterialName())
+            .eq(StringUtils.isNotBlank(bo.getMaterialSpec()), BdMaterial::getMaterialSpec, bo.getMaterialSpec())
+            .eq(bo.getMaterialType() != null, BdMaterial::getMaterialType, bo.getMaterialType())
+            .eq(bo.getSourceType() != null, BdMaterial::getSourceType, bo.getSourceType())
+            .eq(bo.getCategoryId() != null, BdMaterial::getCategoryId, bo.getCategoryId())
+            .eq(bo.getStatus() != null, BdMaterial::getStatus, bo.getStatus())
+            .eq(StringUtils.isNotBlank(bo.getQualityStatus()), BdMaterial::getQualityStatus, bo.getQualityStatus());
         return lqw;
     }
 }

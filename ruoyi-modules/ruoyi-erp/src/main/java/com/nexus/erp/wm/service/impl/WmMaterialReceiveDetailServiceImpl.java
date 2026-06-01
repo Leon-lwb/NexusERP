@@ -3,7 +3,7 @@ package com.nexus.erp.wm.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -22,14 +22,11 @@ import java.util.List;
 /**
  * 物料入库单明细Service业务层处理
  *
- * @author ruoyi
+ * @author nexus
  */
-@RequiredArgsConstructor
 @DS("erp")
 @Service
-public class WmMaterialReceiveDetailServiceImpl implements IWmMaterialReceiveDetailService {
-
-    private final WmMaterialReceiveDetailMapper baseMapper;
+public class WmMaterialReceiveDetailServiceImpl extends ServiceImpl<WmMaterialReceiveDetailMapper, WmMaterialReceiveDetail> implements IWmMaterialReceiveDetailService {
 
     @Override
     public TableDataInfo<WmMaterialReceiveDetailVo> selectPageList(WmMaterialReceiveDetailBo bo, PageQuery pageQuery) {

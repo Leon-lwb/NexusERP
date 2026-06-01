@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 销售退货对象 so_return
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

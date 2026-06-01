@@ -15,7 +15,7 @@ import java.util.List;
  * <p>
  * 定义生产计划相关的业务逻辑操作，包括生产计划的查询、版本管理、BOM 计算、物料需求生成及工单生成等。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IPrdProductionPlanService {
 

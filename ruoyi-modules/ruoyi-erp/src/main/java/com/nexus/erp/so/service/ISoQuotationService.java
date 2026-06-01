@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 销售报价Service接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface ISoQuotationService {
 

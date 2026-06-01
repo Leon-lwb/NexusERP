@@ -13,7 +13,7 @@ import java.util.Date;
 /**
  * 库存过账服务
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IWmStockOperationService {
 

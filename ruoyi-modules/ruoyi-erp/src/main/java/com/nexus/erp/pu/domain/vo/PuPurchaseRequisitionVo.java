@@ -18,7 +18,7 @@ import java.util.List;
  * 与 {@link PuPurchaseRequisition} 实体通过 MapStruct 自动映射转换。
  * 包含申请头展示信息和明细行列表 {@link #puPurchaseRequisitionLineList}。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

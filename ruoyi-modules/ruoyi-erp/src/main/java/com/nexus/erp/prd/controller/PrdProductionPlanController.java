@@ -33,7 +33,7 @@ import java.util.List;
  *   <li>BOM 相关：BOM 树计算、物料需求生成、工单生成</li>
  * </ul>
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

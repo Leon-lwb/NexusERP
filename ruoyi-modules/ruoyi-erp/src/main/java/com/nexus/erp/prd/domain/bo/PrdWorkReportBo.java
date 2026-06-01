@@ -12,7 +12,7 @@ import java.util.Date;
 /**
  * 生产报工业务对象 prd_work_report
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

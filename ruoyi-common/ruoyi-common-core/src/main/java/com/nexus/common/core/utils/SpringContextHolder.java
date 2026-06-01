@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * Spring上下文工具类
  *
- * @author ruoyi
+ * @author nexus
  */
 @Component
 public final class SpringContextHolder implements ApplicationContextAware, BeanFactoryPostProcessor {

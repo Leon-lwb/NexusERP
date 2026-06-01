@@ -3,7 +3,7 @@ package com.nexus.common.ratelimiter.enums;
 /**
  * 限流类型
  *
- * @author ruoyi
+ * @author nexus
  */
 
 public enum LimitType {

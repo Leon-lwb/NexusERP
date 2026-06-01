@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 销售退货视图对象 so_return
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @AutoMapper(target = SoReturn.class)

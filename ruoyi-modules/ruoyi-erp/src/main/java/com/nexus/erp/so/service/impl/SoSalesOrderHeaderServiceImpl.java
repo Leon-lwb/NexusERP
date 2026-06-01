@@ -10,10 +10,8 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.bd.domain.BdClientCredit;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdBom;
-import com.nexus.erp.bd.mapper.BdClientCreditMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
@@ -26,6 +24,7 @@ import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
+import com.nexus.erp.so.service.ICreditCheckService;
 import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
@@ -51,7 +50,7 @@ import java.util.Map;
 /**
  * 销售订单Service业务层处理
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -61,7 +60,6 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
 
     private final SoSalesOrderHeaderMapper baseMapper;
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
-    private final BdClientCreditMapper bdClientCreditMapper;
     private final BdMaterialMapper bdMaterialMapper;
     private final BdBomMapper bdBomMapper;
     private final PrdProductionPlanMapper prdProductionPlanMapper;
@@ -70,6 +68,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final ICreditCheckService creditCheckService;
 
     /**
      * 分页查询销售订单列表
@@ -189,15 +188,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             throw new RuntimeException("当前状态不允许确认");
         }
 
-        // 信用检查
-        String creditCheckResult = checkCredit(header);
-        if (!"OK".equals(creditCheckResult)) {
-            header.setCreditStatus("BLOCKED");
-            header.setCreditCheckTime(new Date());
-            header.setCreditBlockedBy(-1L);
-            baseMapper.updateById(header);
-            throw new RuntimeException("信用检查未通过：" + creditCheckResult);
-        }
+        // 信用检查与冻结
+        creditCheckService.checkAndFreeze(header.getClientId(), soId,
+            header.getTotalAmount() != null ? header.getTotalAmount() : BigDecimal.ZERO);
         header.setCreditStatus("PASSED");
         header.setCreditCheckTime(new Date());
 
@@ -244,6 +237,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         header.setOrderStatus(STATUS_CLOSED);
         header.setClosedTime(new Date());
         baseMapper.updateById(header);
+        creditCheckService.release(soId);
     }
 
     /**
@@ -263,6 +257,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         header.setCancelledTime(new Date());
         header.setCancelledReason(reason);
         baseMapper.updateById(header);
+        creditCheckService.release(soId);
     }
 
     // ==================== Flowable 工作流集成 ====================
@@ -377,62 +372,6 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     /**
-     * 信用检查
-     * 查询客户信用额度，计算已用额度（已确认未关闭订单合计），超额则阻止
-     */
-    private String checkCredit(SoSalesOrderHeader header) {
-        if (header.getClientId() == null) {
-            return "订单未关联客户";
-        }
-        try {
-            LambdaQueryWrapper<BdClientCredit> creditLqw = Wrappers.lambdaQuery();
-            creditLqw.eq(BdClientCredit::getClientId, header.getClientId());
-            BdClientCredit credit = bdClientCreditMapper.selectOne(creditLqw);
-            if (credit == null || credit.getClientCredit() == null) {
-                log.info("客户未配置信用额度，跳过信用检查, clientId={}", header.getClientId());
-                return "OK";
-            }
-
-            // 计算已用额度：已确认/已履行/部分发货的订单合计（排除已关闭/已取消）
-            LambdaQueryWrapper<SoSalesOrderHeader> usedLqw = Wrappers.lambdaQuery();
-            usedLqw.eq(SoSalesOrderHeader::getClientId, header.getClientId());
-            usedLqw.ne(SoSalesOrderHeader::getOrderStatus, STATUS_CLOSED);
-            usedLqw.ne(SoSalesOrderHeader::getOrderStatus, STATUS_CANCELLED);
-            usedLqw.ne(SoSalesOrderHeader::getOrderStatus, STATUS_DRAFT);
-            // 排除本订单（如果是修改后重新确认）
-            if (header.getSoId() != null) {
-                usedLqw.ne(SoSalesOrderHeader::getSoId, header.getSoId());
-            }
-            List<SoSalesOrderHeader> activeOrders = baseMapper.selectList(usedLqw);
-
-            BigDecimal usedAmount = BigDecimal.ZERO;
-            for (SoSalesOrderHeader order : activeOrders) {
-                if (order.getTotalAmount() != null) {
-                    usedAmount = usedAmount.add(order.getTotalAmount());
-                }
-            }
-
-            BigDecimal orderAmount = header.getTotalAmount() != null ? header.getTotalAmount() : BigDecimal.ZERO;
-            BigDecimal totalAmount = usedAmount.add(orderAmount);
-            BigDecimal creditLimit = BigDecimal.valueOf(credit.getClientCredit());
-
-            if (totalAmount.compareTo(creditLimit) > 0) {
-                log.warn("信用检查失败, clientId={}, 信用额度={}, 已用={}, 本次={}, 合计={}",
-                    header.getClientId(), creditLimit, usedAmount, orderAmount, totalAmount);
-                return "客户【" + credit.getClientName() + "】信用额度不足"
-                    + "（额度:" + creditLimit + ", 已用:" + usedAmount + ", 本次:" + orderAmount + "）";
-            }
-
-            log.info("信用检查通过, clientId={}, 额度={}, 已用={}, 本次={}",
-                header.getClientId(), creditLimit, usedAmount, orderAmount);
-            return "OK";
-        } catch (Exception e) {
-            log.error("信用检查异常, clientId={}", header.getClientId(), e);
-            return "信用检查系统异常：" + e.getMessage();
-        }
-    }
-
-    /**
      * Batch insert or update sales order lines
      */
     private void insertOrUpdateLines(Long soId, List<SoSalesOrderLineBo> lineBoList) {
@@ -497,20 +436,20 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     private LambdaQueryWrapper<SoSalesOrderHeader> buildQueryWrapper(SoSalesOrderHeaderBo bo) {
-        LambdaQueryWrapper<SoSalesOrderHeader> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(StringUtils.isNotBlank(bo.getSoNo()), SoSalesOrderHeader::getSoNo, bo.getSoNo());
-        lqw.eq(bo.getCoId() != null, SoSalesOrderHeader::getCoId, bo.getCoId());
-        lqw.eq(bo.getClientId() != null, SoSalesOrderHeader::getClientId, bo.getClientId());
-        lqw.like(StringUtils.isNotBlank(bo.getClientName()), SoSalesOrderHeader::getClientName, bo.getClientName());
-        lqw.eq(bo.getSalesRepId() != null, SoSalesOrderHeader::getSalesRepId, bo.getSalesRepId());
-        lqw.like(StringUtils.isNotBlank(bo.getSalesRepName()), SoSalesOrderHeader::getSalesRepName, bo.getSalesRepName());
-        lqw.eq(bo.getOrderDate() != null, SoSalesOrderHeader::getOrderDate, bo.getOrderDate());
-        lqw.eq(bo.getPromiseDate() != null, SoSalesOrderHeader::getPromiseDate, bo.getPromiseDate());
-        lqw.eq(bo.getRequestedDate() != null, SoSalesOrderHeader::getRequestedDate, bo.getRequestedDate());
-        lqw.eq(StringUtils.isNotBlank(bo.getCreditStatus()), SoSalesOrderHeader::getCreditStatus, bo.getCreditStatus());
-        lqw.eq(bo.getCreditBlockedBy() != null, SoSalesOrderHeader::getCreditBlockedBy, bo.getCreditBlockedBy());
-        lqw.eq(StringUtils.isNotBlank(bo.getOrderStatus()), SoSalesOrderHeader::getOrderStatus, bo.getOrderStatus());
-        lqw.eq(bo.getProjectId() != null, SoSalesOrderHeader::getProjectId, bo.getProjectId());
+        LambdaQueryWrapper<SoSalesOrderHeader> lqw = Wrappers.<SoSalesOrderHeader>lambdaQuery()
+            .eq(StringUtils.isNotBlank(bo.getSoNo()), SoSalesOrderHeader::getSoNo, bo.getSoNo())
+            .eq(bo.getCoId() != null, SoSalesOrderHeader::getCoId, bo.getCoId())
+            .eq(bo.getClientId() != null, SoSalesOrderHeader::getClientId, bo.getClientId())
+            .like(StringUtils.isNotBlank(bo.getClientName()), SoSalesOrderHeader::getClientName, bo.getClientName())
+            .eq(bo.getSalesRepId() != null, SoSalesOrderHeader::getSalesRepId, bo.getSalesRepId())
+            .like(StringUtils.isNotBlank(bo.getSalesRepName()), SoSalesOrderHeader::getSalesRepName, bo.getSalesRepName())
+            .eq(bo.getOrderDate() != null, SoSalesOrderHeader::getOrderDate, bo.getOrderDate())
+            .eq(bo.getPromiseDate() != null, SoSalesOrderHeader::getPromiseDate, bo.getPromiseDate())
+            .eq(bo.getRequestedDate() != null, SoSalesOrderHeader::getRequestedDate, bo.getRequestedDate())
+            .eq(StringUtils.isNotBlank(bo.getCreditStatus()), SoSalesOrderHeader::getCreditStatus, bo.getCreditStatus())
+            .eq(bo.getCreditBlockedBy() != null, SoSalesOrderHeader::getCreditBlockedBy, bo.getCreditBlockedBy())
+            .eq(StringUtils.isNotBlank(bo.getOrderStatus()), SoSalesOrderHeader::getOrderStatus, bo.getOrderStatus())
+            .eq(bo.getProjectId() != null, SoSalesOrderHeader::getProjectId, bo.getProjectId());
         return lqw;
     }
 }

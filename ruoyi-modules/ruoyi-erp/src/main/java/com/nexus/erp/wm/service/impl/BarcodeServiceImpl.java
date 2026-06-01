@@ -13,7 +13,7 @@ import java.util.Date;
  * <p>
  * 基于条码规则生成符合业务规范的条码字符串。
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @Service

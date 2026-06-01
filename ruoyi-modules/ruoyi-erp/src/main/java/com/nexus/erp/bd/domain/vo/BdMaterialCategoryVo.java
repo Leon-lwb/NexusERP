@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * 物料产品分类视图对象 bd_material_category
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-10-01
  */
 @Data

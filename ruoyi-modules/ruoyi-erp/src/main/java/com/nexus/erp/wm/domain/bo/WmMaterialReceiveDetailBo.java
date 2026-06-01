@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 /**
  * 物料入库单明细分业务对象 wm_material_receive_detail
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

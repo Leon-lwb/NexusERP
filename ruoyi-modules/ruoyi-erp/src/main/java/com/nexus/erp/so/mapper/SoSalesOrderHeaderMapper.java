@@ -7,7 +7,7 @@ import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 /**
  * 销售订单Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface SoSalesOrderHeaderMapper extends BaseMapperPlus<SoSalesOrderHeader, SoSalesOrderHeaderVo> {
 }

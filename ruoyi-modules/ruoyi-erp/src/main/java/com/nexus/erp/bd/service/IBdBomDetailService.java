@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * BOM明细Service接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IBdBomDetailService {
 

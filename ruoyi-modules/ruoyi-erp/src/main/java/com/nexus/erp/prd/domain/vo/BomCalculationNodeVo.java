@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 /**
  * BOM计算节点VO
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 public class BomCalculationNodeVo implements Serializable {

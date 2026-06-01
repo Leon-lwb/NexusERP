@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * 根据库存操作类型枚举，获取对应的策略实现类。
  * 采用Spring依赖注入自动收集所有策略实例，构建类型到策略的映射关系。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Component
 public class StockOperationStrategyFactory {

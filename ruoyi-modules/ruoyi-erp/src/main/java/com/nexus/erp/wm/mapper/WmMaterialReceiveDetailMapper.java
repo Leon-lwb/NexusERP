@@ -7,7 +7,7 @@ import com.nexus.erp.wm.domain.vo.WmMaterialReceiveDetailVo;
 /**
  * 物料入库单明细Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface WmMaterialReceiveDetailMapper extends BaseMapperPlus<WmMaterialReceiveDetail, WmMaterialReceiveDetailVo> {
 }

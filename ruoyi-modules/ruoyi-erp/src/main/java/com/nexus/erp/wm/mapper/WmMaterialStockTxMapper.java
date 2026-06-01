@@ -8,7 +8,7 @@ import com.nexus.erp.wm.domain.vo.WmMaterialStockTxVo;
 /**
  * 库存事务Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-12-12
  */
 @Mapper

@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  * <p>
  * 实现物料需求清单相关的业务逻辑，包括物料需求的查询、BOM 导入、净需求计算及树形展示等。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @RequiredArgsConstructor

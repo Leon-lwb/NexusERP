@@ -15,7 +15,7 @@ import java.util.Date;
 /**
  * 生产计划对象 prd_production_plan
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

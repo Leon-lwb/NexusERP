@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 /**
  * 销售出库明细业务对象 wm_sales_issue_line
  *
- * @author ruoyi
+ * @author nexus
  * @date 2026-04-03
  */
 @Data

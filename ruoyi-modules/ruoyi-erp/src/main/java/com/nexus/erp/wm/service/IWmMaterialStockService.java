@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 库存清单Service接口
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-12-03
  */
 public interface IWmMaterialStockService {

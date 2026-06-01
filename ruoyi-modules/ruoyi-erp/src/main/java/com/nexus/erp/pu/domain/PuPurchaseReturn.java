@@ -19,7 +19,7 @@ import java.util.List;
  * 存储采购退货单的主表信息，记录因质量问题、规格不符等原因将已采购物料退回供应商的业务单据。
  * 退货单关联原始采购订单，经确认和执行后扣减对应物料库存并生成库存交易记录。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

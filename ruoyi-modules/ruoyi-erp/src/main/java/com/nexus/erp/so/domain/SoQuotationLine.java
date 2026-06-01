@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * 销售报价行对象 so_quotation_line
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

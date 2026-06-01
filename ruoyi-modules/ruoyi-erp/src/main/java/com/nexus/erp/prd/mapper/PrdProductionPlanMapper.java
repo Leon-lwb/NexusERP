@@ -7,7 +7,7 @@ import com.nexus.erp.prd.domain.vo.PrdProductionPlanVo;
 /**
  * 生产计划Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface PrdProductionPlanMapper extends BaseMapperPlus<PrdProductionPlan, PrdProductionPlanVo> {
 }

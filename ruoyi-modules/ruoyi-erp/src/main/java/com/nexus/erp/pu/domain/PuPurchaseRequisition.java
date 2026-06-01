@@ -19,7 +19,7 @@ import java.util.List;
  * 采购申请由企业内部人员根据生产计划或库存需求发起，经审批通过后
  * 可转换为采购订单，正式向供应商下达采购指令。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

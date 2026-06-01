@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 提供生产报工记录的 RESTful API 接口，用于管理工人生产工时的上报与统计。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

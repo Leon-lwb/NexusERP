@@ -17,7 +17,7 @@ import java.util.Date;
  * 采购订单是采购管理的核心单据，由采购申请转单或直接创建，
  * 经提交、审批后用于向供应商正式下达采购需求，后续可联动生成到货通知和收货单。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

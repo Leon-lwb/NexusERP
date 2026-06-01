@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 库存调拨单Service接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IWmTransferService extends WfCallBackServiceI {
 

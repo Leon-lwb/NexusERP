@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * 销售出库视图对象 wm_sales_issue
  *
- * @author ruoyi
+ * @author nexus
  * @date 2026-04-03
  */
 @Data

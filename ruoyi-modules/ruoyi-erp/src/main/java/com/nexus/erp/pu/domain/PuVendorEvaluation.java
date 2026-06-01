@@ -17,7 +17,7 @@ import java.math.BigDecimal;
  * 从交货及时率、质量合格率、价格竞争力三个维度综合计算供应商得分和等级。
  * 评估周期通常为自然月，评估结果用于供应商分级管理和采购决策优化。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

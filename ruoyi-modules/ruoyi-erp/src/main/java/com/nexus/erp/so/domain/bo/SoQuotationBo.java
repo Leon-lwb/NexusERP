@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * 销售报价业务对象 so_quotation
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -3,6 +3,7 @@ package com.nexus.erp.wm.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -26,14 +27,13 @@ import java.util.List;
 /**
  * 到货通知Service业务层处理
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @DS("erp")
 @Service
-public class WmArrivalNoticeServiceImpl implements IWmArrivalNoticeService {
+public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMapper, WmArrivalNotice> implements IWmArrivalNoticeService {
 
-    private final WmArrivalNoticeMapper baseMapper;
     private final WmArrivalNoticeLineMapper noticeLineMapper;
 
     @Override

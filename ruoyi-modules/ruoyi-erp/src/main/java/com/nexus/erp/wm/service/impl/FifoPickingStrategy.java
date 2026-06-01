@@ -18,7 +18,7 @@ import java.util.List;
  * <p>
  * 按入库日期从早到晚排序，优先拣选最早入库的库存。
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @Service("fifoPickingStrategy")

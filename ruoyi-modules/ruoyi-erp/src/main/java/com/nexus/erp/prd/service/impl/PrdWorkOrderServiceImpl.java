@@ -52,7 +52,7 @@ import java.util.Map;
  * <p>
  * 实现生产工单相关的业务逻辑，包括工单的查询、新增、修改、删除、状态流转及工作流审批等。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -507,26 +507,26 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     }
 
     private LambdaQueryWrapper<PrdWorkOrder> buildQueryWrapper(PrdWorkOrderBo bo) {
-        LambdaQueryWrapper<PrdWorkOrder> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getWoNo()), PrdWorkOrder::getWoNo, bo.getWoNo());
-        lqw.like(StringUtils.isNotBlank(bo.getPlanName()), PrdWorkOrder::getPlanName, bo.getPlanName());
-        lqw.eq(StringUtils.isNotBlank(bo.getSourceType()), PrdWorkOrder::getSourceType, bo.getSourceType());
-        lqw.eq(bo.getSourceId() != null, PrdWorkOrder::getSourceId, bo.getSourceId());
-        lqw.eq(StringUtils.isNotBlank(bo.getSourceNo()), PrdWorkOrder::getSourceNo, bo.getSourceNo());
-        lqw.eq(bo.getSourceLineId() != null, PrdWorkOrder::getSourceLineId, bo.getSourceLineId());
-        lqw.eq(bo.getMaterialId() != null, PrdWorkOrder::getMaterialId, bo.getMaterialId());
-        lqw.like(StringUtils.isNotBlank(bo.getMaterialName()), PrdWorkOrder::getMaterialName, bo.getMaterialName());
-        lqw.eq(StringUtils.isNotBlank(bo.getWoStatus()), PrdWorkOrder::getWoStatus, bo.getWoStatus());
-        lqw.eq(bo.getWorkshopId() != null, PrdWorkOrder::getWorkshopId, bo.getWorkshopId());
-        lqw.like(StringUtils.isNotBlank(bo.getWorkshopName()), PrdWorkOrder::getWorkshopName, bo.getWorkshopName());
-        lqw.eq(bo.getWorkstationId() != null, PrdWorkOrder::getWorkstationId, bo.getWorkstationId());
-        lqw.like(StringUtils.isNotBlank(bo.getWorkstationName()), PrdWorkOrder::getWorkstationName, bo.getWorkstationName());
-        lqw.eq(bo.getProductionLineId() != null, PrdWorkOrder::getProductionLineId, bo.getProductionLineId());
-        lqw.eq(bo.getResponsibleId() != null, PrdWorkOrder::getResponsibleId, bo.getResponsibleId());
-        lqw.like(StringUtils.isNotBlank(bo.getResponsibleName()), PrdWorkOrder::getResponsibleName, bo.getResponsibleName());
-        lqw.eq(bo.getTeamId() != null, PrdWorkOrder::getTeamId, bo.getTeamId());
-        lqw.like(StringUtils.isNotBlank(bo.getTeamName()), PrdWorkOrder::getTeamName, bo.getTeamName());
-        lqw.eq(bo.getPriority() != null, PrdWorkOrder::getPriority, bo.getPriority());
+        LambdaQueryWrapper<PrdWorkOrder> lqw = Wrappers.<PrdWorkOrder>lambdaQuery()
+            .eq(StringUtils.isNotBlank(bo.getWoNo()), PrdWorkOrder::getWoNo, bo.getWoNo())
+            .like(StringUtils.isNotBlank(bo.getPlanName()), PrdWorkOrder::getPlanName, bo.getPlanName())
+            .eq(StringUtils.isNotBlank(bo.getSourceType()), PrdWorkOrder::getSourceType, bo.getSourceType())
+            .eq(bo.getSourceId() != null, PrdWorkOrder::getSourceId, bo.getSourceId())
+            .eq(StringUtils.isNotBlank(bo.getSourceNo()), PrdWorkOrder::getSourceNo, bo.getSourceNo())
+            .eq(bo.getSourceLineId() != null, PrdWorkOrder::getSourceLineId, bo.getSourceLineId())
+            .eq(bo.getMaterialId() != null, PrdWorkOrder::getMaterialId, bo.getMaterialId())
+            .like(StringUtils.isNotBlank(bo.getMaterialName()), PrdWorkOrder::getMaterialName, bo.getMaterialName())
+            .eq(StringUtils.isNotBlank(bo.getWoStatus()), PrdWorkOrder::getWoStatus, bo.getWoStatus())
+            .eq(bo.getWorkshopId() != null, PrdWorkOrder::getWorkshopId, bo.getWorkshopId())
+            .like(StringUtils.isNotBlank(bo.getWorkshopName()), PrdWorkOrder::getWorkshopName, bo.getWorkshopName())
+            .eq(bo.getWorkstationId() != null, PrdWorkOrder::getWorkstationId, bo.getWorkstationId())
+            .like(StringUtils.isNotBlank(bo.getWorkstationName()), PrdWorkOrder::getWorkstationName, bo.getWorkstationName())
+            .eq(bo.getProductionLineId() != null, PrdWorkOrder::getProductionLineId, bo.getProductionLineId())
+            .eq(bo.getResponsibleId() != null, PrdWorkOrder::getResponsibleId, bo.getResponsibleId())
+            .like(StringUtils.isNotBlank(bo.getResponsibleName()), PrdWorkOrder::getResponsibleName, bo.getResponsibleName())
+            .eq(bo.getTeamId() != null, PrdWorkOrder::getTeamId, bo.getTeamId())
+            .like(StringUtils.isNotBlank(bo.getTeamName()), PrdWorkOrder::getTeamName, bo.getTeamName())
+            .eq(bo.getPriority() != null, PrdWorkOrder::getPriority, bo.getPriority());
         return lqw;
     }
 

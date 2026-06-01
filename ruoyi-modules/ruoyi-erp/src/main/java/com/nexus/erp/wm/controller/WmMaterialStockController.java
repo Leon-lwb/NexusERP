@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * <p>
  * 提供物料库存清单的 RESTful API 接口，包括分页查询、详情查询、新增、编辑、删除及按分类查看库存功能。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

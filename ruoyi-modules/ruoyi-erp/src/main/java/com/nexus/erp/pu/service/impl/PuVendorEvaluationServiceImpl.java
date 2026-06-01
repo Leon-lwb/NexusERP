@@ -2,6 +2,7 @@ package com.nexus.erp.pu.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,7 @@ import java.util.Map;
  * 评估算法基于交货及时率（40%）、质量合格率（35%）、价格竞争力（25%）加权计算综合评分，
  * 并按得分划分为 A/B/C/D 四个等级。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -441,12 +442,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
     }
 
     private LambdaQueryWrapper<PuVendorEvaluation> buildQueryWrapper(PuVendorEvaluationBo bo) {
-        LambdaQueryWrapper<PuVendorEvaluation> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(bo.getVendorId() != null, PuVendorEvaluation::getVendorId, bo.getVendorId());
-        lqw.eq(StringUtils.isNotBlank(bo.getEvalPeriod()), PuVendorEvaluation::getEvalPeriod, bo.getEvalPeriod());
-        lqw.like(StringUtils.isNotBlank(bo.getVendorName()), PuVendorEvaluation::getVendorName, bo.getVendorName());
-        lqw.eq(StringUtils.isNotBlank(bo.getEvalLevel()), PuVendorEvaluation::getEvalLevel, bo.getEvalLevel());
-        lqw.orderByDesc(PuVendorEvaluation::getCreateTime);
+        LambdaQueryWrapper<PuVendorEvaluation> lqw = Wrappers.<PuVendorEvaluation>lambdaQuery()
+            .eq(bo.getVendorId() != null, PuVendorEvaluation::getVendorId, bo.getVendorId())
+            .eq(StringUtils.isNotBlank(bo.getEvalPeriod()), PuVendorEvaluation::getEvalPeriod, bo.getEvalPeriod())
+            .like(StringUtils.isNotBlank(bo.getVendorName()), PuVendorEvaluation::getVendorName, bo.getVendorName())
+            .eq(StringUtils.isNotBlank(bo.getEvalLevel()), PuVendorEvaluation::getEvalLevel, bo.getEvalLevel())
+            .orderByDesc(PuVendorEvaluation::getCreateTime);
         return lqw;
     }
 }

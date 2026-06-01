@@ -16,7 +16,7 @@ import java.math.BigDecimal;
  * 与 {@link PuVendorEvaluation} 实体通过 MapStruct 自动映射转换。
  * 展示供应商在各评估维度的得分、等级及统计明细。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

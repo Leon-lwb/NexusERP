@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 库位Service接口
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-12-02
  */
 public interface IWmStorageLocationService {

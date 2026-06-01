@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 01/06/2026 00:24:07
+ Date: 02/06/2026 00:48:58
 */
 
 SET NAMES utf8mb4;
@@ -2362,6 +2362,30 @@ INSERT INTO `sch_worker` VALUES (20, '000000', 113, '黄俊杰', 'SCZX2025122202
 INSERT INTO `sch_worker` VALUES (21, '000000', 114, '林小雨', 'SCZX20251222026', NULL, '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
 
 -- ----------------------------
+-- Table structure for so_credit_usage
+-- ----------------------------
+DROP TABLE IF EXISTS `so_credit_usage`;
+CREATE TABLE `so_credit_usage`  (
+  `usage_id` bigint(20) NOT NULL,
+  `tenant_id` bigint(20) NOT NULL DEFAULT 0,
+  `client_id` bigint(20) NOT NULL,
+  `so_id` bigint(20) NOT NULL,
+  `amount` decimal(14, 2) NOT NULL,
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'FROZEN',
+  `freeze_time` datetime NULL DEFAULT NULL,
+  `release_time` datetime NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`usage_id`) USING BTREE,
+  INDEX `idx_client`(`client_id`) USING BTREE,
+  INDEX `idx_so`(`so_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '信用占用记录' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of so_credit_usage
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for so_customer_order
 -- ----------------------------
 DROP TABLE IF EXISTS `so_customer_order`;
@@ -2414,6 +2438,60 @@ INSERT INTO `so_customer_order` VALUES (8, '000000', 'EDI20241202001', 9, NULL, 
 INSERT INTO `so_customer_order` VALUES (9, '000000', 'EDI20241203001', 10, NULL, NULL, NULL, '2024-12-03 00:00:00', '2024-12-25 00:00:00', 'CNY', 180000.00, 'PENDING_REVIEW', 0, 'CARREFOUR-PO-20241203', 'EDI', NULL, NULL, NULL, NULL, '家乐福库存补充', 103, 1, '2024-12-03 02:45:00', 1, '2025-10-21 17:48:31', '0');
 INSERT INTO `so_customer_order` VALUES (10, '000000', 'CO20241130001', 5, NULL, '陈总', '13600136004', '2024-11-30 00:00:00', '2024-12-15 00:00:00', 'CNY', 75000.00, 'CANCELLED', 0, 'PO-2024-11-005', 'SALES', NULL, NULL, NULL, NULL, '客户项目变更取消', 103, 1, '2024-11-30 14:20:00', 1, '2025-10-21 17:48:31', '0');
 INSERT INTO `so_customer_order` VALUES (2058005870289227777, '000000', 'CO20260523001', 2, '小明科技有限公司', '李明', '0755-88888888', '2026-05-23 00:00:00', '2026-05-31 00:00:00', 'CNY', 1000.00, NULL, 1, NULL, 'SALES', 'C00003', NULL, 101, '麦得朶', NULL, 103, 1, '2026-05-23 10:03:30', 1, '2026-05-23 10:03:30', '0');
+
+-- ----------------------------
+-- Table structure for so_price_list
+-- ----------------------------
+DROP TABLE IF EXISTS `so_price_list`;
+CREATE TABLE `so_price_list`  (
+  `price_list_id` bigint(20) NOT NULL,
+  `tenant_id` bigint(20) NOT NULL DEFAULT 0,
+  `list_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `list_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `list_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'BASE',
+  `client_id` bigint(20) NULL DEFAULT NULL,
+  `currency` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY',
+  `priority` int(11) NULL DEFAULT 0,
+  `valid_from` date NULL DEFAULT NULL,
+  `valid_to` date NULL DEFAULT NULL,
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ACTIVE',
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`price_list_id`) USING BTREE,
+  UNIQUE INDEX `uk_code_tenant`(`list_code`, `tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '销售价格表头' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of so_price_list
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for so_price_list_line
+-- ----------------------------
+DROP TABLE IF EXISTS `so_price_list_line`;
+CREATE TABLE `so_price_list_line`  (
+  `line_id` bigint(20) NOT NULL,
+  `tenant_id` bigint(20) NOT NULL DEFAULT 0,
+  `price_list_id` bigint(20) NOT NULL,
+  `material_id` bigint(20) NOT NULL,
+  `unit_price` decimal(14, 4) NOT NULL,
+  `min_qty` decimal(14, 4) NULL DEFAULT 0.0000,
+  `max_qty` decimal(14, 4) NULL DEFAULT NULL,
+  `discount_rate` decimal(5, 2) NULL DEFAULT 100.00,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_list_material`(`price_list_id`, `material_id`) USING BTREE,
+  INDEX `idx_material`(`material_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '销售价格表行' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of so_price_list_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_quotation
@@ -3557,7 +3635,7 @@ CREATE TABLE `wm_production_recpt`  (
   INDEX `idx_wo`(`wo_id`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE,
   INDEX `idx_warehouse`(`warehouse_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_production_recpt

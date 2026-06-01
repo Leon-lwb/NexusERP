@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 提供库存盘点计划的 RESTful API 接口，包括 CRUD 操作、数据导出、生成盘点明细及过账调整等功能。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

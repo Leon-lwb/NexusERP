@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  * 评估维度包括交货及时率、质量合格率、价格竞争力，
  * 计算结果用于供应商分级管理和采购决策参考。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Component
 @RequiredArgsConstructor

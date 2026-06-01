@@ -15,7 +15,7 @@ import java.util.Date;
 /**
  * 库位对象 wm_storage_location
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-12-02
  */
 @Data

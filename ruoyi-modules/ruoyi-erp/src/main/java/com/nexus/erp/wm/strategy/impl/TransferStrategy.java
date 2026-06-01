@@ -22,7 +22,7 @@ import java.util.List;
  * 处理库存调拨业务，包括来源库存扣减和目标库存增加两个步骤。
  * 支持按先进先出（FIFO）规则匹配来源库存，并在目标库位创建或更新库存记录。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @Component

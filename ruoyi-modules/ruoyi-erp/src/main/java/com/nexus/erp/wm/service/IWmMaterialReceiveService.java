@@ -10,8 +10,11 @@ import java.util.List;
 
 /**
  * 物料入库单Service接口
+ * <p>
+ * Q-003 重构后：本接口保留为兼容层，实际实现委托给 CrudService + ExecutorService。
+ * writeBackPurchaseOrderReceivedQty 已移除（由 PuPurchaseReceiveWritebackService 承担）。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IWmMaterialReceiveService extends WfCallBackServiceI {
 
@@ -27,28 +30,11 @@ public interface IWmMaterialReceiveService extends WfCallBackServiceI {
 
     int deleteByIds(Long[] ids);
 
-    /**
-     * 更新物料入库单并执行必要校验
-     */
     boolean updateWithValidation(WmMaterialReceiveBo bo);
 
-    /**
-     * 提交物料入库单并启动流程
-     */
     boolean submit(String receiveIdStr, String selectFlowId);
 
-    /**
-     * 执行物料入库
-     */
     boolean executeReceive(Long receiveId);
 
-    /**
-     * 获取流程实例ID
-     */
     String getProcInsId(String receiveIdStr);
-
-    /**
-     * 回写采购订单行已收货数量
-     */
-    void writeBackPurchaseOrderReceivedQty(Long receiveId);
 }

@@ -24,7 +24,7 @@ import java.util.List;
  * 处理物料采购入库业务，根据入库单明细增加库存数量并生成库存流水记录。
  * 支持按物料、批次、仓库、库位等维度精确匹配库存记录。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @Component

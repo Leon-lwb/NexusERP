@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * 到货通知业务对象 wm_arrival_notice
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

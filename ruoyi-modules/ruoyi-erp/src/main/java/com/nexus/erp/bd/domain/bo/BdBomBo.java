@@ -13,7 +13,7 @@ import java.util.Date;
 /**
  * 产品BOM业务对象 bd_bom
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-10-18
  */
 @Data

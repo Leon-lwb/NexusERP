@@ -19,7 +19,7 @@ import java.util.List;
  * 与 {@link PuPurchaseReturn} 实体通过 MapStruct 自动映射转换。
  * 包含退货单头展示信息和明细行列表 {@link #puPurchaseReturnLineList}。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

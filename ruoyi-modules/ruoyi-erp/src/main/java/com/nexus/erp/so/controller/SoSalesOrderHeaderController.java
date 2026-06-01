@@ -32,7 +32,7 @@ import java.util.List;
  * </ul>
  * 所有接口均通过 Sa-Token 注解 {@link SaCheckPermission} 进行权限校验。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

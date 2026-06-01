@@ -22,7 +22,7 @@ import java.util.Date;
  * 处理杂项入库业务，根据杂项入库单行数据增加库存并生成库存流水记录。
  * 支持按物料、批次、库位等维度查询或创建库存记录。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @Component

@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 管理仓库区域的划分信息，包括库区编码、名称、所属仓库等。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  * 一个采购订单可包含多条明细，分别对应不同的采购物料。
  * 明细行可由采购申请明细转单生成，并记录已收货数量用于后续收货反馈。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -11,7 +11,7 @@ import java.util.Date;
 /**
  * 生产工单资源分配业务对象 prd_work_order_resource
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

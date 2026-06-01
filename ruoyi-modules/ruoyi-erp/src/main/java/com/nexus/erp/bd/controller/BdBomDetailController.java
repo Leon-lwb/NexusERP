@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * BOM明细Controller
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

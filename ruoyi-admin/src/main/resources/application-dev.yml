@@ -54,6 +54,7 @@ spring:
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
           username: root
+          # 原明文: root, 需替换为 ENC(密文)
           password: root
         # ERP业务库
         erp:
@@ -63,6 +64,7 @@ spring:
           # rewriteBatchedStatements=true 批处理优化 大幅提升批量插入更新删除性能(对数据库有性能损耗 使用批量操作应考虑性能问题)
           url: jdbc:mysql://localhost:3306/ry-erp?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
           username: root
+          # 原明文: root, 需替换为 ENC(密文)
           password: root
 #        # 从库数据源
 #        slave:
@@ -318,6 +320,7 @@ spring.rabbitmq:
   host: localhost
   port: 5672
   username: nexus
+  # 原明文: nexus, 需替换为 ENC(密文)
   password: nexus
   virtual-host: /erp
   publisher-confirm-type: correlated

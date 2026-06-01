@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 分类与库存视图对象
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 public class CategoryWithStockVo implements Serializable {

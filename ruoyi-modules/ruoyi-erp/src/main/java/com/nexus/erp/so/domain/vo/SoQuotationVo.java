@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 销售报价视图对象 so_quotation
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @AutoMapper(target = SoQuotation.class)

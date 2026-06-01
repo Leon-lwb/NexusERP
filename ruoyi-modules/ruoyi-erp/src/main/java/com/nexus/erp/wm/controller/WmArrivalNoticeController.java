@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 提供到货通知单的 RESTful API 接口，用于管理供应商到货通知信息。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

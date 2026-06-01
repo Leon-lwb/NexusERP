@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 /**
  * 库存调拨行对象 wm_transfer_line
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

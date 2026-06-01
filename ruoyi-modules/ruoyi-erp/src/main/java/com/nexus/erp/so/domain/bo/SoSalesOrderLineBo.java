@@ -13,7 +13,7 @@ import java.util.Date;
 /**
  * 销售订单行业务对象 so_sales_order_line
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

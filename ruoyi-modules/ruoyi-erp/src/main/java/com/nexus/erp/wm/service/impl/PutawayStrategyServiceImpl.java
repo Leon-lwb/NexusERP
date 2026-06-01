@@ -24,7 +24,7 @@ import java.util.List;
  * 根据物料信息和仓库配置，推荐最合适的上架库位。
  * 支持最近空位、分类存放、先进先出等多种策略。
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @DS("erp")

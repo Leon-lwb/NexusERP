@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 销售出库Service接口
  *
- * @author ruoyi
+ * @author nexus
  * @date 2026-04-03
  */
 public interface IWmSalesIssueService extends WfCallBackServiceI {

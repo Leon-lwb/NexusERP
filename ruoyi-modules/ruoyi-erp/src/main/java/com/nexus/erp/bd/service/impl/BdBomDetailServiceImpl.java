@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 /**
  * BOM明细Service业务层处理
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @DS("erp")

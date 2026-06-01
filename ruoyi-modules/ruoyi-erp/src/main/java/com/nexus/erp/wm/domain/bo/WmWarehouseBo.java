@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 /**
  * 仓库设置业务对象 wm_warehouse
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-09-30
  */
 @Data

@@ -24,7 +24,7 @@ import java.util.List;
  * <p>
  * 管理企业仓库基础信息，包括仓库编码、名称、地址、状态等。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

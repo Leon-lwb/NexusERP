@@ -13,7 +13,7 @@ import java.util.Date;
 /**
  * 库存事务业务对象 wm_material_stock_tx
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-12-12
  */
 @Data

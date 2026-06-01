@@ -11,7 +11,7 @@ import com.nexus.erp.pu.domain.vo.PuPurchaseReturnVo;
  * <p>
  * 提供采购退货单主表的基础增删改查功能，继承自 {@link BaseMapperPlus} 自动获得通用 CRUD 方法。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Mapper
 public interface PuPurchaseReturnMapper extends BaseMapperPlus<PuPurchaseReturn, PuPurchaseReturnVo>, BaseMapper<PuPurchaseReturn> {

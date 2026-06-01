@@ -7,7 +7,7 @@ import com.nexus.erp.prd.domain.vo.PrdMaterialRequirementVo;
 /**
  * 物料清单Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface PrdMaterialRequirementMapper extends BaseMapperPlus<PrdMaterialRequirement, PrdMaterialRequirementVo> {
 }

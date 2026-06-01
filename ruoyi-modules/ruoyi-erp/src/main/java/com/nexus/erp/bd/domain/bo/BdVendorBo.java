@@ -11,7 +11,7 @@ import com.nexus.erp.bd.domain.BdVendor;
 /**
  * 供应商业务对象 bd_vendor
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-09-22
  */
 @Data

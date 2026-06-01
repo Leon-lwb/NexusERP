@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 时间工具类
  *
- * @author ruoyi
+ * @author nexus
  */
 public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
     private static final String[] PARSE_PATTERNS = {

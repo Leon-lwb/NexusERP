@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * 客户订单对象 so_customer_order
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

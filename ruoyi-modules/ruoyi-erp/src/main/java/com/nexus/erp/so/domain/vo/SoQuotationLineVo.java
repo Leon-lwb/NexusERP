@@ -12,7 +12,7 @@ import java.util.Date;
 /**
  * 销售报价行视图对象 so_quotation_line
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @AutoMapper(target = SoQuotationLine.class)

@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * 到货通知视图对象 wm_arrival_notice
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @ExcelIgnoreUnannotated

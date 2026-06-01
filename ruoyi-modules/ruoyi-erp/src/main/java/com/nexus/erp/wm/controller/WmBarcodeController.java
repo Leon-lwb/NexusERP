@@ -24,7 +24,7 @@ import java.util.List;
  * <p>
  * 提供系统生成的条码实例的维护以及条码生成接口。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

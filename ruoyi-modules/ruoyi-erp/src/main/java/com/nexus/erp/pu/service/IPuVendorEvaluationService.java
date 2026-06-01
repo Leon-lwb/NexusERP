@@ -15,7 +15,7 @@ import java.util.Map;
  * 评估计算基于采购订单、退货单等历史数据，从交货及时率、质量合格率、
  * 价格竞争力三个维度综合计算供应商得分和等级。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IPuVendorEvaluationService {
 

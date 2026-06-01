@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 库存调拨单对象 wm_transfer
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

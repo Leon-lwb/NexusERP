@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 仓库设置Service接口
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-09-30
  */
 public interface IWmWarehouseService {

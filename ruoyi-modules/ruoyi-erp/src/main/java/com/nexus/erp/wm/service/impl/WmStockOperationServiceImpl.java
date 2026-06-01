@@ -22,7 +22,7 @@ import java.util.Date;
  * <p>
  * 采用策略模式委派各类库存操作到对应的策略实现，统一处理入库、出库、调拨、盘点等业务。
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @DS("erp")

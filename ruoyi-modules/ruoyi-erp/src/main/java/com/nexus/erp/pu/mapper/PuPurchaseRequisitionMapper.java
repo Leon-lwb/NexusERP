@@ -11,7 +11,7 @@ import org.apache.ibatis.annotations.Mapper;
  * <p>
  * 提供采购申请主表的基础增删改查功能，继承自 {@link BaseMapperPlus} 自动获得通用 CRUD 方法。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Mapper
 public interface PuPurchaseRequisitionMapper extends BaseMapperPlus<PuPurchaseRequisition, PuPurchaseRequisitionVo>, BaseMapper<PuPurchaseRequisition> {

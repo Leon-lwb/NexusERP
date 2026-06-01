@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
  *   <li>转单操作：将已批准的采购申请转换为采购订单</li>
  * </ul>
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -522,11 +522,11 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
      * @return 查询条件 Wrapper
      */
     private LambdaQueryWrapper<PuPurchaseRequisition> buildQueryWrapper(PuPurchaseRequisitionBo bo) {
-        LambdaQueryWrapper<PuPurchaseRequisition> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getRequisitionNo()), PuPurchaseRequisition::getRequisitionNo, bo.getRequisitionNo());
-        lqw.like(StringUtils.isNotBlank(bo.getRequisitionName()), PuPurchaseRequisition::getRequisitionName, bo.getRequisitionName());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseRequisition::getStatus, bo.getStatus());
-        lqw.orderByDesc(PuPurchaseRequisition::getCreateTime);
+        LambdaQueryWrapper<PuPurchaseRequisition> lqw = Wrappers.<PuPurchaseRequisition>lambdaQuery()
+            .eq(StringUtils.isNotBlank(bo.getRequisitionNo()), PuPurchaseRequisition::getRequisitionNo, bo.getRequisitionNo())
+            .like(StringUtils.isNotBlank(bo.getRequisitionName()), PuPurchaseRequisition::getRequisitionName, bo.getRequisitionName())
+            .eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseRequisition::getStatus, bo.getStatus())
+            .orderByDesc(PuPurchaseRequisition::getCreateTime);
         return lqw;
     }
 }

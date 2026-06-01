@@ -2,6 +2,7 @@ package com.nexus.erp.pu.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +61,7 @@ import java.util.List;
  *   <li>联动操作：生成收货单据（到货通知+物料收货）、从采购申请转单生成</li>
  * </ul>
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -497,11 +498,11 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     }
 
     private LambdaQueryWrapper<PuPurchaseOrder> buildQueryWrapper(PuPurchaseOrderBo bo) {
-        LambdaQueryWrapper<PuPurchaseOrder> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(StringUtils.isNotBlank(bo.getOrderNo()), PuPurchaseOrder::getOrderNo, bo.getOrderNo());
-        lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseOrder::getStatus, bo.getStatus());
-        lqw.like(StringUtils.isNotBlank(bo.getVendorName()), PuPurchaseOrder::getVendorName, bo.getVendorName());
-        lqw.orderByDesc(PuPurchaseOrder::getCreateTime);
+        LambdaQueryWrapper<PuPurchaseOrder> lqw = Wrappers.<PuPurchaseOrder>lambdaQuery()
+            .eq(StringUtils.isNotBlank(bo.getOrderNo()), PuPurchaseOrder::getOrderNo, bo.getOrderNo())
+            .eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseOrder::getStatus, bo.getStatus())
+            .like(StringUtils.isNotBlank(bo.getVendorName()), PuPurchaseOrder::getVendorName, bo.getVendorName())
+            .orderByDesc(PuPurchaseOrder::getCreateTime);
         return lqw;
     }
 }

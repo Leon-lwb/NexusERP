@@ -14,7 +14,7 @@ import java.util.List;
  * 定义生产报工相关的业务逻辑操作，包括报工记录的查询、新增、修改、删除等。
  * 报工记录用于管理工人生产工时的上报与统计。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IPrdWorkReportService {
 

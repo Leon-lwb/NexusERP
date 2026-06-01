@@ -20,7 +20,7 @@ import java.util.List;
  * 与 {@link PuPurchaseOrder} 实体通过 MapStruct 自动映射转换。
  * 包含订单头展示信息和明细行列表 {@link #lineList}。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

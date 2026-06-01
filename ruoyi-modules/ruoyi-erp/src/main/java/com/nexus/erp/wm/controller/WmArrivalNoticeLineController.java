@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 管理到货通知单的明细行数据，包括物料、数量、批次等信息。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

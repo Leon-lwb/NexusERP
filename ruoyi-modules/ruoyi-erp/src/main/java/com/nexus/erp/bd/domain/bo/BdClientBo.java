@@ -11,7 +11,7 @@ import com.nexus.erp.bd.domain.BdClient;
 /**
  * 客户信息业务对象 bd_client
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-09-18
  */
 @Data

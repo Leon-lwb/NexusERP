@@ -27,7 +27,7 @@ import java.util.List;
  * <p>
  * 实现生产报工相关的业务逻辑，包括报工记录的查询、新增、修改、删除及状态变更等。
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @DS("erp")

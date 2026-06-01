@@ -13,7 +13,7 @@ import java.util.List;
  * <p>
  * 定义生产工单资源分配相关的业务逻辑操作，包括设备、工装、人力等资源的分配查询与管理。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IPrdWorkOrderResourceService {
 

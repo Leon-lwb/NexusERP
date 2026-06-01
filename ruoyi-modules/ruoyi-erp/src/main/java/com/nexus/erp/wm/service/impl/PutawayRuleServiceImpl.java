@@ -24,7 +24,7 @@ import java.util.List;
  * <p>
  * 提供上架规则的分页查询、列表查询、新增、修改、删除等业务操作。
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @DS("erp")

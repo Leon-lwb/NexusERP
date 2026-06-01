@@ -7,7 +7,7 @@ import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
 /**
  * BOM明细Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface BdBomDetailMapper extends BaseMapperPlus<BdBomDetail, BdBomDetailVo> {
 }

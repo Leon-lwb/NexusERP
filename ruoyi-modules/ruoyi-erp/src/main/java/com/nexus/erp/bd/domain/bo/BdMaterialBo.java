@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 /**
  * 物料产品主业务对象 bd_material
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-10-04
  */
 @Data

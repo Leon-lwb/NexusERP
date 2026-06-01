@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * 销售退货业务对象 so_return
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

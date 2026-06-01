@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 到货通知单行Service接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IWmArrivalNoticeLineService {
 

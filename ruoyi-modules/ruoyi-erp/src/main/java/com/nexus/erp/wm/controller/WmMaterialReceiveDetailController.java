@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 管理物料入库单的明细数据，记录每一笔入库物料的详细信息。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

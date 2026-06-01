@@ -17,7 +17,7 @@ import java.util.List;
  * <p>
  * 按库存有效期从早到晚排序，优先拣选最早到期的库存，避免物料过期浪费。
  *
- * @author ruoyi
+ * @author nexus
  */
 @RequiredArgsConstructor
 @Service("fefoPickingStrategy")

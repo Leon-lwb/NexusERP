@@ -22,7 +22,7 @@ import java.util.List;
  * 处理生产领料出库业务，根据生产领料单行数据扣减库存并生成库存流水记录。
  * 支持按先进先出（FIFO）规则匹配库存，并处理多批次库存拆分扣减。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @Component

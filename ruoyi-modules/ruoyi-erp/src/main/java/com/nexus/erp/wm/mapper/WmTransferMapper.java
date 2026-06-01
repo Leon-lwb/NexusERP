@@ -7,7 +7,7 @@ import com.nexus.erp.wm.domain.vo.WmTransferVo;
 /**
  * 库存调拨单Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface WmTransferMapper extends BaseMapperPlus<WmTransfer, WmTransferVo> {
 }

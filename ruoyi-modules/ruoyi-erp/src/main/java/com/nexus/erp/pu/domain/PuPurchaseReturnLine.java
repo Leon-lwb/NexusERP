@@ -17,7 +17,7 @@ import java.math.BigDecimal;
  * 一个退货单可包含多条明细，分别对应原始采购订单中的不同物料行。
  * 执行退货时，系统会根据明细行扣减对应物料的库存数量。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

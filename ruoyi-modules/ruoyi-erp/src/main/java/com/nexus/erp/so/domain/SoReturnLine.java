@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 /**
  * 销售退货行对象 so_return_line
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

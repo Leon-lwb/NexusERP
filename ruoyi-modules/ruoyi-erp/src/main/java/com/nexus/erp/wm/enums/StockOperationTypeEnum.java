@@ -5,7 +5,7 @@ package com.nexus.erp.wm.enums;
  * <p>
  * 定义系统支持的所有库存操作类型，包括入库、出库、调拨、盘点等。
  *
- * @author ruoyi
+ * @author nexus
  */
 public enum StockOperationTypeEnum {
 

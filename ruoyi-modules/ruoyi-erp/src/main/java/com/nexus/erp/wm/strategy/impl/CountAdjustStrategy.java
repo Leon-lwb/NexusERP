@@ -21,7 +21,7 @@ import java.util.Date;
  * 处理库存盘点调整业务，根据盘点差异进行盘盈入库或盘亏出库。
  * 支持通过库存ID直接定位库存记录，或按物料、批次、库位等维度匹配库存。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @Component

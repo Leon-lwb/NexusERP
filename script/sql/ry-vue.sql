@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 01/06/2026 00:24:17
+ Date: 02/06/2026 00:49:26
 */
 
 SET NAMES utf8mb4;
@@ -10645,6 +10645,9 @@ INSERT INTO `sys_dict_data` VALUES (2052, '000000', 3, '已完成', 'COMPLETED',
 INSERT INTO `sys_dict_data` VALUES (2060, '000000', 1, '正常工单', 'NORMAL', 'prd_wo_type', '', 'primary', 'Y', 103, 1, '2026-05-28 16:31:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (2061, '000000', 2, '委外工单', 'SUBCONTRACT', 'prd_wo_type', '', 'warning', 'N', 103, 1, '2026-05-28 16:31:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (2062, '000000', 3, '返工工单', 'REWORK', 'prd_wo_type', '', 'danger', 'N', 103, 1, '2026-05-28 16:31:08', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (400001, '000000', 1, '基价', 'BASE', 'so_price_list_type', '', 'primary', 'Y', 103, 1, '2026-06-02 00:19:53', NULL, NULL, '标准基价');
+INSERT INTO `sys_dict_data` VALUES (400002, '000000', 2, '客户专属', 'CUSTOMER', 'so_price_list_type', '', 'success', 'N', 103, 1, '2026-06-02 00:19:53', NULL, NULL, '客户专属价');
+INSERT INTO `sys_dict_data` VALUES (400003, '000000', 3, '期间促销', 'PROMOTION', 'so_price_list_type', '', 'warning', 'N', 103, 1, '2026-06-02 00:19:53', NULL, NULL, '期间促销价');
 INSERT INTO `sys_dict_data` VALUES (3000011, '000000', 1, '草稿', 'DRAFT', 'pu_purchase_requisition_status', '', 'info', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '草稿');
 INSERT INTO `sys_dict_data` VALUES (3000012, '000000', 2, '已提交', 'SUBMITTED', 'pu_purchase_requisition_status', '', 'primary', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '已提交');
 INSERT INTO `sys_dict_data` VALUES (3000013, '000000', 3, '审批中', 'APPROVING', 'pu_purchase_requisition_status', '', 'warning', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '审批中');
@@ -11141,6 +11144,7 @@ INSERT INTO `sys_dict_type` VALUES (300007, '000000', '采购申请来源类型'
 INSERT INTO `sys_dict_type` VALUES (300008, '000000', '上架策略类型', 'wm_putaway_strategy_type', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '上架策略类型');
 INSERT INTO `sys_dict_type` VALUES (300009, '000000', '拣货策略类型', 'wm_picking_strategy_type', 103, 1, '2026-05-28 00:17:46', NULL, NULL, '拣货策略类型');
 INSERT INTO `sys_dict_type` VALUES (300010, '000000', '是否倒冲', 'prd_backflush_flag', 103, 1, '2026-05-29 17:54:42', NULL, NULL, '生产工单/物料是否倒冲');
+INSERT INTO `sys_dict_type` VALUES (400001, '000000', '价格表类型', 'so_price_list_type', 103, 1, '2026-06-02 00:19:53', NULL, NULL, '销售价格表分类');
 INSERT INTO `sys_dict_type` VALUES (3000097, '000000', '产能日历状态', 'prd_calendar_status', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历记录状态');
 INSERT INTO `sys_dict_type` VALUES (3000100, '000000', '产能对象类型', 'prd_calendar_object_type', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历关联对象类型');
 INSERT INTO `sys_dict_type` VALUES (3000210, '000000', '产能对象类型', 'prd_capacity_object_type', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '产能日历对象类型');
@@ -11271,6 +11275,8 @@ INSERT INTO `sys_logininfor` VALUES (2060602314842165250, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2060620594902454273, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-30 15:13:29');
 INSERT INTO `sys_logininfor` VALUES (2060638351672975361, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-30 16:24:03');
 INSERT INTO `sys_logininfor` VALUES (2060760515168305153, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-05-31 00:29:29');
+INSERT INTO `sys_logininfor` VALUES (2061448090191282178, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '1', '验证码错误', '2026-06-01 22:01:39');
+INSERT INTO `sys_logininfor` VALUES (2061448101595594754, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-01 22:01:42');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -12387,7 +12393,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-05-31 00:29:29', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-31 00:29:29', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-01 22:01:42', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-01 22:01:42', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 11:54:44', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 11:54:44', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 1, '2025-10-23 17:03:16', 1, '2025-12-17 15:40:54', '耳朵聋');

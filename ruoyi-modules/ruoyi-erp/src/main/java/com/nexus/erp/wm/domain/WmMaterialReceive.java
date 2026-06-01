@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 物料入库单对象 wm_material_receive
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

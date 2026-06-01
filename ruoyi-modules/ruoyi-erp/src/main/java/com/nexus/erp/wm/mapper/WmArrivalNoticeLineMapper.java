@@ -7,7 +7,7 @@ import com.nexus.erp.wm.domain.vo.WmArrivalNoticeLineVo;
 /**
  * 到货通知单行Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface WmArrivalNoticeLineMapper extends BaseMapperPlus<WmArrivalNoticeLine, WmArrivalNoticeLineVo> {
 }

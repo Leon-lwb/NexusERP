@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * 销售报价Service业务层处理
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @RequiredArgsConstructor

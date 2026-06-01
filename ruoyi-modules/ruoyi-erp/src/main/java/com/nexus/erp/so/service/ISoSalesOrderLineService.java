@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 销售订单行Service接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface ISoSalesOrderLineService {
 

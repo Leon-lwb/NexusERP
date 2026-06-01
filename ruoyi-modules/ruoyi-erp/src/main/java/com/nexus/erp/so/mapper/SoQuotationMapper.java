@@ -7,7 +7,7 @@ import com.nexus.erp.so.domain.vo.SoQuotationVo;
 /**
  * 销售报价Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface SoQuotationMapper extends BaseMapperPlus<SoQuotation, SoQuotationVo> {
 }

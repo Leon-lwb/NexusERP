@@ -13,7 +13,7 @@ import java.util.Map;
  * 统一代码生成与Online设计服务接口
  * 整合代码生成和Online表单设计功能
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IUnifiedGenService {
 

@@ -45,3 +45,11 @@ export const issueSubcontractMaterial = (subcontractId: number) =>
 
 export const receiveSubcontractMaterial = (subcontractId: number) =>
   request({ url: BASE + '/receive/' + subcontractId, method: 'put' });
+
+export function submitApproval(id: string | number) {
+  return request({ url: '/erp/prd/subcontract/submit/' + id, method: 'post' });
+}
+
+export function getOperationLogs(id: string | number) {
+  return request({ url: '/erp/prd/subcontract/logs/' + id, method: 'get' });
+}

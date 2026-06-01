@@ -7,7 +7,7 @@ import com.nexus.erp.so.domain.vo.SoReturnVo;
 /**
  * 销售退货Mapper接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface SoReturnMapper extends BaseMapperPlus<SoReturn, SoReturnVo> {
 }

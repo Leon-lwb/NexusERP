@@ -7,7 +7,7 @@ import com.nexus.common.core.utils.StringUtils;
 /**
  * sql操作工具类
  *
- * @author ruoyi
+ * @author nexus
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SqlUtil {

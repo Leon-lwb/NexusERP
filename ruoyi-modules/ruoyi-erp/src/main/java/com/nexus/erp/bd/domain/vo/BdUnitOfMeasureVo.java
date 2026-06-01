@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 /**
  * 计量单位视图对象 bd_unit_of_measure
  *
- * @author ruoyi
+ * @author nexus
  * @date 2025-09-30
  */
 @Data

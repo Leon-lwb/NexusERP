@@ -18,7 +18,7 @@ import java.util.Date;
  * 一个采购申请可包含多条明细，分别对应不同的采购物料。
  * 明细行经审批后可用于生成采购订单明细。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

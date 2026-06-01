@@ -18,7 +18,7 @@ import java.util.List;
  * <p>
  * 实现 {@link WfCallBackServiceI} 接口以支持 Flowable 审批流程集成。
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface IPuPurchaseOrderService extends WfCallBackServiceI {
 

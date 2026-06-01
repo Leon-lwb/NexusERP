@@ -24,7 +24,7 @@ import java.util.List;
  * <p>
  * 实现生产工单资源分配相关的业务逻辑，包括设备、工装、人力等资源的分配查询与管理。
  *
- * @author ruoyi
+ * @author nexus
  */
 @DS("erp")
 @RequiredArgsConstructor

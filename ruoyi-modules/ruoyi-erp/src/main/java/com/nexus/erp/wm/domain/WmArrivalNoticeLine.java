@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 /**
  * 到货通知单行对象 wm_arrival_notice_line
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @NoArgsConstructor

@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 管理仓库库位的详细信息，包括库位编码、所属库区、容量等。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

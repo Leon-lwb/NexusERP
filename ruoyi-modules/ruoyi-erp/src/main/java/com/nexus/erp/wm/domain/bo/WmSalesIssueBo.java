@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 销售出库业务对象 wm_sales_issue
  *
- * @author ruoyi
+ * @author nexus
  * @date 2026-04-03
  */
 @Data

@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 销售订单视图对象 so_sales_order_header
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @ExcelIgnoreUnannotated

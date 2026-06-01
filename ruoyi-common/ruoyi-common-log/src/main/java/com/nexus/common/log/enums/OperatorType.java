@@ -3,7 +3,7 @@ package com.nexus.common.log.enums;
 /**
  * 操作人类别
  *
- * @author ruoyi
+ * @author nexus
  */
 public enum OperatorType {
     /**

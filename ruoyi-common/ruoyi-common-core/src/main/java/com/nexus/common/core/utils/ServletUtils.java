@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * 客户端工具类，提供获取请求参数、响应处理、头部信息等常用操作
  *
- * @author ruoyi
+ * @author nexus
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ServletUtils extends JakartaServletUtil {

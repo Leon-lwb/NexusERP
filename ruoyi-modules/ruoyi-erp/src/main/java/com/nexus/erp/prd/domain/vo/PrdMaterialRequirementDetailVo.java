@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * 物料需求单明细视图对象 prd_material_requirement_detail
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @ExcelIgnoreUnannotated

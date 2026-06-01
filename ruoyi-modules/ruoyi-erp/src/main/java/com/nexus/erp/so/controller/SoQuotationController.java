@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 提供销售报价单的 RESTful API 接口，包括 CRUD 操作、数据导出、报价确认及转销售订单等功能。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

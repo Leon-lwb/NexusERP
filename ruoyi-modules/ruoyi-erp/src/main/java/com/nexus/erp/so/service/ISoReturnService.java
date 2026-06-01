@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * 销售退货Service接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface ISoReturnService extends WfCallBackServiceI {
 

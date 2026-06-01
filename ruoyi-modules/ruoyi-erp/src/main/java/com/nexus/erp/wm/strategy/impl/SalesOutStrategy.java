@@ -25,7 +25,7 @@ import java.util.List;
  * 处理销售出库业务，根据销售出库单明细扣减库存并生成库存流水记录。
  * 支持按仓库、批次、库位等维度匹配库存，并按先进先出（FIFO）规则出库。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Slf4j
 @Component

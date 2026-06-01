@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 销售订单Service接口
  *
- * @author ruoyi
+ * @author nexus
  */
 public interface ISoSalesOrderHeaderService extends WfCallBackServiceI {
 

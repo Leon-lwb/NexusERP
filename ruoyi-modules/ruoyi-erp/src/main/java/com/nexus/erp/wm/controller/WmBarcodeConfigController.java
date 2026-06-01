@@ -23,7 +23,7 @@ import java.util.List;
  * <p>
  * 提供条码规则配置的 RESTful API 接口，条码生成逻辑从此读取基础规则数据。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor

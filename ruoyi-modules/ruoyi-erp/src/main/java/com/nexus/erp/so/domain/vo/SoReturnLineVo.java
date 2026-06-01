@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 /**
  * 销售退货行视图对象 so_return_line
  *
- * @author ruoyi
+ * @author nexus
  */
 @Data
 @AutoMapper(target = SoReturnLine.class)

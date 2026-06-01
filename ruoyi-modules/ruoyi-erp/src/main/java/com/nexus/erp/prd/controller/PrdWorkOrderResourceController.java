@@ -24,7 +24,7 @@ import java.util.List;
  * <p>
  * 管理生产工单的设备、工装、人力等资源分配信息。
  *
- * @author ruoyi
+ * @author nexus
  */
 @Validated
 @RequiredArgsConstructor
