@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { BomQuery, BomVO, BomForm, BomDetailVO, BomDetailForm } from './types';
+import { BomQuery, BomVO, BomForm, BomDetailVO, BomDetailForm, BomTreeNodeVo, IndentedBomLineVo } from './types';
 
 export const listBom = (query: BomQuery): AxiosPromise<BomVO[]> => {
   return request({
@@ -105,3 +105,24 @@ export const activateBomVersion = (bomId: number) =>
 
 export const verifyBom = (bomId: number): AxiosPromise<string> =>
   request({ url: '/erp/bd/bom/verify/' + bomId, method: 'get' });
+
+export const getBomTree = (bomId: number): AxiosPromise<BomTreeNodeVo> => {
+  return request({
+    url: '/erp/bd/bom/tree/' + bomId,
+    method: 'get'
+  });
+};
+
+export const getIndentedBom = (bomId: number): AxiosPromise<IndentedBomLineVo[]> => {
+  return request({
+    url: '/erp/bd/bom/indented/' + bomId,
+    method: 'get'
+  });
+};
+
+export const explodeBom = (bomId: number): AxiosPromise<IndentedBomLineVo[]> => {
+  return request({
+    url: '/erp/bd/bom/explode/' + bomId,
+    method: 'get'
+  });
+};

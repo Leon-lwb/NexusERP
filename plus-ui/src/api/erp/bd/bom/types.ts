@@ -87,3 +87,46 @@ export interface BomDetailForm {
   remark?: string;
   sourceType?: string;
 }
+
+export interface BomTreeNodeVo {
+  bomId: number;
+  materialId: number;
+  materialCode: string;
+  materialName: string;
+  materialSpec: string;
+  materialType: string;
+  level: number;
+  nodeType: 'ASSEMBLY' | 'PART';
+  parentBomId: number;
+  detailId: number;
+  quantityPerParent: number;
+  lossRate: number;
+  totalQuantity: number;
+  sourceType: string;
+  leadTime: number;
+  hasChildren: boolean;
+  isLeaf: boolean;
+  children: BomTreeNodeVo[];
+}
+
+export interface IndentedBomLineVo {
+  level: number;
+  indent: string;
+  bomId: number;
+  materialId: number;
+  materialCode: string;
+  materialName: string;
+  materialSpec: string;
+  materialType: string;
+  nodeType: 'ASSEMBLY' | 'PART';
+  quantityPerParent: number;
+  lossRate: number;
+  cumulativeQuantity: number;
+  unitName: string;
+  sourceType: string;
+  leadTime: number;
+  workstationName: string;
+  expandable: boolean;
+  detailId: number;
+  parentBomId: number;
+}

@@ -111,11 +111,14 @@
 
       <!-- BOM子项物料信息表格 -->
       <el-divider content-position="center">物料明细</el-divider>
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="primary" icon="Plus" @click="addMaterialRow" v-if="!isViewMode">添加物料</el-button>
-        </el-col>
-      </el-row>
+      
+      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+        <el-tab-pane label="物料明细" name="details">
+          <el-row :gutter="10" class="mb8">
+            <el-col :span="1.5">
+              <el-button type="primary" icon="Plus" @click="addMaterialRow" v-if="!isViewMode">添加物料</el-button>
+            </el-col>
+          </el-row>
 
       <el-table :data="materialItems" style="width: 100%">
         <el-table-column type="index" width="50" align="center" label="序号" />
@@ -241,6 +244,77 @@
           </template>
         </el-table-column>
       </el-table>
+        </el-tab-pane>
+        
+        <el-tab-pane label="BOM树形视图" name="tree">
+          <div class="bom-tree-container">
+            <el-tree
+              v-loading="treeLoading"
+              :data="bomTreeData"
+              :props="treeProps"
+              node-key="materialId"
+              default-expand-all
+              :expand-on-click-node="false"
+            >
+              <template #default="{ data }">
+                <div class="bom-tree-node">
+                  <el-tag :type="data.nodeType === 'ASSEMBLY' ? 'warning' : 'success'" size="small">
+                    {{ data.nodeType === 'ASSEMBLY' ? '组件' : '零件' }}
+                  </el-tag>
+                  <span class="node-label">
+                    {{ data.materialCode }} - {{ data.materialName }}
+                    <span v-if="data.materialSpec" class="node-spec">({{ data.materialSpec }})</span>
+                  </span>
+                  <span class="node-quantity" v-if="data.level > 0">
+                    × {{ data.quantityPerParent }}
+                    <span v-if="data.lossRate > 0" class="loss-rate">(损耗{{ data.lossRate }}%)</span>
+                  </span>
+                  <el-tag v-if="data.sourceType" size="small" type="info" class="source-tag">
+                    {{ data.sourceType }}
+                  </el-tag>
+                </div>
+              </template>
+            </el-tree>
+            <el-empty v-if="!treeLoading && bomTreeData.length === 0" description="暂无BOM数据" />
+          </div>
+        </el-tab-pane>
+        
+        <el-tab-pane label="缩进式BOM" name="indented">
+          <el-table :data="indentedBomData" v-loading="indentedLoading" style="width: 100%">
+            <el-table-column label="层级" prop="level" width="60" align="center" />
+            <el-table-column label="物料编码" prop="materialCode" width="150">
+              <template #default="scope">
+                <span :style="{ paddingLeft: scope.row.level * 20 + 'px' }">
+                  <el-icon v-if="scope.row.expandable" style="color: #e6a23c"><Folder /></el-icon>
+                  <el-icon v-else style="color: #67c23a"><Document /></el-icon>
+                  {{ scope.row.materialCode }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="物料名称" prop="materialName" min-width="150" />
+            <el-table-column label="规格型号" prop="materialSpec" width="120" />
+            <el-table-column label="类型" prop="nodeType" width="80" align="center">
+              <template #default="scope">
+                <el-tag :type="scope.row.nodeType === 'ASSEMBLY' ? 'warning' : 'success'" size="small">
+                  {{ scope.row.nodeType === 'ASSEMBLY' ? '组件' : '零件' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="单位用量" prop="quantityPerParent" width="100" align="right" />
+            <el-table-column label="损耗率(%)" prop="lossRate" width="100" align="right" />
+            <el-table-column label="累计用量" prop="cumulativeQuantity" width="120" align="right">
+              <template #default="scope">
+                <span :class="{ 'leaf-material': scope.row.nodeType === 'PART' }">
+                  {{ scope.row.cumulativeQuantity }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="来源" prop="sourceType" width="80" align="center" />
+            <el-table-column label="提前期(h)" prop="leadTime" width="100" align="right" />
+          </el-table>
+          <el-empty v-if="!indentedLoading && indentedBomData.length === 0" description="暂无BOM数据" />
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
 
     <!-- 物料选择对话框 -->
@@ -348,7 +422,7 @@
 </template>
 
 <script setup lang="ts" name="BomForm">
-import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail, saveBomDetailsBatch } from "@/api/erp/bd/bom"
+import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail, saveBomDetailsBatch, getBomTree, getIndentedBom } from "@/api/erp/bd/bom"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/erp/bd/category"
 import { useRouter, useRoute } from 'vue-router'
@@ -411,6 +485,17 @@ const materialItems = ref([
     backflushFlag: 0
   }
 ])
+
+// BOM树形视图相关
+const activeTab = ref('details')
+const bomTreeData = ref([])
+const treeLoading = ref(false)
+const treeProps = {
+  children: 'children',
+  label: 'materialName'
+}
+const indentedBomData = ref([])
+const indentedLoading = ref(false)
 
 // 物料选择相关
 const materialSelectOpen = ref(false)
@@ -516,6 +601,39 @@ function getBomDetailsList(bomId) {
   }).catch(() => {
     console.warn('获取BOM明细数据失败');
   })
+}
+
+// 加载BOM树形数据
+function loadBomTree() {
+  if (!form.value.bomId) return
+  treeLoading.value = true
+  getBomTree(form.value.bomId).then(response => {
+    bomTreeData.value = response.data ? [response.data] : []
+    treeLoading.value = false
+  }).catch(() => {
+    treeLoading.value = false
+  })
+}
+
+// 加载缩进式BOM数据
+function loadIndentedBom() {
+  if (!form.value.bomId) return
+  indentedLoading.value = true
+  getIndentedBom(form.value.bomId).then(response => {
+    indentedBomData.value = response.rows || []
+    indentedLoading.value = false
+  }).catch(() => {
+    indentedLoading.value = false
+  })
+}
+
+// Tab切换处理
+function handleTabChange(tab) {
+  if (tab === 'tree' && bomTreeData.value.length === 0) {
+    loadBomTree()
+  } else if (tab === 'indented' && indentedBomData.value.length === 0) {
+    loadIndentedBom()
+  }
 }
 
 // 新增方法：通过ID获取物料名称
@@ -868,5 +986,56 @@ onUnmounted(() => {
 
 .category-search-input {
   margin-bottom: 10px;
+}
+
+.bom-tree-container {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 16px;
+  min-height: 300px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.bom-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  flex: 1;
+}
+
+.node-label {
+  font-size: 14px;
+  color: #303133;
+}
+
+.node-spec {
+  color: #909399;
+  font-size: 12px;
+}
+
+.node-quantity {
+  color: #409eff;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.loss-rate {
+  color: #e6a23c;
+  font-size: 12px;
+}
+
+.source-tag {
+  margin-left: auto;
+}
+
+.leaf-material {
+  color: #67c23a;
+  font-weight: 600;
+}
+
+:deep(.el-tree-node__content) {
+  height: 36px;
 }
 </style>

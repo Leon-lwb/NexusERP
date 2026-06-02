@@ -4,6 +4,8 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
+import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
+import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 
 import java.util.List;
 
@@ -72,4 +74,28 @@ public interface IBdBomService {
      * @return 校验结果消息
      */
     String verifyBom(Long bomId);
+
+    /**
+     * 获取BOM树形结构（递归展开所有层级）
+     *
+     * @param bomId BOM ID
+     * @return BOM树节点
+     */
+    BomTreeNodeVo getBomTree(Long bomId);
+
+    /**
+     * 获取缩进式BOM（扁平列表+层级标记）
+     *
+     * @param bomId BOM ID
+     * @return 缩进式BOM行列表
+     */
+    List<IndentedBomLineVo> getIndentedBom(Long bomId);
+
+    /**
+     * 获取BOM展开结果（所有叶子物料汇总）
+     *
+     * @param bomId BOM ID
+     * @return 叶子物料汇总列表
+     */
+    List<IndentedBomLineVo> explodeBom(Long bomId);
 }

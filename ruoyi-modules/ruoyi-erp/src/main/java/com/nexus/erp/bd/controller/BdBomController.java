@@ -12,6 +12,8 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
+import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
+import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.service.IBdBomService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -151,5 +153,44 @@ public class BdBomController extends BaseController {
     public R<String> verify(@PathVariable Long bomId) {
         String result = bdBomService.verifyBom(bomId);
         return R.ok(result);
+    }
+
+    /**
+     * 获取BOM树形结构（递归展开所有层级）
+     * <p>权限标识：{@code bd:bom:query}</p>
+     *
+     * @param bomId BOM ID
+     * @return BOM树节点
+     */
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/tree/{bomId}")
+    public R<BomTreeNodeVo> getBomTree(@PathVariable Long bomId) {
+        return R.ok(bdBomService.getBomTree(bomId));
+    }
+
+    /**
+     * 获取缩进式BOM（扁平列表+层级标记）
+     * <p>权限标识：{@code bd:bom:query}</p>
+     *
+     * @param bomId BOM ID
+     * @return 缩进式BOM行列表
+     */
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/indented/{bomId}")
+    public R<List<IndentedBomLineVo>> getIndentedBom(@PathVariable Long bomId) {
+        return R.ok(bdBomService.getIndentedBom(bomId));
+    }
+
+    /**
+     * 获取BOM展开结果（所有叶子物料汇总）
+     * <p>权限标识：{@code bd:bom:query}</p>
+     *
+     * @param bomId BOM ID
+     * @return 叶子物料汇总列表
+     */
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/explode/{bomId}")
+    public R<List<IndentedBomLineVo>> explodeBom(@PathVariable Long bomId) {
+        return R.ok(bdBomService.explodeBom(bomId));
     }
 }

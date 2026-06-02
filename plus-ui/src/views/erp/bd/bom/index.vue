@@ -108,6 +108,10 @@
         <el-button type="info" plain icon="Search" :disabled="single" @click="handleVerify"
           v-hasPermi="['bd:bom:query']">验证BOM</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Share" :disabled="single" @click="handleViewBomTree"
+          v-hasPermi="['bd:bom:query']">BOM树</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -148,6 +152,7 @@
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:bom:remove']">删除</el-button>
           <el-button link type="success" icon="Check" @click="handleActivateVersion(scope.row)" v-if="scope.row.isCurrent != 1" v-hasPermi="['bd:bom:edit']">激活</el-button>
           <el-button link type="info" icon="Search" @click="handleVerify(scope.row)" v-hasPermi="['bd:bom:query']">验证</el-button>
+          <el-button link type="primary" icon="Share" @click="handleViewBomTree(scope.row)" v-hasPermi="['bd:bom:query']">BOM树</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -378,11 +383,47 @@
         </div>
       </template>
     </el-dialog>
+    
+    <!-- BOM树形结构对话框 -->
+    <el-dialog :title="bomTreeTitle" v-model="bomTreeOpen" width="800px" append-to-body>
+      <div class="bom-tree-dialog-content">
+        <el-tree
+          v-loading="bomTreeLoading"
+          :data="bomTreeData"
+          :props="treeProps"
+          node-key="materialId"
+          default-expand-all
+          :expand-on-click-node="false"
+        >
+          <template #default="{ data }">
+            <div class="bom-tree-node">
+              <el-tag :type="data.nodeType === 'ASSEMBLY' ? 'warning' : 'success'" size="small">
+                {{ data.nodeType === 'ASSEMBLY' ? '组件' : '零件' }}
+              </el-tag>
+              <span class="node-label">
+                {{ data.materialCode }} - {{ data.materialName }}
+                <span v-if="data.materialSpec" class="node-spec">({{ data.materialSpec }})</span>
+              </span>
+              <span class="node-quantity" v-if="data.level > 0">
+                × {{ data.quantityPerParent }}
+                <span v-if="data.lossRate > 0" class="loss-rate">(损耗{{ data.lossRate }}%)</span>
+              </span>
+            </div>
+          </template>
+        </el-tree>
+        <el-empty v-if="!bomTreeLoading && bomTreeData.length === 0" description="暂无BOM数据" />
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="bomTreeOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="Bom">
-import { listBom, getBom, delBom, addBom, updateBom, activateBomVersion, verifyBom } from "@/api/erp/bd/bom"
+import { listBom, getBom, delBom, addBom, updateBom, activateBomVersion, verifyBom, getBomTree } from "@/api/erp/bd/bom"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/erp/bd/category"
 import { useRouter } from 'vue-router'
@@ -402,6 +443,16 @@ import { debounce } from 'lodash'
   const total = ref(0)
   const title = ref("")
   const isViewMode = ref(false) // 新增：标识是否为查看模式
+  
+  // BOM树形视图相关
+  const bomTreeOpen = ref(false)
+  const bomTreeData = ref([])
+  const bomTreeLoading = ref(false)
+  const bomTreeTitle = ref("BOM树形结构")
+  const treeProps = {
+    children: 'children',
+    label: 'materialName'
+  }
   
   // 物料选择相关变量
   const materialSelectOpen = ref(false)
@@ -715,6 +766,21 @@ import { debounce } from 'lodash'
     })
   }
 
+  /** 查看BOM树形结构 */
+  function handleViewBomTree(row: any) {
+    const bomId = row.bomId || ids.value[0]
+    if (!bomId) { proxy.$modal.msgWarning("请选择一个BOM"); return }
+    bomTreeTitle.value = "BOM树形结构 - " + (row.bomName || "")
+    bomTreeOpen.value = true
+    bomTreeLoading.value = true
+    getBomTree(bomId).then(response => {
+      bomTreeData.value = response.data ? [response.data] : []
+      bomTreeLoading.value = false
+    }).catch(() => {
+      bomTreeLoading.value = false
+    })
+  }
+
   // 获取物料分类树
   function getCategoryTree() {
   // 只获取启用状态的分类 (status = 1)
@@ -831,3 +897,44 @@ import { debounce } from 'lodash'
     }
   })
 </script>
+
+<style scoped>
+.bom-tree-dialog-content {
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.bom-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  flex: 1;
+}
+
+.node-label {
+  font-size: 14px;
+  color: #303133;
+}
+
+.node-spec {
+  color: #909399;
+  font-size: 12px;
+}
+
+.node-quantity {
+  color: #409eff;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.loss-rate {
+  color: #e6a23c;
+  font-size: 12px;
+}
+
+:deep(.el-tree-node__content) {
+  height: 36px;
+}
+</style>
