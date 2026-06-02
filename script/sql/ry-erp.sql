@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 02/06/2026 00:48:58
+ Date: 03/06/2026 01:24:49
 */
 
 SET NAMES utf8mb4;
@@ -53,7 +53,7 @@ CREATE TABLE `bd_bom`  (
 -- ----------------------------
 -- Records of bd_bom
 -- ----------------------------
-INSERT INTO `bd_bom` VALUES (1, '000000', 2, '1.0', '减速机JZQ-350标准版BOM', '', '2024-01-01', '2025-12-31', 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:22:23', 1, '2025-10-21 10:58:37', '0');
+INSERT INTO `bd_bom` VALUES (1, '000000', 2, '1.0', '减速机JZQ-350标准版BOM', 'PROCESS', '2024-01-01', '2025-12-31', 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:22:23', 1, '2026-06-02 22:06:58', '0');
 INSERT INTO `bd_bom` VALUES (2, '000000', 2, '1.1', '减速机JZQ-350改进版BOM', '', '2024-06-01', '2025-10-20', 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:22:23', 1, '2025-10-21 11:09:24', '0');
 INSERT INTO `bd_bom` VALUES (3, '000000', 3, '1.0', '电机Y132M-4标准版BOM', '', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:22:23', 1, '2025-10-18 23:22:23', '0');
 INSERT INTO `bd_bom` VALUES (4, '000000', 4, '1.0', '齿轮组标准版BOM', '', '2024-01-01', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:22:23', 1, '2025-10-18 23:22:23', '0');
@@ -103,13 +103,13 @@ CREATE TABLE `bd_bom_detail`  (
 -- ----------------------------
 -- Records of bd_bom_detail
 -- ----------------------------
-INSERT INTO `bd_bom_detail` VALUES (1, '000000', 1, 6, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
-INSERT INTO `bd_bom_detail` VALUES (2, '000000', 1, 7, 4.000000, '', 2.0000, 10, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
-INSERT INTO `bd_bom_detail` VALUES (3, '000000', 1, 5, 1.000000, '', 0.0000, 20, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
-INSERT INTO `bd_bom_detail` VALUES (4, '000000', 1, 8, 2.000000, '', 1.0000, 20, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
-INSERT INTO `bd_bom_detail` VALUES (5, '000000', 1, 2, 1.000000, '', 0.0000, 30, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
-INSERT INTO `bd_bom_detail` VALUES (6, '000000', 1, 9, 2.000000, '', 0.0000, 30, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
-INSERT INTO `bd_bom_detail` VALUES (7, '000000', 1, 10, 0.500000, '', 0.0000, 40, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
+INSERT INTO `bd_bom_detail` VALUES (1, '000000', 1, 6, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (2, '000000', 1, 7, 4.000000, '', 2.0000, 10, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (3, '000000', 1, 5, 1.000000, '', 0.0000, 20, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (4, '000000', 1, 8, 2.000000, '', 1.0000, 20, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (5, '000000', 1, 2, 1.000000, '', 0.0000, 30, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (6, '000000', 1, 9, 2.000000, '', 0.0000, 30, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (7, '000000', 1, 10, 0.500000, '', 0.0000, 40, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2026-06-02 22:06:58', '1');
 INSERT INTO `bd_bom_detail` VALUES (8, '000000', 2, 6, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
 INSERT INTO `bd_bom_detail` VALUES (9, '000000', 2, 7, 6.000000, '', 2.0000, 10, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
 INSERT INTO `bd_bom_detail` VALUES (10, '000000', 2, 5, 1.000000, '', 0.0000, 20, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
@@ -125,9 +125,9 @@ INSERT INTO `bd_bom_detail` VALUES (19, '000000', 3, 15, 4.000000, '', 1.0000, 3
 INSERT INTO `bd_bom_detail` VALUES (20, '000000', 4, 16, 3.000000, '', 2.0000, 10, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
 INSERT INTO `bd_bom_detail` VALUES (21, '000000', 4, 17, 2.000000, '', 2.0000, 10, NULL, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
 INSERT INTO `bd_bom_detail` VALUES (22, '000000', 4, 18, 5.000000, '', 1.0000, 20, NULL, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2025-10-18 23:29:00', 1, '2025-10-18 23:29:00', '0');
-INSERT INTO `bd_bom_detail` VALUES (23, '000000', 1, 16, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 10:53:59', 1, '2025-10-21 10:53:59', '0');
-INSERT INTO `bd_bom_detail` VALUES (24, '000000', 1, 16, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 0, 0, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 10:55:17', 1, '2025-10-21 10:55:17', '0');
-INSERT INTO `bd_bom_detail` VALUES (25, '000000', 1, 2, 1.000000, '', 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 10:58:37', 1, '2025-10-21 10:58:37', '0');
+INSERT INTO `bd_bom_detail` VALUES (23, '000000', 1, 16, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 10:53:59', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (24, '000000', 1, 16, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 0, 0, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 10:55:17', 1, '2026-06-02 22:06:58', '1');
+INSERT INTO `bd_bom_detail` VALUES (25, '000000', 1, 2, 1.000000, '', 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 10:58:37', 1, '2026-06-02 22:06:58', '1');
 INSERT INTO `bd_bom_detail` VALUES (26, '000000', 2, 3, 1.000000, '', 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 11:02:31', 1, '2025-10-21 11:02:31', '0');
 INSERT INTO `bd_bom_detail` VALUES (27, '000000', 2, 3, 1.000000, '', 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-21 11:03:42', 1, '2025-10-21 11:03:42', '0');
 INSERT INTO `bd_bom_detail` VALUES (28, '000000', 5, 2001, 1.000000, '', 0.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-10-26 19:45:40', 1, '2025-12-15 11:40:46', '0');
@@ -142,6 +142,16 @@ INSERT INTO `bd_bom_detail` VALUES (36, '000000', 9, 1, 1.000000, '', 0.0000, 1,
 INSERT INTO `bd_bom_detail` VALUES (37, '000000', 5, 10, 1.000000, 'PROCUREMENT', 0.0000, 40, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2025-11-27 17:45:55', 1, '2026-05-21 10:33:38', '0');
 INSERT INTO `bd_bom_detail` VALUES (2057371558593089537, '000000', 2057368028339740674, 1, 1.000000, 'PROCESS', 3.0000, 4, NULL, 2, '2026-05-21', NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-05-21 16:02:58', 1, '2026-05-21 17:50:35', '1');
 INSERT INTO `bd_bom_detail` VALUES (2057398640882688002, '000000', 2057368028339740674, 1, 0.001000, 'PROCESS', 3.0000, 4, NULL, 2, '2026-05-21', NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-05-21 17:50:35', 1, '2026-05-21 17:50:35', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815687536642, '000000', 1, 6, 1.000000, 'PROCESS', 0.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815687536643, '000000', 1, 7, 4.000000, 'PROCESS', 2.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815687536644, '000000', 1, 5, 1.000000, 'PROCESS', 0.0000, 20, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815687536645, '000000', 1, 8, 2.000000, 'PROCESS', 1.0000, 20, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815687536646, '000000', 1, 2, 1.000000, 'PROCESS', 0.0000, 30, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815754645506, '000000', 1, 9, 2.000000, 'PROCESS', 0.0000, 30, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815754645507, '000000', 1, 10, 0.500000, 'PROCESS', 0.0000, 40, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815754645508, '000000', 1, 16, 1.000000, 'PROCESS', 0.0000, 10, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815754645509, '000000', 1, 16, 1.000000, 'PROCESS', 0.0000, 10, NULL, 0, NULL, NULL, 0, 0, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
+INSERT INTO `bd_bom_detail` VALUES (2061811815754645510, '000000', 1, 2, 1.000000, 'PROCESS', 0.0000, 1, NULL, 0, NULL, NULL, 0, 1, '', NULL, NULL, NULL, NULL, 103, 1, '2026-06-02 22:06:58', 1, '2026-06-02 22:06:58', '0');
 
 -- ----------------------------
 -- Table structure for bd_client
@@ -2972,6 +2982,60 @@ CREATE TABLE `wm_barcode_config`  (
 INSERT INTO `wm_barcode_config` VALUES (900001, 'WM_RECEIVE_DEFAULT', '收货入库默认条码规则', 'RC', 'yyyyMMdd', 6, 0, 'RECEIVE_IN', NULL, 1, '默认收货入库条码配置，入库后自动生成条码实例', NULL, NULL, NULL, NULL, '000000', NULL, NULL, '2026-05-23 17:46:58', NULL, '2026-05-23 17:46:58', '0');
 
 -- ----------------------------
+-- Table structure for wm_batch
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_batch`;
+CREATE TABLE `wm_batch`  (
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '批次编码',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `production_date` date NULL DEFAULT NULL COMMENT '生产日期',
+  `expiry_date` date NULL DEFAULT NULL COMMENT '有效期',
+  `quantity` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '批次数量',
+  `received_qty` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '已收数量',
+  `issued_qty` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '已发数量',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT '状态',
+  `source_doc_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源单据类型',
+  `source_doc_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据ID',
+  `source_doc_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源单据编号',
+  `rule_id` bigint(20) NULL DEFAULT NULL COMMENT '生成规则ID',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(11) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`batch_id`) USING BTREE,
+  UNIQUE INDEX `uk_batch_code`(`batch_code`) USING BTREE,
+  INDEX `idx_batch_material`(`material_id`) USING BTREE,
+  INDEX `idx_batch_vendor`(`vendor_id`) USING BTREE,
+  INDEX `idx_batch_warehouse`(`warehouse_id`) USING BTREE,
+  INDEX `idx_batch_status`(`status`) USING BTREE,
+  INDEX `idx_batch_expiry`(`expiry_date`) USING BTREE,
+  INDEX `idx_batch_source`(`source_doc_type`, `source_doc_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '批次管理表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_batch
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for wm_material_receive
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_receive`;
@@ -3764,6 +3828,59 @@ CREATE TABLE `wm_sales_issue_line`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for wm_sn
+-- ----------------------------
+DROP TABLE IF EXISTS `wm_sn`;
+CREATE TABLE `wm_sn`  (
+  `sn_id` bigint(20) NOT NULL COMMENT '序列号ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `sn_code` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '序列号编码',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '关联批次ID',
+  `batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '关联批次编码',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '当前仓库ID',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `location_id` bigint(20) NULL DEFAULT NULL COMMENT '当前库位ID',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `stock_id` bigint(20) NULL DEFAULT NULL COMMENT '关联库存记录ID',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'IN_STOCK' COMMENT '状态',
+  `source_doc_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源单据类型',
+  `source_doc_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据ID',
+  `source_doc_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源单据编号',
+  `rule_id` bigint(20) NULL DEFAULT NULL COMMENT '生成规则ID',
+  `production_date` date NULL DEFAULT NULL COMMENT '生产日期',
+  `expiry_date` date NULL DEFAULT NULL COMMENT '有效期',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` int(11) NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`sn_id`) USING BTREE,
+  UNIQUE INDEX `uk_sn_code`(`sn_code`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
+  INDEX `idx_batch_id`(`batch_id`) USING BTREE,
+  INDEX `idx_warehouse_id`(`warehouse_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_stock_id`(`stock_id`) USING BTREE,
+  INDEX `idx_source_doc`(`source_doc_type`, `source_doc_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '序列号管理表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_sn
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for wm_stock_alert
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_stock_alert`;
@@ -3908,6 +4025,8 @@ CREATE TABLE `wm_stock_taking_plan`  (
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `act_process_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '流程实例ID',
+  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   PRIMARY KEY (`plan_id`) USING BTREE,
   INDEX `idx_taking_plan_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE

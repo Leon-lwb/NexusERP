@@ -36,6 +36,10 @@ public class WmStockTakingPlanBo extends BaseEntity {
     private String areaName;
     private Date plannedDate;
     private String status;
+    /** 审批流程ID */
+    private Long selectFlowId;
+    /** 流程实例ID */
+    private String actProcessId;
     private String remark;
 
     private List<WmStockTakingLine> wmStockTakingLineList;

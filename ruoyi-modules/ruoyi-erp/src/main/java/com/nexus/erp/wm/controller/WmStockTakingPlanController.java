@@ -151,4 +151,36 @@ public class WmStockTakingPlanController extends BaseController {
         wmStockTakingPlanService.postAdjustment(planId);
         return R.ok();
     }
+
+    // ==================== Flowable 工作流 ====================
+
+    /**
+     * 提交盘点计划审批
+     * <p>权限标识：{@code wm:stocktaking:edit}</p>
+     * <p>日志记录：title="盘点管理"，businessType=SUBMIT</p>
+     *
+     * @param planId       盘点计划ID
+     * @param selectFlowId 流程模板ID（可选）
+     * @return 操作结果
+     */
+    @SaCheckPermission("wm:stocktaking:edit")
+    @Log(title = "盘点管理", businessType = BusinessType.SUBMIT)
+    @PostMapping("/submit/{id}")
+    public R<Void> submit(@PathVariable Long id, @RequestParam(required = false) String selectFlowId) {
+        wmStockTakingPlanService.submit(String.valueOf(id), selectFlowId);
+        return R.ok();
+    }
+
+    /**
+     * 获取盘点计划流程实例ID
+     * <p>权限标识：{@code wm:stocktaking:query}</p>
+     *
+     * @param id 盘点计划ID
+     * @return 流程实例ID
+     */
+    @SaCheckPermission("wm:stocktaking:query")
+    @GetMapping("/proc/{id}")
+    public R<String> getProcInsId(@PathVariable Long id) {
+        return R.ok(wmStockTakingPlanService.getProcInsId(String.valueOf(id)));
+    }
 }

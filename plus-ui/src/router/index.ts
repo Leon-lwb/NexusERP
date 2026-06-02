@@ -458,6 +458,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/so/price-list/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['so:priceList:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/so/price-list/form.vue'),
+        name: 'SoPriceListForm',
+        meta: { title: '价格表表单', activeMenu: '/erp/so/price-list', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/erp/pu/requisition/form',
     component: Layout,
     hidden: true,
@@ -556,6 +570,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/wm/sn/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:sn:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/sn/form.vue'),
+        name: 'WmSnForm',
+        meta: { title: '序列号表单', activeMenu: '/erp/wm/sn', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/erp/pu/vendor-evaluation/report',
     component: Layout,
     hidden: true,
@@ -580,6 +608,21 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/erp/prd/work-order-resource/index.vue'),
         name: 'WorkOrderResource',
         meta: { title: '工单资源分配', activeMenu: '/erp/prd/work-order-resource' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/batch/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:batch:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/batch/form.vue'),
+        name: 'WmBatchForm',
+        meta: { title: '批次表单', activeMenu: '/erp/wm/batch', noCache: true },
+        props: route => ({ batchId: route.query.batchId, isView: route.query.isView })
       }
     ]
   },

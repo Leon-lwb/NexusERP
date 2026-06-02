@@ -48,6 +48,12 @@ public class WmStockTakingPlanVo implements Serializable {
     @ExcelProperty("状态")
     private String status;
 
+    @ExcelProperty("审批流程ID")
+    private Long selectFlowId;
+
+    @ExcelProperty("流程实例ID")
+    private String actProcessId;
+
     @ExcelProperty("备注")
     private String remark;
 

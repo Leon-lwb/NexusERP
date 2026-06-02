@@ -31,6 +31,10 @@ public class WmStockTakingPlan extends TenantEntity {
     private String areaName;
     private Date plannedDate;
     private String status;
+    /** 审批流程ID */
+    private Long selectFlowId;
+    /** 流程实例ID */
+    private String actProcessId;
     private String remark;
 
     @TableField(exist = false)

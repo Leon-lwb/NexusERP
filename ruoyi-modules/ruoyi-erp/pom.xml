@@ -95,6 +95,13 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
+        <!-- 单元测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
