@@ -556,6 +556,7 @@ function resetMaterialQuery() {
 function selectMaterial(row: any) {
   if (currentMaterialIndex.value < 0) return
   const target = lineList.value[currentMaterialIndex.value]
+  target.materialId = row.materialId
   target.materialCode = row.materialCode
   target.materialName = row.materialName
   target.materialSpec = row.materialSpec

@@ -9,6 +9,8 @@ import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.pu.service.PuPurchaseReceivingService;
 import com.nexus.erp.wm.domain.WmArrivalNotice;
 import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
@@ -49,6 +51,7 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
     private final WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
     private final WmMaterialReceiveMapper materialReceiveMapper;
     private final WmMaterialReceiveLineMapper materialReceiveLineMapper;
+    private final BdMaterialMapper materialMapper;
     private final AutoCodeUtil autoCodeUtil;
 
     /**
@@ -97,6 +100,9 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
 
         // 2. 创建到货通知明细行（逐行拷贝采购订单物料信息）
         for (PuPurchaseOrderLine orderLine : orderLines) {
+            if (orderLine.getMaterialId() == null) {
+                throw new ServiceException("采购订单明细行物料ID不能为空，请先完善物料信息（行物料编码：" + orderLine.getMaterialCode() + "）");
+            }
             WmArrivalNoticeLine noticeLine = new WmArrivalNoticeLine();
             noticeLine.setNoticeId(notice.getNoticeId());
             noticeLine.setMaterialId(orderLine.getMaterialId());
