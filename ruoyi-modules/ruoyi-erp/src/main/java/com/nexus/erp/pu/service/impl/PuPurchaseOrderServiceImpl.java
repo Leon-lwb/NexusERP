@@ -35,6 +35,7 @@ import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.runtime.ProcessInstance;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 采购订单服务实现类
@@ -87,8 +89,11 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     public TableDataInfo<PuPurchaseOrderVo> selectPageList(PuPurchaseOrderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PuPurchaseOrder> lqw = buildQueryWrapper(bo);
-        Page<PuPurchaseOrderVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        return TableDataInfo.build(page);
+        Page<PuPurchaseOrder> page = baseMapper.selectPage(pageQuery.build(), lqw);
+        List<PuPurchaseOrderVo> records = page.getRecords().stream().map(this::copyToVo).collect(Collectors.toList());
+        Page<PuPurchaseOrderVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(records);
+        return TableDataInfo.build(voPage);
     }
 
     /**
@@ -96,7 +101,8 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      */
     @Override
     public List<PuPurchaseOrderVo> selectList(PuPurchaseOrderBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<PuPurchaseOrder> list = baseMapper.selectList(buildQueryWrapper(bo));
+        return list.stream().map(this::copyToVo).collect(Collectors.toList());
     }
 
     /**
@@ -106,10 +112,24 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      */
     @Override
     public PuPurchaseOrderVo selectById(Long id) {
-        PuPurchaseOrderVo vo = baseMapper.selectVoById(id);
-        if (vo != null && vo.getOrderId() != null) {
-            vo.setLineList(listLines(vo.getOrderId()));
+        PuPurchaseOrder entity = baseMapper.selectById(id);
+        if (entity == null) {
+            return null;
         }
+        PuPurchaseOrderVo vo = copyToVo(entity);
+        vo.setLineList(listLines(vo.getOrderId()));
+        return vo;
+    }
+
+    /**
+     * 将实体转换为 VO 对象
+     */
+    private PuPurchaseOrderVo copyToVo(PuPurchaseOrder entity) {
+        if (entity == null) {
+            return null;
+        }
+        PuPurchaseOrderVo vo = new PuPurchaseOrderVo();
+        BeanUtils.copyProperties(entity, vo);
         return vo;
     }
 
@@ -133,7 +153,8 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseOrderBo bo) {
-        PuPurchaseOrder entity = MapstructUtils.convert(bo, PuPurchaseOrder.class);
+        PuPurchaseOrder entity = new PuPurchaseOrder();
+        BeanUtils.copyProperties(bo, entity);
         validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
         if (StringUtils.isBlank(entity.getOrderNo())) {
             entity.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
@@ -157,7 +178,8 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuPurchaseOrderBo bo) {
-        PuPurchaseOrder entity = MapstructUtils.convert(bo, PuPurchaseOrder.class);
+        PuPurchaseOrder entity = new PuPurchaseOrder();
+        BeanUtils.copyProperties(bo, entity);
         validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
         PuPurchaseOrder current = baseMapper.selectById(entity.getOrderId());
         if (current == null) {
@@ -493,7 +515,6 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      * <p>
      * 支持按采购订单号精确匹配、按状态精确匹配、按供应商名称模糊查询，默认按创建时间降序排列。
      *
-     * @param bo 查询条件
      * @return 查询条件 Wrapper
      */
     @Override

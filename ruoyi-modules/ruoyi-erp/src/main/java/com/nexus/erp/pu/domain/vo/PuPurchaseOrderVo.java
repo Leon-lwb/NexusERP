@@ -36,8 +36,14 @@ public class PuPurchaseOrderVo extends BaseEntity {
     @ExcelProperty(value = "供应商")
     private String vendorName;
 
+    /** 供应商ID */
+    private Long vendorId;
+
     @ExcelProperty(value = "来源请购单号")
     private String requisitionNo;
+
+    /** 来源请购单ID */
+    private Long requisitionId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @ExcelProperty(value = "订单日期")
@@ -52,6 +58,30 @@ public class PuPurchaseOrderVo extends BaseEntity {
 
     @ExcelProperty(value = "金额")
     private BigDecimal totalAmount;
+
+    /** 币种 */
+    private String currency;
+
+    /** 汇率 */
+    private BigDecimal exchangeRate;
+
+    /** 税额 */
+    private BigDecimal taxAmount;
+
+    /** 折扣金额 */
+    private BigDecimal discountAmount;
+
+    /** 运费金额 */
+    private BigDecimal freightAmount;
+
+    /** 付款条款 */
+    private String paymentTerms;
+
+    /** 交货条款 */
+    private String deliveryTerms;
+
+    /** 选用的审批流ID */
+    private Long selectFlowId;
 
     /** 备注 */
     private String remark;
