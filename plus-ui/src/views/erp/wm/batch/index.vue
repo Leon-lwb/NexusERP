@@ -130,6 +130,7 @@ function getList() {
   listBatch(queryParams.value).then((response: any) => {
     batchList.value = response.rows;
     total.value = response.total;
+  }).finally(() => {
     loading.value = false;
   });
 }

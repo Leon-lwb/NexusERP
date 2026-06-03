@@ -252,7 +252,8 @@ function getList() {
   listBarcodeConfig(queryParams.value).then((res: any) => {
     list.value = res.rows; 
     total.value = res.total; 
-    loading.value = false 
+  }).finally(() => {
+    loading.value = false
   }) 
 }
 
@@ -299,7 +300,10 @@ function handleAdd(){
     remark: '' 
   }; 
   open.value = true; 
-  title.value = '新增条码配置' 
+  title.value = '新增条码配置' ;
+  nextTick(() => {
+    proxy.$refs.formRef?.clearValidate()
+  })
 }
 
 /**
@@ -310,7 +314,10 @@ function handleUpdate(row: any){
   getBarcodeConfig(id).then((res: any) => {
     form.value = res.data; 
     open.value = true; 
-    title.value = '修改条码配置' 
+    title.value = '修改条码配置' ;
+    nextTick(() => {
+      proxy.$refs.formRef?.clearValidate()
+    })
   }) 
 }
 

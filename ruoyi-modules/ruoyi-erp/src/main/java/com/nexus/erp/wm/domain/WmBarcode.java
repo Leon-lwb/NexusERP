@@ -50,6 +50,12 @@ public class WmBarcode extends TenantEntity {
     /** 批次ID */
     private Long batchId;
 
+    /** 批次编码 */
+    private String batchCode;
+
+    /** 序列号ID */
+    private Long snId;
+
     /** 库存ID */
     private Long stockId;
 

@@ -84,7 +84,7 @@ public class WmTraceServiceImpl implements IWmTraceService {
      */
     private WmTraceNodeVo buildForwardTree(Long materialId, String batchCode, String snCode,
                                             int depth, Set<String> visited, List<WmTraceNodeVo> flatNodes) {
-        if (depth > MAX_DEPTH) {
+        if (depth >= MAX_DEPTH) {
             log.warn("正向追溯超过最大深度 {}，停止递归", MAX_DEPTH);
             return null;
         }
@@ -96,7 +96,20 @@ public class WmTraceServiceImpl implements IWmTraceService {
         if (StringUtils.isNotBlank(batchCode)) {
             lqw.eq(WmMaterialStockTx::getBatchCode, batchCode);
         }
+        // SN过滤：当SN不为空时，通过SN表找到对应批次再过滤
+        if (StringUtils.isNotBlank(snCode)) {
+            LambdaQueryWrapper<WmSn> snLqw = Wrappers.lambdaQuery();
+            snLqw.eq(WmSn::getSnCode, snCode);
+            WmSn sn = wmSnMapper.selectOne(snLqw);
+            if (sn != null) {
+                if (sn.getBatchCode() != null) {
+                    lqw.eq(WmMaterialStockTx::getBatchCode, sn.getBatchCode());
+                }
+                lqw.eq(WmMaterialStockTx::getMaterialId, sn.getMaterialId());
+            }
+        }
         lqw.orderByAsc(WmMaterialStockTx::getTxDate);
+        lqw.last("LIMIT 200");
 
         List<WmMaterialStockTx> outTxList = wmMaterialStockTxMapper.selectList(lqw);
 
@@ -167,7 +180,7 @@ public class WmTraceServiceImpl implements IWmTraceService {
      */
     private WmTraceNodeVo buildBackwardTree(Long materialId, String batchCode, String snCode,
                                              int depth, Set<String> visited, List<WmTraceNodeVo> flatNodes) {
-        if (depth > MAX_DEPTH) {
+        if (depth >= MAX_DEPTH) {
             log.warn("反向追溯超过最大深度 {}，停止递归", MAX_DEPTH);
             return null;
         }
@@ -179,7 +192,20 @@ public class WmTraceServiceImpl implements IWmTraceService {
         if (StringUtils.isNotBlank(batchCode)) {
             lqw.eq(WmMaterialStockTx::getBatchCode, batchCode);
         }
+        // SN过滤：当SN不为空时，通过SN表找到对应批次再过滤
+        if (StringUtils.isNotBlank(snCode)) {
+            LambdaQueryWrapper<WmSn> snLqw = Wrappers.lambdaQuery();
+            snLqw.eq(WmSn::getSnCode, snCode);
+            WmSn sn = wmSnMapper.selectOne(snLqw);
+            if (sn != null) {
+                if (sn.getBatchCode() != null) {
+                    lqw.eq(WmMaterialStockTx::getBatchCode, sn.getBatchCode());
+                }
+                lqw.eq(WmMaterialStockTx::getMaterialId, sn.getMaterialId());
+            }
+        }
         lqw.orderByAsc(WmMaterialStockTx::getTxDate);
+        lqw.last("LIMIT 200");
 
         List<WmMaterialStockTx> inTxList = wmMaterialStockTxMapper.selectList(lqw);
 

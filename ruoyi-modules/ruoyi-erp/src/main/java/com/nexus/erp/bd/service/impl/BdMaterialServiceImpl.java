@@ -1,5 +1,6 @@
 package com.nexus.erp.bd.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,6 +13,7 @@ import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.bo.BdMaterialBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.bd.service.IBdMaterialService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 物料产品主Service业务层处理
@@ -31,6 +36,7 @@ import java.util.List;
 public class BdMaterialServiceImpl implements IBdMaterialService {
 
     private final BdMaterialMapper baseMapper;
+    private final BdUnitOfMeasureMapper uomMapper;
 
     /**
      * 查询物料产品主分页列表
@@ -43,6 +49,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     public TableDataInfo<BdMaterialVo> selectPageList(BdMaterialBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<BdMaterial> lqw = buildQueryWrapper(bo);
         Page<BdMaterialVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        fillBaseUomName(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -54,7 +61,9 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
      */
     @Override
     public List<BdMaterialVo> selectList(BdMaterialBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<BdMaterialVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        fillBaseUomName(list);
+        return list;
     }
 
     /**
@@ -65,7 +74,11 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
      */
     @Override
     public BdMaterialVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        BdMaterialVo vo = baseMapper.selectVoById(id);
+        if (vo != null) {
+            fillBaseUomName(List.of(vo));
+        }
+        return vo;
     }
 
     /**
@@ -117,7 +130,9 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return baseMapper.selectByCategoryIds(categoryIds);
+        List<BdMaterialVo> list = baseMapper.selectByCategoryIds(categoryIds);
+        fillBaseUomName(list);
+        return list;
     }
 
     /**
@@ -137,5 +152,35 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
             .eq(bo.getStatus() != null, BdMaterial::getStatus, bo.getStatus())
             .eq(StringUtils.isNotBlank(bo.getQualityStatus()), BdMaterial::getQualityStatus, bo.getQualityStatus());
         return lqw;
+    }
+
+    /**
+     * 批量填充基本计量单位名称
+     *
+     * @param list 物料VO列表
+     */
+    private void fillBaseUomName(List<BdMaterialVo> list) {
+        if (CollUtil.isEmpty(list)) {
+            return;
+        }
+        List<Long> uomIds = list.stream()
+            .map(BdMaterialVo::getBaseUomId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (CollUtil.isEmpty(uomIds)) {
+            return;
+        }
+        Map<Long, String> uomNameMap = uomMapper.selectBatchIds(uomIds).stream()
+            .collect(Collectors.toMap(
+                com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomId,
+                com.nexus.erp.bd.domain.BdUnitOfMeasure::getUomName,
+                (v1, v2) -> v1
+            ));
+        for (BdMaterialVo vo : list) {
+            if (vo.getBaseUomId() != null) {
+                vo.setBaseUomName(uomNameMap.get(vo.getBaseUomId()));
+            }
+        }
     }
 }

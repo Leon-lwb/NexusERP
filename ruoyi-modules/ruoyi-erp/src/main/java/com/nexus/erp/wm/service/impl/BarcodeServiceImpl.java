@@ -3,6 +3,7 @@ package com.nexus.erp.wm.service.impl;
 import lombok.RequiredArgsConstructor;
 import com.nexus.erp.wm.barcode.BarcodeGenerator;
 import com.nexus.erp.wm.barcode.BarcodeRule;
+import com.nexus.erp.wm.barcode.BarcodeSequenceProvider;
 import com.nexus.erp.wm.service.IBarcodeService;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +20,8 @@ import java.util.Date;
 @Service
 public class BarcodeServiceImpl implements IBarcodeService {
 
-    /** 条码生成器实例 */
-    private final BarcodeGenerator barcodeGenerator = new BarcodeGenerator();
+    private final BarcodeGenerator barcodeGenerator;
+    private final BarcodeSequenceProvider barcodeSequenceProvider;
 
     /**
      * 根据规则生成条码
@@ -31,6 +32,8 @@ public class BarcodeServiceImpl implements IBarcodeService {
      */
     @Override
     public String generate(BarcodeRule rule, Date bizDate) {
-        return barcodeGenerator.generate(rule, bizDate);
+        String configCode = rule.getRuleCode() != null ? rule.getRuleCode() : "WM_RECEIVE_DEFAULT";
+        long sequence = barcodeSequenceProvider.nextSequence(configCode);
+        return barcodeGenerator.generate(rule, bizDate, sequence);
     }
 }

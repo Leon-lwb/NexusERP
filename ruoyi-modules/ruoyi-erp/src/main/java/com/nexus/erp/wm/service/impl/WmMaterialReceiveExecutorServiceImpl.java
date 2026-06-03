@@ -333,7 +333,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         WmMaterialStock targetCondition = copyStockCondition(stock);
         WmMaterialStock targetStock = selectOneStock(targetCondition);
 
-        processStockTransfer(receive, stock, virtualStock, targetStock, transactionQuantity);
+        Long actualStockId = processStockTransfer(receive, stock, virtualStock, targetStock, transactionQuantity);
+        stock.setStockId(actualStockId); // 回写实际的库存ID
     }
 
     /**
@@ -345,7 +346,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
      * @param targetStock        目标库位库存
      * @param transactionQuantity 事务数量
      */
-    private void processStockTransfer(WmMaterialReceiveVo receive, WmMaterialStock stock, WmMaterialStock virtualStock,
+    private Long processStockTransfer(WmMaterialReceiveVo receive, WmMaterialStock stock, WmMaterialStock virtualStock,
                                       WmMaterialStock targetStock, BigDecimal transactionQuantity) {
         Date now = new Date();
 
@@ -371,6 +372,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             materialStockMapper.updateById(targetStock);
             recordStockTransaction(receive, stock, 1, transactionQuantity, targetBeforeQuantity,
                 targetAfterQuantity, targetStock.getStockId(), "TARGET_IN");
+            return targetStock.getStockId();
         } else {
             WmMaterialStock newStock = copyStock(stock);
             newStock.setStockId(null);
@@ -380,6 +382,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             materialStockMapper.insert(newStock);
             recordStockTransaction(receive, stock, 1, transactionQuantity, BigDecimal.ZERO,
                 transactionQuantity, newStock.getStockId(), "TARGET_IN");
+            return newStock.getStockId();
         }
     }
 
@@ -460,6 +463,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         target.setRecptDate(source.getRecptDate());
         target.setExpireDate(source.getExpireDate());
         target.setFrozenFlag(source.getFrozenFlag());
+        target.setUnitCost(source.getUnitCost());
+        target.setTotalCost(source.getTotalCost());
         target.setAttr1(source.getAttr1());
         target.setAttr2(source.getAttr2());
         target.setAttr3(source.getAttr3());

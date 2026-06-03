@@ -54,6 +54,9 @@ public class WmBarcodeConfig extends TenantEntity {
     /** 是否启用 */
     private Long enableFlag;
 
+    /** 当前序列号（用于条码流水号生成） */
+    private Long currentSequence;
+
     /** 备注 */
     private String remark;
 }

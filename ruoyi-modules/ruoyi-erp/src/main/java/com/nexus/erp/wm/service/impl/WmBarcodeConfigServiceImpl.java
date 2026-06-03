@@ -60,6 +60,12 @@ public class WmBarcodeConfigServiceImpl implements IWmBarcodeConfigService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBarcodeConfigBo bo) {
+        // 校验 configCode 唯一性
+        long count = baseMapper.selectCount(Wrappers.<WmBarcodeConfig>lambdaQuery()
+            .eq(WmBarcodeConfig::getConfigCode, bo.getConfigCode()));
+        if (count > 0) {
+            throw new RuntimeException("配置编码已存在: " + bo.getConfigCode());
+        }
         WmBarcodeConfig entity = MapstructUtils.convert(bo, WmBarcodeConfig.class);
         return baseMapper.insert(entity);
     }
@@ -102,6 +108,7 @@ public class WmBarcodeConfigServiceImpl implements IWmBarcodeConfigService {
         vo.setBizType(entity.getBizType());
         vo.setCategoryId(entity.getCategoryId());
         vo.setEnableFlag(entity.getEnableFlag());
+        vo.setCurrentSequence(entity.getCurrentSequence());
         vo.setRemark(entity.getRemark());
         return vo;
     }

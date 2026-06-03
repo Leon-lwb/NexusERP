@@ -33,6 +33,10 @@ public class WmBarcodeBo extends BaseEntity {
 
     private Long batchId;
 
+    private String batchCode;
+
+    private Long snId;
+
     private Long stockId;
 
     private String status;

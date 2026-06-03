@@ -82,7 +82,7 @@
     <el-dialog title="批量生成序列号" v-model="batchGenerateVisible" width="500px" append-to-body>
       <el-form ref="batchGenerateFormRef" :model="batchGenerateForm" :rules="batchGenerateRules" label-width="100px">
         <el-form-item label="物料ID" prop="materialId">
-          <el-input v-model="batchGenerateForm.materialId" placeholder="请输入物料ID" />
+          <el-input-number v-model="batchGenerateForm.materialId" :min="1" controls-position="right" style="width: 100%" />
         </el-form-item>
         <el-form-item label="生成数量" prop="quantity">
           <el-input-number v-model="batchGenerateForm.quantity" :min="1" :max="1000" controls-position="right" style="width: 100%" />
@@ -105,10 +105,10 @@
           </el-select>
         </el-form-item>
         <el-form-item label="库位" prop="locationId">
-          <el-input v-model="bindForm.locationId" placeholder="请输入库位ID" />
+          <el-input-number v-model="bindForm.locationId" :min="1" controls-position="right" style="width: 100%" />
         </el-form-item>
         <el-form-item label="库存ID" prop="stockId">
-          <el-input v-model="bindForm.stockId" placeholder="请输入库存ID" />
+          <el-input-number v-model="bindForm.stockId" :min="1" controls-position="right" style="width: 100%" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -125,6 +125,7 @@
 import { listSn, getSn, addSn, updateSn, delSn, batchGenerateSn, bindStock, unbindStock } from '@/api/erp/wm/sn';
 import { WmSnVO, WmSnQuery, WmSnForm } from '@/api/erp/wm/sn/types';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
+import { useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as any;
 const { wm_sn_status } = toRefs<any>(proxy.useDict('wm_sn_status'));
@@ -179,10 +180,13 @@ const warehouseOptions = ref<any[]>([]);
 
 const getList = async () => {
   loading.value = true;
-  const res = await listSn(queryParams.value);
-  snList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
+  try {
+    const res = await listSn(queryParams.value);
+    snList.value = res.rows;
+    total.value = res.total;
+  } finally {
+    loading.value = false;
+  }
 };
 
 const handleQuery = () => {

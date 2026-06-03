@@ -49,6 +49,8 @@ public class WmBarcodeConfigVo implements Serializable {
     @ExcelProperty(value = "启用状态")
     private Long enableFlag;
 
+    private Long currentSequence;
+
     @ExcelProperty(value = "备注")
     private String remark;
 }

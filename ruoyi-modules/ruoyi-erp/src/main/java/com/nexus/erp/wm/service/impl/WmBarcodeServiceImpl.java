@@ -10,6 +10,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.barcode.BarcodeGenerator;
 import com.nexus.erp.wm.barcode.BarcodeRule;
+import com.nexus.erp.wm.barcode.BarcodeSequenceProvider;
 import com.nexus.erp.wm.domain.WmBarcode;
 import com.nexus.erp.wm.domain.WmBarcodeConfig;
 import com.nexus.erp.wm.domain.bo.WmBarcodeBo;
@@ -38,7 +39,8 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
 
     private final WmBarcodeMapper baseMapper;
     private final WmBarcodeConfigMapper barcodeConfigMapper;
-    private final BarcodeGenerator barcodeGenerator = new BarcodeGenerator();
+    private final BarcodeGenerator barcodeGenerator;
+    private final BarcodeSequenceProvider barcodeSequenceProvider;
 
     @Override
     public TableDataInfo<WmBarcodeVo> selectPageList(WmBarcodeBo bo, PageQuery pageQuery) {
@@ -107,7 +109,8 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         }
 
         BarcodeRule rule = buildRule(effectiveConfig);
-        String barcodeCode = barcodeGenerator.generate(rule, bizDate);
+        long sequence = barcodeSequenceProvider.nextSequence(effectiveConfig.getConfigCode());
+        String barcodeCode = barcodeGenerator.generate(rule, bizDate, sequence);
 
         WmBarcode barcode = new WmBarcode();
         barcode.setBarcodeCode(barcodeCode);
@@ -135,17 +138,12 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      * 3. 再不行则使用第一条启用中的配置兜底
      */
     private WmBarcodeConfig resolveEffectiveConfig(WmBarcodeConfig config, String configCode) {
+        // 1. 优先使用外部传入且有效的配置
         if (config != null && (config.getEnableFlag() == null || config.getEnableFlag() != 0L)) {
             return config;
         }
 
-        WmBarcodeConfig defaultConfig = barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
-            .eq(WmBarcodeConfig::getConfigCode, "WM_RECEIVE_DEFAULT")
-            .eq(WmBarcodeConfig::getEnableFlag, 1L));
-        if (defaultConfig != null) {
-            return defaultConfig;
-        }
-
+        // 2. 尝试按指定编码查找启用版本
         if (StringUtils.isNotBlank(configCode)) {
             WmBarcodeConfig configByCode = barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
                 .eq(WmBarcodeConfig::getConfigCode, configCode)
@@ -155,6 +153,15 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
             }
         }
 
+        // 3. 回退到默认配置
+        WmBarcodeConfig defaultConfig = barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
+            .eq(WmBarcodeConfig::getConfigCode, "WM_RECEIVE_DEFAULT")
+            .eq(WmBarcodeConfig::getEnableFlag, 1L));
+        if (defaultConfig != null) {
+            return defaultConfig;
+        }
+
+        // 4. 最后兜底取第一条启用配置
         return barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
             .eq(WmBarcodeConfig::getEnableFlag, 1L)
             .last("limit 1"));
