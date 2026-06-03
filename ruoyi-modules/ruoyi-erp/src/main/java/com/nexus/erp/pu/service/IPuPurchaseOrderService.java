@@ -67,6 +67,14 @@ public interface IPuPurchaseOrderService extends WfCallBackServiceI {
     PuPurchaseOrderVo selectById(Long id);
 
     /**
+     * 根据订单ID查询明细行列表
+     *
+     * @param orderId 订单ID
+     * @return 采购订单明细行列表
+     */
+    List<PuPurchaseOrderLine> listLines(Long orderId);
+
+    /**
      * 新增采购订单，含明细行
      *
      * @param bo 采购订单业务对象

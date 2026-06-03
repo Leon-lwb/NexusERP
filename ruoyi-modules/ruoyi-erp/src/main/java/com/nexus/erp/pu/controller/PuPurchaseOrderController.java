@@ -292,9 +292,6 @@ public class PuPurchaseOrderController extends BaseController {
     @SaCheckPermission("pu:order:query")
     @GetMapping("/{orderId}/lines")
     public R<List<PuPurchaseOrderLine>> listLines(@PathVariable Long orderId) {
-        LambdaQueryWrapper<PuPurchaseOrderLine> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(PuPurchaseOrderLine::getOrderId, orderId);
-        lqw.orderByAsc(PuPurchaseOrderLine::getSortOrder);
-        return R.ok(lineMapper.selectList(lqw));
+        return R.ok(purchaseOrderService.listLines(orderId));
     }
 }

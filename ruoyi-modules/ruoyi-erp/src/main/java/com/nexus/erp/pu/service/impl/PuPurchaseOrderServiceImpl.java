@@ -108,12 +108,20 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     public PuPurchaseOrderVo selectById(Long id) {
         PuPurchaseOrderVo vo = baseMapper.selectVoById(id);
         if (vo != null && vo.getOrderId() != null) {
-            LambdaQueryWrapper<PuPurchaseOrderLine> lqw = new LambdaQueryWrapper<>();
-            lqw.eq(PuPurchaseOrderLine::getOrderId, vo.getOrderId());
-            lqw.orderByAsc(PuPurchaseOrderLine::getSortOrder);
-            vo.setLineList(lineMapper.selectList(lqw));
+            vo.setLineList(listLines(vo.getOrderId()));
         }
         return vo;
+    }
+
+    /**
+     * 根据订单ID查询明细行列表
+     */
+    @Override
+    public List<PuPurchaseOrderLine> listLines(Long orderId) {
+        LambdaQueryWrapper<PuPurchaseOrderLine> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(PuPurchaseOrderLine::getOrderId, orderId);
+        lqw.orderByAsc(PuPurchaseOrderLine::getSortOrder);
+        return lineMapper.selectList(lqw);
     }
 
     /**
