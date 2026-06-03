@@ -101,7 +101,15 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
         // 2. 创建到货通知明细行（逐行拷贝采购订单物料信息）
         for (PuPurchaseOrderLine orderLine : orderLines) {
             if (orderLine.getMaterialId() == null) {
-                throw new ServiceException("采购订单明细行物料ID不能为空，请先完善物料信息（行物料编码：" + orderLine.getMaterialCode() + "）");
+                if (StringUtils.isBlank(orderLine.getMaterialCode())) {
+                    throw new ServiceException("采购订单明细行物料编码和物料ID均为空，无法生成到货通知");
+                }
+                BdMaterial material = materialMapper.selectOne(
+                    new LambdaQueryWrapper<BdMaterial>().eq(BdMaterial::getMaterialCode, orderLine.getMaterialCode()));
+                if (material == null) {
+                    throw new ServiceException("采购订单明细行物料编码【" + orderLine.getMaterialCode() + "】在物料主数据中不存在，请先完善物料信息");
+                }
+                orderLine.setMaterialId(material.getMaterialId());
             }
             WmArrivalNoticeLine noticeLine = new WmArrivalNoticeLine();
             noticeLine.setNoticeId(notice.getNoticeId());
