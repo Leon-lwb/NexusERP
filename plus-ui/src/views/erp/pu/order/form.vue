@@ -111,7 +111,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="汇率" prop="exchangeRate">
-              <el-input v-model="form.exchangeRate" />
+              <el-input v-model="form.exchangeRate" @change="lineList.forEach(r => r.amount = ((parseFloat(r.orderQuantity) || 0) * (parseFloat(r.unitPrice) || 0) * (parseFloat(form.exchangeRate) || 1)).toFixed(2))" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -189,17 +189,17 @@
           </el-table-column>
           <el-table-column label="数量">
             <template #default="scope">
-              <el-input v-model="scope.row.orderQuantity" />
+              <el-input v-model="scope.row.orderQuantity" @change="scope.row.amount = ((parseFloat(scope.row.orderQuantity) || 0) * (parseFloat(scope.row.unitPrice) || 0) * (parseFloat(form.exchangeRate) || 1)).toFixed(2)" />
             </template>
           </el-table-column>
           <el-table-column label="单价">
             <template #default="scope">
-              <el-input v-model="scope.row.unitPrice" />
+              <el-input v-model="scope.row.unitPrice" @change="scope.row.amount = ((parseFloat(scope.row.orderQuantity) || 0) * (parseFloat(scope.row.unitPrice) || 0) * (parseFloat(form.exchangeRate) || 1)).toFixed(2)" />
             </template>
           </el-table-column>
           <el-table-column label="金额">
             <template #default="scope">
-              <el-input v-model="scope.row.amount" />
+              <el-input v-model="scope.row.amount" readonly />
             </template>
           </el-table-column>
           <el-table-column label="备注">
