@@ -36,6 +36,7 @@ import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.runtime.ProcessInstance;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,8 +90,11 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     @Override
     public TableDataInfo<PuPurchaseRequisitionVo> selectPageList(PuPurchaseRequisitionBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PuPurchaseRequisition> lqw = buildQueryWrapper(bo);
-        Page<PuPurchaseRequisitionVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        return TableDataInfo.build(page);
+        Page<PuPurchaseRequisition> page = baseMapper.selectPage(pageQuery.build(), lqw);
+        List<PuPurchaseRequisitionVo> records = page.getRecords().stream().map(this::copyToVo).collect(Collectors.toList());
+        Page<PuPurchaseRequisitionVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(records);
+        return TableDataInfo.build(voPage);
     }
 
     /**
@@ -98,7 +102,8 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
      */
     @Override
     public List<PuPurchaseRequisitionVo> selectList(PuPurchaseRequisitionBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<PuPurchaseRequisition> list = baseMapper.selectList(buildQueryWrapper(bo));
+        return list.stream().map(this::copyToVo).collect(Collectors.toList());
     }
 
     /**
@@ -106,12 +111,26 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
      */
     @Override
     public PuPurchaseRequisitionVo selectById(Long id) {
-        PuPurchaseRequisitionVo vo = baseMapper.selectVoById(id);
-        if (vo != null && vo.getRequisitionId() != null) {
-            LambdaQueryWrapper<PuPurchaseRequisitionLine> lqw = Wrappers.lambdaQuery();
-            lqw.eq(PuPurchaseRequisitionLine::getRequisitionId, vo.getRequisitionId());
-            vo.setPuPurchaseRequisitionLineList(lineMapper.selectList(lqw));
+        PuPurchaseRequisition entity = baseMapper.selectById(id);
+        if (entity == null) {
+            return null;
         }
+        PuPurchaseRequisitionVo vo = copyToVo(entity);
+        LambdaQueryWrapper<PuPurchaseRequisitionLine> lqw = Wrappers.lambdaQuery();
+        lqw.eq(PuPurchaseRequisitionLine::getRequisitionId, vo.getRequisitionId());
+        vo.setPuPurchaseRequisitionLineList(lineMapper.selectList(lqw));
+        return vo;
+    }
+
+    /**
+     * 将实体转换为 VO 对象
+     */
+    private PuPurchaseRequisitionVo copyToVo(PuPurchaseRequisition entity) {
+        if (entity == null) {
+            return null;
+        }
+        PuPurchaseRequisitionVo vo = new PuPurchaseRequisitionVo();
+        BeanUtils.copyProperties(entity, vo);
         return vo;
     }
 
