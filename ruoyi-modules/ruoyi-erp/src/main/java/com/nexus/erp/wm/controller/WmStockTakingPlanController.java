@@ -159,7 +159,7 @@ public class WmStockTakingPlanController extends BaseController {
      * <p>权限标识：{@code wm:stocktaking:edit}</p>
      * <p>日志记录：title="盘点管理"，businessType=SUBMIT</p>
      *
-     * @param planId       盘点计划ID
+     * @param id       盘点计划ID
      * @param selectFlowId 流程模板ID（可选）
      * @return 操作结果
      */

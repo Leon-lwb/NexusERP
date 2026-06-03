@@ -6,6 +6,8 @@
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT'">提交审批</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button type="success" @click="handleGenerateLines" v-if="!isViewMode && form.planId">生成盘点行</el-button>
             <el-button type="warning" @click="handlePostAdjustment" v-if="!isViewMode && form.planId">过账调整</el-button>
             <el-button @click="cancel">取消</el-button>
@@ -13,7 +15,7 @@
         </div>
       </template>
 
-      <el-form ref="stocktakingRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-form ref="stocktakingRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
@@ -61,6 +63,19 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="审批流程" prop="selectFlowId">
+              <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程">
+                <el-option v-for="f in flowOptions" :key="f.id"
+                  :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-alert v-if="!loadingFlow && flowOptions.length === 0 && !isViewMode"
+          title="暂无可用审批流程，请在流程模块中配置并绑定到 wmStockTakingPlanService" type="warning" show-icon :closable="false" class="mb8" />
 
         <el-divider content-position="center">盘点行信息</el-divider>
         <el-row :gutter="10" class="mb8">
@@ -139,7 +154,8 @@
 </template>
 
 <script setup lang="ts" name="StockTakingForm">
-import { getStockTakingPlan, addStockTakingPlan, updateStockTakingPlan, generateLines, postAdjustment } from "@/api/erp/wm/stocktaking"
+import { getStockTakingPlan, addStockTakingPlan, updateStockTakingPlan, generateLines, postAdjustment, submitStockTakingFlow, getStockTakingProcId } from "@/api/erp/wm/stocktaking"
+import { getProcesss } from "@/api/workflow/process"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { listStoragearea } from "@/api/erp/wm/storagearea"
 import { genCode } from "@/api/system/autocode/rule"
@@ -149,12 +165,25 @@ const { proxy } = getCurrentInstance() as any
 const route = useRoute()
 const router = useRouter()
 
+// 工作流嵌入属性（供流程详情页渲染自定义表单时使用）
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+})
+
 const form = ref<any>({})
 const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")
 const lineList = ref<any[]>([])
 const checkedLines = ref<any[]>([])
+
+// 流程相关状态
+const flowOptions = ref<any[]>([])
+const loadingFlow = ref(false)
+const formDisabled = computed(() => isViewMode.value || props.disabled)
 
 const warehouseSelectOpen = ref(false)
 const warehouseList = ref([])
@@ -180,6 +209,7 @@ onMounted(() => {
   if (action === 'add') { title.value = "新增盘点计划"; reset() }
   else if (action === 'edit') { title.value = "修改盘点计划"; if (id) getInfo(id) }
   else if (action === 'view') { title.value = "查看盘点计划"; if (id) getInfo(id) }
+  loadFlows()
 })
 
 function getInfo(id: any) {
@@ -221,6 +251,84 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/stocktaking' }) }
+
+// ==================== Flowable 工作流 ====================
+
+/** 加载可用审批流程 */
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'wmStockTakingPlanService' }).then((response: any) => {
+    flowOptions.value = response?.data || []
+    tryAutoSelect()
+    loadingFlow.value = false
+  })
+}
+
+/** 仅有一个流程时自动选中 */
+function tryAutoSelect() {
+  if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
+/** 提交审批 */
+function handleSubmitFlow() {
+  proxy.$refs["stocktakingRef"].validate((valid: boolean) => {
+    if (valid) {
+      if (!form.value.selectFlowId) {
+        proxy.$modal.msgWarning("请先选择审批流程")
+        return
+      }
+      form.value.wmStockTakingLineList = lineList.value
+      if (form.value.planId != null) {
+        updateStockTakingPlan(form.value).then(() => {
+          submitStockTakingFlow(String(form.value.planId), String(form.value.selectFlowId)).then((res: any) => {
+            if (res.code === 200) {
+              proxy.$modal.msgSuccess("提交审批成功")
+              router.push('/erp/wm/stocktaking')
+            } else {
+              proxy.$modal.msgError(res.msg || '提交审批失败')
+            }
+          })
+        })
+      } else {
+        proxy.$modal.msgWarning("请先保存单据后再提交审批")
+      }
+    }
+  })
+}
+
+/** 查看流程 */
+function onViewFlow() {
+  getStockTakingProcId(String(form.value.planId)).then((res: any) => {
+    if (res.code === 200 && res.data) {
+      router.push('/workflow/process/detail/' + res.data)
+    } else {
+      proxy.$modal.msgWarning('暂无流程信息')
+    }
+  })
+}
+
+/** 工作流嵌入时填充表单数据 */
+function applyWorkflowFormPayload(val: Record<string, any>) {
+  const payload = JSON.parse(JSON.stringify(val))
+  Object.assign(form.value, payload)
+  lineList.value = payload.wmStockTakingLineList || []
+}
+
+// 监听工作流嵌入数据
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).planId != null) {
+      applyWorkflowFormPayload(val as Record<string, any>)
+      isViewMode.value = props.disabled
+      title.value = props.disabled ? '盘点计划（流程）' : '盘点计划'
+      loadFlows()
+    }
+  },
+  { deep: true, immediate: true }
+)
 
 function rowLineIndex({ row, rowIndex }: any) { row.index = rowIndex + 1 }
 

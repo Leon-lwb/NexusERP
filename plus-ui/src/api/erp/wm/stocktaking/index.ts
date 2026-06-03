@@ -27,3 +27,27 @@ export const generateLines = (planId: number) =>
 
 export const postAdjustment = (planId: number) =>
   request({ url: BASE + '/postAdjustment/' + planId, method: 'put' });
+
+/**
+ * 提交流程审批（Flowable 审批流）
+ * @param id 盘点计划ID
+ * @param selectFlowId 审批流ID
+ * @returns 请求结果
+ */
+export const submitStockTakingFlow = (id: string, selectFlowId?: string) =>
+  request({
+    url: BASE + '/submit/' + id,
+    method: 'post',
+    params: selectFlowId ? { selectFlowId } : {}
+  });
+
+/**
+ * 获取流程实例ID
+ * @param id 盘点计划ID
+ * @returns 流程实例ID
+ */
+export const getStockTakingProcId = (id: string) =>
+  request({
+    url: BASE + '/proc/' + id,
+    method: 'get'
+  });

@@ -1,5 +1,3 @@
-import { PageQuery } from '@/types/common';
-
 export interface StockTakingPlanQuery extends PageQuery {
   planCode?: string;
   planName?: string;
@@ -41,6 +39,8 @@ export interface StockTakingPlanVO {
   areaName?: string;
   plannedDate?: string;
   status?: string;
+  selectFlowId?: number;
+  actProcessId?: string;
   remark?: string;
   wmStockTakingLineList?: StockTakingLineVO[];
   createBy?: number;
@@ -61,6 +61,7 @@ export interface StockTakingPlanForm {
   areaName?: string;
   plannedDate?: string;
   status?: string;
+  selectFlowId?: number;
   remark?: string;
   wmStockTakingLineList?: StockTakingLineVO[];
 }
