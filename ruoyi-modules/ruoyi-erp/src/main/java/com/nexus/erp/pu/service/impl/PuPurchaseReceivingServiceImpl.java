@@ -94,22 +94,26 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
         notice.setVendorCode(order.getVendorCode());
         notice.setVendorName(order.getVendorName());
         notice.setArrivalDate(new Date());
-        notice.setStatus("DRAFT");
+        notice.setStatus("PREPARE");
         notice.setRemark("由采购订单自动生成");
         arrivalNoticeMapper.insert(notice);
 
         // 2. 创建到货通知明细行（逐行拷贝采购订单物料信息）
         for (PuPurchaseOrderLine orderLine : orderLines) {
+            BdMaterial material = null;
             if (orderLine.getMaterialId() == null) {
                 if (StringUtils.isBlank(orderLine.getMaterialCode())) {
                     throw new ServiceException("采购订单明细行物料编码和物料ID均为空，无法生成到货通知");
                 }
-                BdMaterial material = materialMapper.selectOne(
+                material = materialMapper.selectOne(
                     new LambdaQueryWrapper<BdMaterial>().eq(BdMaterial::getMaterialCode, orderLine.getMaterialCode()));
                 if (material == null) {
                     throw new ServiceException("采购订单明细行物料编码【" + orderLine.getMaterialCode() + "】在物料主数据中不存在，请先完善物料信息");
                 }
                 orderLine.setMaterialId(material.getMaterialId());
+            }
+            if (material == null) {
+                material = materialMapper.selectById(orderLine.getMaterialId());
             }
             WmArrivalNoticeLine noticeLine = new WmArrivalNoticeLine();
             noticeLine.setNoticeId(notice.getNoticeId());
@@ -117,11 +121,11 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
             noticeLine.setMaterialCode(orderLine.getMaterialCode());
             noticeLine.setMaterialName(orderLine.getMaterialName());
             noticeLine.setMaterialSpec(orderLine.getMaterialSpec());
-            noticeLine.setBaseUomId(null);
+            noticeLine.setBaseUomId(String.valueOf(material != null ? material.getBaseUomId() : null));
             noticeLine.setBaseUomName(orderLine.getUnit());
             noticeLine.setQuantityArrival(orderLine.getOrderQuantity());
             noticeLine.setQuantityQuanlified(orderLine.getOrderQuantity());
-            noticeLine.setIqcCheck("N");
+            noticeLine.setIqcCheck("0");
             noticeLine.setRemark(orderLine.getRemark());
             arrivalNoticeLineMapper.insert(noticeLine);
         }
