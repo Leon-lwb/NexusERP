@@ -108,7 +108,7 @@ public class WmBatchController extends BaseController {
     @SaCheckPermission("wm:batch:add")
     @Log(title = "批次管理", businessType = BusinessType.INSERT)
     @PostMapping("/createBatch")
-    public R<WmBatchVo> createBatch(@Validated @RequestBody WmBatchBo bo) {
+    public R<WmBatchVo> createBatch(@RequestBody WmBatchBo bo) {
         return R.ok(wmBatchService.createBatch(bo));
     }
 

@@ -184,6 +184,12 @@ public class PrdWorkReportVo implements Serializable {
      */
     private String batchNo;
 
+    /** 批次ID */
+    private Long batchId;
+    /** 批次号（统一批次管理） */
+    @ExcelProperty(value = "批次号")
+    private String batchCode;
+
     /**
      * 过期日期
      */

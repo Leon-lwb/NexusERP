@@ -202,6 +202,9 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         stock.setBaseUomName(detail.getBaseUomName());
         stock.setBatchId(detail.getBatchId());
         stock.setBatchCode(detail.getBatchCode());
+        // 将入库明细的序列号信息写入库存，确保库存记录可追溯至具体SN
+        stock.setSnId(detail.getSnId());
+        stock.setSnCode(detail.getSnCode());
         stock.setWarehouseId(detail.getWarehouseId());
         stock.setWarehouseCode(detail.getWarehouseCode());
         stock.setWarehouseName(detail.getWarehouseName());
@@ -443,6 +446,9 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         target.setBaseUomName(source.getBaseUomName());
         target.setBatchId(source.getBatchId());
         target.setBatchCode(source.getBatchCode());
+        // 深拷贝时同步复制序列号信息，避免库存转储时丢失SN追溯
+        target.setSnId(source.getSnId());
+        target.setSnCode(source.getSnCode());
         target.setWarehouseId(source.getWarehouseId());
         target.setWarehouseCode(source.getWarehouseCode());
         target.setWarehouseName(source.getWarehouseName());

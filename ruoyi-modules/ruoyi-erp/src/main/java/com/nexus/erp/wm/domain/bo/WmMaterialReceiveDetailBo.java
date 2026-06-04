@@ -33,6 +33,10 @@ public class WmMaterialReceiveDetailBo extends BaseEntity {
     private BigDecimal quantity;
     private Long batchId;
     private String batchCode;
+    /** 序列号ID */
+    private Long snId;
+    /** 序列号编码 */
+    private String snCode;
     private Long warehouseId;
     private String warehouseCode;
     private String warehouseName;

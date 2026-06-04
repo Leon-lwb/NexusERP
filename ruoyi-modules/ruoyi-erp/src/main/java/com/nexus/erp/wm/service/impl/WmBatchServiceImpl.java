@@ -113,6 +113,21 @@ public class WmBatchServiceImpl implements IWmBatchService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public WmBatchVo createBatchByMaterial(Long materialId, String sourceDocType, Long sourceDocId, String sourceDocNo, Long warehouseId, String vendorBatchCode) {
+        // 构建批次业务对象
+        WmBatchBo bo = new WmBatchBo();
+        bo.setMaterialId(materialId);
+        bo.setSourceDocType(sourceDocType);
+        bo.setSourceDocId(sourceDocId);
+        bo.setSourceDocNo(sourceDocNo);
+        bo.setWarehouseId(warehouseId);
+        bo.setVendorBatchCode(vendorBatchCode);
+        // 调用已有的 createBatch 方法，自动生成批次编码并落库
+        return createBatch(bo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateQuantity(Long batchId, BigDecimal deltaQty, boolean isReceive) {
         WmBatch batch = baseMapper.selectById(batchId);
         if (batch == null) {

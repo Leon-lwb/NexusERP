@@ -35,6 +35,10 @@ public class WmMaterialReceiveDetail extends TenantEntity {
     private BigDecimal quantity;
     private Long batchId;
     private String batchCode;
+    /** 序列号ID（序列号管理物料上架时关联） */
+    private Long snId;
+    /** 序列号编码（序列号管理物料上架时关联） */
+    private String snCode;
     private Long warehouseId;
     private String warehouseCode;
     private String warehouseName;

@@ -63,6 +63,20 @@ public interface IWmBatchService {
     WmBatchVo createBatch(WmBatchBo bo);
 
     /**
+     * 根据物料信息自动创建批次（入库上架时调用）
+     * 自动填充物料编码/名称/规格，按来源单据类型选择规则编码生成批次号
+     *
+     * @param materialId      物料ID
+     * @param sourceDocType   来源单据类型（如 PURCHASE_RECEIVE、PRODUCTION_RECEIVE、MISC_RECEIVE）
+     * @param sourceDocId     来源单据ID
+     * @param sourceDocNo     来源单据编号
+     * @param warehouseId     仓库ID
+     * @param vendorBatchCode 供应商原始批次号（可为空）
+     * @return 创建后的批次信息
+     */
+    WmBatchVo createBatchByMaterial(Long materialId, String sourceDocType, Long sourceDocId, String sourceDocNo, Long warehouseId, String vendorBatchCode);
+
+    /**
      * 更新批次数量
      *
      * @param batchId  批次ID

@@ -236,7 +236,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="批次ID" prop="batchId">
-              <el-input v-model="shelfForm.batchId" placeholder="请输入批次ID" />
+              <el-input v-model="shelfForm.batchId" placeholder="自动生成" readonly />
             </el-form-item>
           </el-col>
         </el-row>
@@ -244,7 +244,7 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="批次号" prop="batchCode">
-              <el-input v-model="shelfForm.batchCode" placeholder="请输入批次号" />
+              <el-input v-model="shelfForm.batchCode" placeholder="自动生成，可手动修改" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -386,6 +386,7 @@
 import { getReceive, addReceive, updateReceive, submitReceive, getReceiveProcId } from "@/api/erp/wm/receive"
 import { getArrivalnotice } from "@/api/erp/wm/arrivalnotice"
 import { addDetail, updateDetail, delDetail, listDetail } from "@/api/erp/wm/detail"
+import { createBatch } from "@/api/erp/wm/batch"
 import { getWareHouseTree } from "@/api/erp/wm/warehouse"
 import { getProcesss } from "@/api/workflow/process"
 import { useRoute, useRouter } from 'vue-router'
@@ -648,13 +649,15 @@ function getInfo(id: any) {
 }
 
 // 加载明细数据
-function loadDetailList(lineId: any, index: number) {
+function loadDetailList(lineId: any, index: number): Promise<any> {
   const queryParams = { lineId: lineId }
-  listDetail(queryParams).then((response: any) => {
+  return listDetail(queryParams).then((response: any) => {
     // 将获取到的明细数据赋值给对应的行
-    wmMaterialReceiveLineList.value[index].detailList = response.rows
+    // 兼容两种响应结构：TableDataInfo 直接返回（response.rows）或被 R 包装（response.data.rows）
+    wmMaterialReceiveLineList.value[index].detailList = response.rows || response.data?.rows || []
   }).catch((error: any) => {
     console.error("加载明细数据失败:", error)
+    wmMaterialReceiveLineList.value[index].detailList = []
   })
 }
 
@@ -936,6 +939,13 @@ function selectArrivalNoticeLine(row: any) {
 
 /** 上架按钮操作 */
 function handleShelf(row: any) {
+  // 校验行ID：若行未保存到数据库（lineId为空），不允许上架
+  // 否则 addDetail 保存的明细 line_id 为 null，会成为孤儿记录，重新打开后无法查询
+  if (!row.lineId) {
+    proxy.$modal.msgWarning("当前入库单行未保存，请先保存入库单主表后再进行上架操作");
+    return;
+  }
+
   // 打开上架弹窗
   resetShelfForm();
   isShelfViewMode.value = false;
@@ -953,8 +963,41 @@ function handleShelf(row: any) {
   shelfForm.value.quantity = row.quantityReceived;
   shelfForm.value.receiveId = form.value.receiveId;
 
+  // 自动生成批次号：调用后端 createBatch 接口，自动生成批次编码并回填
+  autoGenerateBatch(row);
+
   shelfOpen.value = true;
   shelfTitle.value = "添加物料入库单明细";
+}
+
+/**
+ * 自动生成批次号
+ * 调用后端 /erp/wm/batch/createBatch 接口，自动生成批次编码并回填到上架表单
+ * 如果生成失败（如物料未启用批次管理），不阻塞上架流程
+ */
+function autoGenerateBatch(row: any) {
+  if (!row.materialId) return;
+
+  const batchData = {
+    materialId: row.materialId,
+    materialCode: row.materialCode,
+    materialName: row.materialName,
+    sourceDocType: 'PURCHASE_RECEIVE',
+    sourceDocId: form.value.receiveId,
+    sourceDocNo: form.value.receiveCode,
+    quantity: row.quantityReceived
+  };
+
+  createBatch(batchData).then((response: any) => {
+    if (response.code === 200 && response.data) {
+      // 自动回填批次ID和批次号到上架表单
+      shelfForm.value.batchId = response.data.batchId;
+      shelfForm.value.batchCode = response.data.batchCode;
+    }
+  }).catch((error: any) => {
+    // 批次号生成失败不阻塞上架流程，用户可手动输入
+    console.warn("自动生成批次号失败，用户可手动输入:", error);
+  });
 }
 
 /** 加载仓库树数据 */
@@ -1124,19 +1167,27 @@ function cancelShelf() {
 function submitShelfForm() {
   proxy.$refs["shelfRef"].validate((valid: boolean) => {
     if (valid) {
+      // 校验 lineId：若为空则不允许保存，防止生成孤儿明细记录
+      if (!shelfForm.value.lineId) {
+        proxy.$modal.msgWarning("当前入库单行未保存，请先保存入库单主表后再进行上架操作");
+        return;
+      }
+
       if (shelfForm.value.detailId != null) {
         updateDetail(shelfForm.value).then(() => {
           proxy.$modal.msgSuccess("修改成功");
-          shelfOpen.value = false;
-          // 更新表格中的明细数据
-          refreshDetailList();
+          // 先刷新明细列表，确保前端数据与后端同步后再关闭弹窗
+          refreshDetailList().then(() => {
+            shelfOpen.value = false;
+          });
         });
       } else {
         addDetail(shelfForm.value).then(() => {
           proxy.$modal.msgSuccess("新增成功");
-          shelfOpen.value = false;
-          // 更新表格中的明细数据
-          refreshDetailList();
+          // 先刷新明细列表，确保前端数据与后端同步后再关闭弹窗
+          refreshDetailList().then(() => {
+            shelfOpen.value = false;
+          });
         });
       }
     }
@@ -1144,13 +1195,17 @@ function submitShelfForm() {
 }
 
 // 刷新明细列表
-function refreshDetailList() {
+function refreshDetailList(): Promise<any> {
   // 重新加载当前行的明细数据
   const lineId = shelfForm.value.lineId;
+  if (!lineId) {
+    return Promise.resolve();
+  }
   const rowIndex = wmMaterialReceiveLineList.value.findIndex((line: any) => line.lineId === lineId);
   if (rowIndex >= 0) {
-    loadDetailList(lineId, rowIndex);
+    return loadDetailList(lineId, rowIndex);
   }
+  return Promise.resolve();
 }
 
 /**

@@ -72,6 +72,17 @@ public class WmMaterialStockVo implements Serializable {
     private String batchCode;
 
     /**
+     * 序列号ID
+     */
+    private Long snId;
+
+    /**
+     * 序列号编码
+     */
+    @ExcelProperty(value = "序列号编码")
+    private String snCode;
+
+    /**
      * 仓库编码
      */
     @ExcelProperty(value = "仓库编码")

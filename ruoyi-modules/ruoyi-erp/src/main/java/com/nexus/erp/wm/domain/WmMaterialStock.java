@@ -86,6 +86,17 @@ public class WmMaterialStock extends TenantEntity {
     private String batchCode;
 
     /**
+     * 序列号ID（序列号管理物料的唯一标识）
+     */
+    private Long snId;
+
+    /**
+     * 序列号编码（序列号管理物料的唯一编码）
+     */
+    @ExcelProperty("序列号编码")
+    private String snCode;
+
+    /**
      * 仓库ID
      */
     private Long warehouseId;

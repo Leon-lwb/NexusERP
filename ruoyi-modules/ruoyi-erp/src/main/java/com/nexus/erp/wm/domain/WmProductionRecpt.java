@@ -28,6 +28,10 @@ public class WmProductionRecpt extends TenantEntity {
     private String materialName;
     private String materialSpec;
     private BigDecimal quantity;
+    /** 批次ID（生产入库时自动生成或引用） */
+    private Long batchId;
+    /** 批次号（生产入库时自动生成或引用） */
+    private String batchCode;
     private Long warehouseId;
     private String warehouseCode;
     private String warehouseName;

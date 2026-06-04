@@ -65,6 +65,12 @@ public class WmBatchVo extends BaseEntity implements Serializable {
     private String materialSpec;
 
     /**
+     * 供应商原始批次号
+     */
+    @ExcelProperty(value = "供应商原始批次号")
+    private String vendorBatchCode;
+
+    /**
      * 供应商ID
      */
     private Long vendorId;

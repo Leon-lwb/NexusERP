@@ -63,6 +63,12 @@ public class WmBatch extends TenantEntity {
     private String materialSpec;
 
     /**
+     * 供应商原始批次号（记录供应商提供的批次号，便于追溯）
+     */
+    @ExcelProperty("供应商原始批次号")
+    private String vendorBatchCode;
+
+    /**
      * 供应商ID
      */
     private Long vendorId;

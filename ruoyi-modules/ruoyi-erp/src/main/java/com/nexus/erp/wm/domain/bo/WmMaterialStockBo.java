@@ -73,6 +73,16 @@ public class WmMaterialStockBo extends BaseEntity {
     private String batchCode;
 
     /**
+     * 序列号ID
+     */
+    private Long snId;
+
+    /**
+     * 序列号编码
+     */
+    private String snCode;
+
+    /**
      * 仓库ID
      */
     private Long warehouseId;

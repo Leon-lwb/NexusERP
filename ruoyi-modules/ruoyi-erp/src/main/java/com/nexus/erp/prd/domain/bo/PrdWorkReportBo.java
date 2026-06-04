@@ -189,6 +189,11 @@ public class PrdWorkReportBo extends BaseEntity {
      */
     private String batchNo;
 
+    /** 批次ID（关联 wm_batch，统一批次管理） */
+    private Long batchId;
+    /** 批次号（关联 wm_batch.batch_code，统一批次管理） */
+    private String batchCode;
+
     /**
      * 过期日期
      */

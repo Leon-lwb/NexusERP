@@ -50,6 +50,13 @@ public class WmMaterialReceiveDetailVo implements Serializable {
     @ExcelProperty(value = "批次号")
     private String batchCode;
 
+    /** 序列号ID */
+    private Long snId;
+
+    /** 序列号编码 */
+    @ExcelProperty(value = "序列号")
+    private String snCode;
+
     private Long warehouseId;
 
     @ExcelProperty(value = "仓库编码")
