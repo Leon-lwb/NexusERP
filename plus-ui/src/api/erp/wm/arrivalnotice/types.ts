@@ -67,6 +67,7 @@ export interface ArrivalnoticeForm {
   contact?: string;
   phone?: string;
   status?: string;
+  selectFlowId?: number;
   remark?: string;
   attr1?: string;
   attr2?: string;

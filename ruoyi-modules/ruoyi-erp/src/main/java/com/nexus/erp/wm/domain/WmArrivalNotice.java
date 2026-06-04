@@ -49,6 +49,8 @@ public class WmArrivalNotice extends TenantEntity {
     private String phone;
     /** 单据状态 */
     private String status;
+    /** 审批流程ID */
+    private Long selectFlowId;
     /** 备注 */
     private String remark;
     /** 预留字段1 */

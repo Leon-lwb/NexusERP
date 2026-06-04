@@ -129,6 +129,9 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialReceiveBo bo) {
         WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
+        if (StringUtils.isBlank(entity.getStatus())) {
+            entity.setStatus("DRAFT");
+        }
         int rows = baseMapper.insert(entity);
         insertLinesAndDetails(entity.getReceiveId(), bo.getWmMaterialReceiveLineList());
         return rows;
@@ -189,13 +192,13 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             }
         }
 
-        if ("APPROVING".equals(bo.getStatus())) {
+        if ("PENDING_SHELF".equals(bo.getStatus())) {
             if (bo.getWmMaterialReceiveLineList() == null || bo.getWmMaterialReceiveLineList().isEmpty()) {
                 throw new ServiceException("入库单行不能为空！");
             }
         }
 
-        if ("APPROVED".equals(bo.getStatus())) {
+        if ("PENDING_STORAGE".equals(bo.getStatus())) {
             validateDetailsForApproval(bo);
         }
 
@@ -274,6 +277,14 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
 
     /**
      * 工作流审批回调处理
+     * <p>
+     * 状态流转：
+     * <ul>
+     *   <li>doing → PENDING_SHELF（待上架）</li>
+     *   <li>pass → PENDING_STORAGE（待入库）</li>
+     *   <li>reject/return → REJECTED（已驳回）</li>
+     *   <li>revoke/stop/recall → DRAFT</li>
+     * </ul>
      *
      * @param business 工作流业务对象
      */
@@ -287,9 +298,9 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         }
         String actStatus = business.getActStatus();
         if (ActStatus.doing.equals(actStatus)) {
-            receive.setStatus("APPROVING");
+            receive.setStatus("PENDING_SHELF");
         } else if (ActStatus.pass.equals(actStatus)) {
-            receive.setStatus("APPROVED");
+            receive.setStatus("PENDING_STORAGE");
             baseMapper.updateById(receive);
             StockInMessage stockInMsg = new StockInMessage();
             stockInMsg.setReceiveId(receiveId);
@@ -301,7 +312,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             receive.setStatus("REJECTED");
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            receive.setStatus("PREPARE");
+            receive.setStatus("DRAFT");
         }
         baseMapper.updateById(receive);
     }

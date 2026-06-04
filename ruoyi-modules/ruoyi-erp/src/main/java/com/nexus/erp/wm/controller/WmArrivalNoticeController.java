@@ -125,4 +125,38 @@ public class WmArrivalNoticeController extends BaseController {
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(wmArrivalNoticeService.deleteByIds(ids));
     }
+
+    /**
+     * 提交到货通知并启动流程
+     * <p>权限标识：{@code wm:arrivalNotice:submit}</p>
+     * <p>日志记录：title="到货通知"，businessType=UPDATE</p>
+     *
+     * @param noticeId     到货通知 ID
+     * @param selectFlowId 选择的流程模板 ID
+     * @return 操作结果
+     * @throws RuntimeException 提交失败时抛出运行时异常
+     */
+    @SaCheckPermission("wm:arrivalNotice:submit")
+    @Log(title = "到货通知", businessType = BusinessType.UPDATE)
+    @PostMapping("/{noticeId}/submit")
+    public R<Void> submit(@PathVariable("noticeId") String noticeId,
+                          @RequestParam(value = "selectFlowId", required = false) String selectFlowId) {
+        try {
+            return toAjax(wmArrivalNoticeService.submit(noticeId, selectFlowId));
+        } catch (RuntimeException e) {
+            return R.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取到货通知流程实例ID
+     *
+     * @param noticeId 到货通知 ID
+     * @return 流程实例ID
+     */
+    @SaCheckPermission("wm:arrivalNotice:query")
+    @GetMapping("/{noticeId}/proc")
+    public R<String> getProcInsId(@PathVariable("noticeId") String noticeId) {
+        return R.ok("查询成功", wmArrivalNoticeService.getProcInsId(noticeId));
+    }
 }

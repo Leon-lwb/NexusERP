@@ -58,6 +58,8 @@ public class WmArrivalNoticeVo implements Serializable {
     @ExcelProperty(value = "单据状态")
     private String status;
 
+    private Long selectFlowId;
+
     private String remark;
 
     private List<WmArrivalNoticeLineVo> wmArrivalNoticeLineList;

@@ -356,7 +356,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      * 生成收货联动单据
      * <p>
      * 仅已批准或部分到货状态的订单允许生成。调用 {@link PuPurchaseReceivingService}
-     * 创建到货通知单和物料收货单。
+     * 创建到货通知单（状态为 DRAFT，需审批通过后才会自动生成物料收货单）。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -365,7 +365,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         if (!STATUS_APPROVED.equals(order.getStatus()) && !STATUS_PARTIALLY_RECEIVED.equals(order.getStatus())) {
             throw new ServiceException("只有已批准或部分到货的采购订单才能生成收货联动单据");
         }
-        return purchaseReceivingService.createArrivalNoticeAndReceive(orderId);
+        return purchaseReceivingService.createArrivalNotice(orderId);
     }
 
     /**

@@ -39,3 +39,18 @@ export const delArrivalnotice = (noticeId: string | number | (string | number)[]
     method: 'delete'
   });
 };
+
+export const submitArrivalnotice = (noticeId: string, selectFlowId?: string) => {
+  return request({
+    url: '/erp/wm/arrivalnotice/' + noticeId + '/submit',
+    method: 'post',
+    params: selectFlowId ? { selectFlowId } : {}
+  });
+};
+
+export const getArrivalnoticeProcId = (noticeId: string) => {
+  return request({
+    url: '/erp/wm/arrivalnotice/' + noticeId + '/proc',
+    method: 'get'
+  });
+};

@@ -45,8 +45,8 @@ import java.util.Map;
 @Service
 public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveExecutorService {
 
-    /** 已审核状态 */
-    private static final String ORDER_STATUS_APPROVED = "APPROVED";
+    /** 待入库状态（审批通过后） */
+    private static final String ORDER_STATUS_PENDING_STORAGE = "PENDING_STORAGE";
     /** 已完成状态 */
     private static final String ORDER_STATUS_FINISHED = "FINISHED";
     /** 虚拟区域ID */
@@ -76,8 +76,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         if (receiveVo == null) {
             throw new ServiceException("入库单不存在");
         }
-        if (!ORDER_STATUS_APPROVED.equals(receiveVo.getStatus())) {
-            throw new ServiceException("只有已审核的入库单才能执行入库操作");
+        if (!ORDER_STATUS_PENDING_STORAGE.equals(receiveVo.getStatus())) {
+            throw new ServiceException("只有待入库状态的入库单才能执行入库操作");
         }
 
         List<WmMaterialReceiveLineVo> lines = receiveVo.getWmMaterialReceiveLineList();

@@ -39,6 +39,7 @@ public class WmArrivalNoticeBo extends BaseEntity {
     private String contact;
     private String phone;
     private String status;
+    private Long selectFlowId;
     private String remark;
     private String attr1;
     private String attr2;

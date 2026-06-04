@@ -6,6 +6,8 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT'">提交审批</el-button>
+            <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
@@ -83,6 +85,26 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="8">
+            <el-form-item label="审批流程" prop="selectFlowId">
+              <el-select
+                v-model="form.selectFlowId"
+                clearable
+                filterable
+                :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'"
+                placeholder="请选择审批流程"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="f in flowOptions"
+                  :key="f.id"
+                  :label="f.flowName || f.businessName || ('流程#' + f.id)"
+                  :value="f.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="单据状态" prop="status">
               <el-radio-group v-model="form.status">
                 <el-radio v-for="dict in wm_notice_status" :key="dict.value"
@@ -95,8 +117,17 @@
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
           </el-col>
-          <el-col :span="8"></el-col>
         </el-row>
+
+        <!-- 流程选择警告 -->
+        <el-alert
+          v-if="!isViewMode && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+          type="warning"
+          show-icon
+          :closable="false"
+          title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmArrivalNoticeService。"
+          style="margin-bottom: 12px;"
+        />
 
         <!-- 子表部分开始 -->
         <el-divider content-position="center">到货通知单行信息</el-divider>
@@ -295,7 +326,8 @@
 </template>
 
 <script setup lang="ts" name="ArrivalnoticeForm">
-import { getArrivalnotice, addArrivalnotice, updateArrivalnotice } from "@/api/erp/wm/arrivalnotice"
+import { getArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivalnotice, getArrivalnoticeProcId } from "@/api/erp/wm/arrivalnotice"
+import { getProcesss } from "@/api/workflow/process"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
 import { getMeasure } from "@/api/erp/bd/measure"
@@ -344,6 +376,10 @@ const categoryTreeProps = {
 const categoryFilterText = ref('')
 const categoryTreeRef = ref(null)
 
+// 流程相关状态
+const loadingFlow = ref(false)
+const flowOptions = ref([])
+
 onMounted(() => {
   const id = route.query.id
   const action = route.query.action
@@ -380,6 +416,7 @@ function initPage(id: any) {
     isViewMode.value = false
     title.value = "新增到货通知"
     reset()
+    loadFlows()
   }
 }
 
@@ -388,6 +425,7 @@ function getInfo(id: any) {
   getArrivalnotice(id).then((response: any) => {
     form.value = response.data
     wmArrivalNoticeLineList.value = response.data.wmArrivalNoticeLineList
+    loadFlows()
   })
 }
 
@@ -407,6 +445,7 @@ function reset() {
     contact: null,
     phone: null,
     status: null,
+    selectFlowId: null,
     remark: null,
     attr1: null,
     attr2: null,
@@ -460,6 +499,62 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 function cancel() {
   const obj = { path: '/erp/wm/arrivalnotice' }
   proxy.$tab.closeOpenPage(obj)
+}
+
+// ========== 流程相关方法 ==========
+
+/** 加载可用审批流程列表 */
+function loadFlows() {
+  loadingFlow.value = true
+  getProcesss({ serviceName: 'wmArrivalNoticeService' }).then((res: any) => {
+    flowOptions.value = res?.data || []
+    tryAutoSelect()
+  }).catch(() => {
+    flowOptions.value = []
+  }).finally(() => {
+    loadingFlow.value = false
+  })
+}
+
+/** 如果只有一个可用流程，自动选中 */
+function tryAutoSelect() {
+  if (flowOptions.value.length === 1 && !form.value.selectFlowId) {
+    form.value.selectFlowId = flowOptions.value[0].id
+  }
+}
+
+/** 提交审批 */
+function handleSubmitFlow() {
+  if (!form.value.noticeId) {
+    proxy.$modal.msgWarning("请先保存单据")
+    return
+  }
+  if (!form.value.selectFlowId) {
+    proxy.$modal.msgWarning("请先选择审批流程并保存")
+    return
+  }
+  proxy.$modal.confirm('确认提交到货通知审批？').then(() => {
+    submitArrivalnotice(String(form.value.noticeId), String(form.value.selectFlowId)).then(() => {
+      proxy.$modal.msgSuccess("提交审批成功")
+      getInfo(form.value.noticeId)
+    })
+  })
+}
+
+/** 查看流程 */
+function onViewFlow() {
+  if (!form.value.noticeId) return
+  getArrivalnoticeProcId(String(form.value.noticeId)).then((res: any) => {
+    const procInsId = res.data
+    if (!procInsId) {
+      proxy.$modal.msgWarning("暂无流程信息")
+      return
+    }
+    router.push({
+      path: '/workflow/process/detail/' + procInsId,
+      query: { processed: 'false' }
+    })
+  })
 }
 
 // 物料选择相关方法

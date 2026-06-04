@@ -15,6 +15,24 @@ public interface PuPurchaseReceivingService {
      *
      * @param orderId 采购订单ID
      * @return 到货通知单ID
+     * @deprecated 使用 {@link #createArrivalNotice(Long)} 替代，到货通知审批通过后再生成物料收货单
      */
+    @Deprecated
     Long createArrivalNoticeAndReceive(Long orderId);
+
+    /**
+     * 根据采购订单创建到货通知单（仅生成到货通知，状态为 DRAFT）
+     *
+     * @param orderId 采购订单ID
+     * @return 到货通知单ID
+     */
+    Long createArrivalNotice(Long orderId);
+
+    /**
+     * 根据到货通知创建物料收货单（到货通知审批通过后调用）
+     *
+     * @param noticeId 到货通知ID
+     * @return 物料收货单ID
+     */
+    Long createMaterialReceiveFromNotice(Long noticeId);
 }

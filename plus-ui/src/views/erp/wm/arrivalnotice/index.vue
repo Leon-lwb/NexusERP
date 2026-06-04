@@ -62,6 +62,10 @@
           v-hasPermi="['wm:arrivalnotice:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit"
+          v-hasPermi="['wm:arrivalnotice:submit']">提交审批</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport"
           v-hasPermi="['wm:arrivalnotice:export']">导出</el-button>
       </el-col>
@@ -96,6 +100,10 @@
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
             v-hasPermi="['wm:arrivalnotice:edit']">修改</el-button>
+          <el-button link type="success" icon="Promotion" @click="handleSubmitFlowRow(scope.row)"
+            v-hasPermi="['wm:arrivalnotice:submit']" v-if="scope.row.status === 'DRAFT'">提交审批</el-button>
+          <el-button link type="info" icon="Connection" @click="onViewFlowRow(scope.row)"
+            v-hasPermi="['wm:arrivalnotice:query']" v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'">查看流程</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
             v-hasPermi="['wm:arrivalnotice:remove']">删除</el-button>
         </template>
@@ -230,7 +238,8 @@
 </template>
 
 <script setup lang="ts" name="Arrivalnotice">
-import { listArrivalnotice, getArrivalnotice, delArrivalnotice, addArrivalnotice, updateArrivalnotice } from "@/api/erp/wm/arrivalnotice"
+import { listArrivalnotice, getArrivalnotice, delArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivalnotice, getArrivalnoticeProcId } from "@/api/erp/wm/arrivalnotice"
+import { getProcesss } from "@/api/workflow/process"
 import { genCode } from "@/api/system/autocode/rule"
 import { listVendor } from "@/api/erp/bd/vendor"
 import { useRouter } from 'vue-router'
@@ -446,6 +455,54 @@ function handleDelete(row: any) {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => { })
+}
+
+/** 顶部提交审批按钮 */
+function handleSubmit() {
+  if (ids.value.length !== 1) {
+    proxy.$modal.msgWarning("请选择一条数据进行提交审批");
+    return;
+  }
+  const selectedRow = arrivalnoticeList.value.find((item: any) => item.noticeId == ids.value[0]);
+  if (!selectedRow) {
+    proxy.$modal.msgWarning("未找到选中的数据");
+    return;
+  }
+  handleSubmitFlowRow(selectedRow);
+}
+
+/** 列表行提交审批 */
+function handleSubmitFlowRow(row: any) {
+  if (row.status !== 'DRAFT') {
+    proxy.$modal.msgWarning("只有草稿状态的单据才能提交审批");
+    return;
+  }
+  if (!row.selectFlowId) {
+    proxy.$modal.msgWarning("该单据未选择审批流程，请先编辑选择流程并保存");
+    return;
+  }
+  proxy.$modal.confirm('确认提交到货通知【' + row.noticeCode + '】审批？').then(() => {
+    submitArrivalnotice(String(row.noticeId), String(row.selectFlowId)).then(() => {
+      proxy.$modal.msgSuccess("提交审批成功");
+      getList();
+    });
+  });
+}
+
+/** 列表行查看流程 */
+function onViewFlowRow(row: any) {
+  if (!row.noticeId) return;
+  getArrivalnoticeProcId(String(row.noticeId)).then((res: any) => {
+    const procInsId = res.data;
+    if (!procInsId) {
+      proxy.$modal.msgWarning("暂无流程信息");
+      return;
+    }
+    router.push({
+      path: '/workflow/process/detail/' + procInsId,
+      query: { processed: 'false' }
+    });
+  });
 }
 
 /** 导出按钮操作 */

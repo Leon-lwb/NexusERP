@@ -34,7 +34,7 @@ import java.util.List;
  * <ol>
  *   <li>校验采购订单及明细行是否存在</li>
  *   <li>创建到货通知单（WM_ARRIVAL_NOTICE）及其明细行</li>
- *   <li>创建物料收货单（WM_MATERIAL_RECEIVE）及其明细行</li>
+ *   <li>到货通知审批通过后，创建物料收货单（WM_MATERIAL_RECEIVE）及其明细行</li>
  * </ol>
  * 以上操作在同一个事务中完成，保证数据一致性。
  *
@@ -67,10 +67,26 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
      *
      * @param orderId 采购订单ID
      * @return 到货通知单ID
+     * @deprecated 已废弃，使用 {@link #createArrivalNotice(Long)} 替代
+     */
+    @Override
+    @Deprecated
+    @Transactional(rollbackFor = Exception.class)
+    public Long createArrivalNoticeAndReceive(Long orderId) {
+        Long noticeId = createArrivalNotice(orderId);
+        createMaterialReceiveFromNotice(noticeId);
+        return noticeId;
+    }
+
+    /**
+     * 根据采购订单创建到货通知单（仅生成到货通知，状态为 DRAFT）
+     *
+     * @param orderId 采购订单ID
+     * @return 到货通知单ID
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createArrivalNoticeAndReceive(Long orderId) {
+    public Long createArrivalNotice(Long orderId) {
         PuPurchaseOrder order = purchaseOrderMapper.selectById(orderId);
         if (order == null) {
             throw new ServiceException("采购订单不存在");
@@ -85,7 +101,7 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
             throw new ServiceException("采购订单没有明细，无法生成到货通知");
         }
 
-        // 1. 创建到货通知单
+        // 1. 创建到货通知单（草稿状态）
         WmArrivalNotice notice = new WmArrivalNotice();
         notice.setNoticeCode(autoCodeUtil.genSerialCode("WM_ARRIVAL_NOTICE_CODE", null));
         notice.setNoticeName("采购订单到货通知");
@@ -94,27 +110,13 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
         notice.setVendorCode(order.getVendorCode());
         notice.setVendorName(order.getVendorName());
         notice.setArrivalDate(new Date());
-        notice.setStatus("PREPARE");
+        notice.setStatus("DRAFT");
         notice.setRemark("由采购订单自动生成");
         arrivalNoticeMapper.insert(notice);
 
         // 2. 创建到货通知明细行（逐行拷贝采购订单物料信息）
         for (PuPurchaseOrderLine orderLine : orderLines) {
-            BdMaterial material = null;
-            if (orderLine.getMaterialId() == null) {
-                if (StringUtils.isBlank(orderLine.getMaterialCode())) {
-                    throw new ServiceException("采购订单明细行物料编码和物料ID均为空，无法生成到货通知");
-                }
-                material = materialMapper.selectOne(
-                    new LambdaQueryWrapper<BdMaterial>().eq(BdMaterial::getMaterialCode, orderLine.getMaterialCode()));
-                if (material == null) {
-                    throw new ServiceException("采购订单明细行物料编码【" + orderLine.getMaterialCode() + "】在物料主数据中不存在，请先完善物料信息");
-                }
-                orderLine.setMaterialId(material.getMaterialId());
-            }
-            if (material == null) {
-                material = materialMapper.selectById(orderLine.getMaterialId());
-            }
+            BdMaterial material = resolveMaterial(orderLine);
             WmArrivalNoticeLine noticeLine = new WmArrivalNoticeLine();
             noticeLine.setNoticeId(notice.getNoticeId());
             noticeLine.setMaterialId(orderLine.getMaterialId());
@@ -130,7 +132,41 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
             arrivalNoticeLineMapper.insert(noticeLine);
         }
 
-        // 3. 创建物料收货单
+        return notice.getNoticeId();
+    }
+
+    /**
+     * 根据到货通知创建物料收货单（到货通知审批通过后调用，状态为 DRAFT）
+     *
+     * @param noticeId 到货通知ID
+     * @return 物料收货单ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createMaterialReceiveFromNotice(Long noticeId) {
+        WmArrivalNotice notice = arrivalNoticeMapper.selectById(noticeId);
+        if (notice == null) {
+            throw new ServiceException("到货通知不存在");
+        }
+        if (StringUtils.isBlank(notice.getPurOrderCode())) {
+            throw new ServiceException("到货通知关联的采购订单号不能为空");
+        }
+
+        // 查询采购订单（用于关联 purId）
+        PuPurchaseOrder order = purchaseOrderMapper.selectOne(
+            new LambdaQueryWrapper<PuPurchaseOrder>().eq(PuPurchaseOrder::getOrderNo, notice.getPurOrderCode()));
+        if (order == null) {
+            throw new ServiceException("到货通知关联的采购订单不存在");
+        }
+
+        // 查询到货通知明细行
+        List<WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
+            new LambdaQueryWrapper<WmArrivalNoticeLine>().eq(WmArrivalNoticeLine::getNoticeId, noticeId));
+        if (noticeLines == null || noticeLines.isEmpty()) {
+            throw new ServiceException("到货通知没有明细，无法生成物料收货单");
+        }
+
+        // 3. 创建物料收货单（草稿状态，需要走审批流）
         WmMaterialReceive receive = new WmMaterialReceive();
         receive.setReceiveCode(autoCodeUtil.genSerialCode("WM_MATERIAL_RECEIVE_CODE", null));
         receive.setReceiveName("采购到货收货单");
@@ -138,28 +174,50 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
         receive.setNoticeCode(notice.getNoticeCode());
         receive.setPurId(order.getOrderId());
         receive.setPurCode(order.getOrderNo());
-        receive.setVendorId(order.getVendorId());
-        receive.setVendorCode(order.getVendorCode());
-        receive.setVendorName(order.getVendorName());
+        receive.setVendorId(notice.getVendorId());
+        receive.setVendorCode(notice.getVendorCode());
+        receive.setVendorName(notice.getVendorName());
         receive.setReceiveDate(new Date());
-        receive.setStatus("APPROVED");
-        receive.setRemark("采购订单自动联动生成");
+        receive.setStatus("DRAFT");
+        receive.setRemark("到货通知审批通过后自动生成");
         materialReceiveMapper.insert(receive);
 
-        // 4. 创建物料收货明细行
-        for (PuPurchaseOrderLine orderLine : orderLines) {
+        // 4. 创建物料收货明细行（从到货通知行拷贝）
+        for (WmArrivalNoticeLine noticeLine : noticeLines) {
             WmMaterialReceiveLine receiveLine = new WmMaterialReceiveLine();
             receiveLine.setReceiveId(receive.getReceiveId());
-            receiveLine.setMaterialId(orderLine.getMaterialId());
-            receiveLine.setMaterialCode(orderLine.getMaterialCode());
-            receiveLine.setMaterialName(orderLine.getMaterialName());
-            receiveLine.setMaterialSpec(orderLine.getMaterialSpec());
-            receiveLine.setBaseUomName(orderLine.getUnit());
-            receiveLine.setQuantityReceived(orderLine.getOrderQuantity());
-            receiveLine.setRemark(orderLine.getRemark());
+            receiveLine.setMaterialId(noticeLine.getMaterialId());
+            receiveLine.setMaterialCode(noticeLine.getMaterialCode());
+            receiveLine.setMaterialName(noticeLine.getMaterialName());
+            receiveLine.setMaterialSpec(noticeLine.getMaterialSpec());
+            receiveLine.setBaseUomName(noticeLine.getBaseUomName());
+            receiveLine.setQuantityReceived(noticeLine.getQuantityArrival());
+            receiveLine.setRemark(noticeLine.getRemark());
             materialReceiveLineMapper.insert(receiveLine);
         }
 
-        return notice.getNoticeId();
+        return receive.getReceiveId();
+    }
+
+    /**
+     * 解析物料信息，如果物料ID为空则根据编码查询
+     */
+    private BdMaterial resolveMaterial(PuPurchaseOrderLine orderLine) {
+        BdMaterial material = null;
+        if (orderLine.getMaterialId() == null) {
+            if (StringUtils.isBlank(orderLine.getMaterialCode())) {
+                throw new ServiceException("采购订单明细行物料编码和物料ID均为空，无法生成到货通知");
+            }
+            material = materialMapper.selectOne(
+                new LambdaQueryWrapper<BdMaterial>().eq(BdMaterial::getMaterialCode, orderLine.getMaterialCode()));
+            if (material == null) {
+                throw new ServiceException("采购订单明细行物料编码【" + orderLine.getMaterialCode() + "】在物料主数据中不存在，请先完善物料信息");
+            }
+            orderLine.setMaterialId(material.getMaterialId());
+        }
+        if (material == null) {
+            material = materialMapper.selectById(orderLine.getMaterialId());
+        }
+        return material;
     }
 }
