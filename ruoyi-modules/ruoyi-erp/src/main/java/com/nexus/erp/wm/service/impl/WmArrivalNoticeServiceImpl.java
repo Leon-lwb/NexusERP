@@ -227,7 +227,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         if (order == null) {
             return;
         }
-        order.setStatus(IPuPurchaseOrderService.STATUS_ARRIVED);
+        order.setStatus(IPuPurchaseOrderService.STATUS_RECEIVED);
         purchaseOrderMapper.updateById(order);
     }
 

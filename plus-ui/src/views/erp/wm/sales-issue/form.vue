@@ -5,10 +5,10 @@
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode && form.status === 'PREPARE'">保存</el-button>
-            <el-button type="success" @click="handleConfirm" v-if="!isViewMode && (form.status === 'PREPARE' || form.status === 'APPROVED') && form.issueId">确认</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && form.status === 'DRAFT'">保存</el-button>
+            <el-button type="success" @click="handleConfirm" v-if="!isViewMode && (form.status === 'DRAFT' || form.status === 'APPROVED') && form.issueId">确认</el-button>
             <el-button type="warning" @click="handleComplete" v-if="!isViewMode && form.status === 'CONFIRMED'">完成出库</el-button>
-            <el-button type="primary" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'PREPARE' && form.issueId">提交审批</el-button>
+            <el-button type="primary" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.issueId">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
@@ -85,7 +85,7 @@
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
               <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'PREPARE'" placeholder="请选择审批流程" style="width: 100%">
+                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
                 <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
               </el-select>
             </el-form-item>
@@ -97,7 +97,7 @@
           </el-col>
         </el-row>
         <!-- 审批流程提示 -->
-        <el-row :gutter="20" v-if="form.status === 'PREPARE' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
+        <el-row :gutter="20" v-if="form.status === 'DRAFT' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
           <el-col :span="24">
             <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmSalesIssueService。" />
           </el-col>
@@ -126,17 +126,17 @@
         <el-divider content-position="center">出库明细</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && form.status === 'PREPARE'">
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && form.status === 'DRAFT'">
               添加物料
             </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && form.status === 'PREPARE'">
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && form.status === 'DRAFT'">
               删除
             </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="info" icon="Download" @click="handleImportFromOrder" v-if="!isViewMode && form.status === 'PREPARE' && form.soId">
+            <el-button type="info" icon="Download" @click="handleImportFromOrder" v-if="!isViewMode && form.status === 'DRAFT' && form.soId">
               从订单导入
             </el-button>
           </el-col>
@@ -149,11 +149,11 @@
           ref="lineTable"
           border
         >
-          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && form.status === 'PREPARE'" />
+          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && form.status === 'DRAFT'" />
           <el-table-column label="序号" align="center" prop="index" width="60" />
           <el-table-column label="物料编码" prop="materialCode" width="140">
             <template #default="scope">
-              <el-input v-model="scope.row.materialCode" placeholder="选择物料" readonly v-if="!isViewMode && form.status === 'PREPARE'">
+              <el-input v-model="scope.row.materialCode" placeholder="选择物料" readonly v-if="!isViewMode && form.status === 'DRAFT'">
                 <template #append>
                   <el-button icon="Search" @click="openMaterialSelect(scope.$index)" />
                 </template>
@@ -166,7 +166,7 @@
           <el-table-column label="单位" prop="baseUomName" width="80" />
           <el-table-column label="批次号" prop="batchCode" width="140">
             <template #default="scope">
-              <el-input v-model="scope.row.batchCode" placeholder="选择批次" readonly v-if="!isViewMode && form.status === 'PREPARE'">
+              <el-input v-model="scope.row.batchCode" placeholder="选择批次" readonly v-if="!isViewMode && form.status === 'DRAFT'">
                 <template #append>
                   <el-button icon="Search" @click="openBatchSelect(scope.$index)" :disabled="!scope.row.materialId" />
                 </template>
@@ -176,7 +176,7 @@
           </el-table-column>
           <el-table-column label="库位" prop="locationName" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.locationName" placeholder="选择库位" readonly v-if="!isViewMode && form.status === 'PREPARE'">
+              <el-input v-model="scope.row.locationName" placeholder="选择库位" readonly v-if="!isViewMode && form.status === 'DRAFT'">
                 <template #append>
                   <el-button icon="Search" @click="openLocationSelect(scope.$index)" :disabled="!form.warehouseId" />
                 </template>
@@ -200,7 +200,7 @@
                 :precision="2"
                 :controls="false"
                 style="width: 100%"
-                v-if="!isViewMode && form.status === 'PREPARE'"
+                v-if="!isViewMode && form.status === 'DRAFT'"
                 @change="calculateLineAmount(scope.row)"
               />
               <span v-else>{{ scope.row.quantityIssue }}</span>
@@ -214,7 +214,7 @@
                 :precision="4"
                 :controls="false"
                 style="width: 100%"
-                v-if="!isViewMode && form.status === 'PREPARE'"
+                v-if="!isViewMode && form.status === 'DRAFT'"
                 @change="calculateLineAmount(scope.row)"
               />
               <span v-else>{{ scope.row.unitPrice }}</span>
@@ -227,7 +227,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" min-width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!isViewMode && form.status === 'PREPARE'" />
+              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!isViewMode && form.status === 'DRAFT'" />
               <span v-else>{{ scope.row.remark }}</span>
             </template>
           </el-table-column>
@@ -382,7 +382,7 @@ const form = ref({
   issueDate: null,
   totalQuantity: 0,
   totalAmount: 0,
-  status: 'PREPARE',
+  status: 'DRAFT',
   remark: null
 })
 
@@ -537,7 +537,7 @@ function reset() {
     issueDate: proxy.parseTime(new Date(), '{y}-{m}-{d}'),
     totalQuantity: 0,
     totalAmount: 0,
-    status: 'PREPARE',
+    status: 'DRAFT',
     remark: null,
     selectFlowId: null
   }
@@ -740,7 +740,7 @@ function formatAmount(amount: any) {
 
 function getStatusType(status: string) {
   const typeMap: any = {
-    'PREPARE': 'info',
+    'DRAFT': 'info',
     'APPROVING': 'warning',
     'APPROVED': 'success',
     'REJECTED': 'danger',
@@ -753,7 +753,7 @@ function getStatusType(status: string) {
 
 function getStatusLabel(status: string) {
   const labelMap: any = {
-    'PREPARE': '准备中',
+    'DRAFT': '草稿',
     'APPROVING': '审批中',
     'APPROVED': '已批准',
     'REJECTED': '已驳回',

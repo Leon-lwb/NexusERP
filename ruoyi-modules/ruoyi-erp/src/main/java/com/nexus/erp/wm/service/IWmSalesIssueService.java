@@ -16,7 +16,7 @@ import java.util.List;
  */
 public interface IWmSalesIssueService extends WfCallBackServiceI {
 
-    String STATUS_PREPARE = "PREPARE";
+    String STATUS_DRAFT = "DRAFT";
     String STATUS_APPROVING = "APPROVING";
     String STATUS_APPROVED = "APPROVED";
     String STATUS_REJECTED = "REJECTED";

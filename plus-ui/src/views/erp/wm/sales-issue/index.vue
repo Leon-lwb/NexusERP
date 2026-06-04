@@ -119,7 +119,7 @@
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button
-            v-if="scope.row.status === 'PREPARE'"
+            v-if="scope.row.status === 'DRAFT'"
             link type="primary"
             icon="Edit"
             @click="handleUpdate(scope.row)"
@@ -128,7 +128,7 @@
             修改
           </el-button>
           <el-button
-            v-if="scope.row.status === 'PREPARE'"
+            v-if="scope.row.status === 'DRAFT'"
             link type="success"
             icon="Check"
             @click="handleConfirm(scope.row)"
@@ -137,7 +137,7 @@
             确认
           </el-button>
           <el-button
-            v-if="scope.row.status === 'PREPARE'"
+            v-if="scope.row.status === 'DRAFT'"
             link type="primary"
             icon="Finished"
             @click="handleSubmit(scope.row)"
@@ -164,7 +164,7 @@
             完成
           </el-button>
           <el-button
-            v-if="scope.row.status === 'PREPARE'"
+            v-if="scope.row.status === 'DRAFT'"
             link type="danger"
             icon="Delete"
             @click="handleDelete(scope.row)"

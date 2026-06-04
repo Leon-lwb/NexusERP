@@ -81,7 +81,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
     public int insertByBo(WmTransferBo bo) {
         WmTransfer entity = MapstructUtils.convert(bo, WmTransfer.class);
         entity.setTransferNo(autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
-        entity.setStatus(STATUS_PREPARE);
+        entity.setStatus(STATUS_DRAFT);
         int rows = baseMapper.insert(entity);
         if (bo.getWmTransferLineList() != null) {
             for (WmTransferLine line : bo.getWmTransferLineList()) {
@@ -154,8 +154,8 @@ public class WmTransferServiceImpl implements IWmTransferService {
         if (entity == null) {
             throw new RuntimeException("调拨单不存在");
         }
-        if (!STATUS_PREPARE.equals(entity.getStatus())) {
-            throw new RuntimeException("只有准备中的调拨单才能提交审批");
+        if (!STATUS_DRAFT.equals(entity.getStatus())) {
+            throw new RuntimeException("只有草稿状态的调拨单才能提交审批");
         }
         if (StringUtils.isBlank(selectFlowId)) {
             if (entity.getSelectFlowId() != null) {
@@ -208,9 +208,9 @@ public class WmTransferServiceImpl implements IWmTransferService {
         } else if (ActStatus.pass.equals(actStatus)) {
             entity.setStatus(STATUS_APPROVED);
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            entity.setStatus(STATUS_PREPARE);
+            entity.setStatus(STATUS_DRAFT);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            entity.setStatus(STATUS_PREPARE);
+            entity.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(entity);
     }

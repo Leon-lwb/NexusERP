@@ -130,7 +130,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     public int insertByBo(WmMaterialReceiveBo bo) {
         WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
         if (StringUtils.isBlank(entity.getStatus())) {
-            entity.setStatus("DRAFT");
+            entity.setStatus(STATUS_DRAFT);
         }
         int rows = baseMapper.insert(entity);
         insertLinesAndDetails(entity.getReceiveId(), bo.getWmMaterialReceiveLineList());
@@ -147,6 +147,11 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialReceiveBo bo) {
         WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
+        // 校验状态：只有草稿和已驳回状态才能修改
+        WmMaterialReceive existing = baseMapper.selectById(entity.getReceiveId());
+        if (existing != null && !STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
+            throw new ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
+        }
         deleteLinesAndDetailsByReceiveId(entity.getReceiveId());
         insertLinesAndDetails(entity.getReceiveId(), bo.getWmMaterialReceiveLineList());
         return baseMapper.updateById(entity);
@@ -162,6 +167,11 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long receiveId : ids) {
+            // 校验状态：只有草稿状态才能删除
+            WmMaterialReceive existing = baseMapper.selectById(receiveId);
+            if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
+                throw new ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
+            }
             deleteLinesAndDetailsByReceiveId(receiveId);
         }
         return baseMapper.deleteBatchIds(List.of(ids));
@@ -224,6 +234,11 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             throw new ServiceException("入库单不存在");
         }
 
+        // 校验状态：只有草稿和已驳回状态才能提交审批
+        if (!STATUS_DRAFT.equals(receive.getStatus()) && !STATUS_REJECTED.equals(receive.getStatus())) {
+            throw new ServiceException("当前状态不允许提交审批，只有草稿和已驳回状态才能提交！");
+        }
+
         if (StringUtils.isBlank(selectFlowId)) {
             if (receive.getSelectFlowId() != null) {
                 selectFlowId = String.valueOf(receive.getSelectFlowId());
@@ -280,10 +295,10 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      * <p>
      * 状态流转：
      * <ul>
-     *   <li>doing → PENDING_SHELF（待上架）</li>
-     *   <li>pass → PENDING_STORAGE（待入库）</li>
-     *   <li>reject/return → REJECTED（已驳回）</li>
-     *   <li>revoke/stop/recall → DRAFT</li>
+     *   <li>doing → APPROVING（审批中，不可修改和操作）</li>
+     *   <li>pass → APPROVED（待上架，可执行上架操作）</li>
+     *   <li>reject/return → REJECTED（已驳回，可修改后重新提交）</li>
+     *   <li>revoke/stop/recall → DRAFT（草稿，可修改和删除）</li>
      * </ul>
      *
      * @param business 工作流业务对象
@@ -298,9 +313,11 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         }
         String actStatus = business.getActStatus();
         if (ActStatus.doing.equals(actStatus)) {
-            receive.setStatus("PENDING_SHELF");
+            // 审批中：审批流程进行中，不可修改和操作
+            receive.setStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
-            receive.setStatus("PENDING_STORAGE");
+            // 审批通过：待上架状态，可执行上架操作
+            receive.setStatus(STATUS_APPROVED);
             baseMapper.updateById(receive);
             StockInMessage stockInMsg = new StockInMessage();
             stockInMsg.setReceiveId(receiveId);
@@ -310,9 +327,11 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                 RoutingKeyConstants.STOCK_IN_RECEIVE, stockInMsg);
             return;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            receive.setStatus("REJECTED");
+            // 审批驳回：已驳回状态，可修改后重新提交
+            receive.setStatus(STATUS_REJECTED);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            receive.setStatus("DRAFT");
+            // 撤回/终止：回到草稿状态
+            receive.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(receive);
     }

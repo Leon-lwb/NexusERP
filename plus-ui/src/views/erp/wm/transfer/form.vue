@@ -6,7 +6,7 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'PREPARE' && form.transferId">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.transferId">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button type="warning" @click="handleExecute" v-if="!isViewMode && form.status === 'APPROVED'">执行调拨</el-button>
             <el-button @click="cancel">取消</el-button>
@@ -70,7 +70,7 @@
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
               <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'PREPARE'" placeholder="请选择审批流程" style="width: 100%">
+                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
                 <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
               </el-select>
             </el-form-item>
@@ -82,7 +82,7 @@
           </el-col>
         </el-row>
         <!-- 审批流程提示 -->
-        <el-row :gutter="20" v-if="form.status === 'PREPARE' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
+        <el-row :gutter="20" v-if="form.status === 'DRAFT' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
           <el-col :span="24">
             <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmTransferService。" />
           </el-col>
@@ -322,7 +322,7 @@ function getInfo(id: any) {
 
 function reset() {
   autoGenFlag.value = false
-  form.value = { transferId: null, transferNo: null, transferType: null, fromWarehouseId: null, fromWarehouseCode: null, fromWarehouseName: null, toWarehouseId: null, toWarehouseCode: null, toWarehouseName: null, transferDate: null, status: 'PREPARE', remark: null, selectFlowId: null }
+  form.value = { transferId: null, transferNo: null, transferType: null, fromWarehouseId: null, fromWarehouseCode: null, fromWarehouseName: null, toWarehouseId: null, toWarehouseCode: null, toWarehouseName: null, transferDate: null, status: 'DRAFT', remark: null, selectFlowId: null }
   lineList.value = []
   proxy.resetForm("transferRef")
 }
@@ -394,7 +394,7 @@ function handleExecute() {
 
 function getStatusType(status: string) {
   const typeMap: any = {
-    'PREPARE': 'info',
+    'DRAFT': 'info',
     'APPROVING': 'warning',
     'APPROVED': 'success',
     'EXECUTED': 'success',
@@ -405,7 +405,7 @@ function getStatusType(status: string) {
 
 function getStatusLabel(status: string) {
   const labelMap: any = {
-    'PREPARE': '准备中',
+    'DRAFT': '草稿',
     'APPROVING': '审批中',
     'APPROVED': '已批准',
     'EXECUTED': '已执行',

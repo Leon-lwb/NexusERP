@@ -36,19 +36,19 @@
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
-          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'PREPARE'">修改</el-button>
+          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && (selectedRow.status === 'DRAFT' || selectedRow.status === 'REJECTED')">修改</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
-          v-hasPermi="['wm:receive:remove']">删除</el-button>
+          v-hasPermi="['wm:receive:remove']" v-if="selectedRow && selectedRow.status === 'DRAFT'">删除</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Upload" :disabled="single" @click="handleShelf"
-          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'APPROVING'">上架</el-button>
+          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'APPROVED'">上架</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Finished" :disabled="single" @click="handleExecute"
-          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'APPROVED'">入库</el-button>
+          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'SHELVED'">入库</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView"
@@ -81,15 +81,15 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'PREPARE'">修改</el-button>
+            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'">修改</el-button>
           <el-button link type="primary" icon="Upload" @click="handleShelf(scope.row)"
-            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVING'">上架</el-button>
+            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVED'">上架</el-button>
           <el-button link type="primary" icon="Finished" @click="handleExecuteRow(scope.row)"
-            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVED'">入库</el-button>
+            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'SHELVED'">入库</el-button>
           <el-button link type="primary" icon="View" @click="handleViewFlow(scope.row)"
             v-hasPermi="['wm:receive:query']" v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'">查看流程</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-            v-hasPermi="['wm:receive:remove']">删除</el-button>
+            v-hasPermi="['wm:receive:remove']" v-if="scope.row.status === 'DRAFT'">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -381,6 +381,12 @@ function handleUpdate(row: any) {
     row = selectedRow;
   }
 
+  // 校验状态：只有草稿和已驳回状态才能修改
+  if (row.status !== 'DRAFT' && row.status !== 'REJECTED') {
+    proxy.$modal.msgWarning('当前状态不允许修改，只有草稿和已驳回状态才能修改！');
+    return;
+  }
+
   const receiveId = row.receiveId;
   router.push({
     path: '/erp/wm/receive/form',
@@ -437,6 +443,11 @@ function submitForm() {
 
 /** 删除按钮操作 */
 function handleDelete(row: any) {
+  // 校验状态：只有草稿状态才能删除
+  if (row.status !== 'DRAFT') {
+    proxy.$modal.msgWarning('当前状态不允许删除，只有草稿状态才能删除！');
+    return;
+  }
   const _receiveIds = row.receiveId || ids.value
   proxy.$modal.confirm('是否确认删除物料入库单编号为"' + _receiveIds + '"的数据项？').then(function () {
     return delReceive(_receiveIds)
@@ -465,6 +476,12 @@ function handleShelf(row: any) {
     row = selectedRow;
   }
 
+  // 校验状态：只有待上架状态才能执行上架操作
+  if (row.status !== 'APPROVED') {
+    proxy.$modal.msgWarning('当前状态不允许上架，只有待上架状态才能执行上架操作！');
+    return;
+  }
+
   const receiveId = row.receiveId;
   router.push({
     path: '/erp/wm/receive/form',
@@ -484,6 +501,12 @@ function handleExecute() {
     return;
   }
 
+  // 校验状态：只有待入库状态才能执行入库操作
+  if (selectedRow.status !== 'SHELVED') {
+    proxy.$modal.msgWarning('当前状态不允许入库，只有待入库状态才能执行入库操作！');
+    return;
+  }
+
   proxy.$modal.confirm('是否确认执行物料入库操作？').then(function() {
     return execute(selectedRow.receiveId, {});
   }).then(() => {
@@ -494,6 +517,11 @@ function handleExecute() {
 
 /** 行内入库按钮操作 */
 function handleExecuteRow(row: any) {
+  // 校验状态：只有待入库状态才能执行入库操作
+  if (row.status !== 'SHELVED') {
+    proxy.$modal.msgWarning('当前状态不允许入库，只有待入库状态才能执行入库操作！');
+    return;
+  }
   proxy.$modal.confirm('是否确认执行物料入库操作？').then(function() {
     return execute(row.receiveId, {});
   }).then(() => {

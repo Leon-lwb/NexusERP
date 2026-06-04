@@ -15,6 +15,21 @@ import java.util.List;
  */
 public interface IWmMaterialReceiveCrudService extends WfCallBackServiceI {
 
+    /** 草稿状态 */
+    String STATUS_DRAFT = "DRAFT";
+    /** 审批中状态 */
+    String STATUS_APPROVING = "APPROVING";
+    /** 待上架状态（审批通过） */
+    String STATUS_APPROVED = "APPROVED";
+    /** 待入库状态（已上架） */
+    String STATUS_SHELVED = "SHELVED";
+    /** 已完成状态 */
+    String STATUS_FINISHED = "FINISHED";
+    /** 已驳回状态 */
+    String STATUS_REJECTED = "REJECTED";
+    /** 已取消状态 */
+    String STATUS_CANCELED = "CANCELED";
+
     /**
      * 分页查询物料入库单列表
      *

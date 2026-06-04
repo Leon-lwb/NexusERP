@@ -6,7 +6,7 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'PREPARE'">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && (form.status === 'DRAFT' || form.status === 'REJECTED')">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
@@ -81,7 +81,7 @@
                 clearable
                 filterable
                 :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'PREPARE'"
+                :disabled="isViewMode || form.status !== 'DRAFT'"
                 placeholder="请选择审批流程"
                 style="width: 100%"
               >
@@ -134,7 +134,7 @@
         <el-table :data="wmMaterialReceiveLineList" :row-class-name="rowWmMaterialReceiveLineIndex"
           @selection-change="handleWmMaterialReceiveLineSelectionChange" ref="wmMaterialReceiveLine" style="width: 100%">
           <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
-          <el-table-column type="expand" v-if="form.status !== 'PREPARE'">
+          <el-table-column type="expand" v-if="form.status !== 'DRAFT'">
             <template #default="props">
               <el-table :data="props.row.detailList" border style="width: 90%; margin-left: 50px;">
                 <el-table-column label="明细ID" prop="detailId" />
@@ -635,6 +635,12 @@ function getInfo(id: any) {
         loadDetailList(line.lineId, index)
       }
     })
+
+    // 状态校验：审批中状态强制设为只读
+    if (form.value.status === 'APPROVING') {
+      isViewMode.value = true
+      proxy.$modal.msgWarning('当前单据正在审批中，不可修改')
+    }
 
     // 表单数据加载完成后，重新尝试自动选择流程（解决与 loadFlows 的竞态问题）
     tryAutoSelect()

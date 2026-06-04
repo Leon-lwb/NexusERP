@@ -40,8 +40,6 @@ public interface IPuPurchaseOrderService extends WfCallBackServiceI {
     String STATUS_CANCELLED = "CANCELLED";
     /** 已驳回 */
     String STATUS_REJECTED = "REJECTED";
-    /** 已到货 */
-    String STATUS_ARRIVED = "ARRIVED";
 
     /**
      * 分页查询采购订单列表

@@ -146,7 +146,8 @@
       "Bash(rm *)",
       "Bash(dir \"D:\\\\apache-maven*\")",
       "Bash(dir \"D:\\\\maven*\")",
-      "Bash(powershell.exe *)"
+      "Bash(powershell.exe *)",
+      "Bash(where mysql *)"
     ]
   }
 }

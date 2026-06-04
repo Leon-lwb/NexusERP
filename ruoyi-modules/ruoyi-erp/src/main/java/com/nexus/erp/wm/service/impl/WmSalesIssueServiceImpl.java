@@ -107,8 +107,8 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (salesIssue == null) {
             throw new RuntimeException("销售出库单不存在");
         }
-        if (!STATUS_PREPARE.equals(salesIssue.getStatus()) && !STATUS_APPROVED.equals(salesIssue.getStatus())) {
-            throw new RuntimeException("只有准备中或已批准的出库单才能确认");
+        if (!STATUS_DRAFT.equals(salesIssue.getStatus()) && !STATUS_APPROVED.equals(salesIssue.getStatus())) {
+            throw new RuntimeException("只有草稿或已批准的出库单才能确认");
         }
         salesIssue.setStatus(STATUS_CONFIRMED);
         return baseMapper.updateById(salesIssue);
@@ -194,8 +194,8 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (entity == null) {
             throw new RuntimeException("销售出库单不存在");
         }
-        if (!STATUS_PREPARE.equals(entity.getStatus())) {
-            throw new RuntimeException("只有准备中的出库单才能提交审批");
+        if (!STATUS_DRAFT.equals(entity.getStatus())) {
+            throw new RuntimeException("只有草稿状态的出库单才能提交审批");
         }
         if (StringUtils.isBlank(selectFlowId)) {
             if (entity.getSelectFlowId() != null) {
@@ -251,7 +251,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             entity.setStatus(STATUS_REJECTED);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            entity.setStatus(STATUS_PREPARE);
+            entity.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(entity);
     }
