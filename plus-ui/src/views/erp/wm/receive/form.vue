@@ -385,7 +385,7 @@
 <script setup lang="ts" name="ReceiveForm">
 import { getReceive, addReceive, updateReceive, submitReceive, getReceiveProcId } from "@/api/erp/wm/receive"
 import { getArrivalnotice } from "@/api/erp/wm/arrivalnotice"
-import { addDetail, updateDetail, delDetail, listDetail } from "@/api/erp/wm/detail"
+import { listDetail } from "@/api/erp/wm/detail"
 import { createBatch } from "@/api/erp/wm/batch"
 import { getWareHouseTree } from "@/api/erp/wm/warehouse"
 import { getProcesss } from "@/api/workflow/process"
@@ -549,7 +549,11 @@ function applyWorkflowFormPayload(payload: Record<string, any>) {
   }
   form.value = merged
   wmMaterialReceiveLineList.value = Array.isArray(merged.wmMaterialReceiveLineList)
-    ? merged.wmMaterialReceiveLineList.map((line: any) => ({ ...line, detailList: line.detailList || [] }))
+    ? merged.wmMaterialReceiveLineList.map((line: any) => ({
+      ...line,
+      // 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则使用前端维护的 detailList
+      detailList: line.wmMaterialReceiveLineDetailList || line.detailList || []
+    }))
     : []
   wmMaterialReceiveLineList.value.forEach((line: any, index: number) => {
     if (line.lineId) {
@@ -628,11 +632,12 @@ function getInfo(id: any) {
 
     // 获取每个行项目的明细数据
     wmMaterialReceiveLineList.value.forEach((line: any, index: number) => {
-      // 为每一行初始化明细列表
-      line.detailList = []
+      // 优先使用后端返回的 wmMaterialReceiveLineDetailList，否则初始化为空数组
+      // 后端 selectById 会查询明细数据并填充到此字段
+      line.detailList = line.wmMaterialReceiveLineDetailList || []
 
-      // 如果有行ID，则获取对应的明细数据
-      if (line.lineId) {
+      // 如果后端未返回明细数据但行ID存在，则通过独立接口加载
+      if (line.detailList.length === 0 && line.lineId) {
         loadDetailList(line.lineId, index)
       }
     })
@@ -731,7 +736,7 @@ function handleSubmitFlow() {
         proxy.$modal.msgWarning("请先选择审批流程")
         return
       }
-      form.value.wmMaterialReceiveLineList = wmMaterialReceiveLineList.value
+      form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails()
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
           submitReceive(String(form.value.receiveId), String(form.value.selectFlowId)).then((res: any) => {
@@ -767,10 +772,19 @@ function onViewFlow() {
 
 /** 同步入库行明细字段 */
 function normalizeReceiveLineDetails() {
-  return wmMaterialReceiveLineList.value.map((line: any) => ({
-    ...line,
-    wmMaterialReceiveLineDetailList: line.wmMaterialReceiveLineDetailList || line.detailList || []
-  }))
+  return wmMaterialReceiveLineList.value.map((line: any) => {
+    // 优先使用前端维护的 detailList（包含用户新增/编辑的明细）
+    // 后端返回的 wmMaterialReceiveLineDetailList 可能是空数组 []（truthy），不能用 || 短路
+    const details = (line.detailList && line.detailList.length > 0)
+      ? line.detailList
+      : (line.wmMaterialReceiveLineDetailList && line.wmMaterialReceiveLineDetailList.length > 0)
+        ? line.wmMaterialReceiveLineDetailList
+        : []
+    return {
+      ...line,
+      wmMaterialReceiveLineDetailList: details
+    }
+  })
 }
 
 /** 提交按钮 */
@@ -1173,39 +1187,35 @@ function submitShelfForm() {
         return;
       }
 
-      if (shelfForm.value.detailId != null) {
-        updateDetail(shelfForm.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功");
-          // 先刷新明细列表，确保前端数据与后端同步后再关闭弹窗
-          refreshDetailList().then(() => {
-            shelfOpen.value = false;
-          });
-        });
-      } else {
-        addDetail(shelfForm.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功");
-          // 先刷新明细列表，确保前端数据与后端同步后再关闭弹窗
-          refreshDetailList().then(() => {
-            shelfOpen.value = false;
-          });
-        });
+      const rowIndex = wmMaterialReceiveLineList.value.findIndex(
+        (line: any) => line.lineId === shelfForm.value.lineId
+      );
+      if (rowIndex < 0) {
+        proxy.$modal.msgWarning("未找到对应的入库单行");
+        return;
       }
+
+      const detailList = wmMaterialReceiveLineList.value[rowIndex].detailList;
+
+      if (shelfForm.value.detailId != null) {
+        // 编辑模式：只更新前端内存中的明细数据
+        // 不调用独立 updateDetail API，避免 lineId 变化导致数据不一致
+        const detailIndex = detailList.findIndex((d: any) => d.detailId === shelfForm.value.detailId);
+        if (detailIndex >= 0) {
+          detailList[detailIndex] = { ...shelfForm.value };
+        }
+        proxy.$modal.msgSuccess("修改成功");
+      } else {
+        // 新增模式：生成临时 detailId（负数，避免与数据库正数 ID 冲突），添加到前端内存
+        // 真正的数据库保存由主表单 save 时通过 updateByBo 一并完成
+        shelfForm.value.detailId = -Date.now();
+        detailList.push({ ...shelfForm.value });
+        proxy.$modal.msgSuccess("新增成功");
+      }
+
+      shelfOpen.value = false;
     }
   });
-}
-
-// 刷新明细列表
-function refreshDetailList(): Promise<any> {
-  // 重新加载当前行的明细数据
-  const lineId = shelfForm.value.lineId;
-  if (!lineId) {
-    return Promise.resolve();
-  }
-  const rowIndex = wmMaterialReceiveLineList.value.findIndex((line: any) => line.lineId === lineId);
-  if (rowIndex >= 0) {
-    return loadDetailList(lineId, rowIndex);
-  }
-  return Promise.resolve();
 }
 
 /**
@@ -1244,19 +1254,20 @@ function handleEditDetail(detailRow: any, parentRow: any) {
  */
 function handleDeleteDetail(detailRow: any, parentRow: any) {
   proxy.$modal.confirm('确定要删除该条明细数据吗？').then(() => {
-    // 调用删除接口
-    return delDetail(detailRow.detailId);
-  }).then(() => {
-    proxy.$modal.msgSuccess("删除成功");
-    // 重新加载明细数据
+    // 只删除前端内存中的明细，不调用独立 delDetail API
+    // 真正的数据库删除由主表单 save 时通过 updateByBo 全删全插完成
     const lineId = parentRow.lineId;
     const rowIndex = wmMaterialReceiveLineList.value.findIndex((line: any) => line.lineId === lineId);
     if (rowIndex >= 0) {
-      loadDetailList(lineId, rowIndex);
+      const detailList = wmMaterialReceiveLineList.value[rowIndex].detailList;
+      const detailIndex = detailList.findIndex((d: any) => d.detailId === detailRow.detailId);
+      if (detailIndex >= 0) {
+        detailList.splice(detailIndex, 1);
+      }
     }
+    proxy.$modal.msgSuccess("删除成功");
   }).catch((error: any) => {
     if (error !== 'cancel') {
-      proxy.$modal.msgError("删除失败");
       console.error(error);
     }
   });
