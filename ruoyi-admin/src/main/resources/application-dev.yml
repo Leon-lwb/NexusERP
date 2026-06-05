@@ -35,6 +35,8 @@ snail-job:
 
 --- # 数据源配置
 spring:
+  config:
+    import: classpath:application-secret.yml
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     # 动态数据源文档 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
@@ -211,14 +213,14 @@ justauth:
       # maxkey 服务器地址
       # 注意 如下均配置均不需要修改 maxkey 已经内置好了数据
       server-url: http://sso.maxkey.top
-      client-id: 876892492581044224
-      client-secret: x1Y5MTMwNzIwMjMxNTM4NDc3Mzche8
+      client-id: ${secret.justauth.maxkey.client-id}
+      client-secret: ${secret.justauth.maxkey.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=maxkey
     topiam:
       # topiam 服务器地址
       server-url: http://127.0.0.1:1898/api/v1/authorize/y0q************spq***********8ol
-      client-id: 449c4*********937************759
-      client-secret: ac7***********1e0************28d
+      client-id: ${secret.justauth.topiam.client-id}
+      client-secret: ${secret.justauth.topiam.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=topiam
       scopes: [openid, email, phone, profile]
     qq:
@@ -231,8 +233,8 @@ justauth:
       client-secret: 1f7d08**********5b7**********29e
       redirect-uri: ${justauth.address}/social-callback?source=weibo
     gitee:
-      client-id: 91436b7940090d09c72c7daf85b959cfd5f215d67eea73acbf61b6b590751a98
-      client-secret: 02c6fcfd70342980cd8dd2f2c06c1a350645d76c754d7a264c4e125f9ba915ac
+      client-id: ${secret.justauth.gitee.client-id}
+      client-secret: ${secret.justauth.gitee.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=gitee
     dingtalk:
       client-id: 10**********6
@@ -261,8 +263,8 @@ justauth:
       redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
       alipay-public-key: MIIB**************DAQAB
     wechat_open:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.wechat-open.client-id}
+      client-secret: ${secret.justauth.wechat-open.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_open
     wechat_mp:
       client-id: 10**********6

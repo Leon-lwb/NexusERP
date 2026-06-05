@@ -121,7 +121,7 @@
               <span class="social-divider-text">其他登录方式</span>
             </div>
             <div class="social-icons">
-              <div class="social-item" :title="proxy.$t('login.social.wechat')" @click="doSocialLogin('wechat')">
+              <div class="social-item" :title="proxy.$t('login.social.wechat')" @click="doSocialLogin('wechat_open')">
                 <svg-icon icon-class="wechat" />
               </div>
               <div class="social-item" :title="proxy.$t('login.social.maxkey')" @click="doSocialLogin('maxkey')">

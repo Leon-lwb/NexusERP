@@ -86,5 +86,17 @@ public class SysClientVo implements Serializable {
     @ExcelDictFormat(readConverterExp = "0=正常,1=停用")
     private String status;
 
+    /**
+     * 微信小程序appid
+     */
+    @ExcelProperty(value = "微信小程序appid")
+    private String appid;
+
+    /**
+     * 微信小程序appSecret
+     */
+    @ExcelProperty(value = "微信小程序appSecret")
+    private String appSecret;
+
 
 }

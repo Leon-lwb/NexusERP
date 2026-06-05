@@ -76,5 +76,15 @@ public class SysClientBo extends BaseEntity {
      */
     private String status;
 
+    /**
+     * 微信小程序appid
+     */
+    private String appid;
+
+    /**
+     * 微信小程序appSecret
+     */
+    private String appSecret;
+
 
 }

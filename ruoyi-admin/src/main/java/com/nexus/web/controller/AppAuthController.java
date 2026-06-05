@@ -3,6 +3,7 @@ package com.nexus.web.controller;
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.constant.Constants;
@@ -26,6 +27,7 @@ import com.nexus.system.service.ISysTenantService;
 import com.nexus.system.service.ISysUserService;
 import com.nexus.web.domain.vo.LoginVo;
 import com.nexus.web.domain.vo.TenantListVo;
+import me.zhyd.oauth.cache.AuthStateCache;
 import com.nexus.web.service.IAuthStrategy;
 import com.nexus.web.service.SysLoginService;
 import org.springframework.web.bind.annotation.*;
@@ -59,6 +61,7 @@ public class AppAuthController {
     private final ISysClientService clientService;
     private final ISysUserService userService;
     private final ISysTenantService tenantService;
+    private final AuthStateCache authRedisStateCache;
 
     /**
      * 获取短信验证码（开发环境）
@@ -156,6 +159,105 @@ public class AppAuthController {
     }
 
     /**
+     * App微信社交登录（App端拉起微信授权）
+     * <p>
+     * App端通过 uni.login({ provider: 'weixin' }) 获取 code 后调用此接口
+     */
+    @SaIgnore
+    @PostMapping("/socialLogin")
+    public R<Map<String, Object>> socialLogin(@RequestBody Map<String, String> body) {
+        String source = body.get("source");
+        String socialCode = body.get("socialCode");
+        String socialState = body.get("socialState");
+        String tenantId = body.getOrDefault("tenantId", "");
+
+        if (StrUtil.isBlank(source) || StrUtil.isBlank(socialCode)) {
+            return R.fail("社交登录参数不完整");
+        }
+
+        // 构造社交登录请求体
+        Map<String, String> loginBodyMap = new HashMap<>();
+        loginBodyMap.put("clientId", APP_CLIENT_ID);
+        loginBodyMap.put("grantType", "social");
+        loginBodyMap.put("tenantId", tenantId);
+        loginBodyMap.put("source", source);
+        loginBodyMap.put("socialCode", socialCode);
+        loginBodyMap.put("socialState", StrUtil.isNotBlank(socialState) ? socialState : java.util.UUID.randomUUID().toString());
+
+        SysClientVo client = clientService.queryByClientId(APP_CLIENT_ID);
+        if (ObjectUtil.isNull(client) || !SystemConstants.NORMAL.equals(client.getStatus())) {
+            return R.fail("App客户端已被停用");
+        }
+
+        loginService.checkTenant(tenantId);
+
+        // 预存储state到缓存，JustAuth的login()可能会校验state
+        String finalState = loginBodyMap.get("socialState");
+        authRedisStateCache.cache(finalState, finalState);
+
+        LoginVo loginVo = IAuthStrategy.login(
+            JsonUtils.toJsonString(loginBodyMap),
+            client,
+            "social"
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("token", loginVo.getAccessToken());
+        result.put("expireIn", loginVo.getExpireIn());
+        result.put("client_id", client.getClientId());
+        return R.ok(result);
+    }
+
+    /**
+     * 微信小程序登录
+     * <p>
+     * 小程序端通过 wx.login() 获取 code 后调用此接口
+     */
+    @SaIgnore
+    @PostMapping("/xcxLogin")
+    public R<Map<String, Object>> xcxLogin(@RequestBody Map<String, String> body) {
+        String xcxCode = body.get("xcxCode");
+        String appid = body.get("appid");
+        String tenantId = body.getOrDefault("tenantId", "");
+
+        if (StrUtil.isBlank(xcxCode)) {
+            return R.fail("小程序code不能为空");
+        }
+
+        // 小程序专用客户端ID
+        String xcxClientId = "a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8";
+
+        Map<String, String> loginBodyMap = new HashMap<>();
+        loginBodyMap.put("clientId", xcxClientId);
+        loginBodyMap.put("grantType", "xcx");
+        loginBodyMap.put("tenantId", tenantId);
+        loginBodyMap.put("xcxCode", xcxCode);
+        if (StrUtil.isNotBlank(appid)) {
+            loginBodyMap.put("appid", appid);
+        }
+
+        SysClientVo client = clientService.queryByClientId(xcxClientId);
+        if (ObjectUtil.isNull(client) || !SystemConstants.NORMAL.equals(client.getStatus())) {
+            return R.fail("小程序客户端已被停用");
+        }
+
+        loginService.checkTenant(tenantId);
+
+        LoginVo loginVo = IAuthStrategy.login(
+            JsonUtils.toJsonString(loginBodyMap),
+            client,
+            "xcx"
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("token", loginVo.getAccessToken());
+        result.put("expireIn", loginVo.getExpireIn());
+        result.put("openid", loginVo.getOpenid());
+        result.put("client_id", client.getClientId());
+        return R.ok(result);
+    }
+
+    /**
      * 获取当前用户信息
      */
     @GetMapping("/getInfo")
@@ -169,6 +271,82 @@ public class AppAuthController {
         result.put("roles", loginUser.getRolePermission());
         result.put("permissions", loginUser.getMenuPermission());
         return R.ok(result);
+    }
+
+    /**
+     * 微信小程序获取手机号
+     * <p>
+     * 小程序端通过 open-type="getPhoneNumber" 获取 code 后调用此接口
+     */
+    @PostMapping("/bindPhone")
+    public R<Void> bindPhone(@RequestBody Map<String, String> body) {
+        String phoneCode = body.get("phoneCode");
+        if (StrUtil.isBlank(phoneCode)) {
+            return R.fail("手机号授权code不能为空");
+        }
+
+        Long userId = LoginHelper.getUserId();
+        if (ObjectUtil.isNull(userId)) {
+            return R.fail("用户未登录");
+        }
+
+        // 获取小程序客户端配置
+        String xcxClientId = "a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8";
+        SysClientVo client = clientService.queryByClientId(xcxClientId);
+        if (ObjectUtil.isNull(client) || StrUtil.isBlank(client.getAppid()) || StrUtil.isBlank(client.getAppSecret())) {
+            return R.fail("小程序客户端配置不完整");
+        }
+
+        try {
+            // 1. 获取 access_token
+            String tokenUrl = String.format(
+                "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s",
+                client.getAppid(), client.getAppSecret());
+            String tokenResp = cn.hutool.http.HttpUtil.get(tokenUrl);
+            Map<String, Object> tokenMap = JsonUtils.parseMap(tokenResp);
+            String accessToken = (String) tokenMap.get("access_token");
+            if (StrUtil.isBlank(accessToken)) {
+                log.error("获取微信access_token失败：{}", tokenResp);
+                return R.fail("获取微信access_token失败");
+            }
+
+            // 2. 获取手机号
+            String phoneUrl = "https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=" + accessToken;
+            Map<String, String> phoneBody = new HashMap<>();
+            phoneBody.put("code", phoneCode);
+            String phoneResp = cn.hutool.http.HttpUtil.post(phoneUrl, JsonUtils.toJsonString(phoneBody), 5000);
+            Map<String, Object> phoneMap = JsonUtils.parseMap(phoneResp);
+            Object phoneInfo = phoneMap.get("phone_info");
+            if (ObjectUtil.isNull(phoneInfo)) {
+                log.error("获取手机号失败：{}", phoneResp);
+                return R.fail("获取手机号失败");
+            }
+
+            // 解析手机号（微信返回字段名为 phoneNumber）
+            @SuppressWarnings("unchecked")
+            Map<String, Object> phoneInfoMap = (Map<String, Object>) phoneInfo;
+            String phoneNumber = (String) phoneInfoMap.get("phoneNumber");
+            if (StrUtil.isBlank(phoneNumber)) {
+                return R.fail("未获取到手机号");
+            }
+
+            // 3. 更新用户手机号
+            SysUserVo user = userService.selectUserById(userId);
+            if (ObjectUtil.isNull(user)) {
+                return R.fail("用户不存在");
+            }
+            com.nexus.system.domain.bo.SysUserBo userBo = new com.nexus.system.domain.bo.SysUserBo();
+            userBo.setUserId(userId);
+            userBo.setPhonenumber(phoneNumber);
+            userBo.setUpdateBy(userId);
+            userService.updateUserProfile(userBo);
+
+            log.info("用户{}绑定手机号成功：{}", userId, phoneNumber);
+            return R.ok();
+        } catch (Exception e) {
+            log.error("绑定手机号异常", e);
+            return R.fail("绑定手机号失败：" + e.getMessage());
+        }
     }
 
     /**

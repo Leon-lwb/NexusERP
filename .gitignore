@@ -48,6 +48,10 @@ nbdist/
 *.swp
 
 !*/build/*.java
+
+######################################################################
+# Secret Config
+**/application-secret.yml
 !*/build/*.html
 !*/build/*.xml
 
