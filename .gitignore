@@ -65,7 +65,7 @@ replay_pid*
 
 ######################################################################
 # Secret Config
-# **/application-secret.yml
+**/application-secret.yml
 **/*.run.xml.local
 !*/build/*.html
 !*/build/*.xml
