@@ -41,6 +41,20 @@ nbdist/
 **/.claude
 
 ######################################################################
+# OS
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+######################################################################
+# Java
+*.class
+hs_err_pid*
+replay_pid*
+
+######################################################################
 # Others
 *.log
 *.log.gz
@@ -51,7 +65,8 @@ nbdist/
 
 ######################################################################
 # Secret Config
-**/application-secret.yml
+# **/application-secret.yml
+**/*.run.xml.local
 !*/build/*.html
 !*/build/*.xml
 

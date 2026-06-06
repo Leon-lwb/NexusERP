@@ -157,11 +157,11 @@ mail:
   # 是否需要用户名密码验证
   auth: true
   # 发送方，遵循RFC-822标准
-  from: xxx@163.com
+  from: ${secret.mail.from}
   # 用户名（注意：如果使用foxmail邮箱，此处user为qq号）
-  user: xxx@163.com
+  user: ${secret.mail.user}
   # 密码（注意，某些邮箱需要为SMTP服务单独设置密码，详情查看相关帮助）
-  pass: xxxxxxxxxx
+  pass: ${secret.mail.pass}
   # 使用 STARTTLS安全连接，STARTTLS是对纯文本通信协议的扩展。
   starttlsEnable: true
   # 使用SSL安全连接
@@ -190,18 +190,18 @@ sms:
       # 框架定义的厂商名称标识，标定此配置是哪个厂商，详细请看厂商标识介绍部分
       supplier: alibaba
       # 有些称为accessKey有些称之为apiKey，也有称为sdkKey或者appId。
-      access-key-id: 您的accessKey
+      access-key-id: ${secret.sms.config1.access-key-id}
       # 称为accessSecret有些称之为apiSecret
-      access-key-secret: 您的accessKeySecret
-      signature: 您的短信签名
-      sdk-app-id: 您的sdkAppId
+      access-key-secret: ${secret.sms.config1.access-key-secret}
+      signature: ${secret.sms.config1.signature}
+      sdk-app-id: ${secret.sms.config1.sdk-app-id}
     config2:
       # 厂商标识，标定此配置是哪个厂商，详细请看厂商标识介绍部分
       supplier: tencent
-      access-key-id: 您的accessKey
-      access-key-secret: 您的accessKeySecret
-      signature: 您的短信签名
-      sdk-app-id: 您的sdkAppId
+      access-key-id: ${secret.sms.config2.access-key-id}
+      access-key-secret: ${secret.sms.config2.access-key-secret}
+      signature: ${secret.sms.config2.signature}
+      sdk-app-id: ${secret.sms.config2.sdk-app-id}
 
 
 --- # 三方授权
@@ -224,96 +224,96 @@ justauth:
       redirect-uri: ${justauth.address}/social-callback?source=topiam
       scopes: [openid, email, phone, profile]
     qq:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.qq.client-id}
+      client-secret: ${secret.justauth.qq.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=qq
       union-id: false
     weibo:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.weibo.client-id}
+      client-secret: ${secret.justauth.weibo.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=weibo
     gitee:
       client-id: ${secret.justauth.gitee.client-id}
       client-secret: ${secret.justauth.gitee.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=gitee
     dingtalk:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.dingtalk.client-id}
+      client-secret: ${secret.justauth.dingtalk.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=dingtalk
     baidu:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.baidu.client-id}
+      client-secret: ${secret.justauth.baidu.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=baidu
     csdn:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.csdn.client-id}
+      client-secret: ${secret.justauth.csdn.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=csdn
     coding:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.coding.client-id}
+      client-secret: ${secret.justauth.coding.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=coding
       coding-group-name: xx
     oschina:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.oschina.client-id}
+      client-secret: ${secret.justauth.oschina.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=oschina
     alipay_wallet:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.alipay-wallet.client-id}
+      client-secret: ${secret.justauth.alipay-wallet.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
-      alipay-public-key: MIIB**************DAQAB
+      alipay-public-key: ${secret.justauth.alipay-wallet.alipay-public-key}
     wechat_open:
       client-id: ${secret.justauth.wechat-open.client-id}
       client-secret: ${secret.justauth.wechat-open.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_open
     wechat_mp:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.wechat-mp.client-id}
+      client-secret: ${secret.justauth.wechat-mp.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_mp
     wechat_enterprise:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.wechat-enterprise.client-id}
+      client-secret: ${secret.justauth.wechat-enterprise.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=wechat_enterprise
       agent-id: 1000002
     gitlab:
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.gitlab.client-id}
+      client-secret: ${secret.justauth.gitlab.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=gitlab
     gitea:
       # 前端改动 https://gitee.com/JavaLionLi/plus-ui/pulls/204
       # gitea 服务器地址
       server-url: https://demo.gitea.com
-      client-id: 10**********6
-      client-secret: 1f7d08**********5b7**********29e
+      client-id: ${secret.justauth.gitea.client-id}
+      client-secret: ${secret.justauth.gitea.client-secret}
       redirect-uri: ${justauth.address}/social-callback?source=gitea
 
 --- # 支付配置
 pay:
   alipay:
     enabled: true
-    appId: 9021000163621746
-    appPrivateKey: xx
-    alipayPublicKey: xx
+    appId: ${secret.pay.alipay.app-id}
+    appPrivateKey: ${secret.pay.alipay.app-private-key}
+    alipayPublicKey: ${secret.pay.alipay.alipay-public-key}
     notifyUrl: http://59e5381d.r23.cpolar.top/pay/alipay/notify
     signType: RSA2
     gatewayHost: openapi-sandbox.dl.alipaydev.com
     protocol: https
   wechat:
     enabled: false
-    merchantId: your_merchant_id
-    merchantSerialNumber: your_merchant_serial_number
-    apiV3Key: your_api_v3_key
+    merchantId: ${secret.pay.wechat.merchant-id}
+    merchantSerialNumber: ${secret.pay.wechat.merchant-serial-number}
+    apiV3Key: ${secret.pay.wechat.api-v3-key}
     privateKeyPath: classpath:cert/wechat/apiclient_key.pem
-    appId: your_wechat_app_id
+    appId: ${secret.pay.wechat.app-id}
     notifyUrl: http://your-domain/pay/wechat/notify
   sqb:
     enabled: false
     apiDomain: https://api.shouqianba.com
-    terminalSn: your_terminal_sn
-    terminalKey: your_terminal_key
-    appId: your_sqb_app_id
-    vendorSn: your_vendor_sn
-    vendorKey: your_vendor_key
+    terminalSn: ${secret.pay.sqb.terminal-sn}
+    terminalKey: ${secret.pay.sqb.terminal-key}
+    appId: ${secret.pay.sqb.app-id}
+    vendorSn: ${secret.pay.sqb.vendor-sn}
+    vendorKey: ${secret.pay.sqb.vendor-key}
     notifyUrl: http://your-domain/pay/sqb/notify
     publicKey: classpath:cert/sqb/public_key.pem
 

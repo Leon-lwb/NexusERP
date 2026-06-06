@@ -135,6 +135,7 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - Flowable 异步执行器和 IDM 引擎已禁用 — 仅运行核心流程引擎
 - Logback 配置: `logback-plus.xml`，日志写入 `./logs/` 目录
 - 敏感凭证位于 `application-dev.yml` / `application-prod.yml` 中 (不在基础 `application.yml` 中)
+- `application-dev.yml`中的一些支付宝支付配置、微信小程序配置等在`application-secret.yml`中，需要自行更换配置
 
 ### 国际化 (i18n)
 
