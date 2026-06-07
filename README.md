@@ -130,6 +130,7 @@ cd nexus-erp
 # 执行初始化 SQL（按顺序）
 # 1. script/sql/ry_vue.sql
 # 2. script/sql/ry-vue-erp.sql
+# 3. script/sql/app.sql(可选，添加app配置SQL)
 
 # 启动后端
 mvn spring-boot:run -P dev

@@ -48,6 +48,13 @@ export const execute = (receiveId: string | number, data: any) => {
   });
 };
 
+export const confirmShelf = (receiveId: string | number) => {
+  return request({
+    url: '/erp/wm/receive/shelf/' + receiveId,
+    method: 'put'
+  });
+};
+
 export const submitReceive = (receiveId: string, selectFlowId?: string) => {
   return request({
     url: '/erp/wm/receive/' + receiveId + '/submit',

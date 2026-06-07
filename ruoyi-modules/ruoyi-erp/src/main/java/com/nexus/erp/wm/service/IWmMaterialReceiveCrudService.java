@@ -103,4 +103,12 @@ public interface IWmMaterialReceiveCrudService extends WfCallBackServiceI {
      * @return 流程实例ID
      */
     String getProcInsId(String receiveIdStr);
+
+    /**
+     * 确认上架：将入库单从"待上架"(APPROVED)变为"待入库"(SHELVED)
+     *
+     * @param receiveId 入库单ID
+     * @return 是否成功
+     */
+    boolean confirmShelf(Long receiveId);
 }

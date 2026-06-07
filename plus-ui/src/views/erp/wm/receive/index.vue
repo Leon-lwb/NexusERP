@@ -47,8 +47,12 @@
           v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'APPROVED'">上架</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button type="warning" plain icon="Check" :disabled="single" @click="handleConfirmShelf"
+          v-hasPermi="['wm:receive:shelf']" v-if="selectedRow && selectedRow.status === 'APPROVED'">确认上架</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="success" plain icon="Finished" :disabled="single" @click="handleExecute"
-          v-hasPermi="['wm:receive:edit']" v-if="selectedRow && selectedRow.status === 'SHELVED'">入库</el-button>
+          v-hasPermi="['wm:receive:execute']" v-if="selectedRow && selectedRow.status === 'SHELVED'">入库</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView"
@@ -78,14 +82,32 @@
           <dict-tag :options="wm_material_receive_status" :value="scope.row.status" />
         </template>
       </el-table-column>
+      <!-- <el-table-column label="上架人" align="center" prop="shelfByName" width="120">
+        <template #default="scope">
+          <span v-if="scope.row.status === 'SHELVED' || scope.row.status === 'FINISHED'">
+            {{ scope.row.shelfByName || '-' }}
+          </span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="上架时间" align="center" prop="shelfTime" width="180">
+        <template #default="scope">
+          <span v-if="scope.row.status === 'SHELVED' || scope.row.status === 'FINISHED'">
+            {{ parseTime(scope.row.shelfTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
+          </span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column> -->
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
             v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'">修改</el-button>
           <el-button link type="primary" icon="Upload" @click="handleShelf(scope.row)"
             v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'APPROVED'">上架</el-button>
+          <el-button link type="warning" icon="Check" @click="handleConfirmShelfRow(scope.row)"
+            v-hasPermi="['wm:receive:shelf']" v-if="scope.row.status === 'APPROVED'">确认上架</el-button>
           <el-button link type="primary" icon="Finished" @click="handleExecuteRow(scope.row)"
-            v-hasPermi="['wm:receive:edit']" v-if="scope.row.status === 'SHELVED'">入库</el-button>
+            v-hasPermi="['wm:receive:execute']" v-if="scope.row.status === 'SHELVED'">入库</el-button>
           <el-button link type="primary" icon="View" @click="handleViewFlow(scope.row)"
             v-hasPermi="['wm:receive:query']" v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'">查看流程</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
@@ -210,7 +232,7 @@
 </template>
 
 <script setup lang="ts" name="Receive">
-import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute, getReceiveProcId } from "@/api/erp/wm/receive"
+import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute, confirmShelf, getReceiveProcId } from "@/api/erp/wm/receive"
 import { listArrivalnotice } from "@/api/erp/wm/arrivalnotice"
 import { useRouter } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
@@ -512,6 +534,35 @@ function handleExecute() {
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("入库成功");
+  }).catch(() => { });
+}
+
+/** 确认上架按钮操作 */
+function handleConfirmShelf() {
+  if (ids.value.length !== 1) {
+    proxy.$modal.msgWarning("请选择一条数据进行确认上架");
+    return;
+  }
+  const selectedRow = receiveList.value.find((item: any) => item.receiveId == ids.value[0]);
+  if (!selectedRow) {
+    proxy.$modal.msgWarning("未找到选中的数据");
+    return;
+  }
+  handleConfirmShelfRow(selectedRow);
+}
+
+/** 行内确认上架按钮操作 */
+function handleConfirmShelfRow(row: any) {
+  // 校验状态：只有待上架状态才能执行确认上架操作
+  if (row.status !== 'APPROVED') {
+    proxy.$modal.msgWarning('当前状态不允许确认上架，只有待上架状态才能执行确认上架操作！');
+    return;
+  }
+  proxy.$modal.confirm('是否确认上架？确认后单据状态将变为"待入库"。').then(function() {
+    return confirmShelf(row.receiveId);
+  }).then(() => {
+    getList();
+    proxy.$modal.msgSuccess("确认上架成功");
   }).catch(() => { });
 }
 

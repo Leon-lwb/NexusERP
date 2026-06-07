@@ -75,6 +75,10 @@ public class WmMaterialReceive extends TenantEntity {
     private String status;
     /** 审批流程ID */
     private Long selectFlowId;
+    /** 上架人ID */
+    private Long shelfBy;
+    /** 上架时间 */
+    private Date shelfTime;
     /** 备注 */
     private String remark;
     /** 预留字段1 */

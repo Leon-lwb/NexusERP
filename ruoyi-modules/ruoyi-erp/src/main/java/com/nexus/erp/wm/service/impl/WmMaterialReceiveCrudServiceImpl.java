@@ -28,7 +28,11 @@ import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.erp.wm.service.IWmMaterialReceiveExecutorService;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.nexus.system.domain.vo.SysUserVo;
+import com.nexus.system.service.ISysUserService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -42,6 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +70,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     private final HistoryService historyService;
     private final IWmMaterialReceiveExecutorService executorService;
     private final ReliableMessageProducer messageProducer;
+    private final ISysUserService sysUserService;
 
     /**
      * 分页查询物料入库单列表
@@ -77,6 +83,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     public TableDataInfo<WmMaterialReceiveVo> selectPageList(WmMaterialReceiveBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmMaterialReceive> lqw = buildQueryWrapper(bo);
         Page<WmMaterialReceiveVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        fillShelfByName(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -88,7 +95,9 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      */
     @Override
     public List<WmMaterialReceiveVo> selectList(WmMaterialReceiveBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<WmMaterialReceiveVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        fillShelfByName(list);
+        return list;
     }
 
     /**
@@ -115,6 +124,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             }
 
             vo.setWmMaterialReceiveLineList(lineVoList);
+            fillShelfByName(List.of(vo));
         }
         return vo;
     }
@@ -291,6 +301,56 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     }
 
     /**
+     * 确认上架：将入库单从"待上架"(APPROVED)变为"待入库"(SHELVED)
+     *
+     * @param receiveId 入库单ID
+     * @return 是否成功
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean confirmShelf(Long receiveId) {
+        WmMaterialReceive receive = baseMapper.selectById(receiveId);
+        if (receive == null) {
+            throw new ServiceException("入库单不存在");
+        }
+        if (!STATUS_APPROVED.equals(receive.getStatus())) {
+            throw new ServiceException("当前状态不允许上架确认，只有待上架状态才能执行上架确认操作！");
+        }
+
+        // 校验必须有上架明细且库位信息完整
+        List<WmMaterialReceiveLine> lines = receiveLineMapper.selectList(
+            new LambdaQueryWrapper<WmMaterialReceiveLine>()
+                .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
+        if (lines == null || lines.isEmpty()) {
+            throw new ServiceException("入库单行不能为空");
+        }
+
+        boolean hasDetail = false;
+        for (WmMaterialReceiveLine line : lines) {
+            List<WmMaterialReceiveDetail> details = receiveDetailMapper.selectList(
+                new LambdaQueryWrapper<WmMaterialReceiveDetail>()
+                    .eq(WmMaterialReceiveDetail::getLineId, line.getLineId()));
+            if (details != null && !details.isEmpty()) {
+                hasDetail = true;
+                for (WmMaterialReceiveDetail detail : details) {
+                    if (detail.getLocationId() == null) {
+                        throw new ServiceException("存在未分配库位的上架明细，请先完善库位信息");
+                    }
+                }
+            }
+        }
+        if (!hasDetail) {
+            throw new ServiceException("请先添加上架明细并分配库位");
+        }
+
+        receive.setStatus(STATUS_SHELVED);
+        receive.setShelfBy(LoginHelper.getUserId());
+        receive.setShelfTime(new Date());
+        receive.setUpdateTime(new Date());
+        return baseMapper.updateById(receive) > 0;
+    }
+
+    /**
      * 工作流审批回调处理
      * <p>
      * 状态流转：
@@ -316,15 +376,11 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             // 审批中：审批流程进行中，不可修改和操作
             receive.setStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
-            // 审批通过：待上架状态，可执行上架操作
+            // 审批通过：状态变更为"待上架"，等待仓库人员执行上架操作
+            // 注意：不再发送StockInMessage，入库过账统一由用户手动触发（executeReceive），
+            // 避免审批通过时库位尚未分配导致MQ异步过账失败或重复入库
             receive.setStatus(STATUS_APPROVED);
             baseMapper.updateById(receive);
-            StockInMessage stockInMsg = new StockInMessage();
-            stockInMsg.setReceiveId(receiveId);
-            stockInMsg.setSourceType("PURCHASE");
-            stockInMsg.setSourceModule("wm");
-            messageProducer.send(ExchangeConstants.DIRECT_EXCHANGE,
-                RoutingKeyConstants.STOCK_IN_RECEIVE, stockInMsg);
             return;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             // 审批驳回：已驳回状态，可修改后重新提交
@@ -438,6 +494,37 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         }
         receiveLineMapper.delete(new LambdaQueryWrapper<WmMaterialReceiveLine>()
             .eq(WmMaterialReceiveLine::getReceiveId, receiveId));
+    }
+
+    /**
+     * 批量填充上架人姓名
+     * 注：需要手动切换到主数据源查询 sys_user 表
+     */
+    private void fillShelfByName(List<WmMaterialReceiveVo> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        List<Long> userIds = list.stream()
+            .map(WmMaterialReceiveVo::getShelfBy)
+            .filter(id -> id != null && id > 0)
+            .distinct()
+            .toList();
+        if (userIds.isEmpty()) {
+            return;
+        }
+        DynamicDataSourceContextHolder.push("master");
+        try {
+            List<SysUserVo> users = sysUserService.selectUserByIds(userIds, null);
+            Map<Long, String> userNameMap = users.stream()
+                .collect(HashMap::new, (m, u) -> m.put(u.getUserId(), u.getUserName()), HashMap::putAll);
+            for (WmMaterialReceiveVo vo : list) {
+                if (vo.getShelfBy() != null) {
+                    vo.setShelfByName(userNameMap.getOrDefault(vo.getShelfBy(), ""));
+                }
+            }
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
     }
 
     private LambdaQueryWrapper<WmMaterialReceive> buildQueryWrapper(WmMaterialReceiveBo bo) {

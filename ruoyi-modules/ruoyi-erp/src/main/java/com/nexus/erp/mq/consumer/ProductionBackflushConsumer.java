@@ -1,5 +1,6 @@
 package com.nexus.erp.mq.consumer;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
@@ -25,6 +26,7 @@ import java.util.Date;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@DS("erp")
 public class ProductionBackflushConsumer extends BaseMessageConsumer<ProductionCompleteMessage> {
 
     private final PrdBackflushServiceImpl backflushService;

@@ -36,5 +36,7 @@ public interface IWmMaterialReceiveService extends WfCallBackServiceI {
 
     boolean executeReceive(Long receiveId);
 
+    boolean confirmShelf(Long receiveId);
+
     String getProcInsId(String receiveIdStr);
 }

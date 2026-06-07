@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 import com.nexus.erp.bd.service.IBdMaterialService;
 import com.nexus.erp.wm.domain.WmArrivalNotice;
@@ -28,6 +29,8 @@ import com.nexus.erp.wm.service.IWmMaterialReceiveExecutorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -45,14 +48,16 @@ import java.util.Map;
 @Service
 public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveExecutorService {
 
-    /** 待入库状态（审批通过后） */
-    private static final String ORDER_STATUS_PENDING_STORAGE = "PENDING_STORAGE";
+    /** 待入库状态（已上架） */
+    private static final String ORDER_STATUS_SHELVED = "SHELVED";
     /** 已完成状态 */
     private static final String ORDER_STATUS_FINISHED = "FINISHED";
     /** 虚拟区域ID */
     private static final Long VIRTUAL_AREA_ID = 0L;
     /** 虚拟库位ID */
     private static final Long VIRTUAL_LOCATION_ID = 0L;
+    /** 来源单据类型：物料入库单（用于防重校验） */
+    private static final String SOURCE_DOC_TYPE_RECEIVE = "WM_MATERIAL_RECEIVE";
 
     private final WmMaterialReceiveMapper baseMapper;
     private final WmMaterialReceiveLineMapper receiveLineMapper;
@@ -62,9 +67,14 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
     private final WmArrivalNoticeMapper arrivalNoticeMapper;
     private final IBdMaterialService bdMaterialService;
     private final IWmBarcodeService wmBarcodeService;
+    /** 仓储模块MQ消息发送服务，独立于@DS("erp")，确保消息记录写入ry-vue库 */
+    private final WmMqSendService wmMqSendService;
 
     /**
      * 执行物料入库
+     * <p>
+     * 完整流程：防重校验 → 虚拟库位转储 → 更新单据状态 → 更新到货通知 → 生成条码 → 发送采购回写MQ消息
+     * </p>
      *
      * @param receiveId 入库单ID
      * @return 是否成功
@@ -76,8 +86,13 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         if (receiveVo == null) {
             throw new ServiceException("入库单不存在");
         }
-        if (!ORDER_STATUS_PENDING_STORAGE.equals(receiveVo.getStatus())) {
+        if (!ORDER_STATUS_SHELVED.equals(receiveVo.getStatus())) {
             throw new ServiceException("只有待入库状态的入库单才能执行入库操作");
+        }
+
+        // 防重校验：检查是否已存在该入库单的库存事务记录，避免重复入库
+        if (hasPosted(receiveId)) {
+            throw new ServiceException("入库单已执行过入库过账，请勿重复操作");
         }
 
         List<WmMaterialReceiveLineVo> lines = receiveVo.getWmMaterialReceiveLineList();
@@ -85,6 +100,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             throw new ServiceException("入库单行不能为空");
         }
 
+        // 按明细/行构建库存对象，去重校验
         Map<String, WmMaterialStock> stockMap = new LinkedHashMap<>();
         for (WmMaterialReceiveLineVo line : lines) {
             List<WmMaterialReceiveDetailVo> details = line.getWmMaterialReceiveLineDetailList();
@@ -99,15 +115,18 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             }
         }
 
+        // 执行库存转储：虚拟库位扣减 + 目标库位增加
         for (WmMaterialStock stock : stockMap.values()) {
             processStockTransferTransaction(receiveVo, stock, nvl(stock.getStockQuantity()));
         }
 
+        // 更新入库单状态为已完成
         WmMaterialReceive receive = baseMapper.selectById(receiveId);
         receive.setStatus(ORDER_STATUS_FINISHED);
         receive.setUpdateTime(new Date());
         baseMapper.updateById(receive);
 
+        // 更新入库行和明细的时间戳
         List<WmMaterialReceiveLine> dbLines = receiveLineMapper.selectList(
             new LambdaQueryWrapper<WmMaterialReceiveLine>().eq(WmMaterialReceiveLine::getReceiveId, receiveId));
         for (WmMaterialReceiveLine dbLine : dbLines) {
@@ -123,6 +142,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             receiveLineMapper.updateById(dbLine);
         }
 
+        // 更新关联的到货通知单状态为已完成
         if (receive.getNoticeId() != null) {
             WmArrivalNotice notice = arrivalNoticeMapper.selectById(receive.getNoticeId());
             if (notice != null) {
@@ -132,6 +152,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             }
         }
 
+        // 为入库的库存生成条码
         for (WmMaterialStock stock : stockMap.values()) {
             wmBarcodeService.generateAndSaveByCode(
                 "WM_RECEIVE_DEFAULT",
@@ -145,7 +166,42 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             );
         }
 
+        // 入库完成后，异步回写采购订单已收货数量
+        // 通过MQ解耦，避免仓储模块直接依赖采购模块的写操作
+        // 使用事务同步机制，在事务提交后再发送MQ消息：
+        // 1. 确保入库数据已持久化，避免消息先于数据到达消费者
+        // 2. 事务提交后通过独立的WmMqSendService发送，该Service无@DS注解，
+        //    可正确切换到master数据源，将消息记录写入ry-vue库的mq_message_record表
+        if (receive.getPurId() != null) {
+            // 在请求线程中提前获取租户ID，afterCommit/异步线程中无法获取
+            final String tenantId = TenantHelper.getTenantId();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    wmMqSendService.sendPurchaseReceiveWriteback(receiveId, tenantId);
+                }
+            });
+        }
+
         return true;
+    }
+
+    /**
+     * 防重校验：检查该入库单是否已执行过库存过账
+     * <p>
+     * 通过查询库存事务表（wm_material_stock_tx）中是否存在该来源单据的记录来判断。
+     * 如果已存在记录，说明该入库单已经执行过入库过账，不允许重复操作。
+     * </p>
+     *
+     * @param receiveId 入库单ID
+     * @return true=已过账（不允许重复），false=未过账
+     */
+    private boolean hasPosted(Long receiveId) {
+        Long count = materialStockTxMapper.selectCount(
+            new LambdaQueryWrapper<WmMaterialStockTx>()
+                .eq(WmMaterialStockTx::getSourceDocType, SOURCE_DOC_TYPE_RECEIVE)
+                .eq(WmMaterialStockTx::getSourceDocId, receiveId));
+        return count != null && count > 0;
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.nexus.erp.wm.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.nexus.erp.wm.domain.WmMaterialReceive;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
@@ -174,6 +175,25 @@ public class WmMaterialReceiveController extends BaseController {
                           @RequestParam(value = "selectFlowId", required = false) String selectFlowId) {
         try {
             return toAjax(wmMaterialReceiveService.submit(receiveId, selectFlowId));
+        } catch (RuntimeException e) {
+            return R.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 确认上架：将入库单从"待上架"变为"待入库"
+     * <p>权限标识：{@code wm:receive:shelf}</p>
+     * <p>日志记录：title="物料入库单上架确认"，businessType=UPDATE</p>
+     *
+     * @param receiveId 入库单 ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("wm:receive:shelf")
+    @Log(title = "物料入库单上架确认", businessType = BusinessType.UPDATE)
+    @PutMapping("/shelf/{receiveId}")
+    public R<Void> confirmShelf(@PathVariable Long receiveId) {
+        try {
+            return toAjax(wmMaterialReceiveService.confirmShelf(receiveId));
         } catch (RuntimeException e) {
             return R.fail(e.getMessage());
         }

@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : whbuild
+ Source Server         : 本地5.7
  Source Server Type    : MySQL
- Source Server Version : 50720
+ Source Server Version : 50714 (5.7.14)
  Source Host           : localhost:3306
  Source Schema         : ry-vue
 
  Target Server Type    : MySQL
- Target Server Version : 50720
+ Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 05/06/2026 21:35:31
+ Date: 07/06/2026 22:15:58
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,11 @@ CREATE TABLE `act_evt_log`  (
   `LOCK_TIME_` timestamp(3) NULL DEFAULT NULL,
   `IS_PROCESSED_` tinyint(4) NULL DEFAULT 0,
   PRIMARY KEY (`LOG_NR_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_evt_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ge_bytearray
@@ -51,7 +55,7 @@ CREATE TABLE `act_ge_bytearray`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `ACT_FK_BYTEARR_DEPL`(`DEPLOYMENT_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_BYTEARR_DEPL` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_bytearray
@@ -131,7 +135,7 @@ CREATE TABLE `act_ge_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_property
@@ -177,7 +181,7 @@ CREATE TABLE `act_hi_actinst`  (
   INDEX `ACT_IDX_HI_ACT_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_PROCINST`(`PROC_INST_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_EXEC`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_actinst
@@ -278,7 +282,11 @@ CREATE TABLE `act_hi_attachment`  (
   `CONTENT_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TIME_` datetime(3) NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_attachment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_comment
@@ -295,7 +303,7 @@ CREATE TABLE `act_hi_comment`  (
   `MESSAGE_` varchar(4000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `FULL_MSG_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_comment
@@ -352,7 +360,11 @@ CREATE TABLE `act_hi_detail`  (
   INDEX `ACT_IDX_HI_DETAIL_TIME`(`TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_NAME`(`NAME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_TASK_ID`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_detail
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_entitylink
@@ -378,7 +390,11 @@ CREATE TABLE `act_hi_entitylink`  (
   INDEX `ACT_IDX_HI_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_identitylink
@@ -403,7 +419,7 @@ CREATE TABLE `act_hi_identitylink`  (
   INDEX `ACT_IDX_HI_IDENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_TASK`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_identitylink
@@ -500,7 +516,7 @@ CREATE TABLE `act_hi_procinst`  (
   INDEX `ACT_IDX_HI_PRO_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_I_BUSKEY`(`BUSINESS_KEY_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_SUPER_PROCINST`(`SUPER_PROCESS_INSTANCE_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_procinst
@@ -556,7 +572,7 @@ CREATE TABLE `act_hi_taskinst`  (
   INDEX `ACT_IDX_HI_TASK_SUB_SCOPE`(`SUB_SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_INST_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_taskinst
@@ -606,7 +622,11 @@ CREATE TABLE `act_hi_tsk_log`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_tsk_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_varinst
@@ -638,7 +658,7 @@ CREATE TABLE `act_hi_varinst`  (
   INDEX `ACT_IDX_HI_PROCVAR_PROC_INST`(`PROC_INST_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_TASK_ID`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_EXE`(`EXECUTION_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_varinst
@@ -798,7 +818,11 @@ CREATE TABLE `act_id_bytearray`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_bytearray
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_group
@@ -810,7 +834,11 @@ CREATE TABLE `act_id_group`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_group
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_info
@@ -826,7 +854,11 @@ CREATE TABLE `act_id_info`  (
   `PASSWORD_` longblob NULL,
   `PARENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_membership
@@ -839,7 +871,11 @@ CREATE TABLE `act_id_membership`  (
   INDEX `ACT_FK_MEMB_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_MEMB_GROUP` FOREIGN KEY (`GROUP_ID_`) REFERENCES `act_id_group` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MEMB_USER` FOREIGN KEY (`USER_ID_`) REFERENCES `act_id_user` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_membership
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv
@@ -850,7 +886,11 @@ CREATE TABLE `act_id_priv`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PRIV_NAME`(`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv_mapping
@@ -866,7 +906,11 @@ CREATE TABLE `act_id_priv_mapping`  (
   INDEX `ACT_IDX_PRIV_USER`(`USER_ID_`) USING BTREE,
   INDEX `ACT_IDX_PRIV_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_PRIV_MAPPING` FOREIGN KEY (`PRIV_ID_`) REFERENCES `act_id_priv` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv_mapping
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_property
@@ -877,7 +921,7 @@ CREATE TABLE `act_id_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_id_property
@@ -898,7 +942,11 @@ CREATE TABLE `act_id_token`  (
   `USER_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TOKEN_DATA_` varchar(2000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_token
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_user
@@ -915,7 +963,11 @@ CREATE TABLE `act_id_user`  (
   `PICTURE_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_user
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_procdef_info
@@ -932,7 +984,11 @@ CREATE TABLE `act_procdef_info`  (
   INDEX `ACT_FK_INFO_JSON_BA`(`INFO_JSON_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_INFO_JSON_BA` FOREIGN KEY (`INFO_JSON_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_INFO_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_procdef_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_re_deployment
@@ -950,7 +1006,7 @@ CREATE TABLE `act_re_deployment`  (
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `ENGINE_VERSION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_deployment
@@ -996,7 +1052,7 @@ CREATE TABLE `act_re_model`  (
   CONSTRAINT `ACT_FK_MODEL_DEPLOYMENT` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE` FOREIGN KEY (`EDITOR_SOURCE_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE_EXTRA` FOREIGN KEY (`EDITOR_SOURCE_EXTRA_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_model
@@ -1057,7 +1113,7 @@ CREATE TABLE `act_re_procdef`  (
   `DERIVED_VERSION_` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PROCDEF`(`KEY_`, `VERSION_`, `DERIVED_VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_procdef
@@ -1107,7 +1163,7 @@ CREATE TABLE `act_ru_actinst`  (
   INDEX `ACT_IDX_RU_ACTI_EXEC`(`EXECUTION_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_EXEC_ACT`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_TASK`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_actinst
@@ -1172,7 +1228,11 @@ CREATE TABLE `act_ru_deadletter_job`  (
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_deadletter_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_entitylink
@@ -1199,7 +1259,11 @@ CREATE TABLE `act_ru_entitylink`  (
   INDEX `ACT_IDX_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_event_subscr
@@ -1228,7 +1292,11 @@ CREATE TABLE `act_ru_event_subscr`  (
   INDEX `ACT_IDX_EVENT_SUBSCR_SCOPEREF_`(`SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_FK_EVENT_EXEC`(`EXECUTION_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_EVENT_EXEC` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_event_subscr
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_execution
@@ -1286,7 +1354,7 @@ CREATE TABLE `act_ru_execution`  (
   CONSTRAINT `ACT_FK_EXE_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXE_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `ACT_FK_EXE_SUPER` FOREIGN KEY (`SUPER_EXEC_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_execution
@@ -1339,7 +1407,11 @@ CREATE TABLE `act_ru_external_job`  (
   INDEX `ACT_IDX_EJOB_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_CUSTOM_VALUES` FOREIGN KEY (`CUSTOM_VALUES_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_EXCEPTION` FOREIGN KEY (`EXCEPTION_STACK_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_external_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_history_job
@@ -1361,7 +1433,11 @@ CREATE TABLE `act_ru_history_job`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_history_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_identitylink
@@ -1392,7 +1468,7 @@ CREATE TABLE `act_ru_identitylink`  (
   CONSTRAINT `ACT_FK_ATHRZ_PROCEDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_IDL_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TSKASS_TASK` FOREIGN KEY (`TASK_ID_`) REFERENCES `act_ru_task` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_identitylink
@@ -1454,7 +1530,11 @@ CREATE TABLE `act_ru_job`  (
   CONSTRAINT `ACT_FK_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_suspended_job
@@ -1501,7 +1581,11 @@ CREATE TABLE `act_ru_suspended_job`  (
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_suspended_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_task
@@ -1549,7 +1633,7 @@ CREATE TABLE `act_ru_task`  (
   CONSTRAINT `ACT_FK_TASK_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_task
@@ -1606,7 +1690,11 @@ CREATE TABLE `act_ru_timer_job`  (
   CONSTRAINT `ACT_FK_TIMER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_timer_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_variable
@@ -1639,7 +1727,7 @@ CREATE TABLE `act_ru_variable`  (
   CONSTRAINT `ACT_FK_VAR_BYTEARRAY` FOREIGN KEY (`BYTEARRAY_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_variable
@@ -1697,7 +1785,11 @@ CREATE TABLE `flw_channel_definition`  (
   `IMPLEMENTATION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_CHANNEL_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_channel_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ev_databasechangelog
@@ -1707,7 +1799,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
+  `DATEEXECUTED` datetime NULL DEFAULT NULL,
   `ORDEREXECUTED` int(11) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
@@ -1718,7 +1810,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `CONTEXTS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `LABELS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `DEPLOYMENT_ID` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangelog
@@ -1734,10 +1826,10 @@ DROP TABLE IF EXISTS `flw_ev_databasechangeloglock`;
 CREATE TABLE `flw_ev_databasechangeloglock`  (
   `ID` int(11) NOT NULL,
   `LOCKED` tinyint(4) NOT NULL,
-  `LOCKGRANTED` datetime(0) NULL DEFAULT NULL,
+  `LOCKGRANTED` datetime NULL DEFAULT NULL,
   `LOCKEDBY` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangeloglock
@@ -1760,7 +1852,11 @@ CREATE TABLE `flw_event_definition`  (
   `DESCRIPTION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_EVENT_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_deployment
@@ -1774,7 +1870,11 @@ CREATE TABLE `flw_event_deployment`  (
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_deployment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_resource
@@ -1786,7 +1886,11 @@ CREATE TABLE `flw_event_resource`  (
   `DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `RESOURCE_BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_resource
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch
@@ -1804,7 +1908,11 @@ CREATE TABLE `flw_ru_batch`  (
   `BATCH_DOC_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch_part
@@ -1828,7 +1936,11 @@ CREATE TABLE `flw_ru_batch_part`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `FLW_IDX_BATCH_PART`(`BATCH_ID_`) USING BTREE,
   CONSTRAINT `FLW_FK_BATCH_PART_PARENT` FOREIGN KEY (`BATCH_ID_`) REFERENCES `flw_ru_batch` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch_part
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for gen_table
@@ -1857,14 +1969,14 @@ CREATE TABLE `gen_table`  (
   `options` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE,
   INDEX `idx_gen_table_design_id`(`design_id`) USING BTREE,
   INDEX `idx_gen_table_source_type`(`source_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table
@@ -1914,11 +2026,11 @@ CREATE TABLE `gen_table_column`  (
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -2334,11 +2446,15 @@ CREATE TABLE `gen_table_design_history`  (
   `design_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设计JSON内容',
   `version` int(11) NULL DEFAULT 1 COMMENT '版本号',
   `create_by` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`history_id`) USING BTREE,
   INDEX `idx_design_history_table_id`(`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of gen_table_design_history
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for huiyuan_age
@@ -2349,7 +2465,7 @@ CREATE TABLE `huiyuan_age`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_age
@@ -2372,7 +2488,7 @@ CREATE TABLE `huiyuan_fengongsi`  (
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_fengongsi
@@ -2394,7 +2510,7 @@ CREATE TABLE `huiyuan_huoyuedu`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_huoyuedu
@@ -2414,7 +2530,7 @@ CREATE TABLE `huiyuan_sex`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '性别',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_sex
@@ -2431,7 +2547,7 @@ CREATE TABLE `huiyuan_work`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '姓名',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_work
@@ -2449,7 +2565,7 @@ CREATE TABLE `huiyuan_wxtl`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_wxtl
@@ -2466,7 +2582,7 @@ CREATE TABLE `huiyuan_wxtlshuliang`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` int(10) NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_wxtlshuliang
@@ -2490,7 +2606,7 @@ CREATE TABLE `huiyuan_xueli`  (
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
   `value` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '值',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of huiyuan_xueli
@@ -2512,14 +2628,14 @@ CREATE TABLE `im_friend`  (
   `friend_user_id` bigint(20) NOT NULL COMMENT '濂藉弸鐢ㄦ埛ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '鍒涘缓閮ㄩ棬',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '鍒涘缓鑰',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '鍒涘缓鏃堕棿',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '鍒涘缓鏃堕棿',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '鏇存柊鑰',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '鏇存柊鏃堕棿',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '鏇存柊鏃堕棿',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '澶囨敞',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_im_friend`(`tenant_id`, `user_id`, `friend_user_id`) USING BTREE,
   INDEX `idx_im_friend_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM濂藉弸鍏崇郴' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM濂藉弸鍏崇郴' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_friend
@@ -2540,13 +2656,13 @@ CREATE TABLE `im_group`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1解散）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`group_id`) USING BTREE,
   INDEX `idx_im_group_tenant`(`tenant_id`, `status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group
@@ -2563,16 +2679,16 @@ CREATE TABLE `im_group_member`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `group_id` bigint(20) NOT NULL COMMENT '群ID',
   `user_id` bigint(20) NOT NULL COMMENT '成员用户ID',
-  `join_time` datetime(0) NULL DEFAULT NULL COMMENT '加入时间',
+  `join_time` datetime NULL DEFAULT NULL COMMENT '加入时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_group_user`(`group_id`, `user_id`) USING BTREE,
   INDEX `idx_igm_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group_member
@@ -2601,14 +2717,14 @@ CREATE TABLE `im_message`  (
   `forward_from` bigint(20) NULL DEFAULT NULL COMMENT '杞?彂鏉ユ簮娑堟伅ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`message_id`) USING BTREE,
   INDEX `idx_im_msg_private`(`tenant_id`, `from_user_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_to`(`tenant_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_group`(`tenant_id`, `group_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_message
@@ -2643,14 +2759,14 @@ CREATE TABLE `jimu_dict`  (
   `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '描述',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `type` int(1) UNSIGNED ZEROFILL NULL DEFAULT 0 COMMENT '字典类型0为string,1为number',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_sd_dict_code`(`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict
@@ -2729,15 +2845,15 @@ CREATE TABLE `jimu_dict_item`  (
   `sort_order` int(10) NULL DEFAULT NULL COMMENT '排序',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态（1启用 0不启用）',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_sdi_role_dict_id`(`dict_id`) USING BTREE,
   INDEX `idx_sdi_role_sort_order`(`sort_order`) USING BTREE,
   INDEX `idx_sdi_status`(`status`) USING BTREE,
   INDEX `idx_sdi_dict_val`(`dict_id`, `item_value`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict_item
@@ -2976,9 +3092,9 @@ CREATE TABLE `jimu_report`  (
   `api_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求地址',
   `thumb` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '缩略图',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   `api_method` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求方法0-get,1-post',
   `api_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求编码',
@@ -2995,7 +3111,7 @@ CREATE TABLE `jimu_report`  (
   UNIQUE INDEX `uniq_jmreport_code`(`code`) USING BTREE,
   INDEX `uniq_jmreport_createby`(`create_by`) USING BTREE,
   INDEX `uniq_jmreport_delflag`(`del_flag`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report
@@ -3086,14 +3202,14 @@ CREATE TABLE `jimu_report_category`  (
   `iz_leaf` int(1) NULL DEFAULT NULL COMMENT '是否为叶子节点(0 否 1是)',
   `source_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型( report 积木报表 screen 大屏  drag 仪表盘)',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态(0未删除，1已删除，2临时删除)',
   `sort_no` int(11) NULL DEFAULT NULL COMMENT '排序',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_category
@@ -3122,16 +3238,16 @@ CREATE TABLE `jimu_report_data_source`  (
   `db_username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户名',
   `db_password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `connect_times` int(11) NULL DEFAULT 0 COMMENT '连接失败次数',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   `type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型(report:报表;drag:仪表盘)',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jmdatasource_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jmdatasource_code`(`code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_data_source
@@ -3158,8 +3274,8 @@ CREATE TABLE `jimu_report_db`  (
   `jimu_report_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '主键字段',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `db_code` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集编码',
   `db_ch_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集名字',
   `db_type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源类型',
@@ -3184,7 +3300,7 @@ CREATE TABLE `jimu_report_db`  (
   INDEX `idx_jmreportdb_db_key`(`db_key`) USING BTREE,
   INDEX `idx_jimu_report_id`(`jimu_report_id`) USING BTREE,
   INDEX `idx_db_source_id`(`db_source`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db
@@ -3333,9 +3449,9 @@ DROP TABLE IF EXISTS `jimu_report_db_field`;
 CREATE TABLE `jimu_report_db_field`  (
   `id` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `jimu_report_db_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源ID',
   `field_name` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字段名',
   `field_name_physics` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '物理字段名（文件数据集使用，存的是excel的字段标题）',
@@ -3352,7 +3468,7 @@ CREATE TABLE `jimu_report_db_field`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdf_jimu_report_db_id`(`jimu_report_db_id`) USING BTREE,
   INDEX `idx_dbfield_order_num`(`order_num`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_field
@@ -4276,9 +4392,9 @@ CREATE TABLE `jimu_report_db_param`  (
   `param_value` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '参数默认值',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `search_flag` int(1) NULL DEFAULT NULL COMMENT '查询标识0否1是 默认0',
   `widget_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询控件类型',
   `search_mode` int(1) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
@@ -4287,7 +4403,7 @@ CREATE TABLE `jimu_report_db_param`  (
   `ext_json` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '参数配置',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdp_jimu_report_head_id`(`jimu_report_head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_param
@@ -4329,21 +4445,21 @@ DROP TABLE IF EXISTS `jimu_report_export_job`;
 CREATE TABLE `jimu_report_export_job`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务名称',
-  `begin_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
-  `end_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `begin_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
   `exec_interval` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '执行频率',
   `report_conf` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '导出报表配置',
-  `last_run_time` datetime(0) NULL DEFAULT NULL COMMENT '最后执行时间',
+  `last_run_time` datetime NULL DEFAULT NULL COMMENT '最后执行时间',
   `receiver_email` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '接收通知的邮件',
   `file_sync_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件同步路径',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态(0:停止;1:启动)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_job
@@ -4367,11 +4483,11 @@ CREATE TABLE `jimu_report_export_log`  (
   `status` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '状态',
   `err_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误消息',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_log
@@ -4664,12 +4780,12 @@ CREATE TABLE `jimu_report_ext_data`  (
   `metadata` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '元数据，用于存储补充信息',
   `status` tinyint(4) NULL DEFAULT 1 COMMENT '状态标识：1正常 0禁用',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_biz`(`biz_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_ext_data
@@ -4686,12 +4802,12 @@ CREATE TABLE `jimu_report_icon_lib`  (
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图片类型',
   `image_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '图片地址',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户id',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_icon_lib
@@ -4927,7 +5043,7 @@ CREATE TABLE `jimu_report_link`  (
   `requirement` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '条件',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `uniq_link_reportid`(`report_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_link
@@ -4948,14 +5064,14 @@ CREATE TABLE `jimu_report_map`  (
   `name` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '地图编码',
   `data` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '地图数据',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '0表示未删除,1表示删除',
   `sys_org_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '所属部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_jmreport_map_name`(`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_map
@@ -4981,7 +5097,7 @@ CREATE TABLE `jimu_report_share`  (
   `report_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线excel设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，2:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁状态(0不存在密码锁，1存在密码锁)',
@@ -4989,7 +5105,7 @@ CREATE TABLE `jimu_report_share`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jrs_share_token`(`share_token`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_share
@@ -5014,14 +5130,14 @@ CREATE TABLE `jimu_report_sheet`  (
   `sheet_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Sheet名称',
   `sheet_order` int(11) NOT NULL COMMENT '排序（可以为负数，负数表示在默认sheet前面）',
   `json_str` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '该sheet的完整jsonStr',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_report_id`(`report_id`) USING BTREE,
   INDEX `idx_sheet_order`(`report_id`, `sheet_order`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_sheet
@@ -5049,13 +5165,17 @@ CREATE TABLE `mq_compensation_record`  (
   `compensation_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '补偿参数JSON',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 5 COMMENT '最大重试次数',
-  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_compensation_status`(`compensation_status`, `next_retry_time`) USING BTREE,
   INDEX `idx_business`(`business_type`, `business_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mq_compensation_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for mq_dead_letter_record
@@ -5070,11 +5190,15 @@ CREATE TABLE `mq_dead_letter_record`  (
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/RESOLVED/RESENT',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mq_dead_letter_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for mq_message_record
@@ -5089,14 +5213,19 @@ CREATE TABLE `mq_message_record`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'SENDING' COMMENT '状态: SENDING/SENT/CONSUMED/FAILED',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 3 COMMENT '最大重试次数',
-  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_message_id`(`message_id`) USING BTREE,
   INDEX `idx_status_create`(`status`, `create_time`) USING BTREE,
   INDEX `idx_next_retry`(`next_retry_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mq_message_record
+-- ----------------------------
+INSERT INTO `mq_message_record` VALUES (2063625490937282561, 'ab95d56535d1472b9d2bf93c055dbdfa', 'erp.topic.exchange', 'purchase.receive.writeback', '{\"messageId\":\"ab95d56535d1472b9d2bf93c055dbdfa\",\"timestamp\":1780841632002,\"traceId\":null,\"tenantId\":null,\"sourceModule\":\"wm\",\"retryCount\":0,\"maxRetry\":3,\"receiveId\":\"2062395873109688322\",\"tenantIdStr\":\"000000\"}', 'SENT', 0, 3, NULL, '2026-06-07 22:13:52', NULL);
 
 -- ----------------------------
 -- Table structure for onl_drag_comp
@@ -5113,11 +5242,11 @@ CREATE TABLE `onl_drag_comp`  (
   `comp_config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `status` varchar(2) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态0:无效 1:有效',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_comp
@@ -5261,14 +5390,14 @@ CREATE TABLE `onl_drag_dataset_head`  (
   `iz_agent` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT 'iz_agent',
   `data_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据类型',
   `api_method` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'api方法：get/post',
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `low_app_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_head
@@ -5385,12 +5514,12 @@ CREATE TABLE `onl_drag_dataset_item`  (
   `search_mode` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询模式',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddi_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_item
@@ -5666,12 +5795,12 @@ CREATE TABLE `onl_drag_dataset_param`  (
   `search_mode` int(11) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
   `dict_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字典',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddp_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_param
@@ -5702,16 +5831,16 @@ CREATE TABLE `onl_drag_page`  (
   `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件夹类',
   `iz_template` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否模板(1:是；0不是)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   `update_count` int(10) NULL DEFAULT 1,
   `visits_num` int(11) NULL DEFAULT NULL COMMENT '访问次数',
   `del_flag` int(11) NULL DEFAULT NULL COMMENT '删除状态( 0未删除 1已删除)',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page
@@ -5778,11 +5907,11 @@ CREATE TABLE `onl_drag_page_comp`  (
   `component` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件名称',
   `config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page_comp
@@ -6751,14 +6880,14 @@ CREATE TABLE `onl_drag_share`  (
   `drag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线仪表盘设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，7:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为密码锁(0 否,1是)',
   `share_token` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分享token',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_ods_drag_id`(`drag_id`) USING BTREE COMMENT '仪表盘id唯一索引'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_share
@@ -6782,15 +6911,19 @@ CREATE TABLE `onl_drag_table_relation`  (
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户ID',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_aggregation_name`(`aggregation_name`) USING BTREE,
   INDEX `idx_del_flag`(`del_flag`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_create_by`(`create_by`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of onl_drag_table_relation
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pay_invoice
@@ -6808,12 +6941,12 @@ CREATE TABLE `pay_invoice`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`invoice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_invoice
@@ -6834,18 +6967,18 @@ CREATE TABLE `pay_order`  (
   `order_content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '订单内容',
   `order_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负载信息',
   `pay_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付方式',
-  `pay_time` datetime(0) NULL DEFAULT NULL COMMENT '支付时间',
+  `pay_time` datetime NULL DEFAULT NULL COMMENT '支付时间',
   `pay_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '支付人',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`order_id`) USING BTREE,
   INDEX `idx_order_number`(`order_number`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_order
@@ -6880,16 +7013,16 @@ DROP TABLE IF EXISTS `rep_demo_dxtj`;
 CREATE TABLE `rep_demo_dxtj`  (
   `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '姓名',
-  `gtime` datetime(0) NULL DEFAULT NULL COMMENT '雇佣日期',
+  `gtime` datetime NULL DEFAULT NULL COMMENT '雇佣日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '职务',
   `jphone` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '家庭电话',
-  `birth` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birth` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `hukou` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '户口所在地',
   `laddress` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系地址',
   `jperson` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '紧急联系人',
   `sex` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'xingbie',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_dxtj
@@ -6929,7 +7062,7 @@ CREATE TABLE `rep_demo_employee`  (
   `num` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '编号',
   `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
   `sex` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '性别',
-  `birthday` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birthday` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `nation` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '民族',
   `political` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '政治面貌',
   `native_place` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '籍贯',
@@ -6947,18 +7080,18 @@ CREATE TABLE `rep_demo_employee`  (
   `foreign_language` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语语种',
   `foreign_language_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语水平',
   `computer_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '计算机水平',
-  `graduation_time` datetime(0) NULL DEFAULT NULL COMMENT '毕业时间',
-  `arrival_time` datetime(0) NULL DEFAULT NULL COMMENT '到职时间',
+  `graduation_time` datetime NULL DEFAULT NULL COMMENT '毕业时间',
+  `arrival_time` datetime NULL DEFAULT NULL COMMENT '到职时间',
   `positional_titles` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '职称',
   `education_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '教育经历',
   `work_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '工作经历',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_employee
@@ -6979,7 +7112,7 @@ CREATE TABLE `rep_demo_gongsi`  (
   `zhaiyao` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `num` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_gongsi
@@ -7003,7 +7136,7 @@ CREATE TABLE `rep_demo_jianpiao`  (
   `shihelv` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `s_id` int(11) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_jianpiao
@@ -7113,7 +7246,7 @@ CREATE TABLE `rep_demo_xiaoshou`  (
   `beizhu` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `s_id` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_xiaoshou
@@ -7146,10 +7279,25 @@ CREATE TABLE `sj_distributed_lock`  (
   `lock_until` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '锁定时长',
   `locked_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '锁定时间',
   `locked_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '锁定者',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_distributed_lock
+-- ----------------------------
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-06-07 20:48:57.383', '2026-06-07 20:47:57.383', '2063543465639325696', '2026-06-07 16:47:58', '2026-06-07 20:47:57');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-06-07 22:16:04.679', '2026-06-07 22:15:59.679', '2063543465639325696', '2026-06-07 16:47:57', '2026-06-07 22:16:00');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-06-07 20:48:57.379', '2026-06-07 20:47:57.379', '2063543465639325696', '2026-06-07 16:47:57', '2026-06-07 20:47:57');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-06-07 22:16:55.524', '2026-06-07 22:15:55.524', '2063543465639325696', '2026-06-07 16:47:57', '2026-06-07 22:15:56');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-06-07 22:16:15.524', '2026-06-07 22:15:55.524', '2063543465639325696', '2026-06-07 16:47:57', '2026-06-07 22:15:56');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-06-07 22:16:04.788', '2026-06-07 22:15:59.788', '2063543465639325696', '2026-06-07 16:47:58', '2026-06-07 22:16:00');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-06-07 22:08:58.092', '2026-06-07 22:07:58.092', '2063543465639325696', '2026-06-07 16:47:58', '2026-06-07 22:07:58');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-06-07 21:48:57.386', '2026-06-07 21:47:57.386', '2063543465639325696', '2026-06-07 16:47:58', '2026-06-07 21:47:57');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-06-07 22:16:15.524', '2026-06-07 22:15:55.524', '2063543465639325696', '2026-06-07 16:47:58', '2026-06-07 22:15:56');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-06-07 22:08:58.092', '2026-06-07 22:07:58.092', '2063543465639325696', '2026-06-07 16:47:58', '2026-06-07 22:07:58');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-06-07 22:16:15.524', '2026-06-07 22:15:55.524', '2063543465639325696', '2026-06-07 16:47:58', '2026-06-07 22:15:56');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -7166,11 +7314,11 @@ CREATE TABLE `sj_group_config`  (
   `group_partition` int(11) NOT NULL COMMENT '分区',
   `id_generator_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '唯一id生成模式 默认号段模式',
   `init_scene` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否初始化场景 0:否 1:是',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_group_config
@@ -7210,20 +7358,20 @@ CREATE TABLE `sj_job`  (
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_job_status_bucket_index`(`job_status`, `bucket_index`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job
 -- ----------------------------
-INSERT INTO `sj_job` VALUES (1, 'dev', 'ruoyi_group', 'demo-job', NULL, 1, 1780127229919, 1, 1, 4, 1, 'testJobExecutor', 2, '600', 1, 60, 3, 1, 1, 116, 0, '', 1, '{}', '', '', 0, '2026-04-15 10:51:35', '2026-05-30 15:37:09');
-INSERT INTO `sj_job` VALUES (2, 'dev', 'ruoyi_group', '应商绩效批量评估任务', '', 1, 1780160400000, 1, 1, 4, 1, 'vendorEvaluationTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 69, 0, '', 1, '{}', '', '', 0, '2026-05-28 10:57:55', '2026-05-30 13:57:09');
-INSERT INTO `sj_job` VALUES (3, 'dev', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1780160400000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-05-30 13:57:09');
+INSERT INTO `sj_job` VALUES (1, 'dev', 'ruoyi_group', 'demo-job', NULL, 1, 1780841907386, 1, 1, 4, 1, 'testJobExecutor', 2, '600', 1, 60, 3, 1, 1, 116, 0, '', 1, '{}', '', '', 0, '2026-04-15 10:51:35', '2026-06-07 22:08:27');
+INSERT INTO `sj_job` VALUES (2, 'dev', 'ruoyi_group', '应商绩效批量评估任务', '', 1, 1780851600000, 1, 1, 4, 1, 'vendorEvaluationTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 69, 0, '', 1, '{}', '', '', 0, '2026-05-28 10:57:55', '2026-06-07 13:15:36');
+INSERT INTO `sj_job` VALUES (3, 'dev', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1780851600000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-06-07 13:15:36');
 
 -- ----------------------------
 -- Table structure for sj_job_executor
@@ -7235,12 +7383,12 @@ CREATE TABLE `sj_job_executor`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `executor_info` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '任务执行器名称',
   `executor_type` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '1:java 2:python 3:go',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_executor
@@ -7257,6 +7405,9 @@ INSERT INTO `sj_job_executor` VALUES (9, 'dev', 'ruoyi_group', 'wechatBillTask',
 INSERT INTO `sj_job_executor` VALUES (10, 'dev', 'ruoyi_group', 'vendorEvaluationTask', '1', '2026-05-28 14:29:38', '2026-05-28 14:29:38');
 INSERT INTO `sj_job_executor` VALUES (11, 'dev', 'ruoyi_group', 'stockAlertTask', '1', '2026-05-28 14:29:38', '2026-05-28 14:29:38');
 INSERT INTO `sj_job_executor` VALUES (12, 'dev', 'ruoyi_group', 'com.nexus.job.snailjob.TestClassJobExecutor', '1', '2026-05-29 10:29:40', '2026-05-29 10:29:39');
+INSERT INTO `sj_job_executor` VALUES (13, 'dev', 'ruoyi_group', 'mqCompensationTask', '1', '2026-06-07 13:16:13', '2026-06-07 13:16:13');
+INSERT INTO `sj_job_executor` VALUES (14, 'dev', 'ruoyi_group', 'mqMessageCompensationTask', '1', '2026-06-07 13:16:13', '2026-06-07 13:16:13');
+INSERT INTO `sj_job_executor` VALUES (15, 'dev', 'ruoyi_group', 'mqReconciliationTask', '1', '2026-06-07 13:16:13', '2026-06-07 13:16:13');
 
 -- ----------------------------
 -- Table structure for sj_job_log_message
@@ -7273,12 +7424,12 @@ CREATE TABLE `sj_job_log_message`  (
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_id`(`task_batch_id`, `task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1738 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1771 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_log_message
@@ -7294,150 +7445,39 @@ INSERT INTO `sj_job_log_message` VALUES (1582, 'dev', 'ruoyi_group', 1, 1484, 13
 INSERT INTO `sj_job_log_message` VALUES (1583, 'dev', 'ruoyi_group', 1, 1492, 1380, '[{\"time_stamp\":\"1778133018807\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-946\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1492] retryCount:[1]. \"},{\"time_stamp\":\"1778133019814\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-946\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1492] retryCount:[2]. \"},{\"time_stamp\":\"1778133020817\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-946\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1492] retryCount:[3]. \"},{\"time_stamp\":\"1778133016760\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-946\",\"message\":\"Task ID:[1380] Task scheduling failed. \"}]', 4, 1778133018807, '', '2026-05-07 13:50:19');
 INSERT INTO `sj_job_log_message` VALUES (1584, 'dev', 'ruoyi_group', 1, 1549, 1437, '[{\"time_stamp\":\"1778136438798\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[1]. \"},{\"time_stamp\":\"1778136439803\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[2]. \"},{\"time_stamp\":\"1778136440812\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[3]. \"},{\"time_stamp\":\"1778136436761\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task ID:[1437] Task scheduling failed. \"}]', 4, 1778136438798, '', '2026-05-07 14:47:19');
 INSERT INTO `sj_job_log_message` VALUES (1585, 'dev', 'ruoyi_group', 1, 1550, 1438, '[{\"time_stamp\":\"1778136498808\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[1]. \"},{\"time_stamp\":\"1778136499821\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[2]. \"},{\"time_stamp\":\"1778136500830\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[3]. \"},{\"time_stamp\":\"1778136496758\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task ID:[1438] Task scheduling failed. \"}]', 4, 1778136498808, '', '2026-05-07 14:48:19');
-INSERT INTO `sj_job_log_message` VALUES (1586, 'dev', 'ruoyi_group', 1, 1613, 1494, '[{\"time_stamp\":\"1779936474761\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1613] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936474776\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,613-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1613,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936474779\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,613-1\",\"message\":\"Task executed successfully taskBatchId:[1613] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936474761, '', '2026-05-28 10:48:00');
-INSERT INTO `sj_job_log_message` VALUES (1587, 'dev', 'ruoyi_group', 1, 1614, 1495, '[{\"time_stamp\":\"1779936534515\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1614] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936534516\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,614-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1614,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936534516\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,614-1\",\"message\":\"Task executed successfully taskBatchId:[1614] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936534515, '', '2026-05-28 10:49:00');
-INSERT INTO `sj_job_log_message` VALUES (1588, 'dev', 'ruoyi_group', 1, 1615, 1496, '[{\"time_stamp\":\"1779936594510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1615] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936594510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,615-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1615,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936594511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,615-1\",\"message\":\"Task executed successfully taskBatchId:[1615] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936594510, '', '2026-05-28 10:50:00');
-INSERT INTO `sj_job_log_message` VALUES (1589, 'dev', 'ruoyi_group', 1, 1616, 1497, '[{\"time_stamp\":\"1779936654511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1616] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936654512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,616-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1616,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936654512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,616-1\",\"message\":\"Task executed successfully taskBatchId:[1616] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936654511, '', '2026-05-28 10:51:00');
-INSERT INTO `sj_job_log_message` VALUES (1590, 'dev', 'ruoyi_group', 1, 1617, 1498, '[{\"time_stamp\":\"1779936714514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1617] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936714514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,617-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1617,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936714514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,617-1\",\"message\":\"Task executed successfully taskBatchId:[1617] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936714514, '', '2026-05-28 10:52:00');
-INSERT INTO `sj_job_log_message` VALUES (1591, 'dev', 'ruoyi_group', 1, 1618, 1499, '[{\"time_stamp\":\"1779936774508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1618] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936774509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,618-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1618,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936774509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,618-1\",\"message\":\"Task executed successfully taskBatchId:[1618] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936774508, '', '2026-05-28 10:53:00');
-INSERT INTO `sj_job_log_message` VALUES (1592, 'dev', 'ruoyi_group', 1, 1619, 1500, '[{\"time_stamp\":\"1779936834511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1619] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936834511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,619-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1619,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936834512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,619-1\",\"message\":\"Task executed successfully taskBatchId:[1619] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936834511, '', '2026-05-28 10:54:00');
-INSERT INTO `sj_job_log_message` VALUES (1593, 'dev', 'ruoyi_group', 1, 1620, 1501, '[{\"time_stamp\":\"1779936894508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1620] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936894508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,620-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1620,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936894509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,620-1\",\"message\":\"Task executed successfully taskBatchId:[1620] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936894508, '', '2026-05-28 10:55:00');
-INSERT INTO `sj_job_log_message` VALUES (1594, 'dev', 'ruoyi_group', 1, 1621, 1502, '[{\"time_stamp\":\"1779936954509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1621] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779936954510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,621-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1621,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779936954510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,621-1\",\"message\":\"Task executed successfully taskBatchId:[1621] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779936954509, '', '2026-05-28 10:56:00');
-INSERT INTO `sj_job_log_message` VALUES (1595, 'dev', 'ruoyi_group', 1, 1622, 1503, '[{\"time_stamp\":\"1779937014509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1622] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937014510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,622-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1622,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937014510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,622-1\",\"message\":\"Task executed successfully taskBatchId:[1622] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937014509, '', '2026-05-28 10:57:00');
-INSERT INTO `sj_job_log_message` VALUES (1596, 'dev', 'ruoyi_group', 1, 1623, 1504, '[{\"time_stamp\":\"1779937074513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1623] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937074514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,623-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1623,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937074514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,623-1\",\"message\":\"Task executed successfully taskBatchId:[1623] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937074513, '', '2026-05-28 10:58:00');
-INSERT INTO `sj_job_log_message` VALUES (1597, 'dev', 'ruoyi_group', 2, 1624, 1505, '[{\"time_stamp\":\"1779937085109\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[2] Task batch:[1624] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937085110\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:19)\",\"thread\":\"snail-job-job-1,624-1\",\"message\":\"开始执行供应商绩效批量评估任务\"},{\"time_stamp\":\"1779937085132\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:22)\",\"thread\":\"snail-job-job-1,624-1\",\"message\":\"供应商绩效批量评估任务执行完成\"},{\"time_stamp\":\"1779937085132\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,624-1\",\"message\":\"Task executed successfully taskBatchId:[1624] [{\\\"status\\\":1,\\\"result\\\":\\\"供应商绩效批量评估完成\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 4, 1779937085109, '', '2026-05-28 10:58:10');
-INSERT INTO `sj_job_log_message` VALUES (1598, 'dev', 'ruoyi_group', 1, 1625, 1506, '[{\"time_stamp\":\"1779937134513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1625] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937134514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,625-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1625,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937134514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,625-1\",\"message\":\"Task executed successfully taskBatchId:[1625] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937134513, '', '2026-05-28 10:59:00');
-INSERT INTO `sj_job_log_message` VALUES (1599, 'dev', 'ruoyi_group', 1, 1626, 1507, '[{\"time_stamp\":\"1779937194511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1626] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937194512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,626-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1626,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937194512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,626-1\",\"message\":\"Task executed successfully taskBatchId:[1626] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937194511, '', '2026-05-28 11:00:00');
-INSERT INTO `sj_job_log_message` VALUES (1600, 'dev', 'ruoyi_group', 1, 1627, 1508, '[{\"time_stamp\":\"1779937254513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1627] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937254514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,627-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1627,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937254514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,627-1\",\"message\":\"Task executed successfully taskBatchId:[1627] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937254513, '', '2026-05-28 11:01:00');
-INSERT INTO `sj_job_log_message` VALUES (1601, 'dev', 'ruoyi_group', 1, 1628, 1509, '[{\"time_stamp\":\"1779937314508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1628] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937314508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,628-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1628,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937314509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,628-1\",\"message\":\"Task executed successfully taskBatchId:[1628] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937314508, '', '2026-05-28 11:02:00');
-INSERT INTO `sj_job_log_message` VALUES (1602, 'dev', 'ruoyi_group', 1, 1629, 1510, '[{\"time_stamp\":\"1779937374511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1629] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937374511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,629-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1629,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937374512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,629-1\",\"message\":\"Task executed successfully taskBatchId:[1629] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937374511, '', '2026-05-28 11:03:00');
-INSERT INTO `sj_job_log_message` VALUES (1603, 'dev', 'ruoyi_group', 1, 1630, 1511, '[{\"time_stamp\":\"1779937434510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1630] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937434511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,630-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1630,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937434511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,630-1\",\"message\":\"Task executed successfully taskBatchId:[1630] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937434510, '', '2026-05-28 11:04:00');
-INSERT INTO `sj_job_log_message` VALUES (1604, 'dev', 'ruoyi_group', 1, 1631, 1512, '[{\"time_stamp\":\"1779937494509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1631] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937494510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,631-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1631,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937494510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,631-1\",\"message\":\"Task executed successfully taskBatchId:[1631] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937494509, '', '2026-05-28 11:05:00');
-INSERT INTO `sj_job_log_message` VALUES (1605, 'dev', 'ruoyi_group', 1, 1632, 1513, '[{\"time_stamp\":\"1779937554512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1632] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937554513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,632-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1632,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937554513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,632-1\",\"message\":\"Task executed successfully taskBatchId:[1632] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937554512, '', '2026-05-28 11:06:00');
-INSERT INTO `sj_job_log_message` VALUES (1606, 'dev', 'ruoyi_group', 1, 1633, 1514, '[{\"time_stamp\":\"1779937614508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1633] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937614508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,633-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1633,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937614508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,633-1\",\"message\":\"Task executed successfully taskBatchId:[1633] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937614508, '', '2026-05-28 11:07:00');
-INSERT INTO `sj_job_log_message` VALUES (1607, 'dev', 'ruoyi_group', 1, 1634, 1515, '[{\"time_stamp\":\"1779937674516\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1634] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937674517\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,634-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1634,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937674517\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,634-1\",\"message\":\"Task executed successfully taskBatchId:[1634] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937674516, '', '2026-05-28 11:08:00');
-INSERT INTO `sj_job_log_message` VALUES (1608, 'dev', 'ruoyi_group', 1, 1635, 1516, '[{\"time_stamp\":\"1779937734510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1635] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937734512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,635-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1635,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937734512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,635-1\",\"message\":\"Task executed successfully taskBatchId:[1635] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937734510, '', '2026-05-28 11:09:00');
-INSERT INTO `sj_job_log_message` VALUES (1609, 'dev', 'ruoyi_group', 1, 1636, 1517, '[{\"time_stamp\":\"1779937794511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1636] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937794512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,636-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1636,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937794513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,636-1\",\"message\":\"Task executed successfully taskBatchId:[1636] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937794511, '', '2026-05-28 11:10:00');
-INSERT INTO `sj_job_log_message` VALUES (1610, 'dev', 'ruoyi_group', 1, 1637, 1518, '[{\"time_stamp\":\"1779937854509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1637] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937854510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,637-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1637,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937854510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,637-1\",\"message\":\"Task executed successfully taskBatchId:[1637] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937854509, '', '2026-05-28 11:11:00');
-INSERT INTO `sj_job_log_message` VALUES (1611, 'dev', 'ruoyi_group', 1, 1638, 1519, '[{\"time_stamp\":\"1779937914511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1638] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937914512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,638-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1638,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937914512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,638-1\",\"message\":\"Task executed successfully taskBatchId:[1638] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937914511, '', '2026-05-28 11:12:00');
-INSERT INTO `sj_job_log_message` VALUES (1612, 'dev', 'ruoyi_group', 1, 1639, 1520, '[{\"time_stamp\":\"1779937974509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1639] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779937974510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,639-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1639,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779937974510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,639-1\",\"message\":\"Task executed successfully taskBatchId:[1639] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779937974509, '', '2026-05-28 11:13:00');
-INSERT INTO `sj_job_log_message` VALUES (1613, 'dev', 'ruoyi_group', 1, 1640, 1521, '[{\"time_stamp\":\"1779938034507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1640] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938034507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,640-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1640,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938034507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,640-1\",\"message\":\"Task executed successfully taskBatchId:[1640] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938034507, '', '2026-05-28 11:14:00');
-INSERT INTO `sj_job_log_message` VALUES (1614, 'dev', 'ruoyi_group', 1, 1641, 1522, '[{\"time_stamp\":\"1779938094510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1641] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938094511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,641-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1641,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938094511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,641-1\",\"message\":\"Task executed successfully taskBatchId:[1641] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938094510, '', '2026-05-28 11:15:00');
-INSERT INTO `sj_job_log_message` VALUES (1615, 'dev', 'ruoyi_group', 1, 1642, 1523, '[{\"time_stamp\":\"1779938154517\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1642] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938154518\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,642-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1642,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938154518\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,642-1\",\"message\":\"Task executed successfully taskBatchId:[1642] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938154517, '', '2026-05-28 11:16:00');
-INSERT INTO `sj_job_log_message` VALUES (1616, 'dev', 'ruoyi_group', 1, 1643, 1524, '[{\"time_stamp\":\"1779938214507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1643] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938214508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,643-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1643,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938214509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,643-1\",\"message\":\"Task executed successfully taskBatchId:[1643] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938214507, '', '2026-05-28 11:17:00');
-INSERT INTO `sj_job_log_message` VALUES (1617, 'dev', 'ruoyi_group', 1, 1644, 1525, '[{\"time_stamp\":\"1779938274513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1644] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938274513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,644-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1644,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938274513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,644-1\",\"message\":\"Task executed successfully taskBatchId:[1644] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938274513, '', '2026-05-28 11:18:00');
-INSERT INTO `sj_job_log_message` VALUES (1618, 'dev', 'ruoyi_group', 1, 1645, 1526, '[{\"time_stamp\":\"1779938334508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1645] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938334508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,645-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1645,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938334508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,645-1\",\"message\":\"Task executed successfully taskBatchId:[1645] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938334508, '', '2026-05-28 11:19:00');
-INSERT INTO `sj_job_log_message` VALUES (1619, 'dev', 'ruoyi_group', 1, 1646, 1527, '[{\"time_stamp\":\"1779938394509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1646] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938394510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,646-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1646,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938394510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,646-1\",\"message\":\"Task executed successfully taskBatchId:[1646] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938394509, '', '2026-05-28 11:20:00');
-INSERT INTO `sj_job_log_message` VALUES (1620, 'dev', 'ruoyi_group', 1, 1647, 1528, '[{\"time_stamp\":\"1779938454510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1647] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938454511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,647-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1647,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938454511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,647-1\",\"message\":\"Task executed successfully taskBatchId:[1647] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938454510, '', '2026-05-28 11:21:00');
-INSERT INTO `sj_job_log_message` VALUES (1621, 'dev', 'ruoyi_group', 1, 1648, 1529, '[{\"time_stamp\":\"1779938514506\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1648] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938514507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,648-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1648,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938514507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,648-1\",\"message\":\"Task executed successfully taskBatchId:[1648] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938514506, '', '2026-05-28 11:22:00');
-INSERT INTO `sj_job_log_message` VALUES (1622, 'dev', 'ruoyi_group', 1, 1649, 1530, '[{\"time_stamp\":\"1779938574512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1649] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938574512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,649-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1649,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938574512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,649-1\",\"message\":\"Task executed successfully taskBatchId:[1649] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938574512, '', '2026-05-28 11:23:00');
-INSERT INTO `sj_job_log_message` VALUES (1623, 'dev', 'ruoyi_group', 1, 1650, 1531, '[{\"time_stamp\":\"1779938634508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1650] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938634509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,650-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1650,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938634509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,650-1\",\"message\":\"Task executed successfully taskBatchId:[1650] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938634508, '', '2026-05-28 11:24:00');
-INSERT INTO `sj_job_log_message` VALUES (1624, 'dev', 'ruoyi_group', 1, 1651, 1532, '[{\"time_stamp\":\"1779938694508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1651] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938694509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,651-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1651,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938694509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,651-1\",\"message\":\"Task executed successfully taskBatchId:[1651] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938694508, '', '2026-05-28 11:25:00');
-INSERT INTO `sj_job_log_message` VALUES (1625, 'dev', 'ruoyi_group', 1, 1652, 1533, '[{\"time_stamp\":\"1779938754520\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1652] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938754521\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,652-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1652,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938754521\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,652-1\",\"message\":\"Task executed successfully taskBatchId:[1652] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938754520, '', '2026-05-28 11:26:00');
-INSERT INTO `sj_job_log_message` VALUES (1626, 'dev', 'ruoyi_group', 1, 1653, 1534, '[{\"time_stamp\":\"1779938814510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1653] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938814511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,653-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1653,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938814511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,653-1\",\"message\":\"Task executed successfully taskBatchId:[1653] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938814510, '', '2026-05-28 11:27:00');
-INSERT INTO `sj_job_log_message` VALUES (1627, 'dev', 'ruoyi_group', 1, 1654, 1535, '[{\"time_stamp\":\"1779938874509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1654] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938874510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,654-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1654,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938874510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,654-1\",\"message\":\"Task executed successfully taskBatchId:[1654] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938874509, '', '2026-05-28 11:28:00');
-INSERT INTO `sj_job_log_message` VALUES (1628, 'dev', 'ruoyi_group', 1, 1655, 1536, '[{\"time_stamp\":\"1779938934523\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1655] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938934524\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,655-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1655,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938934524\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,655-1\",\"message\":\"Task executed successfully taskBatchId:[1655] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938934523, '', '2026-05-28 11:29:00');
-INSERT INTO `sj_job_log_message` VALUES (1629, 'dev', 'ruoyi_group', 1, 1656, 1537, '[{\"time_stamp\":\"1779938994518\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1656] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779938994520\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,656-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1656,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779938994520\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,656-1\",\"message\":\"Task executed successfully taskBatchId:[1656] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779938994518, '', '2026-05-28 11:30:00');
-INSERT INTO `sj_job_log_message` VALUES (1630, 'dev', 'ruoyi_group', 1, 1657, 1538, '[{\"time_stamp\":\"1779939054508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1657] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939054508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,657-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1657,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939054509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,657-1\",\"message\":\"Task executed successfully taskBatchId:[1657] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939054508, '', '2026-05-28 11:31:00');
-INSERT INTO `sj_job_log_message` VALUES (1631, 'dev', 'ruoyi_group', 1, 1658, 1539, '[{\"time_stamp\":\"1779939114512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1658] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939114513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,658-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1658,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939114513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,658-1\",\"message\":\"Task executed successfully taskBatchId:[1658] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939114512, '', '2026-05-28 11:32:00');
-INSERT INTO `sj_job_log_message` VALUES (1632, 'dev', 'ruoyi_group', 1, 1659, 1540, '[{\"time_stamp\":\"1779939174507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1659] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939174508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,659-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1659,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939174508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,659-1\",\"message\":\"Task executed successfully taskBatchId:[1659] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939174507, '', '2026-05-28 11:33:00');
-INSERT INTO `sj_job_log_message` VALUES (1633, 'dev', 'ruoyi_group', 1, 1660, 1541, '[{\"time_stamp\":\"1779939234514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1660] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939234515\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,660-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1660,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939234515\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,660-1\",\"message\":\"Task executed successfully taskBatchId:[1660] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939234514, '', '2026-05-28 11:34:00');
-INSERT INTO `sj_job_log_message` VALUES (1634, 'dev', 'ruoyi_group', 1, 1661, 1542, '[{\"time_stamp\":\"1779939294514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1661] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939294514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,661-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1661,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939294514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,661-1\",\"message\":\"Task executed successfully taskBatchId:[1661] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939294514, '', '2026-05-28 11:35:00');
-INSERT INTO `sj_job_log_message` VALUES (1635, 'dev', 'ruoyi_group', 1, 1662, 1543, '[{\"time_stamp\":\"1779939354510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1662] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939354511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,662-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1662,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939354512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,662-1\",\"message\":\"Task executed successfully taskBatchId:[1662] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939354510, '', '2026-05-28 11:36:00');
-INSERT INTO `sj_job_log_message` VALUES (1636, 'dev', 'ruoyi_group', 1, 1663, 1544, '[{\"time_stamp\":\"1779939414509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1663] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939414509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,663-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1663,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939414509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,663-1\",\"message\":\"Task executed successfully taskBatchId:[1663] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939414509, '', '2026-05-28 11:37:00');
-INSERT INTO `sj_job_log_message` VALUES (1637, 'dev', 'ruoyi_group', 1, 1664, 1545, '[{\"time_stamp\":\"1779939474511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1664] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939474512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,664-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1664,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939474512\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,664-1\",\"message\":\"Task executed successfully taskBatchId:[1664] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939474511, '', '2026-05-28 11:38:00');
-INSERT INTO `sj_job_log_message` VALUES (1638, 'dev', 'ruoyi_group', 1, 1665, 1546, '[{\"time_stamp\":\"1779939534511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1665] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939534511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,665-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1665,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939534511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,665-1\",\"message\":\"Task executed successfully taskBatchId:[1665] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939534511, '', '2026-05-28 11:39:00');
-INSERT INTO `sj_job_log_message` VALUES (1639, 'dev', 'ruoyi_group', 1, 1666, 1547, '[{\"time_stamp\":\"1779939594510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1666] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939594510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,666-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1666,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939594511\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,666-1\",\"message\":\"Task executed successfully taskBatchId:[1666] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939594510, '', '2026-05-28 11:40:00');
-INSERT INTO `sj_job_log_message` VALUES (1640, 'dev', 'ruoyi_group', 1, 1667, 1548, '[{\"time_stamp\":\"1779939654508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1667] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939654509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,667-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1667,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939654509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,667-1\",\"message\":\"Task executed successfully taskBatchId:[1667] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939654508, '', '2026-05-28 11:41:00');
-INSERT INTO `sj_job_log_message` VALUES (1641, 'dev', 'ruoyi_group', 1, 1668, 1549, '[{\"time_stamp\":\"1779939714513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1668] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939714514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,668-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1668,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939714514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,668-1\",\"message\":\"Task executed successfully taskBatchId:[1668] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939714513, '', '2026-05-28 11:42:00');
-INSERT INTO `sj_job_log_message` VALUES (1642, 'dev', 'ruoyi_group', 1, 1669, 1550, '[{\"time_stamp\":\"1779939774612\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1669] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939774613\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,669-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1669,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939774613\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,669-1\",\"message\":\"Task executed successfully taskBatchId:[1669] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939774612, '', '2026-05-28 11:43:00');
-INSERT INTO `sj_job_log_message` VALUES (1643, 'dev', 'ruoyi_group', 1, 1670, 1551, '[{\"time_stamp\":\"1779939834508\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1670] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939834509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,670-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1670,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939834509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,670-1\",\"message\":\"Task executed successfully taskBatchId:[1670] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939834508, '', '2026-05-28 11:44:00');
-INSERT INTO `sj_job_log_message` VALUES (1644, 'dev', 'ruoyi_group', 1, 1671, 1552, '[{\"time_stamp\":\"1779939894506\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1671] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939894507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,671-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1671,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939894507\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,671-1\",\"message\":\"Task executed successfully taskBatchId:[1671] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939894506, '', '2026-05-28 11:45:00');
-INSERT INTO `sj_job_log_message` VALUES (1645, 'dev', 'ruoyi_group', 1, 1672, 1553, '[{\"time_stamp\":\"1779939954509\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1672] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779939954510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,672-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1672,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779939954510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,672-1\",\"message\":\"Task executed successfully taskBatchId:[1672] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779939954509, '', '2026-05-28 11:46:00');
-INSERT INTO `sj_job_log_message` VALUES (1646, 'dev', 'ruoyi_group', 1, 1673, 1554, '[{\"time_stamp\":\"1779940014514\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1673] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779940014515\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,673-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1673,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779940014515\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,673-1\",\"message\":\"Task executed successfully taskBatchId:[1673] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779940014514, '', '2026-05-28 11:47:00');
-INSERT INTO `sj_job_log_message` VALUES (1647, 'dev', 'ruoyi_group', 1, 1674, 1555, '[{\"time_stamp\":\"1779940627123\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1674] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779940627124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,674-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1674,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779940627124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,674-1\",\"message\":\"Task executed successfully taskBatchId:[1674] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779940627123, '', '2026-05-28 11:57:12');
-INSERT INTO `sj_job_log_message` VALUES (1648, 'dev', 'ruoyi_group', 1, 1675, 1556, '[{\"time_stamp\":\"1779941227113\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1675] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779941227114\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,675-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1675,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779941227114\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,675-1\",\"message\":\"Task executed successfully taskBatchId:[1675] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779941227113, '', '2026-05-28 12:07:12');
-INSERT INTO `sj_job_log_message` VALUES (1649, 'dev', 'ruoyi_group', 1, 1676, 1557, '[{\"time_stamp\":\"1779941827113\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1676] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779941827114\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,676-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1676,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779941827114\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,676-1\",\"message\":\"Task executed successfully taskBatchId:[1676] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779941827113, '', '2026-05-28 12:17:12');
-INSERT INTO `sj_job_log_message` VALUES (1650, 'dev', 'ruoyi_group', 1, 1677, 1558, '[{\"time_stamp\":\"1779942427113\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1677] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779942427115\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,677-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1677,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779942427115\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,677-1\",\"message\":\"Task executed successfully taskBatchId:[1677] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779942427113, '', '2026-05-28 12:27:12');
-INSERT INTO `sj_job_log_message` VALUES (1651, 'dev', 'ruoyi_group', 1, 1678, 1559, '[{\"time_stamp\":\"1779943027121\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1678] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779943027121\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,678-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1678,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779943027122\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,678-1\",\"message\":\"Task executed successfully taskBatchId:[1678] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779943027121, '', '2026-05-28 12:37:12');
-INSERT INTO `sj_job_log_message` VALUES (1652, 'dev', 'ruoyi_group', 1, 1679, 1560, '[{\"time_stamp\":\"1779943627119\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1679] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779943627120\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,679-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1679,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779943627120\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,679-1\",\"message\":\"Task executed successfully taskBatchId:[1679] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779943627119, '', '2026-05-28 12:47:12');
-INSERT INTO `sj_job_log_message` VALUES (1653, 'dev', 'ruoyi_group', 1, 1680, 1561, '[{\"time_stamp\":\"1779944227124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1680] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779944227125\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,680-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1680,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779944227125\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,680-1\",\"message\":\"Task executed successfully taskBatchId:[1680] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779944227124, '', '2026-05-28 12:57:12');
-INSERT INTO `sj_job_log_message` VALUES (1654, 'dev', 'ruoyi_group', 1, 1681, 1562, '[{\"time_stamp\":\"1779944827121\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1681] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779944827121\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,681-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1681,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779944827122\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,681-1\",\"message\":\"Task executed successfully taskBatchId:[1681] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779944827121, '', '2026-05-28 13:07:12');
-INSERT INTO `sj_job_log_message` VALUES (1655, 'dev', 'ruoyi_group', 1, 1682, 1563, '[{\"time_stamp\":\"1779945427112\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1682] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779945427113\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,682-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1682,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779945427113\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,682-1\",\"message\":\"Task executed successfully taskBatchId:[1682] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779945427112, '', '2026-05-28 13:17:12');
-INSERT INTO `sj_job_log_message` VALUES (1656, 'dev', 'ruoyi_group', 1, 1683, 1564, '[{\"time_stamp\":\"1779946027118\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1683] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779946027118\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,683-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1683,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779946027119\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,683-1\",\"message\":\"Task executed successfully taskBatchId:[1683] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779946027118, '', '2026-05-28 13:27:12');
-INSERT INTO `sj_job_log_message` VALUES (1657, 'dev', 'ruoyi_group', 1, 1684, 1565, '[{\"time_stamp\":\"1779946627119\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1684] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779946627120\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,684-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1684,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779946627120\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,684-1\",\"message\":\"Task executed successfully taskBatchId:[1684] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779946627119, '', '2026-05-28 13:37:12');
-INSERT INTO `sj_job_log_message` VALUES (1658, 'dev', 'ruoyi_group', 1, 1685, 1566, '[{\"time_stamp\":\"1779947227124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1685] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779947227124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,685-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1685,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779947227124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,685-1\",\"message\":\"Task executed successfully taskBatchId:[1685] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779947227124, '', '2026-05-28 13:47:12');
-INSERT INTO `sj_job_log_message` VALUES (1659, 'dev', 'ruoyi_group', 1, 1686, 1567, '[{\"time_stamp\":\"1779947827130\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1686] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779947827131\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,686-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1686,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779947827131\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,686-1\",\"message\":\"Task executed successfully taskBatchId:[1686] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779947827130, '', '2026-05-28 13:57:12');
-INSERT INTO `sj_job_log_message` VALUES (1660, 'dev', 'ruoyi_group', 1, 1687, 1568, '[{\"time_stamp\":\"1779948427120\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1687] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779948427121\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,687-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1687,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779948427121\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,687-1\",\"message\":\"Task executed successfully taskBatchId:[1687] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779948427120, '', '2026-05-28 14:07:12');
-INSERT INTO `sj_job_log_message` VALUES (1661, 'dev', 'ruoyi_group', 1, 1688, 1569, '[{\"time_stamp\":\"1779949027123\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1688] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779949027123\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,688-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1688,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779949027124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,688-1\",\"message\":\"Task executed successfully taskBatchId:[1688] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779949027123, '', '2026-05-28 14:17:12');
-INSERT INTO `sj_job_log_message` VALUES (1662, 'dev', 'ruoyi_group', 1, 1690, 1570, '[{\"time_stamp\":\"1779950227247\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1690] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779950227260\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,690-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1690,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779950227262\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,690-1\",\"message\":\"Task executed successfully taskBatchId:[1690] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779950227247, '', '2026-05-28 14:37:12');
-INSERT INTO `sj_job_log_message` VALUES (1663, 'dev', 'ruoyi_group', 1, 1700, 1571, '[{\"time_stamp\":\"1779956227264\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1700] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779956227279\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,700-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1700,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779956227281\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,700-1\",\"message\":\"Task executed successfully taskBatchId:[1700] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779956227264, '', '2026-05-28 16:17:12');
-INSERT INTO `sj_job_log_message` VALUES (1664, 'dev', 'ruoyi_group', 1, 1701, 1572, '[{\"time_stamp\":\"1779956827115\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1701] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779956827117\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,701-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1701,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779956827117\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,701-1\",\"message\":\"Task executed successfully taskBatchId:[1701] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779956827115, '', '2026-05-28 16:27:12');
-INSERT INTO `sj_job_log_message` VALUES (1665, 'dev', 'ruoyi_group', 1, 1702, 1573, '[{\"time_stamp\":\"1779957427128\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1702] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779957427129\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,702-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1702,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779957427130\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,702-1\",\"message\":\"Task executed successfully taskBatchId:[1702] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779957427128, '', '2026-05-28 16:37:12');
-INSERT INTO `sj_job_log_message` VALUES (1670, 'dev', 'ruoyi_group', 1, 1705, 1575, '[{\"time_stamp\":\"1779959227212\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1705] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779959227223\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,705-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1705,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779959227224\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,705-1\",\"message\":\"Task executed successfully taskBatchId:[1705] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779959227212, '', '2026-05-28 17:07:12');
-INSERT INTO `sj_job_log_message` VALUES (1675, 'dev', 'ruoyi_group', 1, 1707, 1577, '[{\"time_stamp\":\"1779960427187\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1707] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779960427199\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,707-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1707,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779960427201\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,707-1\",\"message\":\"Task executed successfully taskBatchId:[1707] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779960427187, '', '2026-05-28 17:27:12');
-INSERT INTO `sj_job_log_message` VALUES (1676, 'dev', 'ruoyi_group', 1, 1708, 1578, '[{\"time_stamp\":\"1779961027201\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1708] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779961027201\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,708-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1708,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779961027202\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,708-1\",\"message\":\"Task executed successfully taskBatchId:[1708] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779961027201, '', '2026-05-28 17:37:12');
-INSERT INTO `sj_job_log_message` VALUES (1677, 'dev', 'ruoyi_group', 1, 1709, 1579, '[{\"time_stamp\":\"1779961627121\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1709] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779961627122\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,709-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1709,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779961627122\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,709-1\",\"message\":\"Task executed successfully taskBatchId:[1709] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779961627121, '', '2026-05-28 17:47:12');
-INSERT INTO `sj_job_log_message` VALUES (1678, 'dev', 'ruoyi_group', 1, 1710, 1580, '[{\"time_stamp\":\"1779962227123\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1710] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779962227124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,710-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1710,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779962227124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,710-1\",\"message\":\"Task executed successfully taskBatchId:[1710] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779962227123, '', '2026-05-28 17:57:12');
-INSERT INTO `sj_job_log_message` VALUES (1679, 'dev', 'ruoyi_group', 1, 1711, 1581, '[{\"time_stamp\":\"1779962827122\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1711] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779962827123\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,711-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1711,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779962827123\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,711-1\",\"message\":\"Task executed successfully taskBatchId:[1711] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779962827122, '', '2026-05-28 18:07:12');
-INSERT INTO `sj_job_log_message` VALUES (1680, 'dev', 'ruoyi_group', 1, 1712, 1582, '[{\"time_stamp\":\"1779963427125\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1712] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779963427127\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,712-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1712,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779963427127\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,712-1\",\"message\":\"Task executed successfully taskBatchId:[1712] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779963427125, '', '2026-05-28 18:17:12');
-INSERT INTO `sj_job_log_message` VALUES (1681, 'dev', 'ruoyi_group', 1, 1713, 1583, '[{\"time_stamp\":\"1779964027124\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1713] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1779964027125\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"org.dromara.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,713-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1713,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1779964027125\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,713-1\",\"message\":\"Task executed successfully taskBatchId:[1713] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1779964027124, '', '2026-05-28 18:27:12');
-INSERT INTO `sj_job_log_message` VALUES (1682, 'dev', 'ruoyi_group', 1, 1717, 1584, '[{\"time_stamp\":\"1780022379679\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1717] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780022379692\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,717-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1717,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780022379693\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,717-1\",\"message\":\"Task executed successfully taskBatchId:[1717] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780022379679, '', '2026-05-29 10:39:45');
-INSERT INTO `sj_job_log_message` VALUES (1683, 'dev', 'ruoyi_group', 1, 1721, 1585, '[{\"time_stamp\":\"1780025037794\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1721] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780025037807\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,721-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1721,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780025037809\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,721-1\",\"message\":\"Task executed successfully taskBatchId:[1721] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780025037794, '', '2026-05-29 11:24:03');
-INSERT INTO `sj_job_log_message` VALUES (1684, 'dev', 'ruoyi_group', 1, 1722, 1586, '[{\"time_stamp\":\"1780025637559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1722] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780025637560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,722-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1722,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780025637560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,722-1\",\"message\":\"Task executed successfully taskBatchId:[1722] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780025637559, '', '2026-05-29 11:34:03');
-INSERT INTO `sj_job_log_message` VALUES (1685, 'dev', 'ruoyi_group', 1, 1723, 1587, '[{\"time_stamp\":\"1780026237558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1723] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780026237558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,723-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1723,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780026237559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,723-1\",\"message\":\"Task executed successfully taskBatchId:[1723] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780026237558, '', '2026-05-29 11:44:03');
-INSERT INTO `sj_job_log_message` VALUES (1686, 'dev', 'ruoyi_group', 1, 1724, 1588, '[{\"time_stamp\":\"1780026837563\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1724] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780026837564\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,724-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1724,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780026837564\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,724-1\",\"message\":\"Task executed successfully taskBatchId:[1724] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780026837563, '', '2026-05-29 11:54:03');
-INSERT INTO `sj_job_log_message` VALUES (1687, 'dev', 'ruoyi_group', 1, 1725, 1589, '[{\"time_stamp\":\"1780027437553\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1725] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780027437554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,725-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1725,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780027437554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,725-1\",\"message\":\"Task executed successfully taskBatchId:[1725] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780027437553, '', '2026-05-29 12:04:03');
-INSERT INTO `sj_job_log_message` VALUES (1688, 'dev', 'ruoyi_group', 1, 1726, 1590, '[{\"time_stamp\":\"1780028037560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1726] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780028037561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,726-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1726,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780028037561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,726-1\",\"message\":\"Task executed successfully taskBatchId:[1726] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780028037560, '', '2026-05-29 12:14:03');
-INSERT INTO `sj_job_log_message` VALUES (1689, 'dev', 'ruoyi_group', 1, 1727, 1591, '[{\"time_stamp\":\"1780028637560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1727] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780028637560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,727-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1727,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780028637561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,727-1\",\"message\":\"Task executed successfully taskBatchId:[1727] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780028637560, '', '2026-05-29 12:24:03');
-INSERT INTO `sj_job_log_message` VALUES (1690, 'dev', 'ruoyi_group', 1, 1728, 1592, '[{\"time_stamp\":\"1780029237553\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1728] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780029237554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,728-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1728,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780029237554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,728-1\",\"message\":\"Task executed successfully taskBatchId:[1728] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780029237553, '', '2026-05-29 12:34:03');
-INSERT INTO `sj_job_log_message` VALUES (1691, 'dev', 'ruoyi_group', 1, 1729, 1593, '[{\"time_stamp\":\"1780029837559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1729] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780029837560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,729-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1729,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780029837560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,729-1\",\"message\":\"Task executed successfully taskBatchId:[1729] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780029837559, '', '2026-05-29 12:44:03');
-INSERT INTO `sj_job_log_message` VALUES (1692, 'dev', 'ruoyi_group', 1, 1730, 1594, '[{\"time_stamp\":\"1780030437556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1730] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780030437557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,730-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1730,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780030437557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,730-1\",\"message\":\"Task executed successfully taskBatchId:[1730] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780030437556, '', '2026-05-29 12:54:03');
-INSERT INTO `sj_job_log_message` VALUES (1693, 'dev', 'ruoyi_group', 1, 1731, 1595, '[{\"time_stamp\":\"1780031037556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1731] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780031037557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,731-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1731,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780031037557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,731-1\",\"message\":\"Task executed successfully taskBatchId:[1731] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780031037556, '', '2026-05-29 13:04:03');
-INSERT INTO `sj_job_log_message` VALUES (1694, 'dev', 'ruoyi_group', 1, 1732, 1596, '[{\"time_stamp\":\"1780031637558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1732] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780031637559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,732-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1732,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780031637559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,732-1\",\"message\":\"Task executed successfully taskBatchId:[1732] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780031637558, '', '2026-05-29 13:14:03');
-INSERT INTO `sj_job_log_message` VALUES (1695, 'dev', 'ruoyi_group', 1, 1733, 1597, '[{\"time_stamp\":\"1780032237557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1733] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780032237557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,733-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1733,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780032237557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,733-1\",\"message\":\"Task executed successfully taskBatchId:[1733] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780032237557, '', '2026-05-29 13:24:03');
-INSERT INTO `sj_job_log_message` VALUES (1696, 'dev', 'ruoyi_group', 1, 1734, 1598, '[{\"time_stamp\":\"1780032837555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1734] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780032837555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,734-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1734,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780032837556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,734-1\",\"message\":\"Task executed successfully taskBatchId:[1734] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780032837555, '', '2026-05-29 13:34:03');
-INSERT INTO `sj_job_log_message` VALUES (1697, 'dev', 'ruoyi_group', 1, 1735, 1599, '[{\"time_stamp\":\"1780033437554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1735] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780033437555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,735-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1735,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780033437555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,735-1\",\"message\":\"Task executed successfully taskBatchId:[1735] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780033437554, '', '2026-05-29 13:44:03');
-INSERT INTO `sj_job_log_message` VALUES (1698, 'dev', 'ruoyi_group', 1, 1736, 1600, '[{\"time_stamp\":\"1780034037556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1736] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780034037557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,736-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1736,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780034037557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,736-1\",\"message\":\"Task executed successfully taskBatchId:[1736] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780034037556, '', '2026-05-29 13:54:03');
-INSERT INTO `sj_job_log_message` VALUES (1699, 'dev', 'ruoyi_group', 1, 1737, 1601, '[{\"time_stamp\":\"1780034637555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1737] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780034637556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,737-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1737,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780034637556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,737-1\",\"message\":\"Task executed successfully taskBatchId:[1737] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780034637555, '', '2026-05-29 14:04:03');
-INSERT INTO `sj_job_log_message` VALUES (1700, 'dev', 'ruoyi_group', 1, 1738, 1602, '[{\"time_stamp\":\"1780035237553\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1738] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780035237553\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,738-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1738,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780035237554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,738-1\",\"message\":\"Task executed successfully taskBatchId:[1738] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780035237553, '', '2026-05-29 14:14:03');
-INSERT INTO `sj_job_log_message` VALUES (1701, 'dev', 'ruoyi_group', 1, 1739, 1603, '[{\"time_stamp\":\"1780035837557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1739] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780035837558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,739-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1739,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780035837558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,739-1\",\"message\":\"Task executed successfully taskBatchId:[1739] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780035837557, '', '2026-05-29 14:24:03');
-INSERT INTO `sj_job_log_message` VALUES (1702, 'dev', 'ruoyi_group', 1, 1740, 1604, '[{\"time_stamp\":\"1780036437557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1740] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780036437558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,740-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1740,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780036437558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,740-1\",\"message\":\"Task executed successfully taskBatchId:[1740] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780036437557, '', '2026-05-29 14:34:03');
-INSERT INTO `sj_job_log_message` VALUES (1703, 'dev', 'ruoyi_group', 1, 1741, 1605, '[{\"time_stamp\":\"1780037037561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1741] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780037037562\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,741-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1741,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780037037562\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,741-1\",\"message\":\"Task executed successfully taskBatchId:[1741] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780037037561, '', '2026-05-29 14:44:03');
-INSERT INTO `sj_job_log_message` VALUES (1704, 'dev', 'ruoyi_group', 1, 1742, 1606, '[{\"time_stamp\":\"1780037637560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1742] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780037637561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,742-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1742,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780037637562\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,742-1\",\"message\":\"Task executed successfully taskBatchId:[1742] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780037637560, '', '2026-05-29 14:54:03');
-INSERT INTO `sj_job_log_message` VALUES (1705, 'dev', 'ruoyi_group', 1, 1743, 1607, '[{\"time_stamp\":\"1780038237554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1743] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780038237555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,743-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1743,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780038237555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,743-1\",\"message\":\"Task executed successfully taskBatchId:[1743] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780038237554, '', '2026-05-29 15:04:03');
-INSERT INTO `sj_job_log_message` VALUES (1706, 'dev', 'ruoyi_group', 1, 1744, 1608, '[{\"time_stamp\":\"1780038837560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1744] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780038837561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,744-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1744,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780038837561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,744-1\",\"message\":\"Task executed successfully taskBatchId:[1744] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780038837560, '', '2026-05-29 15:14:03');
-INSERT INTO `sj_job_log_message` VALUES (1707, 'dev', 'ruoyi_group', 1, 1745, 1609, '[{\"time_stamp\":\"1780039437564\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1745] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780039437565\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,745-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1745,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780039437565\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,745-1\",\"message\":\"Task executed successfully taskBatchId:[1745] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780039437564, '', '2026-05-29 15:24:03');
-INSERT INTO `sj_job_log_message` VALUES (1708, 'dev', 'ruoyi_group', 1, 1746, 1610, '[{\"time_stamp\":\"1780040037555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1746] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780040037556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,746-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1746,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780040037556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,746-1\",\"message\":\"Task executed successfully taskBatchId:[1746] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780040037555, '', '2026-05-29 15:34:03');
-INSERT INTO `sj_job_log_message` VALUES (1709, 'dev', 'ruoyi_group', 1, 1747, 1611, '[{\"time_stamp\":\"1780040637558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1747] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780040637559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,747-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1747,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780040637559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,747-1\",\"message\":\"Task executed successfully taskBatchId:[1747] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780040637558, '', '2026-05-29 15:44:03');
-INSERT INTO `sj_job_log_message` VALUES (1710, 'dev', 'ruoyi_group', 1, 1748, 1612, '[{\"time_stamp\":\"1780041237557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1748] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780041237558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,748-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1748,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780041237558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,748-1\",\"message\":\"Task executed successfully taskBatchId:[1748] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780041237557, '', '2026-05-29 15:54:03');
-INSERT INTO `sj_job_log_message` VALUES (1711, 'dev', 'ruoyi_group', 1, 1749, 1613, '[{\"time_stamp\":\"1780041837556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1749] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780041837557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,749-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1749,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780041837557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,749-1\",\"message\":\"Task executed successfully taskBatchId:[1749] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780041837556, '', '2026-05-29 16:04:03');
-INSERT INTO `sj_job_log_message` VALUES (1712, 'dev', 'ruoyi_group', 1, 1750, 1614, '[{\"time_stamp\":\"1780042437555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1750] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780042437556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,750-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1750,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780042437556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,750-1\",\"message\":\"Task executed successfully taskBatchId:[1750] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780042437555, '', '2026-05-29 16:14:03');
-INSERT INTO `sj_job_log_message` VALUES (1713, 'dev', 'ruoyi_group', 1, 1751, 1615, '[{\"time_stamp\":\"1780043037558\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1751] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780043037559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,751-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1751,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780043037559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,751-1\",\"message\":\"Task executed successfully taskBatchId:[1751] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780043037558, '', '2026-05-29 16:24:03');
-INSERT INTO `sj_job_log_message` VALUES (1714, 'dev', 'ruoyi_group', 1, 1752, 1616, '[{\"time_stamp\":\"1780043637556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1752] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780043637557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,752-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1752,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780043637557\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,752-1\",\"message\":\"Task executed successfully taskBatchId:[1752] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780043637556, '', '2026-05-29 16:34:03');
-INSERT INTO `sj_job_log_message` VALUES (1715, 'dev', 'ruoyi_group', 1, 1753, 1617, '[{\"time_stamp\":\"1780044237554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1753] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780044237554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,753-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1753,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780044237554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,753-1\",\"message\":\"Task executed successfully taskBatchId:[1753] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780044237554, '', '2026-05-29 16:44:03');
-INSERT INTO `sj_job_log_message` VALUES (1716, 'dev', 'ruoyi_group', 1, 1703, 1574, '[{\"time_stamp\":\"1779958029186\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-369\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1703] retryCount:[1]. \"},{\"time_stamp\":\"1779958030214\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-369\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1703] retryCount:[2]. \"},{\"time_stamp\":\"1779958031218\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-369\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1703] retryCount:[3]. \"},{\"time_stamp\":\"1779958027118\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-369\",\"message\":\"Task ID:[1574] Task scheduling failed. \"}]', 4, 1779958029186, '', '2026-05-28 16:47:09');
-INSERT INTO `sj_job_log_message` VALUES (1717, 'dev', 'ruoyi_group', 1, 1754, 1618, '[{\"time_stamp\":\"1780044837553\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1754] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780044837554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,754-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1754,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780044837554\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,754-1\",\"message\":\"Task executed successfully taskBatchId:[1754] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780044837553, '', '2026-05-29 16:54:03');
-INSERT INTO `sj_job_log_message` VALUES (1718, 'dev', 'ruoyi_group', 1, 1755, 1619, '[{\"time_stamp\":\"1780045437561\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1755] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780045437562\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,755-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1755,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780045437562\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,755-1\",\"message\":\"Task executed successfully taskBatchId:[1755] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780045437561, '', '2026-05-29 17:04:03');
-INSERT INTO `sj_job_log_message` VALUES (1719, 'dev', 'ruoyi_group', 1, 1756, 1620, '[{\"time_stamp\":\"1780046037559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1756] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780046037559\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,756-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1756,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780046037560\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,756-1\",\"message\":\"Task executed successfully taskBatchId:[1756] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780046037559, '', '2026-05-29 17:14:03');
-INSERT INTO `sj_job_log_message` VALUES (1720, 'dev', 'ruoyi_group', 1, 1706, 1576, '[{\"time_stamp\":\"1779959829144\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-381\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1706] retryCount:[1]. \"},{\"time_stamp\":\"1779959830150\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-381\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1706] retryCount:[2]. \"},{\"time_stamp\":\"1779959831161\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-381\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1706] retryCount:[3]. \"},{\"time_stamp\":\"1779959827105\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-381\",\"message\":\"Task ID:[1576] Task scheduling failed. \"}]', 4, 1779959829144, '', '2026-05-28 17:17:09');
-INSERT INTO `sj_job_log_message` VALUES (1721, 'dev', 'ruoyi_group', 1, 1757, 1621, '[{\"time_stamp\":\"1780046637555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1757] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780046637555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,757-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1757,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780046637556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,757-1\",\"message\":\"Task executed successfully taskBatchId:[1757] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780046637555, '', '2026-05-29 17:24:03');
-INSERT INTO `sj_job_log_message` VALUES (1722, 'dev', 'ruoyi_group', 1, 1758, 1622, '[{\"time_stamp\":\"1780047237555\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1758] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780047237556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,758-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1758,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780047237556\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,758-1\",\"message\":\"Task executed successfully taskBatchId:[1758] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780047237555, '', '2026-05-29 17:34:03');
-INSERT INTO `sj_job_log_message` VALUES (1723, 'dev', 'ruoyi_group', 1, 1761, 1623, '[{\"time_stamp\":\"1780072715180\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1761] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780072715190\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,761-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1761,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780072715192\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,761-1\",\"message\":\"Task executed successfully taskBatchId:[1761] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780072715180, '', '2026-05-30 00:38:40');
-INSERT INTO `sj_job_log_message` VALUES (1724, 'dev', 'ruoyi_group', 1, 1762, 1624, '[{\"time_stamp\":\"1780073317000\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[1]. \"}]', 1, 1780073317000, '', '2026-05-30 00:48:37');
-INSERT INTO `sj_job_log_message` VALUES (1725, 'dev', 'ruoyi_group', 1, 1762, 1624, '[{\"time_stamp\":\"1780073318012\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[2]. \"}]', 1, 1780073318012, '', '2026-05-30 00:48:38');
-INSERT INTO `sj_job_log_message` VALUES (1726, 'dev', 'ruoyi_group', 1, 1762, 1624, '[{\"time_stamp\":\"1780073319015\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[3]. \"}]', 1, 1780073319015, '', '2026-05-30 00:48:39');
-INSERT INTO `sj_job_log_message` VALUES (1727, 'dev', 'ruoyi_group', 1, 1762, 1624, '[{\"time_stamp\":\"1780073314961\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task ID:[1624] Task scheduling failed. \"}]', 1, 1780073314961, '', '2026-05-30 00:48:39');
-INSERT INTO `sj_job_log_message` VALUES (1728, 'dev', 'ruoyi_group', 1, 1766, 1625, '[{\"time_stamp\":\"1780121230140\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1766] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780121230148\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,766-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1766,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780121230150\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,766-1\",\"message\":\"Task executed successfully taskBatchId:[1766] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780121230140, '', '2026-05-30 14:07:15');
-INSERT INTO `sj_job_log_message` VALUES (1729, 'dev', 'ruoyi_group', 1, 1767, 1626, '[{\"time_stamp\":\"1780121829951\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1767] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780121829952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,767-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1767,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780121829952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,767-1\",\"message\":\"Task executed successfully taskBatchId:[1767] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780121829951, '', '2026-05-30 14:17:15');
-INSERT INTO `sj_job_log_message` VALUES (1730, 'dev', 'ruoyi_group', 1, 1768, 1627, '[{\"time_stamp\":\"1780122429939\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1768] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780122429939\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,768-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1768,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780122429939\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,768-1\",\"message\":\"Task executed successfully taskBatchId:[1768] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780122429939, '', '2026-05-30 14:27:15');
-INSERT INTO `sj_job_log_message` VALUES (1731, 'dev', 'ruoyi_group', 1, 1769, 1628, '[{\"time_stamp\":\"1780123029944\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1769] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780123029944\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,769-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1769,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780123029945\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,769-1\",\"message\":\"Task executed successfully taskBatchId:[1769] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780123029944, '', '2026-05-30 14:37:15');
-INSERT INTO `sj_job_log_message` VALUES (1732, 'dev', 'ruoyi_group', 1, 1770, 1629, '[{\"time_stamp\":\"1780123629942\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1770] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780123629943\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,770-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1770,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780123629943\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,770-1\",\"message\":\"Task executed successfully taskBatchId:[1770] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780123629942, '', '2026-05-30 14:47:15');
-INSERT INTO `sj_job_log_message` VALUES (1733, 'dev', 'ruoyi_group', 1, 1771, 1630, '[{\"time_stamp\":\"1780124229939\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1771] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780124229940\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,771-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1771,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780124229940\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,771-1\",\"message\":\"Task executed successfully taskBatchId:[1771] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780124229939, '', '2026-05-30 14:57:15');
-INSERT INTO `sj_job_log_message` VALUES (1734, 'dev', 'ruoyi_group', 1, 1772, 1631, '[{\"time_stamp\":\"1780124829952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1772] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780124829952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,772-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1772,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780124829952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,772-1\",\"message\":\"Task executed successfully taskBatchId:[1772] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780124829952, '', '2026-05-30 15:07:15');
-INSERT INTO `sj_job_log_message` VALUES (1735, 'dev', 'ruoyi_group', 1, 1773, 1632, '[{\"time_stamp\":\"1780125429945\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1773] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780125429946\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,773-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1773,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780125429946\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,773-1\",\"message\":\"Task executed successfully taskBatchId:[1773] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780125429945, '', '2026-05-30 15:17:15');
-INSERT INTO `sj_job_log_message` VALUES (1736, 'dev', 'ruoyi_group', 1, 1774, 1633, '[{\"time_stamp\":\"1780126029948\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1774] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780126029948\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,774-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1774,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780126029948\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,774-1\",\"message\":\"Task executed successfully taskBatchId:[1774] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780126029948, '', '2026-05-30 15:27:15');
-INSERT INTO `sj_job_log_message` VALUES (1737, 'dev', 'ruoyi_group', 1, 1775, 1634, '[{\"time_stamp\":\"1780126629953\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1775] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780126629955\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,775-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1775,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780126629955\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,775-1\",\"message\":\"Task executed successfully taskBatchId:[1775] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780126629953, '', '2026-05-30 15:37:15');
+INSERT INTO `sj_job_log_message` VALUES (1738, 'dev', 'ruoyi_group', 1, 1762, 1624, '[{\"time_stamp\":\"1780073317000\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[1]. \"},{\"time_stamp\":\"1780073318012\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[2]. \"},{\"time_stamp\":\"1780073319015\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[3]. \"},{\"time_stamp\":\"1780073314961\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task ID:[1624] Task scheduling failed. \"}]', 4, 1780073317000, '', '2026-05-30 00:48:37');
+INSERT INTO `sj_job_log_message` VALUES (1739, 'dev', 'ruoyi_group', 1, 1780, 1635, '[{\"time_stamp\":\"1780822707619\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1780] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780822707628\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,780-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1780,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780822707629\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,780-1\",\"message\":\"Task executed successfully taskBatchId:[1780] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780822707619, '', '2026-06-07 16:58:33');
+INSERT INTO `sj_job_log_message` VALUES (1740, 'dev', 'ruoyi_group', 1, 1781, 1636, '[{\"time_stamp\":\"1780823307413\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1781] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780823307413\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,781-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1781,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780823307414\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,781-1\",\"message\":\"Task executed successfully taskBatchId:[1781] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780823307413, '', '2026-06-07 17:08:32');
+INSERT INTO `sj_job_log_message` VALUES (1741, 'dev', 'ruoyi_group', 1, 1782, 1637, '[{\"time_stamp\":\"1780823907416\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1782] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780823907416\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,782-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1782,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780823907416\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,782-1\",\"message\":\"Task executed successfully taskBatchId:[1782] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780823907416, '', '2026-06-07 17:18:32');
+INSERT INTO `sj_job_log_message` VALUES (1742, 'dev', 'ruoyi_group', 1, 1783, 1638, '[{\"time_stamp\":\"1780824507406\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1783] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780824507407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,783-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1783,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780824507407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,783-1\",\"message\":\"Task executed successfully taskBatchId:[1783] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780824507406, '', '2026-06-07 17:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1743, 'dev', 'ruoyi_group', 1, 1784, 1639, '[{\"time_stamp\":\"1780825107412\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1784] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780825107414\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,784-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1784,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780825107414\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,784-1\",\"message\":\"Task executed successfully taskBatchId:[1784] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780825107412, '', '2026-06-07 17:38:32');
+INSERT INTO `sj_job_log_message` VALUES (1744, 'dev', 'ruoyi_group', 1, 1785, 1640, '[{\"time_stamp\":\"1780825707417\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1785] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780825707418\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,785-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1785,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780825707418\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,785-1\",\"message\":\"Task executed successfully taskBatchId:[1785] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780825707417, '', '2026-06-07 17:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1745, 'dev', 'ruoyi_group', 1, 1786, 1641, '[{\"time_stamp\":\"1780826307408\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1786] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780826307408\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,786-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1786,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780826307409\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,786-1\",\"message\":\"Task executed successfully taskBatchId:[1786] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780826307408, '', '2026-06-07 17:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1746, 'dev', 'ruoyi_group', 1, 1787, 1642, '[{\"time_stamp\":\"1780826907405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1787] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780826907407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,787-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1787,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780826907407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,787-1\",\"message\":\"Task executed successfully taskBatchId:[1787] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780826907405, '', '2026-06-07 18:08:32');
+INSERT INTO `sj_job_log_message` VALUES (1747, 'dev', 'ruoyi_group', 1, 1788, 1643, '[{\"time_stamp\":\"1780827507417\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1788] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780827507417\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,788-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1788,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780827507417\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,788-1\",\"message\":\"Task executed successfully taskBatchId:[1788] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780827507417, '', '2026-06-07 18:18:32');
+INSERT INTO `sj_job_log_message` VALUES (1748, 'dev', 'ruoyi_group', 1, 1789, 1644, '[{\"time_stamp\":\"1780828107411\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1789] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780828107412\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,789-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1789,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780828107413\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,789-1\",\"message\":\"Task executed successfully taskBatchId:[1789] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780828107411, '', '2026-06-07 18:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1749, 'dev', 'ruoyi_group', 1, 1790, 1645, '[{\"time_stamp\":\"1780828707404\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1790] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780828707405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,790-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1790,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780828707405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,790-1\",\"message\":\"Task executed successfully taskBatchId:[1790] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780828707404, '', '2026-06-07 18:38:32');
+INSERT INTO `sj_job_log_message` VALUES (1750, 'dev', 'ruoyi_group', 1, 1791, 1646, '[{\"time_stamp\":\"1780829307405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1791] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780829307405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,791-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1791,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780829307406\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,791-1\",\"message\":\"Task executed successfully taskBatchId:[1791] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780829307405, '', '2026-06-07 18:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1751, 'dev', 'ruoyi_group', 1, 1792, 1647, '[{\"time_stamp\":\"1780829907403\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1792] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780829907403\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,792-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1792,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780829907403\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,792-1\",\"message\":\"Task executed successfully taskBatchId:[1792] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780829907403, '', '2026-06-07 18:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1752, 'dev', 'ruoyi_group', 1, 1793, 1648, '[{\"time_stamp\":\"1780830507409\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1793] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780830507410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,793-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1793,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780830507410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,793-1\",\"message\":\"Task executed successfully taskBatchId:[1793] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780830507409, '', '2026-06-07 19:08:32');
+INSERT INTO `sj_job_log_message` VALUES (1753, 'dev', 'ruoyi_group', 1, 1794, 1649, '[{\"time_stamp\":\"1780831107407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1794] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780831107408\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,794-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1794,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780831107408\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,794-1\",\"message\":\"Task executed successfully taskBatchId:[1794] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780831107407, '', '2026-06-07 19:18:32');
+INSERT INTO `sj_job_log_message` VALUES (1754, 'dev', 'ruoyi_group', 1, 1795, 1650, '[{\"time_stamp\":\"1780831707415\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1795] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780831707415\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,795-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1795,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780831707415\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,795-1\",\"message\":\"Task executed successfully taskBatchId:[1795] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780831707415, '', '2026-06-07 19:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1755, 'dev', 'ruoyi_group', 1, 1796, 1651, '[{\"time_stamp\":\"1780832307533\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1796] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780832307533\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,796-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1796,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780832307533\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,796-1\",\"message\":\"Task executed successfully taskBatchId:[1796] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780832307533, '', '2026-06-07 19:38:33');
+INSERT INTO `sj_job_log_message` VALUES (1756, 'dev', 'ruoyi_group', 1, 1797, 1652, '[{\"time_stamp\":\"1780832907410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1797] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780832907410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,797-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1797,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780832907410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,797-1\",\"message\":\"Task executed successfully taskBatchId:[1797] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780832907410, '', '2026-06-07 19:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1757, 'dev', 'ruoyi_group', 1, 1798, 1653, '[{\"time_stamp\":\"1780833507404\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1798] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780833507404\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,798-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1798,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780833507405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,798-1\",\"message\":\"Task executed successfully taskBatchId:[1798] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780833507404, '', '2026-06-07 19:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1758, 'dev', 'ruoyi_group', 1, 1799, 1654, '[{\"time_stamp\":\"1780834107407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1799] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780834107408\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,799-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1799,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780834107408\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,799-1\",\"message\":\"Task executed successfully taskBatchId:[1799] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780834107407, '', '2026-06-07 20:08:32');
+INSERT INTO `sj_job_log_message` VALUES (1759, 'dev', 'ruoyi_group', 1, 1800, 1655, '[{\"time_stamp\":\"1780834707406\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1800] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780834707407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,800-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1800,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780834707408\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,800-1\",\"message\":\"Task executed successfully taskBatchId:[1800] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780834707406, '', '2026-06-07 20:18:32');
+INSERT INTO `sj_job_log_message` VALUES (1760, 'dev', 'ruoyi_group', 1, 1801, 1656, '[{\"time_stamp\":\"1780835307414\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1801] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780835307414\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,801-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1801,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780835307415\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,801-1\",\"message\":\"Task executed successfully taskBatchId:[1801] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780835307414, '', '2026-06-07 20:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1761, 'dev', 'ruoyi_group', 1, 1802, 1657, '[{\"time_stamp\":\"1780835907410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1802] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780835907410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,802-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1802,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780835907410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,802-1\",\"message\":\"Task executed successfully taskBatchId:[1802] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780835907410, '', '2026-06-07 20:38:32');
+INSERT INTO `sj_job_log_message` VALUES (1762, 'dev', 'ruoyi_group', 1, 1803, 1658, '[{\"time_stamp\":\"1780836507411\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1803] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780836507413\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,803-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1803,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780836507413\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,803-1\",\"message\":\"Task executed successfully taskBatchId:[1803] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780836507411, '', '2026-06-07 20:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1763, 'dev', 'ruoyi_group', 1, 1804, 1659, '[{\"time_stamp\":\"1780837107404\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1804] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780837107405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,804-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1804,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780837107405\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,804-1\",\"message\":\"Task executed successfully taskBatchId:[1804] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780837107404, '', '2026-06-07 20:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1764, 'dev', 'ruoyi_group', 1, 1805, 1660, '[{\"time_stamp\":\"1780837707490\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1805] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780837707497\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,805-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1805,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780837707499\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,805-1\",\"message\":\"Task executed successfully taskBatchId:[1805] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780837707490, '', '2026-06-07 21:08:32');
+INSERT INTO `sj_job_log_message` VALUES (1765, 'dev', 'ruoyi_group', 1, 1806, 1661, '[{\"time_stamp\":\"1780838307414\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1806] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780838307415\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,806-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1806,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780838307416\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,806-1\",\"message\":\"Task executed successfully taskBatchId:[1806] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780838307414, '', '2026-06-07 21:18:32');
+INSERT INTO `sj_job_log_message` VALUES (1766, 'dev', 'ruoyi_group', 1, 1807, 1662, '[{\"time_stamp\":\"1780838907473\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1807] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780838907480\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,807-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1807,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780838907481\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,807-1\",\"message\":\"Task executed successfully taskBatchId:[1807] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780838907473, '', '2026-06-07 21:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1767, 'dev', 'ruoyi_group', 1, 1808, 1663, '[{\"time_stamp\":\"1780839507456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1808] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780839507464\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,808-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1808,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780839507465\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,808-1\",\"message\":\"Task executed successfully taskBatchId:[1808] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780839507456, '', '2026-06-07 21:38:32');
+INSERT INTO `sj_job_log_message` VALUES (1768, 'dev', 'ruoyi_group', 1, 1809, 1664, '[{\"time_stamp\":\"1780840107406\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1809] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780840107407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,809-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1809,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780840107407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,809-1\",\"message\":\"Task executed successfully taskBatchId:[1809] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780840107406, '', '2026-06-07 21:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1769, 'dev', 'ruoyi_group', 1, 1810, 1665, '[{\"time_stamp\":\"1780840707481\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1810] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780840707489\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,810-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1810,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780840707491\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,810-1\",\"message\":\"Task executed successfully taskBatchId:[1810] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780840707481, '', '2026-06-07 21:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1770, 'dev', 'ruoyi_group', 1, 1811, 1666, '[{\"time_stamp\":\"1780841307485\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1811] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780841307494\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,811-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1811,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780841307495\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,811-1\",\"message\":\"Task executed successfully taskBatchId:[1811] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780841307485, '', '2026-06-07 22:08:32');
 
 -- ----------------------------
 -- Table structure for sj_job_summary
@@ -7449,7 +7489,7 @@ CREATE TABLE `sj_job_summary`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `business_id` bigint(20) NOT NULL COMMENT '业务id (job_id或workflow_id)',
   `system_task_type` tinyint(4) NOT NULL DEFAULT 3 COMMENT '任务类型 3、JOB任务 4、WORKFLOW任务',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `success_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行成功-日志数量',
   `fail_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `fail_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
@@ -7457,12 +7497,12 @@ CREATE TABLE `sj_job_summary`  (
   `stop_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
   `cancel_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `cancel_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_trigger_at_system_task_type_business_id`(`trigger_at`, `system_task_type`, `business_id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_business_id`(`namespace_id`, `group_name`, `business_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_summary
@@ -7484,6 +7524,9 @@ INSERT INTO `sj_job_summary` VALUES (14, 'dev', 'ruoyi_group', 3, 3, '2026-05-29
 INSERT INTO `sj_job_summary` VALUES (15, 'dev', 'ruoyi_group', 1, 3, '2026-05-30 00:00:00', 11, 1, '[{\"reason\":0,\"total\":1}]', 0, '[]', 1, '[{\"reason\":2,\"total\":1}]', '2026-05-30 00:39:04', '2026-05-30 15:37:39');
 INSERT INTO `sj_job_summary` VALUES (16, 'dev', 'ruoyi_group', 2, 3, '2026-05-30 00:00:00', 0, 0, '[]', 0, '[]', 1, '[{\"reason\":2,\"total\":1}]', '2026-05-30 13:57:39', '2026-05-30 13:57:39');
 INSERT INTO `sj_job_summary` VALUES (17, 'dev', 'ruoyi_group', 3, 3, '2026-05-30 00:00:00', 0, 0, '[]', 0, '[]', 1, '[{\"reason\":2,\"total\":1}]', '2026-05-30 13:57:39', '2026-05-30 13:57:39');
+INSERT INTO `sj_job_summary` VALUES (18, 'dev', 'ruoyi_group', 1, 3, '2026-06-07 00:00:00', 32, 0, '[]', 0, '[]', 2, '[{\"reason\":2,\"total\":2}]', '2026-06-07 13:16:06', '2026-06-07 22:08:57');
+INSERT INTO `sj_job_summary` VALUES (19, 'dev', 'ruoyi_group', 2, 3, '2026-06-07 00:00:00', 0, 0, '[]', 0, '[]', 1, '[{\"reason\":2,\"total\":1}]', '2026-06-07 13:16:06', '2026-06-07 13:16:06');
+INSERT INTO `sj_job_summary` VALUES (20, 'dev', 'ruoyi_group', 3, 3, '2026-06-07 00:00:00', 0, 0, '[]', 0, '[]', 1, '[{\"reason\":2,\"total\":1}]', '2026-06-07 13:16:06', '2026-06-07 13:16:06');
 
 -- ----------------------------
 -- Table structure for sj_job_task
@@ -7507,158 +7550,49 @@ CREATE TABLE `sj_job_task`  (
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '执行方法参数',
   `args_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '参数类型 ',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_status`(`task_batch_id`, `task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1635 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1667 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task
 -- ----------------------------
-INSERT INTO `sj_job_task` VALUES (1494, 'dev', 'ruoyi_group', 1, 1613, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:47:55', '2026-05-28 10:47:55');
-INSERT INTO `sj_job_task` VALUES (1495, 'dev', 'ruoyi_group', 1, 1614, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:48:55', '2026-05-28 10:48:55');
-INSERT INTO `sj_job_task` VALUES (1496, 'dev', 'ruoyi_group', 1, 1615, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:49:55', '2026-05-28 10:49:55');
-INSERT INTO `sj_job_task` VALUES (1497, 'dev', 'ruoyi_group', 1, 1616, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:50:55', '2026-05-28 10:50:55');
-INSERT INTO `sj_job_task` VALUES (1498, 'dev', 'ruoyi_group', 1, 1617, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:51:55', '2026-05-28 10:51:55');
-INSERT INTO `sj_job_task` VALUES (1499, 'dev', 'ruoyi_group', 1, 1618, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:52:55', '2026-05-28 10:52:55');
-INSERT INTO `sj_job_task` VALUES (1500, 'dev', 'ruoyi_group', 1, 1619, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:53:55', '2026-05-28 10:53:55');
-INSERT INTO `sj_job_task` VALUES (1501, 'dev', 'ruoyi_group', 1, 1620, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:54:55', '2026-05-28 10:54:55');
-INSERT INTO `sj_job_task` VALUES (1502, 'dev', 'ruoyi_group', 1, 1621, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:55:55', '2026-05-28 10:55:55');
-INSERT INTO `sj_job_task` VALUES (1503, 'dev', 'ruoyi_group', 1, 1622, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:56:55', '2026-05-28 10:56:55');
-INSERT INTO `sj_job_task` VALUES (1504, 'dev', 'ruoyi_group', 1, 1623, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:57:55', '2026-05-28 10:57:55');
-INSERT INTO `sj_job_task` VALUES (1505, 'dev', 'ruoyi_group', 2, 1624, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '供应商绩效批量评估完成', '{\"jobParams\":\"\"}', 2, '', '2026-05-28 10:58:05', '2026-05-28 10:58:05');
-INSERT INTO `sj_job_task` VALUES (1506, 'dev', 'ruoyi_group', 1, 1625, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:58:55', '2026-05-28 10:58:55');
-INSERT INTO `sj_job_task` VALUES (1507, 'dev', 'ruoyi_group', 1, 1626, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 10:59:55', '2026-05-28 10:59:55');
-INSERT INTO `sj_job_task` VALUES (1508, 'dev', 'ruoyi_group', 1, 1627, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:00:55', '2026-05-28 11:00:55');
-INSERT INTO `sj_job_task` VALUES (1509, 'dev', 'ruoyi_group', 1, 1628, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:01:55', '2026-05-28 11:01:55');
-INSERT INTO `sj_job_task` VALUES (1510, 'dev', 'ruoyi_group', 1, 1629, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:02:55', '2026-05-28 11:02:55');
-INSERT INTO `sj_job_task` VALUES (1511, 'dev', 'ruoyi_group', 1, 1630, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:03:55', '2026-05-28 11:03:55');
-INSERT INTO `sj_job_task` VALUES (1512, 'dev', 'ruoyi_group', 1, 1631, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:04:55', '2026-05-28 11:04:55');
-INSERT INTO `sj_job_task` VALUES (1513, 'dev', 'ruoyi_group', 1, 1632, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:05:55', '2026-05-28 11:05:55');
-INSERT INTO `sj_job_task` VALUES (1514, 'dev', 'ruoyi_group', 1, 1633, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:06:55', '2026-05-28 11:06:55');
-INSERT INTO `sj_job_task` VALUES (1515, 'dev', 'ruoyi_group', 1, 1634, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:07:55', '2026-05-28 11:07:55');
-INSERT INTO `sj_job_task` VALUES (1516, 'dev', 'ruoyi_group', 1, 1635, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:08:55', '2026-05-28 11:08:55');
-INSERT INTO `sj_job_task` VALUES (1517, 'dev', 'ruoyi_group', 1, 1636, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:09:55', '2026-05-28 11:09:55');
-INSERT INTO `sj_job_task` VALUES (1518, 'dev', 'ruoyi_group', 1, 1637, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:10:55', '2026-05-28 11:10:55');
-INSERT INTO `sj_job_task` VALUES (1519, 'dev', 'ruoyi_group', 1, 1638, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:11:55', '2026-05-28 11:11:55');
-INSERT INTO `sj_job_task` VALUES (1520, 'dev', 'ruoyi_group', 1, 1639, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:12:55', '2026-05-28 11:12:55');
-INSERT INTO `sj_job_task` VALUES (1521, 'dev', 'ruoyi_group', 1, 1640, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:13:55', '2026-05-28 11:13:55');
-INSERT INTO `sj_job_task` VALUES (1522, 'dev', 'ruoyi_group', 1, 1641, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:14:55', '2026-05-28 11:14:55');
-INSERT INTO `sj_job_task` VALUES (1523, 'dev', 'ruoyi_group', 1, 1642, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:15:55', '2026-05-28 11:15:55');
-INSERT INTO `sj_job_task` VALUES (1524, 'dev', 'ruoyi_group', 1, 1643, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:16:55', '2026-05-28 11:16:55');
-INSERT INTO `sj_job_task` VALUES (1525, 'dev', 'ruoyi_group', 1, 1644, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:17:55', '2026-05-28 11:17:55');
-INSERT INTO `sj_job_task` VALUES (1526, 'dev', 'ruoyi_group', 1, 1645, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:18:55', '2026-05-28 11:18:55');
-INSERT INTO `sj_job_task` VALUES (1527, 'dev', 'ruoyi_group', 1, 1646, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:19:55', '2026-05-28 11:19:55');
-INSERT INTO `sj_job_task` VALUES (1528, 'dev', 'ruoyi_group', 1, 1647, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:20:55', '2026-05-28 11:20:55');
-INSERT INTO `sj_job_task` VALUES (1529, 'dev', 'ruoyi_group', 1, 1648, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:21:55', '2026-05-28 11:21:55');
-INSERT INTO `sj_job_task` VALUES (1530, 'dev', 'ruoyi_group', 1, 1649, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:22:55', '2026-05-28 11:22:55');
-INSERT INTO `sj_job_task` VALUES (1531, 'dev', 'ruoyi_group', 1, 1650, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:23:55', '2026-05-28 11:23:55');
-INSERT INTO `sj_job_task` VALUES (1532, 'dev', 'ruoyi_group', 1, 1651, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:24:55', '2026-05-28 11:24:55');
-INSERT INTO `sj_job_task` VALUES (1533, 'dev', 'ruoyi_group', 1, 1652, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:25:55', '2026-05-28 11:25:55');
-INSERT INTO `sj_job_task` VALUES (1534, 'dev', 'ruoyi_group', 1, 1653, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:26:55', '2026-05-28 11:26:55');
-INSERT INTO `sj_job_task` VALUES (1535, 'dev', 'ruoyi_group', 1, 1654, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:27:55', '2026-05-28 11:27:55');
-INSERT INTO `sj_job_task` VALUES (1536, 'dev', 'ruoyi_group', 1, 1655, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:28:55', '2026-05-28 11:28:55');
-INSERT INTO `sj_job_task` VALUES (1537, 'dev', 'ruoyi_group', 1, 1656, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:29:55', '2026-05-28 11:29:55');
-INSERT INTO `sj_job_task` VALUES (1538, 'dev', 'ruoyi_group', 1, 1657, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:30:55', '2026-05-28 11:30:55');
-INSERT INTO `sj_job_task` VALUES (1539, 'dev', 'ruoyi_group', 1, 1658, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:31:55', '2026-05-28 11:31:55');
-INSERT INTO `sj_job_task` VALUES (1540, 'dev', 'ruoyi_group', 1, 1659, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:32:55', '2026-05-28 11:32:55');
-INSERT INTO `sj_job_task` VALUES (1541, 'dev', 'ruoyi_group', 1, 1660, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:33:55', '2026-05-28 11:33:55');
-INSERT INTO `sj_job_task` VALUES (1542, 'dev', 'ruoyi_group', 1, 1661, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:34:55', '2026-05-28 11:34:55');
-INSERT INTO `sj_job_task` VALUES (1543, 'dev', 'ruoyi_group', 1, 1662, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:35:55', '2026-05-28 11:35:55');
-INSERT INTO `sj_job_task` VALUES (1544, 'dev', 'ruoyi_group', 1, 1663, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:36:55', '2026-05-28 11:36:55');
-INSERT INTO `sj_job_task` VALUES (1545, 'dev', 'ruoyi_group', 1, 1664, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:37:55', '2026-05-28 11:37:55');
-INSERT INTO `sj_job_task` VALUES (1546, 'dev', 'ruoyi_group', 1, 1665, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:38:55', '2026-05-28 11:38:55');
-INSERT INTO `sj_job_task` VALUES (1547, 'dev', 'ruoyi_group', 1, 1666, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:39:55', '2026-05-28 11:39:55');
-INSERT INTO `sj_job_task` VALUES (1548, 'dev', 'ruoyi_group', 1, 1667, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:40:55', '2026-05-28 11:40:55');
-INSERT INTO `sj_job_task` VALUES (1549, 'dev', 'ruoyi_group', 1, 1668, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:41:55', '2026-05-28 11:41:55');
-INSERT INTO `sj_job_task` VALUES (1550, 'dev', 'ruoyi_group', 1, 1669, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:42:55', '2026-05-28 11:42:55');
-INSERT INTO `sj_job_task` VALUES (1551, 'dev', 'ruoyi_group', 1, 1670, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:43:55', '2026-05-28 11:43:55');
-INSERT INTO `sj_job_task` VALUES (1552, 'dev', 'ruoyi_group', 1, 1671, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:44:55', '2026-05-28 11:44:55');
-INSERT INTO `sj_job_task` VALUES (1553, 'dev', 'ruoyi_group', 1, 1672, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:45:55', '2026-05-28 11:45:55');
-INSERT INTO `sj_job_task` VALUES (1554, 'dev', 'ruoyi_group', 1, 1673, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:46:55', '2026-05-28 11:46:55');
-INSERT INTO `sj_job_task` VALUES (1555, 'dev', 'ruoyi_group', 1, 1674, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 11:57:07', '2026-05-28 11:57:07');
-INSERT INTO `sj_job_task` VALUES (1556, 'dev', 'ruoyi_group', 1, 1675, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 12:07:07', '2026-05-28 12:07:07');
-INSERT INTO `sj_job_task` VALUES (1557, 'dev', 'ruoyi_group', 1, 1676, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 12:17:07', '2026-05-28 12:17:07');
-INSERT INTO `sj_job_task` VALUES (1558, 'dev', 'ruoyi_group', 1, 1677, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 12:27:07', '2026-05-28 12:27:07');
-INSERT INTO `sj_job_task` VALUES (1559, 'dev', 'ruoyi_group', 1, 1678, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 12:37:07', '2026-05-28 12:37:07');
-INSERT INTO `sj_job_task` VALUES (1560, 'dev', 'ruoyi_group', 1, 1679, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 12:47:07', '2026-05-28 12:47:07');
-INSERT INTO `sj_job_task` VALUES (1561, 'dev', 'ruoyi_group', 1, 1680, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 12:57:07', '2026-05-28 12:57:07');
-INSERT INTO `sj_job_task` VALUES (1562, 'dev', 'ruoyi_group', 1, 1681, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 13:07:07', '2026-05-28 13:07:07');
-INSERT INTO `sj_job_task` VALUES (1563, 'dev', 'ruoyi_group', 1, 1682, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 13:17:07', '2026-05-28 13:17:07');
-INSERT INTO `sj_job_task` VALUES (1564, 'dev', 'ruoyi_group', 1, 1683, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 13:27:07', '2026-05-28 13:27:07');
-INSERT INTO `sj_job_task` VALUES (1565, 'dev', 'ruoyi_group', 1, 1684, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 13:37:07', '2026-05-28 13:37:07');
-INSERT INTO `sj_job_task` VALUES (1566, 'dev', 'ruoyi_group', 1, 1685, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 13:47:07', '2026-05-28 13:47:07');
-INSERT INTO `sj_job_task` VALUES (1567, 'dev', 'ruoyi_group', 1, 1686, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 13:57:07', '2026-05-28 13:57:07');
-INSERT INTO `sj_job_task` VALUES (1568, 'dev', 'ruoyi_group', 1, 1687, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 14:07:07', '2026-05-28 14:07:07');
-INSERT INTO `sj_job_task` VALUES (1569, 'dev', 'ruoyi_group', 1, 1688, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059790612477976576@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 14:17:07', '2026-05-28 14:17:07');
-INSERT INTO `sj_job_task` VALUES (1570, 'dev', 'ruoyi_group', 1, 1690, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059884778310541312@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 14:37:07', '2026-05-28 14:37:07');
-INSERT INTO `sj_job_task` VALUES (1571, 'dev', 'ruoyi_group', 1, 1700, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059910324079726592@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 16:17:07', '2026-05-28 16:17:07');
-INSERT INTO `sj_job_task` VALUES (1572, 'dev', 'ruoyi_group', 1, 1701, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059910324079726592@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 16:27:07', '2026-05-28 16:27:07');
-INSERT INTO `sj_job_task` VALUES (1573, 'dev', 'ruoyi_group', 1, 1702, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059910324079726592@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 16:37:07', '2026-05-28 16:37:07');
-INSERT INTO `sj_job_task` VALUES (1574, 'dev', 'ruoyi_group', 1, 1703, 0, 4, 0, NULL, 1, 'CLUSTER_TASK', '2059910324079726592@192.168.200.1:28080', NULL, '', '{}', 2, '', '2026-05-28 16:47:07', '2026-05-28 16:47:11');
-INSERT INTO `sj_job_task` VALUES (1575, 'dev', 'ruoyi_group', 1, 1705, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059921992671264768@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 17:07:07', '2026-05-28 17:07:07');
-INSERT INTO `sj_job_task` VALUES (1576, 'dev', 'ruoyi_group', 1, 1706, 0, 4, 0, NULL, 1, 'CLUSTER_TASK', '2059921992671264768@192.168.200.1:28080', NULL, '', '{}', 2, '', '2026-05-28 17:17:07', '2026-05-28 17:17:11');
-INSERT INTO `sj_job_task` VALUES (1577, 'dev', 'ruoyi_group', 1, 1707, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059926954142801920@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 17:27:07', '2026-05-28 17:27:07');
-INSERT INTO `sj_job_task` VALUES (1578, 'dev', 'ruoyi_group', 1, 1708, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059926954142801920@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 17:37:07', '2026-05-28 17:37:07');
-INSERT INTO `sj_job_task` VALUES (1579, 'dev', 'ruoyi_group', 1, 1709, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059926954142801920@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 17:47:07', '2026-05-28 17:47:07');
-INSERT INTO `sj_job_task` VALUES (1580, 'dev', 'ruoyi_group', 1, 1710, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059926954142801920@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 17:57:07', '2026-05-28 17:57:07');
-INSERT INTO `sj_job_task` VALUES (1581, 'dev', 'ruoyi_group', 1, 1711, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059926954142801920@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 18:07:07', '2026-05-28 18:07:07');
-INSERT INTO `sj_job_task` VALUES (1582, 'dev', 'ruoyi_group', 1, 1712, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059926954142801920@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 18:17:07', '2026-05-28 18:17:07');
-INSERT INTO `sj_job_task` VALUES (1583, 'dev', 'ruoyi_group', 1, 1713, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2059926954142801920@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-28 18:27:07', '2026-05-28 18:27:07');
-INSERT INTO `sj_job_task` VALUES (1584, 'dev', 'ruoyi_group', 1, 1717, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060186773831528448@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 10:39:39', '2026-05-29 10:39:40');
-INSERT INTO `sj_job_task` VALUES (1585, 'dev', 'ruoyi_group', 1, 1721, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 11:23:58', '2026-05-29 11:23:58');
-INSERT INTO `sj_job_task` VALUES (1586, 'dev', 'ruoyi_group', 1, 1722, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 11:33:58', '2026-05-29 11:33:58');
-INSERT INTO `sj_job_task` VALUES (1587, 'dev', 'ruoyi_group', 1, 1723, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 11:43:58', '2026-05-29 11:43:58');
-INSERT INTO `sj_job_task` VALUES (1588, 'dev', 'ruoyi_group', 1, 1724, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 11:53:58', '2026-05-29 11:53:58');
-INSERT INTO `sj_job_task` VALUES (1589, 'dev', 'ruoyi_group', 1, 1725, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 12:03:58', '2026-05-29 12:03:58');
-INSERT INTO `sj_job_task` VALUES (1590, 'dev', 'ruoyi_group', 1, 1726, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 12:13:58', '2026-05-29 12:13:58');
-INSERT INTO `sj_job_task` VALUES (1591, 'dev', 'ruoyi_group', 1, 1727, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 12:23:58', '2026-05-29 12:23:58');
-INSERT INTO `sj_job_task` VALUES (1592, 'dev', 'ruoyi_group', 1, 1728, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 12:33:58', '2026-05-29 12:33:58');
-INSERT INTO `sj_job_task` VALUES (1593, 'dev', 'ruoyi_group', 1, 1729, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 12:43:58', '2026-05-29 12:43:58');
-INSERT INTO `sj_job_task` VALUES (1594, 'dev', 'ruoyi_group', 1, 1730, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 12:53:58', '2026-05-29 12:53:58');
-INSERT INTO `sj_job_task` VALUES (1595, 'dev', 'ruoyi_group', 1, 1731, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 13:03:58', '2026-05-29 13:03:58');
-INSERT INTO `sj_job_task` VALUES (1596, 'dev', 'ruoyi_group', 1, 1732, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 13:13:58', '2026-05-29 13:13:58');
-INSERT INTO `sj_job_task` VALUES (1597, 'dev', 'ruoyi_group', 1, 1733, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 13:23:58', '2026-05-29 13:23:58');
-INSERT INTO `sj_job_task` VALUES (1598, 'dev', 'ruoyi_group', 1, 1734, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 13:33:58', '2026-05-29 13:33:58');
-INSERT INTO `sj_job_task` VALUES (1599, 'dev', 'ruoyi_group', 1, 1735, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 13:43:58', '2026-05-29 13:43:58');
-INSERT INTO `sj_job_task` VALUES (1600, 'dev', 'ruoyi_group', 1, 1736, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 13:53:58', '2026-05-29 13:53:58');
-INSERT INTO `sj_job_task` VALUES (1601, 'dev', 'ruoyi_group', 1, 1737, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 14:03:58', '2026-05-29 14:03:58');
-INSERT INTO `sj_job_task` VALUES (1602, 'dev', 'ruoyi_group', 1, 1738, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 14:13:58', '2026-05-29 14:13:58');
-INSERT INTO `sj_job_task` VALUES (1603, 'dev', 'ruoyi_group', 1, 1739, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 14:23:58', '2026-05-29 14:23:58');
-INSERT INTO `sj_job_task` VALUES (1604, 'dev', 'ruoyi_group', 1, 1740, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 14:33:58', '2026-05-29 14:33:58');
-INSERT INTO `sj_job_task` VALUES (1605, 'dev', 'ruoyi_group', 1, 1741, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 14:43:58', '2026-05-29 14:43:58');
-INSERT INTO `sj_job_task` VALUES (1606, 'dev', 'ruoyi_group', 1, 1742, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 14:53:58', '2026-05-29 14:53:58');
-INSERT INTO `sj_job_task` VALUES (1607, 'dev', 'ruoyi_group', 1, 1743, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 15:03:58', '2026-05-29 15:03:58');
-INSERT INTO `sj_job_task` VALUES (1608, 'dev', 'ruoyi_group', 1, 1744, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 15:13:58', '2026-05-29 15:13:58');
-INSERT INTO `sj_job_task` VALUES (1609, 'dev', 'ruoyi_group', 1, 1745, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 15:23:58', '2026-05-29 15:23:58');
-INSERT INTO `sj_job_task` VALUES (1610, 'dev', 'ruoyi_group', 1, 1746, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 15:33:58', '2026-05-29 15:33:58');
-INSERT INTO `sj_job_task` VALUES (1611, 'dev', 'ruoyi_group', 1, 1747, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 15:43:58', '2026-05-29 15:43:58');
-INSERT INTO `sj_job_task` VALUES (1612, 'dev', 'ruoyi_group', 1, 1748, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 15:53:58', '2026-05-29 15:53:58');
-INSERT INTO `sj_job_task` VALUES (1613, 'dev', 'ruoyi_group', 1, 1749, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 16:03:58', '2026-05-29 16:03:58');
-INSERT INTO `sj_job_task` VALUES (1614, 'dev', 'ruoyi_group', 1, 1750, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 16:13:58', '2026-05-29 16:13:58');
-INSERT INTO `sj_job_task` VALUES (1615, 'dev', 'ruoyi_group', 1, 1751, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 16:23:58', '2026-05-29 16:23:58');
-INSERT INTO `sj_job_task` VALUES (1616, 'dev', 'ruoyi_group', 1, 1752, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 16:33:58', '2026-05-29 16:33:58');
-INSERT INTO `sj_job_task` VALUES (1617, 'dev', 'ruoyi_group', 1, 1753, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 16:43:58', '2026-05-29 16:43:58');
-INSERT INTO `sj_job_task` VALUES (1618, 'dev', 'ruoyi_group', 1, 1754, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 16:53:58', '2026-05-29 16:53:58');
-INSERT INTO `sj_job_task` VALUES (1619, 'dev', 'ruoyi_group', 1, 1755, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 17:03:58', '2026-05-29 17:03:58');
-INSERT INTO `sj_job_task` VALUES (1620, 'dev', 'ruoyi_group', 1, 1756, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 17:13:58', '2026-05-29 17:13:58');
-INSERT INTO `sj_job_task` VALUES (1621, 'dev', 'ruoyi_group', 1, 1757, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 17:23:58', '2026-05-29 17:23:58');
-INSERT INTO `sj_job_task` VALUES (1622, 'dev', 'ruoyi_group', 1, 1758, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060199209150107648@192.168.200.1:28080', NULL, '测试成功', '{}', 2, '', '2026-05-29 17:33:58', '2026-05-29 17:33:58');
-INSERT INTO `sj_job_task` VALUES (1623, 'dev', 'ruoyi_group', 1, 1761, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060400213184737280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 00:38:35', '2026-05-30 00:38:35');
-INSERT INTO `sj_job_task` VALUES (1624, 'dev', 'ruoyi_group', 1, 1762, 0, 4, 0, NULL, 1, 'CLUSTER_TASK', '2060400213184737280@192.168.1.103:28080', NULL, '', '{}', 2, '', '2026-05-30 00:48:35', '2026-05-30 00:48:39');
-INSERT INTO `sj_job_task` VALUES (1625, 'dev', 'ruoyi_group', 1, 1766, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 14:07:10', '2026-05-30 14:07:10');
-INSERT INTO `sj_job_task` VALUES (1626, 'dev', 'ruoyi_group', 1, 1767, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 14:17:10', '2026-05-30 14:17:10');
-INSERT INTO `sj_job_task` VALUES (1627, 'dev', 'ruoyi_group', 1, 1768, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 14:27:10', '2026-05-30 14:27:10');
-INSERT INTO `sj_job_task` VALUES (1628, 'dev', 'ruoyi_group', 1, 1769, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 14:37:10', '2026-05-30 14:37:10');
-INSERT INTO `sj_job_task` VALUES (1629, 'dev', 'ruoyi_group', 1, 1770, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 14:47:10', '2026-05-30 14:47:10');
-INSERT INTO `sj_job_task` VALUES (1630, 'dev', 'ruoyi_group', 1, 1771, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 14:57:10', '2026-05-30 14:57:10');
-INSERT INTO `sj_job_task` VALUES (1631, 'dev', 'ruoyi_group', 1, 1772, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 15:07:10', '2026-05-30 15:07:10');
-INSERT INTO `sj_job_task` VALUES (1632, 'dev', 'ruoyi_group', 1, 1773, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 15:17:10', '2026-05-30 15:17:10');
-INSERT INTO `sj_job_task` VALUES (1633, 'dev', 'ruoyi_group', 1, 1774, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 15:27:10', '2026-05-30 15:27:10');
-INSERT INTO `sj_job_task` VALUES (1634, 'dev', 'ruoyi_group', 1, 1775, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2060601987447377920@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-05-30 15:37:10', '2026-05-30 15:37:10');
+INSERT INTO `sj_job_task` VALUES (1635, 'dev', 'ruoyi_group', 1, 1780, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 16:58:28', '2026-06-07 16:58:28');
+INSERT INTO `sj_job_task` VALUES (1636, 'dev', 'ruoyi_group', 1, 1781, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 17:08:27', '2026-06-07 17:08:27');
+INSERT INTO `sj_job_task` VALUES (1637, 'dev', 'ruoyi_group', 1, 1782, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 17:18:27', '2026-06-07 17:18:27');
+INSERT INTO `sj_job_task` VALUES (1638, 'dev', 'ruoyi_group', 1, 1783, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 17:28:27', '2026-06-07 17:28:27');
+INSERT INTO `sj_job_task` VALUES (1639, 'dev', 'ruoyi_group', 1, 1784, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 17:38:27', '2026-06-07 17:38:27');
+INSERT INTO `sj_job_task` VALUES (1640, 'dev', 'ruoyi_group', 1, 1785, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 17:48:27', '2026-06-07 17:48:27');
+INSERT INTO `sj_job_task` VALUES (1641, 'dev', 'ruoyi_group', 1, 1786, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 17:58:27', '2026-06-07 17:58:27');
+INSERT INTO `sj_job_task` VALUES (1642, 'dev', 'ruoyi_group', 1, 1787, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 18:08:27', '2026-06-07 18:08:27');
+INSERT INTO `sj_job_task` VALUES (1643, 'dev', 'ruoyi_group', 1, 1788, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 18:18:27', '2026-06-07 18:18:27');
+INSERT INTO `sj_job_task` VALUES (1644, 'dev', 'ruoyi_group', 1, 1789, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 18:28:27', '2026-06-07 18:28:27');
+INSERT INTO `sj_job_task` VALUES (1645, 'dev', 'ruoyi_group', 1, 1790, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 18:38:27', '2026-06-07 18:38:27');
+INSERT INTO `sj_job_task` VALUES (1646, 'dev', 'ruoyi_group', 1, 1791, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 18:48:27', '2026-06-07 18:48:27');
+INSERT INTO `sj_job_task` VALUES (1647, 'dev', 'ruoyi_group', 1, 1792, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 18:58:27', '2026-06-07 18:58:27');
+INSERT INTO `sj_job_task` VALUES (1648, 'dev', 'ruoyi_group', 1, 1793, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 19:08:27', '2026-06-07 19:08:27');
+INSERT INTO `sj_job_task` VALUES (1649, 'dev', 'ruoyi_group', 1, 1794, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 19:18:27', '2026-06-07 19:18:27');
+INSERT INTO `sj_job_task` VALUES (1650, 'dev', 'ruoyi_group', 1, 1795, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 19:28:27', '2026-06-07 19:28:27');
+INSERT INTO `sj_job_task` VALUES (1651, 'dev', 'ruoyi_group', 1, 1796, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 19:38:28', '2026-06-07 19:38:28');
+INSERT INTO `sj_job_task` VALUES (1652, 'dev', 'ruoyi_group', 1, 1797, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 19:48:27', '2026-06-07 19:48:27');
+INSERT INTO `sj_job_task` VALUES (1653, 'dev', 'ruoyi_group', 1, 1798, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 19:58:27', '2026-06-07 19:58:27');
+INSERT INTO `sj_job_task` VALUES (1654, 'dev', 'ruoyi_group', 1, 1799, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 20:08:27', '2026-06-07 20:08:27');
+INSERT INTO `sj_job_task` VALUES (1655, 'dev', 'ruoyi_group', 1, 1800, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 20:18:27', '2026-06-07 20:18:27');
+INSERT INTO `sj_job_task` VALUES (1656, 'dev', 'ruoyi_group', 1, 1801, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 20:28:27', '2026-06-07 20:28:27');
+INSERT INTO `sj_job_task` VALUES (1657, 'dev', 'ruoyi_group', 1, 1802, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 20:38:27', '2026-06-07 20:38:27');
+INSERT INTO `sj_job_task` VALUES (1658, 'dev', 'ruoyi_group', 1, 1803, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 20:48:27', '2026-06-07 20:48:27');
+INSERT INTO `sj_job_task` VALUES (1659, 'dev', 'ruoyi_group', 1, 1804, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063545731691745280@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 20:58:27', '2026-06-07 20:58:27');
+INSERT INTO `sj_job_task` VALUES (1660, 'dev', 'ruoyi_group', 1, 1805, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063608857338445824@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:08:27', '2026-06-07 21:08:28');
+INSERT INTO `sj_job_task` VALUES (1661, 'dev', 'ruoyi_group', 1, 1806, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063608857338445824@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:18:27', '2026-06-07 21:18:27');
+INSERT INTO `sj_job_task` VALUES (1662, 'dev', 'ruoyi_group', 1, 1807, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063612557033340928@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:28:27', '2026-06-07 21:28:27');
+INSERT INTO `sj_job_task` VALUES (1663, 'dev', 'ruoyi_group', 1, 1808, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063615289085575168@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:38:27', '2026-06-07 21:38:27');
+INSERT INTO `sj_job_task` VALUES (1664, 'dev', 'ruoyi_group', 1, 1809, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063615289085575168@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:48:27', '2026-06-07 21:48:27');
+INSERT INTO `sj_job_task` VALUES (1665, 'dev', 'ruoyi_group', 1, 1810, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063620426155933696@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:58:27', '2026-06-07 21:58:27');
+INSERT INTO `sj_job_task` VALUES (1666, 'dev', 'ruoyi_group', 1, 1811, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063622789000204288@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 22:08:27', '2026-06-07 22:08:28');
 
 -- ----------------------------
 -- Table structure for sj_job_task_batch
@@ -7679,181 +7613,54 @@ CREATE TABLE `sj_job_task_batch`  (
   `parent_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '父节点',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`job_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_workflow_task_batch_id_workflow_node_id`(`workflow_task_batch_id`, `workflow_node_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1776 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1812 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task_batch
 -- ----------------------------
-INSERT INTO `sj_job_task_batch` VALUES (1613, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936474616, 3, '', '', 0, '2026-05-28 10:47:54', '2026-05-28 10:47:55');
-INSERT INTO `sj_job_task_batch` VALUES (1614, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936534505, 3, '', '', 0, '2026-05-28 10:48:54', '2026-05-28 10:48:55');
-INSERT INTO `sj_job_task_batch` VALUES (1615, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936594501, 3, '', '', 0, '2026-05-28 10:49:54', '2026-05-28 10:49:55');
-INSERT INTO `sj_job_task_batch` VALUES (1616, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936654501, 3, '', '', 0, '2026-05-28 10:50:54', '2026-05-28 10:50:55');
-INSERT INTO `sj_job_task_batch` VALUES (1617, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936714505, 3, '', '', 0, '2026-05-28 10:51:54', '2026-05-28 10:51:55');
-INSERT INTO `sj_job_task_batch` VALUES (1618, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936774501, 3, '', '', 0, '2026-05-28 10:52:54', '2026-05-28 10:52:55');
-INSERT INTO `sj_job_task_batch` VALUES (1619, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936834502, 3, '', '', 0, '2026-05-28 10:53:54', '2026-05-28 10:53:55');
-INSERT INTO `sj_job_task_batch` VALUES (1620, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936894501, 3, '', '', 0, '2026-05-28 10:54:54', '2026-05-28 10:54:55');
-INSERT INTO `sj_job_task_batch` VALUES (1621, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779936954502, 3, '', '', 0, '2026-05-28 10:55:54', '2026-05-28 10:55:55');
-INSERT INTO `sj_job_task_batch` VALUES (1622, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937014501, 3, '', '', 0, '2026-05-28 10:56:54', '2026-05-28 10:56:55');
-INSERT INTO `sj_job_task_batch` VALUES (1623, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937074503, 3, '', '', 0, '2026-05-28 10:57:54', '2026-05-28 10:57:55');
-INSERT INTO `sj_job_task_batch` VALUES (1624, 'dev', 'ruoyi_group', 2, 0, 0, 0, 3, 0, 1779937085101, 3, '', '', 0, '2026-05-28 10:58:05', '2026-05-28 10:58:05');
-INSERT INTO `sj_job_task_batch` VALUES (1625, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937134505, 3, '', '', 0, '2026-05-28 10:58:54', '2026-05-28 10:58:55');
-INSERT INTO `sj_job_task_batch` VALUES (1626, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937194501, 3, '', '', 0, '2026-05-28 10:59:54', '2026-05-28 10:59:55');
-INSERT INTO `sj_job_task_batch` VALUES (1627, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937254503, 3, '', '', 0, '2026-05-28 11:00:54', '2026-05-28 11:00:55');
-INSERT INTO `sj_job_task_batch` VALUES (1628, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937314501, 3, '', '', 0, '2026-05-28 11:01:54', '2026-05-28 11:01:55');
-INSERT INTO `sj_job_task_batch` VALUES (1629, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937374502, 3, '', '', 0, '2026-05-28 11:02:54', '2026-05-28 11:02:55');
-INSERT INTO `sj_job_task_batch` VALUES (1630, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937434502, 3, '', '', 0, '2026-05-28 11:03:54', '2026-05-28 11:03:55');
-INSERT INTO `sj_job_task_batch` VALUES (1631, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937494502, 3, '', '', 0, '2026-05-28 11:04:54', '2026-05-28 11:04:55');
-INSERT INTO `sj_job_task_batch` VALUES (1632, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937554502, 3, '', '', 0, '2026-05-28 11:05:54', '2026-05-28 11:05:55');
-INSERT INTO `sj_job_task_batch` VALUES (1633, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937614501, 3, '', '', 0, '2026-05-28 11:06:54', '2026-05-28 11:06:55');
-INSERT INTO `sj_job_task_batch` VALUES (1634, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937674510, 3, '', '', 0, '2026-05-28 11:07:54', '2026-05-28 11:07:55');
-INSERT INTO `sj_job_task_batch` VALUES (1635, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937734503, 3, '', '', 0, '2026-05-28 11:08:54', '2026-05-28 11:08:55');
-INSERT INTO `sj_job_task_batch` VALUES (1636, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937794502, 3, '', '', 0, '2026-05-28 11:09:54', '2026-05-28 11:09:55');
-INSERT INTO `sj_job_task_batch` VALUES (1637, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937854501, 3, '', '', 0, '2026-05-28 11:10:54', '2026-05-28 11:10:55');
-INSERT INTO `sj_job_task_batch` VALUES (1638, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937914504, 3, '', '', 0, '2026-05-28 11:11:54', '2026-05-28 11:11:55');
-INSERT INTO `sj_job_task_batch` VALUES (1639, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779937974501, 3, '', '', 0, '2026-05-28 11:12:54', '2026-05-28 11:12:55');
-INSERT INTO `sj_job_task_batch` VALUES (1640, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938034500, 3, '', '', 0, '2026-05-28 11:13:54', '2026-05-28 11:13:55');
-INSERT INTO `sj_job_task_batch` VALUES (1641, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938094500, 3, '', '', 0, '2026-05-28 11:14:54', '2026-05-28 11:14:55');
-INSERT INTO `sj_job_task_batch` VALUES (1642, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938154504, 3, '', '', 0, '2026-05-28 11:15:54', '2026-05-28 11:15:55');
-INSERT INTO `sj_job_task_batch` VALUES (1643, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938214501, 3, '', '', 0, '2026-05-28 11:16:54', '2026-05-28 11:16:55');
-INSERT INTO `sj_job_task_batch` VALUES (1644, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938274506, 3, '', '', 0, '2026-05-28 11:17:54', '2026-05-28 11:17:55');
-INSERT INTO `sj_job_task_batch` VALUES (1645, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938334501, 3, '', '', 0, '2026-05-28 11:18:54', '2026-05-28 11:18:55');
-INSERT INTO `sj_job_task_batch` VALUES (1646, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938394503, 3, '', '', 0, '2026-05-28 11:19:54', '2026-05-28 11:19:55');
-INSERT INTO `sj_job_task_batch` VALUES (1647, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938454504, 3, '', '', 0, '2026-05-28 11:20:54', '2026-05-28 11:20:55');
-INSERT INTO `sj_job_task_batch` VALUES (1648, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938514500, 3, '', '', 0, '2026-05-28 11:21:54', '2026-05-28 11:21:55');
-INSERT INTO `sj_job_task_batch` VALUES (1649, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938574500, 3, '', '', 0, '2026-05-28 11:22:54', '2026-05-28 11:22:55');
-INSERT INTO `sj_job_task_batch` VALUES (1650, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938634501, 3, '', '', 0, '2026-05-28 11:23:54', '2026-05-28 11:23:55');
-INSERT INTO `sj_job_task_batch` VALUES (1651, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938694501, 3, '', '', 0, '2026-05-28 11:24:54', '2026-05-28 11:24:55');
-INSERT INTO `sj_job_task_batch` VALUES (1652, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938754511, 3, '', '', 0, '2026-05-28 11:25:54', '2026-05-28 11:25:55');
-INSERT INTO `sj_job_task_batch` VALUES (1653, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938814501, 3, '', '', 0, '2026-05-28 11:26:54', '2026-05-28 11:26:55');
-INSERT INTO `sj_job_task_batch` VALUES (1654, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938874502, 3, '', '', 0, '2026-05-28 11:27:54', '2026-05-28 11:27:55');
-INSERT INTO `sj_job_task_batch` VALUES (1655, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938934516, 3, '', '', 0, '2026-05-28 11:28:54', '2026-05-28 11:28:55');
-INSERT INTO `sj_job_task_batch` VALUES (1656, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779938994507, 3, '', '', 0, '2026-05-28 11:29:54', '2026-05-28 11:29:55');
-INSERT INTO `sj_job_task_batch` VALUES (1657, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939054501, 3, '', '', 0, '2026-05-28 11:30:54', '2026-05-28 11:30:55');
-INSERT INTO `sj_job_task_batch` VALUES (1658, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939114502, 3, '', '', 0, '2026-05-28 11:31:54', '2026-05-28 11:31:55');
-INSERT INTO `sj_job_task_batch` VALUES (1659, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939174501, 3, '', '', 0, '2026-05-28 11:32:54', '2026-05-28 11:32:55');
-INSERT INTO `sj_job_task_batch` VALUES (1660, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939234508, 3, '', '', 0, '2026-05-28 11:33:54', '2026-05-28 11:33:55');
-INSERT INTO `sj_job_task_batch` VALUES (1661, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939294507, 3, '', '', 0, '2026-05-28 11:34:54', '2026-05-28 11:34:55');
-INSERT INTO `sj_job_task_batch` VALUES (1662, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939354502, 3, '', '', 0, '2026-05-28 11:35:54', '2026-05-28 11:35:55');
-INSERT INTO `sj_job_task_batch` VALUES (1663, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939414503, 3, '', '', 0, '2026-05-28 11:36:54', '2026-05-28 11:36:55');
-INSERT INTO `sj_job_task_batch` VALUES (1664, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939474503, 3, '', '', 0, '2026-05-28 11:37:54', '2026-05-28 11:37:55');
-INSERT INTO `sj_job_task_batch` VALUES (1665, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939534504, 3, '', '', 0, '2026-05-28 11:38:54', '2026-05-28 11:38:55');
-INSERT INTO `sj_job_task_batch` VALUES (1666, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939594501, 3, '', '', 0, '2026-05-28 11:39:54', '2026-05-28 11:39:55');
-INSERT INTO `sj_job_task_batch` VALUES (1667, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939654502, 3, '', '', 0, '2026-05-28 11:40:54', '2026-05-28 11:40:55');
-INSERT INTO `sj_job_task_batch` VALUES (1668, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939714507, 3, '', '', 0, '2026-05-28 11:41:54', '2026-05-28 11:41:55');
-INSERT INTO `sj_job_task_batch` VALUES (1669, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939774603, 3, '', '', 0, '2026-05-28 11:42:55', '2026-05-28 11:42:55');
-INSERT INTO `sj_job_task_batch` VALUES (1670, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939834500, 3, '', '', 0, '2026-05-28 11:43:54', '2026-05-28 11:43:55');
-INSERT INTO `sj_job_task_batch` VALUES (1671, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939894501, 3, '', '', 0, '2026-05-28 11:44:54', '2026-05-28 11:44:55');
-INSERT INTO `sj_job_task_batch` VALUES (1672, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779939954503, 3, '', '', 0, '2026-05-28 11:45:54', '2026-05-28 11:45:55');
-INSERT INTO `sj_job_task_batch` VALUES (1673, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779940014507, 3, '', '', 0, '2026-05-28 11:46:54', '2026-05-28 11:46:55');
-INSERT INTO `sj_job_task_batch` VALUES (1674, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779940627110, 3, '', '', 0, '2026-05-28 11:57:04', '2026-05-28 11:57:07');
-INSERT INTO `sj_job_task_batch` VALUES (1675, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779941227102, 3, '', '', 0, '2026-05-28 12:07:04', '2026-05-28 12:07:07');
-INSERT INTO `sj_job_task_batch` VALUES (1676, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779941827102, 3, '', '', 0, '2026-05-28 12:17:04', '2026-05-28 12:17:07');
-INSERT INTO `sj_job_task_batch` VALUES (1677, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779942427102, 3, '', '', 0, '2026-05-28 12:27:04', '2026-05-28 12:27:07');
-INSERT INTO `sj_job_task_batch` VALUES (1678, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779943027101, 3, '', '', 0, '2026-05-28 12:37:04', '2026-05-28 12:37:07');
-INSERT INTO `sj_job_task_batch` VALUES (1679, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779943627106, 3, '', '', 0, '2026-05-28 12:47:04', '2026-05-28 12:47:07');
-INSERT INTO `sj_job_task_batch` VALUES (1680, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779944227101, 3, '', '', 0, '2026-05-28 12:57:04', '2026-05-28 12:57:07');
-INSERT INTO `sj_job_task_batch` VALUES (1681, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779944827102, 3, '', '', 0, '2026-05-28 13:07:04', '2026-05-28 13:07:07');
-INSERT INTO `sj_job_task_batch` VALUES (1682, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779945427102, 3, '', '', 0, '2026-05-28 13:17:04', '2026-05-28 13:17:07');
-INSERT INTO `sj_job_task_batch` VALUES (1683, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779946027108, 3, '', '', 0, '2026-05-28 13:27:04', '2026-05-28 13:27:07');
-INSERT INTO `sj_job_task_batch` VALUES (1684, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779946627101, 3, '', '', 0, '2026-05-28 13:37:04', '2026-05-28 13:37:07');
-INSERT INTO `sj_job_task_batch` VALUES (1685, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779947227103, 3, '', '', 0, '2026-05-28 13:47:04', '2026-05-28 13:47:07');
-INSERT INTO `sj_job_task_batch` VALUES (1686, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779947827111, 3, '', '', 0, '2026-05-28 13:57:04', '2026-05-28 13:57:07');
-INSERT INTO `sj_job_task_batch` VALUES (1687, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779948427101, 3, '', '', 0, '2026-05-28 14:07:04', '2026-05-28 14:07:07');
-INSERT INTO `sj_job_task_batch` VALUES (1688, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779949027101, 3, '', '', 0, '2026-05-28 14:17:04', '2026-05-28 14:17:07');
-INSERT INTO `sj_job_task_batch` VALUES (1689, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 14:27:04', '2026-05-28 14:27:04');
-INSERT INTO `sj_job_task_batch` VALUES (1690, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779950227102, 3, '', '', 0, '2026-05-28 14:37:04', '2026-05-28 14:37:07');
-INSERT INTO `sj_job_task_batch` VALUES (1691, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 14:47:04', '2026-05-28 14:47:04');
-INSERT INTO `sj_job_task_batch` VALUES (1692, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 14:57:04', '2026-05-28 14:57:04');
-INSERT INTO `sj_job_task_batch` VALUES (1693, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 15:07:04', '2026-05-28 15:07:04');
-INSERT INTO `sj_job_task_batch` VALUES (1694, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 15:17:04', '2026-05-28 15:17:04');
-INSERT INTO `sj_job_task_batch` VALUES (1695, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 15:27:04', '2026-05-28 15:27:04');
-INSERT INTO `sj_job_task_batch` VALUES (1696, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 15:37:04', '2026-05-28 15:37:04');
-INSERT INTO `sj_job_task_batch` VALUES (1697, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 15:47:04', '2026-05-28 15:47:04');
-INSERT INTO `sj_job_task_batch` VALUES (1698, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 15:57:04', '2026-05-28 15:57:04');
-INSERT INTO `sj_job_task_batch` VALUES (1699, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 16:07:04', '2026-05-28 16:07:04');
-INSERT INTO `sj_job_task_batch` VALUES (1700, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779956227104, 3, '', '', 0, '2026-05-28 16:17:04', '2026-05-28 16:17:07');
-INSERT INTO `sj_job_task_batch` VALUES (1701, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779956827102, 3, '', '', 0, '2026-05-28 16:27:04', '2026-05-28 16:27:07');
-INSERT INTO `sj_job_task_batch` VALUES (1702, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779957427109, 3, '', '', 0, '2026-05-28 16:37:04', '2026-05-28 16:37:07');
-INSERT INTO `sj_job_task_batch` VALUES (1703, 'dev', 'ruoyi_group', 1, 0, 0, 0, 4, 0, 1779958027101, 3, '', '', 0, '2026-05-28 16:47:04', '2026-05-28 16:47:11');
-INSERT INTO `sj_job_task_batch` VALUES (1704, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-28 16:57:04', '2026-05-28 16:57:04');
-INSERT INTO `sj_job_task_batch` VALUES (1705, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779959227104, 3, '', '', 0, '2026-05-28 17:07:04', '2026-05-28 17:07:07');
-INSERT INTO `sj_job_task_batch` VALUES (1706, 'dev', 'ruoyi_group', 1, 0, 0, 0, 4, 0, 1779959827101, 3, '', '', 0, '2026-05-28 17:17:04', '2026-05-28 17:17:11');
-INSERT INTO `sj_job_task_batch` VALUES (1707, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779960427100, 3, '', '', 0, '2026-05-28 17:27:04', '2026-05-28 17:27:07');
-INSERT INTO `sj_job_task_batch` VALUES (1708, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779961027174, 3, '', '', 0, '2026-05-28 17:37:04', '2026-05-28 17:37:07');
-INSERT INTO `sj_job_task_batch` VALUES (1709, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779961627108, 3, '', '', 0, '2026-05-28 17:47:04', '2026-05-28 17:47:07');
-INSERT INTO `sj_job_task_batch` VALUES (1710, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779962227102, 3, '', '', 0, '2026-05-28 17:57:04', '2026-05-28 17:57:07');
-INSERT INTO `sj_job_task_batch` VALUES (1711, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779962827101, 3, '', '', 0, '2026-05-28 18:07:04', '2026-05-28 18:07:07');
-INSERT INTO `sj_job_task_batch` VALUES (1712, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779963427101, 3, '', '', 0, '2026-05-28 18:17:04', '2026-05-28 18:17:07');
-INSERT INTO `sj_job_task_batch` VALUES (1713, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1779964027102, 3, '', '', 0, '2026-05-28 18:27:04', '2026-05-28 18:27:07');
-INSERT INTO `sj_job_task_batch` VALUES (1714, 'dev', 'ruoyi_group', 3, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 10:29:39', '2026-05-29 10:29:39');
-INSERT INTO `sj_job_task_batch` VALUES (1715, 'dev', 'ruoyi_group', 2, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 10:29:39', '2026-05-29 10:29:39');
-INSERT INTO `sj_job_task_batch` VALUES (1716, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 10:29:39', '2026-05-29 10:29:39');
-INSERT INTO `sj_job_task_batch` VALUES (1717, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780022379454, 3, '', '', 0, '2026-05-29 10:39:39', '2026-05-29 10:39:40');
-INSERT INTO `sj_job_task_batch` VALUES (1718, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 10:53:58', '2026-05-29 10:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1719, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 11:03:58', '2026-05-29 11:03:58');
-INSERT INTO `sj_job_task_batch` VALUES (1720, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 11:13:58', '2026-05-29 11:13:58');
-INSERT INTO `sj_job_task_batch` VALUES (1721, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780025037653, 3, '', '', 0, '2026-05-29 11:23:58', '2026-05-29 11:23:58');
-INSERT INTO `sj_job_task_batch` VALUES (1722, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780025637542, 3, '', '', 0, '2026-05-29 11:33:58', '2026-05-29 11:33:58');
-INSERT INTO `sj_job_task_batch` VALUES (1723, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780026237543, 3, '', '', 0, '2026-05-29 11:43:58', '2026-05-29 11:43:58');
-INSERT INTO `sj_job_task_batch` VALUES (1724, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780026837547, 3, '', '', 0, '2026-05-29 11:53:58', '2026-05-29 11:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1725, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780027437542, 3, '', '', 0, '2026-05-29 12:03:58', '2026-05-29 12:03:58');
-INSERT INTO `sj_job_task_batch` VALUES (1726, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780028037547, 3, '', '', 0, '2026-05-29 12:13:58', '2026-05-29 12:13:58');
-INSERT INTO `sj_job_task_batch` VALUES (1727, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780028637549, 3, '', '', 0, '2026-05-29 12:23:58', '2026-05-29 12:23:58');
-INSERT INTO `sj_job_task_batch` VALUES (1728, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780029237542, 3, '', '', 0, '2026-05-29 12:33:58', '2026-05-29 12:33:58');
-INSERT INTO `sj_job_task_batch` VALUES (1729, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780029837543, 3, '', '', 0, '2026-05-29 12:43:58', '2026-05-29 12:43:58');
-INSERT INTO `sj_job_task_batch` VALUES (1730, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780030437541, 3, '', '', 0, '2026-05-29 12:53:58', '2026-05-29 12:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1731, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780031037547, 3, '', '', 0, '2026-05-29 13:03:58', '2026-05-29 13:03:58');
-INSERT INTO `sj_job_task_batch` VALUES (1732, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780031637545, 3, '', '', 0, '2026-05-29 13:13:58', '2026-05-29 13:13:58');
-INSERT INTO `sj_job_task_batch` VALUES (1733, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780032237546, 3, '', '', 0, '2026-05-29 13:23:58', '2026-05-29 13:23:58');
-INSERT INTO `sj_job_task_batch` VALUES (1734, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780032837542, 3, '', '', 0, '2026-05-29 13:33:58', '2026-05-29 13:33:58');
-INSERT INTO `sj_job_task_batch` VALUES (1735, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780033437543, 3, '', '', 0, '2026-05-29 13:43:58', '2026-05-29 13:43:58');
-INSERT INTO `sj_job_task_batch` VALUES (1736, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780034037545, 3, '', '', 0, '2026-05-29 13:53:58', '2026-05-29 13:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1737, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780034637546, 3, '', '', 0, '2026-05-29 14:03:58', '2026-05-29 14:03:58');
-INSERT INTO `sj_job_task_batch` VALUES (1738, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780035237543, 3, '', '', 0, '2026-05-29 14:13:58', '2026-05-29 14:13:58');
-INSERT INTO `sj_job_task_batch` VALUES (1739, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780035837543, 3, '', '', 0, '2026-05-29 14:23:58', '2026-05-29 14:23:58');
-INSERT INTO `sj_job_task_batch` VALUES (1740, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780036437547, 3, '', '', 0, '2026-05-29 14:33:58', '2026-05-29 14:33:58');
-INSERT INTO `sj_job_task_batch` VALUES (1741, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780037037551, 3, '', '', 0, '2026-05-29 14:43:58', '2026-05-29 14:43:58');
-INSERT INTO `sj_job_task_batch` VALUES (1742, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780037637548, 3, '', '', 0, '2026-05-29 14:53:58', '2026-05-29 14:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1743, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780038237544, 3, '', '', 0, '2026-05-29 15:03:58', '2026-05-29 15:03:58');
-INSERT INTO `sj_job_task_batch` VALUES (1744, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780038837545, 3, '', '', 0, '2026-05-29 15:13:58', '2026-05-29 15:13:58');
-INSERT INTO `sj_job_task_batch` VALUES (1745, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780039437548, 3, '', '', 0, '2026-05-29 15:23:58', '2026-05-29 15:23:58');
-INSERT INTO `sj_job_task_batch` VALUES (1746, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780040037544, 3, '', '', 0, '2026-05-29 15:33:58', '2026-05-29 15:33:58');
-INSERT INTO `sj_job_task_batch` VALUES (1747, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780040637543, 3, '', '', 0, '2026-05-29 15:43:58', '2026-05-29 15:43:58');
-INSERT INTO `sj_job_task_batch` VALUES (1748, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780041237543, 3, '', '', 0, '2026-05-29 15:53:58', '2026-05-29 15:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1749, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780041837542, 3, '', '', 0, '2026-05-29 16:03:58', '2026-05-29 16:03:58');
-INSERT INTO `sj_job_task_batch` VALUES (1750, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780042437543, 3, '', '', 0, '2026-05-29 16:13:58', '2026-05-29 16:13:58');
-INSERT INTO `sj_job_task_batch` VALUES (1751, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780043037547, 3, '', '', 0, '2026-05-29 16:23:58', '2026-05-29 16:23:58');
-INSERT INTO `sj_job_task_batch` VALUES (1752, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780043637543, 3, '', '', 0, '2026-05-29 16:33:58', '2026-05-29 16:33:58');
-INSERT INTO `sj_job_task_batch` VALUES (1753, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780044237543, 3, '', '', 0, '2026-05-29 16:43:58', '2026-05-29 16:43:58');
-INSERT INTO `sj_job_task_batch` VALUES (1754, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780044837544, 3, '', '', 0, '2026-05-29 16:53:58', '2026-05-29 16:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1755, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780045437549, 3, '', '', 0, '2026-05-29 17:03:58', '2026-05-29 17:03:58');
-INSERT INTO `sj_job_task_batch` VALUES (1756, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780046037548, 3, '', '', 0, '2026-05-29 17:13:58', '2026-05-29 17:13:58');
-INSERT INTO `sj_job_task_batch` VALUES (1757, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780046637544, 3, '', '', 0, '2026-05-29 17:23:58', '2026-05-29 17:23:58');
-INSERT INTO `sj_job_task_batch` VALUES (1758, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780047237542, 3, '', '', 0, '2026-05-29 17:33:58', '2026-05-29 17:33:58');
-INSERT INTO `sj_job_task_batch` VALUES (1759, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 17:43:58', '2026-05-29 17:43:58');
-INSERT INTO `sj_job_task_batch` VALUES (1760, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-29 17:53:58', '2026-05-29 17:53:58');
-INSERT INTO `sj_job_task_batch` VALUES (1761, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780072715059, 3, '', '', 0, '2026-05-30 00:38:35', '2026-05-30 00:38:35');
-INSERT INTO `sj_job_task_batch` VALUES (1762, 'dev', 'ruoyi_group', 1, 0, 0, 0, 4, 0, 1780073314957, 3, '', '', 0, '2026-05-30 00:48:35', '2026-05-30 00:48:39');
-INSERT INTO `sj_job_task_batch` VALUES (1763, 'dev', 'ruoyi_group', 2, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-30 13:57:10', '2026-05-30 13:57:10');
-INSERT INTO `sj_job_task_batch` VALUES (1764, 'dev', 'ruoyi_group', 3, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-30 13:57:10', '2026-05-30 13:57:10');
-INSERT INTO `sj_job_task_batch` VALUES (1765, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-05-30 13:57:10', '2026-05-30 13:57:10');
-INSERT INTO `sj_job_task_batch` VALUES (1766, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780121230039, 3, '', '', 0, '2026-05-30 14:07:10', '2026-05-30 14:07:10');
-INSERT INTO `sj_job_task_batch` VALUES (1767, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780121829938, 3, '', '', 0, '2026-05-30 14:17:10', '2026-05-30 14:17:10');
-INSERT INTO `sj_job_task_batch` VALUES (1768, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780122429929, 3, '', '', 0, '2026-05-30 14:27:10', '2026-05-30 14:27:10');
-INSERT INTO `sj_job_task_batch` VALUES (1769, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780123029934, 3, '', '', 0, '2026-05-30 14:37:10', '2026-05-30 14:37:10');
-INSERT INTO `sj_job_task_batch` VALUES (1770, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780123629932, 3, '', '', 0, '2026-05-30 14:47:10', '2026-05-30 14:47:10');
-INSERT INTO `sj_job_task_batch` VALUES (1771, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780124229930, 3, '', '', 0, '2026-05-30 14:57:10', '2026-05-30 14:57:10');
-INSERT INTO `sj_job_task_batch` VALUES (1772, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780124829943, 3, '', '', 0, '2026-05-30 15:07:10', '2026-05-30 15:07:10');
-INSERT INTO `sj_job_task_batch` VALUES (1773, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780125429935, 3, '', '', 0, '2026-05-30 15:17:10', '2026-05-30 15:17:10');
-INSERT INTO `sj_job_task_batch` VALUES (1774, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780126029939, 3, '', '', 0, '2026-05-30 15:27:10', '2026-05-30 15:27:10');
-INSERT INTO `sj_job_task_batch` VALUES (1775, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780126629941, 3, '', '', 0, '2026-05-30 15:37:10', '2026-05-30 15:37:10');
+INSERT INTO `sj_job_task_batch` VALUES (1776, 'dev', 'ruoyi_group', 2, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-07 13:15:37', '2026-06-07 13:15:37');
+INSERT INTO `sj_job_task_batch` VALUES (1777, 'dev', 'ruoyi_group', 3, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-07 13:15:37', '2026-06-07 13:15:37');
+INSERT INTO `sj_job_task_batch` VALUES (1778, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-07 13:15:37', '2026-06-07 13:15:37');
+INSERT INTO `sj_job_task_batch` VALUES (1779, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-07 16:48:27', '2026-06-07 16:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1780, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780822707506, 3, '', '', 0, '2026-06-07 16:58:27', '2026-06-07 16:58:28');
+INSERT INTO `sj_job_task_batch` VALUES (1781, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780823307401, 3, '', '', 0, '2026-06-07 17:08:27', '2026-06-07 17:08:27');
+INSERT INTO `sj_job_task_batch` VALUES (1782, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780823907405, 3, '', '', 0, '2026-06-07 17:18:27', '2026-06-07 17:18:27');
+INSERT INTO `sj_job_task_batch` VALUES (1783, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780824507397, 3, '', '', 0, '2026-06-07 17:28:27', '2026-06-07 17:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1784, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780825107401, 3, '', '', 0, '2026-06-07 17:38:27', '2026-06-07 17:38:27');
+INSERT INTO `sj_job_task_batch` VALUES (1785, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780825707405, 3, '', '', 0, '2026-06-07 17:48:27', '2026-06-07 17:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1786, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780826307400, 3, '', '', 0, '2026-06-07 17:58:27', '2026-06-07 17:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1787, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780826907397, 3, '', '', 0, '2026-06-07 18:08:27', '2026-06-07 18:08:27');
+INSERT INTO `sj_job_task_batch` VALUES (1788, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780827507408, 3, '', '', 0, '2026-06-07 18:18:27', '2026-06-07 18:18:27');
+INSERT INTO `sj_job_task_batch` VALUES (1789, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780828107398, 3, '', '', 0, '2026-06-07 18:28:27', '2026-06-07 18:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1790, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780828707395, 3, '', '', 0, '2026-06-07 18:38:27', '2026-06-07 18:38:27');
+INSERT INTO `sj_job_task_batch` VALUES (1791, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780829307397, 3, '', '', 0, '2026-06-07 18:48:27', '2026-06-07 18:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1792, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780829907396, 3, '', '', 0, '2026-06-07 18:58:27', '2026-06-07 18:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1793, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780830507401, 3, '', '', 0, '2026-06-07 19:08:27', '2026-06-07 19:08:27');
+INSERT INTO `sj_job_task_batch` VALUES (1794, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780831107400, 3, '', '', 0, '2026-06-07 19:18:27', '2026-06-07 19:18:27');
+INSERT INTO `sj_job_task_batch` VALUES (1795, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780831707405, 3, '', '', 0, '2026-06-07 19:28:27', '2026-06-07 19:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1796, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780832307507, 3, '', '', 0, '2026-06-07 19:38:27', '2026-06-07 19:38:28');
+INSERT INTO `sj_job_task_batch` VALUES (1797, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780832907403, 3, '', '', 0, '2026-06-07 19:48:27', '2026-06-07 19:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1798, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780833507396, 3, '', '', 0, '2026-06-07 19:58:27', '2026-06-07 19:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1799, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780834107400, 3, '', '', 0, '2026-06-07 20:08:27', '2026-06-07 20:08:27');
+INSERT INTO `sj_job_task_batch` VALUES (1800, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780834707399, 3, '', '', 0, '2026-06-07 20:18:27', '2026-06-07 20:18:27');
+INSERT INTO `sj_job_task_batch` VALUES (1801, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780835307405, 3, '', '', 0, '2026-06-07 20:28:27', '2026-06-07 20:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1802, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780835907402, 3, '', '', 0, '2026-06-07 20:38:27', '2026-06-07 20:38:27');
+INSERT INTO `sj_job_task_batch` VALUES (1803, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780836507404, 3, '', '', 0, '2026-06-07 20:48:27', '2026-06-07 20:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1804, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780837107396, 3, '', '', 0, '2026-06-07 20:58:27', '2026-06-07 20:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1805, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780837707396, 3, '', '', 0, '2026-06-07 21:08:27', '2026-06-07 21:08:28');
+INSERT INTO `sj_job_task_batch` VALUES (1806, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780838307402, 3, '', '', 0, '2026-06-07 21:18:27', '2026-06-07 21:18:27');
+INSERT INTO `sj_job_task_batch` VALUES (1807, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780838907410, 3, '', '', 0, '2026-06-07 21:28:27', '2026-06-07 21:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1808, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780839507396, 3, '', '', 0, '2026-06-07 21:38:27', '2026-06-07 21:38:27');
+INSERT INTO `sj_job_task_batch` VALUES (1809, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780840107396, 3, '', '', 0, '2026-06-07 21:48:27', '2026-06-07 21:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1810, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780840707406, 3, '', '', 0, '2026-06-07 21:58:27', '2026-06-07 21:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1811, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780841307409, 3, '', '', 0, '2026-06-07 22:08:27', '2026-06-07 22:08:28');
 
 -- ----------------------------
 -- Table structure for sj_namespace
@@ -7865,12 +7672,12 @@ CREATE TABLE `sj_namespace`  (
   `unique_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '唯一id',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_unique_id`(`unique_id`) USING BTREE,
   INDEX `idx_name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_namespace
@@ -7895,11 +7702,15 @@ CREATE TABLE `sj_notify_config`  (
   `rate_limiter_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '限流状态 0、未启用 1、启用',
   `rate_limiter_threshold` int(11) NOT NULL DEFAULT 0 COMMENT '每秒限流阈值',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_notify_recipient
@@ -7912,11 +7723,15 @@ CREATE TABLE `sj_notify_recipient`  (
   `notify_type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '通知类型 1、钉钉 2、邮件 3、企业微信 4 飞书 5 webhook',
   `notify_attribute` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置属性',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id`(`namespace_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_recipient
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry
@@ -7942,8 +7757,8 @@ CREATE TABLE `sj_retry`  (
   `bucket_index` int(11) NOT NULL DEFAULT 0 COMMENT 'bucket',
   `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父节点id',
   `deleted` bigint(20) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_tasktype_idempotentid_deleted`(`scene_id`, `task_type`, `idempotent_id`, `deleted`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
@@ -7951,7 +7766,11 @@ CREATE TABLE `sj_retry`  (
   INDEX `idx_retry_status_bucket_index`(`retry_status`, `bucket_index`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_dead_letter
@@ -7970,13 +7789,17 @@ CREATE TABLE `sj_retry_dead_letter`  (
   `serializer_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'jackson' COMMENT '执行方法参数序列化器名称',
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '执行方法参数',
   `ext_attrs` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `idx_idempotent_id`(`idempotent_id`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_dead_letter
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_scene_config
@@ -8003,11 +7826,15 @@ CREATE TABLE `sj_retry_scene_config`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_scene_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_summary
@@ -8018,17 +7845,21 @@ CREATE TABLE `sj_retry_summary`  (
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `scene_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '场景名称',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `running_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试中-日志数量',
   `finish_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试完成-日志数量',
   `max_count_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试到达最大次数-日志数量',
   `suspend_num` int(11) NOT NULL DEFAULT 0 COMMENT '暂停重试-日志数量',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_name_trigger_at`(`namespace_id`, `group_name`, `scene_name`, `trigger_at`) USING BTREE,
   INDEX `idx_trigger_at`(`trigger_at`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_summary
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task
@@ -8045,14 +7876,18 @@ CREATE TABLE `sj_retry_task`  (
   `task_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '任务类型 1、重试数据 2、回调数据',
   `operation_reason` tinyint(4) NOT NULL DEFAULT 0 COMMENT '操作原因',
   `client_info` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '客户端地址 clientId#ip:port',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `task_status`(`task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_retry_id`(`retry_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task_log_message
@@ -8067,11 +7902,15 @@ CREATE TABLE `sj_retry_task_log_message`  (
   `message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '异常信息',
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_retry_task_id`(`namespace_id`, `group_name`, `retry_task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task_log_message
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_server_node
@@ -8084,17 +7923,23 @@ CREATE TABLE `sj_server_node`  (
   `host_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主机id',
   `host_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '机器ip',
   `host_port` int(16) NOT NULL COMMENT '机器端口',
-  `expire_at` datetime(0) NOT NULL COMMENT '过期时间',
+  `expire_at` datetime NOT NULL COMMENT '过期时间',
   `node_type` tinyint(4) NOT NULL COMMENT '节点类型 1、客户端 2、是服务端',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_server_node
+-- ----------------------------
+INSERT INTO `sj_server_node` VALUES (3, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2063543465639325696', '192.168.1.103', 17888, '2026-06-07 22:16:26', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-06-07 16:47:58', '2026-06-07 22:15:55');
+INSERT INTO `sj_server_node` VALUES (12, 'dev', 'ruoyi_group', '2063624952946491392', '192.168.1.103', 28080, '2026-06-07 22:16:25', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-06-07 22:11:45', '2026-06-07 22:15:54');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -8105,11 +7950,11 @@ CREATE TABLE `sj_system_user`  (
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '账号',
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '密码',
   `role` tinyint(4) NOT NULL DEFAULT 0 COMMENT '角色：1-普通用户、2-管理员',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_system_user
@@ -8125,11 +7970,15 @@ CREATE TABLE `sj_system_user_permission`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `system_user_id` bigint(20) NOT NULL COMMENT '系统用户id',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_system_user_id`(`namespace_id`, `group_name`, `system_user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_system_user_permission
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow
@@ -8155,12 +8004,16 @@ CREATE TABLE `sj_workflow`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_node
@@ -8182,12 +8035,16 @@ CREATE TABLE `sj_workflow_node`  (
   `version` int(11) NOT NULL COMMENT '版本号',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_node
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_task_batch
@@ -8206,13 +8063,17 @@ CREATE TABLE `sj_workflow_task_batch`  (
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `version` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`workflow_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_task_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_auto_code_part
@@ -8242,14 +8103,14 @@ CREATE TABLE `sys_auto_code_part`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`part_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -8357,15 +8218,15 @@ CREATE TABLE `sys_auto_code_result`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`code_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_gen_date`(`gen_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -8414,14 +8275,14 @@ CREATE TABLE `sys_auto_code_rule`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -8474,19 +8335,20 @@ CREATE TABLE `sys_client`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `appid` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appid',
   `app_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appSecret',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_client
 -- ----------------------------
 INSERT INTO `sys_client` VALUES (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 1800, 604800, '0', '0', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', '', '');
 INSERT INTO `sys_client` VALUES (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 1800, 604800, '0', '0', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', '', '');
+INSERT INTO `sys_client` VALUES (3, 'a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8', 'xcx', 'xcx_secret', 'xcx', 'xcx', 1800, 604800, '0', '0', NULL, NULL, NULL, NULL, NULL, 'wx139028129ea0d39e', 'app_secret');
 
 -- ----------------------------
 -- Table structure for sys_config
@@ -8501,12 +8363,12 @@ CREATE TABLE `sys_config`  (
   `config_type` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_config
@@ -8541,11 +8403,11 @@ CREATE TABLE `sys_dept`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -8602,16 +8464,16 @@ CREATE TABLE `sys_dic_area`  (
   `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`pkid`) USING BTREE,
   INDEX `idx_layered`(`layered`) USING BTREE,
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   INDEX `idx_parent_area_id`(`parent_area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dic_area
@@ -10294,12 +10156,12 @@ CREATE TABLE `sys_dict_data`  (
   `is_default` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -10754,13 +10616,13 @@ CREATE TABLE `sys_dict_type`  (
   `dict_type` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '字典类型',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `tenant_id`(`tenant_id`, `dict_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -10892,11 +10754,11 @@ CREATE TABLE `sys_logininfor`  (
   `os` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '操作系统',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
   `msg` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '提示消息',
-  `login_time` datetime(0) NULL DEFAULT NULL COMMENT '访问时间',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -10932,6 +10794,13 @@ INSERT INTO `sys_logininfor` VALUES (2062823722887061505, '000000', 'wx_oOUoL6wV
 INSERT INTO `sys_logininfor` VALUES (2062833176575647745, '000000', 'wx_oOUoL6wV', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'MicroMessenger', 'iPhone', '0', '登录成功', '2026-06-05 17:45:30');
 INSERT INTO `sys_logininfor` VALUES (2062833590733824001, '000000', 'wx_oOUoL6wV', 'xcx', 'xcx', '0:0:0:0:0:0:0:1', '内网IP', 'MicroMessenger', 'iPhone', '0', '退出成功', '2026-06-05 17:47:08');
 INSERT INTO `sys_logininfor` VALUES (2062833614972706818, '000000', 'wx_oOUoL6wV', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'MicroMessenger', 'iPhone', '0', '登录成功', '2026-06-05 17:47:14');
+INSERT INTO `sys_logininfor` VALUES (2063100552891478018, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-06-06 11:27:57');
+INSERT INTO `sys_logininfor` VALUES (2063490368749596673, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-07 13:16:56');
+INSERT INTO `sys_logininfor` VALUES (2063516891187642370, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-07 15:02:20');
+INSERT INTO `sys_logininfor` VALUES (2063524416574324737, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-06-07 15:32:14');
+INSERT INTO `sys_logininfor` VALUES (2063524427324325890, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-07 15:32:17');
+INSERT INTO `sys_logininfor` VALUES (2063537405767696386, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-07 16:23:51');
+INSERT INTO `sys_logininfor` VALUES (2063609186327068674, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-07 21:09:05');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -10954,12 +10823,12 @@ CREATE TABLE `sys_menu`  (
   `icon` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -11183,6 +11052,7 @@ INSERT INTO `sys_menu` VALUES (2152, '返工订单新增', 2150, 2, '#', '', NUL
 INSERT INTO `sys_menu` VALUES (2153, '返工订单修改', 2150, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:edit', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2154, '返工订单删除', 2150, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:remove', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2155, '返工订单导出', 2150, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:export', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2156, '上架确认', 2105, 1, '', '', '', 1, 0, 'F', '0', '0', 'wm:receive:shelf', '#', 103, 1, '2026-06-07 10:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2200, '销售管理', 2000, 3, 'so', NULL, NULL, 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '销售管理');
 INSERT INTO `sys_menu` VALUES (2201, '客户订单', 2200, 1, 'customerOrder', 'erp/so/customerorder/index', NULL, 1, 0, 'C', '0', '0', 'so:customerOrder:list', 'documentation', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2202, '销售订单', 2200, 2, 'orderheader', 'erp/so/orderheader/index', NULL, 1, 0, 'C', '0', '0', 'so:orderheader:list', 'documentation', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-13 15:19:26', '');
@@ -11389,12 +11259,12 @@ CREATE TABLE `sys_notice`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2052226250938740738 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2052226250938740738 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -11426,13 +11296,13 @@ CREATE TABLE `sys_oper_log`  (
   `json_result` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '返回参数',
   `status` int(1) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
   `error_msg` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '错误消息',
-  `oper_time` datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
+  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
   `cost_time` bigint(20) NULL DEFAULT 0 COMMENT '消耗时间',
   PRIMARY KEY (`oper_id`) USING BTREE,
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -11491,6 +11361,20 @@ INSERT INTO `sys_oper_log` VALUES (2062717540465876994, '000000', '批次管理'
 INSERT INTO `sys_oper_log` VALUES (2062717661899366401, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.edit()', 'PUT', 1, 'admin', '研发部门', '/erp/wm/receive', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"receiveId\":\"2062395873109688322\",\"receiveCode\":\"CGRK20260604002\",\"receiveName\":\"采购到货收货单\",\"iqcId\":null,\"iqcCode\":null,\"noticeId\":\"2062208168804696066\",\"noticeCode\":\"AN20260604001\",\"purId\":\"2062092892921307138\",\"purCode\":\"CGDD202606030001\",\"vendorId\":\"2062098763051089921\",\"vendorCode\":\"V00001\",\"vendorName\":\"钢板产出商\",\"vendorNick\":null,\"warehouseId\":null,\"warehouseCode\":null,\"warehouseName\":null,\"areaId\":null,\"areaCode\":null,\"areaName\":null,\"locationId\":null,\"locationCode\":null,\"locationName\":null,\"receiveDate\":\"2026-06-04 12:47:48\",\"status\":\"APPROVED\",\"selectFlowId\":\"2015458019458437122\",\"remark\":\"到货通知审批通过后自动生成\",\"attr1\":null,\"attr2\":null,\"attr3\":null,\"attr4\":null,\"wmMaterialReceiveLineList\":[{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"lineId\":\"2062710168410365954\",\"receiveId\":\"2062395873109688322\",\"sourceDocLineId\":null,\"materialId\":1,\"materialCode\":\"IF20251016004\",\"materialName\":\"钢板\",\"materialSpec\":\"1m*0.5m*2cm,100kg\",\"baseUomId\":null,\"baseUomName\":\"千克\",\"quantityReceived\":\"1000.0\",\"batchId\":null,\"batchCode\":null,\"warehouseId\":null,\"warehouseCode\":null,\"warehouseName\":null,\"areaId\":null,\"areaCode\":null,\"areaName\":null,\"locationId\":null,\"locationCode\":null,\"locationName\":null,\"remark\":\"测试\",\"attr1\":null,\"attr2\":null,\"attr3\":null,\"attr4\":null,\"wmMaterialReceiveLineDetailList\":[{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"detailId\":-1780625185911,\"lineId\":\"2062710168410365954\",\"receiveId\":\"2062395873109688322\",\"materialId\":1,\"materialCode\":\"IF20251016004\",\"materialName\":\"钢板\",\"materialSpec\":null,\"baseUomId\":null,\"baseUomName\":\"千克\",\"quantity\":\"1000.0\",\"batchId\":\"2062717540369408001\",\"batchCode\":\"B202606050002\",\"snId\":null,\"snCode\":null,\"warehouseId\":2,\"warehouseCode\":\"WH004\",\"warehouseName\":\"原料仓库\",\"areaId\":4,\"areaCode\":\"A0005\",\"areaName\":\"金属库区\",\"locationId\":6,\"locationCode\":\"L010\",\"locationName\":\"钢板库位\",\"remark\":\"最新的一吨钢板\",\"attr1\":null,\"attr2\":null,\"attr3\":null,\"attr4\":null,\"ids\":null}],\"ids\":null}],\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-05 10:06:29', 49);
 INSERT INTO `sys_oper_log` VALUES (2062813928289652738, '000000', '部门管理', 1, 'com.nexus.system.controller.system.SysDeptController.add()', 'POST', 1, 'admin', '研发部门', '/system/dept', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"deptId\":null,\"parentId\":100,\"deptName\":\"临时部门\",\"deptCategory\":\"LSBM\",\"orderNum\":2,\"leader\":null,\"phone\":null,\"email\":null,\"status\":\"0\",\"belongDeptId\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-05 16:29:00', 29);
 INSERT INTO `sys_oper_log` VALUES (2062813987295121409, '000000', '部门管理', 2, 'com.nexus.system.controller.system.SysDeptController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dept', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":\"2026-06-05 16:29:00\",\"updateBy\":null,\"updateTime\":null,\"deptId\":\"2062813928180600833\",\"parentId\":100,\"deptName\":\"临时部门\",\"deptCategory\":\"LSBM\",\"orderNum\":3,\"leader\":null,\"phone\":null,\"email\":null,\"status\":\"0\",\"belongDeptId\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-05 16:29:14', 32);
+INSERT INTO `sys_oper_log` VALUES (2063100193334767617, '000000', '字典类型', 9, 'com.nexus.system.controller.system.SysDictTypeController.refreshCache()', 'DELETE', 1, 'admin', '研发部门', '/system/dict/type/refreshCache', '127.0.0.1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-06 11:26:31', 4);
+INSERT INTO `sys_oper_log` VALUES (2063519089351065601, '000000', '物料入库单上架确认', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.confirmShelf()', 'PUT', 1, 'admin', '研发部门', '/erp/wm/receive/shelf/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-07 15:11:04', 35);
+INSERT INTO `sys_oper_log` VALUES (2063528144173973505, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 15:47:03', 147);
+INSERT INTO `sys_oper_log` VALUES (2063537705886924802, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 16:25:02', 198);
+INSERT INTO `sys_oper_log` VALUES (2063543125103849473, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 16:46:34', 227);
+INSERT INTO `sys_oper_log` VALUES (2063544164355915777, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 16:50:42', 216);
+INSERT INTO `sys_oper_log` VALUES (2063547647473651714, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 17:04:33', 194);
+INSERT INTO `sys_oper_log` VALUES (2063609421656883201, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 21:10:01', 199);
+INSERT INTO `sys_oper_log` VALUES (2063612738567012354, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 21:23:12', 214);
+INSERT INTO `sys_oper_log` VALUES (2063615886086029314, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 21:35:42', 143);
+INSERT INTO `sys_oper_log` VALUES (2063620726380019713, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 21:54:56', 201);
+INSERT INTO `sys_oper_log` VALUES (2063622914967736322, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 22:03:38', 173);
+INSERT INTO `sys_oper_log` VALUES (2063623345664036866, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 22:05:21', 72);
+INSERT INTO `sys_oper_log` VALUES (2063625491000197121, '000000', '物料入库单', 2, 'com.nexus.erp.wm.controller.WmMaterialReceiveController.executeReceive()', 'POST', 1, 'admin', '研发部门', '/erp/wm/receive/execute/2062395873109688322', '127.0.0.1', '内网IP', '\"2062395873109688322\"', '{\"code\":200,\"msg\":\"物料入库执行成功\",\"data\":null}', 0, '', '2026-06-07 22:13:52', 168);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -11505,13 +11389,13 @@ CREATE TABLE `sys_oss`  (
   `url` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'URL地址',
   `ext1` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '上传人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `service` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'minio' COMMENT '服务商',
   PRIMARY KEY (`oss_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss
@@ -11540,12 +11424,12 @@ CREATE TABLE `sys_oss_config`  (
   `ext1` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`oss_config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss_config
@@ -11571,12 +11455,12 @@ CREATE TABLE `sys_post`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_post
@@ -11603,12 +11487,12 @@ CREATE TABLE `sys_role`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role
@@ -11626,7 +11510,7 @@ CREATE TABLE `sys_role_dept`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `dept_id` bigint(20) NOT NULL COMMENT '部门ID',
   PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_dept
@@ -11641,7 +11525,7 @@ CREATE TABLE `sys_role_menu`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -11903,12 +11787,12 @@ CREATE TABLE `sys_social`  (
   `oauth_token_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Twitter平台用户的附带属性，部分平台可能没有',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_social
@@ -11931,17 +11815,17 @@ CREATE TABLE `sys_tenant`  (
   `domain` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '域名',
   `remark` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   `package_id` bigint(20) NULL DEFAULT NULL COMMENT '租户套餐编号',
-  `expire_time` datetime(0) NULL DEFAULT NULL COMMENT '过期时间',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
   `account_count` int(11) NULL DEFAULT -1 COMMENT '用户数量（-1不限制）',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '租户状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_tenant
@@ -11963,11 +11847,11 @@ CREATE TABLE `sys_tenant_package`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`package_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_tenant_package
@@ -11993,20 +11877,20 @@ CREATE TABLE `sys_user`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `login_ip` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `login_date` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
+  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-05 16:53:21', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-05 16:53:21', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-07 21:09:05', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-07 21:09:05', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-05-11 11:54:44', 103, 1, '2026-04-15 10:51:23', -1, '2026-05-11 11:54:44', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 1, '2025-10-23 17:03:16', 1, '2025-12-17 15:40:54', '耳朵聋');
@@ -12045,14 +11929,14 @@ CREATE TABLE `sys_user_notification`  (
   `ext_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '扩展JSON',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notification_id`) USING BTREE,
   INDEX `idx_sun_user_read`(`tenant_id`, `user_id`, `read_flag`, `create_time`) USING BTREE,
   INDEX `idx_sun_category`(`tenant_id`, `user_id`, `category`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_notification
@@ -12092,7 +11976,7 @@ CREATE TABLE `sys_user_post`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
   PRIMARY KEY (`user_id`, `post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_post
@@ -12107,7 +11991,7 @@ CREATE TABLE `sys_user_role`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -12140,7 +12024,7 @@ CREATE TABLE `test_customer`  (
   `tbr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '填表人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_customer
@@ -12165,13 +12049,13 @@ CREATE TABLE `test_demo`  (
   `value` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_demo
@@ -12199,18 +12083,18 @@ CREATE TABLE `test_leave`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `apply_code` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '申请编号',
   `leave_type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '请假类型',
-  `start_date` datetime(0) NOT NULL COMMENT '开始时间',
-  `end_date` datetime(0) NOT NULL COMMENT '结束时间',
+  `start_date` datetime NOT NULL COMMENT '开始时间',
+  `end_date` datetime NOT NULL COMMENT '结束时间',
   `leave_days` int(10) NOT NULL COMMENT '请假天数',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请假原因',
   `status` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_leave
@@ -12260,7 +12144,11 @@ CREATE TABLE `test_monthly_report`  (
   `by_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '本月-弃水天数',
   `lj_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '累计-弃水天数',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_monthly_report
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order
@@ -12270,15 +12158,19 @@ CREATE TABLE `test_order`  (
   `id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `order_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单名称',
   `order_no` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单编号',
-  `order_sign_date` datetime(0) NULL DEFAULT NULL COMMENT '订单签订日期',
-  `order_delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '订单交付日期',
+  `order_sign_date` datetime NULL DEFAULT NULL COMMENT '订单签订日期',
+  `order_delivery_date` datetime NULL DEFAULT NULL COMMENT '订单交付日期',
   `order_coms` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户名称',
   `order_pers` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系人',
   `order_phone` varchar(15) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系方式',
   `fzr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order_pros
@@ -12294,7 +12186,11 @@ CREATE TABLE `test_order_pros`  (
   `pro_model` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '型号',
   `main_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外键',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order_pros
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_resume
@@ -12318,7 +12214,7 @@ CREATE TABLE `test_resume`  (
   `edu_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '教育经历',
   `work_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '工作经历',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_resume
@@ -12339,13 +12235,13 @@ CREATE TABLE `test_tree`  (
   `tree_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_tree
@@ -12375,7 +12271,7 @@ CREATE TABLE `tmp_report_data_1`  (
   `his_lowest` decimal(10, 2) NULL DEFAULT NULL,
   `his_average` decimal(10, 2) NULL DEFAULT NULL,
   `his_highest` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_1
@@ -12406,7 +12302,7 @@ CREATE TABLE `tmp_report_data_income`  (
   `tb_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `neikong_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `total` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_income
@@ -12429,14 +12325,14 @@ CREATE TABLE `wf_category`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`category_id`) USING BTREE,
   UNIQUE INDEX `codeIndex`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_category
@@ -12466,12 +12362,16 @@ CREATE TABLE `wf_copy`  (
   `state` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`copy_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_copy
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_custom_form
@@ -12487,13 +12387,13 @@ CREATE TABLE `wf_custom_form`  (
   `component` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件注入方法',
   `table_id` bigint(20) NULL DEFAULT NULL COMMENT '业务主表ID',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_custom_form
@@ -12526,11 +12426,15 @@ CREATE TABLE `wf_custom_rule`  (
   `attribute` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '属性0-隐藏1-只读默认2-可编辑',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_custom_rule
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_dd_flow
@@ -12541,11 +12445,15 @@ CREATE TABLE `wf_dd_flow`  (
   `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '流程名称',
   `flow_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '流程JSON数据',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_dd_flow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_default_operate
@@ -12558,11 +12466,15 @@ CREATE TABLE `wf_default_operate`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_default_operate
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_demo
@@ -12577,14 +12489,14 @@ CREATE TABLE `wf_demo`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`demo_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_demo
@@ -12604,7 +12516,7 @@ CREATE TABLE `wf_deploy_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`deploy_id`, `form_key`, `node_key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_deploy_form
@@ -12627,11 +12539,15 @@ CREATE TABLE `wf_flow_config`  (
   `form_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表单Key',
   `app_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用类型',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_flow_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_form
@@ -12643,16 +12559,20 @@ CREATE TABLE `wf_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `db` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否保存数据库',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_form
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_my_business
@@ -12661,9 +12581,9 @@ DROP TABLE IF EXISTS `wf_my_business`;
 CREATE TABLE `wf_my_business`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `process_definition_key` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义key 一个key会有多个版本的id',
   `process_definition_id` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义id 一个流程定义唯一',
   `process_instance_id` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程业务实例id 一个流程业务唯一，本表中也唯一',
@@ -12684,7 +12604,7 @@ CREATE TABLE `wf_my_business`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `dataid`(`data_id`) USING BTREE COMMENT '业务数据Id索引'
-) ENGINE = InnoDB AUTO_INCREMENT = 2062399117227671555 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062399117227671555 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_my_business
@@ -12723,12 +12643,12 @@ CREATE TABLE `wf_nform`  (
   `form_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_nform
@@ -12753,10 +12673,14 @@ CREATE TABLE `wf_operate_rule`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_operate_rule
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;

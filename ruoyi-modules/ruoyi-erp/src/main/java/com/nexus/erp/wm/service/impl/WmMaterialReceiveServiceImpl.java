@@ -78,6 +78,11 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     }
 
     @Override
+    public boolean confirmShelf(Long receiveId) {
+        return crudService.confirmShelf(receiveId);
+    }
+
+    @Override
     public String getProcInsId(String receiveIdStr) {
         return crudService.getProcInsId(receiveIdStr);
     }

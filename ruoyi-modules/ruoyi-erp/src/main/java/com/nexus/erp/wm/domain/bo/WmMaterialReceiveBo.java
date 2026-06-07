@@ -52,6 +52,8 @@ public class WmMaterialReceiveBo extends BaseEntity {
     private Date receiveDate;
     private String status;
     private Long selectFlowId;
+    private Long shelfBy;
+    private Date shelfTime;
     private String remark;
     private String attr1;
     private String attr2;

@@ -43,13 +43,14 @@ public class RabbitMqInitializer {
 
     /** 声明所有业务队列及绑定关系 */
     private void declareQueuesAndBindings() {
-        declareQueueWithDLX(QueueConstants.STOCK_IN_QUEUE, ExchangeConstants.DIRECT_EXCHANGE, "stock.in.#");
-        declareQueueWithDLX(QueueConstants.STOCK_OUT_QUEUE, ExchangeConstants.DIRECT_EXCHANGE, "stock.out.#");
-        declareQueueWithDLX(QueueConstants.PURCHASE_RECEIVE_QUEUE, ExchangeConstants.DIRECT_EXCHANGE, "purchase.receive.#");
-        declareQueueWithDLX(QueueConstants.PRODUCTION_COMPLETE_QUEUE, ExchangeConstants.DIRECT_EXCHANGE, "production.complete.#");
-        declareQueueWithDLX(QueueConstants.VENDOR_EVALUATION_QUEUE, ExchangeConstants.DIRECT_EXCHANGE, "vendor.evaluation.#");
-        declareQueueWithDLX(QueueConstants.SUBCONTRACT_STOCK_QUEUE, ExchangeConstants.DIRECT_EXCHANGE, "subcontract.stock.#");
-        declareQueueWithDLX(QueueConstants.REWORK_STOCK_QUEUE, ExchangeConstants.DIRECT_EXCHANGE, "rework.stock.#");
+        // 使用TopicExchange绑定带通配符(#)的路由键，DirectExchange只支持精确匹配不支持通配符
+        declareQueueWithDLX(QueueConstants.STOCK_IN_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.in.#");
+        declareQueueWithDLX(QueueConstants.STOCK_OUT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.out.#");
+        declareQueueWithDLX(QueueConstants.PURCHASE_RECEIVE_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "purchase.receive.#");
+        declareQueueWithDLX(QueueConstants.PRODUCTION_COMPLETE_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "production.complete.#");
+        declareQueueWithDLX(QueueConstants.VENDOR_EVALUATION_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "vendor.evaluation.#");
+        declareQueueWithDLX(QueueConstants.SUBCONTRACT_STOCK_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "subcontract.stock.#");
+        declareQueueWithDLX(QueueConstants.REWORK_STOCK_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "rework.stock.#");
 
         declareQueueWithDLX(QueueConstants.STOCK_ALERT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.alert.#");
 

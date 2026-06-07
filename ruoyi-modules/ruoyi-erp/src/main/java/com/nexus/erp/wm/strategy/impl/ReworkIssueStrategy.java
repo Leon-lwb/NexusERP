@@ -135,7 +135,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         msg.setMaterialId(materialId);
         msg.setQuantity(quantity);
         msg.setSourceModule("wm");
-        messageProducer.send(ExchangeConstants.DIRECT_EXCHANGE,
+        messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
             RoutingKeyConstants.REWORK_STOCK, msg);
     }
 }

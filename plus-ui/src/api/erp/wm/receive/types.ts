@@ -34,6 +34,8 @@ export interface ReceiveVO {
   receiveDate: string;
   status: string;
   selectFlowId: number;
+  shelfBy?: number;
+  shelfTime?: string;
   remark: string;
   createBy: number;
   createTime: string;
@@ -119,6 +121,8 @@ export interface ReceiveForm {
   receiveDate?: string;
   status?: string;
   selectFlowId?: number;
+  shelfBy?: number;
+  shelfTime?: string;
   remark?: string;
   wmMaterialReceiveLineList?: any[];
 }

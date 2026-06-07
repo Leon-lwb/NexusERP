@@ -374,7 +374,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         completeMsg.setMaterialName(wo.getMaterialName());
         completeMsg.setWorkshopId(wo.getWorkshopId());
         completeMsg.setSourceModule("prd");
-        messageProducer.send(ExchangeConstants.DIRECT_EXCHANGE,
+        messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
             RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH, completeMsg);
     }
 

@@ -20,4 +20,13 @@ public class PurchaseReceiveWritebackMessage extends BaseMessage {
 
     /** 入库单ID */
     private Long receiveId;
+
+    /**
+     * 租户ID（字符串格式）
+     * <p>
+     * BaseMessage.tenantId 为 Long 类型，"000000" 转 Long 会变成 0，再转回 String 变成 "0"，
+     * 与数据库中 tenant_id='000000' 不匹配。因此单独用 String 字段传递原始租户ID。
+     * </p>
+     */
+    private String tenantIdStr;
 }

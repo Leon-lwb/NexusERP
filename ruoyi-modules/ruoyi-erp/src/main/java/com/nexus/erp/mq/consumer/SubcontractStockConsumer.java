@@ -1,5 +1,6 @@
 package com.nexus.erp.mq.consumer;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.erp.mq.message.SubcontractStockMessage;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@DS("erp")
 public class SubcontractStockConsumer extends BaseMessageConsumer<SubcontractStockMessage> {
 
     private final PrdSubcontractMapper subcontractMapper;

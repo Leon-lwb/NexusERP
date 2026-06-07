@@ -7,6 +7,7 @@
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && (form.status === 'DRAFT' || form.status === 'REJECTED')">提交审批</el-button>
+            <el-button type="warning" @click="handleConfirmShelf" v-if="pageType === 'shelf' && form.status === 'APPROVED' && !isViewMode">确认上架</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
@@ -105,6 +106,18 @@
           <el-col :span="8">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20" v-if="form.status === 'SHELVED' || form.status === 'FINISHED'">
+          <el-col :span="8">
+            <el-form-item label="上架人">
+              <el-input v-model="form.shelfByName" readonly />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="上架时间">
+              <el-input :value="parseTime(form.shelfTime, '{y}-{m}-{d} {h}:{i}:{s}')" readonly />
             </el-form-item>
           </el-col>
         </el-row>
@@ -383,7 +396,7 @@
 </template>
 
 <script setup lang="ts" name="ReceiveForm">
-import { getReceive, addReceive, updateReceive, submitReceive, getReceiveProcId } from "@/api/erp/wm/receive"
+import { getReceive, addReceive, updateReceive, submitReceive, confirmShelf, getReceiveProcId } from "@/api/erp/wm/receive"
 import { getArrivalnotice } from "@/api/erp/wm/arrivalnotice"
 import { listDetail } from "@/api/erp/wm/detail"
 import { createBatch } from "@/api/erp/wm/batch"
@@ -755,6 +768,33 @@ function handleSubmitFlow() {
       }
     }
   })
+}
+
+// 确认上架
+function handleConfirmShelf() {
+  if (form.value.status !== 'APPROVED') {
+    proxy.$modal.msgWarning('当前状态不允许确认上架，只有待上架状态才能执行确认上架操作！');
+    return;
+  }
+  // 校验是否已有上架明细
+  let hasDetail = false;
+  for (const line of wmMaterialReceiveLineList.value) {
+    if (line.detailList && line.detailList.length > 0) {
+      hasDetail = true;
+      break;
+    }
+  }
+  if (!hasDetail) {
+    proxy.$modal.msgWarning('请先添加上架明细并分配库位后再确认上架');
+    return;
+  }
+  proxy.$modal.confirm('是否确认上架？确认后单据状态将变为"待入库"。').then(function() {
+    return confirmShelf(form.value.receiveId);
+  }).then(() => {
+    proxy.$modal.msgSuccess('确认上架成功');
+    // 刷新页面数据
+    getInfo(form.value.receiveId);
+  }).catch(() => {});
 }
 
 // 查看流程

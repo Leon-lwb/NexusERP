@@ -1,5 +1,6 @@
 package com.nexus.erp.mq.consumer;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@DS("erp")
 public class StockInConsumer extends BaseMessageConsumer<StockInMessage> {
 
     private final IWmStockOperationService stockOperationService;
@@ -53,7 +55,7 @@ public class StockInConsumer extends BaseMessageConsumer<StockInMessage> {
             writebackMsg.setReceiveId(message.getReceiveId());
             writebackMsg.setSourceModule("wm");
             writebackMsg.setTenantId(message.getTenantId());
-            messageProducer.send(ExchangeConstants.DIRECT_EXCHANGE,
+            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
                 RoutingKeyConstants.PURCHASE_RECEIVE_WRITEBACK, writebackMsg);
         } else {
             log.warn("不支持的入库来源类型: sourceType={}, receiveId={}", sourceType, message.getReceiveId());

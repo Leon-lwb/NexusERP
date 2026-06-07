@@ -90,6 +90,15 @@ public class WmMaterialReceiveVo implements Serializable {
 
     private Long selectFlowId;
 
+    @ExcelProperty(value = "上架人ID")
+    private Long shelfBy;
+
+    @ExcelProperty(value = "上架人")
+    private String shelfByName;
+
+    @ExcelProperty(value = "上架时间")
+    private Date shelfTime;
+
     private String remark;
 
     private List<WmMaterialReceiveLineVo> wmMaterialReceiveLineList;
