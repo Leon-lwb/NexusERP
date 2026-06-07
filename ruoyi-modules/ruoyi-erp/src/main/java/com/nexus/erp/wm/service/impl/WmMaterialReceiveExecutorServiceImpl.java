@@ -436,6 +436,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             WmMaterialStock newStock = copyStock(stock);
             newStock.setStockId(null);
             newStock.setStockQuantity(transactionQuantity);
+            // 新增库存记录默认未冻结
+            newStock.setFrozenFlag(0L);
             newStock.setCreateTime(now);
             newStock.setUpdateTime(now);
             materialStockMapper.insert(newStock);

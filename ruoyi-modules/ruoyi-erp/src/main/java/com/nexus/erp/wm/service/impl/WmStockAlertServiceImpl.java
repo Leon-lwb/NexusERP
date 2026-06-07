@@ -189,21 +189,43 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
         BigDecimal minStock = material.getMinStock() != null ? material.getMinStock() : BigDecimal.ZERO;
         BigDecimal maxStock = material.getMaxStock() != null ? material.getMaxStock() : BigDecimal.ZERO;
 
-        int count = 0;
+        // 判断当前应触发的预警类型
+        String currentAlertType = null;
+        String currentAlertLevel = null;
 
         if (minStock.compareTo(BigDecimal.ZERO) > 0 && totalQty.compareTo(minStock) < 0) {
-            createOrUpdateAlert(material, null, totalQty, safetyStock, minStock, maxStock,
-                ALERT_TYPE_BELOW_MIN, ALERT_LEVEL_CRITICAL, now);
-            count++;
+            currentAlertType = ALERT_TYPE_BELOW_MIN;
+            currentAlertLevel = ALERT_LEVEL_CRITICAL;
         } else if (safetyStock.compareTo(BigDecimal.ZERO) > 0 && totalQty.compareTo(safetyStock) < 0) {
-            createOrUpdateAlert(material, null, totalQty, safetyStock, minStock, maxStock,
-                ALERT_TYPE_BELOW_SAFETY, ALERT_LEVEL_WARNING, now);
-            count++;
+            currentAlertType = ALERT_TYPE_BELOW_SAFETY;
+            currentAlertLevel = ALERT_LEVEL_WARNING;
+        } else if (maxStock.compareTo(BigDecimal.ZERO) > 0 && totalQty.compareTo(maxStock) > 0) {
+            currentAlertType = ALERT_TYPE_ABOVE_MAX;
+            currentAlertLevel = ALERT_LEVEL_INFO;
         }
 
-        if (maxStock.compareTo(BigDecimal.ZERO) > 0 && totalQty.compareTo(maxStock) > 0) {
+        // 自动关闭该物料不再适用的未处理预警
+        List<WmStockAlert> existingAlerts = baseMapper.selectList(
+            new LambdaQueryWrapper<WmStockAlert>()
+                .eq(WmStockAlert::getMaterialId, material.getMaterialId())
+                .eq(WmStockAlert::getHandledFlag, 0));
+
+        if (existingAlerts != null) {
+            for (WmStockAlert alert : existingAlerts) {
+                if (!java.util.Objects.equals(alert.getAlertType(), currentAlertType)) {
+                    alert.setHandledFlag(1);
+                    alert.setHandledTime(now);
+                    alert.setHandledRemark("库存状态变更，自动关闭");
+                    alert.setUpdateTime(now);
+                    baseMapper.updateById(alert);
+                }
+            }
+        }
+
+        int count = 0;
+        if (currentAlertType != null) {
             createOrUpdateAlert(material, null, totalQty, safetyStock, minStock, maxStock,
-                ALERT_TYPE_ABOVE_MAX, ALERT_LEVEL_INFO, now);
+                currentAlertType, currentAlertLevel, now);
             count++;
         }
 

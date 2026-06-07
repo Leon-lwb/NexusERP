@@ -66,22 +66,50 @@
               审批通过 ──→ 转采购订单（PurchaseOrder）[审批流]
                                 ↓
                           审批通过 ──→ 生成收货联动单据
-                                          ↓              ↓
-                                    到货通知（ArrivalNotice）  物料入库单（Receive）[审批流]
-                                                                ↓
-                                                          执行入库 ──→ 增加库存
-                                                                ↓
-                                                    MQ: StockInConsumer ──→ 采购入库过账
-                                                                ↓
-                                                    MQ: PurchaseReceiveWritebackConsumer ──→ 回写已收货数量
+                                          ↓
+                                    到货通知（ArrivalNotice）[审批流]
+                                          ↓
+                                    审批通过 ──→ 自动创建物料入库单（Receive）[审批流]
+                                                    ↓
+                                              审批通过（待上架/APPROVED）
+                                                    ↓
+                                              上架操作：添加上架明细（分配库位）→ 确认上架
+                                                    ↓
+                                              待入库（SHELVED） ──→ 记录上架人(shelfBy) + 上架时间(shelfTime)
+                                                    ↓
+                                              点击入库（executeReceive）
+                                              ├── 防重校验（hasPosted）
+                                              ├── 虚拟库位扣减 + 目标库位增加
+                                              ├── 更新入库单状态 → FINISHED
+                                              ├── 更新到货通知状态 → FINISHED
+                                              └── 生成条码
+                                                    ↓
+                                              事务提交后 ──→ WmMqSendService（@Async） ──→ 发送 PurchaseReceiveWritebackMessage
+                                                                              ↓
+                                                                    PurchaseReceiveWritebackConsumer
+                                                                    ├── TenantHelper.dynamic() 设置租户上下文
+                                                                    └── writeBackReceivedQty()
+                                                                        ├── 按物料ID/编码匹配收货行与采购行
+                                                                        ├── 累加已收货数量 + 更新行级收货状态
+                                                                        └── 更新采购订单状态（PARTIALLY_RECEIVED / RECEIVED）
               ──→ 如需退货 ──→ 采购退货（PurchaseReturn）[审批流] ──→ 确认 ──→ 执行退货出库 ──→ 扣减库存
+```
+
+**物料入库单状态机**：
+```
+DRAFT(草稿) → APPROVING(审批中) → APPROVED(待上架) → SHELVED(待入库) → FINISHED(已完成)
+                                     ↑                    │
+                              REJECTED(已驳回) ←──────────┘ (可重新提交)
 ```
 
 **关键流转节点**：
 - 低库存自动生成（`generate-from-low-stock`）
 - 采购申请 → 采购订单（`convert`）
-- 采购订单收货 → 自动创建到货通知 + 物料入库单
-- MQ异步：入库过账 + 采购订单回写
+- 采购订单收货 → 自动创建到货通知 → 到货通知审批通过自动创建物料入库单
+- 物料入库单审批通过 → 待上架（不再发送StockInMessage）
+- 确认上架（`confirmShelf`）：校验上架明细和库位，记录上架人和上架时间，状态变为待入库
+- 执行入库（`executeReceive`）：虚拟库位转储 + 事务提交后异步回写采购订单
+- MQ异步：仅采购回写（入库完成后通过 `WmMqSendService` 发送 `PurchaseReceiveWritebackMessage`）
 
 ### 3.3 生产制造（Manufacturing）
 
@@ -219,10 +247,16 @@
 | 队列 | 触发场景 | 消费逻辑 |
 |------|---------|---------|
 | `PRODUCTION_COMPLETE_QUEUE` | 生产工单完工 | 倒冲领料 + 成品入库过账 |
-| `STOCK_IN_QUEUE` | 入库执行 | 按sourceType分发，采购入库→发送回写消息 |
-| `PURCHASE_RECEIVE_QUEUE` | 采购入库完成 | 回写采购订单已收货数量 |
+| `STOCK_IN_QUEUE` | （保留，当前采购入库不再使用） | 按sourceType分发，采购入库→发送回写消息 |
+| `PURCHASE_RECEIVE_QUEUE` | 物料入库单执行入库完成后 | 回写采购订单已收货数量 + 更新采购订单状态 |
 | `REWORK_STOCK_QUEUE` | 返工出库/入库 | 更新返工订单状态 |
 | `SUBCONTRACT_STOCK_QUEUE` | 委外发料/收货 | 更新委外订单状态（ISSUE→IN_PROGRESS, RECEIVE→COMPLETED） |
+
+**采购入库MQ流转说明**：
+- 触发时机：用户点击"入库"按钮执行 `executeReceive` 成功后，事务提交时通过 `TransactionSynchronization.afterCommit()` 触发
+- 发送方式：`WmMqSendService`（`@Async`），独立于 `@DS("erp")` 上下文，确保 `mq_message_record` 写入 `ry-vue` 库
+- 消息携带：`receiveId` + `tenantIdStr`（字符串格式，避免 Long 转换丢失前导零）
+- 消费者处理：`TenantHelper.dynamic()` 设置租户上下文 → 按物料ID/编码匹配 → 累加已收货数量 → 更新采购订单状态
 
 ---
 
@@ -304,7 +338,7 @@
 | `WmStorageArea` | `wm_storage_area` | areaCode, areaName, warehouseId, 3D位置, layoutType |
 | `WmMaterialStock` | `wm_material_stock` | materialId, batchId, warehouseId, areaId, locationId, stockQuantity, unitCost, totalCost, frozenFlag, version |
 | `WmMaterialStockTx` | `wm_material_stock_tx` | 库存交易记录 |
-| `WmMaterialReceive` | `wm_material_receive` | receiveCode, noticeId, purId, vendorId, warehouseId, receiveDate |
+| `WmMaterialReceive` | `wm_material_receive` | receiveCode, noticeId, purId, vendorId, warehouseId, receiveDate, status, shelfBy, shelfTime |
 | `WmMaterialReceiveLine` | `wm_material_receive_line` | materialId, quantityReceived, batchId |
 | `WmMaterialReceiveDetail` | `wm_material_receive_detail` | materialId, quantity, warehouseId, areaId, locationId |
 | `WmArrivalNotice` | `wm_arrival_notice` | noticeCode, purOrderCode, vendorId, arrivalDate |
@@ -346,7 +380,7 @@
 | 消息类 | 说明 |
 |--------|------|
 | `ProductionCompleteMessage` | 生产完工消息（woId, completionQty, materialId） |
-| `PurchaseReceiveWritebackMessage` | 采购收货回写消息（receiveId） |
+| `PurchaseReceiveWritebackMessage` | 采购收货回写消息（receiveId, tenantIdStr） |
 | `StockInMessage` | 入库消息（receiveId, sourceType, tenantId） |
 | `ReworkStockMessage` | 返工库存消息（reworkId, operationType: ISSUE/RECEIVE） |
 | `SubcontractStockMessage` | 委外库存消息（subcontractId, operationType: ISSUE/RECEIVE） |
@@ -355,7 +389,7 @@
 |--------|------|---------|
 | `ProductionBackflushConsumer` | `PRODUCTION_COMPLETE_QUEUE` | 生产完工→倒冲领料+成品入库过账 |
 | `StockInConsumer` | `STOCK_IN_QUEUE` | 入库消息分发: PURCHASE→采购入库+发送回写消息 |
-| `PurchaseReceiveWritebackConsumer` | `PURCHASE_RECEIVE_QUEUE` | 采购收货→回写采购订单已收货数量 |
+| `PurchaseReceiveWritebackConsumer` | `PURCHASE_RECEIVE_QUEUE` | 采购收货→设置租户上下文→按物料ID/编码匹配→回写采购订单已收货数量→更新采购订单状态 |
 | `ReworkStockConsumer` | `REWORK_STOCK_QUEUE` | 返工库存→更新返工订单状态 |
 | `SubcontractStockConsumer` | `SUBCONTRACT_STOCK_QUEUE` | 委外库存→更新委外订单状态 |
 
@@ -404,7 +438,7 @@
 
 1. **多租户支持**: 所有实体继承 `TenantEntity`，支持SaaS多租户隔离
 2. **审批流集成**: 采购/销售/生产/仓储单据均集成 Flowable 工作流
-3. **异步解耦**: 通过 RabbitMQ 实现生产倒冲、采购回写、入库过账等异步操作
+3. **异步解耦**: 通过 RabbitMQ 实现生产倒冲、采购回写等异步操作；采购入库回写通过 `WmMqSendService`（@Async）发送，事务提交后触发
 4. **策略模式**: 仓储模块使用策略模式处理12种不同类型的库存操作
 5. **乐观锁**: 库存表使用 `@Version` 防止并发冲突
 6. **权限控制**: 通过 Sa-Token `@SaCheckPermission` 实现细粒度权限
