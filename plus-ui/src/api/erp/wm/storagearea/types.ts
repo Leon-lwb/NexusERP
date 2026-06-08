@@ -2,6 +2,7 @@ export interface StorageareaQuery extends PageQuery {
   areaCode?: string;
   areaName?: string;
   warehouseId?: number;
+  warehouseName?: string;
   locationFlag?: number;
   enableFlag?: number;
   frozenFlag?: number;
@@ -13,6 +14,8 @@ export interface StorageareaVO {
   areaCode: string;
   areaName: string;
   warehouseId: number;
+  warehouseName: string;
+  warehouseCode: string;
   area: number;
   locationFlag: number;
   enableFlag: number;

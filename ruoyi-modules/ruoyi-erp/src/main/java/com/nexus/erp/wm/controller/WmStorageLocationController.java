@@ -10,8 +10,12 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.erp.wm.domain.bo.WmLocationBatchGenerateBo;
+import com.nexus.erp.wm.domain.bo.WmStorageAreaBo;
 import com.nexus.erp.wm.domain.bo.WmStorageLocationBo;
+import com.nexus.erp.wm.domain.vo.WmStorageAreaVo;
 import com.nexus.erp.wm.domain.vo.WmStorageLocationVo;
+import com.nexus.erp.wm.service.IWmStorageAreaService;
 import com.nexus.erp.wm.service.IWmStorageLocationService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +36,7 @@ import java.util.List;
 public class WmStorageLocationController extends BaseController {
 
     private final IWmStorageLocationService wmStorageLocationService;
+    private final IWmStorageAreaService wmStorageAreaService;
 
     /**
      * 分页查询库位列表
@@ -124,5 +129,55 @@ public class WmStorageLocationController extends BaseController {
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(wmStorageLocationService.deleteByIds(ids));
+    }
+
+    /**
+     * 批量生成库位
+     * <p>
+     * 权限标识：{@code wm:storagelocation:add}</p>
+     * <p>日志记录：title="库位"，businessType=INSERT</p>
+     *
+     * @param bo 批量生成参数，包含库区ID、行/列/层范围、编码前缀等
+     * @return 操作结果，成功返回生成的库位数量
+     */
+    @SaCheckPermission("wm:storagelocation:add")
+    @Log(title = "库位", businessType = BusinessType.INSERT)
+    @PostMapping("/batch-generate")
+    public R<Integer> batchGenerate(@Validated @RequestBody WmLocationBatchGenerateBo bo) {
+        return R.ok(wmStorageLocationService.batchGenerate(bo));
+    }
+
+    /**
+     * 根据仓库ID查询库区列表（下拉选择用）
+     * <p>
+     * 权限标识：{@code wm:storagearea:list}</p>
+     *
+     * @param warehouseId 仓库ID
+     * @return 该仓库下启用的库区列表
+     */
+    @SaCheckPermission("wm:storagearea:list")
+    @GetMapping("/list-by-warehouse/{warehouseId}")
+    public R<List<WmStorageAreaVo>> listAreaByWarehouse(@PathVariable Long warehouseId) {
+        WmStorageAreaBo bo = new WmStorageAreaBo();
+        bo.setWarehouseId(warehouseId);
+        bo.setEnableFlag(1L);
+        return R.ok(wmStorageAreaService.selectList(bo));
+    }
+
+    /**
+     * 根据库区ID查询库位列表（下拉选择用）
+     * <p>
+     * 权限标识：{@code wm:storagelocation:list}</p>
+     *
+     * @param areaId 库区ID
+     * @return 该库区下启用的库位列表
+     */
+    @SaCheckPermission("wm:storagelocation:list")
+    @GetMapping("/list-by-area/{areaId}")
+    public R<List<WmStorageLocationVo>> listByArea(@PathVariable Long areaId) {
+        WmStorageLocationBo bo = new WmStorageLocationBo();
+        bo.setAreaId(areaId);
+        bo.setEnableFlag(1L);
+        return R.ok(wmStorageLocationService.selectList(bo));
     }
 }

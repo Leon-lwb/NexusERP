@@ -2,6 +2,7 @@ package com.nexus.erp.wm.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.wm.domain.bo.WmLocationBatchGenerateBo;
 import com.nexus.erp.wm.domain.bo.WmStorageLocationBo;
 import com.nexus.erp.wm.domain.vo.WmStorageLocationVo;
 
@@ -44,4 +45,14 @@ public interface IWmStorageLocationService {
      * 批量删除库位
      */
     int deleteByIds(Long[] ids);
+
+    /**
+     * 批量生成库位
+     * <p>
+     * 根据行×列×层规则批量生成库位，适用于货架型库区。
+     *
+     * @param bo 批量生成参数
+     * @return 生成的库位数量
+     */
+    int batchGenerate(WmLocationBatchGenerateBo bo);
 }

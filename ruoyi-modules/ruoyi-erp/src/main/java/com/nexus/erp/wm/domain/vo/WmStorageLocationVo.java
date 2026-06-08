@@ -107,4 +107,32 @@ public class WmStorageLocationVo implements Serializable {
      */
     @ExcelProperty(value = "最后出库时间")
     private Date lastOutboundTime;
+
+    /**
+     * 仓库ID
+     */
+    private Long warehouseId;
+
+    /**
+     * 库区ID
+     */
+    private Long areaId;
+
+    /**
+     * 库区名称
+     */
+    @ExcelProperty(value = "库区名称")
+    private String areaName;
+
+    /**
+     * 库区编码
+     */
+    @ExcelProperty(value = "库区编码")
+    private String areaCode;
+
+    /**
+     * 仓库名称
+     */
+    @ExcelProperty(value = "仓库名称")
+    private String warehouseName;
 }

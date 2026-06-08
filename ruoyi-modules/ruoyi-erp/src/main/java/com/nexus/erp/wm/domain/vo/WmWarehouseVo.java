@@ -64,4 +64,10 @@ public class WmWarehouseVo implements Serializable {
      */
     @ExcelProperty(value = "仓库状态")
     private Long status;
+
+    /**
+     * 库区数量
+     */
+    @ExcelProperty(value = "库区数量")
+    private Integer areaCount;
 }

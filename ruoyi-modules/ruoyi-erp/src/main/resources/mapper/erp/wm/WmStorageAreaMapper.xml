@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.erp.wm.mapper.WmStorageAreaMapper">
+
+    <!-- 分页查询库区列表（含仓库名称） -->
+    <select id="selectVoPageWithWarehouse" resultType="com.nexus.erp.wm.domain.vo.WmStorageAreaVo">
+        SELECT a.*, w.warehouse_name, w.warehouse_code
+        FROM wm_storage_area a
+        LEFT JOIN wm_warehouse w ON a.warehouse_id = w.warehouse_id AND w.del_flag = '0'
+        ${ew.customSqlSegment}
+    </select>
+
+    <!-- 查询库区列表（含仓库名称） -->
+    <select id="selectVoListWithWarehouse" resultType="com.nexus.erp.wm.domain.vo.WmStorageAreaVo">
+        SELECT a.*, w.warehouse_name, w.warehouse_code
+        FROM wm_storage_area a
+        LEFT JOIN wm_warehouse w ON a.warehouse_id = w.warehouse_id AND w.del_flag = '0'
+        ${ew.customSqlSegment}
+    </select>
+
+    <!-- 查询库区树形列表 -->
+    <select id="selectAreaTreeList" resultType="com.nexus.erp.wm.domain.vo.WmStorageAreaTreeVo">
+        SELECT area_id, area_code, area_name, warehouse_id, location_flag, enable_flag, layout_type
+        FROM wm_storage_area
+        WHERE del_flag = '0'
+        ORDER BY warehouse_id, area_id
+    </select>
+
+</mapper>

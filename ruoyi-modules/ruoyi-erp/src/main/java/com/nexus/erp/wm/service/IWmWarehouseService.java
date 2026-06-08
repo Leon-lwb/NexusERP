@@ -2,8 +2,8 @@ package com.nexus.erp.wm.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.domain.bo.WmWarehouseBo;
+import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
 
 import java.util.List;
@@ -49,5 +49,5 @@ public interface IWmWarehouseService {
     /**
      * 获取仓库树
      */
-    List<WmWarehouse> getWareHouseTree();
+    List<WmWarehouseTreeVo> getWareHouseTree();
 }

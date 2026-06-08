@@ -1,5 +1,16 @@
 <template>
   <div class="app-container">
+    <!-- 面包屑上下文 -->
+    <el-card v-if="currentArea" class="mb8" shadow="never">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <el-button link icon="ArrowLeft" @click="goBackToArea">返回库区列表</el-button>
+        <el-divider direction="vertical" />
+        <span>仓库：<strong>{{ currentArea.warehouseName || '—' }}</strong></span>
+        <el-divider direction="vertical" />
+        <span>库区：<strong>{{ currentArea.areaName }}</strong>（{{ currentArea.areaCode }}）</span>
+      </div>
+    </el-card>
+
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
       <el-form-item label="库位编码" prop="locationCode">
         <el-input v-model="queryParams.locationCode" placeholder="请输入库位编码" clearable @keyup.enter="handleQuery" />
@@ -7,34 +18,16 @@
       <el-form-item label="库位名称" prop="locationName">
         <el-input v-model="queryParams.locationName" placeholder="请输入库位名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="库区ID" prop="areaId">
-        <el-input v-model="queryParams.areaId" placeholder="请输入库区ID" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="面积" prop="area">
-        <el-input v-model="queryParams.area" placeholder="请输入面积" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="最大载重量" prop="maxLoa">
-        <el-input v-model="queryParams.maxLoa" placeholder="请输入最大载重量" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="是否允许产品混放" prop="productMixing">
-        <el-select v-model="queryParams.productMixing" placeholder="请选择是否允许产品混放" clearable>
-          <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="是否允许批次混放" prop="batchMixing">
-        <el-select v-model="queryParams.batchMixing" placeholder="请选择是否允许批次混放" clearable>
-          <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="是否启用" prop="enableFlag">
-        <el-select v-model="queryParams.enableFlag" placeholder="请选择是否启用" clearable>
-          <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="是否冻结" prop="frozenFlag">
-        <el-select v-model="queryParams.frozenFlag" placeholder="请选择是否冻结" clearable>
-          <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
+      <el-form-item label="所属库区" prop="areaId">
+        <el-cascader
+          v-model="queryAreaPath"
+          :options="warehouseTreeOptions"
+          :props="cascaderProps"
+          placeholder="请选择仓库/库区"
+          clearable
+          filterable
+          @change="handleQueryAreaChange"
+        />
       </el-form-item>
       <el-form-item label="库位类型" prop="locationType">
         <el-select v-model="queryParams.locationType" placeholder="请选择库位类型" clearable>
@@ -46,15 +39,10 @@
           <el-option v-for="dict in wm_location_status" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="最后入库时间" prop="lastInboundTime">
-        <el-date-picker clearable v-model="queryParams.lastInboundTime" type="date" value-format="YYYY-MM-DD"
-          placeholder="请选择最后入库时间">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="最后出库时间" prop="lastOutboundTime">
-        <el-date-picker clearable v-model="queryParams.lastOutboundTime" type="date" value-format="YYYY-MM-DD"
-          placeholder="请选择最后出库时间">
-        </el-date-picker>
+      <el-form-item label="是否启用" prop="enableFlag">
+        <el-select v-model="queryParams.enableFlag" placeholder="请选择是否启用" clearable>
+          <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -66,6 +54,10 @@
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Plus" @click="handleAdd"
           v-hasPermi="['wm:storagelocation:add']">新增</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Grid" @click="handleBatchGenerate"
+          v-hasPermi="['wm:storagelocation:add']">批量生成</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
@@ -88,29 +80,15 @@
 
     <el-table v-loading="loading" :data="storagelocationList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="库位ID" align="center" prop="locationId" />
       <el-table-column label="库位编码" align="center" prop="locationCode" />
       <el-table-column label="库位名称" align="center" prop="locationName" />
+      <el-table-column v-if="!route.query.areaId" label="所属仓库" align="center" prop="warehouseName" width="120" />
+      <el-table-column v-if="!route.query.areaId" label="所属库区" align="center" prop="areaName" width="120" />
       <el-table-column label="面积" align="center" prop="area" />
       <el-table-column label="最大载重量" align="center" prop="maxLoa" />
-      <el-table-column label="是否允许产品混放" align="center" prop="productMixing">
-        <template #default="scope">
-          <dict-tag :options="sys_true_or_false" :value="scope.row.productMixing" />
-        </template>
-      </el-table-column>
-      <el-table-column label="是否允许批次混放" align="center" prop="batchMixing">
-        <template #default="scope">
-          <dict-tag :options="sys_true_or_false" :value="scope.row.batchMixing" />
-        </template>
-      </el-table-column>
       <el-table-column label="是否启用" align="center" prop="enableFlag">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.enableFlag" />
-        </template>
-      </el-table-column>
-      <el-table-column label="是否冻结" align="center" prop="frozenFlag">
-        <template #default="scope">
-          <dict-tag :options="sys_true_or_false" :value="scope.row.frozenFlag" />
         </template>
       </el-table-column>
       <el-table-column label="库位类型" align="center" prop="locationType">
@@ -171,8 +149,17 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="库区ID" prop="areaId">
-              <el-input v-model="form.areaId" placeholder="请输入库区ID" />
+            <el-form-item label="所属库区" prop="areaId">
+              <el-cascader
+                v-model="selectedAreaPath"
+                :options="warehouseTreeOptions"
+                :props="cascaderProps"
+                placeholder="请选择仓库/库区"
+                :disabled="isViewMode"
+                style="width: 100%"
+                filterable
+                @change="handleAreaCascaderChange"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -244,204 +231,16 @@
           </el-col>
         </el-row>
 
-        <!-- 隐藏部分表单字段 -->
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="库位位置X" prop="positionX">
-              <el-input v-model="form.positionX" placeholder="请输入库位位置X" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库位位置y" prop="positionY">
-              <el-input v-model="form.positionY" placeholder="请输入库位位置y" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库位位置z" prop="positionZ">
-              <el-input v-model="form.positionZ" placeholder="请输入库位位置z" />
+        <el-row :gutter="20" v-if="!isViewMode">
+          <el-col :span="24">
+            <el-form-item label="3D配置">
+              <el-button type="info" link icon="Setting" @click="show3dConfig = true">3D 可视化配置</el-button>
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="所属货架ID" prop="rackId">
-              <el-input v-model="form.rackId" placeholder="请输入所属货架ID" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="层数(从下往上)" prop="layer">
-              <el-input v-model="form.layer" placeholder="请输入层数(从下往上)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="列数(从左往右)" prop="col">
-              <el-input v-model="form.col" placeholder="请输入列数(从左往右)" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="行数(从前到后)" prop="rowNum">
-              <el-input v-model="form.rowNum" placeholder="请输入行数(从前到后)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="3D坐标X(米)" prop="posX">
-              <el-input v-model="form.posX" placeholder="请输入3D坐标X(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="3D坐标Y(米)" prop="posY">
-              <el-input v-model="form.posY" placeholder="请输入3D坐标Y(米)" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="3D坐标Z(米)" prop="posZ">
-              <el-input v-model="form.posZ" placeholder="请输入3D坐标Z(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库位宽度(米)" prop="width">
-              <el-input v-model="form.width" placeholder="请输入库位宽度(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库位高度(米)" prop="height">
-              <el-input v-model="form.height" placeholder="请输入库位高度(米)" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="库位深度(米)" prop="locationDepth">
-              <el-input v-model="form.locationDepth" placeholder="请输入库位深度(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="X轴旋转角度" prop="rotationX">
-              <el-input v-model="form.rotationX" placeholder="请输入X轴旋转角度" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="Y轴旋转角度" prop="rotationY">
-              <el-input v-model="form.rotationY" placeholder="请输入Y轴旋转角度" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="Z轴旋转角度" prop="rotationZ">
-              <el-input v-model="form.rotationZ" placeholder="请输入Z轴旋转角度" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="空置时颜色" prop="colorEmpty">
-              <el-input v-model="form.colorEmpty" placeholder="请输入空置时颜色" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="占用时颜色" prop="colorOccupied">
-              <el-input v-model="form.colorOccupied" placeholder="请输入占用时颜色" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="锁定时颜色" prop="colorLocked">
-              <el-input v-model="form.colorLocked" placeholder="请输入锁定时颜色" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="预警时颜色" prop="colorWarning">
-              <el-input v-model="form.colorWarning" placeholder="请输入预警时颜色" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="透明度" prop="opacity">
-              <el-input v-model="form.opacity" placeholder="请输入透明度" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="是否显示边框" prop="showBorder">
-              <el-radio-group v-model="form.showBorder">
-                <el-radio v-for="dict in sys_true_or_false" :key="dict.value"
-                  :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="边框颜色" prop="borderColor">
-              <el-input v-model="form.borderColor" placeholder="请输入边框颜色" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="边框宽度" prop="borderWidth">
-              <el-input v-model="form.borderWidth" placeholder="请输入边框宽度" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="是否显示标签" prop="showLabel">
-              <el-input v-model="form.showLabel" placeholder="请输入是否显示标签" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="置: TOP-顶部, FRONT-前面标签位" prop="labelPosition">
-              <el-input v-model="form.labelPosition" placeholder="请输入置: TOP-顶部, FRONT-前面标签位" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="标签大小" prop="labelSize">
-              <el-input v-model="form.labelSize" placeholder="请输入标签大小" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="库位状态" prop="status">
-              <el-radio-group v-model="form.status">
-                <el-radio v-for="dict in wm_location_status" :key="dict.value"
-                  :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="占用率(0-100)" prop="occupancyRate">
-              <el-input v-model="form.occupancyRate" placeholder="请输入占用率(0-100)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="最后入库时间" prop="lastInboundTime">
-              <el-date-picker clearable v-model="form.lastInboundTime" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择最后入库时间">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="最后出库时间" prop="lastOutboundTime">
-              <el-date-picker clearable v-model="form.lastOutboundTime" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择最后出库时间">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <!-- 3D 可视化配置抽屉 -->
+        <Wm3dConfigDrawer v-model="show3dConfig" :form-data="form" />
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -450,13 +249,75 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 批量生成库位对话框 -->
+    <el-dialog title="批量生成库位" v-model="batchGenOpen" width="600px" append-to-body>
+      <el-form ref="batchGenRef" :model="batchGenForm" :rules="batchGenRules" label-width="100px">
+        <el-form-item label="所属库区" prop="areaId">
+          <el-cascader
+            v-model="batchGenForm.areaPath"
+            :options="warehouseTreeOptions"
+            :props="cascaderProps"
+            placeholder="请选择仓库/库区"
+            :disabled="!!route.query.areaId"
+            style="width: 100%"
+            filterable
+            @change="handleBatchAreaChange"
+          />
+        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="起始行" prop="rowStart">
+              <el-input-number v-model="batchGenForm.rowStart" :min="1" :max="999" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="结束行" prop="rowEnd">
+              <el-input-number v-model="batchGenForm.rowEnd" :min="1" :max="999" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="列数" prop="colCount">
+              <el-input-number v-model="batchGenForm.colCount" :min="1" :max="999" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="层数" prop="layerCount">
+              <el-input-number v-model="batchGenForm.layerCount" :min="1" :max="999" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="编码前缀" prop="codePrefix">
+          <el-input v-model="batchGenForm.codePrefix" placeholder="留空则使用库区编码" />
+        </el-form-item>
+        <el-form-item label="库位类型" prop="locationType">
+          <el-select v-model="batchGenForm.locationType" placeholder="请选择库位类型" style="width: 100%">
+            <el-option v-for="dict in wm_location_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+          </el-select>
+        </el-form-item>
+        <el-alert type="info" :closable="false" show-icon>
+          <template #title>
+            将生成 {{ batchGenEstimate }} 个库位
+          </template>
+        </el-alert>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchGenOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitBatchGenerate">确认生成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="Storagelocation">
-import { listStoragelocation, getStoragelocation, delStoragelocation, addStoragelocation, updateStoragelocation } from "@/api/erp/wm/storagelocation"
+import { listStoragelocation, getStoragelocation, delStoragelocation, addStoragelocation, updateStoragelocation, batchGenerateLocation } from "@/api/erp/wm/storagelocation"
+import { getStoragearea } from "@/api/erp/wm/storagearea"
+import { getWareHouseTree } from "@/api/erp/wm/warehouse"
 import { useRoute } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
+import Wm3dConfigDrawer from '../components/Wm3dConfigDrawer.vue'
 
 const { proxy } = getCurrentInstance() as any
 const { sys_true_or_false, wm_location_type, wm_location_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_location_type', 'wm_location_status'))
@@ -472,6 +333,20 @@ const total = ref(0)
 const title = ref("")
 const isViewMode = ref(false)
 const autoGenFlag = ref(false)
+const show3dConfig = ref(false)
+
+const currentArea = ref<any>(null)
+const warehouseTreeOptions = ref<any[]>([])
+const selectedAreaPath = ref<string[]>([])
+const queryAreaPath = ref('')
+
+const cascaderProps = {
+  checkStrictly: true,
+  emitPath: false,
+  value: 'key',
+  label: 'label',
+  children: 'children'
+}
 
 const route = useRoute()
 
@@ -483,6 +358,7 @@ const data = reactive({
     locationCode: null,
     locationName: null,
     areaId: null,
+    warehouseId: null,
     area: null,
     maxLoa: null,
     productMixing: null,
@@ -532,6 +408,7 @@ function getList() {
     total.value = response.total
     loading.value = false
   })
+  loadAreaContext()
 }
 
 // 取消按钮
@@ -623,8 +500,12 @@ function handleAdd() {
   reset()
   isViewMode.value = false
   if (route.query.areaId) {
-    form.value.areaId = route.query.areaId
+    form.value.areaId = Number(route.query.areaId)
+    selectedAreaPath.value = `a_${route.query.areaId}`
+  } else {
+    selectedAreaPath.value = ''
   }
+  loadWarehouseTree()
   open.value = true
   title.value = "添加库位"
 }
@@ -636,6 +517,11 @@ function handleUpdate(row: any) {
   const _locationId = row.locationId || ids.value
   getStoragelocation(_locationId).then((response: any) => {
     form.value = response.data
+    // 回显级联选择器
+    if (form.value.areaId) {
+      selectedAreaPath.value = `a_${form.value.areaId}`
+    }
+    loadWarehouseTree()
     open.value = true
     title.value = "修改库位"
   })
@@ -648,6 +534,11 @@ function handleView(row: any) {
   const _locationId = row.locationId || ids.value
   getStoragelocation(_locationId).then((response: any) => {
     form.value = response.data
+    // 回显级联选择器
+    if (form.value.areaId) {
+      selectedAreaPath.value = `a_${form.value.areaId}`
+    }
+    loadWarehouseTree()
     open.value = true
     title.value = "查看库位"
   })
@@ -703,5 +594,168 @@ function handleAutoGenChange(autoGenFlag: boolean) {
   }
 }
 
+/** 加载当前库区上下文信息 */
+function loadAreaContext() {
+  const areaId = route.query.areaId as string
+  if (areaId) {
+    getStoragearea(areaId).then((res: any) => {
+      currentArea.value = res.data
+    })
+  }
+}
+
+/** 返回库区列表 */
+function goBackToArea() {
+  const warehouseId = currentArea.value?.warehouseId
+  if (warehouseId) {
+    proxy.$router.push({ path: '/erp/wm/storagearea/index', query: { warehouseId } })
+  } else {
+    proxy.$router.push({ path: '/erp/wm/storagearea/index' })
+  }
+}
+
+/** 加载仓库树用于级联选择 */
+function loadWarehouseTree() {
+  getWareHouseTree().then((res: any) => {
+    warehouseTreeOptions.value = normalizeTree(res.data)
+  })
+}
+
+/** 标准化仓库树数据 */
+function normalizeTree(data: any[]): any[] {
+  return (data || []).map((w: any) => ({
+    key: `w_${w.warehouseId}`,
+    label: w.warehouseName,
+    warehouseId: w.warehouseId,
+    children: (w.children || []).map((a: any) => ({
+      key: `a_${a.areaId}`,
+      label: a.areaName,
+      areaId: a.areaId,
+      warehouseId: w.warehouseId,
+      children: undefined
+    }))
+  }))
+}
+
+/** 级联选择器变更处理 */
+function handleAreaCascaderChange(value: any) {
+  if (!value) {
+    form.value.areaId = null
+    form.value.warehouseId = null
+    return
+  }
+  // 从 key 中解析 areaId
+  const keyStr = String(value)
+  if (keyStr.startsWith('a_')) {
+    form.value.areaId = Number(keyStr.replace('a_', ''))
+  }
+  // 从树中找到对应仓库ID
+  for (const w of warehouseTreeOptions.value) {
+    for (const a of (w.children || [])) {
+      if (a.key === keyStr) {
+        form.value.warehouseId = w.warehouseId
+        return
+      }
+    }
+  }
+}
+
+/** 查询条件级联选择器变更处理 */
+function handleQueryAreaChange(value: any) {
+  if (!value) {
+    queryParams.value.areaId = null
+    queryParams.value.warehouseId = null
+    return
+  }
+  const keyStr = String(value)
+  if (keyStr.startsWith('a_')) {
+    queryParams.value.areaId = Number(keyStr.replace('a_', ''))
+    queryParams.value.warehouseId = null
+  } else if (keyStr.startsWith('w_')) {
+    queryParams.value.warehouseId = Number(keyStr.replace('w_', ''))
+    queryParams.value.areaId = null
+  }
+}
+
+const batchGenOpen = ref(false)
+const batchGenForm = ref<any>({
+  areaId: null,
+  areaPath: '',
+  rowStart: 1,
+  rowEnd: 1,
+  colCount: 1,
+  layerCount: 1,
+  codePrefix: '',
+  locationType: null
+})
+const batchGenRules = {
+  areaId: [{ required: true, message: '请选择库区', trigger: 'change' }],
+  rowStart: [{ required: true, message: '起始行不能为空', trigger: 'blur' }],
+  rowEnd: [{ required: true, message: '结束行不能为空', trigger: 'blur' }],
+  colCount: [{ required: true, message: '列数不能为空', trigger: 'blur' }],
+  layerCount: [{ required: true, message: '层数不能为空', trigger: 'blur' }]
+}
+
+/** 批量生成预估数量 */
+const batchGenEstimate = computed(() => {
+  const rows = Math.max(0, (batchGenForm.value.rowEnd || 0) - (batchGenForm.value.rowStart || 0) + 1)
+  const cols = batchGenForm.value.colCount || 0
+  const layers = batchGenForm.value.layerCount || 0
+  return rows * cols * layers
+})
+
+/** 打开批量生成对话框 */
+function handleBatchGenerate() {
+  batchGenForm.value = {
+    areaId: route.query.areaId ? Number(route.query.areaId) : null,
+    areaPath: route.query.areaId ? `a_${route.query.areaId}` : '',
+    rowStart: 1,
+    rowEnd: 1,
+    colCount: 1,
+    layerCount: 1,
+    codePrefix: '',
+    locationType: null
+  }
+  loadWarehouseTree()
+  batchGenOpen.value = true
+}
+
+/** 批量生成库区级联选择变更 */
+function handleBatchAreaChange(value: any) {
+  if (!value) {
+    batchGenForm.value.areaId = null
+    return
+  }
+  const keyStr = String(value)
+  if (keyStr.startsWith('a_')) {
+    batchGenForm.value.areaId = Number(keyStr.replace('a_', ''))
+  }
+}
+
+/** 提交批量生成 */
+function submitBatchGenerate() {
+  proxy.$refs['batchGenRef'].validate((valid: boolean) => {
+    if (valid) {
+      if (batchGenEstimate.value > 500) {
+        proxy.$modal.confirm(`即将生成 ${batchGenEstimate.value} 个库位，数量较大是否继续？`).then(() => {
+          doBatchGenerate()
+        }).catch(() => {})
+      } else {
+        doBatchGenerate()
+      }
+    }
+  })
+}
+
+/** 执行批量生成 */
+function doBatchGenerate() {
+  batchGenerateLocation(batchGenForm.value).then((res: any) => {
+    proxy.$modal.msgSuccess(`成功生成 ${res.data} 个库位`)
+    batchGenOpen.value = false
+    getList()
+  })
+}
+
+loadWarehouseTree()
 getList()
 </script>

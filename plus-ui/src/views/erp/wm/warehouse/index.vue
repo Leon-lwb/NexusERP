@@ -63,6 +63,13 @@
           <dict-tag :options="wm_warehouse_status" :value="scope.row.status" />
         </template>
       </el-table-column>
+      <el-table-column label="库区数量" align="center" width="100">
+        <template #default="scope">
+          <el-button link type="primary" @click="handleStoragearea(scope.row.warehouseId)">
+            {{ scope.row.areaCount || 0 }}
+          </el-button>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220px">
         <template #default="scope">
           <el-button size="mini" type="text" icon="box" @click="handleStoragearea(scope.row.warehouseId)"

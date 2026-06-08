@@ -1,6 +1,18 @@
 <template>
   <div class="app-container">
+    <!-- 面包屑上下文 -->
+    <el-card v-if="currentWarehouse" class="mb8" shadow="never">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <el-button link icon="ArrowLeft" @click="goBackToWarehouse">返回仓库列表</el-button>
+        <el-divider direction="vertical" />
+        <span>当前仓库：<strong>{{ currentWarehouse.warehouseName }}</strong>（{{ currentWarehouse.warehouseCode }}）</span>
+      </div>
+    </el-card>
+
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
+      <el-form-item v-if="!route.query.warehouseId" label="所属仓库" prop="warehouseName">
+        <el-input v-model="queryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="handleQuery" />
+      </el-form-item>
       <el-form-item label="库区编码" prop="areaCode">
         <el-input v-model="queryParams.areaCode" placeholder="请输入库区编码" clearable @keyup.enter="handleQuery" />
       </el-form-item>
@@ -59,9 +71,9 @@
 
     <el-table v-loading="loading" :data="storageareaList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="库区ID" align="center" prop="areaId" />
       <el-table-column label="库区编码" align="center" prop="areaCode" />
       <el-table-column label="库区名称" align="center" prop="areaName" />
+      <el-table-column v-if="!route.query.warehouseId" label="所属仓库" align="center" prop="warehouseName" />
       <el-table-column label="面积(㎡)" align="center" prop="area" />
       <el-table-column label="开启库位管理" align="center" prop="locationFlag">
         <template #default="scope">
@@ -120,6 +132,16 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
+            <el-form-item label="所属仓库" prop="warehouseId">
+              <el-select v-model="form.warehouseId" placeholder="请选择所属仓库"
+                :disabled="isViewMode" style="width: 100%" filterable>
+                <el-option v-for="item in warehouseOptions" :key="item.warehouseId"
+                  :label="`${item.warehouseCode} - ${item.warehouseName}`"
+                  :value="item.warehouseId" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="布局类型" prop="layoutType">
               <el-select v-model="form.layoutType" placeholder="请选择布局类型">
                 <el-option v-for="dict in wm_layout_type" :key="dict.value" :label="dict.label"
@@ -127,6 +149,9 @@
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="面积(㎡)" prop="area">
               <el-input v-model="form.area" placeholder="请输入面积(㎡)" />
@@ -172,41 +197,16 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="3D坐标X(米)" prop="posX">
-              <el-input v-model="form.posX" placeholder="请输入3D坐标X(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="3D坐标Y(米)" prop="posY">
-              <el-input v-model="form.posY" placeholder="请输入3D坐标Y(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="3D坐标Z(米)" prop="posZ">
-              <el-input v-model="form.posZ" placeholder="请输入3D坐标Z(米)" />
+        <el-row :gutter="20" v-if="!isViewMode">
+          <el-col :span="24">
+            <el-form-item label="3D配置">
+              <el-button type="info" link icon="Setting" @click="show3dConfig = true">3D 可视化配置</el-button>
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-row :gutter="20" style="display: none;">
-          <el-col :span="8">
-            <el-form-item label="库区宽度(米)" prop="areaWidth">
-              <el-input v-model="form.areaWidth" placeholder="请输入库区宽度(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库区长度(米)" prop="areaLength">
-              <el-input v-model="form.areaLength" placeholder="请输入库区长度(米)" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="库区高度(米)" prop="areaHeight">
-              <el-input v-model="form.areaHeight" placeholder="请输入库区高度(米)" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <!-- 3D 可视化配置抽屉 -->
+        <Wm3dConfigDrawer v-model="show3dConfig" :form-data="form" />
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -220,8 +220,10 @@
 
 <script setup lang="ts" name="Storagearea">
 import { listStoragearea, getStoragearea, delStoragearea, addStoragearea, updateStoragearea } from "@/api/erp/wm/storagearea"
+import { getWarehouse, listWarehouse } from "@/api/erp/wm/warehouse"
 import { useRoute } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
+import Wm3dConfigDrawer from '../components/Wm3dConfigDrawer.vue'
 
 const { proxy } = getCurrentInstance() as any
 const { sys_true_or_false, wm_layout_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_layout_type'))
@@ -237,6 +239,10 @@ const total = ref(0)
 const title = ref("")
 const isViewMode = ref(false)
 const autoGenFlag = ref(false)
+const show3dConfig = ref(false)
+
+const currentWarehouse = ref<any>(null)
+const warehouseOptions = ref<any[]>([])
 
 const route = useRoute()
 
@@ -248,6 +254,7 @@ const data = reactive({
     areaCode: null,
     areaName: null,
     warehouseId: null,
+    warehouseName: null,
     area: null,
     locationFlag: null,
     enableFlag: null,
@@ -288,6 +295,7 @@ function getList() {
     total.value = response.total
     loading.value = false
   })
+  loadWarehouseContext()
 }
 
 function cancel() {
@@ -358,6 +366,7 @@ function handleAdd() {
   if ((route.query as any).warehouseId) {
     form.value.warehouseId = (route.query as any).warehouseId
   }
+  loadWarehouseOptions()
   open.value = true
   title.value = "添加库区"
 }
@@ -434,5 +443,28 @@ function handleStoragelocation(areaId: number) {
   proxy.$router.push({ path: '/erp/wm/storagelocation/index', query: { areaId: areaId || 0 } })
 }
 
+/** 加载当前仓库上下文信息 */
+function loadWarehouseContext() {
+  const warehouseId = route.query.warehouseId as string
+  if (warehouseId) {
+    getWarehouse(warehouseId).then((res: any) => {
+      currentWarehouse.value = res.data
+    })
+  }
+}
+
+/** 返回仓库列表 */
+function goBackToWarehouse() {
+  proxy.$router.push({ path: '/erp/wm/warehouse' })
+}
+
+/** 加载仓库下拉选项 */
+function loadWarehouseOptions() {
+  listWarehouse({ pageNum: 1, pageSize: 9999, status: 1 }).then((res: any) => {
+    warehouseOptions.value = res.rows
+  })
+}
+
+loadWarehouseOptions()
 getList()
 </script>

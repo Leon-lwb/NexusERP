@@ -39,3 +39,10 @@ export const delStoragearea = (areaId: string | number | (string | number)[]) =>
     method: 'delete'
   });
 };
+
+/**
+ * 根据仓库ID查询库区列表（下拉选择用）
+ */
+export const listAreaByWarehouse = (warehouseId: number): AxiosPromise<StorageareaVO[]> => {
+  return request({ url: `/erp/wm/storagearea/list-by-warehouse/${warehouseId}`, method: 'get' });
+};

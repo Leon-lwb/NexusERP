@@ -125,4 +125,21 @@ public class WmStorageAreaController extends BaseController {
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(wmStorageAreaService.deleteByIds(ids));
     }
+
+    /**
+     * 根据仓库ID查询库区列表（下拉选择用）
+     * <p>
+     * 权限标识：{@code wm:storagearea:list}</p>
+     *
+     * @param warehouseId 仓库ID
+     * @return 该仓库下启用的库区列表
+     */
+    @SaCheckPermission("wm:storagearea:list")
+    @GetMapping("/list-by-warehouse/{warehouseId}")
+    public R<List<WmStorageAreaVo>> listAreaByWarehouse(@PathVariable Long warehouseId) {
+        WmStorageAreaBo bo = new WmStorageAreaBo();
+        bo.setWarehouseId(warehouseId);
+        bo.setEnableFlag(1L);
+        return R.ok(wmStorageAreaService.selectList(bo));
+    }
 }

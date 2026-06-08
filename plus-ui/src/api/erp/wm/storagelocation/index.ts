@@ -39,3 +39,17 @@ export const delStoragelocation = (locationId: string | number | (string | numbe
     method: 'delete'
   });
 };
+
+/**
+ * 根据库区ID查询库位列表（下拉选择用）
+ */
+export const listLocationByArea = (areaId: number): AxiosPromise<StoragelocationVO[]> => {
+  return request({ url: `/erp/wm/storagelocation/list-by-area/${areaId}`, method: 'get' });
+};
+
+/**
+ * 批量生成库位
+ */
+export const batchGenerateLocation = (data: any) => {
+  return request({ url: '/erp/wm/storagelocation/batch-generate', method: 'post', data });
+};

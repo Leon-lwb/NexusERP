@@ -76,4 +76,16 @@ public class WmStorageAreaVo implements Serializable {
      */
     @ExcelProperty(value = "布局类型")
     private String layoutType;
+
+    /**
+     * 仓库名称
+     */
+    @ExcelProperty(value = "仓库名称")
+    private String warehouseName;
+
+    /**
+     * 仓库编码
+     */
+    @ExcelProperty(value = "仓库编码")
+    private String warehouseCode;
 }

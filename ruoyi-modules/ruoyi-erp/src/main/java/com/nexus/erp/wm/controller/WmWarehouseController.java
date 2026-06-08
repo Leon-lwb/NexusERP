@@ -10,8 +10,8 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
-import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.domain.bo.WmWarehouseBo;
+import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
 import com.nexus.erp.wm.service.IWmWarehouseService;
 import org.springframework.validation.annotation.Validated;
@@ -136,7 +136,7 @@ public class WmWarehouseController extends BaseController {
      */
     @SaCheckPermission("wm:warehouse:list")
     @GetMapping("/tree")
-    public R<List<WmWarehouse>> getWareHouseTree() {
+    public R<List<WmWarehouseTreeVo>> getWareHouseTree() {
         return R.ok(wmWarehouseService.getWareHouseTree());
     }
 }

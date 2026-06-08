@@ -2,6 +2,8 @@ export interface StoragelocationQuery extends PageQuery {
   locationCode?: string;
   locationName?: string;
   areaId?: number;
+  warehouseId?: number;
+  areaName?: string;
   area?: number;
   maxLoa?: number;
   productMixing?: number;
@@ -19,6 +21,10 @@ export interface StoragelocationVO {
   locationCode: string;
   locationName: string;
   areaId: number;
+  warehouseId: number;
+  areaName: string;
+  areaCode: string;
+  warehouseName: string;
   area: number;
   maxLoa: number;
   positionX: number;
