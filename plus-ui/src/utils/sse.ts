@@ -60,6 +60,12 @@ export const initSSE = (url: any) => {
             return;
           }
         }
+        // AI 消息类型处理（顶层 type 字段以 AI_ 开头）
+        if (obj.type && typeof obj.type === 'string' && obj.type.startsWith('AI_')) {
+          window.dispatchEvent(new CustomEvent('ai-sse-message', { detail: obj }));
+          data.value = null;
+          return;
+        }
         // AI 消息类型处理（message 字段为 JSON，含 type/content）
         // 注意：AI 消息格式与系统通知不同，独立处理
         if (obj.message && typeof obj.message === 'string') {

@@ -38,7 +38,7 @@ RuoYi-Vue-Plus v5.6.0 — 一个多租户企业管理系统 (ERP)。基于 RuoYi
 
 ```
 ruoyi-admin/              — Spring Boot 入口 (DromaraApplication)。组装所有模块。
-ruoyi-common/             — 共享库 (26 个子模块)。每个均为可自动配置的独立 jar。
+ruoyi-common/             — 共享库 (27 个子模块)。每个均为可自动配置的独立 jar。
   ruoyi-common-core/      —    基础层: 领域模型、枚举、异常、校验器、工具类
   ruoyi-common-web/       —    Web 层: 全局异常处理、响应包装、过滤器
   ruoyi-common-satoken/   —    认证 (Sa-Token + JWT)
@@ -46,12 +46,14 @@ ruoyi-common/             — 共享库 (26 个子模块)。每个均为可自�
   ruoyi-common-redis/     —    Redis 客户端 (Redisson + Spring Cache 注解)
   ruoyi-common-tenant/    —    多租户插件
   ruoyi-common-sse/       —    用于推送通知的服务器发送事件 (Server-Sent Events)
+  ruoyi-common-ai/        —    AI 公共层: 实体类 (AiProvider/AiModel/AiSession/AiMessage)、Mapper、DTO、Service 接口
   ruoyi-common-oss/       —    对象存储 (Minio / S3 协议)
   ruoyi-common-flowable/  —    Flowable 工作流引擎集成
   ... 以及更多 (任务、日志、短信、邮件、社交、Excel、加密等)
 ruoyi-modules/            — 业务模块
   ruoyi-system/           —    系统管理 (用户、角色、菜单、部门、租户、客户端、字典等)
   ruoyi-erp/              —    ERP 业务逻辑 (主要业务模块)
+  ruoyi-ai/               —    AI 智能助手 (Agent 编排、Tool、SSE 推送、对话管理)
   ruoyi-flowable/         —    Flowable 工作流 REST API
   ruoyi-generator/        —    代码生成器
   ruoyi-job/              —    分布式任务调度 (SnailJob)
@@ -90,11 +92,38 @@ ERP 模块 (`ruoyi-erp`) 按业务领域组织:
 | `sch` | 排产调度 | 班次、班组、工人、考勤、假期、生产调度 |
 | `wm` | 仓储管理 | 仓库、库区/储位、库存、收货、发货、到货通知 |
 
+### AI 模块子包
+
+AI 模块 (`ruoyi-ai`) 按 LangChain4j Agent 架构组织:
+
+| 包 | 描述 |
+|---------|-------------|
+| `agent` | Agent 接口定义 (ErpQueryAgent)，使用 `@Agent` / `@SystemMessage` 注解声明 |
+| `config` | 配置类 (AiProperties — `nexus.ai` 前缀、AiThreadPoolConfig — 异步线程池) |
+| `context` | AiRequestContext — 异步线程传播 tenantId/userId (Sa-Token ThreadLocal 不自动传播) |
+| `controller` | AiChatController — REST 接口 (`/ai/chat/send`, `/ai/chat/history/{id}`, `/ai/chat/sessions`) |
+| `service/chat` | ChatModelFactory — 根据数据库配置动态构建 ChatModel/StreamingChatModel (带缓存) |
+| `service/facade` | AiServiceFacade — 统一入口: 路由对话 → 创建会话 → 构建 SupervisorAgent → 异步执行 → SSE 推送 |
+| `service/query` | ErpQueryService — ERP 数据源 SQL 执行 (`@DS("erp")` 切换到 ry-erp 库) |
+| `service/sse` | AiSseMessageHelper — SSE 消息编码 (JSON payload: type=AI_CONTENT/AI_THINKING/AI_DONE/AI_ERROR/AI_CHART) |
+| `tool` | LangChain4j Tool 实现: QueryAllTablesTool、QueryTableSchemaTool、ExecuteSqlQueryTool |
+
+AI 公共模块 (`ruoyi-common-ai`) 存放跨模块共享的实体和接口:
+
+| 包 | 描述 |
+|---------|-------------|
+| `domain/entity` | AiProvider、AiModel、AiSession、AiMessage (对应 ai_provider/ai_model/ai_session/ai_message 表) |
+| `mapper` | MyBatis-Plus Mapper 接口 |
+| `dto` | AiChatRequest (聊天请求 DTO) |
+| `service` | IAiModelService 及实现 (模型配置查询) |
+
 ### 前端结构 (plus-ui)
 
 ```
-src/api/                  — API 层 (对应后端模块: system, erp/bd, erp/prd, erp/sch, erp/so, erp/wm, workflow)
+src/api/                  — API 层 (对应后端模块: system, erp/bd, erp/prd, erp/sch, erp/so, erp/wm, ai/chat, workflow)
 src/views/                — 页面组件 (结构对应)
+src/views/ai/             —   AI 页面: model/ (厂商/模型配置)、knowledge/ (知识库)、assistant/ (助手)
+src/components/ai/        —   AI 组件: AiChatDrawer.vue (全局对话抽屉，Markdown 渲染，SSE 消息接收)
 src/router/               — Vue Router 配置 (index.ts)
 src/store/modules/        — Pinia 状态库 (app, user, permission, dict, tagsView, settings, notice)
 src/components/           — 共享组件
@@ -124,6 +153,8 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 | Excel | FastExcel (阿里巴巴 EasyExcel 分支) |
 | API 加密 | 动态 AES + RSA (每次请求生成唯一 AES 密钥，用 RSA 加密) |
 | XSS 防护 | 自定义过滤器 (可配置排除 URL) |
+| AI 框架 | LangChain4j 1.13.0 + LangChain4j Agentic 1.13.0-beta23 (Supervisor Agent 编排) |
+| AI 模型接入 | OpenAI 兼容接口 (DeepSeek/通义千问/智谱/Ollama)，ChatModelFactory 动态构建+缓存 |
 | 前端技术栈 | Vue 3.5 + Vite 7 + TypeScript + Pinia + Element Plus + UnoCSS |
 
 ### 配置注意事项
@@ -136,6 +167,17 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - Logback 配置: `logback-plus.xml`，日志写入 `./logs/` 目录
 - 敏感凭证位于 `application-dev.yml` / `application-prod.yml` 中 (不在基础 `application.yml` 中)
 - `application-dev.yml`中的一些支付宝支付配置、微信小程序配置等在`application-secret.yml`中，需要自行更换配置
+
+### AI 模块配置与约束
+
+- AI 配置前缀: `nexus.ai` (避免与 Spring AI 的 `spring.ai` 冲突)，关键属性: `defaultProvider`、`defaultModel`、`allowedTablePrefixes`、`sqlTimeout`、`sqlMaxRows`
+- AI 厂商和模型配置存储在 `ry-vue` 库的 `ai_provider` / `ai_model` 表中，运行时由 ChatModelFactory 动态构建并缓存
+- AI 数据查询走 `@DS("erp")` 数据源 (ry-erp 库)，系统配置走默认 master 数据源 (ry-vue 库)
+- SQL 执行安全: 仅允许 SELECT，内置危险关键词黑名单、表名前缀白名单 (bd_/so_/pu_/prd_/wm_/sch_)，自动注入 tenant_id 隔离条件
+- 异步线程上下文: Sa-Token 的 ThreadLocal 不会传播到异步线程，必须通过 `AiRequestContext.set(tenantId, userId)` 手动传播，任务结束时调用 `AiRequestContext.clear()`
+- SSE 推送: AI 回复通过 `AiSseMessageHelper` → `SseMessageUtils.publishMessage` (Redis Pub/Sub 广播) → 前端 SSE 连接接收
+- AI 线程池: `AiThreadPoolConfig` 定义的 `aiExecutor` Bean，专用于 AI 异步任务
+- AI 实体类 (AiProvider/AiModel/AiSession/AiMessage) 在 `ruoyi-common-ai` 中，不在 `ruoyi-ai` 中，以便跨模块引用
 
 ### 国际化 (i18n)
 
