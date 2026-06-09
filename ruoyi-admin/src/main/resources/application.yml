@@ -305,8 +305,17 @@ flowable:
 --- # mq 消息队列通用配置
 mq:
   rabbit:
-    enabled: true
+    enabled: false
     exchange-prefix: erp
     message-record-enabled: true
     max-retry: 3
     compensation-resend-threshold: 60000
+
+--- # NexusERP AI 配置
+nexus:
+  ai:
+    default-provider: deepseek
+    default-model: deepseek-chat
+    allowed-table-prefixes: bd_,so_,pu_,prd_,wm_,sch_
+    sql-timeout: 5000
+    sql-max-rows: 1000

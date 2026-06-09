@@ -193,6 +193,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- AI 公共模块 -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-common-ai</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

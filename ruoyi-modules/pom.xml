@@ -20,6 +20,7 @@
         <module>ruoyi-pay</module>
         <module>ruoyi-report</module>
         <module>ruoyi-im</module>
+        <module>ruoyi-ai</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

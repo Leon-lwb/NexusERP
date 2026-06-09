@@ -60,6 +60,20 @@ export const initSSE = (url: any) => {
             return;
           }
         }
+        // AI 消息类型处理（message 字段为 JSON，含 type/content）
+        // 注意：AI 消息格式与系统通知不同，独立处理
+        if (obj.message && typeof obj.message === 'string') {
+          try {
+            const aiMsg = JSON.parse(obj.message);
+            if (aiMsg.type && aiMsg.type.startsWith('AI_')) {
+              window.dispatchEvent(new CustomEvent('ai-sse-message', { detail: aiMsg }));
+              data.value = null;
+              return;
+            }
+          } catch {
+            /* message 不是 JSON，忽略 */
+          }
+        }
       } catch {
         /* 非 JSON */
       }

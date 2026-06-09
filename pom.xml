@@ -53,6 +53,11 @@
         <!-- Flowable工作流引擎 -->
         <flowable.version>7.0.0</flowable.version>
 
+        <!-- AI 相关版本 -->
+        <langchain4j.version>1.13.0</langchain4j.version>
+        <langchain4j.community.version>1.13.0-beta23</langchain4j.community.version>
+        <langgraph4j.version>1.5.3</langgraph4j.version>
+
         <!-- 插件版本 -->
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-war-plugin.version>3.4.0</maven-war-plugin.version>

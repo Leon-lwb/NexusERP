@@ -122,6 +122,13 @@
             <artifactId>ruoyi-im</artifactId>
         </dependency>
 
+        <!--  AI 智能助手模块  -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-ai</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <dependency>
             <groupId>de.codecentric</groupId>
             <artifactId>spring-boot-admin-starter-client</artifactId>

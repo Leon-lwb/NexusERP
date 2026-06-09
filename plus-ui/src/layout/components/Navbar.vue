@@ -32,6 +32,13 @@
             <svg-icon class-name="search-icon" icon-class="search" />
           </div>
         </el-tooltip>
+        <!-- AI 智能助手 -->
+        <el-tooltip content="AI 智能助手" effect="dark" placement="bottom">
+          <div class="right-menu-item hover-effect" @click="openAiChat">
+            <el-icon :size="18"><ChatDotRound /></el-icon>
+          </div>
+        </el-tooltip>
+
         <!-- 消息 -->
         <el-tooltip :content="proxy.$t('navbar.message')" effect="dark" placement="bottom">
           <div>
@@ -95,6 +102,8 @@
         </el-dropdown>
       </div>
     </div>
+    <!-- AI 智能助手抽屉 -->
+    <AiChatDrawer ref="aiChatDrawerRef" />
   </div>
 </template>
 
@@ -114,7 +123,8 @@ import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import Logo from "@/layout/components/Sidebar/Logo.vue";
 import TopBar from './TopBar'
-import { Brush } from '@element-plus/icons-vue'
+import { Brush, ChatDotRound } from '@element-plus/icons-vue'
+import AiChatDrawer from '@/components/ai/AiChatDrawer.vue'
 
 const appStore = useAppStore();
 const userStore = useUserStore();
@@ -137,9 +147,14 @@ const dynamic = ref(false);
 const tenantEnabled = ref(true);
 // 搜索菜单
 const searchMenuRef = ref<InstanceType<typeof SearchMenu>>();
+const aiChatDrawerRef = ref<InstanceType<typeof AiChatDrawer>>();
 
 const openSearchMenu = () => {
   searchMenuRef.value?.openSearch();
+};
+
+const openAiChat = () => {
+  aiChatDrawerRef.value?.open();
 };
 
 // 动态切换
