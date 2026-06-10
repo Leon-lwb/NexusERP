@@ -18,6 +18,7 @@
               :key="session.id"
               :class="['session-item', { active: session.id === currentSessionId }]"
               @click="switchSession(session.id)"
+              @contextmenu.prevent="showContextMenu($event, session)"
             >
               <el-icon class="session-icon"><ChatDotRound /></el-icon>
               <span class="session-title">{{ session.title }}</span>
@@ -89,16 +90,38 @@
             </el-button>
           </div>
         </div>
-      </el-card>
+      </el-card></div>
+
+      <!-- 右键菜单 -->
+      <div v-if="contextMenu.visible" class="context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
+        <div class="context-menu-item" @click="handleRename">
+          <el-icon><Edit /></el-icon>
+          <span>重命名</span>
+        </div>
+        <div class="context-menu-item danger" @click="handleDelete">
+          <el-icon><Delete /></el-icon>
+          <span>删除</span>
+        </div>
+      </div>
+
+      <!-- 重命名弹窗 -->
+      <el-dialog v-model="renameDialogVisible" title="重命名会话" width="400px" append-to-body>
+        <el-input v-model="renameTitle" placeholder="请输入新标题" maxlength="50" show-word-limit />
+        <template #footer>
+          <el-button @click="renameDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmRename">确定</el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { Promotion, Loading, ChatDotRound, UserFilled, Plus } from '@element-plus/icons-vue'
-import { sendAiMessage, getChatHistory, getChatSessions, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
+import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
 import { marked } from 'marked'
+import { createAiRenderer } from '@/utils/aiRenderers'
 import 'github-markdown-css'
 
 /** 前端聊天消息类型 */
@@ -115,6 +138,11 @@ const sessionLoading = ref(false)
 const messageListRef = ref<HTMLElement>()
 const sessions = ref<AiSession[]>([])
 const currentSessionId = ref<number | null>(null)
+
+/** 右键菜单状态 */
+const contextMenu = ref({ visible: false, x: 0, y: 0, session: null as AiSession | null })
+const renameDialogVisible = ref(false)
+const renameTitle = ref('')
 
 const quickTips = [
   '查询所有业务表',
@@ -134,7 +162,19 @@ function onAiSseMessage(event: Event) {
     case 'AI_THINKING':
       thinking.value = true
       break
+    case 'AI_CONTENT_INCREMENT':
+      // 流式 Token 追加模式
+      thinking.value = false
+      const incMsg = messages.value[messages.value.length - 1]
+      if (incMsg && incMsg.role === 'assistant') {
+        incMsg.content += detail.content
+      } else {
+        messages.value.push({ role: 'assistant', content: detail.content })
+      }
+      nextTick(() => scrollToBottom())
+      break
     case 'AI_CONTENT':
+      // Agent 模式完整替换
       thinking.value = false
       loading.value = false
       const lastMsg = messages.value[messages.value.length - 1]
@@ -150,6 +190,8 @@ function onAiSseMessage(event: Event) {
       loading.value = false
       // 刷新会话列表（新会话可能已创建）
       loadSessions()
+      // 扫描并挂载 ECharts 容器
+      nextTick(() => mountEchartsContainers())
       break
     case 'AI_ERROR':
       thinking.value = false
@@ -161,9 +203,10 @@ function onAiSseMessage(event: Event) {
   }
 }
 
-/** 渲染 Markdown */
+/** 渲染 Markdown（含 ECharts 代码块识别） */
 function renderMarkdown(content: string) {
-  return marked.parse(content || '')
+  const renderer = createAiRenderer()
+  return marked.parse(content || '', { renderer: renderer as any })
 }
 
 /** 滚动到底部 */
@@ -271,13 +314,100 @@ function formatTime(time: string) {
   return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
 }
 
+/** 显示右键菜单 */
+function showContextMenu(event: MouseEvent, session: AiSession) {
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    session
+  }
+}
+
+/** 隐藏右键菜单 */
+function hideContextMenu() {
+  contextMenu.value.visible = false
+}
+
+/** 重命名会话 */
+function handleRename() {
+  if (!contextMenu.value.session) return
+  renameTitle.value = contextMenu.value.session.title || ''
+  renameDialogVisible.value = true
+  hideContextMenu()
+}
+
+/** 确认重命名 */
+async function confirmRename() {
+  if (!contextMenu.value.session || !renameTitle.value.trim()) return
+  try {
+    await renameSession({ id: contextMenu.value.session.id, title: renameTitle.value.trim() })
+    // 更新本地列表
+    const s = sessions.value.find(item => item.id === contextMenu.value.session!.id)
+    if (s) s.title = renameTitle.value.trim()
+    renameDialogVisible.value = false
+  } catch (e: any) {
+    console.error('[AI] 重命名会话失败', e)
+  }
+}
+
+/** 删除会话 */
+async function handleDelete() {
+  if (!contextMenu.value.session) return
+  const session = contextMenu.value.session
+  hideContextMenu()
+  try {
+    await ElMessageBox.confirm('确定删除该会话及其所有消息？', '提示', { type: 'warning' })
+    await deleteSession([session.id])
+    sessions.value = sessions.value.filter(s => s.id !== session.id)
+    if (currentSessionId.value === session.id) {
+      newSession()
+    }
+  } catch {
+    // 用户取消
+  }
+}
+
+import { ElMessageBox } from 'element-plus'
+
+/** 点击空白处关闭右键菜单 */
+function onGlobalClick() {
+  hideContextMenu()
+}
+
+/** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例 */
+function mountEchartsContainers() {
+  if (!messageListRef.value) return
+  const containers = messageListRef.value.querySelectorAll('.echarts-container:not([data-mounted])')
+  containers.forEach((el) => {
+    const optionStr = (el as HTMLElement).dataset.option
+    if (!optionStr) return
+    try {
+      const option = JSON.parse(decodeURIComponent(optionStr))
+      // 标记已挂载，避免重复渲染
+      el.setAttribute('data-mounted', 'true')
+      const chart = echarts.init(el as HTMLElement)
+      chart.setOption(option, true)
+      // 监听容器大小变化
+      const ro = new ResizeObserver(() => chart.resize())
+      ro.observe(el as HTMLElement)
+    } catch (e) {
+      console.error('ECharts 容器挂载失败:', e)
+    }
+  })
+}
+
+import * as echarts from 'echarts'
+
 onMounted(() => {
   window.addEventListener('ai-sse-message', onAiSseMessage)
+  window.addEventListener('click', onGlobalClick)
   loadSessions()
 })
 
 onUnmounted(() => {
   window.removeEventListener('ai-sse-message', onAiSseMessage)
+  window.removeEventListener('click', onGlobalClick)
 })
 </script>
 
@@ -530,6 +660,41 @@ onUnmounted(() => {
     padding: 2px 6px;
     border-radius: 3px;
     font-family: monospace;
+  }
+}
+
+/* 右键菜单 */
+.context-menu {
+  position: fixed;
+  z-index: 3000;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  min-width: 120px;
+
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #606266;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #f5f7fa;
+    }
+
+    &.danger {
+      color: #f56c6c;
+
+      &:hover {
+        background-color: #fef0f0;
+      }
+    }
   }
 }
 </style>

@@ -37,7 +37,7 @@ public class ExecuteSqlQueryTool {
         "INTO OUTFILE", "INTO DUMPFILE", "LOAD_FILE", "LOAD DATA",
         "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE",
         "GRANT", "REVOKE", "EXECUTE", "INFORMATION_SCHEMA",
-        "SLEEP", "BENCHMARK", "WAITFOR"
+        "SLEEP", "BENCHMARK", "WAITFOR", "UNION"
     );
 
     /** 表名提取正则（匹配 FROM/JOIN 后的表名） */
@@ -61,22 +61,26 @@ public class ExecuteSqlQueryTool {
 
         String upperSql = sql.trim().toUpperCase();
 
+        // 0. 移除 SQL 注释（防止通过注释绕过关键词检测）
+        String cleanedSql = sql.replaceAll("/\\*.*?\\*/", " ");  // 块注释 /*...*/
+        String cleanedUpperSql = cleanedSql.trim().toUpperCase();
+
         // 1. 必须以 SELECT 开头
-        if (!upperSql.startsWith("SELECT")) {
+        if (!cleanedUpperSql.startsWith("SELECT")) {
             log.warn("[AI-SQL] 非 SELECT 语句被拒绝: {}", sql);
             return "Error: Only SELECT queries are allowed";
         }
 
-        // 2. 禁止危险关键词
+        // 2. 禁止危险关键词（在清理注释后的 SQL 上检测）
         for (String keyword : FORBIDDEN_KEYWORDS) {
-            if (upperSql.contains(keyword)) {
+            if (cleanedUpperSql.contains(keyword)) {
                 log.warn("[AI-SQL] 包含禁止关键词 '{}': {}", keyword, sql);
                 return "Error: SQL contains forbidden keyword: " + keyword;
             }
         }
 
         // 3. 表名白名单校验
-        Matcher matcher = TABLE_NAME_PATTERN.matcher(sql);
+        Matcher matcher = TABLE_NAME_PATTERN.matcher(cleanedSql);
         while (matcher.find()) {
             String tableName = matcher.group(1);
             boolean allowed = aiProperties.getAllowedTablePrefixes().stream()
@@ -96,10 +100,10 @@ public class ExecuteSqlQueryTool {
             log.warn("[AI-SQL] 无法获取租户ID，跳过租户隔离");
         }
 
-        // 5. 追加行数限制
-        if (!upperSql.contains("LIMIT")) {
-            sql = sql + " LIMIT " + aiProperties.getSqlMaxRows();
-        }
+        // 5. 追加行数限制（移除已有的 LIMIT，强制使用安全限制）
+        // 移除用户指定的 LIMIT（防止绕过行数限制）
+        sql = sql.replaceAll("(?i)\\s+LIMIT\\s+\\d+(?:\\s*,\\s*\\d+)?\\s*$", "");
+        sql = sql + " LIMIT " + aiProperties.getSqlMaxRows();
 
         // 6. 通过 ErpQueryService 执行（走 @DS("erp") 数据源）
         try {

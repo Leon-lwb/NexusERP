@@ -51,3 +51,26 @@ export function getChatSessions() {
     method: 'get'
   })
 }
+
+/**
+ * 删除会话（级联删除消息）
+ * @param ids 会话ID数组
+ */
+export function deleteSession(ids: Array<number | string>) {
+  return request({
+    url: `/ai/chat/session/${ids}`,
+    method: 'delete'
+  })
+}
+
+/**
+ * 重命名会话
+ * @param data 会话信息（含 id 和 title）
+ */
+export function renameSession(data: { id: number; title: string }) {
+  return request({
+    url: '/ai/chat/session',
+    method: 'put',
+    data
+  })
+}

@@ -37,9 +37,20 @@
         </dependency>
 
         <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-excel</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
             <version>${langchain4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.ulisesbocchio</groupId>
+            <artifactId>jasypt-spring-boot-starter</artifactId>
+            <version>3.0.5</version>
         </dependency>
     </dependencies>
 

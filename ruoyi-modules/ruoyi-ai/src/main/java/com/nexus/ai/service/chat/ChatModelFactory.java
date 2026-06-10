@@ -6,6 +6,8 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,8 +15,8 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * AI 模型工厂（带缓存）
- * <p>根据数据库配置动态构建 ChatModel 和 StreamingChatModel，避免每次请求重建实例</p>
+ * AI 模型工厂（带缓存 + 多厂商路由）
+ * <p>根据数据库配置动态构建 ChatModel 和 StreamingChatModel，按 providerType 路由到不同厂商实现</p>
  *
  * @author NexusERP
  */
@@ -90,35 +92,84 @@ public class ChatModelFactory {
     }
 
     /**
-     * 构建同步模型
-     * <p>目前所有厂商均走 OpenAI 兼容接口，后续按 providerType 分支处理</p>
+     * 构建同步模型（按 providerType 路由）
      *
      * @param config 模型配置
      * @return ChatModel 实例
      */
     private ChatModel buildChatModel(AiModel config) {
-        return OpenAiChatModel.builder()
-            .baseUrl(config.getApiHost())
-            .apiKey(config.getApiKey())
-            .modelName(config.getModelName())
-            .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
-            .maxTokens(config.getMaxTokens())
-            .build();
+        String providerType = config.getProviderType();
+        log.debug("[ChatModelFactory] 构建 ChatModel: providerType={}, modelName={}", providerType, config.getModelName());
+
+        if (providerType == null) {
+            providerType = "OPENAI";
+        }
+
+        return switch (providerType.toUpperCase()) {
+            case "OLLAMA" -> OllamaChatModel.builder()
+                .baseUrl(config.getApiHost())
+                .modelName(config.getModelName())
+                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                .build();
+            // DASHSCOPE/ZHIPU 暂走 OpenAI 兼容接口
+            case "OPENAI", "DASHSCOPE", "ZHIPU" -> OpenAiChatModel.builder()
+                .baseUrl(config.getApiHost())
+                .apiKey(config.getApiKey())
+                .modelName(config.getModelName())
+                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                .maxTokens(config.getMaxTokens())
+                .build();
+            default -> {
+                log.warn("[ChatModelFactory] 未知的 providerType: {}，回退到 OpenAI 兼容接口", providerType);
+                yield OpenAiChatModel.builder()
+                    .baseUrl(config.getApiHost())
+                    .apiKey(config.getApiKey())
+                    .modelName(config.getModelName())
+                    .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                    .maxTokens(config.getMaxTokens())
+                    .build();
+            }
+        };
     }
 
     /**
-     * 构建流式模型（SSE 流式对话必须使用）
+     * 构建流式模型（按 providerType 路由）
      *
      * @param config 模型配置
      * @return StreamingChatModel 实例
      */
     private StreamingChatModel buildStreamingChatModel(AiModel config) {
-        return OpenAiStreamingChatModel.builder()
-            .baseUrl(config.getApiHost())
-            .apiKey(config.getApiKey())
-            .modelName(config.getModelName())
-            .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
-            .maxTokens(config.getMaxTokens())
-            .build();
+        String providerType = config.getProviderType();
+        log.debug("[ChatModelFactory] 构建 StreamingChatModel: providerType={}, modelName={}", providerType, config.getModelName());
+
+        if (providerType == null) {
+            providerType = "OPENAI";
+        }
+
+        return switch (providerType.toUpperCase()) {
+            case "OLLAMA" -> OllamaStreamingChatModel.builder()
+                .baseUrl(config.getApiHost())
+                .modelName(config.getModelName())
+                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                .build();
+            // DASHSCOPE/ZHIPU 暂走 OpenAI 兼容接口
+            case "OPENAI", "DASHSCOPE", "ZHIPU" -> OpenAiStreamingChatModel.builder()
+                .baseUrl(config.getApiHost())
+                .apiKey(config.getApiKey())
+                .modelName(config.getModelName())
+                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                .maxTokens(config.getMaxTokens())
+                .build();
+            default -> {
+                log.warn("[ChatModelFactory] 未知的 providerType: {}，回退到 OpenAI 兼容接口", providerType);
+                yield OpenAiStreamingChatModel.builder()
+                    .baseUrl(config.getApiHost())
+                    .apiKey(config.getApiKey())
+                    .modelName(config.getModelName())
+                    .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                    .maxTokens(config.getMaxTokens())
+                    .build();
+            }
+        };
     }
 }

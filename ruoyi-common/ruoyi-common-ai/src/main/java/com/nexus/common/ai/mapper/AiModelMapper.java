@@ -1,6 +1,7 @@
 package com.nexus.common.ai.mapper;
 
 import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.domain.vo.AiModelVo;
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
 
 /**
@@ -8,5 +9,5 @@ import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
  *
  * @author NexusERP
  */
-public interface AiModelMapper extends BaseMapperPlus<AiModel, AiModel> {
+public interface AiModelMapper extends BaseMapperPlus<AiModel, AiModelVo> {
 }

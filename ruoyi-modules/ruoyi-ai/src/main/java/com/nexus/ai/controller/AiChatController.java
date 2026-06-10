@@ -5,7 +5,7 @@ import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.mapper.AiMessageMapper;
-import com.nexus.common.ai.mapper.AiSessionMapper;
+import com.nexus.common.ai.service.IAiSessionService;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.ai.service.facade.AiServiceFacade;
@@ -28,8 +28,8 @@ import java.util.List;
 public class AiChatController {
 
     private final AiServiceFacade aiServiceFacade;
-    private final AiSessionMapper aiSessionMapper;
     private final AiMessageMapper aiMessageMapper;
+    private final IAiSessionService aiSessionService;
 
     /**
      * 发送消息
@@ -41,6 +41,9 @@ public class AiChatController {
     @PostMapping("/send")
     public R<Long> send(@RequestBody AiChatRequest request) {
         Long sessionId = aiServiceFacade.chat(request);
+        if (sessionId == null) {
+            return R.fail("未找到可用的 AI 模型，请先配置模型");
+        }
         return R.ok(sessionId);
     }
 
@@ -52,6 +55,12 @@ public class AiChatController {
      */
     @GetMapping("/history/{sessionId}")
     public R<List<AiMessage>> history(@PathVariable Long sessionId) {
+        // 校验会话归属：只能查看自己的会话消息
+        Long userId = LoginHelper.getUserId();
+        AiSession session = aiSessionService.selectById(sessionId);
+        if (session == null || !session.getUserId().equals(userId)) {
+            return R.fail("无权访问该会话");
+        }
         List<AiMessage> messages = aiMessageMapper.selectList(
             new LambdaQueryWrapper<AiMessage>()
                 .eq(AiMessage::getSessionId, sessionId)
@@ -68,11 +77,49 @@ public class AiChatController {
     @GetMapping("/sessions")
     public R<List<AiSession>> sessions() {
         Long userId = LoginHelper.getUserId();
-        List<AiSession> sessions = aiSessionMapper.selectList(
-            new LambdaQueryWrapper<AiSession>()
-                .eq(AiSession::getUserId, userId)
-                .orderByDesc(AiSession::getCreateTime)
-        );
+        List<AiSession> sessions = aiSessionService.selectByUserId(userId);
         return R.ok(sessions);
     }
+
+    /**
+     * 删除会话（级联删除消息）
+     *
+     * @param ids 会话ID数组
+     * @return 操作结果
+     */
+    @DeleteMapping("/session/{ids}")
+    public R<Void> deleteSession(@PathVariable Long[] ids) {
+        // 校验会话归属：只能删除自己的会话
+        Long userId = LoginHelper.getUserId();
+        for (Long id : ids) {
+            AiSession session = aiSessionService.selectById(id);
+            if (session == null || !session.getUserId().equals(userId)) {
+                return R.fail("无权删除该会话");
+            }
+        }
+        aiSessionService.deleteByIds(ids);
+        return R.ok();
+    }
+
+    /**
+     * 重命名会话
+     *
+     * @param session 会话信息（含 id 和 title）
+     * @return 操作结果
+     */
+    @PutMapping("/session")
+    public R<Void> renameSession(@RequestBody AiSession session) {
+        if (session.getId() == null || session.getTitle() == null || session.getTitle().isBlank()) {
+            return R.fail("参数错误：会话ID和标题不能为空");
+        }
+        // 校验会话归属：只能重命名自己的会话
+        Long userId = LoginHelper.getUserId();
+        AiSession existing = aiSessionService.selectById(session.getId());
+        if (existing == null || !existing.getUserId().equals(userId)) {
+            return R.fail("无权修改该会话");
+        }
+        aiSessionService.updateTitle(session.getId(), session.getTitle());
+        return R.ok();
+    }
+
 }

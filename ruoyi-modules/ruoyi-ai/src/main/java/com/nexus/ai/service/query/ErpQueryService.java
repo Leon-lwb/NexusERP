@@ -10,6 +10,7 @@ import java.sql.ResultSetMetaData;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * ERP 数据源 SQL 执行服务
@@ -29,8 +30,12 @@ public class ErpQueryService {
 
     private final JdbcTemplate jdbcTemplate;
 
+    /** 表名合法字符正则（仅允许字母、数字、下划线） */
+    private static final Pattern TABLE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
+
     /**
      * 执行 SELECT 查询
+     * <p>使用局部 JdbcTemplate 设置查询参数，避免修改单例 Bean 状态导致线程安全问题</p>
      *
      * @param sql            SQL 语句
      * @param maxRows        最大返回行数
@@ -39,16 +44,23 @@ public class ErpQueryService {
      */
     public List<Map<String, Object>> executeQuery(String sql, int maxRows, int timeoutSeconds) {
         log.debug("[ErpQuery] 执行SQL: {}, maxRows={}, timeout={}s", sql, maxRows, timeoutSeconds);
-        jdbcTemplate.setQueryTimeout(timeoutSeconds);
-        jdbcTemplate.setMaxRows(maxRows);
-        List<Map<String, Object>> results = jdbcTemplate.query(sql, (rs, rowNum) -> {
-            Map<String, Object> row = new LinkedHashMap<>();
-            ResultSetMetaData meta = rs.getMetaData();
-            for (int i = 1; i <= meta.getColumnCount(); i++) {
-                row.put(meta.getColumnName(i), rs.getObject(i));
+        // 使用 query 回调方式设置参数，避免修改 JdbcTemplate 单例状态
+        List<Map<String, Object>> results = jdbcTemplate.query(
+            con -> {
+                var ps = con.prepareStatement(sql);
+                ps.setQueryTimeout(timeoutSeconds);
+                ps.setMaxRows(maxRows);
+                return ps;
+            },
+            (rs, rowNum) -> {
+                Map<String, Object> row = new LinkedHashMap<>();
+                ResultSetMetaData meta = rs.getMetaData();
+                for (int i = 1; i <= meta.getColumnCount(); i++) {
+                    row.put(meta.getColumnName(i), rs.getObject(i));
+                }
+                return row;
             }
-            return row;
-        });
+        );
         log.debug("[ErpQuery] 查询完成，返回 {} 行", results.size());
         return results;
     }
@@ -75,6 +87,11 @@ public class ErpQueryService {
      */
     public String queryTableSchema(String tableName) {
         log.debug("[ErpQuery] 查询表结构: {}", tableName);
+        // 安全校验：表名只允许字母、数字、下划线，防止 SQL 注入
+        if (!TABLE_NAME_PATTERN.matcher(tableName).matches()) {
+            log.warn("[ErpQuery] 非法表名被拒绝: {}", tableName);
+            throw new IllegalArgumentException("非法表名: " + tableName);
+        }
         try {
             List<Map<String, Object>> results = jdbcTemplate.queryForList(
                 "SHOW CREATE TABLE `" + tableName + "`"
