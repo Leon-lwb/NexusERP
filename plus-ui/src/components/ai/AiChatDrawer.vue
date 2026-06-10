@@ -47,6 +47,8 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/icons-vue'
 import { sendAiMessage } from '@/api/ai/chat'
 import { marked } from 'marked'
+import { createAiRenderer } from '@/utils/aiRenderers'
+import * as echarts from 'echarts'
 import 'github-markdown-css'
 
 interface ChatMessage {
@@ -70,6 +72,17 @@ function onAiSseMessage(event: Event) {
     case 'AI_THINKING':
       thinking.value = true
       break
+    case 'AI_CONTENT_INCREMENT':
+      // 流式 Token 追加模式
+      thinking.value = false
+      const incMsg = messages.value[messages.value.length - 1]
+      if (incMsg && incMsg.role === 'assistant') {
+        incMsg.content += detail.content
+      } else {
+        messages.value.push({ role: 'assistant', content: detail.content })
+      }
+      nextTick(() => scrollToBottom())
+      break
     case 'AI_CONTENT':
       thinking.value = false
       loading.value = false
@@ -84,6 +97,8 @@ function onAiSseMessage(event: Event) {
     case 'AI_DONE':
       thinking.value = false
       loading.value = false
+      // 扫描并挂载 ECharts 容器
+      nextTick(() => mountEchartsContainers())
       break
     case 'AI_ERROR':
       thinking.value = false
@@ -96,7 +111,28 @@ function onAiSseMessage(event: Event) {
 }
 
 function renderMarkdown(content: string) {
-  return marked.parse(content || '')
+  const renderer = createAiRenderer()
+  return marked.parse(content || '', { renderer })
+}
+
+/** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例 */
+function mountEchartsContainers() {
+  if (!messageListRef.value) return
+  const containers = messageListRef.value.querySelectorAll('.echarts-container:not([data-mounted])')
+  containers.forEach((el) => {
+    const optionStr = (el as HTMLElement).dataset.option
+    if (!optionStr) return
+    try {
+      const option = JSON.parse(decodeURIComponent(optionStr))
+      el.setAttribute('data-mounted', 'true')
+      const chart = echarts.init(el as HTMLElement)
+      chart.setOption(option, true)
+      const ro = new ResizeObserver(() => chart.resize())
+      ro.observe(el as HTMLElement)
+    } catch (e) {
+      console.error('ECharts 容器挂载失败:', e)
+    }
+  })
 }
 
 function scrollToBottom() {

@@ -1,0 +1,214 @@
+package com.nexus.ai.service.rag;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.common.ai.domain.entity.AiKnowledge;
+import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
+import com.nexus.common.ai.domain.entity.AiKnowledgeDocument;
+import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
+import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
+import com.nexus.common.ai.service.IAiKnowledgeService;
+import com.nexus.common.oss.entity.UploadResult;
+import com.nexus.common.oss.factory.OssFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 知识库文档处理服务
+ * <p>整合文档上传→OSS持久化→解析→分段→向量化→存储的完整流程</p>
+ *
+ * @author NexusERP
+ * @since 1.0.0
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class KnowledgeProcessService {
+
+    private final DocumentParserService documentParserService;
+    private final ChunkingService chunkingService;
+    private final VectorStoreService vectorStoreService;
+    private final AiKnowledgeDocumentMapper documentMapper;
+    private final AiKnowledgeChunkMapper chunkMapper;
+    private final IAiKnowledgeService aiKnowledgeService;
+
+    @Qualifier("aiExecutor")
+    private final java.util.concurrent.Executor aiExecutor;
+
+    /**
+     * 上传并处理文档
+     * <p>1. 上传文件到 OSS 持久化存储</p>
+     * <p>2. 创建文档记录</p>
+     * <p>3. 异步处理：从 OSS 下载→解析→分段→向量化→存储</p>
+     *
+     * @param knowledgeId 知识库ID
+     * @param file        上传的文件
+     * @return 文档ID
+     */
+    public Long uploadAndProcess(Long knowledgeId, MultipartFile file) {
+        // 1. 校验文件类型
+        String fileName = file.getOriginalFilename();
+        if (!documentParserService.isSupported(fileName)) {
+            throw new IllegalArgumentException("不支持的文件类型: " + fileName);
+        }
+
+        // 2. 上传文件到 OSS
+        String ossUrl;
+        try {
+            String suffix = fileName.substring(fileName.lastIndexOf("."));
+            UploadResult uploadResult = OssFactory.instance().uploadSuffix(file.getBytes(), suffix, file.getContentType());
+            ossUrl = uploadResult.getUrl();
+            log.info("文档已上传到 OSS: fileName={}, url={}", fileName, ossUrl);
+        } catch (Exception e) {
+            throw new RuntimeException("文件上传到 OSS 失败: " + e.getMessage(), e);
+        }
+
+        // 3. 创建文档记录
+        AiKnowledgeDocument document = new AiKnowledgeDocument();
+        document.setKnowledgeId(knowledgeId);
+        document.setFileName(fileName);
+        document.setFilePath(ossUrl);
+        document.setFileSize(file.getSize());
+        document.setChunkCount(0);
+        document.setStatus("0"); // 待解析
+        documentMapper.insert(document);
+
+        Long documentId = document.getId();
+
+        // 4. 异步处理文档
+        aiExecutor.execute(() -> {
+            try {
+                processDocument(documentId, knowledgeId);
+            } catch (Exception e) {
+                log.error("文档处理失败: documentId={}, error={}", documentId, e.getMessage(), e);
+                updateDocumentStatus(documentId, "3", e.getMessage());
+            }
+        });
+
+        return documentId;
+    }
+
+    /**
+     * 处理文档（从 OSS 下载→解析→分段→向量化→存储）
+     *
+     * @param documentId   文档ID
+     * @param knowledgeId  知识库ID
+     */
+    private void processDocument(Long documentId, Long knowledgeId) {
+        // 更新状态为解析中
+        updateDocumentStatus(documentId, "1", null);
+
+        try {
+            AiKnowledgeDocument document = documentMapper.selectById(documentId);
+            if (document == null) {
+                throw new IllegalStateException("文档不存在: " + documentId);
+            }
+
+            // 1. 从 OSS 下载文件并解析
+            String content;
+            try (InputStream inputStream = new URL(document.getFilePath()).openStream()) {
+                content = documentParserService.parse(inputStream, document.getFileName());
+            }
+
+            if (content == null || content.trim().isEmpty()) {
+                updateDocumentStatus(documentId, "3", "文档内容为空");
+                return;
+            }
+
+            // 2. 获取知识库配置用于分段
+            var knowledgeVo = aiKnowledgeService.selectById(knowledgeId);
+            Integer textBlockSize = knowledgeVo != null ? knowledgeVo.getTextBlockSize() : null;
+            Integer overlapChar = knowledgeVo != null ? knowledgeVo.getOverlapChar() : null;
+            String separator = knowledgeVo != null ? knowledgeVo.getSeparator() : null;
+
+            // 3. 分段（使用知识库配置参数）
+            List<ChunkingService.ChunkResult> chunks = chunkingService.split(content, textBlockSize, overlapChar, separator);
+            if (chunks.isEmpty()) {
+                updateDocumentStatus(documentId, "3", "分段结果为空");
+                return;
+            }
+
+            // 4. 保存片段到数据库
+            List<AiKnowledgeChunk> chunkEntities = new ArrayList<>();
+            for (ChunkingService.ChunkResult chunk : chunks) {
+                AiKnowledgeChunk chunkEntity = new AiKnowledgeChunk();
+                chunkEntity.setDocumentId(documentId);
+                chunkEntity.setKnowledgeId(knowledgeId);
+                chunkEntity.setContent(chunk.getContent());
+                chunkEntity.setChunkIndex(chunk.getIndex());
+                chunkMapper.insert(chunkEntity);
+                chunkEntities.add(chunkEntity);
+            }
+
+            // 5. 向量化并存储
+            List<String> vectorIds = vectorStoreService.storeChunks(knowledgeId, chunkEntities);
+
+            // 6. 更新文档状态
+            AiKnowledgeDocument updateDoc = new AiKnowledgeDocument();
+            updateDoc.setId(documentId);
+            updateDoc.setChunkCount(chunkEntities.size());
+            updateDoc.setStatus("2"); // 已完成
+            documentMapper.updateById(updateDoc);
+
+            log.info("文档处理完成: documentId={}, chunks={}, vectors={}", documentId, chunkEntities.size(), vectorIds.size());
+        } catch (Exception e) {
+            log.error("文档处理异常: documentId={}", documentId, e);
+            updateDocumentStatus(documentId, "3", e.getMessage());
+        }
+    }
+
+    /**
+     * 更新文档状态
+     *
+     * @param documentId   文档ID
+     * @param status       状态（0待解析 1解析中 2已完成 3失败）
+     * @param errorMessage 错误信息
+     */
+    private void updateDocumentStatus(Long documentId, String status, String errorMessage) {
+        AiKnowledgeDocument updateDoc = new AiKnowledgeDocument();
+        updateDoc.setId(documentId);
+        updateDoc.setStatus(status);
+        updateDoc.setErrorMessage(errorMessage != null && errorMessage.length() > 500
+            ? errorMessage.substring(0, 500) : errorMessage);
+        documentMapper.updateById(updateDoc);
+    }
+
+    /**
+     * 重新处理文档（从 OSS 重新下载解析）
+     *
+     * @param documentId 文档ID
+     */
+    public void retryProcess(Long documentId) {
+        AiKnowledgeDocument document = documentMapper.selectById(documentId);
+        if (document == null) {
+            throw new IllegalArgumentException("文档不存在: " + documentId);
+        }
+        if (!"3".equals(document.getStatus()) && !"0".equals(document.getStatus())) {
+            throw new IllegalStateException("只能重新处理待解析或失败的文档，当前状态: " + document.getStatus());
+        }
+
+        // 删除旧的片段和向量
+        chunkMapper.delete(new LambdaQueryWrapper<AiKnowledgeChunk>()
+            .eq(AiKnowledgeChunk::getDocumentId, documentId));
+        vectorStoreService.deleteByDocumentId(documentId, document.getKnowledgeId());
+
+        // 异步重新处理
+        aiExecutor.execute(() -> {
+            try {
+                processDocument(documentId, document.getKnowledgeId());
+            } catch (Exception e) {
+                log.error("文档重试处理失败: documentId={}, error={}", documentId, e.getMessage(), e);
+                updateDocumentStatus(documentId, "3", e.getMessage());
+            }
+        });
+
+        log.info("重新处理文档: documentId={}", documentId);
+    }
+}

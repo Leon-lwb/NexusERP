@@ -121,7 +121,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
 import { marked } from 'marked'
-import { createAiRenderer } from '@/utils/aiRenderers'
+import { createAiRenderer, sanitizeOption } from '@/utils/aiRenderers'
 import 'github-markdown-css'
 
 /** 前端聊天消息类型 */
@@ -396,6 +396,8 @@ function mountEchartsContainers() {
     if (!optionStr) return
     try {
       const option = JSON.parse(decodeURIComponent(optionStr))
+      // 安全过滤：移除可能包含 JavaScript 函数的字段
+      sanitizeOption(option)
       // 标记已挂载，避免重复渲染
       el.setAttribute('data-mounted', 'true')
       const chart = echarts.init(el as HTMLElement)

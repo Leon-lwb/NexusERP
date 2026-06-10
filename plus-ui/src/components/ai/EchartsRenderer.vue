@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { sanitizeOption } from '@/utils/aiRenderers'
 
 const props = defineProps<{
   option: string
@@ -75,46 +76,6 @@ function parseOption(code: string): any {
     } catch {
       console.error('无法解析 ECharts 配置')
       return null
-    }
-  }
-}
-
-/**
- * 安全过滤：递归移除可能包含 JavaScript 代码的字段
- */
-function sanitizeOption(option: any, depth = 0): void {
-  if (!option || typeof option !== 'object' || depth > 10) return
-
-  const forbiddenKeys = ['formatter', 'callback', 'function', 'onclick', 'onmouseover', 'onmouseout']
-  const dangerousPatterns = /function\s*\(|=>|\bnew\s+|\beval\b|\bFunction\b/
-
-  for (const key of Object.keys(option)) {
-    const value = option[key]
-
-    // 删除禁止的键
-    if (forbiddenKeys.includes(key)) {
-      delete option[key]
-      continue
-    }
-
-    // 字符串值中包含危险代码
-    if (typeof value === 'string' && dangerousPatterns.test(value)) {
-      delete option[key]
-      continue
-    }
-
-    // 递归处理嵌套对象
-    if (typeof value === 'object' && value !== null) {
-      sanitizeOption(value, depth + 1)
-    }
-
-    // 数组中的元素递归处理
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        if (typeof item === 'object' && item !== null) {
-          sanitizeOption(item, depth + 1)
-        }
-      }
     }
   }
 }

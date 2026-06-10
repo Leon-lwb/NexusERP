@@ -94,4 +94,11 @@ public interface IAiModelService {
      * @return 影响行数
      */
     int setDefaultModel(Long id);
+
+    /**
+     * 查询默认 Embedding 模型配置（含厂商信息）
+     *
+     * @return 默认 Embedding 模型配置，不存在则返回 null
+     */
+    AiModel selectDefaultEmbeddingModel();
 }

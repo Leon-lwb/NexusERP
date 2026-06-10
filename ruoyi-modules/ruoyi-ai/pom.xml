@@ -102,6 +102,28 @@
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
+        <!-- ========== RAG 知识库 ========== -->
+
+        <!-- Apache Tika 文档解析 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-document-parser-apache-tika</artifactId>
+            <version>${langchain4j.community.version}</version>
+        </dependency>
+
+        <!-- Milvus 向量数据库 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-milvus</artifactId>
+            <version>${langchain4j.community.version}</version>
+        </dependency>
+
+        <!-- OSS 文件存储（知识库文档上传） -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-oss</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -65,18 +65,57 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
 
     /**
      * 更新消息（增量保存 AI 回复）
-     * <p>LangChain4j 会在对话过程中调用此方法更新消息列表，
-     * 我们只保存最后一条 AI 消息（增量保存）</p>
+     * <p>LangChain4j 会在对话过程中调用此方法更新消息列表。
+     * 只保存最后一条纯文本 AI 消息，过滤工具调用请求，并与数据库去重。</p>
      *
      * @param memoryId 会话ID
      * @param messages  消息列表
      */
     @Override
     public void updateMessages(Object memoryId, List<ChatMessage> messages) {
-        // LangChain4j 会在对话过程中多次调用此方法
-        // 我们不在每次调用时都写入数据库，而是在 AiServiceFacade 中显式保存
-        // 此方法仅记录日志，实际保存在 AiServiceFacade 中处理
-        log.debug("PersistentChatMemoryStore.updateMessages called, memoryId={}, messageCount={}", memoryId, messages.size());
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+        Long sessionId = toLong(memoryId);
+        if (sessionId == null) {
+            return;
+        }
+
+        ChatMessage lastMessage = messages.get(messages.size() - 1);
+        if (!(lastMessage instanceof dev.langchain4j.data.message.AiMessage aiMsg)) {
+            return;
+        }
+
+        // 过滤包含工具调用请求的中间消息，只保存最终文本回复
+        if (aiMsg.hasToolExecutionRequests()) {
+            log.debug("跳过工具调用请求消息, memoryId={}", memoryId);
+            return;
+        }
+
+        String content = aiMsg.text();
+        if (content == null || content.isEmpty()) {
+            return;
+        }
+
+        // 去重：若数据库最后一条 ASSISTANT 消息内容相同，则不再插入
+        List<AiMessage> existing = aiMessageMapper.selectList(
+            new LambdaQueryWrapper<AiMessage>()
+                .eq(AiMessage::getSessionId, sessionId)
+                .eq(AiMessage::getRole, "ASSISTANT")
+                .orderByDesc(AiMessage::getCreateTime)
+                .last("LIMIT 1")
+        );
+        if (!existing.isEmpty() && existing.get(0).getContent().equals(content)) {
+            log.debug("AI 回复已存在，跳过重复保存, sessionId={}", sessionId);
+            return;
+        }
+
+        AiMessage entity = new AiMessage();
+        entity.setSessionId(sessionId);
+        entity.setRole("ASSISTANT");
+        entity.setContent(content);
+        aiMessageMapper.insert(entity);
+        log.debug("PersistentChatMemoryStore 自动保存 AI 回复, sessionId={}, length={}", sessionId, content.length());
     }
 
     /**

@@ -63,3 +63,45 @@ export function createAiRenderer(): Renderer {
 
   return renderer
 }
+
+/**
+ * 安全过滤：递归移除 ECharts 配置中可能包含 JavaScript 代码的字段
+ * <p>禁止 formatter、callback、function 等可执行字段，防止 XSS 和代码注入</p>
+ * @param option ECharts 配置对象
+ * @param depth 当前递归深度（防止过深递归）
+ */
+export function sanitizeOption(option: any, depth = 0): void {
+  if (!option || typeof option !== 'object' || depth > 10) return
+
+  const forbiddenKeys = ['formatter', 'callback', 'function', 'onclick', 'onmouseover', 'onmouseout']
+  const dangerousPatterns = /function\s*\(|=>|\bnew\s+|\beval\b|\bFunction\b/
+
+  for (const key of Object.keys(option)) {
+    const value = option[key]
+
+    // 删除禁止的键
+    if (forbiddenKeys.includes(key)) {
+      delete option[key]
+      continue
+    }
+
+    // 字符串值中包含危险代码
+    if (typeof value === 'string' && dangerousPatterns.test(value)) {
+      delete option[key]
+      continue
+    }
+
+    // 递归处理嵌套对象和数组
+    if (typeof value === 'object' && value !== null) {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === 'object' && item !== null) {
+            sanitizeOption(item, depth + 1)
+          }
+        }
+      } else {
+        sanitizeOption(value, depth + 1)
+      }
+    }
+  }
+}

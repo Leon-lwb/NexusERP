@@ -319,3 +319,10 @@ nexus:
     allowed-table-prefixes: bd_,so_,pu_,prd_,wm_,sch_
     sql-timeout: 5000
     sql-max-rows: 1000
+    vector-store:
+      type: milvus
+      milvus:
+        url: http://localhost:19530
+        collection-name: AiKnowledge
+      inmemory:
+        enabled: true

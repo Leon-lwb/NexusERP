@@ -144,6 +144,23 @@ public class AiModelServiceImpl implements IAiModelService {
     }
 
     /**
+     * 查询默认 Embedding 模型配置（含厂商信息）
+     */
+    @Override
+    public AiModel selectDefaultEmbeddingModel() {
+        AiModel model = baseMapper.selectOne(
+            new LambdaQueryWrapper<AiModel>()
+                .eq(AiModel::getModelType, "EMBEDDING")
+                .eq(AiModel::getIsDefault, "1")
+                .eq(AiModel::getStatus, "1")
+        );
+        if (model != null) {
+            fillProviderInfo(model);
+        }
+        return model;
+    }
+
+    /**
      * 构建查询条件
      *
      * @param bo 查询参数

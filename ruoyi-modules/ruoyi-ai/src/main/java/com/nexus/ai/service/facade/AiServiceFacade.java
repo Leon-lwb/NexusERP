@@ -3,8 +3,10 @@ package com.nexus.ai.service.facade;
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.context.AiRequestContext;
+import com.nexus.ai.observability.AiAgentListener;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.ai.service.chat.PersistentChatMemoryStore;
+import com.nexus.ai.service.rag.RetrieverService;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
 import com.nexus.ai.tool.ExecuteSqlQueryTool;
 import com.nexus.ai.tool.ErpInventoryTool;
@@ -44,9 +46,11 @@ import java.util.concurrent.Executor;
 
 /**
  * AI 服务门面
- * <p>统一入口：智能路由普通流式对话 / Agent 编排</p>
+ * <p>统一入口：智能路由普通流式对话 / RAG 增强对话 / Agent 编排</p>
+ * <p>路由规则：数据查询关键词 → Agent 模式；knowledgeId 或知识检索关键词 → RAG 模式；其他 → 普通流式</p>
  *
  * @author NexusERP
+ * @since 1.0.0
  */
 @Slf4j
 @Service
@@ -65,6 +69,8 @@ public class AiServiceFacade {
     private final ErpPurchaseTool erpPurchaseTool;
     private final ErpSalesTool erpSalesTool;
     private final ErpProductionTool erpProductionTool;
+    private final RetrieverService retrieverService;
+    private final AiAgentListener aiAgentListener;
 
     @Qualifier("aiExecutor")
     private final Executor aiExecutor;
@@ -75,6 +81,13 @@ public class AiServiceFacade {
         "订单", "库存", "采购", "销售", "生产", "供应商", "客户", "物料",
         "趋势", "排行", "占比", "分布", "对比", "总", "多少", "几个",
         "BOM", "工单", "补货", "退货", "入库", "出库", "仓库"
+    );
+
+    /** 知识库检索关键词（包含这些词时走 RAG 增强模式） */
+    private static final Set<String> RAG_KEYWORDS = Set.of(
+        "如何", "怎么", "操作", "流程", "步骤", "手册", "指南", "规则",
+        "制度", "规范", "说明", "文档", "教程", "方法", "什么是", "定义",
+        "区别", "比较", "配置", "设置", "使用", "创建", "审批"
     );
 
     /**
@@ -132,11 +145,14 @@ public class AiServiceFacade {
         }
         final Long finalSessionId = sessionId;
 
-        // 5. 智能路由：判断走普通流式对话还是 Agent 编排
+        // 5. 智能路由：判断走 Agent 编排、RAG 增强还是普通流式对话
         boolean needAgent = containsDataQueryKeywords(request.getContent());
+        boolean needRag = request.getKnowledgeId() != null || (!needAgent && containsRagKeywords(request.getContent()));
 
         if (needAgent) {
             invokeWithAgent(modelConfig, request, userId, finalSessionId, tenantId);
+        } else if (needRag) {
+            invokeWithRag(modelConfig, request, userId, finalSessionId, tenantId);
         } else {
             invokeWithStreaming(modelConfig, request, userId, finalSessionId, tenantId);
         }
@@ -151,9 +167,13 @@ public class AiServiceFacade {
                                      Long userId, Long sessionId, Long tenantId) {
         StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId());
 
-        // 加载历史消息
-        List<ChatMessage> historyMessages = persistentChatMemoryStore.getMessages(sessionId);
-        List<ChatMessage> allMessages = new ArrayList<>(historyMessages);
+        // 使用 MessageWindowChatMemory 加载历史消息，限制最近 20 条（约 10 轮对话），避免超出 token 限制
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+            .id(sessionId)
+            .maxMessages(20)
+            .chatMemoryStore(persistentChatMemoryStore)
+            .build();
+        List<ChatMessage> allMessages = new ArrayList<>(memory.messages());
 
         AiSseMessageHelper.sendThinking(userId);
 
@@ -197,6 +217,75 @@ public class AiServiceFacade {
     }
 
     /**
+     * RAG 增强对话：先检索知识库，再流式生成回答
+     * <p>将检索到的知识片段注入提示词，让 LLM 基于知识库内容回答</p>
+     */
+    private void invokeWithRag(AiModel modelConfig, AiChatRequest request,
+                               Long userId, Long sessionId, Long tenantId) {
+        StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId());
+
+        // 加载历史消息
+        MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+            .id(sessionId)
+            .maxMessages(20)
+            .chatMemoryStore(persistentChatMemoryStore)
+            .build();
+        List<ChatMessage> allMessages = new ArrayList<>(memory.messages());
+
+        // RAG 检索增强：将用户问题与知识库匹配，生成增强提示词
+        String augmentedQuery;
+        if (request.getKnowledgeId() != null) {
+            augmentedQuery = retrieverService.augmentPrompt(request.getKnowledgeId(), request.getContent());
+        } else {
+            augmentedQuery = retrieverService.augmentPrompt(request.getContent());
+        }
+
+        // 替换最后一条用户消息为增强后的提示词
+        if (!allMessages.isEmpty()) {
+            allMessages.remove(allMessages.size() - 1);
+        }
+        allMessages.add(dev.langchain4j.data.message.UserMessage.from(augmentedQuery));
+
+        AiSseMessageHelper.sendThinking(userId);
+
+        StringBuffer fullContent = new StringBuffer();
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                AiRequestContext.set(tenantId, userId);
+
+                streamingModel.chat(ChatRequest.builder()
+                        .messages(allMessages)
+                        .build(),
+                    new StreamingChatResponseHandler() {
+                        @Override
+                        public void onPartialResponse(String partialToken) {
+                            fullContent.append(partialToken);
+                            AiSseMessageHelper.sendContentIncrement(userId, partialToken);
+                        }
+
+                        @Override
+                        public void onCompleteResponse(ChatResponse response) {
+                            saveAiMessage(sessionId, fullContent.toString());
+                            AiSseMessageHelper.sendDone(userId);
+                        }
+
+                        @Override
+                        public void onError(Throwable error) {
+                            log.error("AI RAG 对话失败", error);
+                            AiSseMessageHelper.sendError(userId, "AI 对话失败: " + error.getMessage());
+                        }
+                    });
+            } catch (Exception e) {
+                log.error("AI RAG 对话异常", e);
+                AiSseMessageHelper.sendError(userId, "AI 对话失败: " + e.getMessage());
+            } finally {
+                AiRequestContext.clear();
+            }
+        }, aiExecutor);
+    }
+
+    /**
      * Agent 编排模式：SupervisorAgent + 同步 ChatModel → 一次性推送结果
      * <p>SupervisorAgent 暂不支持流式回调，结果完成后一次性推送</p>
      */
@@ -204,10 +293,18 @@ public class AiServiceFacade {
                                  Long userId, Long sessionId, Long tenantId) {
         ChatModel chatModel = chatModelFactory.getChatModel(modelConfig.getId());
 
-        // 构建 ERP 查询 Agent（不配置 chatMemoryProvider，避免默认 memoryId="default" 导致 PersistentChatMemoryStore 转换失败。
-        // 历史上下文由 Supervisor / AiServiceFacade 层统一维护。）
+        // 加载历史消息，构建带上下文的查询（避免多轮对话丢失上下文）
+        List<ChatMessage> history = persistentChatMemoryStore.getMessages(sessionId);
+        String contextualQuery = buildContextualQuery(history, request.getContent());
+
+        // 为 SubAgent 配置基于 sessionId 的持久化记忆，确保工具调用链内部有上下文
         ErpQueryAgent queryAgent = AgenticServices.agentBuilder(ErpQueryAgent.class)
             .chatModel(chatModel)
+            .chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder()
+                .id(sessionId)
+                .maxMessages(20)
+                .chatMemoryStore(persistentChatMemoryStore)
+                .build())
             .tools(queryAllTablesTool, queryTableSchemaTool, executeSqlQueryTool,
                 erpInventoryTool, erpPurchaseTool, erpSalesTool, erpProductionTool)
             .build();
@@ -215,6 +312,11 @@ public class AiServiceFacade {
         // 构建 ERP 报表 Agent
         ErpReportAgent reportAgent = AgenticServices.agentBuilder(ErpReportAgent.class)
             .chatModel(chatModel)
+            .chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder()
+                .id(sessionId)
+                .maxMessages(20)
+                .chatMemoryStore(persistentChatMemoryStore)
+                .build())
             .tools(queryAllTablesTool, executeSqlQueryTool)
             .build();
 
@@ -231,7 +333,13 @@ public class AiServiceFacade {
         CompletableFuture.runAsync(() -> {
             try {
                 AiRequestContext.set(tenantId, userId);
-                String result = supervisor.invoke(request.getContent());
+                long startTime = System.currentTimeMillis();
+                aiAgentListener.onAgentStart("SupervisorAgent", contextualQuery);
+
+                String result = supervisor.invoke(contextualQuery);
+
+                long duration = System.currentTimeMillis() - startTime;
+                aiAgentListener.onAgentComplete("SupervisorAgent", duration, 0);
 
                 // 保存 AI 回复
                 saveAiMessage(sessionId, result);
@@ -240,11 +348,40 @@ public class AiServiceFacade {
                 AiSseMessageHelper.sendDone(userId);
             } catch (Exception e) {
                 log.error("AI Agent 对话失败", e);
+                aiAgentListener.onAgentError("SupervisorAgent", e.getMessage());
                 AiSseMessageHelper.sendError(userId, "AI 对话失败: " + e.getMessage());
             } finally {
                 AiRequestContext.clear();
             }
         }, aiExecutor);
+    }
+
+    /**
+     * 构建带历史上下文的查询提示
+     * <p>将最近 20 条历史消息拼接到当前问题前，确保 Agent 模式具备多轮对话能力</p>
+     *
+     * @param history      历史消息列表
+     * @param currentQuery 当前用户问题
+     * @return 带上下文的查询字符串
+     */
+    private String buildContextualQuery(List<ChatMessage> history, String currentQuery) {
+        if (history == null || history.size() <= 1) {
+            return currentQuery;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("以下是本次会话的历史对话，请参考上下文回答当前问题：\n\n");
+        // 只取最近 20 条历史消息（约 10 轮对话），避免超出 token 限制
+        int startIdx = Math.max(0, history.size() - 21);
+        for (int i = startIdx; i < history.size() - 1; i++) {
+            ChatMessage msg = history.get(i);
+            if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
+                sb.append("用户：").append(um.singleText()).append("\n");
+            } else if (msg instanceof dev.langchain4j.data.message.AiMessage am) {
+                sb.append("AI：").append(am.text()).append("\n");
+            }
+        }
+        sb.append("\n当前问题：").append(currentQuery);
+        return sb.toString();
     }
 
     /**
@@ -265,12 +402,33 @@ public class AiServiceFacade {
      * @return 是否需要走 Agent 模式
      */
     private boolean containsDataQueryKeywords(String input) {
+        return containsKeywords(input, DATA_QUERY_KEYWORDS);
+    }
+
+    /**
+     * 判断用户输入是否包含知识库检索关键词
+     *
+     * @param input 用户输入
+     * @return 是否需要走 RAG 增强模式
+     */
+    private boolean containsRagKeywords(String input) {
+        return containsKeywords(input, RAG_KEYWORDS);
+    }
+
+    /**
+     * 通用关键词匹配
+     *
+     * @param input    用户输入
+     * @param keywords 关键词集合
+     * @return 是否包含任一关键词
+     */
+    private boolean containsKeywords(String input, Set<String> keywords) {
         if (input == null || input.isEmpty()) {
             return false;
         }
         String lowerInput = input.toLowerCase();
-        for (String keyword : DATA_QUERY_KEYWORDS) {
-            if (lowerInput.contains(keyword)) {
+        for (String keyword : keywords) {
+            if (lowerInput.contains(keyword.toLowerCase())) {
                 return true;
             }
         }
