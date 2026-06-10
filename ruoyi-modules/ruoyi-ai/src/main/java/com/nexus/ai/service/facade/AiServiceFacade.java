@@ -204,14 +204,10 @@ public class AiServiceFacade {
                                  Long userId, Long sessionId, Long tenantId) {
         ChatModel chatModel = chatModelFactory.getChatModel(modelConfig.getId());
 
-        // 构建 ERP 查询 Agent（带 PersistentChatMemory）
+        // 构建 ERP 查询 Agent（不配置 chatMemoryProvider，避免默认 memoryId="default" 导致 PersistentChatMemoryStore 转换失败。
+        // 历史上下文由 Supervisor / AiServiceFacade 层统一维护。）
         ErpQueryAgent queryAgent = AgenticServices.agentBuilder(ErpQueryAgent.class)
             .chatModel(chatModel)
-            .chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder()
-                .id(memoryId)
-                .maxMessages(20)
-                .chatMemoryStore(persistentChatMemoryStore)
-                .build())
             .tools(queryAllTablesTool, queryTableSchemaTool, executeSqlQueryTool,
                 erpInventoryTool, erpPurchaseTool, erpSalesTool, erpProductionTool)
             .build();

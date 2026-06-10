@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 /** AI 会话类型 */
 export interface AiSession {
-  id: number
+  id: number | string
   userId: number
   title: string
   modelName: string
@@ -11,8 +11,8 @@ export interface AiSession {
 
 /** AI 消息类型 */
 export interface AiMessage {
-  id: number
-  sessionId: number
+  id: number | string
+  sessionId: number | string
   role: 'USER' | 'ASSISTANT' | 'SYSTEM'
   content: string
   createTime: string
@@ -35,7 +35,7 @@ export function sendAiMessage(data: { sessionId?: number; content: string; model
  * 查询聊天历史
  * @param sessionId 会话ID
  */
-export function getChatHistory(sessionId: number) {
+export function getChatHistory(sessionId: number | string) {
   return request({
     url: `/ai/chat/history/${sessionId}`,
     method: 'get'

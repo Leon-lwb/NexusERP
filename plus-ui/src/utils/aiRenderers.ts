@@ -1,3 +1,5 @@
+import { Renderer } from 'marked'
+
 /**
  * AI Markdown 渲染器
  * <p>检测 Markdown 中的 echarts/json 代码块，自动渲染为 ECharts 图表</p>
@@ -37,20 +39,27 @@ export function isEchartsConfig(code: string, language?: string): boolean {
 }
 
 /**
- * 为 marked 创建自定义代码块渲染器
- * @returns marked Renderer 对象
+ * 为 marked 创建自定义 Renderer 实例
+ * <p>继承默认 Renderer，仅覆盖 code 方法以支持 ECharts 渲染</p>
+ * @returns marked Renderer 实例
  */
-export function createAiRenderer() {
-  return {
-    code(this: any, code: string, language?: string) {
-      if (language === 'echarts' || isEchartsConfig(code, language)) {
-        // 渲染为 ECharts 容器，由前端 Vue 组件扫描并挂载
-        const encoded = encodeURIComponent(code)
-        return `<div class="echarts-container" data-option="${encoded}" style="width:100%;height:300px;margin:8px 0;"></div>`
-      }
-      // 普通代码块
-      const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      return `<pre><code class="language-${language || ''}">${escaped}</code></pre>`
+export function createAiRenderer(): Renderer {
+  const renderer = new Renderer()
+
+  // marked v18 中 code 方法接收 token 对象
+  renderer.code = function (token: any): string {
+    const code = token.text || ''
+    const language = token.lang || ''
+
+    if (language === 'echarts' || isEchartsConfig(code, language)) {
+      // 渲染为 ECharts 容器，由前端 Vue 组件扫描并挂载
+      const encoded = encodeURIComponent(code)
+      return `<div class="echarts-container" data-option="${encoded}" style="width:100%;height:300px;margin:8px 0;"></div>`
     }
+    // 普通代码块
+    const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return `<pre><code class="language-${language}">${escaped}</code></pre>`
   }
+
+  return renderer
 }

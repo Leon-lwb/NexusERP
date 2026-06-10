@@ -90,7 +90,7 @@
             </el-button>
           </div>
         </div>
-      </el-card></div>
+      </el-card>
 
       <!-- 右键菜单 -->
       <div v-if="contextMenu.visible" class="context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
@@ -137,7 +137,7 @@ const loading = ref(false)
 const sessionLoading = ref(false)
 const messageListRef = ref<HTMLElement>()
 const sessions = ref<AiSession[]>([])
-const currentSessionId = ref<number | null>(null)
+const currentSessionId = ref<number | string | null>(null)
 
 /** 右键菜单状态 */
 const contextMenu = ref({ visible: false, x: 0, y: 0, session: null as AiSession | null })
@@ -206,7 +206,7 @@ function onAiSseMessage(event: Event) {
 /** 渲染 Markdown（含 ECharts 代码块识别） */
 function renderMarkdown(content: string) {
   const renderer = createAiRenderer()
-  return marked.parse(content || '', { renderer: renderer as any })
+  return marked.parse(content || '', { renderer })
 }
 
 /** 滚动到底部 */
@@ -233,22 +233,34 @@ async function loadSessions() {
 }
 
 /** 切换会话 */
-async function switchSession(sessionId: number) {
+async function switchSession(sessionId: number | string) {
   if (currentSessionId.value === sessionId) return
-  currentSessionId.value = sessionId
+  currentSessionId.value = sessionId as any
   messages.value = []
   loading.value = true
   try {
-    const res = await getChatHistory(sessionId)
+    const res = await getChatHistory(sessionId as any)
     console.log('[AI] 聊天历史响应:', res)
-    const history: AiMessageDto[] = res?.data ?? res?.rows ?? (Array.isArray(res) ? res : [])
+    // 兼容多种响应格式：R.ok(data)、{ rows: [...] }、直接数组
+    let history: AiMessageDto[] = []
+    if (Array.isArray(res)) {
+      history = res
+    } else if (Array.isArray(res?.data)) {
+      history = res.data
+    } else if (Array.isArray(res?.rows)) {
+      history = res.rows
+    } else if (res?.data?.rows && Array.isArray(res.data.rows)) {
+      history = res.data.rows
+    }
+    console.log('[AI] 解析到的历史消息条数:', history.length)
     messages.value = history.map(m => ({
       role: m.role === 'USER' ? 'user' as const : 'assistant' as const,
       content: m.content
     }))
     nextTick(() => scrollToBottom())
-  } catch (e) {
+  } catch (e: any) {
     console.error('[AI] 加载聊天历史失败', e)
+    ElMessage.error('加载聊天历史失败: ' + (e.message || e))
   } finally {
     loading.value = false
   }
@@ -279,8 +291,8 @@ async function sendMessage() {
     console.log('[AI] 发送消息响应:', res)
     // 后端返回 sessionId（新会话时为新 ID）
     const sid = res?.data ?? res
-    if (sid && typeof sid === 'number') {
-      currentSessionId.value = sid
+    if (sid && (typeof sid === 'number' || typeof sid === 'string')) {
+      currentSessionId.value = sid as any
     }
   } catch (e: any) {
     loading.value = false
