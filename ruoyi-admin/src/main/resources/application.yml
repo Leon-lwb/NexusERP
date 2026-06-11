@@ -305,9 +305,9 @@ flowable:
 --- # mq 消息队列通用配置
 mq:
   rabbit:
-    enabled: true
+    enabled: false
     exchange-prefix: erp
-    message-record-enabled: true
+    message-record-enabled: false
     max-retry: 3
     compensation-resend-threshold: 60000
 

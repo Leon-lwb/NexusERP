@@ -147,7 +147,8 @@
       "Bash(dir \"D:\\\\apache-maven*\")",
       "Bash(dir \"D:\\\\maven*\")",
       "Bash(powershell.exe *)",
-      "Bash(where mysql *)"
+      "Bash(where mysql *)",
+      "Bash(cat dev/langchain4j/store/embedding/filter/Filter.java)"
     ]
   }
 }

@@ -626,6 +626,41 @@ export const dynamicRoutes: RouteRecordRaw[] = [
       }
     ]
   },
+  // AI 智能助手
+  {
+    path: '/ai',
+    component: Layout,
+    redirect: '/ai/assistant',
+    name: 'Ai',
+    meta: { title: 'AI 智能助手', icon: 'message' },
+    children: [
+      {
+        path: 'assistant',
+        component: () => import('@/views/ai/assistant/index.vue'),
+        name: 'AiAssistant',
+        meta: { title: '智能助手', icon: 'message' }
+      },
+      {
+        path: 'model',
+        component: () => import('@/views/ai/model/index.vue'),
+        name: 'AiModel',
+        meta: { title: '模型管理', icon: 'model' }
+      },
+      {
+        path: 'model/provider',
+        component: () => import('@/views/ai/model/provider.vue'),
+        name: 'AiProvider',
+        meta: { title: '厂商管理', icon: 'model', activeMenu: '/ai/model' },
+        hidden: true
+      },
+      {
+        path: 'knowledge',
+        component: () => import('@/views/ai/knowledge/index.vue'),
+        name: 'AiKnowledge',
+        meta: { title: '知识库管理', icon: 'documentation' }
+      }
+    ]
+  },
 ];
 
 /**
