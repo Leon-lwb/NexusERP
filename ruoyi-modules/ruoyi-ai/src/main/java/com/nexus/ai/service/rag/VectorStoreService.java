@@ -1,8 +1,10 @@
 package com.nexus.ai.service.rag;
 
 import com.nexus.ai.config.AiProperties;
+import com.nexus.common.ai.domain.entity.AiKnowledge;
 import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
+import com.nexus.common.ai.mapper.AiKnowledgeMapper;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -10,6 +12,8 @@ import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
+import dev.langchain4j.store.embedding.filter.Filter;
+import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +38,7 @@ public class VectorStoreService {
 
     private final EmbeddingService embeddingService;
     private final AiKnowledgeChunkMapper chunkMapper;
+    private final AiKnowledgeMapper knowledgeMapper;
     private final AiProperties aiProperties;
 
     /** InMemory 模式：按知识库ID隔离的存储实例 */
@@ -43,10 +48,25 @@ public class VectorStoreService {
     private final ConcurrentHashMap<Long, EmbeddingStore<TextSegment>> milvusStores = new ConcurrentHashMap<>();
 
     /**
-     * 获取当前向量存储类型
+     * 获取全局默认向量存储类型（未指定知识库时使用）
      */
-    private String getStoreType() {
+    private String getDefaultStoreType() {
         return aiProperties.getVectorStore().getType();
+    }
+
+    /**
+     * 获取指定知识库的向量存储类型
+     * <p>优先从知识库实体读取，若知识库不存在则回退到全局配置</p>
+     *
+     * @param knowledgeId 知识库ID
+     * @return 向量存储类型（milvus / inmemory）
+     */
+    private String getStoreType(Long knowledgeId) {
+        AiKnowledge knowledge = knowledgeMapper.selectById(knowledgeId);
+        if (knowledge != null && knowledge.getVectorStore() != null) {
+            return knowledge.getVectorStore();
+        }
+        return getDefaultStoreType();
     }
 
     /**
@@ -63,7 +83,8 @@ public class VectorStoreService {
      * @return EmbeddingStore 实例
      */
     private EmbeddingStore<TextSegment> getStore(Long knowledgeId) {
-        if ("milvus".equalsIgnoreCase(getStoreType())) {
+        String storeType = getStoreType(knowledgeId);
+        if ("milvus".equalsIgnoreCase(storeType)) {
             return milvusStores.computeIfAbsent(knowledgeId, kid -> {
                 String collectionName = getCollectionName(kid);
                 String url = aiProperties.getVectorStore().getMilvus().getUrl();
@@ -82,14 +103,17 @@ public class VectorStoreService {
     }
 
     /**
-     * 将文本片段向量化并存储
+     * 将文本片段向量化并存储（使用知识库指定的 Embedding 模型）
      *
-     * @param knowledgeId 知识库ID
-     * @param chunks      文本片段列表
+     * @param knowledgeId       知识库ID
+     * @param chunks            文本片段列表
+     * @param embeddingModelName 使用的 Embedding 模型名称（为空时使用默认模型）
      * @return 存储的向量ID列表
      */
-    public List<String> storeChunks(Long knowledgeId, List<AiKnowledgeChunk> chunks) {
-        EmbeddingModel embeddingModel = embeddingService.getDefaultEmbeddingModel();
+    public List<String> storeChunks(Long knowledgeId, List<AiKnowledgeChunk> chunks, String embeddingModelName) {
+        EmbeddingModel embeddingModel = (embeddingModelName != null && !embeddingModelName.isEmpty())
+            ? embeddingService.getEmbeddingModel(embeddingModelName)
+            : embeddingService.getDefaultEmbeddingModel();
         EmbeddingStore<TextSegment> store = getStore(knowledgeId);
         List<String> vectorIds = new ArrayList<>();
 
@@ -113,21 +137,24 @@ public class VectorStoreService {
             }
         }
 
-        log.info("知识库[{}]向量化存储完成: 成功 {}/{} 片段, 存储类型={}", knowledgeId, vectorIds.size(), chunks.size(), getStoreType());
+        log.info("知识库[{}]向量化存储完成: 成功 {}/{} 片段, 存储类型={}", knowledgeId, vectorIds.size(), chunks.size(), getStoreType(knowledgeId));
         return vectorIds;
     }
 
     /**
-     * 语义检索相关片段（指定知识库）
+     * 语义检索相关片段（指定知识库，使用知识库指定的 Embedding 模型）
      *
-     * @param knowledgeId 知识库ID
-     * @param query       查询文本
-     * @param maxResults  最大返回结果数
-     * @param minScore    最低相似度阈值（0.0-1.0）
+     * @param knowledgeId       知识库ID
+     * @param query             查询文本
+     * @param maxResults        最大返回结果数
+     * @param minScore          最低相似度阈值（0.0-1.0）
+     * @param embeddingModelName 使用的 Embedding 模型名称（为空时使用默认模型）
      * @return 匹配的片段列表
      */
-    public List<EmbeddingMatch<TextSegment>> search(Long knowledgeId, String query, int maxResults, double minScore) {
-        EmbeddingModel embeddingModel = embeddingService.getDefaultEmbeddingModel();
+    public List<EmbeddingMatch<TextSegment>> search(Long knowledgeId, String query, int maxResults, double minScore, String embeddingModelName) {
+        EmbeddingModel embeddingModel = (embeddingModelName != null && !embeddingModelName.isEmpty())
+            ? embeddingService.getEmbeddingModel(embeddingModelName)
+            : embeddingService.getDefaultEmbeddingModel();
         Embedding queryEmbedding = embeddingModel.embed(query).content();
         EmbeddingStore<TextSegment> store = getStore(knowledgeId);
 
@@ -142,6 +169,14 @@ public class VectorStoreService {
     }
 
     /**
+     * 语义检索相关片段（指定知识库，使用默认 Embedding 模型）
+     * <p>兼容性重载，向后兼容未指定模型的调用方</p>
+     */
+    public List<EmbeddingMatch<TextSegment>> search(Long knowledgeId, String query, int maxResults, double minScore) {
+        return search(knowledgeId, query, maxResults, minScore, null);
+    }
+
+    /**
      * 语义检索（全库搜索，不指定知识库，仅 InMemory 模式支持）
      *
      * @param query      查询文本
@@ -153,7 +188,7 @@ public class VectorStoreService {
         EmbeddingModel embeddingModel = embeddingService.getDefaultEmbeddingModel();
         Embedding queryEmbedding = embeddingModel.embed(query).content();
 
-        if (!"milvus".equalsIgnoreCase(getStoreType())) {
+        if (!"milvus".equalsIgnoreCase(getDefaultStoreType())) {
             List<EmbeddingMatch<TextSegment>> allMatches = new ArrayList<>();
             for (var entry : inMemoryStores.entrySet()) {
                 EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder()
@@ -178,7 +213,7 @@ public class VectorStoreService {
      * @param knowledgeId 知识库ID
      */
     public void deleteByKnowledgeId(Long knowledgeId) {
-        if ("milvus".equalsIgnoreCase(getStoreType())) {
+        if ("milvus".equalsIgnoreCase(getStoreType(knowledgeId))) {
             // Milvus: 移除缓存，Collection 在下次创建时会自动重建
             milvusStores.remove(knowledgeId);
             log.info("[VectorStore] 已移除 Milvus 知识库缓存: knowledgeId={}", knowledgeId);
@@ -192,14 +227,32 @@ public class VectorStoreService {
 
     /**
      * 删除指定文档的所有向量数据
+     * <p>Milvus 模式：通过 {@link MetadataFilterBuilder} 构建 metadata 过滤条件，按 documentId 精确删除</p>
+     * <p>  参考 ruoyi-ai 的 MilvusVectorStoreStrategy.removeByDocId()，已验证 {@code EmbeddingStore.removeAll(Filter)} 在 langchain4j 1.13.0 可用</p>
+     * <p>InMemory 模式：移除知识库缓存，下次使用时自动重建（InMemoryEmbeddingStore 不支持按条件删除）</p>
      *
-     * @param documentId  文档ID
-     * @param knowledgeId 知识库ID
+     * @param documentId  文档ID，对应存储向量时 metadata 中的 "documentId" 字段
+     * @param knowledgeId 知识库ID，用于定位 Milvus Collection 或 InMemory 实例
      */
     public void deleteByDocumentId(Long documentId, Long knowledgeId) {
-        // InMemory 和 Milvus（通过 langchain4j 高级 API）均不支持按元数据条件删除
-        // 需要在知识库级别重建向量索引
-        log.info("[VectorStore] 请求删除文档向量: documentId={}, knowledgeId={}", documentId, knowledgeId);
-        log.info("[VectorStore] 当前版本暂不支持按文档ID精确删除向量，建议删除知识库后重新导入");
+        if ("milvus".equalsIgnoreCase(getStoreType(knowledgeId))) {
+            // Milvus: 通过 MetadataFilterBuilder 构建过滤条件，按 documentId 精确删除
+            EmbeddingStore<TextSegment> store = getStore(knowledgeId);
+            try {
+                Filter filter = MetadataFilterBuilder.metadataKey("documentId").isEqualTo(documentId.toString());
+                store.removeAll(filter);
+                log.info("[VectorStore] Milvus 按文档ID删除向量成功: documentId={}, knowledgeId={}", documentId, knowledgeId);
+            } catch (Exception e) {
+                log.error("[VectorStore] Milvus 按文档ID删除向量失败: documentId={}, knowledgeId={}, error={}",
+                    documentId, knowledgeId, e.getMessage());
+                // 降级：清除缓存，提示重新导入
+                milvusStores.remove(knowledgeId);
+                log.warn("[VectorStore] 已清除 Milvus 知识库缓存 (knowledgeId={})，建议重新导入该知识库", knowledgeId);
+            }
+        } else {
+            // InMemory: 不支持按条件删除，移除整个知识库缓存
+            inMemoryStores.remove(knowledgeId);
+            log.info("[VectorStore] InMemory 已移除知识库缓存: knowledgeId={}，下次使用时自动重建", knowledgeId);
+        }
     }
 }

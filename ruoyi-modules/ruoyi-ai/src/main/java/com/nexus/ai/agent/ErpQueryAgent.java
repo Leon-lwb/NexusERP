@@ -30,7 +30,8 @@ public interface ErpQueryAgent {
 
         重要规则：
         - 你只能查询 SELECT 语句，严禁执行 INSERT/UPDATE/DELETE
-        - 你只能访问以下业务表：bd_*, so_*, pu_*, prd_*, wm_*, sch_*
+        - 使用通用查询工具时，必须先调用 queryAllTables 了解数据库中有哪些表，再调用 queryTableSchema 查看表结构，然后才能构造并执行 SQL
+        - 不要猜测表名，必须从 queryAllTables 返回的列表中选择
         - 涉及金额数据时，保留2位小数
         - 涉及日期数据时，使用 YYYY-MM-DD 格式
         - 所有查询必须包含 tenant_id 条件以遵守数据隔离

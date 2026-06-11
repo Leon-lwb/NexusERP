@@ -122,7 +122,22 @@
           <template #header>
             <span class="font-bold">检索测试</span>
           </template>
-          <el-form :inline="true" @submit.prevent>
+          <!-- 参数控制 -->
+          <el-form :inline="true" size="small" style="margin-bottom: 10px">
+            <el-form-item label="Top K">
+              <el-input-number v-model="testParams.topK" :min="1" :max="20" controls-position="right" style="width: 100px" />
+            </el-form-item>
+            <el-form-item label="阈值">
+              <el-input-number v-model="testParams.threshold" :min="0" :max="1" :step="0.1" :precision="2" controls-position="right" style="width: 100px" />
+            </el-form-item>
+            <el-form-item label="混合检索">
+              <el-switch v-model="testParams.enableHybrid" />
+            </el-form-item>
+            <el-form-item label="重排序">
+              <el-switch v-model="testParams.enableRerank" />
+            </el-form-item>
+          </el-form>
+          <el-form @submit.prevent>
             <el-form-item style="flex: 1">
               <el-input v-model="retrievalQuery" placeholder="输入检索文本" clearable @keyup.enter="handleRetrievalTest" />
             </el-form-item>
@@ -133,10 +148,9 @@
           <div v-if="retrievalResults.length > 0" class="retrieval-results">
             <div v-for="(item, index) in retrievalResults" :key="index" class="retrieval-result-item">
               <div class="result-header">
-                <el-tag size="small" type="info">相似度: {{ (item.score * 100).toFixed(1) }}%</el-tag>
-                <span v-if="item.documentName" class="result-doc-name">{{ item.documentName }}</span>
+                <el-tag size="small" type="info">#{{ index + 1 }}</el-tag>
               </div>
-              <div class="result-content">{{ item.content }}</div>
+              <div class="result-content">{{ typeof item === 'string' ? item : item.content }}</div>
             </div>
           </div>
           <el-empty v-else-if="retrievalQueried" description="未检索到相关内容" />
@@ -154,7 +168,17 @@
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入描述" />
         </el-form-item>
         <el-form-item label="Embedding模型" prop="embeddingModel">
-          <el-input v-model="form.embeddingModel" placeholder="请输入 Embedding 模型名称" />
+          <el-select v-model="form.embeddingModel" placeholder="请选择 Embedding 模型" style="width: 100%">
+            <el-option
+              v-for="item in embeddingModels"
+              :key="item.modelName"
+              :label="item.displayName || item.modelName"
+              :value="item.modelName"
+            />
+          </el-select>
+          <div v-if="embeddingModels.length === 0" style="color: #f56c6c; font-size: 12px; margin-top: 4px">
+            未找到可用的 Embedding 模型，请先到【AI模型管理】中添加 EMBEDDING 类型模型
+          </div>
         </el-form-item>
         <el-form-item label="向量存储类型" prop="vectorStore">
           <el-select v-model="form.vectorStore" placeholder="向量存储类型">
@@ -232,6 +256,7 @@
 
 <script setup lang="ts" name="Knowledge">
 import { listKnowledge, getKnowledge, addKnowledge, updateKnowledge, delKnowledge, listDocumentByKnowledge, delDocument, uploadDocument, listChunkByDocument, retryDocument, knowledgeRetrieval } from '@/api/ai/knowledge'
+import { listModel } from '@/api/ai/model'
 import { ComponentInternalInstance } from 'vue'
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance
@@ -255,6 +280,12 @@ const retrievalQuery = ref('')
 const retrievalResults = ref<any[]>([])
 const retrievalLoading = ref(false)
 const retrievalQueried = ref(false)
+const testParams = reactive({
+  topK: 5,
+  threshold: 0.5,
+  enableHybrid: false,
+  enableRerank: false
+})
 
 const queryParams = ref<any>({
   pageNum: 1,
@@ -265,8 +296,19 @@ const queryParams = ref<any>({
 
 const form = ref<any>({})
 const rules = ref({
-  knowledgeName: [{ required: true, message: '知识库名称不能为空', trigger: 'blur' }]
+  knowledgeName: [{ required: true, message: '知识库名称不能为空', trigger: 'blur' }],
+  embeddingModel: [{ required: true, message: '请选择 Embedding 模型', trigger: 'change' }]
 })
+
+/** Embedding 模型列表 */
+const embeddingModels = ref<any[]>([])
+
+/** 加载 Embedding 模型列表 */
+function loadEmbeddingModels() {
+  listModel({ modelType: 'EMBEDDING', status: '1', pageNum: 1, pageSize: 100 }).then((res: any) => {
+    embeddingModels.value = res.rows || []
+  })
+}
 
 const dialog = reactive<{ visible: boolean; title: string }>({
   visible: false,
@@ -309,11 +351,15 @@ function handleSelectionChange(selection: any[]) {
 /** 选中知识库行 */
 function handleCurrentChange(row: any) {
   selectedKnowledge.value = row
-  // 切换知识库时清空检索结果
+  // 切换知识库时清空检索结果，重置测试参数为知识库配置
   retrievalResults.value = []
   retrievalQueried.value = false
   retrievalQuery.value = ''
   if (row) {
+    testParams.topK = row.retrieveLimit || 5
+    testParams.threshold = row.similarityThreshold || 0.5
+    testParams.enableHybrid = row.enableHybrid === 1
+    testParams.enableRerank = row.enableRerank === 1
     loadDocuments(row.id)
   }
 }
@@ -334,7 +380,7 @@ function reset() {
     knowledgeName: undefined,
     description: undefined,
     embeddingModel: undefined,
-    vectorStore: 'milvus',
+    vectorStore: 'inmemory',
     status: '1',
     separator: '#',
     overlapChar: 30,
@@ -354,6 +400,7 @@ function reset() {
 /** 新增 */
 function handleAdd() {
   reset()
+  loadEmbeddingModels()
   dialog.visible = true
   dialog.title = '新增知识库'
 }
@@ -361,6 +408,7 @@ function handleAdd() {
 /** 修改 */
 function handleUpdate(row: any) {
   reset()
+  loadEmbeddingModels()
   getKnowledge(row.id).then((res: any) => {
     form.value = res.data
     // 确保高级配置字段有默认值
@@ -487,11 +535,11 @@ function handleRetrievalTest() {
   knowledgeRetrieval({
     knowledgeId: selectedKnowledge.value.id,
     query: retrievalQuery.value,
-    topK: selectedKnowledge.value.retrieveLimit || 5,
-    threshold: selectedKnowledge.value.similarityThreshold || 0.5,
-    enableRerank: selectedKnowledge.value.enableRerank === 1,
+    topK: testParams.topK,
+    threshold: testParams.threshold,
+    enableRerank: testParams.enableRerank,
     rerankModel: selectedKnowledge.value.rerankModel || undefined,
-    enableHybrid: selectedKnowledge.value.enableHybrid === 1,
+    enableHybrid: testParams.enableHybrid,
     hybridAlpha: selectedKnowledge.value.hybridAlpha || 0.5
   }).then((res: any) => {
     retrievalResults.value = res.data || []

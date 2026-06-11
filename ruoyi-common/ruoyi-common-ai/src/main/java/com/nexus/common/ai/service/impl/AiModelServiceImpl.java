@@ -62,6 +62,7 @@ public class AiModelServiceImpl implements IAiModelService {
     public AiModel selectDefaultModel() {
         AiModel model = baseMapper.selectOne(
             new LambdaQueryWrapper<AiModel>()
+                .eq(AiModel::getModelType, "CHAT")
                 .eq(AiModel::getIsDefault, "1")
                 .eq(AiModel::getStatus, "1")
         );
@@ -128,10 +129,17 @@ public class AiModelServiceImpl implements IAiModelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int setDefaultModel(Long id) {
-        // 先取消所有默认模型
+        // 查询目标模型的类型，只取消同类型的默认模型
+        AiModel target = baseMapper.selectById(id);
+        if (target == null) {
+            return 0;
+        }
+        String modelType = target.getModelType();
         AiModel unset = new AiModel();
         unset.setIsDefault("0");
-        baseMapper.update(unset, new LambdaQueryWrapper<AiModel>().eq(AiModel::getIsDefault, "1"));
+        baseMapper.update(unset, new LambdaQueryWrapper<AiModel>()
+            .eq(AiModel::getModelType, modelType)
+            .eq(AiModel::getIsDefault, "1"));
         // 设置目标模型为默认
         AiModel set = new AiModel();
         set.setId(id);

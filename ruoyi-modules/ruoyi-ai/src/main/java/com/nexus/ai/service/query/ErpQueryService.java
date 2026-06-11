@@ -10,6 +10,7 @@ import java.sql.ResultSetMetaData;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -32,6 +33,9 @@ public class ErpQueryService {
 
     /** 表名合法字符正则（仅允许字母、数字、下划线） */
     private static final Pattern TABLE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
+
+    /** 表名存在性缓存（避免每次查库） */
+    private final ConcurrentHashMap<String, Boolean> tableExistsCache = new ConcurrentHashMap<>();
 
     /**
      * 执行 SELECT 查询
@@ -66,7 +70,8 @@ public class ErpQueryService {
     }
 
     /**
-     * 查询所有 ERP 业务表（只返回 bd_ / so_ / pu_ / prd_ / wm_ / sch_ 前缀的表）
+     * 查询所有 ERP 业务表
+     * <p>排除系统表（以 sys_/gen_/qrtz_/flyway_ 开头），返回所有业务表</p>
      *
      * @return ERP 业务表名列表
      */
@@ -75,7 +80,7 @@ public class ErpQueryService {
             "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()",
             String.class
         ).stream()
-         .filter(name -> name.matches("^(bd_|so_|pu_|prd_|wm_|sch_).*"))
+         .filter(name -> !name.matches("^(sys_|gen_|qrtz_|flyway_|ACT_|FLW_|camunda_).*"))
          .toList();
     }
 
@@ -107,5 +112,32 @@ public class ErpQueryService {
             log.error("[ErpQuery] 查询表结构失败: {}", tableName, e);
             throw e;
         }
+    }
+
+    /**
+     * 检查表是否存在于当前 ERP 数据库中（带缓存）
+     * <p>用于 ExecuteSqlQueryTool 的动态白名单校验，避免硬编码表名前缀导致遗漏</p>
+     *
+     * @param tableName 表名
+     * @return true 如果表存在
+     */
+    public boolean tableExists(String tableName) {
+        return tableExistsCache.computeIfAbsent(tableName, name -> {
+            if (!TABLE_NAME_PATTERN.matcher(name).matches()) {
+                return false;
+            }
+            try {
+                List<Map<String, Object>> results = jdbcTemplate.queryForList(
+                    "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+                    name
+                );
+                boolean exists = !results.isEmpty();
+                log.debug("[ErpQuery] 表存在性检查: {}={}", name, exists);
+                return exists;
+            } catch (Exception e) {
+                log.warn("[ErpQuery] 表存在性检查失败: {}", name, e);
+                return false;
+            }
+        });
     }
 }

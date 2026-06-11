@@ -23,7 +23,7 @@ export interface AiMessage {
  * @param data 聊天请求数据
  * @returns 会话ID
  */
-export function sendAiMessage(data: { sessionId?: number; content: string; model?: string }) {
+export function sendAiMessage(data: { sessionId?: number; content: string; model?: string; mode?: string }) {
   return request({
     url: '/ai/chat/send',
     method: 'post',

@@ -9,9 +9,11 @@ import com.nexus.common.ai.domain.entity.AiKnowledge;
 import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.domain.entity.AiKnowledgeDocument;
 import com.nexus.common.ai.domain.vo.AiKnowledgeVo;
+import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
 import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
 import com.nexus.common.ai.mapper.AiKnowledgeMapper;
+import com.nexus.common.ai.mapper.AiModelMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -38,6 +40,7 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService {
     private final AiKnowledgeMapper baseMapper;
     private final AiKnowledgeDocumentMapper documentMapper;
     private final AiKnowledgeChunkMapper chunkMapper;
+    private final AiModelMapper modelMapper;
 
     @Override
     public TableDataInfo<AiKnowledgeVo> selectPageList(AiKnowledgeBo bo, PageQuery pageQuery) {
@@ -70,6 +73,7 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(AiKnowledgeBo bo) {
+        validateEmbeddingModel(bo.getEmbeddingModel());
         AiKnowledge entity = MapstructUtils.convert(bo, AiKnowledge.class);
         return baseMapper.insert(entity);
     }
@@ -77,8 +81,30 @@ public class AiKnowledgeServiceImpl implements IAiKnowledgeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(AiKnowledgeBo bo) {
+        validateEmbeddingModel(bo.getEmbeddingModel());
         AiKnowledge entity = MapstructUtils.convert(bo, AiKnowledge.class);
         return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 校验 Embedding 模型是否有效
+     * <p>要求模型存在、类型为 EMBEDDING、状态为正常</p>
+     *
+     * @param modelName 模型名称
+     * @throws IllegalArgumentException 模型无效时抛出
+     */
+    private void validateEmbeddingModel(String modelName) {
+        if (StringUtils.isBlank(modelName)) {
+            throw new IllegalArgumentException("Embedding 模型不能为空，请先在模型管理中配置 EMBEDDING 类型模型");
+        }
+        AiModel model = modelMapper.selectOne(Wrappers.<AiModel>lambdaQuery()
+            .eq(AiModel::getModelName, modelName)
+            .eq(AiModel::getModelType, "EMBEDDING")
+            .eq(AiModel::getStatus, "1")
+            .last("LIMIT 1"));
+        if (model == null) {
+            throw new IllegalArgumentException("Embedding 模型 '" + modelName + "' 不存在或未启用，请先在模型管理中配置");
+        }
     }
 
     @Override

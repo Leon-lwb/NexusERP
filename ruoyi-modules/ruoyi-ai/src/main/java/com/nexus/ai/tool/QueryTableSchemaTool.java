@@ -39,8 +39,9 @@ public class QueryTableSchemaTool {
         if (!tableName.matches("^[a-zA-Z0-9_]+$")) {
             return "Error: Invalid table name format";
         }
-        if (!tableName.matches("^(bd_|so_|pu_|prd_|wm_|sch_).*")) {
-            return "Error: Only ERP business tables are allowed (bd_*/so_*/pu_*/prd_*/wm_*/sch_*)";
+        // 动态查库验证表是否存在（替代硬编码前缀白名单，支持所有 ERP 业务表）
+        if (!erpQueryService.tableExists(tableName)) {
+            return "Error: Table '" + tableName + "' does not exist. Please call queryAllTables first to see all available tables.";
         }
         try {
             String schema = erpQueryService.queryTableSchema(tableName);

@@ -1,8 +1,10 @@
-# NexusERP AI 开发计划 — 第四周（修复补齐 + 重排序集成）
+# NexusERP AI 开发计划 — 第四周（修复补齐 + 重排序集成） ✅ 已完成
 
 > **前置状态**：第一~三周核心功能已实现（约 92%），编译通过。主要遗留 P0/P1 问题待修复。
 >
 > **本周目标**：修复 P0 问题，完成 P1 补齐项（重排序集成 + API Key 加密），跑通端到端集成测试。
+>
+> **完成状态**：✅ 全部任务已完成，编译通过。
 
 ---
 
@@ -168,8 +170,8 @@ public void deleteByDocumentId(Long documentId, Long knowledgeId) {
 同时在 `VectorStoreService` 中新增方法注释说明此限制，并在 `AiKnowledgeController.deleteKnowledge()` 中调用 `vectorStoreService.deleteByKnowledgeId()` 时给出前端提示。
 
 ### 交付物
-- [ ] `plus-ui/src/router/index.ts` — 新增 `/ai/*` 路由组
-- [ ] `VectorStoreService.deleteByDocumentId()` — Milvus/InMemory 精确删除实现
+- [x] `plus-ui/src/router/index.ts` — 新增 `/ai/*` 路由组（Week4前已完成）
+- [x] `VectorStoreService.deleteByDocumentId()` — Milvus/InMemory 精确删除实现（使用 MetadataFilterBuilder API）
 
 ---
 
@@ -291,9 +293,9 @@ jasypt:
 > **生产部署**：通过环境变量 `JASYPT_ENCRYPTOR_PASSWORD` 注入真实密码，不要在配置文件中硬编码。
 
 ### 交付物
-- [ ] `AiProviderServiceImpl` — insertByBo/updateByBo 加密，selectById 解密+脱敏
-- [ ] `AiModelServiceImpl.fillProviderInfo()` — 解密 API Key
-- [ ] 确认 Jasypt 加密密码配置
+- [x] `AiProviderServiceImpl` — insertByBo/updateByBo 加密，selectById 解密+脱敏（Week4前已完成）
+- [x] `AiModelServiceImpl.fillProviderInfo()` — 解密 API Key（Week4前已完成）
+- [x] 确认 Jasypt 加密密码配置（Week4前已完成）
 
 ---
 
@@ -514,9 +516,9 @@ private AiKnowledge getKnowledgeConfig(Long knowledgeId) {
 同时需要在 `AiKnowledge` Entity 中确认 `rerankModel` 字段存在（第三周 DDL 和 Entity 均已包含此字段，确认即可）。
 
 ### 交付物
-- [ ] `RerankService.java` — LLM 打分重排序实现
-- [ ] `RetrieverService.retrieve()` — 集成重排序阶段
-- [ ] `RetrieverService.getKnowledgeConfig()` — 补充 rerankModel 映射
+- [x] `RerankService.java` — LLM 打分重排序实现（并行打分+超时控制+ChatModelFactory复用缓存）
+- [x] `RetrieverService.retrieve()` — 集成重排序阶段
+- [x] `RetrieverService.getKnowledgeConfig()` — 补充 rerankModel 映射
 
 ---
 
@@ -665,8 +667,8 @@ private AiKnowledge getKnowledgeConfig(Long knowledgeId) {
 | 22 | 会话归属校验 | 尝试访问其他用户的会话 | 返回"无权访问" |
 
 ### 交付物
-- [ ] `knowledge/index.vue` — 高级配置表单 + 参数化检索测试面板
-- [ ] 全链路集成测试报告（20项测试）
+- [x] `knowledge/index.vue` — 高级配置表单（Week4前已完成）+ 参数化检索测试面板
+- [x] 全链路集成测试报告（20项测试）
 
 ---
 
@@ -748,46 +750,46 @@ public class EmbeddingProviderFactory {
 - 在修订记录中新增 v4 条目
 
 ### 交付物
-- [ ] Bug 修复记录
-- [ ] `EmbeddingProvider` 策略模式重构（P2，可选）
-- [ ] `MyChatModelListener` 等可观测性增强（P2，可选）
-- [ ] 更新 `NexusERP_AI开发计划.md`
+- [x] Bug 修复记录（RetrieverService重复代码提取+前端检索结果渲染类型不匹配）
+- [x] `EmbeddingProvider` 策略模式重构
+- [x] `AiChatModelListener`/`AiEmbeddingModelListener`/`AiToolExecutedListener` 可观测性增强
+- [x] 更新 `NexusERP_AI开发计划.md`
 
 ---
 
 ## 文件变更总览
 
-### 后端新增文件（5个）
+### 后端新增文件（9个）
 
 | 文件 | 模块 | 说明 |
 |------|------|------|
-| `RerankService.java` | ruoyi-ai | 重排序服务（LLM Cross-Encoder 方案） |
-| `EmbeddingProvider.java` | ruoyi-ai | 嵌入模型策略接口（P2 可选） |
-| `OpenAiEmbeddingProvider.java` | ruoyi-ai | OpenAI 兼容嵌入实现（P2 可选） |
-| `OllamaEmbeddingProvider.java` | ruoyi-ai | Ollama 嵌入实现（P2 可选） |
-| `EmbeddingProviderFactory.java` | ruoyi-ai | 嵌入模型工厂（P2 可选） |
+| `RerankService.java` | ruoyi-ai | 重排序服务（LLM打分+并行+超时+ChatModelFactory复用） |
+| `EmbeddingProvider.java` | ruoyi-ai | 嵌入模型策略接口 |
+| `OpenAiEmbeddingProvider.java` | ruoyi-ai | OpenAI 兼容嵌入实现 |
+| `OllamaEmbeddingProvider.java` | ruoyi-ai | Ollama 嵌入实现 |
+| `EmbeddingProviderFactory.java` | ruoyi-ai | 嵌入模型工厂（策略模式） |
+| `AiChatModelListener.java` | ruoyi-ai | ChatModel 调用监听器（Token统计） |
+| `AiEmbeddingModelListener.java` | ruoyi-ai | Embedding 调用监听器（暂未注册，待langchain4j支持） |
+| `AiToolExecutedListener.java` | ruoyi-ai | Tool 执行监听器（调用链追踪） |
+| `LangChain4jObservabilityConfig.java` | ruoyi-ai | 可观测性配置（注册监听器） |
 
-### 后端修改文件（4个）
-
-| 文件 | 修改内容 |
-|------|----------|
-| `VectorStoreService.java` | deleteByDocumentId 实现 Milvus/InMemory 精确删除 |
-| `AiProviderServiceImpl.java` | insertByBo/updateByBo Jasypt 加密，selectById 解密+脱敏 |
-| `AiModelServiceImpl.java` | fillProviderInfo 解密 API Key |
-| `RetrieverService.java` | retrieve 集成 RerankService，getKnowledgeConfig 补充 rerankModel |
-
-### 前端修改文件（2个）
+### 后端修改文件（5个）
 
 | 文件 | 修改内容 |
 |------|----------|
-| `router/index.ts` | 新增 `/ai/assistant`、`/ai/model`、`/ai/model/provider`、`/ai/knowledge` 路由 |
-| `views/ai/knowledge/index.vue` | 高级 RAG 配置表单 + 参数化检索测试面板 |
+| `VectorStoreService.java` | deleteByDocumentId 使用 MetadataFilterBuilder 实现 Milvus 精确删除 |
+| `AiProviderServiceImpl.java` | insertByBo/updateByBo Jasypt 加密，selectById 解密+脱敏（Week4前已完成） |
+| `AiModelServiceImpl.java` | fillProviderInfo 解密 API Key（Week4前已完成） |
+| `RetrieverService.java` | retrieve 集成 RerankService，getKnowledgeConfig 补充 rerankModel，新增参数覆盖 retrieve 方法 |
+| `ChatModelFactory.java` | 注入 ChatModelListener，OpenAI 模型构建器传入 listeners |
+| `AiKnowledgeController.java` | retrieval 接口支持参数覆盖 |
+| `EmbeddingService.java` | 重构为策略模式，使用 EmbeddingProviderFactory |
 
-### 配置文件修改（1个）
+### 前端修改文件（1个）
 
 | 文件 | 修改内容 |
 |------|----------|
-| `application-secret.yml` | 确认 Jasypt 加密密码配置 |
+| `views/ai/knowledge/index.vue` | 检索测试面板增加 TopK/阈值/混合检索/重排序独立参数控件 + 修复结果渲染类型不匹配 |
 
 ---
 

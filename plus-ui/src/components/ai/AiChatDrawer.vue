@@ -23,11 +23,19 @@
 
       <!-- 输入框 -->
       <div class="input-area">
+        <div class="mode-selector">
+          <el-radio-group v-model="chatMode" size="small">
+            <el-radio-button label="auto">自动</el-radio-button>
+            <el-radio-button label="chat">对话</el-radio-button>
+            <el-radio-button label="agent">数据查询</el-radio-button>
+            <el-radio-button label="rag">知识库</el-radio-button>
+          </el-radio-group>
+        </div>
         <el-input
           v-model="inputText"
           type="textarea"
           :rows="2"
-          placeholder="输入问题，如：查询本月采购订单总金额"
+          :placeholder="modePlaceholder"
           @keydown.enter.exact.prevent="sendMessage"
           :disabled="loading"
         />
@@ -43,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/icons-vue'
 import { sendAiMessage } from '@/api/ai/chat'
 import { marked } from 'marked'
@@ -63,6 +71,17 @@ const thinking = ref(false)
 const loading = ref(false)
 const messageListRef = ref<HTMLElement>()
 const sessionId = ref<number | null>(null)
+const chatMode = ref('auto')
+
+/** 根据当前模式显示不同的输入提示 */
+const modePlaceholder = computed(() => {
+  switch (chatMode.value) {
+    case 'agent': return '输入数据查询需求，如：查询本月采购订单总金额'
+    case 'rag': return '输入知识检索问题，如：如何创建采购订单'
+    case 'chat': return '输入任意问题，与 AI 自由对话'
+    default: return '输入问题，AI 将自动选择最佳模式'
+  }
+})
 
 function onAiSseMessage(event: Event) {
   const detail = (event as CustomEvent).detail
@@ -153,7 +172,11 @@ async function sendMessage() {
   scrollToBottom()
 
   try {
-    const res = await sendAiMessage({ content: text, sessionId: sessionId.value ?? undefined })
+    const res = await sendAiMessage({
+      content: text,
+      sessionId: sessionId.value ?? undefined,
+      mode: chatMode.value === 'auto' ? undefined : chatMode.value
+    })
     const sid = res?.data ?? res
     if (sid && typeof sid === 'number') {
       sessionId.value = sid
@@ -283,6 +306,25 @@ onUnmounted(() => {
 .input-area {
   padding: 12px 0;
   border-top: 1px solid #e4e7ed;
+
+  .mode-selector {
+    margin-bottom: 8px;
+
+    :deep(.el-radio-group) {
+      display: flex;
+      width: 100%;
+    }
+
+    :deep(.el-radio-button) {
+      flex: 1;
+
+      .el-radio-button__inner {
+        width: 100%;
+        font-size: 12px;
+        padding: 5px 0;
+      }
+    }
+  }
 
   .input-actions {
     display: flex;

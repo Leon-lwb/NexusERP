@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 10/06/2026 00:58:57
+ Date: 12/06/2026 00:36:07
 */
 
 SET NAMES utf8mb4;
@@ -1767,134 +1767,6 @@ INSERT INTO `act_ru_variable` VALUES ('2a374d1b-4de6-11f1-83fe-00ff6700037c', 1,
 INSERT INTO `act_ru_variable` VALUES ('2a374d1c-4de6-11f1-83fe-00ff6700037c', 1, 'long', 'receiveId', '2a3466de-4de6-11f1-83fe-00ff6700037c', '2a3466de-4de6-11f1-83fe-00ff6700037c', NULL, NULL, NULL, NULL, NULL, NULL, 2054133595956535298, '2054133595956535298', NULL, NULL);
 
 -- ----------------------------
--- Table structure for ai_message
--- ----------------------------
-DROP TABLE IF EXISTS `ai_message`;
-CREATE TABLE `ai_message`  (
-  `id` bigint(20) NOT NULL COMMENT '主键',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `session_id` bigint(20) NOT NULL COMMENT '会话ID',
-  `role` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色: USER/ASSISTANT/SYSTEM',
-  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '消息内容',
-  `token_usage` bigint(20) NULL DEFAULT NULL COMMENT 'Token 消耗',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_session_id`(`session_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of ai_message
--- ----------------------------
-INSERT INTO `ai_message` VALUES (2064277443566452737, '000000', 2064277443511926786, 'USER', '各仓库库存总量', NULL, 103, 1, '2026-06-09 17:24:30', 1, '2026-06-09 17:24:30', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2064277513598746626, '000000', 2064277443511926786, 'ASSISTANT', '以下是各仓库的库存总量查询结果：\n\n| 仓库编码 | 仓库名称 | 库存总量 |\n| :--- | :--- | :--- |\n| **WH004** | **原料仓库** | **1,000.00** |\n| **WH003** | **成品仓库** | **0.00** |\n\n**简要说明：**\n- **原料仓库（WH004）**：目前库存总量为 **1,000.00**（单位与物料的基础计量单位一致）。\n- **成品仓库（WH003）**：当前库存总量为 **0.00**，暂无库存。\n\n如需查看具体某个仓库下按物料分类的库存明细，或者按仓库+物料维度的详细数据，请随时告知！', NULL, -1, -1, '2026-06-09 17:24:46', -1, '2026-06-09 17:24:46', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2064321022131421185, '000000', 2064277443511926786, 'USER', 'WH004仓库有多少库区', NULL, 103, 1, '2026-06-09 20:17:40', 1, '2026-06-09 20:17:40', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2064321102490091521, '000000', 2064277443511926786, 'ASSISTANT', '## 查询结果\n\n**WH004 仓库（原料仓库）共有 2 个库区**，具体明细如下：\n\n| 库区编码 | 库区名称 | 是否启用 | 面积 |\n| :--- | :--- | :---: | :---: |\n| A0005 | **金属库区** | ✅ 是 | 200.00 |\n| A0006 | **辅料库区** | ✅ 是 | 20.00 |\n\n### 总结\n- 🏭 **仓库名称**：原料仓库\n- 📍 **仓库编码**：WH004\n- 📦 **库区数量**：**2 个**\n- 两个库区（金属库区、辅料库区）均为启用状态，总面积合计 **220.00** 平方米。', NULL, -1, -1, '2026-06-09 20:17:59', -1, '2026-06-09 20:17:59', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2064326447962767362, '000000', 2064277443511926786, 'USER', 'A0005这个库区有多少库位', NULL, 103, 1, '2026-06-09 20:39:13', 1, '2026-06-09 20:39:13', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2064326684525707266, '000000', 2064277443511926786, 'ASSISTANT', '以下是查询结果：\n\n---\n\n## 库区 A0005 的库位信息\n\n**库区信息：** A0005 - **金属库区**\n\n该库区下共有 **6 个库位**，具体如下：\n\n| 库位编码 | 库位名称 | 是否启用 | 是否冻结 |\n| :--- | :--- | :---: | :---: |\n| L010 | 钢板库位 | ✅ 是 | ❌ 否 |\n| L011 | 轮圈库位 | ✅ 是 | ❌ 否 |\n| L012 | 轮胎库位 | ✅ 是 | ❌ 否 |\n| L013 | 辐条库位 | ✅ 是 | ❌ 否 |\n| L014 | 把管库位 | ✅ 是 | ❌ 否 |\n| L015 | 把套库位 | ✅ 是 | ❌ 否 |\n\n**结论：** 库区 **A0005（金属库区）** 共包含 **6 个库位**，目前全部处于启用且未冻结的状态。', NULL, -1, -1, '2026-06-09 20:40:10', -1, '2026-06-09 20:40:10', '0', NULL, NULL, NULL, NULL);
-
--- ----------------------------
--- Table structure for ai_model
--- ----------------------------
-DROP TABLE IF EXISTS `ai_model`;
-CREATE TABLE `ai_model`  (
-  `id` bigint(20) NOT NULL COMMENT '主键',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `provider_id` bigint(20) NOT NULL COMMENT '关联厂商ID',
-  `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模型名称（如 deepseek-chat）',
-  `display_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '显示名称',
-  `model_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型: CHAT/EMBEDDING/RERANK',
-  `max_tokens` int(11) NULL DEFAULT 4096 COMMENT '最大输出 Token',
-  `temperature` decimal(3, 2) NULL DEFAULT 0.70 COMMENT '温度参数',
-  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '是否默认模型（1是 0否）',
-  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_provider_id`(`provider_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of ai_model
--- ----------------------------
-INSERT INTO `ai_model` VALUES (1, '000000', 1, 'deepseek-v4-flash', 'deepseek-v4-flash', 'CHAT', 4096, 0.70, '1', '1', NULL, NULL, NULL, NULL, NULL, '0', NULL, NULL, NULL, NULL);
-
--- ----------------------------
--- Table structure for ai_provider
--- ----------------------------
-DROP TABLE IF EXISTS `ai_provider`;
-CREATE TABLE `ai_provider`  (
-  `id` bigint(20) NOT NULL COMMENT '主键',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '厂商名称',
-  `api_host` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'API 地址',
-  `api_key` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'API Key（Jasypt 加密存储）',
-  `provider_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '厂商类型: OPENAI/DASHSCOPE/ZHIPU/OLLAMA',
-  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of ai_provider
--- ----------------------------
-INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'sk-xx', 'OPENAI', '1', NULL, NULL, NULL, NULL, NULL, '0', NULL, NULL, NULL, NULL);
-
--- ----------------------------
--- Table structure for ai_session
--- ----------------------------
-DROP TABLE IF EXISTS `ai_session`;
-CREATE TABLE `ai_session`  (
-  `id` bigint(20) NOT NULL COMMENT '主键',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-  `title` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '会话标题',
-  `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的模型名称',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
-  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
-  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
-  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of ai_session
--- ----------------------------
-INSERT INTO `ai_session` VALUES (2064277443511926786, '000000', 1, '各仓库库存总量', 'deepseek-v4-flash', 103, 1, '2026-06-09 17:24:30', 1, '2026-06-09 17:24:30', '0', NULL, NULL, NULL, NULL);
-
--- ----------------------------
 -- Table structure for ai_knowledge
 -- ----------------------------
 DROP TABLE IF EXISTS `ai_knowledge`;
@@ -1930,6 +1802,52 @@ CREATE TABLE `ai_knowledge`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
+-- Records of ai_knowledge
+-- ----------------------------
+INSERT INTO `ai_knowledge` VALUES (2065090090526457857, '000000', 'ERP知识库', '测试', 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'inmemory', '1', '#', 30, 500, 5, 0.5, 0, NULL, 0, 0.5, NULL, 103, 1, '2026-06-11 23:13:40', 1, '2026-06-12 00:05:18', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_knowledge_chunk
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_knowledge_chunk`;
+CREATE TABLE `ai_knowledge_chunk`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `document_id` bigint(20) NOT NULL COMMENT '文档ID',
+  `knowledge_id` bigint(20) NOT NULL COMMENT '知识库ID',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '片段内容',
+  `chunk_index` int(11) NULL DEFAULT NULL COMMENT '片段序号',
+  `vector_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '向量数据库中的ID',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
+  INDEX `idx_document_id`(`document_id`) USING BTREE,
+  FULLTEXT INDEX `ft_content`(`content`) WITH PARSER `ngram`
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_knowledge_chunk
+-- ----------------------------
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414890184706, '000000', 2065103110631759873, 2065090090526457857, 'ERP系统知识文档\r\n\r\n---\n一、ERP概述\n1. 什么是ERP\r\nERP（Enterprise Resource Planning，企业资源计划）是一种集成化的企业管理信息系统。它通过统一的数据库和软件平台，将企业的财务、采购、生产、销售、库存、人力资源等核心业务流程整合在一起，实现数据的实时共享与业务协同，帮助企业高效配置资源、优化运营并支持决策。\n2. ERP的核心理念\r\n- **集成性**：打破部门壁垒，所有模块共用同一数据源，确保信息一致。\r\n- **实时性**：业务数据即时更新，管理层可随时掌握经营动态。\r\n- **标准化**：将企业最佳实践固化为标准流程，减少人为随意性，提升管理规范度。\r\n- **全局优化**：从整体而非局部视角规划资源，避免“部门最优但整体受损”。', 0, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414890184707, '000000', 2065103110631759873, 2065090090526457857, '3. ERP与普通财务/进销存软件的区别\r\n| 对比维度 | 普通单功能软件   | ERP系统                      |\r\n| -------- | ---------------- | ---------------------------- |\r\n| 数据范围 | 孤立，部门内使用 | 企业级共享，跨职能打通       |\r\n| 流程联动 | 需要人工传递数据 | 自动触发上下游业务动作       |\r\n| 管控深度 | 事后记录         | 事前计划、事中控制、事后分析 |\r\n| 可扩展性 | 功能固定         | 可按需配置、二次开发         |\r\n\r\n---', 1, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099266, '000000', 2065103110631759873, 2065090090526457857, '二、ERP的发展简史\r\n\r\n- **1960s：MRP（物料需求计划）**  \r\n  起源于制造业，解决“需要什么、需要多少、何时需要”的物料计算问题。\r\n\r\n- **1980s：MRP II（制造资源计划）**  \r\n  把生产、财务、销售、工程等职能纳入统一计划体系，形成闭环。\r\n\r\n- **1990s：ERP（企业资源计划）**  \r\n  范围超越制造，延伸至全行业，整合供应链、人力资源、项目管理等。\r\n\r\n- **2000s至今：ERP II / 云ERP**  \r\n  强调跨企业协同、电子商务集成，技术架构向云端、移动化、智能化演进。\r\n\r\n---\n三、ERP的核心功能模块\r\n\r\n一套完整的ERP系统通常包含以下核心模块，不同行业会有所侧重：\n1. 财务管理（核心）\r\n- 总账、应收/应付、资产管理\r\n- 成本核算、预算控制、财务分析\r\n- 多币种、多会计准则支持\n2. 供应链管理（SCM）\r\n- **采购管理**：供应商管理、申购、采购订单、收货、对账\r\n- **库存管理**：多仓库、批次/序列号、安全库存、盘点\r\n- **销售管理**：报价、订单、发货、退货、开票', 2, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099267, '000000', 2065103110631759873, 2065090090526457857, '3. 生产管理\r\n- 主生产计划（MPS）、物料需求计划（MRP）\r\n- 工艺路线、车间排程、报工\r\n- 质量控制、设备维护\n4. 人力资源管理（HRM）\r\n- 组织架构、员工信息、考勤、薪酬\r\n- 招聘、绩效、培训\n5. 客户关系管理（CRM，常集成或作为模块）\r\n- 客户档案、商机跟踪、服务管理\r\n- 营销活动、销售漏斗分析\n6. 项目管理\r\n- 项目分解、预算、进度、成本归集\r\n- 适用于工程、专业服务等行业\n7. 商业智能（BI）与报表\r\n- 内置分析看板、KPI仪表盘\r\n- 自定义报表、数据钻取与预警\r\n\r\n以上模块并非所有企业都必须全部启用，而是根据业务需求灵活选用、分阶段部署。\r\n\r\n---', 3, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099268, '000000', 2065103110631759873, 2065090090526457857, '四、ERP实施方法论\r\n\r\nERP项目是管理变革，而非简单的IT工程。经典实施路径一般分为六个阶段：\r\n\r\n1. **项目准备**  \r\n   组建团队、明确目标与范围、制定计划、启动宣导。\r\n\r\n2. **需求分析与业务蓝图设计**  \r\n   梳理现有流程，结合系统功能设计未来流程（To-Be），形成蓝图文档。\r\n\r\n3. **系统实现**  \r\n   配置系统参数、二次开发、单元测试、集成测试。\r\n\r\n4. **数据准备**  \r\n   清理与迁移主数据（物料、客户、供应商、科目等）和期初余额。\r\n\r\n5. **上线准备与切换**  \r\n   用户培训、权限设定、模拟运行、制定切换策略（一次性/分步/并行）。\r\n\r\n6. **上线支持与持续优化**  \r\n   现场支持、问题处理、知识转移，系统进入稳定运行后持续评估改进。\n实施成功关键因素\r\n- 高层领导全力参与和推动\r\n- 清晰的需求与务实的范围控制\r\n- 关键用户（业务骨干）全程深度投入\r\n- 数据准确性和完整性\r\n- 有效的变革管理与培训\r\n- 合适的外部顾问团队与知识转移\r\n\r\n---\n五、ERP选型指南', 4, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099269, '000000', 2065103110631759873, 2065090090526457857, '1. 选型评估要点\r\n- **功能匹配度**：系统是否覆盖企业核心业务，行业特性支持如何（如离散/流程制造、零售、工程建设等）。\r\n- **技术架构**：是否支持云部署、移动端、开放API、低代码扩展。\r\n- **用户体验**：界面友好度、操作效率、学习成本。\r\n- **总拥有成本（TCO）**：软件许可、实施、定制、运维、升级等全生命周期费用。\r\n- **供应商能力**：行业案例、本地化服务、持续研发投入、生态伙伴。', 5, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013826, '000000', 2065103110631759873, 2065090090526457857, '2. 主流ERP产品概览（分类示例）\r\n\r\n| 类型            | 代表产品                                              | 适用对象                     |\r\n| --------------- | ----------------------------------------------------- | ---------------------------- |\r\n| 国际大型ERP     | SAP S/4HANA, Oracle ERP Cloud, Microsoft Dynamics 365 | 大型跨国企业、多业态集团     |\r\n| 国际中端/成长型 | Infor LN/M3, IFS, Sage X3                             | 中型企业、特定行业           |\r\n| 国内主流        | 用友U9 cloud/YonSuite, 金蝶云·星瀚/苍穹, 浪潮inSuite  | 本土中型至大型企业，政策合规 |\r\n| 新兴云原生      | Odoo, Acumatica, 国内的多点/聚水潭等（电商）          | 中小型、快速成长、特殊场景   |\r\n\r\n选型时不可只看品牌，应通过原型演示、客户参考、POC（概念验证）等方式验证实际匹配度。\r\n\r\n---', 6, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013827, '000000', 2065103110631759873, 2065090090526457857, '六、ERP的未来趋势\r\n\r\n1. **全面云化（Cloud ERP）**  \r\n   减少本地IT负担，支持快速弹性扩展、远程协同与持续迭代。\r\n\r\n2. **智能化（AI + ERP）**  \r\n   需求预测、异常检测、智能审批、财务对账自动化，由“记录系统”转向“决策系统”。\r\n\r\n3. **移动化与物联网（IoT）**  \r\n   通过移动设备完成审批、入库、巡检；设备数据直接传入ERP实现预防性维护与自动补料。\r\n\r\n4. **低代码/无代码扩展**  \r\n   让业务人员快速搭建个性化报表、审批流和小应用，提升系统灵活度。\r\n\r\n5. **行业深化与生态融合**  \r\n   头部ERP厂商构建行业云和平台生态，连接客户、供应商、物流、金融机构，形成端到端数字化协同。\r\n\r\n6. **安全与合规强化**  \r\n   随着数据法规趋严，ERP在权限管理、审计追踪、数据本地化等方面持续增强。\r\n\r\n---', 7, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013828, '000000', 2065103110631759873, 2065090090526457857, '七、总结\r\n\r\nERP不是普通的软件采购，而是企业运营体系的一次系统性梳理与升级。成功的ERP项目能够贯通信息孤岛、固化标准流程、提高运营效率和决策质量，但前提是必须将其作为管理工程来对待，投入充足的资源、耐心和变革管理精力。\r\n\r\n对于准备上线或更换ERP的企业，建议：\r\n- 先理清自身管理痛点与核心需求，勿盲目对标功能列表。\r\n- 选择有行业经验的实施伙伴，重视知识转移和内部团队培养。\r\n- 上线不是终点，要建立持续优化的机制，让系统与企业共同成长。\r\n\r\n---\r\n\r\n*本文档旨在提供ERP领域的框架性知识，供学习、选型参考。具体实施时请结合企业实际情况与专业顾问意见。*', 8, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
 -- Table structure for ai_knowledge_document
 -- ----------------------------
 DROP TABLE IF EXISTS `ai_knowledge_document`;
@@ -1958,17 +1876,21 @@ CREATE TABLE `ai_knowledge_document`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Table structure for ai_knowledge_chunk
+-- Records of ai_knowledge_document
 -- ----------------------------
-DROP TABLE IF EXISTS `ai_knowledge_chunk`;
-CREATE TABLE `ai_knowledge_chunk`  (
+INSERT INTO `ai_knowledge_document` VALUES (2065103110631759873, '000000', 2065090090526457857, 'ERP.md', 'http://127.0.0.1:9005/ruoyi/2026/06/12/b2c8db1a7bd84251a3b523431fe60681.md', 7733, 9, '2', '未配置 Embedding 模型，请在模型管理中添加 EMBEDDING 类型模型', 103, 1, '2026-06-12 00:05:24', -1, '2026-06-12 00:14:34', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_message
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_message`;
+CREATE TABLE `ai_message`  (
   `id` bigint(20) NOT NULL COMMENT '主键',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `document_id` bigint(20) NOT NULL COMMENT '文档ID',
-  `knowledge_id` bigint(20) NOT NULL COMMENT '知识库ID',
-  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '片段内容',
-  `chunk_index` int(11) NULL DEFAULT NULL COMMENT '片段序号',
-  `vector_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '向量数据库中的ID',
+  `session_id` bigint(20) NOT NULL COMMENT '会话ID',
+  `role` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色: USER/ASSISTANT/SYSTEM',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '消息内容',
+  `token_usage` bigint(20) NULL DEFAULT NULL COMMENT 'Token 消耗',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
@@ -1980,10 +1902,133 @@ CREATE TABLE `ai_knowledge_chunk`  (
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
-  INDEX `idx_document_id`(`document_id`) USING BTREE,
-  FULLTEXT INDEX `ft_content`(`content`) WITH PARSER ngram
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = DYNAMIC;
+  INDEX `idx_session_id`(`session_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_message
+-- ----------------------------
+INSERT INTO `ai_message` VALUES (2064277443566452737, '000000', 2064277443511926786, 'USER', '各仓库库存总量', NULL, 103, 1, '2026-06-09 17:24:30', 1, '2026-06-09 17:24:30', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2064277513598746626, '000000', 2064277443511926786, 'ASSISTANT', '以下是各仓库的库存总量查询结果：\n\n| 仓库编码 | 仓库名称 | 库存总量 |\n| :--- | :--- | :--- |\n| **WH004** | **原料仓库** | **1,000.00** |\n| **WH003** | **成品仓库** | **0.00** |\n\n**简要说明：**\n- **原料仓库（WH004）**：目前库存总量为 **1,000.00**（单位与物料的基础计量单位一致）。\n- **成品仓库（WH003）**：当前库存总量为 **0.00**，暂无库存。\n\n如需查看具体某个仓库下按物料分类的库存明细，或者按仓库+物料维度的详细数据，请随时告知！', NULL, -1, -1, '2026-06-09 17:24:46', -1, '2026-06-09 17:24:46', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2064321022131421185, '000000', 2064277443511926786, 'USER', 'WH004仓库有多少库区', NULL, 103, 1, '2026-06-09 20:17:40', 1, '2026-06-09 20:17:40', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2064321102490091521, '000000', 2064277443511926786, 'ASSISTANT', '## 查询结果\n\n**WH004 仓库（原料仓库）共有 2 个库区**，具体明细如下：\n\n| 库区编码 | 库区名称 | 是否启用 | 面积 |\n| :--- | :--- | :---: | :---: |\n| A0005 | **金属库区** | ✅ 是 | 200.00 |\n| A0006 | **辅料库区** | ✅ 是 | 20.00 |\n\n### 总结\n- 🏭 **仓库名称**：原料仓库\n- 📍 **仓库编码**：WH004\n- 📦 **库区数量**：**2 个**\n- 两个库区（金属库区、辅料库区）均为启用状态，总面积合计 **220.00** 平方米。', NULL, -1, -1, '2026-06-09 20:17:59', -1, '2026-06-09 20:17:59', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2064326447962767362, '000000', 2064277443511926786, 'USER', 'A0005这个库区有多少库位', NULL, 103, 1, '2026-06-09 20:39:13', 1, '2026-06-09 20:39:13', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2064326684525707266, '000000', 2064277443511926786, 'ASSISTANT', '以下是查询结果：\n\n---\n\n## 库区 A0005 的库位信息\n\n**库区信息：** A0005 - **金属库区**\n\n该库区下共有 **6 个库位**，具体如下：\n\n| 库位编码 | 库位名称 | 是否启用 | 是否冻结 |\n| :--- | :--- | :---: | :---: |\n| L010 | 钢板库位 | ✅ 是 | ❌ 否 |\n| L011 | 轮圈库位 | ✅ 是 | ❌ 否 |\n| L012 | 轮胎库位 | ✅ 是 | ❌ 否 |\n| L013 | 辐条库位 | ✅ 是 | ❌ 否 |\n| L014 | 把管库位 | ✅ 是 | ❌ 否 |\n| L015 | 把套库位 | ✅ 是 | ❌ 否 |\n\n**结论：** 库区 **A0005（金属库区）** 共包含 **6 个库位**，目前全部处于启用且未冻结的状态。', NULL, -1, -1, '2026-06-09 20:40:10', -1, '2026-06-09 20:40:10', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065070116864950275, '000000', 2065070116864950274, 'USER', '你好，你是什么大模型', NULL, 103, 1, '2026-06-11 21:54:18', 1, '2026-06-11 21:54:18', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065070142496342018, '000000', 2065070116864950274, 'ASSISTANT', '你好！我是 DeepSeek，由深度求索公司开发的AI助手。我是最新版本的DeepSeek模型，专注于提供高质量的对话、问答和创作服务。\n\n我的特点包括：\n- **纯文本模型**，但支持上传图像、PDF、Word、Excel等文件并读取其中的文字信息\n- **1M超长上下文**，可以一次性处理像《三体》三部曲体量的书籍\n- **支持联网搜索**（需手动开启）\n- **完全免费**，没有收费计划\n- **App端支持语音输入**，可在官方应用商店下载\n\n很高兴为你服务！有什么我可以帮助你的吗？😊', NULL, -1, -1, '2026-06-11 21:54:24', -1, '2026-06-11 21:54:24', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065070250248011778, '000000', 2065070116864950274, 'USER', '我刚刚说了什么', NULL, 103, 1, '2026-06-11 21:54:49', 1, '2026-06-11 21:54:49', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065070264236015618, '000000', 2065070116864950274, 'ASSISTANT', '你刚刚说的是：“你好，你是什么大模型”', NULL, -1, -1, '2026-06-11 21:54:53', -1, '2026-06-11 21:54:53', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065070583837786114, '000000', 2064277443511926786, 'USER', '生成当前正在使用的仓库库区库位报表', NULL, 103, 1, '2026-06-11 21:56:09', 1, '2026-06-11 21:56:09', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065074179329482754, '000000', 2064277443511926786, 'USER', '生成当前正在使用的仓库库区库位报表', NULL, 103, 1, '2026-06-11 22:10:26', 1, '2026-06-11 22:10:26', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065078312979566593, '000000', 2064277443511926786, 'USER', '生成当前正在使用的仓库库区库位报表', NULL, 103, 1, '2026-06-11 22:26:52', 1, '2026-06-11 22:26:52', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065078576352497666, '000000', 2064277443511926786, 'ASSISTANT', '现在我已经获取了所有数据，让我整理一下并生成图表。\n\n**数据汇总：**\n- **仓库**：成品仓库、原料仓库（共2个）\n- **库区**：成品区、半成品区、废品仓、金属库区、辅料库区（共5个）\n- **库位**：自行车库位、车轮库位、车架库位、车把库位、废品库位、钢板库位、轮圈库位、轮胎库位、辐条库位、把管库位等（共12个）\n\n我来生成一个综合的可视化报表：\n\n```echarts\n{\n  \"title\": {\n    \"text\": \"当前正在使用的仓库库区库位报表\",\n    \"left\": \"center\"\n  },\n  \"tooltip\": {\n    \"trigger\": \"axis\",\n    \"axisPointer\": {\"type\": \"shadow\"}\n  },\n  \"legend\": {\n    \"data\": [\"库区数量\", \"库位数量\"],\n    \"top\": 50\n  },\n  \"xAxis\": {\n    \"type\": \"category\",\n    \"data\": [\"成品仓库\", \"原料仓库\"],\n    \"axisLabel\": {\"fontSize\": 14}\n  },\n  \"yAxis\": [\n    {\n      \"type\": \"value\",\n      \"name\": \"数量\",\n      \"min\": 0,\n      \"max\": 10\n    }\n  ],\n  \"series\": [\n    {\n      \"name\": \"库区数量\",\n      \"type\": \"bar\",\n      \"data\": [3, 2],\n      \"barWidth\": 40,\n      \"itemStyle\": {\"color\": \"#5470C6\"},\n      \"label\": {\n        \"show\": true,\n        \"position\": \"top\",\n        \"fontSize\": 14\n      }\n    },\n    {\n      \"name\": \"库位数量\",\n      \"type\": \"bar\",\n      \"data\": [4, 6],\n      \"barWidth\": 40,\n      \"itemStyle\": {\"color\": \"#91CC75\"},\n      \"label\": {\n        \"show\": true,\n        \"position\": \"top\",\n        \"fontSize\": 14\n      }\n    }\n  ]\n}\n```', NULL, -1, -1, '2026-06-11 22:27:55', -1, '2026-06-11 22:27:55', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065083505834106882, '000000', 2065083505834106881, 'USER', '足球世界杯你预测谁能夺冠', NULL, 103, 1, '2026-06-11 22:47:30', 1, '2026-06-11 22:47:30', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065083562117472258, '000000', 2065083505834106881, 'ASSISTANT', '关于世界杯的夺冠预测，这是一个非常有趣但也充满变数的问题。由于足球比赛的结果受状态、战术、伤病、甚至运气等多种因素影响，**任何预测都只能基于当前实力、历史数据和球队结构进行分析，并非绝对答案**。\n\n要给出更精准的预测，我需要知道您指的是**哪一届世界杯**（比如2026年美加墨世界杯？还是刚刚过去的2022年卡塔尔世界杯？）。\n\n不过，如果按当前（2024-2025年）的国际足坛格局和球队实力来看，以下是一些**传统强队和新兴势力的分析**，供您参考：\n\n### 1. 传统顶级强队（夺冠大热门）\n-   **法国队**：纸面实力几乎无短板。拥有姆巴佩、格列兹曼、楚阿梅尼等顶级球星，中场和锋线储备极其深厚。他们在2018年夺冠，2022年亚军，表现出极强的稳定性和大赛经验。**如果核心球员健康且更衣室稳定，法国队是头号热门。**\n-   **阿根廷队**：虽然梅西已退出国家队（或进入生涯末期），但球队在斯卡洛尼的调教下形成了非常成熟的战术体系。年轻一代如阿尔瓦雷斯、恩佐、麦卡利斯特等迅速成长，防守极其坚韧。**卫冕冠军的身份会让他们拥有心理优势**，但核心老化是隐患。\n-   **巴西队**：永远的热门。锋线人才（维尼修斯、罗德里戈、拉菲尼亚等）依然豪华，但近年来中场控制力下降，防守端有时缺乏稳定性。**如果解决了战术纪律问题，桑巴军团绝对具备夺冠实力。**\n\n### 2. 极具竞争力的挑战者\n-   **英格兰队**：连续两届欧洲杯亚军，世界杯也进入四强。阵容年轻且球星云集（贝林厄姆、福登、凯恩、萨卡）。**最大的问题是“关键战”心理素质和大赛冠军基因**，如果能突破瓶颈，他们实力不输任何队。\n-   **德国队**：经历了2022年世界杯的低谷后，纳格尔斯曼带领球队重新崛起，本土承办2024年欧洲杯后信心大增。年轻球员（维尔茨、穆西亚拉）与克罗斯（若回归）的中场组合令人期待。**主场优势可能成为最大助力**，但稳定性需检验。\n-   **西班牙队**：传控战术根基仍在，近年来培养出佩德里、加维等天才。**主要短板是缺少顶级终结者（中锋）**，但中后场控制力极强，很容易把比赛拖入自己的节奏。\n\n### 3. 潜在黑马或关键变量\n-   **葡萄牙队**：拥有C罗（虽老化但精神属性强）、B费、B席、莱奥、菲利克斯等，配置非常均衡。**如果教练能捏合好攻防转换，他们有实力掀翻任何豪门。**\n-   **荷兰队/比利时队**：荷兰防守体系稳固，前锋线有德佩、加克波等；比利时虽黄金一代老化，但新生代（如多库）极具冲击力。\n-   **非洲球队（摩洛哥、塞内加尔等）**：上届世界杯摩洛哥杀入四强，非洲球队的身体对抗、防守纪律和快速反击能力正在提升，**不可小觑**。\n\n### 总结我的“倾向性预测”（基于当前趋势）\n**如果非要选一个现阶段最“合理”的夺冠热门，我会选择：法国队。**\n-   **理由**：他们拥有未来十年最好的前锋（姆巴佩），中后场控制力强，大赛经验丰富，且年龄结构合理（平均26岁左右）。只要不发生内部矛盾或核心伤病，他们是最符合“冠军相”的球队。\n\n**但请记住：**\n1.  **世界杯看临场**：小组赛出线后的淘汰赛阶段，心态、裁判、点球、红牌都可能改变一切。\n2.  **两年后的事情**：球员状态、教练更换、伤病（比如2026世界杯前）都充满变数。\n3.  **足球最大的魅力就是“冷门”**：正如2022年阿根廷夺冠前，很少有人会完全排除法国、巴西或英格兰。\n\n**最后，如果您有具体一届世界杯想讨论（比如2026世界杯），或者您是某支球队的球迷，可以告诉我，我可以给出更针对性的分析！** 毕竟，预测冠军最准的方式其实只有一个——**等到决赛90分钟哨声响起的那一刻** ⚽。', NULL, -1, -1, '2026-06-11 22:47:43', -1, '2026-06-11 22:47:43', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065083868435881986, '000000', 2065083505834106881, 'USER', '阿根廷是上届冠军，为什么你不觉得他们是夺冠热门', NULL, 103, 1, '2026-06-11 22:48:56', 1, '2026-06-11 22:48:56', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065083957598396418, '000000', 2065083505834106881, 'ASSISTANT', '你提出了一个非常敏锐的问题。确实，**阿根廷作为卫冕冠军，不仅在历史上拥有“卫冕魔咒”需要打破，在现实层面也面临着更直接的挑战。** 我在上一轮没有将其列为头号热门，并非忽视他们的实力，而是基于以下几个**核心矛盾**的分析：\n\n### 1. 核心球员的“不可替代性”与老化\n-   **梅西的“隐性作用”**：阿根廷2022年夺冠，梅西不仅仅是数据（7球3助攻）上的贡献，更是**精神领袖和战术支点**。他在前场吸引防守、串联传控、指挥比赛节奏的能力，目前队内无人能完全替代。尽管他可能还会参加2026世界杯，但届时39岁的年龄意味着他的**体能、冲刺速度和比赛密度承受力**会显著下降。\n-   **迪马利亚的“决赛玄学”**：迪马利亚几乎垄断了阿根廷近两届大赛决赛的进球（2021美洲杯、2022世界杯决赛），但他已明确表示2022世界杯后逐渐淡出国家队。这支阿根廷的边路突破和“一脚定江山”的能力，会因他的离开而出现明显缺口。\n-   **其他核心球员的年龄**：奥塔门迪（37岁）、帕雷德斯（30岁+）等后场核心同样面临老化。虽然恩佐、麦卡利斯特、阿尔瓦雷斯这一代成长起来了，但**大赛冠军需要的是“关键时刻的老将经验”与“年轻人的冲击力”完美结合**，阿根廷的“老将红利”正在被时间消耗。\n\n### 2. “夺冠后遗症”：战术被研究 + 心态变化\n-   **战术被彻底公开**：2022年世界杯后，全世界所有对手都对阿根廷的**防守反击体系、三中场绞杀、劳塔罗-阿尔瓦雷斯-梅西的三人组**进行了深度研究。斯卡洛尼的战术不再是秘密。非洲球队、欧洲强队现在知道如何封堵阿根廷的中场传球线路，如何利用梅西回撤后的空当。\n-   **对手的“复仇心理”**：作为世界冠军，阿根廷将成为每支球队的“必须击败的目标”。小组赛和淘汰赛，对手会用更强的身体对抗、更疯狂的逼抢来针对他们。这种压力与2022年“低调出击”的心态完全不同。\n-   **卫冕冠军的“魔咒”心理**：历史上只有意大利（1934-1938）和巴西（1958-1962）卫冕成功。最近20年，法国（1998-2002）、西班牙（2010-2014）、德国（2014-2018）等强队都在卫冕路上惨败。这种心理包袱是真实存在的。\n\n### 3. 竞争对手的“质变”与阿根廷的短板\n-   **法国队**：2022年决赛阿根廷险胜，但当时法国队中场核心坎特、博格巴缺阵，姆巴佩刚经历疲惫赛季。两年后，法国队拥有更成熟的姆巴佩（核心地位稳固）、更年轻的中场（楚阿梅尼、卡马文加），以及可能回归的登贝莱等。**他们解决了2022年决赛前70分钟“消失”的问题，战术更具侵略性。**\n-   **英格兰队**：连续两届欧洲杯亚军，萨卡、贝林厄姆、福登等球员的杯赛经验已完全成熟。阿根廷的防守体系在面对这种**多点开花、边中结合流畅**的进攻时，可能会暴露“转身慢”和“边后卫防守”的短板。\n-   **德国队**：纳格尔斯曼接手后，德国队从2022年世界杯小组赛出局的阴影中走出，确立了“维尔茨+穆西亚拉”的双核，并且拥有防守稳固的后卫线（吕迪格、塔）。**他们的高位逼抢和快速转换能力，正好克制阿根廷偏慢的地面传控。**\n\n### 4. 阿根廷自身“短板”未彻底解决\n-   **中锋依赖劳塔罗**：劳塔罗在国米和世界杯状态起伏太大，阿尔瓦雷斯更擅长二前锋，如果遇到密集防守，阿根廷缺乏能站桩拿球、护球的中锋。\n-   **左后卫漏洞**：2022年世界杯时，莫利纳（右后卫）的防守短板已被利用（比如被姆巴佩强突）。26年世界杯时，边后卫老化或状态下滑（如阿库尼亚）可能成为对手重点攻击的“通道”。\n-   **点球运气不能复制**：2022年阿根廷赢了三次点球大战（对荷兰、法国）；历史上只有2022年的克罗地亚和阿根廷在单届赢过超过一次点球。**这一项不能作为常规战术依赖。**\n\n### 结论：为什么法国队可能比阿根廷更“热门”？\n**简单来说：法国队拥有“顶级身体+速度+经验”的王牌，且没有核心老化问题；而阿根廷的夺冠基础——“梅西的巅峰、迪马利亚的灵光、全队的团结一致”——正在不可逆地衰退。**\n\n但这**不意味着阿根廷不可能再次夺冠**。如果他们能做到：\n1.  **梅西在2026年保持接近“半退休”但关键战仍能输出**（类似2018年伊涅斯塔）；\n2.  **年轻一代（恩佐、麦卡、阿尔瓦雷斯）完全承担核心责任，不需要再依赖梅西“硬扛”**；\n3.  **斯卡洛尼开发出新战术（比如三中卫、防反变阵）**；\n4.  **抽签对手和淘汰赛赛程相对友好**。\n\n那么，阿根廷依然是**夺冠梯队的第一集团**，只是概率上可能低于法国（或者英格兰）。**但足球的魅力就在于，卫冕冠军往往在“不被看好”时爆发出最惊人的战斗力——就像2021年美洲杯前的阿根廷一样。** 所以，如果有阿根廷球迷告诉我“我们就是能卫冕”，我完全理解，因为热血和奇迹也是足球的一部分。', NULL, -1, -1, '2026-06-11 22:49:18', -1, '2026-06-11 22:49:18', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065084396435841026, '000000', 2065084396368732162, 'USER', '2026年的采购申请有多少条', NULL, 103, 1, '2026-06-11 22:51:02', 1, '2026-06-11 22:51:02', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065084518947266562, '000000', 2065084396368732162, 'ASSISTANT', '根据查询结果，2026年的采购申请信息如下：\n\n---\n\n**📋 2026年共有 6 条采购申请记录**，全部来自 `pu_purchase_requisition`（采购申请表），明细如下：\n\n| 序号 | 申请单号 | 名称 | 申请日期 | 状态 |\n|:---:|:---:|:---:|:---:|:---:|\n| 1 | 123123 | 测试 | 2026-05-24 | 草稿 |\n| 2 | PU2026052401 | cs2 | 2026-05-24 | 草稿 |\n| 3 | PU20260524002 | 测试3 | 2026-05-24 | 已审批 |\n| 4 | CGSQ202605240001 | 采购 | 2026-05-24 | 草稿 |\n| 5 | CGSQ202606030001 | - | 2026-06-03 | 草稿 |\n| 6 | CGSQ202606030002 | 钢板采购 | 2026-06-03 | 已订购 |\n\n**汇总：2026年共有 6 条采购申请记录。** 其中：\n- **草稿**状态：4条\n- **已审批**状态：1条\n- **已订购**状态：1条', NULL, -1, -1, '2026-06-11 22:51:31', -1, '2026-06-11 22:51:31', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065110056273432578, '000000', 2065110056239878145, 'USER', 'ERP的核心理念是什么', NULL, 103, 1, '2026-06-12 00:33:00', 1, '2026-06-12 00:33:00', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2065110153803583490, '000000', 2065110056239878145, 'ASSISTANT', 'ERP（企业资源计划）的核心理念可以一句话概括为：**以客户为中心，打通企业内部所有资源，实现供应链全链条的集成与实时协同，从而驱动管理精细化与决策科学化。**\n\n它不仅仅是一套软件，更是一套先进的现代企业管理思想。具体来说，其核心理念体现在以下几个关键层面：\n\n1.  **核心思想：集成与协同**\n    -   **打破部门墙**：ERP的核心思想是**管理整个价值链**，而不仅仅是某个孤立的部门。它将财务、采购、生产、库存、销售、人力资源等所有业务环节视为一个有机整体，实现信息的一次输入、全程共享。\n    -   **实时的信息流**：业务发生的同时，财务数据、库存数据、生产进度等所有相关数据同步更新。比如，销售员录入一个订单，系统会自动检查库存、规划生产、计算成本、更新应收账款，各部门都能看到一致且实时的信息。\n\n2.  **核心逻辑：计划驱动与资源平衡**\n    -   **从销售预测开始**：ERP的运行动力来自于“计划”。它从销售预测或客户订单出发，自动生成主生产计划，继而精密计算所需的物料（MRP，物料需求计划）和产能（CRP，能力需求计划）。\n    -   **消除瓶颈与浪费**：通过精确计算“需要什么、需要多少、什么时候需要”，ERP能帮助企业有效平衡需求与供应，**最大程度减少库存积压、生产停工待料和资源闲置**，这正是精益生产思想的体现。\n\n3.  **核心架构：统一数据与流程标准化**\n    -   **一数一源**：企业中的所有核心数据（如客户信息、物料编码、供应商数据、会计科目）都只有一个标准、一个来源，且集中存储在一个共享数据库中。这从根本上解决了数据混乱、口径不一的顽疾。\n    -   **流程固化与优化**：ERP将企业的最佳业务实践（Best Practices）固化为标准的操作流程。例如，从采购申请→审批→下单→收货→检验→入库→付款，每一步都有明确规则、权限和状态。这确保了操作的规范性和合规性，也为后续的流程优化提供了基准。\n\n4.  **核心价值：决策支持与绩效提升**\n    -   **从“事后报告”到“事前预测、事中控制”**：ERP提供强大的商业智能（BI，Business Intelligence）功能，能实时生成各类报表（如成本分析、资金流预测、订单履行率），帮助管理层**从“看后视镜”转向“看挡风玻璃”**，做出前瞻性决策。\n    -   **驱动绩效提升**：最终目标是通过流程优化、成本降低、库存周转加快、客户响应速度提升、决策准确性提高等多方面，全面提升企业的整体运营效率和盈利能力。\n\n**打个比方：**\n如果传统管理像是多个独立的部门（如销售部有自己的小账本，工厂有自己的库存表），信息传递像接力赛跑，经常掉棒、信息失真。那么ERP就像一个统一的、高度集成的数字神经系统：销售（大脑皮层）下达指令，生产（心脏和肌肉）立即响应，库存（血液和营养库）同步调整，财务（体温和代谢监测）实时监控状态。所有部分协调一致，高效运转。\n\n**需要注意的是：** 实施ERP并不代表管理自动成功。它的核心理念需要一个关键前提：**管理变革**。如果企业内部的流程顽固、数据混乱、人心不齐，再优秀的ERP系统也难以发挥其集成、协同、计划、平衡的核心理念。ERP是“术”，而与之匹配的管理思想（如流程导向、数据驱动、持续优化）才是“道”。', NULL, -1, -1, '2026-06-12 00:33:23', -1, '2026-06-12 00:33:23', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_model
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_model`;
+CREATE TABLE `ai_model`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `provider_id` bigint(20) NOT NULL COMMENT '关联厂商ID',
+  `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模型名称（如 deepseek-chat）',
+  `display_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '显示名称',
+  `model_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型: CHAT/EMBEDDING/RERANK',
+  `max_tokens` int(11) NULL DEFAULT 4096 COMMENT '最大输出 Token',
+  `temperature` decimal(3, 2) NULL DEFAULT 0.70 COMMENT '温度参数',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '是否默认模型（1是 0否）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_provider_id`(`provider_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_model
+-- ----------------------------
+INSERT INTO `ai_model` VALUES (1, '000000', 1, 'deepseek-v4-flash', 'deepseek-v4-flash', 'CHAT', 4096, 0.70, '1', '1', NULL, NULL, NULL, NULL, NULL, '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_model` VALUES (2, '000000', 2, 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'Qwen3-Embedding-0.6B-Q8', 'EMBEDDING', 2048, 0.00, '1', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-11 23:42:56', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_provider
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_provider`;
+CREATE TABLE `ai_provider`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '厂商名称',
+  `api_host` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'API 地址',
+  `api_key` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'API Key（Jasypt 加密存储）',
+  `provider_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '厂商类型: OPENAI/DASHSCOPE/ZHIPU/OLLAMA',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_provider
+-- ----------------------------
+INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'sxxx', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-06-11 21:53:54', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', '7VIFr/u20gS3WI5w6UpR57YNkl6ZL7D/xPNYtooX5NM7x4yUs4rqKg7PO3lBXZDcd/io5ULRc/Qi9bG0F96Lsg5BUSut7CIofwUqhyFsWZ8iv7wITaIayr3PVUNhkCRy', 'OLLAMA', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-11 23:44:47', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_session
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_session`;
+CREATE TABLE `ai_session`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `title` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '会话标题',
+  `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的模型名称',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_id`(`user_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_session
+-- ----------------------------
+INSERT INTO `ai_session` VALUES (2064277443511926786, '000000', 1, '各仓库库存总量', 'deepseek-v4-flash', 103, 1, '2026-06-09 17:24:30', 1, '2026-06-09 17:24:30', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_session` VALUES (2065070116864950274, '000000', 1, '你好，你是什么大模型', 'deepseek-v4-flash', 103, 1, '2026-06-11 21:54:18', 1, '2026-06-11 21:54:18', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_session` VALUES (2065083505834106881, '000000', 1, '足球世界杯你预测谁能夺冠', 'deepseek-v4-flash', 103, 1, '2026-06-11 22:47:30', 1, '2026-06-11 22:47:30', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_session` VALUES (2065084396368732162, '000000', 1, '2026年的采购申请有多少条', 'deepseek-v4-flash', 103, 1, '2026-06-11 22:51:02', 1, '2026-06-11 22:51:02', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_session` VALUES (2065110056239878145, '000000', 1, 'ERP的核心理念是什么', 'deepseek-v4-flash', 103, 1, '2026-06-12 00:33:00', 1, '2026-06-12 00:33:00', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for flw_channel_definition
@@ -7355,17 +7400,17 @@ CREATE TABLE `sj_distributed_lock`  (
 -- ----------------------------
 -- Records of sj_distributed_lock
 -- ----------------------------
-INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-06-09 21:05:32.073', '2026-06-09 21:04:32.073', '2064332810545754112', '2026-06-08 22:00:05', '2026-06-09 21:04:32');
-INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-06-10 00:59:03.090', '2026-06-10 00:58:58.090', '2064332810545754112', '2026-06-08 22:00:04', '2026-06-10 00:58:58');
-INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-06-09 21:05:31.615', '2026-06-09 21:04:31.615', '2064332810545754112', '2026-06-08 22:00:04', '2026-06-09 21:04:32');
-INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-06-10 00:58:31.623', '2026-06-10 00:57:31.623', '2064332810545754112', '2026-06-08 22:00:04', '2026-06-10 00:57:32');
-INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-06-10 00:58:51.621', '2026-06-10 00:58:31.621', '2064332810545754112', '2026-06-08 22:00:04', '2026-06-10 00:58:32');
-INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-06-10 00:58:59.781', '2026-06-10 00:58:54.781', '2064332810545754112', '2026-06-08 22:00:05', '2026-06-10 00:58:55');
-INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-06-10 00:55:32.362', '2026-06-10 00:54:32.362', '2064332810545754112', '2026-06-08 22:00:05', '2026-06-10 00:54:32');
-INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-06-10 00:05:31.618', '2026-06-10 00:04:31.618', '2064332810545754112', '2026-06-08 22:00:05', '2026-06-10 00:04:32');
-INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-06-10 00:58:51.621', '2026-06-10 00:58:31.621', '2064332810545754112', '2026-06-08 22:00:05', '2026-06-10 00:58:32');
-INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-06-10 00:55:32.362', '2026-06-10 00:54:32.362', '2064332810545754112', '2026-06-08 22:00:05', '2026-06-10 00:54:32');
-INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-06-10 00:58:51.621', '2026-06-10 00:58:31.621', '2064332810545754112', '2026-06-08 22:00:05', '2026-06-10 00:58:32');
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-06-11 21:48:31.599', '2026-06-11 21:47:31.599', '2065068404569726976', '2026-06-08 22:00:05', '2026-06-11 21:47:32');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-06-12 00:36:14.073', '2026-06-12 00:36:09.073', '2065068404569726976', '2026-06-08 22:00:04', '2026-06-12 00:36:09');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-06-11 21:48:31.021', '2026-06-11 21:47:31.021', '2065068404569726976', '2026-06-08 22:00:04', '2026-06-11 21:47:32');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-06-12 00:35:31.033', '2026-06-12 00:34:31.033', '2065068404569726976', '2026-06-08 22:00:04', '2026-06-12 00:34:31');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-06-12 00:35:51.028', '2026-06-12 00:35:31.028', '2065068404569726976', '2026-06-08 22:00:04', '2026-06-12 00:35:31');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-06-12 00:36:10.403', '2026-06-12 00:36:05.403', '2065068404569726976', '2026-06-08 22:00:05', '2026-06-12 00:36:05');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-06-12 00:28:31.803', '2026-06-12 00:27:31.803', '2065068404569726976', '2026-06-08 22:00:05', '2026-06-12 00:27:32');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-06-11 23:48:31.030', '2026-06-11 23:47:31.030', '2065068404569726976', '2026-06-08 22:00:05', '2026-06-11 23:47:31');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-06-12 00:35:51.028', '2026-06-12 00:35:31.028', '2065068404569726976', '2026-06-08 22:00:05', '2026-06-12 00:35:31');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-06-12 00:28:31.803', '2026-06-12 00:27:31.803', '2065068404569726976', '2026-06-08 22:00:05', '2026-06-12 00:27:32');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-06-12 00:35:51.028', '2026-06-12 00:35:31.028', '2065068404569726976', '2026-06-08 22:00:05', '2026-06-12 00:35:31');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -7437,9 +7482,9 @@ CREATE TABLE `sj_job`  (
 -- ----------------------------
 -- Records of sj_job
 -- ----------------------------
-INSERT INTO `sj_job` VALUES (1, 'dev', 'ruoyi_group', 'demo-job', NULL, 1, 1781024701635, 1, 1, 4, 1, 'testJobExecutor', 2, '600', 1, 60, 3, 1, 1, 116, 0, '', 1, '{}', '', '', 0, '2026-04-15 10:51:35', '2026-06-10 00:55:01');
-INSERT INTO `sj_job` VALUES (2, 'dev', 'ruoyi_group', '应商绩效批量评估任务', '', 1, 1781024400000, 1, 1, 4, 1, 'vendorEvaluationTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 69, 0, '', 1, '{}', '', '', 0, '2026-05-28 10:57:55', '2026-06-09 21:05:01');
-INSERT INTO `sj_job` VALUES (3, 'dev', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1781024400000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-06-09 21:05:01');
+INSERT INTO `sj_job` VALUES (1, 'dev', 'ruoyi_group', 'demo-job', NULL, 1, 1781195881036, 1, 1, 4, 1, 'testJobExecutor', 2, '600', 1, 60, 3, 1, 1, 116, 0, '', 1, '{}', '', '', 0, '2026-04-15 10:51:35', '2026-06-12 00:28:01');
+INSERT INTO `sj_job` VALUES (2, 'dev', 'ruoyi_group', '应商绩效批量评估任务', '', 1, 1781197200000, 1, 1, 4, 1, 'vendorEvaluationTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 69, 0, '', 1, '{}', '', '', 0, '2026-05-28 10:57:55', '2026-06-11 21:48:01');
+INSERT INTO `sj_job` VALUES (3, 'dev', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1781197200000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-06-11 21:48:01');
 
 -- ----------------------------
 -- Table structure for sj_job_executor
@@ -7497,7 +7542,7 @@ CREATE TABLE `sj_job_log_message`  (
   INDEX `idx_task_batch_id_task_id`(`task_batch_id`, `task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1823 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1842 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_log_message
@@ -7598,6 +7643,25 @@ INSERT INTO `sj_job_log_message` VALUES (1819, 'dev', 'ruoyi_group', 1, 1860, 17
 INSERT INTO `sj_job_log_message` VALUES (1820, 'dev', 'ruoyi_group', 1, 1861, 1716, '[{\"time_stamp\":\"1781022901684\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1861] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781022901684\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,861-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1861,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781022901685\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,861-1\",\"message\":\"Task executed successfully taskBatchId:[1861] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781022901684, '', '2026-06-10 00:35:07');
 INSERT INTO `sj_job_log_message` VALUES (1821, 'dev', 'ruoyi_group', 1, 1862, 1717, '[{\"time_stamp\":\"1781023501683\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1862] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781023501684\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,862-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1862,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781023501684\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,862-1\",\"message\":\"Task executed successfully taskBatchId:[1862] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781023501683, '', '2026-06-10 00:45:07');
 INSERT INTO `sj_job_log_message` VALUES (1822, 'dev', 'ruoyi_group', 1, 1863, 1718, '[{\"time_stamp\":\"1781024101681\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1863] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781024101681\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,863-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1863,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781024101681\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.102\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,863-1\",\"message\":\"Task executed successfully taskBatchId:[1863] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781024101681, '', '2026-06-10 00:55:07');
+INSERT INTO `sj_job_log_message` VALUES (1823, 'dev', 'ruoyi_group', 3, 1866, 1719, '[{\"time_stamp\":\"1781185681397\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[3] Task batch:[1866] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781185681410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.wm.task.StockAlertTask.jobExecute(StockAlertTask.java:31)\",\"thread\":\"snail-job-job-1,866-1\",\"message\":\"开始执行安全库存预警检查任务\"},{\"time_stamp\":\"1781185681510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.wm.task.StockAlertTask.jobExecute(StockAlertTask.java:34)\",\"thread\":\"snail-job-job-1,866-1\",\"message\":\"安全库存预警检查任务执行完成\"},{\"time_stamp\":\"1781185681510\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,866-1\",\"message\":\"Task executed successfully taskBatchId:[1866] [{\\\"status\\\":1,\\\"result\\\":\\\"安全库存预警检查完成\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 4, 1781185681397, '', '2026-06-11 21:48:06');
+INSERT INTO `sj_job_log_message` VALUES (1824, 'dev', 'ruoyi_group', 2, 1864, 1720, '[{\"time_stamp\":\"1781185681399\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[2] Task batch:[1864] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781185681410\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:38)\",\"thread\":\"snail-job-job-1,864-1\",\"message\":\"开始执行供应商绩效批量评估任务\"},{\"time_stamp\":\"1781185681567\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:41)\",\"thread\":\"snail-job-job-1,864-1\",\"message\":\"供应商绩效批量评估任务执行完成\"},{\"time_stamp\":\"1781185681567\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,864-1\",\"message\":\"Task executed successfully taskBatchId:[1864] [{\\\"status\\\":1,\\\"result\\\":\\\"供应商绩效批量评估完成\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 4, 1781185681399, '', '2026-06-11 21:48:06');
+INSERT INTO `sj_job_log_message` VALUES (1825, 'dev', 'ruoyi_group', 1, 1865, 1721, '[{\"time_stamp\":\"1781185681397\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1865] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781185681411\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,865-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1865,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781185681415\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,865-1\",\"message\":\"Task executed successfully taskBatchId:[1865] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781185681397, '', '2026-06-11 21:48:06');
+INSERT INTO `sj_job_log_message` VALUES (1826, 'dev', 'ruoyi_group', 1, 1867, 1722, '[{\"time_stamp\":\"1781186281078\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1867] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781186281079\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,867-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1867,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781186281079\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,867-1\",\"message\":\"Task executed successfully taskBatchId:[1867] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781186281078, '', '2026-06-11 21:58:06');
+INSERT INTO `sj_job_log_message` VALUES (1827, 'dev', 'ruoyi_group', 1, 1868, 1723, '[{\"time_stamp\":\"1781186881073\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1868] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781186881075\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,868-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1868,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781186881075\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,868-1\",\"message\":\"Task executed successfully taskBatchId:[1868] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781186881073, '', '2026-06-11 22:08:06');
+INSERT INTO `sj_job_log_message` VALUES (1828, 'dev', 'ruoyi_group', 1, 1869, 1724, '[{\"time_stamp\":\"1781187481189\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1869] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781187481200\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,869-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1869,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781187481201\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,869-1\",\"message\":\"Task executed successfully taskBatchId:[1869] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781187481189, '', '2026-06-11 22:18:06');
+INSERT INTO `sj_job_log_message` VALUES (1829, 'dev', 'ruoyi_group', 1, 1870, 1725, '[{\"time_stamp\":\"1781188081142\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1870] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781188081151\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,870-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1870,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781188081153\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,870-1\",\"message\":\"Task executed successfully taskBatchId:[1870] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781188081142, '', '2026-06-11 22:28:06');
+INSERT INTO `sj_job_log_message` VALUES (1830, 'dev', 'ruoyi_group', 1, 1871, 1726, '[{\"time_stamp\":\"1781188681162\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1871] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781188681173\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,871-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1871,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781188681176\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,871-1\",\"message\":\"Task executed successfully taskBatchId:[1871] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781188681162, '', '2026-06-11 22:38:06');
+INSERT INTO `sj_job_log_message` VALUES (1831, 'dev', 'ruoyi_group', 1, 1872, 1727, '[{\"time_stamp\":\"1781189281080\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1872] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781189281080\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,872-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1872,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781189281080\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,872-1\",\"message\":\"Task executed successfully taskBatchId:[1872] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781189281080, '', '2026-06-11 22:48:06');
+INSERT INTO `sj_job_log_message` VALUES (1832, 'dev', 'ruoyi_group', 1, 1873, 1728, '[{\"time_stamp\":\"1781189881084\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1873] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781189881085\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,873-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1873,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781189881085\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,873-1\",\"message\":\"Task executed successfully taskBatchId:[1873] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781189881084, '', '2026-06-11 22:58:06');
+INSERT INTO `sj_job_log_message` VALUES (1833, 'dev', 'ruoyi_group', 1, 1874, 1729, '[{\"time_stamp\":\"1781190481075\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1874] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781190481076\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,874-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1874,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781190481076\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,874-1\",\"message\":\"Task executed successfully taskBatchId:[1874] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781190481075, '', '2026-06-11 23:08:06');
+INSERT INTO `sj_job_log_message` VALUES (1834, 'dev', 'ruoyi_group', 1, 1875, 1730, '[{\"time_stamp\":\"1781191081144\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1875] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781191081155\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,875-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1875,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781191081157\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,875-1\",\"message\":\"Task executed successfully taskBatchId:[1875] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781191081144, '', '2026-06-11 23:18:06');
+INSERT INTO `sj_job_log_message` VALUES (1835, 'dev', 'ruoyi_group', 1, 1876, 1731, '[{\"time_stamp\":\"1781191681084\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1876] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781191681085\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,876-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1876,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781191681085\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,876-1\",\"message\":\"Task executed successfully taskBatchId:[1876] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781191681084, '', '2026-06-11 23:28:06');
+INSERT INTO `sj_job_log_message` VALUES (1836, 'dev', 'ruoyi_group', 1, 1877, 1732, '[{\"time_stamp\":\"1781192281180\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1877] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781192281191\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,877-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1877,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781192281192\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,877-1\",\"message\":\"Task executed successfully taskBatchId:[1877] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781192281180, '', '2026-06-11 23:38:06');
+INSERT INTO `sj_job_log_message` VALUES (1837, 'dev', 'ruoyi_group', 1, 1878, 1733, '[{\"time_stamp\":\"1781192881083\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1878] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781192881084\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,878-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1878,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781192881084\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,878-1\",\"message\":\"Task executed successfully taskBatchId:[1878] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781192881083, '', '2026-06-11 23:48:06');
+INSERT INTO `sj_job_log_message` VALUES (1838, 'dev', 'ruoyi_group', 1, 1879, 1734, '[{\"time_stamp\":\"1781193481081\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1879] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781193481081\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,879-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1879,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781193481081\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,879-1\",\"message\":\"Task executed successfully taskBatchId:[1879] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781193481081, '', '2026-06-11 23:58:06');
+INSERT INTO `sj_job_log_message` VALUES (1839, 'dev', 'ruoyi_group', 1, 1880, 1735, '[{\"time_stamp\":\"1781194081149\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1880] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781194081160\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,880-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1880,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781194081162\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,880-1\",\"message\":\"Task executed successfully taskBatchId:[1880] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781194081149, '', '2026-06-12 00:08:06');
+INSERT INTO `sj_job_log_message` VALUES (1840, 'dev', 'ruoyi_group', 1, 1881, 1736, '[{\"time_stamp\":\"1781194681204\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1881] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781194681214\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,881-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1881,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781194681217\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,881-1\",\"message\":\"Task executed successfully taskBatchId:[1881] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781194681204, '', '2026-06-12 00:18:06');
+INSERT INTO `sj_job_log_message` VALUES (1841, 'dev', 'ruoyi_group', 1, 1882, 1737, '[{\"time_stamp\":\"1781195281177\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1882] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781195281189\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,882-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1882,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781195281190\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,882-1\",\"message\":\"Task executed successfully taskBatchId:[1882] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781195281177, '', '2026-06-12 00:28:06');
 
 -- ----------------------------
 -- Table structure for sj_job_summary
@@ -7622,7 +7686,7 @@ CREATE TABLE `sj_job_summary`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_trigger_at_system_task_type_business_id`(`trigger_at`, `system_task_type`, `business_id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_business_id`(`namespace_id`, `group_name`, `business_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_summary
@@ -7654,6 +7718,10 @@ INSERT INTO `sj_job_summary` VALUES (24, 'dev', 'ruoyi_group', 1, 3, '2026-06-09
 INSERT INTO `sj_job_summary` VALUES (25, 'dev', 'ruoyi_group', 2, 3, '2026-06-09 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-09 21:05:31', '2026-06-09 21:05:31');
 INSERT INTO `sj_job_summary` VALUES (26, 'dev', 'ruoyi_group', 3, 3, '2026-06-09 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-09 21:05:31', '2026-06-09 21:05:31');
 INSERT INTO `sj_job_summary` VALUES (27, 'dev', 'ruoyi_group', 1, 3, '2026-06-10 00:00:00', 6, 0, '[]', 0, '[]', 0, '[]', '2026-06-10 00:05:31', '2026-06-10 00:55:31');
+INSERT INTO `sj_job_summary` VALUES (28, 'dev', 'ruoyi_group', 1, 3, '2026-06-11 00:00:00', 14, 0, '[]', 0, '[]', 0, '[]', '2026-06-11 21:48:31', '2026-06-11 23:58:31');
+INSERT INTO `sj_job_summary` VALUES (29, 'dev', 'ruoyi_group', 2, 3, '2026-06-11 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-11 21:48:31', '2026-06-11 21:48:31');
+INSERT INTO `sj_job_summary` VALUES (30, 'dev', 'ruoyi_group', 3, 3, '2026-06-11 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-11 21:48:31', '2026-06-11 21:48:31');
+INSERT INTO `sj_job_summary` VALUES (31, 'dev', 'ruoyi_group', 1, 3, '2026-06-12 00:00:00', 3, 0, '[]', 0, '[]', 0, '[]', '2026-06-12 00:08:31', '2026-06-12 00:28:31');
 
 -- ----------------------------
 -- Table structure for sj_job_task
@@ -7683,7 +7751,7 @@ CREATE TABLE `sj_job_task`  (
   INDEX `idx_task_batch_id_task_status`(`task_batch_id`, `task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1719 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1738 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task
@@ -7772,6 +7840,25 @@ INSERT INTO `sj_job_task` VALUES (1715, 'dev', 'ruoyi_group', 1, 1860, 0, 3, 0, 
 INSERT INTO `sj_job_task` VALUES (1716, 'dev', 'ruoyi_group', 1, 1861, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2064334006299803648@192.168.1.102:28080', NULL, '测试成功', '{}', 2, '', '2026-06-10 00:35:02', '2026-06-10 00:35:02');
 INSERT INTO `sj_job_task` VALUES (1717, 'dev', 'ruoyi_group', 1, 1862, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2064334006299803648@192.168.1.102:28080', NULL, '测试成功', '{}', 2, '', '2026-06-10 00:45:02', '2026-06-10 00:45:02');
 INSERT INTO `sj_job_task` VALUES (1718, 'dev', 'ruoyi_group', 1, 1863, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2064334006299803648@192.168.1.102:28080', NULL, '测试成功', '{}', 2, '', '2026-06-10 00:55:02', '2026-06-10 00:55:02');
+INSERT INTO `sj_job_task` VALUES (1719, 'dev', 'ruoyi_group', 3, 1866, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065068400870326272@192.168.1.104:28080', NULL, '安全库存预警检查完成', '{\"jobParams\":\"\"}', 2, '', '2026-06-11 21:48:01', '2026-06-11 21:48:02');
+INSERT INTO `sj_job_task` VALUES (1720, 'dev', 'ruoyi_group', 2, 1864, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065068400870326272@192.168.1.104:28080', NULL, '供应商绩效批量评估完成', '{\"jobParams\":\"\"}', 2, '', '2026-06-11 21:48:01', '2026-06-11 21:48:02');
+INSERT INTO `sj_job_task` VALUES (1721, 'dev', 'ruoyi_group', 1, 1865, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065068400870326272@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 21:48:01', '2026-06-11 21:48:01');
+INSERT INTO `sj_job_task` VALUES (1722, 'dev', 'ruoyi_group', 1, 1867, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065068400870326272@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 21:58:01', '2026-06-11 21:58:01');
+INSERT INTO `sj_job_task` VALUES (1723, 'dev', 'ruoyi_group', 1, 1868, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065068400870326272@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 22:08:01', '2026-06-11 22:08:01');
+INSERT INTO `sj_job_task` VALUES (1724, 'dev', 'ruoyi_group', 1, 1869, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065073990606774272@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 22:18:01', '2026-06-11 22:18:01');
+INSERT INTO `sj_job_task` VALUES (1725, 'dev', 'ruoyi_group', 1, 1870, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065077560710172672@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 22:28:01', '2026-06-11 22:28:01');
+INSERT INTO `sj_job_task` VALUES (1726, 'dev', 'ruoyi_group', 1, 1871, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065077560710172672@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 22:38:01', '2026-06-11 22:38:01');
+INSERT INTO `sj_job_task` VALUES (1727, 'dev', 'ruoyi_group', 1, 1872, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065080869030371328@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 22:48:01', '2026-06-11 22:48:01');
+INSERT INTO `sj_job_task` VALUES (1728, 'dev', 'ruoyi_group', 1, 1873, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065080869030371328@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 22:58:01', '2026-06-11 22:58:01');
+INSERT INTO `sj_job_task` VALUES (1729, 'dev', 'ruoyi_group', 1, 1874, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065080869030371328@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 23:08:01', '2026-06-11 23:08:01');
+INSERT INTO `sj_job_task` VALUES (1730, 'dev', 'ruoyi_group', 1, 1875, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065090036575125504@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 23:18:01', '2026-06-11 23:18:01');
+INSERT INTO `sj_job_task` VALUES (1731, 'dev', 'ruoyi_group', 1, 1876, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065090036575125504@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 23:28:01', '2026-06-11 23:28:01');
+INSERT INTO `sj_job_task` VALUES (1732, 'dev', 'ruoyi_group', 1, 1877, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065094210494820352@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 23:38:01', '2026-06-11 23:38:01');
+INSERT INTO `sj_job_task` VALUES (1733, 'dev', 'ruoyi_group', 1, 1878, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065094210494820352@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 23:48:01', '2026-06-11 23:48:01');
+INSERT INTO `sj_job_task` VALUES (1734, 'dev', 'ruoyi_group', 1, 1879, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065094210494820352@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-11 23:58:01', '2026-06-11 23:58:01');
+INSERT INTO `sj_job_task` VALUES (1735, 'dev', 'ruoyi_group', 1, 1880, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065102645357617152@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-12 00:08:01', '2026-06-12 00:08:01');
+INSERT INTO `sj_job_task` VALUES (1736, 'dev', 'ruoyi_group', 1, 1881, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065105350960603136@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-12 00:18:01', '2026-06-12 00:18:01');
+INSERT INTO `sj_job_task` VALUES (1737, 'dev', 'ruoyi_group', 1, 1882, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2065107223910277120@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-12 00:28:01', '2026-06-12 00:28:01');
 
 -- ----------------------------
 -- Table structure for sj_job_task_batch
@@ -7799,7 +7886,7 @@ CREATE TABLE `sj_job_task_batch`  (
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_workflow_task_batch_id_workflow_node_id`(`workflow_task_batch_id`, `workflow_node_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1864 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1883 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task_batch
@@ -7892,6 +7979,25 @@ INSERT INTO `sj_job_task_batch` VALUES (1860, 'dev', 'ruoyi_group', 1, 0, 0, 0, 
 INSERT INTO `sj_job_task_batch` VALUES (1861, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781022901675, 3, '', '', 0, '2026-06-10 00:35:02', '2026-06-10 00:35:02');
 INSERT INTO `sj_job_task_batch` VALUES (1862, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781023501675, 3, '', '', 0, '2026-06-10 00:45:02', '2026-06-10 00:45:02');
 INSERT INTO `sj_job_task_batch` VALUES (1863, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781024101669, 3, '', '', 0, '2026-06-10 00:55:02', '2026-06-10 00:55:02');
+INSERT INTO `sj_job_task_batch` VALUES (1864, 'dev', 'ruoyi_group', 2, 0, 0, 0, 3, 0, 1781185681174, 3, '', '', 0, '2026-06-11 21:48:01', '2026-06-11 21:48:02');
+INSERT INTO `sj_job_task_batch` VALUES (1865, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781185681173, 3, '', '', 0, '2026-06-11 21:48:01', '2026-06-11 21:48:01');
+INSERT INTO `sj_job_task_batch` VALUES (1866, 'dev', 'ruoyi_group', 3, 0, 0, 0, 3, 0, 1781185681174, 3, '', '', 0, '2026-06-11 21:48:01', '2026-06-11 21:48:02');
+INSERT INTO `sj_job_task_batch` VALUES (1867, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781186281067, 3, '', '', 0, '2026-06-11 21:58:01', '2026-06-11 21:58:01');
+INSERT INTO `sj_job_task_batch` VALUES (1868, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781186881062, 3, '', '', 0, '2026-06-11 22:08:01', '2026-06-11 22:08:01');
+INSERT INTO `sj_job_task_batch` VALUES (1869, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781187481067, 3, '', '', 0, '2026-06-11 22:18:01', '2026-06-11 22:18:01');
+INSERT INTO `sj_job_task_batch` VALUES (1870, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781188081062, 3, '', '', 0, '2026-06-11 22:28:01', '2026-06-11 22:28:01');
+INSERT INTO `sj_job_task_batch` VALUES (1871, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781188681066, 3, '', '', 0, '2026-06-11 22:38:01', '2026-06-11 22:38:01');
+INSERT INTO `sj_job_task_batch` VALUES (1872, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781189281065, 3, '', '', 0, '2026-06-11 22:48:01', '2026-06-11 22:48:01');
+INSERT INTO `sj_job_task_batch` VALUES (1873, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781189881073, 3, '', '', 0, '2026-06-11 22:58:01', '2026-06-11 22:58:01');
+INSERT INTO `sj_job_task_batch` VALUES (1874, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781190481064, 3, '', '', 0, '2026-06-11 23:08:01', '2026-06-11 23:08:01');
+INSERT INTO `sj_job_task_batch` VALUES (1875, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781191081074, 3, '', '', 0, '2026-06-11 23:18:01', '2026-06-11 23:18:01');
+INSERT INTO `sj_job_task_batch` VALUES (1876, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781191681071, 3, '', '', 0, '2026-06-11 23:28:01', '2026-06-11 23:28:01');
+INSERT INTO `sj_job_task_batch` VALUES (1877, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781192281062, 3, '', '', 0, '2026-06-11 23:38:01', '2026-06-11 23:38:01');
+INSERT INTO `sj_job_task_batch` VALUES (1878, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781192881072, 3, '', '', 0, '2026-06-11 23:48:01', '2026-06-11 23:48:01');
+INSERT INTO `sj_job_task_batch` VALUES (1879, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781193481071, 3, '', '', 0, '2026-06-11 23:58:01', '2026-06-11 23:58:01');
+INSERT INTO `sj_job_task_batch` VALUES (1880, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781194081074, 3, '', '', 0, '2026-06-12 00:08:01', '2026-06-12 00:08:01');
+INSERT INTO `sj_job_task_batch` VALUES (1881, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781194681073, 3, '', '', 0, '2026-06-12 00:18:01', '2026-06-12 00:18:01');
+INSERT INTO `sj_job_task_batch` VALUES (1882, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781195281077, 3, '', '', 0, '2026-06-12 00:28:01', '2026-06-12 00:28:01');
 
 -- ----------------------------
 -- Table structure for sj_namespace
@@ -8164,13 +8270,13 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 33 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (19, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2064332810545754112', '192.168.1.102', 17888, '2026-06-10 00:59:22', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-06-09 21:04:32', '2026-06-10 00:58:51');
-INSERT INTO `sj_server_node` VALUES (21, 'dev', 'ruoyi_group', '2064334006299803648', '192.168.1.102', 28080, '2026-06-10 00:59:20', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-06-09 21:09:16', '2026-06-10 00:58:49');
+INSERT INTO `sj_server_node` VALUES (22, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2065068404569726976', '192.168.1.104', 17888, '2026-06-12 00:36:21', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-06-11 21:47:31', '2026-06-12 00:35:51');
+INSERT INTO `sj_server_node` VALUES (32, 'dev', 'ruoyi_group', '2065109996601069568', '192.168.1.104', 28080, '2026-06-12 00:36:30', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-06-12 00:32:47', '2026-06-12 00:36:00');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -11062,6 +11168,7 @@ INSERT INTO `sys_logininfor` VALUES (2064270542350946305, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2064320510401167361, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '1', '验证码错误', '2026-06-09 20:15:38');
 INSERT INTO `sys_logininfor` VALUES (2064320526645706753, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-09 20:15:41');
 INSERT INTO `sys_logininfor` VALUES (2064362570927718401, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-09 23:02:46');
+INSERT INTO `sys_logininfor` VALUES (2065068838353010690, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-11 21:49:13');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -11673,6 +11780,27 @@ INSERT INTO `sys_oper_log` VALUES (2064332439324704769, '000000', 'OSS对象存�
 INSERT INTO `sys_oper_log` VALUES (2064333011331301378, '000000', '用户头像', 2, 'com.nexus.system.controller.system.SysProfileController.avatar()', 'POST', 1, 'admin', '研发部门', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '', 1, '上传文件失败，请检查配置信息:[The service request was not made within 120 seconds of doBlockingWrite being invoked. Make sure to invoke the service request BEFORE invoking doBlockingWrite if your caller is single-threaded.]', '2026-06-09 21:05:18', 120005);
 INSERT INTO `sys_oper_log` VALUES (2064333059666460673, '000000', '对象存储配置', 2, 'com.nexus.system.controller.system.SysOssConfigController.edit()', 'PUT', 1, 'admin', '研发部门', '/resource/oss/config', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"ossConfigId\":1,\"configKey\":\"minio\",\"accessKey\":\"minio\",\"secretKey\":\"minio123\",\"bucketName\":\"ruoyi\",\"prefix\":\"\",\"endpoint\":\"127.0.0.1:9005\",\"domain\":\"\",\"isHttps\":\"N\",\"status\":\"0\",\"region\":\"\",\"ext1\":\"\",\"remark\":\"\",\"accessPolicy\":\"0\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-09 21:05:30', 8);
 INSERT INTO `sys_oper_log` VALUES (2064333187571761154, '000000', '用户头像', 2, 'com.nexus.system.controller.system.SysProfileController.avatar()', 'POST', 1, 'admin', '研发部门', '/system/user/profile/avatar', '127.0.0.1', '内网IP', '', '', 1, '上传文件失败，请检查配置信息:[The service request was not made within 120 seconds of doBlockingWrite being invoked. Make sure to invoke the service request BEFORE invoking doBlockingWrite if your caller is single-threaded.]', '2026-06-09 21:06:00', 120008);
+INSERT INTO `sys_oper_log` VALUES (2065070016407175169, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":1,\"name\":\"DeepSeek\",\"apiHost\":\"https://api.deepseek.com\",\"apiKey\":\"sk-2b5c94a2083942b1aa16449c7253039b\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 21:53:54', 75);
+INSERT INTO `sys_oper_log` VALUES (2065085421305634818, '000000', 'AI知识库管理', 1, 'com.nexus.ai.controller.AiKnowledgeController.add()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":null,\"knowledgeName\":\"ERP知识库\",\"description\":null,\"embeddingModel\":null,\"vectorStore\":\"inmemory\",\"status\":\"1\",\"separator\":\"#\",\"overlapChar\":30,\"textBlockSize\":500,\"retrieveLimit\":5,\"similarityThreshold\":0.5,\"enableRerank\":0,\"rerankModel\":null,\"enableHybrid\":0,\"hybridAlpha\":0.5,\"systemPrompt\":null,\"ids\":null}', '', 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near \'separator, overlap_char, text_block_size, retrieve_limit, similarity_threshold, \' at line 1\r\n### The error may exist in com/nexus/common/ai/mapper/AiKnowledgeMapper.java (best guess)\r\n### The error may involve com.nexus.common.ai.mapper.AiKnowledgeMapper.insert-Inline\r\n### The error occurred while setting parameters\r\n### SQL: INSERT INTO ai_knowledge (id, knowledge_name, vector_store, status, separator, overlap_char, text_block_size, retrieve_limit, similarity_threshold, enable_rerank, enable_hybrid, hybrid_alpha, create_dept, create_by, create_time, update_by, update_time, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'000000\')\r\n### Cause: java.sql.SQLSyntaxErrorException: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near \'separator, overlap_char, text_block_size, retrieve_limit, similarity_threshold, \' at line 1\n; bad SQL grammar []', '2026-06-11 22:55:07', 61);
+INSERT INTO `sys_oper_log` VALUES (2065085597122469890, '000000', 'AI知识库管理', 1, 'com.nexus.ai.controller.AiKnowledgeController.add()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":null,\"knowledgeName\":\"ERP知识库\",\"description\":\"测试\",\"embeddingModel\":\"测试\",\"vectorStore\":\"inmemory\",\"status\":\"1\",\"separator\":\"#\",\"overlapChar\":30,\"textBlockSize\":500,\"retrieveLimit\":5,\"similarityThreshold\":0.5,\"enableRerank\":0,\"rerankModel\":null,\"enableHybrid\":0,\"hybridAlpha\":0.5,\"systemPrompt\":null,\"ids\":null}', '', 1, '\r\n### Error updating database.  Cause: java.sql.SQLSyntaxErrorException: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near \'separator, overlap_char, text_block_size, retrieve_limit, similarity_threshold, \' at line 1\r\n### The error may exist in com/nexus/common/ai/mapper/AiKnowledgeMapper.java (best guess)\r\n### The error may involve com.nexus.common.ai.mapper.AiKnowledgeMapper.insert-Inline\r\n### The error occurred while setting parameters\r\n### SQL: INSERT INTO ai_knowledge (id, knowledge_name, description, embedding_model, vector_store, status, separator, overlap_char, text_block_size, retrieve_limit, similarity_threshold, enable_rerank, enable_hybrid, hybrid_alpha, create_dept, create_by, create_time, update_by, update_time, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'000000\')\r\n### Cause: java.sql.SQLSyntaxErrorException: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near \'separator, overlap_char, text_block_size, retrieve_limit, similarity_threshold, \' at line 1\n; bad SQL grammar []', '2026-06-11 22:55:48', 3);
+INSERT INTO `sys_oper_log` VALUES (2065090090702618625, '000000', 'AI知识库管理', 1, 'com.nexus.ai.controller.AiKnowledgeController.add()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":null,\"knowledgeName\":\"ERP知识库\",\"description\":\"测试\",\"embeddingModel\":\"测试\",\"vectorStore\":\"inmemory\",\"status\":\"1\",\"separator\":\"#\",\"overlapChar\":30,\"textBlockSize\":500,\"retrieveLimit\":5,\"similarityThreshold\":0.5,\"enableRerank\":0,\"rerankModel\":null,\"enableHybrid\":0,\"hybridAlpha\":0.5,\"systemPrompt\":null,\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 23:13:40', 57);
+INSERT INTO `sys_oper_log` VALUES (2065093168407396353, '000000', '对象存储配置', 2, 'com.nexus.system.controller.system.SysOssConfigController.edit()', 'PUT', 1, 'admin', '研发部门', '/resource/oss/config', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"ossConfigId\":1,\"configKey\":\"minio\",\"accessKey\":\"minio\",\"secretKey\":\"minio123\",\"bucketName\":\"ruoyi\",\"prefix\":\"\",\"endpoint\":\"127.0.0.1:9005\",\"domain\":\"\",\"isHttps\":\"N\",\"status\":\"0\",\"region\":\"\",\"ext1\":\"\",\"remark\":\"\",\"accessPolicy\":\"0\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 23:25:54', 20);
+INSERT INTO `sys_oper_log` VALUES (2065093247222562819, '000000', 'AI知识库文档上传', 1, 'com.nexus.ai.controller.AiKnowledgeController.uploadDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/upload/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":\"2065093247222562818\"}', 0, '', '2026-06-11 23:26:12', 331);
+INSERT INTO `sys_oper_log` VALUES (2065093366777004035, '000000', 'OSS对象存储', 1, 'com.nexus.system.controller.system.SysOssController.upload()', 'POST', 1, 'admin', '研发部门', '/resource/oss/upload', '127.0.0.1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"url\":\"http://127.0.0.1:9005/ruoyi/2026/06/11/2972fda6b86e47fc86495ec01e7a8b23.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260611T152640Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260611%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=be90abef8cde8cf4a2b8bbc7fadbd2e22ff7b5b029856780ae38dfe9df9afd65\",\"fileName\":\"对话结果.png\",\"ossId\":\"2065093366777004034\"}}', 0, '', '2026-06-11 23:26:41', 26);
+INSERT INTO `sys_oper_log` VALUES (2065093406828412929, '000000', 'OSS对象存储', 3, 'com.nexus.system.controller.system.SysOssController.remove()', 'DELETE', 1, 'admin', '研发部门', '/resource/oss/2065093366777004034', '127.0.0.1', '内网IP', '[\"2065093366777004034\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 23:26:50', 21);
+INSERT INTO `sys_oper_log` VALUES (2065094384264835073, '000000', 'AI知识库文档管理', 3, 'com.nexus.ai.controller.AiKnowledgeController.removeDocument()', 'DELETE', 1, 'admin', '研发部门', '/ai/knowledge/document/2065093247222562818', '127.0.0.1', '内网IP', '[\"2065093247222562818\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 23:30:43', 37);
+INSERT INTO `sys_oper_log` VALUES (2065094435338874882, '000000', 'AI知识库文档上传', 1, 'com.nexus.ai.controller.AiKnowledgeController.uploadDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/upload/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":\"2065094435338874881\"}', 0, '', '2026-06-11 23:30:56', 1040);
+INSERT INTO `sys_oper_log` VALUES (2065097922827153409, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":2,\"name\":\"本地Ollama\",\"apiHost\":\"http://localhost:11434\",\"apiKey\":\"81a1bb9589164dcb861f2a3a027aa6ec.nsQ25x2erSu-6l1ItAb2532l\",\"providerType\":\"OLLAMA\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 23:44:47', 71);
+INSERT INTO `sys_oper_log` VALUES (2065098107921788930, '000000', 'AI模型管理', 2, 'com.nexus.ai.controller.AiModelController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/model', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"providerId\":2,\"modelName\":\"Qwen3-Embedding-0.6B:Q8_0\",\"displayName\":\"Qwen3-Embedding-0.6B-Q8\",\"modelType\":\"EMBEDDING\",\"maxTokens\":2048,\"temperature\":\"0\",\"isDefault\":\"0\",\"status\":\"1\",\"ids\":null}', '{\"code\":500,\"msg\":\"操作失败\",\"data\":null}', 0, '', '2026-06-11 23:45:31', 12);
+INSERT INTO `sys_oper_log` VALUES (2065098191430381570, '000000', 'AI模型管理', 2, 'com.nexus.ai.controller.AiModelController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/model', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"providerId\":2,\"modelName\":\"Qwen3-Embedding-0.6B:Q8_0\",\"displayName\":\"Qwen3-Embedding-0.6B-Q8\",\"modelType\":\"EMBEDDING\",\"maxTokens\":2048,\"temperature\":\"0\",\"isDefault\":\"0\",\"status\":\"1\",\"ids\":null}', '{\"code\":500,\"msg\":\"操作失败\",\"data\":null}', 0, '', '2026-06-11 23:45:51', 3);
+INSERT INTO `sys_oper_log` VALUES (2065098412906409986, '000000', 'AI知识库管理', 2, 'com.nexus.ai.controller.AiKnowledgeController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/knowledge', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2065090090526457857\",\"knowledgeName\":\"ERP知识库\",\"description\":\"测试\",\"embeddingModel\":\"Qwen3-Embedding-0.6B:Q8_0\",\"vectorStore\":\"inmemory\",\"status\":\"1\",\"separator\":\"#\",\"overlapChar\":30,\"textBlockSize\":500,\"retrieveLimit\":5,\"similarityThreshold\":0.5,\"enableRerank\":0,\"rerankModel\":null,\"enableHybrid\":0,\"hybridAlpha\":0.5,\"systemPrompt\":null,\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 23:46:44', 15);
+INSERT INTO `sys_oper_log` VALUES (2065100620645429250, '000000', 'AI知识库文档管理', 3, 'com.nexus.ai.controller.AiKnowledgeController.removeDocument()', 'DELETE', 1, 'admin', '研发部门', '/ai/knowledge/document/2065094435338874881', '127.0.0.1', '内网IP', '[\"2065094435338874881\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-11 23:55:30', 6);
+INSERT INTO `sys_oper_log` VALUES (2065100636642504706, '000000', 'AI知识库文档上传', 1, 'com.nexus.ai.controller.AiKnowledgeController.uploadDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/upload/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":\"2065100636642504705\"}', 0, '', '2026-06-11 23:55:34', 15);
+INSERT INTO `sys_oper_log` VALUES (2065102859078377474, '000000', 'AI知识库文档重试', 2, 'com.nexus.ai.controller.AiKnowledgeController.retryDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/retry/2065100636642504705', '127.0.0.1', '内网IP', '\"2065100636642504705\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-12 00:04:24', 88);
+INSERT INTO `sys_oper_log` VALUES (2065103065551380481, '000000', 'AI知识库文档管理', 3, 'com.nexus.ai.controller.AiKnowledgeController.removeDocument()', 'DELETE', 1, 'admin', '研发部门', '/ai/knowledge/document/2065100636642504705', '127.0.0.1', '内网IP', '[\"2065100636642504705\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-12 00:05:13', 24);
+INSERT INTO `sys_oper_log` VALUES (2065103085960863745, '000000', 'AI知识库管理', 2, 'com.nexus.ai.controller.AiKnowledgeController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/knowledge', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2065090090526457857\",\"knowledgeName\":\"ERP知识库\",\"description\":\"测试\",\"embeddingModel\":\"Qwen3-Embedding-0.6B:Q8_0\",\"vectorStore\":\"inmemory\",\"status\":\"1\",\"separator\":\"#\",\"overlapChar\":30,\"textBlockSize\":500,\"retrieveLimit\":5,\"similarityThreshold\":0.5,\"enableRerank\":0,\"rerankModel\":null,\"enableHybrid\":0,\"hybridAlpha\":0.5,\"systemPrompt\":null,\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-12 00:05:18', 25);
+INSERT INTO `sys_oper_log` VALUES (2065103110631759874, '000000', 'AI知识库文档上传', 1, 'com.nexus.ai.controller.AiKnowledgeController.uploadDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/upload/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":\"2065103110631759873\"}', 0, '', '2026-06-12 00:05:24', 119);
+INSERT INTO `sys_oper_log` VALUES (2065105409940905986, '000000', 'AI知识库文档重试', 2, 'com.nexus.ai.controller.AiKnowledgeController.retryDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/retry/2065103110631759873', '127.0.0.1', '内网IP', '\"2065103110631759873\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-12 00:14:32', 32);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -11732,7 +11860,7 @@ CREATE TABLE `sys_oss_config`  (
 -- ----------------------------
 -- Records of sys_oss_config
 -- ----------------------------
-INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'minio', 'minio123', 'ruoyi', '', '127.0.0.1:9005', '', 'N', '', '0', '0', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-06-09 21:05:30', '');
+INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'minio', 'minio123', 'ruoyi', '', '127.0.0.1:9005', '', 'N', '', '0', '0', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-06-11 23:25:54', '');
 INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi-1240000000', '', 'cos.ap-beijing.myqcloud.com', '', 'N', 'ap-beijing', '1', '1', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', NULL);
@@ -12188,7 +12316,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-09 23:02:46', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-09 23:02:46', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-11 21:49:13', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-11 21:49:13', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '127.0.0.1', '2026-06-08 23:52:52', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-08 23:52:52', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 1, '2025-10-23 17:03:16', 1, '2025-12-17 15:40:54', '耳朵聋');

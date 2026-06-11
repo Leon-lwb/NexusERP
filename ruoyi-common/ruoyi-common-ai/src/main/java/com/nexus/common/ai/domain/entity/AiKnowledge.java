@@ -1,5 +1,6 @@
 package com.nexus.common.ai.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
@@ -40,7 +41,8 @@ public class AiKnowledge extends BaseEntity {
     /** 状态（1正常 0停用） */
     private String status;
 
-    /** 知识分隔符 */
+    /** 知识分隔符（MySQL 保留关键字，需反引号转义） */
+    @TableField("`separator`")
     private String separator;
 
     /** 重叠字符数 */

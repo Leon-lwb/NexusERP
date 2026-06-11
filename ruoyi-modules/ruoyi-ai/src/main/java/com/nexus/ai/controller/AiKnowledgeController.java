@@ -185,8 +185,9 @@ public class AiKnowledgeController extends BaseController {
     /**
      * 知识库检索测试
      * <p>权限标识：{@code ai:knowledge:query}</p>
+     * <p>支持参数覆盖：topK、threshold、enableRerank、rerankModel、enableHybrid、hybridAlpha</p>
      *
-     * @param params 请求参数，包含 knowledgeId（知识库ID）和 query（查询文本）
+     * @param params 请求参数，包含 knowledgeId（知识库ID）、query（查询文本）及可选覆盖参数
      * @return 检索到的片段内容列表
      */
     @SaCheckPermission("ai:knowledge:query")
@@ -194,7 +195,7 @@ public class AiKnowledgeController extends BaseController {
     public R<List<String>> retrieval(@RequestBody java.util.Map<String, Object> params) {
         Long knowledgeId = Long.valueOf(params.get("knowledgeId").toString());
         String query = params.get("query").toString();
-        return R.ok(retrieverService.retrieve(knowledgeId, query));
+        return R.ok(retrieverService.retrieve(knowledgeId, query, params));
     }
 
     // ==================== 片段管理 ====================

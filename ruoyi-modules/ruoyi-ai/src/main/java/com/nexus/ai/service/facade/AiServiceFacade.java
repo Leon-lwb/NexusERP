@@ -145,9 +145,25 @@ public class AiServiceFacade {
         }
         final Long finalSessionId = sessionId;
 
-        // 5. 智能路由：判断走 Agent 编排、RAG 增强还是普通流式对话
-        boolean needAgent = containsDataQueryKeywords(request.getContent());
-        boolean needRag = request.getKnowledgeId() != null || (!needAgent && containsRagKeywords(request.getContent()));
+        // 5. 智能路由：前端显式指定模式 或 后端根据关键词自动判断
+        boolean needAgent;
+        boolean needRag;
+
+        String mode = request.getMode();
+        if ("agent".equalsIgnoreCase(mode)) {
+            needAgent = true;
+            needRag = false;
+        } else if ("rag".equalsIgnoreCase(mode)) {
+            needAgent = false;
+            needRag = true;
+        } else if ("chat".equalsIgnoreCase(mode)) {
+            needAgent = false;
+            needRag = false;
+        } else {
+            // auto 模式（默认）：根据关键词自动路由
+            needAgent = containsDataQueryKeywords(request.getContent());
+            needRag = request.getKnowledgeId() != null || (!needAgent && containsRagKeywords(request.getContent()));
+        }
 
         if (needAgent) {
             invokeWithAgent(modelConfig, request, userId, finalSessionId, tenantId);
@@ -288,6 +304,7 @@ public class AiServiceFacade {
     /**
      * Agent 编排模式：SupervisorAgent + 同步 ChatModel → 一次性推送结果
      * <p>SupervisorAgent 暂不支持流式回调，结果完成后一次性推送</p>
+     * <p>SubAgent 不使用持久化记忆（参考 ruoyi-ai 做法），避免工具调用中间结果膨胀上下文导致 Agent 混乱</p>
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
                                  Long userId, Long sessionId, Long tenantId) {
@@ -297,35 +314,26 @@ public class AiServiceFacade {
         List<ChatMessage> history = persistentChatMemoryStore.getMessages(sessionId);
         String contextualQuery = buildContextualQuery(history, request.getContent());
 
-        // 为 SubAgent 配置基于 sessionId 的持久化记忆，确保工具调用链内部有上下文
+        // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
+        // 参考 ruoyi-ai 的 ChatServiceFacade：SupervisorAgent 的 chatMemoryProvider 被注释掉
         ErpQueryAgent queryAgent = AgenticServices.agentBuilder(ErpQueryAgent.class)
             .chatModel(chatModel)
-            .chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder()
-                .id(sessionId)
-                .maxMessages(20)
-                .chatMemoryStore(persistentChatMemoryStore)
-                .build())
             .tools(queryAllTablesTool, queryTableSchemaTool, executeSqlQueryTool,
                 erpInventoryTool, erpPurchaseTool, erpSalesTool, erpProductionTool)
             .build();
 
-        // 构建 ERP 报表 Agent
+        // 构建 ERP 报表 Agent（同样不使用持久化记忆）
         ErpReportAgent reportAgent = AgenticServices.agentBuilder(ErpReportAgent.class)
             .chatModel(chatModel)
-            .chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder()
-                .id(sessionId)
-                .maxMessages(20)
-                .chatMemoryStore(persistentChatMemoryStore)
-                .build())
             .tools(queryAllTablesTool, executeSqlQueryTool)
             .build();
 
-        // 构建 Supervisor
+        // 构建 Supervisor（增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数）
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
             .chatModel(chatModel)
             .subAgents(queryAgent, reportAgent)
             .responseStrategy(SupervisorResponseStrategy.LAST)
-            .maxAgentsInvocations(10)
+            .maxAgentsInvocations(20)
             .build();
 
         AiSseMessageHelper.sendThinking(userId);

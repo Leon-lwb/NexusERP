@@ -79,15 +79,15 @@ public class ExecuteSqlQueryTool {
             }
         }
 
-        // 3. 表名白名单校验
+        // 3. 表名白名单校验（动态查库，确保与实际 ERP 表一致）
         Matcher matcher = TABLE_NAME_PATTERN.matcher(cleanedSql);
         while (matcher.find()) {
             String tableName = matcher.group(1);
-            boolean allowed = aiProperties.getAllowedTablePrefixes().stream()
-                .anyMatch(tableName::startsWith);
-            if (!allowed) {
+            if (!isTableAllowed(tableName)) {
                 log.warn("[AI-SQL] 表名 '{}' 不在白名单中", tableName);
-                return "Error: Table '" + tableName + "' is not allowed. Only ERP business tables are permitted.";
+                return "Error: Table '" + tableName + "' does not exist or is not allowed. "
+                    + getAvailableTablesHint()
+                    + ". Please use an exact table name from this list.";
             }
         }
 
@@ -115,6 +115,54 @@ public class ExecuteSqlQueryTool {
         } catch (Exception e) {
             log.error("[AI-SQL] 执行 SQL 查询失败: {}", sql, e);
             return "Error: Query execution failed - " + e.getMessage();
+        }
+    }
+
+    /**
+     * 检查表名是否在白名单中
+     * <p>优先使用前缀匹配（配置项），如果前缀匹配失败则动态查库验证</p>
+     * <p>动态查库结果按表名缓存，避免每次查询都访问数据库</p>
+     *
+     * @param tableName 表名
+     * @return true 如果表名在白名单中
+     */
+    private boolean isTableAllowed(String tableName) {
+        // 1. 前缀匹配（快速路径）
+        boolean prefixMatch = aiProperties.getAllowedTablePrefixes().stream()
+            .anyMatch(tableName::startsWith);
+        if (prefixMatch) {
+            return true;
+        }
+
+        // 2. 动态查库验证（覆盖不在前缀白名单中但实际存在的 ERP 表）
+        try {
+            return erpQueryService.tableExists(tableName);
+        } catch (Exception e) {
+            log.warn("[AI-SQL] 动态查库验证失败，回退到前缀匹配: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 获取可用表名提示（包含前几条表名，帮助 Agent 直接选择正确的表）
+     *
+     * @return 包含可用表名列表的提示字符串
+     */
+    private String getAvailableTablesHint() {
+        try {
+            List<String> tables = erpQueryService.queryErpTables();
+            if (tables.isEmpty()) {
+                return "No ERP tables found in the database.";
+            }
+            StringBuilder hint = new StringBuilder("Available tables: ");
+            int limit = Math.min(tables.size(), 30);
+            hint.append(String.join(", ", tables.subList(0, limit)));
+            if (tables.size() > limit) {
+                hint.append(", ... (and ").append(tables.size() - limit).append(" more)");
+            }
+            return hint.toString();
+        } catch (Exception e) {
+            return "Please call queryAllTables to see available tables.";
         }
     }
 

@@ -4,6 +4,7 @@ import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.service.IAiModelService;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatModelFactory {
 
     private final IAiModelService aiModelService;
+    private final List<ChatModelListener> chatModelListeners;
 
     /** 同步模型缓存（key = modelId） */
     private final ConcurrentHashMap<Long, ChatModel> chatModelCache = new ConcurrentHashMap<>();
@@ -118,6 +121,7 @@ public class ChatModelFactory {
                 .modelName(config.getModelName())
                 .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
                 .maxTokens(config.getMaxTokens())
+                .listeners(chatModelListeners)
                 .build();
             default -> {
                 log.warn("[ChatModelFactory] 未知的 providerType: {}，回退到 OpenAI 兼容接口", providerType);
@@ -127,6 +131,7 @@ public class ChatModelFactory {
                     .modelName(config.getModelName())
                     .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
                     .maxTokens(config.getMaxTokens())
+                    .listeners(chatModelListeners)
                     .build();
             }
         };
@@ -159,6 +164,7 @@ public class ChatModelFactory {
                 .modelName(config.getModelName())
                 .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
                 .maxTokens(config.getMaxTokens())
+                .listeners(chatModelListeners)
                 .build();
             default -> {
                 log.warn("[ChatModelFactory] 未知的 providerType: {}，回退到 OpenAI 兼容接口", providerType);
@@ -168,6 +174,7 @@ public class ChatModelFactory {
                     .modelName(config.getModelName())
                     .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
                     .maxTokens(config.getMaxTokens())
+                    .listeners(chatModelListeners)
                     .build();
             }
         };

@@ -73,11 +73,19 @@
 
         <!-- 输入区域 -->
         <div class="input-area">
+          <div class="mode-selector">
+            <el-radio-group v-model="chatMode" size="small">
+              <el-radio-button label="auto">自动</el-radio-button>
+              <el-radio-button label="chat">对话</el-radio-button>
+              <el-radio-button label="agent">数据查询</el-radio-button>
+              <el-radio-button label="rag">知识库</el-radio-button>
+            </el-radio-group>
+          </div>
           <el-input
             v-model="inputText"
             type="textarea"
             :rows="3"
-            placeholder="输入问题，如：查询本月采购订单总金额、展示各仓库库存分布..."
+            :placeholder="modePlaceholder"
             @keydown.enter.exact.prevent="sendMessage"
             :disabled="loading"
           />
@@ -117,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
 import { marked } from 'marked'
@@ -138,6 +146,17 @@ const sessionLoading = ref(false)
 const messageListRef = ref<HTMLElement>()
 const sessions = ref<AiSession[]>([])
 const currentSessionId = ref<number | string | null>(null)
+const chatMode = ref('auto')
+
+/** 根据当前模式显示不同的输入提示 */
+const modePlaceholder = computed(() => {
+  switch (chatMode.value) {
+    case 'agent': return '输入数据查询需求，如：查询本月采购订单总金额'
+    case 'rag': return '输入知识检索问题，如：如何创建采购订单'
+    case 'chat': return '输入任意问题，与 AI 自由对话'
+    default: return '输入问题，AI 将自动选择最佳模式'
+  }
+})
 
 /** 右键菜单状态 */
 const contextMenu = ref({ visible: false, x: 0, y: 0, session: null as AiSession | null })
@@ -287,7 +306,11 @@ async function sendMessage() {
   scrollToBottom()
 
   try {
-    const res = await sendAiMessage({ content: text, sessionId: currentSessionId.value ?? undefined })
+    const res = await sendAiMessage({
+      content: text,
+      sessionId: currentSessionId.value ?? undefined,
+      mode: chatMode.value === 'auto' ? undefined : chatMode.value
+    })
     console.log('[AI] 发送消息响应:', res)
     // 后端返回 sessionId（新会话时为新 ID）
     const sid = res?.data ?? res
@@ -629,7 +652,26 @@ onUnmounted(() => {
 
 .input-area {
   border-top: 1px solid #e4e7ed;
-  padding: 16px 20px;
+  padding: 12px 20px 16px;
+
+  .mode-selector {
+    margin-bottom: 10px;
+
+    :deep(.el-radio-group) {
+      display: flex;
+      width: 100%;
+    }
+
+    :deep(.el-radio-button) {
+      flex: 1;
+
+      .el-radio-button__inner {
+        width: 100%;
+        font-size: 12px;
+        padding: 5px 0;
+      }
+    }
+  }
 
   .el-textarea {
     margin-bottom: 12px;

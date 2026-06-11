@@ -9,6 +9,7 @@ import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.oss.entity.UploadResult;
 import com.nexus.common.oss.factory.OssFactory;
+import com.nexus.common.oss.core.OssClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,9 +111,9 @@ public class KnowledgeProcessService {
                 throw new IllegalStateException("文档不存在: " + documentId);
             }
 
-            // 1. 从 OSS 下载文件并解析
+            // 1. 从 OSS 下载文件并解析（通过 MinIO Client 直接读取，避免私有桶 403）
             String content;
-            try (InputStream inputStream = new URL(document.getFilePath()).openStream()) {
+            try (InputStream inputStream = OssFactory.instance().getObjectContent(document.getFilePath())) {
                 content = documentParserService.parse(inputStream, document.getFileName());
             }
 
@@ -122,11 +122,12 @@ public class KnowledgeProcessService {
                 return;
             }
 
-            // 2. 获取知识库配置用于分段
+            // 2. 获取知识库配置用于分段和向量化
             var knowledgeVo = aiKnowledgeService.selectById(knowledgeId);
             Integer textBlockSize = knowledgeVo != null ? knowledgeVo.getTextBlockSize() : null;
             Integer overlapChar = knowledgeVo != null ? knowledgeVo.getOverlapChar() : null;
             String separator = knowledgeVo != null ? knowledgeVo.getSeparator() : null;
+            String embeddingModel = knowledgeVo != null ? knowledgeVo.getEmbeddingModel() : null;
 
             // 3. 分段（使用知识库配置参数）
             List<ChunkingService.ChunkResult> chunks = chunkingService.split(content, textBlockSize, overlapChar, separator);
@@ -147,8 +148,8 @@ public class KnowledgeProcessService {
                 chunkEntities.add(chunkEntity);
             }
 
-            // 5. 向量化并存储
-            List<String> vectorIds = vectorStoreService.storeChunks(knowledgeId, chunkEntities);
+            // 5. 向量化并存储（使用知识库指定的 Embedding 模型）
+            List<String> vectorIds = vectorStoreService.storeChunks(knowledgeId, chunkEntities, embeddingModel);
 
             // 6. 更新文档状态
             AiKnowledgeDocument updateDoc = new AiKnowledgeDocument();

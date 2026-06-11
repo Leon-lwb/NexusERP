@@ -1,6 +1,6 @@
-# NexusERP AI 开发计划（优化版 v3）
+# NexusERP AI 开发计划（优化版 v4）
 
-> **优化说明**：本版在 v2 修订版基础上，通过深度代码验证发现了 **8 处新 Bug**（含 2 处严重），并补全了 v2 中省略的 Phase 3-6 完整内容。主要新增修正：SSE API 调用方式完全错误、ExecuteSqlQueryTool 数据源指向错误、SseMessageDto 误改框架类、缺少 AI 专用线程池、ChatModelFactory 缺少缓存等。
+> **优化说明**：本版在 v3 基础上，完成第四周开发任务（修复补齐 + 重排序集成），新增 9 处修正（含 1 处严重）。主要变更：Milvus 精确删除实现、RerankService 并行打分+ChatModelFactory复用、EmbeddingService 策略模式重构、可观测性监听器增强、前端检索测试面板参数化。
 
 ---
 
@@ -1951,3 +1951,17 @@ spring:
 | ECharts 安全 | 未提及 | LLM 生成的 ECharts JSON 可能包含恶意 JS，新增安全过滤提示 | 低 |
 | 表名白名单实现 | 注释"使用正则提取"但无代码 | 提供完整正则 `TABLE_NAME_PATTERN` + 校验逻辑 | 低 |
 | ai_message.token_usage | INT 类型 | 改为 BIGINT，避免长对话 Token 统计溢出 | 低 |
+
+## 附录 C：修订记录（v3→v4）
+
+| 修订项 | v3 内容 | v4 修正 | 严重度 |
+|--------|---------|---------|--------|
+| Milvus 精确删除 | `deleteByDocumentId()` 仅打印日志，注释"不支持按元数据条件删除" | 参考 ruoyi-ai 的 `MilvusVectorStoreStrategy.removeByDocId()`，使用 `MetadataFilterBuilder.metadataKey("documentId").isEqualTo()` + `store.removeAll(filter)` 实现精确删除 | 严重 |
+| RerankService 每次新建 ChatModel | 计划中 `rerankWithLLM()` 每次调用 `OpenAiChatModel.builder().build()` | 改为复用 `ChatModelFactory.getChatModel(modelId)` 的缓存机制 | 中等 |
+| RerankService 无并发控制 | 计划中串行调用 LLM 打分 | 改为并行打分（CompletableFuture + aiExecutor）+ orTimeout(5s) + 候选数限制15 | 中等 |
+| 前端检索结果渲染类型不匹配 | 模板使用 `item.score`/`item.content`，但后端返回 `List<String>` | 修复为 `typeof item === 'string' ? item : item.content`，移除不存在的 score 显示 | 中等 |
+| RetrieverService 重复代码 | `retrieve(knowledgeId, query)` 和 `retrieve(knowledgeId, query, overrides)` 逻辑完全重复 | 提取公共方法，`retrieve(knowledgeId, query)` 委托给 `retrieve(knowledgeId, query, null)` | 低 |
+| EmbeddingService 策略模式 | switch 分支路由，扩展新厂商需改代码 | 重构为 EmbeddingProvider 接口 + EmbeddingProviderFactory 工厂，扩展只需新增实现类 | 低 |
+| 可观测性监听器 | 仅有 AiAgentListener 内存统计（手动调用） | 新增 AiChatModelListener/AiEmbeddingModelListener/AiToolExecutedListener，通过 LangChain4j 原生接口自动回调 | 低 |
+| ChatModelFactory 缺少监听器 | 构建 ChatModel 时未注入 ChatModelListener | 注入 `List<ChatModelListener>`，OpenAI 模型构建器传入 `.listeners()` | 低 |
+| 第四周计划 Milvus API 用错 | 计划用 `Filter.builder().eq()` | 实际应用 `MetadataFilterBuilder.metadataKey().isEqualTo()` | 低 |
