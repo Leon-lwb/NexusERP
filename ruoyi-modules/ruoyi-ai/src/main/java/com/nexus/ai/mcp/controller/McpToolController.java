@@ -1,6 +1,7 @@
 package com.nexus.ai.mcp.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.nexus.ai.mcp.dto.McpToolTestResult;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.ai.mcp.service.McpToolServiceImpl;
 import com.nexus.common.core.domain.R;
@@ -96,5 +97,14 @@ public class McpToolController {
     public R<Void> sync() {
         mcpToolService.syncBuiltinTools();
         return R.ok();
+    }
+
+    /**
+     * 测试工具连接
+     */
+    @SaCheckPermission("ai:mcp:query")
+    @PostMapping("/{id}/test")
+    public R<McpToolTestResult> test(@PathVariable Long id) {
+        return R.ok(mcpToolService.testTool(id));
     }
 }

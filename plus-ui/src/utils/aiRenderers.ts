@@ -9,6 +9,28 @@ import { Renderer } from 'marked'
 const ECHARTS_KEY_FIELDS = ['xAxis', 'yAxis', 'series', 'title', 'legend', 'gauge', 'pie', 'radar', 'geo']
 
 /**
+ * HTML 净化：移除危险的 HTML 标签和属性，防止 XSS 攻击
+ * @param html 原始 HTML 字符串
+ * @returns 净化后的 HTML
+ */
+export function sanitizeHtml(html: string): string {
+  if (!html) return ''
+  return html
+    // 移除 script 标签及内容
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // 移除 iframe 标签
+    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, '')
+    // 移除 object/embed 标签
+    .replace(/<(object|embed|applet|form|input|textarea|select|button)\b[^>]*>.*?<\/\1>/gi, '')
+    // 移除所有 on* 事件属性
+    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    // 移除 javascript: 协议
+    .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
+    // 移除 style 中的 expression/url
+    .replace(/style\s*=\s*(?:"[^"]*expression\([^"]*"|'[^']*expression\([^']*')/gi, '')
+}
+
+/**
  * 检测代码内容是否为 ECharts 配置
  * @param code 代码内容
  * @param language 代码语言

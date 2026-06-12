@@ -1,6 +1,7 @@
 package com.nexus.ai.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.dto.AiChatRequest;
@@ -119,6 +120,36 @@ public class AiChatController {
             return R.fail("无权修改该会话");
         }
         aiSessionService.updateTitle(session.getId(), session.getTitle());
+        return R.ok();
+    }
+
+    /**
+     * 消息反馈（点赞/点踩）
+     *
+     * @param messageId 消息ID
+     * @param feedback  反馈类型：LIKE / DISLIKE / NONE（取消反馈）
+     * @return 操作结果
+     */
+    @PutMapping("/message/{messageId}/feedback")
+    public R<Void> feedback(@PathVariable Long messageId, @RequestParam String feedback) {
+        if (!"LIKE".equals(feedback) && !"DISLIKE".equals(feedback) && !"NONE".equals(feedback)) {
+            return R.fail("参数错误：feedback 必须为 LIKE/DISLIKE/NONE");
+        }
+        // 校验消息归属：只能反馈自己会话中的消息
+        Long userId = LoginHelper.getUserId();
+        AiMessage message = aiMessageMapper.selectById(messageId);
+        if (message == null) {
+            return R.fail("消息不存在");
+        }
+        AiSession session = aiSessionService.selectById(message.getSessionId());
+        if (session == null || !session.getUserId().equals(userId)) {
+            return R.fail("无权操作该消息");
+        }
+        // 更新反馈（使用 UpdateWrapper 确保 null 值能写入数据库，绕过 NOT_NULL 策略）
+        LambdaUpdateWrapper<AiMessage> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(AiMessage::getId, messageId)
+            .set(AiMessage::getFeedback, "NONE".equals(feedback) ? null : feedback);
+        aiMessageMapper.update(null, updateWrapper);
         return R.ok();
     }
 

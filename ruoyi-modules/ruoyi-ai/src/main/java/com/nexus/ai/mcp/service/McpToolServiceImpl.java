@@ -3,6 +3,7 @@ package com.nexus.ai.mcp.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.ai.mcp.BuiltinToolProvider;
 import com.nexus.ai.mcp.BuiltinToolRegistry;
+import com.nexus.ai.mcp.dto.McpToolTestResult;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.List;
 
 /**
  * MCP 工具服务实现
- * <p>提供工具 CRUD 和同步内置工具到数据库的功能</p>
+ * <p>提供工具 CRUD、同步内置工具到数据库、工具测试连接等功能</p>
  *
  * @author NexusERP
  */
@@ -25,6 +26,7 @@ public class McpToolServiceImpl {
 
     private final AiToolMapper aiToolMapper;
     private final BuiltinToolRegistry builtinToolRegistry;
+    private final McpClientManager mcpClientManager;
 
     /**
      * 查询所有启用的工具
@@ -62,7 +64,12 @@ public class McpToolServiceImpl {
      */
     @Transactional
     public int updateTool(AiTool tool) {
-        return aiToolMapper.updateById(tool);
+        int result = aiToolMapper.updateById(tool);
+        // 如果是 MCP 外部工具且配置变更，刷新连接
+        if (!BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
+            mcpClientManager.refreshClient(tool.getId());
+        }
+        return result;
     }
 
     /**
@@ -70,7 +77,21 @@ public class McpToolServiceImpl {
      */
     @Transactional
     public int deleteTools(List<Long> ids) {
-        return aiToolMapper.deleteBatchIds(ids);
+        // 过滤掉内置工具（不允许删除）
+        List<Long> deletableIds = ids.stream()
+            .filter(id -> {
+                AiTool tool = aiToolMapper.selectById(id);
+                return tool == null || !BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType());
+            })
+            .toList();
+
+        if (deletableIds.isEmpty()) {
+            return 0;
+        }
+
+        // 刷新 MCP 连接
+        deletableIds.forEach(id -> mcpClientManager.refreshClient(id));
+        return aiToolMapper.deleteBatchIds(deletableIds);
     }
 
     /**
@@ -81,7 +102,29 @@ public class McpToolServiceImpl {
         AiTool tool = new AiTool();
         tool.setId(id);
         tool.setStatus(status);
-        return aiToolMapper.updateById(tool);
+        int result = aiToolMapper.updateById(tool);
+        // 刷新 MCP 连接
+        mcpClientManager.refreshClient(id);
+        return result;
+    }
+
+    /**
+     * 测试工具连接
+     *
+     * @param id 工具ID
+     * @return 测试结果
+     */
+    public McpToolTestResult testTool(Long id) {
+        AiTool tool = aiToolMapper.selectById(id);
+        if (tool == null) {
+            return McpToolTestResult.fail("工具不存在");
+        }
+
+        if (BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
+            return testBuiltinTool(tool);
+        } else {
+            return testMcpTool(tool);
+        }
     }
 
     /**
@@ -130,5 +173,53 @@ public class McpToolServiceImpl {
         }
 
         log.info("[MCP] 内置工具同步完成: 新增 {} 个, 已存在 {} 个", addedCount, existingCount);
+    }
+
+    // ==================== 私有方法 ====================
+
+    /**
+     * 测试内置工具
+     */
+    private McpToolTestResult testBuiltinTool(AiTool tool) {
+        try {
+            boolean isRegistered = builtinToolRegistry.hasTool(tool.getToolName());
+            if (isRegistered) {
+                return McpToolTestResult.success(
+                    String.format("内置工具 [%s] 已注册，可正常使用", tool.getToolName()),
+                    1,
+                    List.of(tool.getToolName())
+                );
+            } else {
+                return McpToolTestResult.fail(
+                    String.format("内置工具 [%s] 未在注册表中找到", tool.getToolName())
+                );
+            }
+        } catch (Exception e) {
+            log.error("[MCP] 测试内置工具失败: {} - {}", tool.getToolName(), e.getMessage());
+            return McpToolTestResult.fail("测试失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 测试 MCP 外部工具连接
+     */
+    private McpToolTestResult testMcpTool(AiTool tool) {
+        try {
+            boolean isHealthy = mcpClientManager.checkToolHealth(tool.getId());
+            if (isHealthy) {
+                return McpToolTestResult.success(
+                    String.format("MCP工具 [%s] 连接测试成功", tool.getToolName()),
+                    1,
+                    List.of(tool.getToolName())
+                );
+            } else {
+                return McpToolTestResult.fail(
+                    String.format("MCP工具 [%s] 连接测试失败", tool.getToolName())
+                );
+            }
+        } catch (Exception e) {
+            log.error("[MCP] 测试MCP工具失败: {} - {}", tool.getToolName(), e.getMessage());
+            return McpToolTestResult.fail("测试失败: " + e.getMessage());
+        }
     }
 }

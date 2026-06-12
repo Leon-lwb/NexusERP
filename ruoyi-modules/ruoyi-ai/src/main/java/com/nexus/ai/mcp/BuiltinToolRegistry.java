@@ -1,10 +1,15 @@
 package com.nexus.ai.mcp;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.common.ai.domain.entity.AiTool;
+import com.nexus.common.ai.mapper.AiToolMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 内置工具注册中心
  * <p>
  * 自动发现并注册所有实现 {@link BuiltinToolProvider} 接口的工具。
- * 仅存储工具元数据（名称、描述），用于数据库同步和 UI 展示。
- * 不通过 newInstance() 创建工具实例，避免依赖注入 NPE 问题。
+ * 存储工具元数据（名称、描述、Class），用于数据库同步、UI 展示和运行时动态获取工具实例。
  * </p>
  *
  * @author NexusERP
@@ -28,6 +32,8 @@ public class BuiltinToolRegistry {
     public static final String TYPE_BUILTIN = "BUILTIN";
 
     private final List<BuiltinToolProvider> toolProviders;
+    private final AiToolMapper aiToolMapper;
+    private final ApplicationContext applicationContext;
 
     private final Map<String, BuiltinToolProvider> registeredProviders = new ConcurrentHashMap<>();
 
@@ -71,5 +77,54 @@ public class BuiltinToolRegistry {
      */
     public int getToolCount() {
         return registeredProviders.size();
+    }
+
+    /**
+     * 获取所有已启用的内置工具对象
+     * <p>
+     * 根据 ai_tool 表的 status 字段过滤，只返回 ENABLED 状态的工具 Bean 实例。
+     * 这些对象包含 @Tool 注解的方法，可直接用于 AgenticServices.tools()。
+     * </p>
+     *
+     * @return 已启用的内置工具对象列表
+     */
+    public List<Object> getEnabledBuiltinToolObjects() {
+        // 查询所有已启用的 BUILTIN 类型工具
+        List<AiTool> enabledTools = aiToolMapper.selectList(
+            new LambdaQueryWrapper<AiTool>()
+                .eq(AiTool::getToolType, TYPE_BUILTIN)
+                .eq(AiTool::getStatus, "ENABLED")
+        );
+
+        List<Object> toolObjects = new ArrayList<>();
+        for (AiTool tool : enabledTools) {
+            BuiltinToolProvider provider = registeredProviders.get(tool.getToolName());
+            if (provider != null) {
+                try {
+                    Object toolBean = applicationContext.getBean(provider.getToolClass());
+                    toolObjects.add(toolBean);
+                } catch (Exception e) {
+                    log.warn("[MCP] 获取工具 Bean 失败: toolName={}, error={}", tool.getToolName(), e.getMessage());
+                }
+            }
+        }
+        return toolObjects;
+    }
+
+    /**
+     * 获取所有内置工具对象（不过滤状态）
+     * <p>用于全量加载场景</p>
+     */
+    public List<Object> getAllBuiltinToolObjects() {
+        List<Object> toolObjects = new ArrayList<>();
+        for (BuiltinToolProvider provider : registeredProviders.values()) {
+            try {
+                Object toolBean = applicationContext.getBean(provider.getToolClass());
+                toolObjects.add(toolBean);
+            } catch (Exception e) {
+                log.warn("[MCP] 获取工具 Bean 失败: toolName={}, error={}", provider.getToolName(), e.getMessage());
+            }
+        }
+        return toolObjects;
     }
 }

@@ -36,6 +36,12 @@ public class AiSseMessageHelper {
     public static final String TYPE_ERROR = "AI_ERROR";
     /** ECharts 图表配置 */
     public static final String TYPE_CHART = "AI_CHART";
+    /** Agent 工具调用开始 */
+    public static final String TYPE_TOOL_START = "AI_TOOL_START";
+    /** Agent 工具调用完成 */
+    public static final String TYPE_TOOL_END = "AI_TOOL_END";
+    /** Agent 思考过程 */
+    public static final String TYPE_AGENT_THINKING = "AI_AGENT_THINKING";
 
     /**
      * 发送 AI 回复内容（完整替换模式，用于 Agent 一次性结果）
@@ -93,6 +99,62 @@ public class AiSseMessageHelper {
      */
     public static void sendChart(Long userId, String chartJson) {
         send(userId, TYPE_CHART, chartJson);
+    }
+
+    /**
+     * 发送 Agent 工具调用开始事件
+     *
+     * @param userId   目标用户ID
+     * @param toolName 工具名称
+     * @param args     工具参数（JSON 字符串）
+     */
+    public static void sendToolStart(Long userId, String toolName, String args) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("toolName", toolName);
+            payload.put("arguments", args);
+            send(userId, TYPE_TOOL_START, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送工具开始事件失败", e);
+        }
+    }
+
+    /**
+     * 发送 Agent 工具调用完成事件
+     *
+     * @param userId         目标用户ID
+     * @param toolName       工具名称
+     * @param durationMs     执行耗时（毫秒）
+     * @param resultSummary  结果摘要
+     */
+    public static void sendToolEnd(Long userId, String toolName, long durationMs, String resultSummary) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("toolName", toolName);
+            payload.put("duration", durationMs);
+            payload.put("resultSummary", resultSummary);
+            send(userId, TYPE_TOOL_END, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送工具完成事件失败", e);
+        }
+    }
+
+    /**
+     * 发送 Agent 思考过程
+     *
+     * @param userId     目标用户ID
+     * @param agentName  Agent 名称
+     * @param message    思考内容
+     */
+    public static void sendAgentThinking(Long userId, String agentName, String message) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("agentName", agentName);
+            payload.put("message", message);
+            send(userId, TYPE_AGENT_THINKING, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送思考过程事件失败", e);
+        }
     }
 
     /**

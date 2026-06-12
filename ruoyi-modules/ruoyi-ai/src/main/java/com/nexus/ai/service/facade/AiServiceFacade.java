@@ -3,18 +3,15 @@ package com.nexus.ai.service.facade;
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.context.AiRequestContext;
+import com.nexus.ai.mcp.service.ToolProviderFactory;
 import com.nexus.ai.observability.AiAgentListener;
+import com.nexus.ai.observability.AiToolExecutedListener;
+import com.nexus.ai.observability.AgentStreamHelper;
+import com.nexus.ai.observability.OutputChannel;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.ai.service.chat.PersistentChatMemoryStore;
 import com.nexus.ai.service.rag.RetrieverService;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
-import com.nexus.ai.tool.ExecuteSqlQueryTool;
-import com.nexus.ai.tool.ErpInventoryTool;
-import com.nexus.ai.tool.ErpPurchaseTool;
-import com.nexus.ai.tool.ErpProductionTool;
-import com.nexus.ai.tool.ErpSalesTool;
-import com.nexus.ai.tool.QueryAllTablesTool;
-import com.nexus.ai.tool.QueryTableSchemaTool;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.domain.entity.AiSession;
@@ -33,6 +30,7 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import dev.langchain4j.service.tool.ToolProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -41,6 +39,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -48,6 +47,7 @@ import java.util.concurrent.Executor;
  * AI 服务门面
  * <p>统一入口：智能路由普通流式对话 / RAG 增强对话 / Agent 编排</p>
  * <p>路由规则：数据查询关键词 → Agent 模式；knowledgeId 或知识检索关键词 → RAG 模式；其他 → 普通流式</p>
+ * <p>Agent 模式支持流式推送：通过 OutputChannel 跨线程事件总线 + SSE 实时推送工具调用过程</p>
  *
  * @author NexusERP
  * @since 1.0.0
@@ -62,13 +62,7 @@ public class AiServiceFacade {
     private final AiSessionMapper aiSessionMapper;
     private final AiMessageMapper aiMessageMapper;
     private final PersistentChatMemoryStore persistentChatMemoryStore;
-    private final QueryAllTablesTool queryAllTablesTool;
-    private final QueryTableSchemaTool queryTableSchemaTool;
-    private final ExecuteSqlQueryTool executeSqlQueryTool;
-    private final ErpInventoryTool erpInventoryTool;
-    private final ErpPurchaseTool erpPurchaseTool;
-    private final ErpSalesTool erpSalesTool;
-    private final ErpProductionTool erpProductionTool;
+    private final ToolProviderFactory toolProviderFactory;
     private final RetrieverService retrieverService;
     private final AiAgentListener aiAgentListener;
 
@@ -302,9 +296,11 @@ public class AiServiceFacade {
     }
 
     /**
-     * Agent 编排模式：SupervisorAgent + 同步 ChatModel → 一次性推送结果
-     * <p>SupervisorAgent 暂不支持流式回调，结果完成后一次性推送</p>
-     * <p>SubAgent 不使用持久化记忆（参考 ruoyi-ai 做法），避免工具调用中间结果膨胀上下文导致 Agent 混乱</p>
+     * Agent 编排模式：SupervisorAgent + 同步 ChatModel → 流式推送结果
+     * <p>
+     * 使用 OutputChannel 跨线程事件总线，将 Agent 执行过程中的工具调用事件推送到前端。
+     * SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文导致 Agent 混乱。
+     * </p>
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
                                  Long userId, Long sessionId, Long tenantId) {
@@ -314,18 +310,22 @@ public class AiServiceFacade {
         List<ChatMessage> history = persistentChatMemoryStore.getMessages(sessionId);
         String contextualQuery = buildContextualQuery(history, request.getContent());
 
+        // 动态加载已启用的工具
+        List<Object> builtinTools = toolProviderFactory.getAllEnabledBuiltinToolObjects();
+        ToolProvider mcpToolProvider = toolProviderFactory.getAllEnabledMcpToolProviders();
+
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
-        // 参考 ruoyi-ai 的 ChatServiceFacade：SupervisorAgent 的 chatMemoryProvider 被注释掉
         ErpQueryAgent queryAgent = AgenticServices.agentBuilder(ErpQueryAgent.class)
             .chatModel(chatModel)
-            .tools(queryAllTablesTool, queryTableSchemaTool, executeSqlQueryTool,
-                erpInventoryTool, erpPurchaseTool, erpSalesTool, erpProductionTool)
+            .tools(builtinTools.toArray())
+            .toolProvider(mcpToolProvider)
             .build();
 
         // 构建 ERP 报表 Agent（同样不使用持久化记忆）
         ErpReportAgent reportAgent = AgenticServices.agentBuilder(ErpReportAgent.class)
             .chatModel(chatModel)
-            .tools(queryAllTablesTool, executeSqlQueryTool)
+            .tools(builtinTools.toArray())
+            .toolProvider(mcpToolProvider)
             .build();
 
         // 构建 Supervisor（增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数）
@@ -338,11 +338,21 @@ public class AiServiceFacade {
 
         AiSseMessageHelper.sendThinking(userId);
 
+        // 创建 OutputChannel 用于流式推送
+        String requestId = UUID.randomUUID().toString();
+        OutputChannel channel = OutputChannel.create(requestId);
+
         CompletableFuture.runAsync(() -> {
             try {
                 AiRequestContext.set(tenantId, userId);
+                // 设置 ThreadLocal OutputChannel，使 AiToolExecutedListener 能推送事件
+                AiToolExecutedListener.setChannel(channel);
+
                 long startTime = System.currentTimeMillis();
                 aiAgentListener.onAgentStart("SupervisorAgent", contextualQuery);
+
+                // 推送 Agent 开始思考
+                AgentStreamHelper.sendThinking(channel, "SupervisorAgent", "开始分析您的问题...");
 
                 String result = supervisor.invoke(contextualQuery);
 
@@ -352,14 +362,65 @@ public class AiServiceFacade {
                 // 保存 AI 回复
                 saveAiMessage(sessionId, result);
 
+                // 推送最终结果
                 AiSseMessageHelper.sendContent(userId, result);
                 AiSseMessageHelper.sendDone(userId);
+
+                channel.complete();
             } catch (Exception e) {
                 log.error("AI Agent 对话失败", e);
                 aiAgentListener.onAgentError("SupervisorAgent", e.getMessage());
+                AgentStreamHelper.sendError(channel, "SupervisorAgent", e.getMessage());
+                channel.completeWithError(e);
                 AiSseMessageHelper.sendError(userId, "AI 对话失败: " + e.getMessage());
             } finally {
+                AiToolExecutedListener.clearChannel();
                 AiRequestContext.clear();
+                OutputChannel.remove(requestId);
+            }
+        }, aiExecutor);
+
+        // 异步消费 OutputChannel 事件，根据事件类型路由到对应的 SSE 推送方法
+        final com.fasterxml.jackson.databind.ObjectMapper drainMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        CompletableFuture.runAsync(() -> {
+            try {
+                channel.drain(eventJson -> {
+                    try {
+                        com.fasterxml.jackson.databind.JsonNode node = drainMapper.readTree(eventJson);
+                        String eventType = node.has("type") ? node.get("type").asText() : "";
+
+                        switch (eventType) {
+                            case "TOOL_START" -> {
+                                String toolName = node.has("toolName") ? node.get("toolName").asText() : "unknown";
+                                String args = node.has("arguments") ? node.get("arguments").asText() : "";
+                                AiSseMessageHelper.sendToolStart(userId, toolName, args);
+                            }
+                            case "TOOL_END" -> {
+                                String toolName = node.has("toolName") ? node.get("toolName").asText() : "unknown";
+                                long dur = node.has("duration") ? node.get("duration").asLong() : 0;
+                                String summary = node.has("resultSummary") ? node.get("resultSummary").asText() : "";
+                                AiSseMessageHelper.sendToolEnd(userId, toolName, dur, summary);
+                            }
+                            case "THINKING" -> {
+                                String agentName = node.has("agentName") ? node.get("agentName").asText() : "Agent";
+                                String message = node.has("message") ? node.get("message").asText() : "";
+                                AiSseMessageHelper.sendAgentThinking(userId, agentName, message);
+                            }
+                            case "ERROR" -> {
+                                String errorMsg = node.has("error") ? node.get("error").asText() : "未知错误";
+                                AiSseMessageHelper.sendError(userId, errorMsg);
+                            }
+                            default -> log.warn("[Agent] 未知 OutputChannel 事件类型: {}", eventType);
+                        }
+                    } catch (Exception e) {
+                        log.warn("[Agent] 解析 OutputChannel 事件失败: {}", e.getMessage());
+                    }
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("[Agent] OutputChannel drain 被中断");
+            } catch (Exception e) {
+                log.error("[Agent] OutputChannel drain 异常", e);
             }
         }, aiExecutor);
     }

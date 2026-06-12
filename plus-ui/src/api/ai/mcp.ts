@@ -103,3 +103,14 @@ export function syncBuiltinTools() {
     method: 'post'
   })
 }
+
+/**
+ * 测试工具连接
+ * @param id 工具ID
+ */
+export function testTool(id: number) {
+  return request({
+    url: `/ai/mcp/tool/${id}/test`,
+    method: 'post'
+  })
+}

@@ -1,6 +1,7 @@
 package com.nexus.ai.mcp.registry;
 
 import com.nexus.ai.mcp.BuiltinToolProvider;
+import com.nexus.ai.tool.QueryTableSchemaTool;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,5 +25,10 @@ public class QueryTableSchemaToolProvider implements BuiltinToolProvider {
     @Override
     public String getDescription() {
         return "查询指定表的 CREATE TABLE DDL（优先从缓存获取）";
+    }
+
+    @Override
+    public Class<?> getToolClass() {
+        return QueryTableSchemaTool.class;
     }
 }

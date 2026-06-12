@@ -34,4 +34,10 @@ public class AiMessage extends BaseEntity {
 
     /** Token 消耗 */
     private Long tokenUsage;
+
+    /** 用户反馈: LIKE/DISLIKE */
+    private String feedback;
+
+    /** 反馈内容 */
+    private String feedbackContent;
 }

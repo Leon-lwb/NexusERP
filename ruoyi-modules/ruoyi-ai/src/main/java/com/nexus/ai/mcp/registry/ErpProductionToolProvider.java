@@ -1,6 +1,7 @@
 package com.nexus.ai.mcp.registry;
 
 import com.nexus.ai.mcp.BuiltinToolProvider;
+import com.nexus.ai.tool.ErpProductionTool;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,5 +25,10 @@ public class ErpProductionToolProvider implements BuiltinToolProvider {
     @Override
     public String getDescription() {
         return "查询在产工单、产能利用率、BOM展开、生产完成率";
+    }
+
+    @Override
+    public Class<?> getToolClass() {
+        return ErpProductionTool.class;
     }
 }

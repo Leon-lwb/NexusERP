@@ -26,7 +26,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
             <el-button
@@ -35,6 +35,15 @@
               @click="handleToggleStatus(row)"
             >
               {{ row.status === 'ENABLED' ? '停用' : '启用' }}
+            </el-button>
+            <el-button
+              link
+              type="info"
+              @click="handleTest(row)"
+              :disabled="row.toolType === 'BUILTIN'"
+              :loading="testLoading[row.id]"
+            >
+              测试
             </el-button>
             <el-button
               link
@@ -69,12 +78,12 @@
         <el-form-item label="工具类型" prop="toolType">
           <el-select v-model="form.toolType" placeholder="请选择工具类型" style="width: 100%" :disabled="isEdit">
             <el-option label="BUILTIN（内置工具）" value="BUILTIN" />
-            <el-option label="MCP（MCP 服务工具）" value="MCP" />
-            <el-option label="REMOTE（远程 HTTP 工具）" value="REMOTE" />
+            <el-option label="LOCAL（本地 STDIO 工具）" value="LOCAL" />
+            <el-option label="REMOTE（远程 HTTP/SSE 工具）" value="REMOTE" />
           </el-select>
         </el-form-item>
         <el-form-item
-          v-if="form.toolType !== 'BUILTIN'"
+          v-if="form.toolType === 'LOCAL'"
           label="配置 JSON"
           prop="configJson"
         >
@@ -82,7 +91,19 @@
             v-model="form.configJson"
             type="textarea"
             :rows="6"
-            placeholder='请输入配置 JSON，如：{"url": "http://example.com/mcp", "apiKey": "xxx"}'
+            placeholder='本地工具配置，如：{"command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"]}'
+          />
+        </el-form-item>
+        <el-form-item
+          v-if="form.toolType === 'REMOTE'"
+          label="配置 JSON"
+          prop="configJson"
+        >
+          <el-input
+            v-model="form.configJson"
+            type="textarea"
+            :rows="6"
+            placeholder='远程工具配置，如：{"baseUrl": "http://localhost:3001/mcp"}'
           />
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -103,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { listTool, addTool, updateTool, delTool, toggleToolStatus, syncBuiltinTools } from '@/api/ai/mcp'
+import { listTool, addTool, updateTool, delTool, toggleToolStatus, syncBuiltinTools, testTool } from '@/api/ai/mcp'
 import type { AiTool } from '@/api/ai/mcp'
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance
@@ -111,6 +132,7 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance
 const loading = ref(false)
 const list = ref<AiTool[]>([])
 const isEdit = ref(false)
+const testLoading = reactive<Record<number, boolean>>({})
 
 const dialog = reactive<DialogOption>({
   visible: false,
@@ -242,6 +264,28 @@ const handleSync = async () => {
   await syncBuiltinTools()
   await getList()
   proxy?.$modal.msgSuccess('同步成功')
+}
+
+/** 测试工具连接 */
+const handleTest = async (row: AiTool) => {
+  if (row.toolType === 'BUILTIN') {
+    proxy?.$modal.msgWarning('内置工具无需测试连接')
+    return
+  }
+  testLoading[row.id!] = true
+  try {
+    const res = await testTool(row.id!)
+    const result = res.data || res
+    if (result.success) {
+      proxy?.$modal.msgSuccess(result.message || '连接测试成功')
+    } else {
+      proxy?.$modal.msgError(result.message || '连接测试失败')
+    }
+  } catch (e: any) {
+    proxy?.$modal.msgError('测试失败: ' + (e.message || '未知错误'))
+  } finally {
+    testLoading[row.id!] = false
+  }
 }
 
 onMounted(() => {

@@ -74,3 +74,16 @@ export function renameSession(data: { id: number; title: string }) {
     data
   })
 }
+
+/**
+ * 消息反馈（点赞/点踩）
+ * @param messageId 消息ID
+ * @param feedback 反馈类型：LIKE / DISLIKE / NONE
+ */
+export function messageFeedback(messageId: number | string, feedback: string) {
+  return request({
+    url: `/ai/chat/message/${messageId}/feedback`,
+    method: 'put',
+    params: { feedback }
+  })
+}

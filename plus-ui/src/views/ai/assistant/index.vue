@@ -50,9 +50,42 @@
             </div>
             <div class="message-body">
               <div class="message-role">{{ msg.role === 'user' ? '我' : 'NexusERP AI' }}</div>
+              <!-- Agent 思考过程 -->
+              <div v-if="msg.thinking && msg.role === 'assistant'" class="agent-thinking">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                <span>{{ msg.thinking }}</span>
+              </div>
+              <!-- 工具调用过程 -->
+              <div v-if="msg.toolCalls && msg.toolCalls.length > 0 && msg.role === 'assistant'" class="tool-calls">
+                <div v-for="(tc, tcIdx) in msg.toolCalls" :key="tcIdx" :class="['tool-call-item', tc.status]">
+                  <div class="tool-call-header">
+                    <el-icon v-if="tc.status === 'running'" class="is-loading"><Loading /></el-icon>
+                    <el-icon v-else><CircleCheck /></el-icon>
+                    <span class="tool-name">{{ tc.toolName }}</span>
+                    <span v-if="tc.status === 'completed' && tc.duration" class="tool-duration">{{ tc.duration }}ms</span>
+                  </div>
+                  <div v-if="tc.resultSummary && tc.status === 'completed'" class="tool-result">
+                    {{ truncateText(tc.resultSummary, 200) }}
+                  </div>
+                </div>
+              </div>
+              <!-- 消息内容 -->
               <div class="message-content">
-                <div v-if="msg.role === 'assistant'" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
-                <div v-else>{{ msg.content }}</div>
+                <div v-if="msg.role === 'assistant' && msg.content" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+                <div v-else-if="msg.role === 'user'">{{ msg.content }}</div>
+              </div>
+              <!-- 反馈按钮（仅 AI 消息且有内容时显示） -->
+              <div v-if="msg.role === 'assistant' && msg.content && !msg.content.startsWith('[错误]')" class="message-feedback">
+                <span
+                  :class="['feedback-btn', { active: msg.feedback === 'LIKE' }]"
+                  @click="handleFeedback(msg, 'LIKE')"
+                  title="有帮助"
+                >&#x1F44D;</span>
+                <span
+                  :class="['feedback-btn', { active: msg.feedback === 'DISLIKE' }]"
+                  @click="handleFeedback(msg, 'DISLIKE')"
+                  title="需改进"
+                >&#x1F44E;</span>
               </div>
             </div>
           </div>
@@ -126,16 +159,29 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete } from '@element-plus/icons-vue'
-import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
+import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck } from '@element-plus/icons-vue'
+import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, messageFeedback, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
 import { marked } from 'marked'
-import { createAiRenderer, sanitizeOption } from '@/utils/aiRenderers'
+import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers'
 import 'github-markdown-css'
+
+/** 工具调用状态 */
+interface ToolCallInfo {
+  toolName: string
+  arguments?: string
+  duration?: number
+  resultSummary?: string
+  status: 'running' | 'completed'
+}
 
 /** 前端聊天消息类型 */
 interface ChatMessage {
+  id?: number | string
   role: 'user' | 'assistant'
   content: string
+  toolCalls?: ToolCallInfo[]
+  thinking?: string
+  feedback?: string  // LIKE / DISLIKE
 }
 
 const inputText = ref('')
@@ -219,13 +265,78 @@ function onAiSseMessage(event: Event) {
       break
     case 'AI_CHART':
       break
+    case 'AI_TOOL_START': {
+      // 工具调用开始
+      thinking.value = false
+      let toolInfo: { toolName?: string; arguments?: string } = {}
+      try { toolInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      const toolStartMsg = messages.value[messages.value.length - 1]
+      if (toolStartMsg && toolStartMsg.role === 'assistant') {
+        if (!toolStartMsg.toolCalls) toolStartMsg.toolCalls = []
+        toolStartMsg.toolCalls.push({
+          toolName: toolInfo.toolName || 'unknown',
+          arguments: toolInfo.arguments,
+          status: 'running'
+        })
+      } else {
+        messages.value.push({
+          role: 'assistant',
+          content: '',
+          toolCalls: [{
+            toolName: toolInfo.toolName || 'unknown',
+            arguments: toolInfo.arguments,
+            status: 'running'
+          }]
+        })
+      }
+      nextTick(() => scrollToBottom())
+      break
+    }
+    case 'AI_TOOL_END': {
+      // 工具调用完成
+      let toolEndInfo: { toolName?: string; duration?: number; resultSummary?: string } = {}
+      try { toolEndInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      // 查找最近一条包含该工具的 assistant 消息，更新状态
+      const toolEndMsg = messages.value[messages.value.length - 1]
+      if (toolEndMsg && toolEndMsg.role === 'assistant' && toolEndMsg.toolCalls) {
+        const runningTool = [...toolEndMsg.toolCalls].reverse().find(
+          tc => tc.toolName === toolEndInfo.toolName && tc.status === 'running'
+        )
+        if (runningTool) {
+          runningTool.status = 'completed'
+          runningTool.duration = toolEndInfo.duration
+          runningTool.resultSummary = toolEndInfo.resultSummary
+        }
+      }
+      nextTick(() => scrollToBottom())
+      break
+    }
+    case 'AI_AGENT_THINKING': {
+      // Agent 思考过程
+      thinking.value = false
+      let thinkInfo: { agentName?: string; message?: string } = {}
+      try { thinkInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      const thinkMsg = messages.value[messages.value.length - 1]
+      if (thinkMsg && thinkMsg.role === 'assistant') {
+        thinkMsg.thinking = thinkInfo.message || ''
+      } else {
+        messages.value.push({
+          role: 'assistant',
+          content: '',
+          thinking: thinkInfo.message || ''
+        })
+      }
+      nextTick(() => scrollToBottom())
+      break
+    }
   }
 }
 
-/** 渲染 Markdown（含 ECharts 代码块识别） */
+/** 渲染 Markdown（含 ECharts 代码块识别 + XSS 净化） */
 function renderMarkdown(content: string) {
   const renderer = createAiRenderer()
-  return marked.parse(content || '', { renderer })
+  const html = marked.parse(content || '', { renderer })
+  return sanitizeHtml(typeof html === 'string' ? html : '')
 }
 
 /** 滚动到底部 */
@@ -273,8 +384,10 @@ async function switchSession(sessionId: number | string) {
     }
     console.log('[AI] 解析到的历史消息条数:', history.length)
     messages.value = history.map(m => ({
+      id: m.id,
       role: m.role === 'USER' ? 'user' as const : 'assistant' as const,
-      content: m.content
+      content: m.content,
+      feedback: (m as any).feedback
     }))
     nextTick(() => scrollToBottom())
   } catch (e: any) {
@@ -347,6 +460,30 @@ function formatTime(time: string) {
     return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   }
   return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+}
+
+/** 截断文本 */
+function truncateText(text: string, maxLen: number) {
+  if (!text) return ''
+  return text.length > maxLen ? text.substring(0, maxLen) + '...' : text
+}
+
+/** 消息反馈 */
+async function handleFeedback(msg: ChatMessage, feedback: string) {
+  if (!msg.id) {
+    // 新消息尚未保存到后端，提示用户刷新后操作
+    ElMessage.info('请等待消息保存后再反馈')
+    return
+  }
+  // 如果点击已选中的反馈，则取消
+  const newFeedback = msg.feedback === feedback ? 'NONE' : feedback
+  try {
+    await messageFeedback(msg.id, newFeedback)
+    msg.feedback = newFeedback === 'NONE' ? undefined : newFeedback
+  } catch (e: any) {
+    console.error('[AI] 反馈失败', e)
+    ElMessage.error('反馈提交失败')
+  }
 }
 
 /** 显示右键菜单 */
@@ -647,6 +784,111 @@ onUnmounted(() => {
     align-items: center;
     gap: 8px;
     color: #909399;
+  }
+}
+
+/* Agent 思考过程 */
+.agent-thinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: #fdf6ec;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #e6a23c;
+
+  .el-icon {
+    font-size: 14px;
+  }
+}
+
+/* 消息反馈按钮 */
+.message-feedback {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  .feedback-btn {
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    user-select: none;
+    filter: grayscale(100%);
+    transition: filter 0.2s, background-color 0.2s;
+
+    &:hover {
+      filter: grayscale(0%);
+      background-color: #f0f0f0;
+    }
+
+    &.active {
+      filter: grayscale(0%);
+    }
+  }
+}
+
+.ai-message:hover .message-feedback {
+  opacity: 1;
+}
+
+/* 工具调用过程 */
+.tool-calls {
+  margin-bottom: 8px;
+}
+
+.tool-call-item {
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid #e4e7ed;
+  background: #fafafa;
+
+  &.running {
+    border-color: #409eff;
+    background: #ecf5ff;
+  }
+
+  &.completed {
+    border-color: #67c23a;
+    background: #f0f9eb;
+  }
+
+  .tool-call-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .el-icon {
+      font-size: 14px;
+    }
+
+    .tool-name {
+      font-weight: 600;
+      color: #303133;
+    }
+
+    .tool-duration {
+      margin-left: auto;
+      font-size: 11px;
+      color: #909399;
+    }
+  }
+
+  .tool-result {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed #dcdfe6;
+    font-size: 12px;
+    color: #606266;
+    max-height: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

@@ -1,6 +1,7 @@
 package com.nexus.ai.mcp.registry;
 
 import com.nexus.ai.mcp.BuiltinToolProvider;
+import com.nexus.ai.tool.ErpInventoryTool;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,5 +25,10 @@ public class ErpInventoryToolProvider implements BuiltinToolProvider {
     @Override
     public String getDescription() {
         return "查询库存预警、出库趋势、库存金额分布、按仓库统计";
+    }
+
+    @Override
+    public Class<?> getToolClass() {
+        return ErpInventoryTool.class;
     }
 }

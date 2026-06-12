@@ -1,6 +1,7 @@
 package com.nexus.ai.mcp.registry;
 
 import com.nexus.ai.mcp.BuiltinToolProvider;
+import com.nexus.ai.tool.ExecuteSqlQueryTool;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,5 +25,10 @@ public class ExecuteSqlQueryToolProvider implements BuiltinToolProvider {
     @Override
     public String getDescription() {
         return "执行 SELECT SQL 查询（必须包含 tenant_id 条件）";
+    }
+
+    @Override
+    public Class<?> getToolClass() {
+        return ExecuteSqlQueryTool.class;
     }
 }
