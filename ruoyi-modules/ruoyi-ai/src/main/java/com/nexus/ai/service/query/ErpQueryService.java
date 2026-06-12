@@ -70,6 +70,41 @@ public class ErpQueryService {
     }
 
     /**
+     * 执行参数化 SELECT 查询（防止 SQL 注入）
+     * <p>使用 PreparedStatement 的 ? 占位符，避免 String.format() 拼接用户参数</p>
+     *
+     * @param sql            SQL 语句（使用 ? 占位符）
+     * @param params         参数数组
+     * @param maxRows        最大返回行数
+     * @param timeoutSeconds 超时秒数
+     * @return 查询结果列表
+     */
+    public List<Map<String, Object>> executeParameterizedQuery(String sql, Object[] params, int maxRows, int timeoutSeconds) {
+        log.debug("[ErpQuery] 执行参数化SQL: {}, params={}, maxRows={}, timeout={}s", sql, params, maxRows, timeoutSeconds);
+        List<Map<String, Object>> results = jdbcTemplate.query(
+            con -> {
+                var ps = con.prepareStatement(sql);
+                ps.setQueryTimeout(timeoutSeconds);
+                ps.setMaxRows(maxRows);
+                for (int i = 0; i < params.length; i++) {
+                    ps.setObject(i + 1, params[i]);
+                }
+                return ps;
+            },
+            (rs, rowNum) -> {
+                Map<String, Object> row = new LinkedHashMap<>();
+                ResultSetMetaData meta = rs.getMetaData();
+                for (int i = 1; i <= meta.getColumnCount(); i++) {
+                    row.put(meta.getColumnName(i), rs.getObject(i));
+                }
+                return row;
+            }
+        );
+        log.debug("[ErpQuery] 参数化查询完成，返回 {} 行", results.size());
+        return results;
+    }
+
+    /**
      * 查询所有 ERP 业务表
      * <p>排除系统表（以 sys_/gen_/qrtz_/flyway_ 开头），返回所有业务表</p>
      *

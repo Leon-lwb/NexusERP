@@ -658,6 +658,12 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/ai/knowledge/index.vue'),
         name: 'AiKnowledge',
         meta: { title: '知识库管理', icon: 'documentation' }
+      },
+      {
+        path: 'mcp',
+        component: () => import('@/views/ai/mcp/index.vue'),
+        name: 'AiMcp',
+        meta: { title: '工具管理', icon: 'component' }
       }
     ]
   },

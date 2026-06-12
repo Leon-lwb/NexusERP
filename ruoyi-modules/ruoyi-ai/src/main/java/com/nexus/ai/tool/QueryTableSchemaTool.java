@@ -1,6 +1,7 @@
 package com.nexus.ai.tool;
 
 import com.nexus.ai.service.query.ErpQueryService;
+import com.nexus.ai.service.query.ErpTableSchemaManager;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 查询 ERP 表结构工具
- * <p>供 AI Agent 调用，获取指定表的 CREATE TABLE DDL（含字段注释）</p>
+ * <p>供 AI Agent 调用，获取指定表的 CREATE TABLE DDL（优先从缓存获取）</p>
  *
  * @author NexusERP
  */
@@ -18,19 +19,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class QueryTableSchemaTool {
 
+    private final ErpTableSchemaManager erpTableSchemaManager;
     private final ErpQueryService erpQueryService;
 
-    /**
-     * 查询指定表的 CREATE TABLE 语句
-     *
-     * @param tableName 表名
-     * @return CREATE TABLE DDL
-     */
     /** DDL 最大返回长度（避免超出模型上下文限制） */
     private static final int MAX_DDL_LENGTH = 3000;
 
-    @Tool("Query the CREATE TABLE statement (DDL) for a specific ERP table by table name")
-    public String queryTableSchema(@P("Table name") String tableName) {
+    @Tool("查询指定 ERP 表的建表语句（DDL）和字段说明")
+    public String queryTableSchema(@P("表名") String tableName) {
         log.info("[AI-Schema] 查询表结构: {}", tableName);
 
         if (tableName == null || tableName.trim().isEmpty()) {
@@ -39,21 +35,33 @@ public class QueryTableSchemaTool {
         if (!tableName.matches("^[a-zA-Z0-9_]+$")) {
             return "Error: Invalid table name format";
         }
-        // 动态查库验证表是否存在（替代硬编码前缀白名单，支持所有 ERP 业务表）
-        if (!erpQueryService.tableExists(tableName)) {
-            return "Error: Table '" + tableName + "' does not exist. Please call queryAllTables first to see all available tables.";
-        }
+
         try {
-            String schema = erpQueryService.queryTableSchema(tableName);
-            if (schema == null) {
+            // 优先从缓存获取 DDL
+            ErpTableSchemaManager.TableStructure schema = erpTableSchemaManager.getTableSchema(tableName);
+            String ddl = null;
+            if (schema != null && schema.getDdl() != null) {
+                ddl = schema.getDdl();
+                log.debug("[AI-Schema] 从缓存获取 DDL: {}", tableName);
+            } else {
+                // 缓存未命中，动态查库验证表是否存在并获取 DDL
+                if (!erpQueryService.tableExists(tableName)) {
+                    return "Error: Table '" + tableName + "' does not exist. Please call queryAllTables first to see all available tables.";
+                }
+                ddl = erpQueryService.queryTableSchema(tableName);
+                log.debug("[AI-Schema] 从数据库获取 DDL: {}", tableName);
+            }
+
+            if (ddl == null) {
                 return "Table not found: " + tableName;
             }
+
             // 截断过长的 DDL，避免超出模型上下文限制
-            if (schema.length() > MAX_DDL_LENGTH) {
-                log.info("[AI-Schema] DDL 过长({}字符)，截断到 {} 字符", schema.length(), MAX_DDL_LENGTH);
-                schema = schema.substring(0, MAX_DDL_LENGTH) + "\n... (truncated)";
+            if (ddl.length() > MAX_DDL_LENGTH) {
+                log.info("[AI-Schema] DDL 过长({}字符)，截断到 {} 字符", ddl.length(), MAX_DDL_LENGTH);
+                ddl = ddl.substring(0, MAX_DDL_LENGTH) + "\n... (truncated)";
             }
-            return schema;
+            return ddl;
         } catch (Exception e) {
             log.error("[AI-Schema] 查询表结构失败: {}", tableName, e);
             return "Error: " + e.getMessage();

@@ -20,6 +20,16 @@ public interface ErpReportAgent {
         3. 将数据转换为 ECharts 图表配置
         4. 以 ```echarts 代码块格式返回 ECharts 配置
 
+        === ERP 核心表关联关系 ===
+        - 销售订单：so_sales_order_header.so_id → so_sales_order_line.so_id → bd_material.material_id
+        - 销售退货：so_return.so_id → so_sales_order_header.so_id
+        - 采购订单：pu_purchase_order.order_id → pu_purchase_order_line.order_id → bd_material.material_id
+        - 供应商评估：pu_vendor_evaluation.vendor_id → bd_vendor.vendor_id
+        - 库存：wm_material_stock.material_id → bd_material.material_id, wm_material_stock.warehouse_id → wm_warehouse.warehouse_id
+        - 库存事务：wm_material_stock_tx.material_id → bd_material.material_id, tx_flag = -1 表示出库
+        - 生产工单：prd_work_order.material_id → bd_material.material_id, prd_work_order.workstation_id → bd_workstation.workstation_id
+        - BOM：bd_bom.parent_material_id → bd_material.material_id, bd_bom_detail.bom_id → bd_bom.bom_id, bd_bom_detail.child_material_id → bd_material.material_id
+
         输出格式（必须严格遵守）：
         ```echarts
         {

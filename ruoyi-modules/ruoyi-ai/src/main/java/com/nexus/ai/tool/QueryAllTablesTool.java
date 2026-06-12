@@ -1,16 +1,14 @@
 package com.nexus.ai.tool;
 
-import com.nexus.ai.service.query.ErpQueryService;
+import com.nexus.ai.service.query.ErpTableSchemaManager;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * 查询所有 ERP 业务表工具
- * <p>供 AI Agent 调用，获取数据库中所有可用的 ERP 业务表列表</p>
+ * <p>供 AI Agent 调用，获取数据库中所有可用的 ERP 业务表列表（从缓存获取）</p>
  *
  * @author NexusERP
  */
@@ -19,27 +17,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class QueryAllTablesTool {
 
-    private final ErpQueryService erpQueryService;
+    private final ErpTableSchemaManager erpTableSchemaManager;
 
     /**
      * 查询所有可用的 ERP 业务表
      *
-     * @return 表名列表
+     * @return 表名列表（含中文注释）
      */
-    @Tool("Query all available ERP business tables in the database")
+    @Tool("查询数据库中所有可用的 ERP 业务表")
     public String queryAllTables() {
-        log.info("[AI-Tables] 查询所有 ERP 业务表");
+        log.info("[AI-Tables] 查询所有 ERP 业务表（从缓存）");
         try {
-            List<String> tables = erpQueryService.queryErpTables();
-            if (tables.isEmpty()) {
+            String summary = erpTableSchemaManager.getAllTablesSummary();
+            if (summary.isEmpty()) {
                 return "No ERP business tables found.";
             }
-            StringBuilder result = new StringBuilder();
-            result.append("Found ").append(tables.size()).append(" ERP business tables:\n");
-            for (String tableName : tables) {
-                result.append("- ").append(tableName).append("\n");
-            }
-            return result.toString();
+            int tableCount = erpTableSchemaManager.getTableCount();
+            return "Found " + tableCount + " ERP business tables:\n" + summary;
         } catch (Exception e) {
             log.error("查询 ERP 表列表失败", e);
             return "Error: " + e.getMessage();
