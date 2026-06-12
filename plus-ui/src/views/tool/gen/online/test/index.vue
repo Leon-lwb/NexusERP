@@ -185,7 +185,7 @@
 
 <script setup name="OnlineTest" lang="ts">
 import { listOnlineData, getOnlineData, delOnlineData, addOrUpdateOnlineData, getOnlineForm } from "@/api/online";
-import DispTag from "../components/DispTag/index.vue";
+import DispTag from "../components/disp-tag/index.vue";
 import { useFlowable } from '@/views/workflow/hooks/useFlowable';
 import { useOnline } from '@/views/workflow/hooks/useOnline'
 import { ref, reactive, toRefs, onMounted, watch, computed, getCurrentInstance, ComponentInternalInstance } from 'vue'

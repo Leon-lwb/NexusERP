@@ -1,0 +1,212 @@
+# ============================================================
+# NexusERP 双机 Docker 部署 - 主服务器 (81.68.78.136)
+# 部署：MySQL、Redis、RabbitMQ、MinIO、Nginx+前端、NexusServer
+# ============================================================
+
+services:
+  # ==========================================
+  # MySQL 8.0（内存优化版）
+  # ==========================================
+  mysql:
+    image: mysql:8.0.42
+    container_name: nexus-mysql
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: MIS@5mis@5
+      # 首次启动自动创建系统库 ry-vue，业务库 ry-erp 通过初始化 SQL 自动创建
+      MYSQL_DATABASE: ry-vue
+    volumes:
+      - /docker/mysql/data:/var/lib/mysql
+      - /docker/mysql/conf:/etc/mysql/conf.d
+      - /docker/mysql/init:/docker-entrypoint-initdb.d
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+      --innodb-buffer-pool-size=256M
+      --key-buffer-size=32M
+      --tmp-table-size=32M
+      --max-connections=80
+      --performance-schema=OFF
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pMIS@5mis@5"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ==========================================
+  # Redis 7.2
+  # ==========================================
+  redis:
+    image: redis:7.2.8
+    container_name: nexus-redis
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - /docker/redis/conf:/redis/config:rw
+      - /docker/redis/data:/redis/data:rw
+    # 使用 command 覆盖 CMD，确保加载配置文件
+    command: "redis-server /redis/config/redis.conf"
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "ruoyi123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # ==========================================
+  # RabbitMQ 3.13（带管理后台）
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: nexus-rabbitmq
+    environment:
+      TZ: Asia/Shanghai
+      RABBITMQ_DEFAULT_USER: nexus
+      RABBITMQ_DEFAULT_PASS: nexus
+      RABBITMQ_DEFAULT_VHOST: /erp
+    volumes:
+      - /docker/rabbitmq/data:/var/lib/rabbitmq
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ==========================================
+  # MinIO 文件存储
+  # ==========================================
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    container_name: nexus-minio
+    environment:
+      TZ: Asia/Shanghai
+      MINIO_ROOT_USER: nexus
+      MINIO_ROOT_PASSWORD: nexus123456
+    volumes:
+      - /docker/minio/data:/data
+    command: server /data --console-address ":9001"
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ==========================================
+  # Nginx + 前端（plus-ui）
+  # ==========================================
+  nginx-web:
+    image: nexus/nexus-ui:5.6.0
+    container_name: nexus-nginx
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - /docker/nginx/cert:/etc/nginx/cert
+      - /docker/nginx/log:/var/log/nginx
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    depends_on:
+      - nexus-server
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+  # ==========================================
+  # NexusERP 主后端服务（ruoyi-admin）
+  # ==========================================
+  nexus-server:
+    image: nexus/nexus-server:5.6.0
+    container_name: nexus-server
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: 8080
+      SNAIL_PORT: 28080
+      JAVA_OPTS: "-Xms256m -Xmx384m -XX:MaxMetaspaceSize=256m -XX:+UseZGC"
+      # Jasypt 加密密钥（用于解密 application-prod.yml 中的 ENC(...) 密码）
+      # 请替换为您的实际密钥
+      JASYPT_PASSWORD: "your-jasypt-key-here"
+    volumes:
+      - /docker/server/logs:/ruoyi/server/logs
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 10
+    #   start_period: 180s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 768M

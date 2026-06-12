@@ -1,0 +1,71 @@
+# ============================================================
+# NexusERP 双机 Docker 部署 - 辅助服务器 (117.72.190.225)
+# 部署：MonitorAdmin、SnailJobServer
+# ============================================================
+
+services:
+  # ==========================================
+  # 监控中心（ruoyi-monitor-admin）
+  # ==========================================
+  nexus-monitor:
+    image: nexus/nexus-monitor:5.6.0
+    container_name: nexus-monitor
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Xms128m -Xmx192m -XX:MaxMetaspaceSize=64m -XX:+UseZGC"
+    volumes:
+      - /docker/monitor/logs:/ruoyi/monitor/logs
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost:9090/actuator/health || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+
+  # ==========================================
+  # SnailJob 调度中心（ruoyi-snailjob-server）
+  # ==========================================
+  nexus-snailjob:
+    image: nexus/nexus-snailjob:5.6.0
+    container_name: nexus-snailjob
+    environment:
+      TZ: Asia/Shanghai
+      # MySQL 地址指向主服务器
+      SPRING_DATASOURCE_URL: "jdbc:mysql://81.68.78.136:3306/ry-vue?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: MIS@5mis@5
+      JAVA_OPTS: "-Xms128m -Xmx192m -XX:MaxMetaspaceSize=64m -XX:+UseZGC"
+    volumes:
+      - /docker/snailjob/logs:/ruoyi/snailjob/logs
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+    depends_on:
+      - nexus-monitor
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost:8800/actuator/health || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 320M

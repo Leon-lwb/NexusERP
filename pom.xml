@@ -32,6 +32,7 @@
         <lock4j.version>2.2.7</lock4j.version>
         <dynamic-ds.version>4.3.1</dynamic-ds.version>
         <snailjob.version>1.9.0</snailjob.version>
+        <grpc.version>1.56.1</grpc.version>
         <mapstruct-plus.version>1.5.0</mapstruct-plus.version>
         <mapstruct-plus.lombok.version>0.2.0</mapstruct-plus.lombok.version>
         <lombok.version>1.18.42</lombok.version>
@@ -293,6 +294,15 @@
                 <groupId>com.aizuda</groupId>
                 <artifactId>snail-job-client-job-core</artifactId>
                 <version>${snailjob.version}</version>
+            </dependency>
+
+            <!-- 锁定 gRPC 版本，解决 SnailJob 启动时 InternalGlobalInterceptors 找不到的问题 -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- 加密包引入 -->

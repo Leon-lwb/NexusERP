@@ -14,6 +14,12 @@
  Date: 09/06/2026 17:59:11
 */
 
+-- 创建数据库（如果不存在）
+CREATE DATABASE IF NOT EXISTS `ry-erp` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 使用 ry-erp 数据库
+USE `ry-erp`;
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 

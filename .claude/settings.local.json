@@ -148,7 +148,8 @@
       "Bash(dir \"D:\\\\maven*\")",
       "Bash(powershell.exe *)",
       "Bash(where mysql *)",
-      "Bash(cat dev/langchain4j/store/embedding/filter/Filter.java)"
+      "Bash(cat dev/langchain4j/store/embedding/filter/Filter.java)",
+      "Bash(mvn dependency:tree -pl ruoyi-admin -Dincludes=io.grpc)"
     ]
   }
 }
