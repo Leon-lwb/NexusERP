@@ -99,4 +99,26 @@ public class AiPromptTemplateController extends BaseController {
         }
         return toAjax(result);
     }
+
+    /**
+     * 预览 Prompt 模板渲染结果
+     * <p>使用当前系统数据渲染模板，返回实际注入 Agent 的文本内容</p>
+     * <p>对于已知模板（erp_query_agent/erp_report_agent/supervisor）使用专用渲染方法，</p>
+     * <p>其他模板使用空变量渲染原始模板内容</p>
+     *
+     * @param templateKey 模板标识
+     * @return 渲染后的完整文本
+     */
+    @SaCheckPermission("ai:prompt:query")
+    @GetMapping("/preview/{templateKey}")
+    public R<String> preview(@PathVariable String templateKey) {
+        String rendered;
+        switch (templateKey) {
+            case "erp_query_agent" -> rendered = promptTemplateRenderingService.renderQueryAgentContext();
+            case "erp_report_agent" -> rendered = promptTemplateRenderingService.renderReportAgentContext();
+            case "supervisor" -> rendered = promptTemplateRenderingService.renderSupervisorContext();
+            default -> rendered = promptTemplateRenderingService.render(templateKey, java.util.Map.of());
+        }
+        return R.ok(rendered);
+    }
 }

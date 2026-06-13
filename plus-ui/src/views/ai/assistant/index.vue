@@ -113,6 +113,10 @@
               <el-radio-button label="agent">数据查询</el-radio-button>
               <el-radio-button label="rag">知识库</el-radio-button>
             </el-radio-group>
+            <el-button size="small" :icon="Download" @click="openToolDrawer" plain>
+              工具({{ selectedToolIds.length }})
+            </el-button>
+            <span v-if="tokenUsage > 0" class="token-usage">{{ tokenUsage.toLocaleString() }} tokens</span>
           </div>
           <el-input
             v-model="inputText"
@@ -133,8 +137,30 @@
         </div>
       </el-card>
 
+      <!-- MCP 工具选择抽屉 -->
+      <el-drawer v-model="toolDrawerVisible" title="MCP 工具选择" size="350px" :append-to-body="true">
+        <p class="tool-drawer-tip">选择本次对话可使用的 MCP 外部工具，未选择时使用全部已启用工具。</p>
+        <el-checkbox-group v-model="selectedToolIds">
+          <div v-for="tool in availableTools" :key="tool.id" class="tool-item">
+            <el-checkbox :value="tool.id">
+              <span class="tool-name">{{ tool.displayName || tool.toolName }}</span>
+              <span class="tool-desc">{{ tool.description }}</span>
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+        <el-empty v-if="availableTools.length === 0" description="暂无可用的 MCP 工具" />
+        <template #footer>
+          <el-button @click="selectedToolIds = []; toolDrawerVisible = false">使用全部</el-button>
+          <el-button type="primary" @click="toolDrawerVisible = false">确认</el-button>
+        </template>
+      </el-drawer>
+
       <!-- 右键菜单 -->
       <div v-if="contextMenu.visible" class="context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
+        <div class="context-menu-item" @click="handleExport">
+          <el-icon><Download /></el-icon>
+          <span>导出对话</span>
+        </div>
         <div class="context-menu-item" @click="handleRename">
           <el-icon><Edit /></el-icon>
           <span>重命名</span>
@@ -159,8 +185,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck } from '@element-plus/icons-vue'
-import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, messageFeedback, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
+import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck, Download } from '@element-plus/icons-vue'
+import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, messageFeedback, exportSession, getTokenUsage, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
+import { getAvailableMcpTools } from '@/api/ai/mcpTool'
 import { marked } from 'marked'
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers'
 import 'github-markdown-css'
@@ -193,6 +220,14 @@ const messageListRef = ref<HTMLElement>()
 const sessions = ref<AiSession[]>([])
 const currentSessionId = ref<number | string | null>(null)
 const chatMode = ref('auto')
+
+/** MCP 工具选择器状态 */
+const toolDrawerVisible = ref(false)
+const availableTools = ref<any[]>([])
+const selectedToolIds = ref<number[]>([])
+
+/** Token 用量 */
+const tokenUsage = ref<number>(0)
 
 /** 根据当前模式显示不同的输入提示 */
 const modePlaceholder = computed(() => {
@@ -422,7 +457,8 @@ async function sendMessage() {
     const res = await sendAiMessage({
       content: text,
       sessionId: currentSessionId.value ?? undefined,
-      mode: chatMode.value === 'auto' ? undefined : chatMode.value
+      mode: chatMode.value === 'auto' ? undefined : chatMode.value,
+      enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined
     })
     console.log('[AI] 发送消息响应:', res)
     // 后端返回 sessionId（新会话时为新 ID）
@@ -434,6 +470,30 @@ async function sendMessage() {
     loading.value = false
     thinking.value = false
     messages.value.push({ role: 'assistant', content: `[请求失败] ${e.message}` })
+  }
+}
+
+/** 打开 MCP 工具选择器 */
+async function openToolDrawer() {
+  toolDrawerVisible.value = true
+  if (availableTools.value.length === 0) {
+    try {
+      const res = await getAvailableMcpTools()
+      availableTools.value = res?.data ?? res ?? []
+    } catch (e) {
+      console.error('[AI] 获取 MCP 工具列表失败', e)
+    }
+  }
+}
+
+/** 刷新 Token 用量 */
+async function refreshTokenUsage() {
+  if (!currentSessionId.value) return
+  try {
+    const res = await getTokenUsage(currentSessionId.value as number)
+    tokenUsage.value = res?.data?.totalTokens ?? 0
+  } catch {
+    // 忽略
   }
 }
 
@@ -520,6 +580,27 @@ async function confirmRename() {
     renameDialogVisible.value = false
   } catch (e: any) {
     console.error('[AI] 重命名会话失败', e)
+  }
+}
+
+/** 导出会话为 Markdown 文件 */
+async function handleExport() {
+  if (!contextMenu.value.session) return
+  const session = contextMenu.value.session
+  hideContextMenu()
+  try {
+    const res = await exportSession(session.id)
+    const blob = new Blob([res], { type: 'text/markdown;charset=utf-8' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${session.title || 'AI对话'}.md`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e: any) {
+    console.error('[AI] 导出会话失败', e)
+    ElMessage.error('导出失败')
   }
 }
 
@@ -898,10 +979,18 @@ onUnmounted(() => {
 
   .mode-selector {
     margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
     :deep(.el-radio-group) {
       display: flex;
-      width: 100%;
+    }
+
+    .token-usage {
+      font-size: 12px;
+      color: #909399;
+      margin-left: auto;
     }
 
     :deep(.el-radio-button) {
@@ -993,6 +1082,26 @@ onUnmounted(() => {
         background-color: #fef0f0;
       }
     }
+  }
+}
+
+.tool-drawer-tip {
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 15px;
+}
+
+.tool-item {
+  margin-bottom: 8px;
+
+  .tool-name {
+    font-weight: 500;
+    margin-right: 6px;
+  }
+
+  .tool-desc {
+    font-size: 12px;
+    color: #909399;
   }
 }
 </style>

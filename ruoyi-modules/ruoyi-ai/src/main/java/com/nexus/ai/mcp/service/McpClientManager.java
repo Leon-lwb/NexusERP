@@ -54,6 +54,9 @@ public class McpClientManager {
 
     /**
      * 获取所有已启用 MCP 工具的 ToolProvider
+     * <p>当没有可用的 MCP 客户端时返回 null，调用方应跳过 toolProvider 注入</p>
+     *
+     * @return MCP ToolProvider，无可用客户端时返回 null
      */
     public ToolProvider getAllEnabledToolProviders() {
         List<AiTool> enabledTools = aiToolMapper.selectList(
@@ -63,7 +66,7 @@ public class McpClientManager {
         );
 
         if (enabledTools.isEmpty()) {
-            return McpToolProvider.builder().build();
+            return null;
         }
 
         List<McpClient> clients = new ArrayList<>();
@@ -79,7 +82,7 @@ public class McpClientManager {
         }
 
         if (clients.isEmpty()) {
-            return McpToolProvider.builder().build();
+            return null;
         }
 
         return McpToolProvider.builder()
@@ -89,10 +92,14 @@ public class McpClientManager {
 
     /**
      * 按工具名称列表获取 MCP 工具 Provider
+     * <p>当没有可用的 MCP 客户端时返回 null</p>
+     *
+     * @param toolNames 工具名称列表
+     * @return MCP ToolProvider，无匹配时返回 null
      */
     public ToolProvider getToolProvidersByNames(List<String> toolNames) {
         if (toolNames == null || toolNames.isEmpty()) {
-            return McpToolProvider.builder().build();
+            return null;
         }
 
         List<AiTool> tools = aiToolMapper.selectList(
@@ -102,8 +109,42 @@ public class McpClientManager {
                 .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
         );
 
-        if (tools.isEmpty()) {
-            return McpToolProvider.builder().build();
+        return buildToolProvider(tools);
+    }
+
+    /**
+     * 按工具 ID 列表获取 MCP 工具 Provider
+     * <p>仅返回指定 ID 且状态为 ENABLED 的 MCP 外部工具</p>
+     * <p>当没有可用的 MCP 客户端时返回 null</p>
+     *
+     * @param toolIds 工具 ID 列表
+     * @return MCP ToolProvider，无匹配时返回 null
+     */
+    public ToolProvider getToolProvidersByIds(List<Long> toolIds) {
+        if (toolIds == null || toolIds.isEmpty()) {
+            return null;
+        }
+
+        List<AiTool> tools = aiToolMapper.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiTool>()
+                .in(AiTool::getId, toolIds)
+                .eq(AiTool::getStatus, "ENABLED")
+                .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
+        );
+
+        return buildToolProvider(tools);
+    }
+
+    /**
+     * 根据工具列表构建 MCP ToolProvider
+     * <p>遍历工具列表创建客户端，过滤掉创建失败的客户端</p>
+     *
+     * @param tools 工具实体列表
+     * @return MCP ToolProvider，无可用客户端时返回 null
+     */
+    private ToolProvider buildToolProvider(List<AiTool> tools) {
+        if (tools == null || tools.isEmpty()) {
+            return null;
         }
 
         List<McpClient> clients = new ArrayList<>();
@@ -114,12 +155,12 @@ public class McpClientManager {
                     clients.add(client);
                 }
             } catch (Exception e) {
-                log.error("[MCP] 创建客户端失败: toolName={}, error={}", tool.getToolName(), e.getMessage());
+                log.error("[MCP] 创建客户端失败: toolId={}, error={}", tool.getId(), e.getMessage());
             }
         }
 
         if (clients.isEmpty()) {
-            return McpToolProvider.builder().build();
+            return null;
         }
 
         return McpToolProvider.builder()

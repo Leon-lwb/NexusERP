@@ -10,10 +10,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 内置工具注册中心
@@ -100,6 +103,43 @@ public class BuiltinToolRegistry {
         for (AiTool tool : enabledTools) {
             BuiltinToolProvider provider = registeredProviders.get(tool.getToolName());
             if (provider != null) {
+                try {
+                    Object toolBean = applicationContext.getBean(provider.getToolClass());
+                    toolObjects.add(toolBean);
+                } catch (Exception e) {
+                    log.warn("[MCP] 获取工具 Bean 失败: toolName={}, error={}", tool.getToolName(), e.getMessage());
+                }
+            }
+        }
+        return toolObjects;
+    }
+
+    /**
+     * 获取指定类别的已启用工具对象列表
+     * <p>
+     * 根据 categories 参数过滤工具，支持逗号分隔的多个类别。
+     * 例如 "QUERY,ALL" 会返回 QUERY 和 ALL 两个类别的所有已启用工具。
+     * </p>
+     *
+     * @param categories 类别标签（逗号分隔，如 "QUERY,ALL"）
+     * @return 匹配类别的已启用工具对象列表
+     */
+    public List<Object> getEnabledBuiltinToolObjectsByCategories(String categories) {
+        Set<String> categorySet = Arrays.stream(categories.split(","))
+            .map(String::trim)
+            .collect(Collectors.toSet());
+
+        // 查询所有已启用的 BUILTIN 类型工具
+        List<AiTool> enabledTools = aiToolMapper.selectList(
+            new LambdaQueryWrapper<AiTool>()
+                .eq(AiTool::getToolType, TYPE_BUILTIN)
+                .eq(AiTool::getStatus, "ENABLED")
+        );
+
+        List<Object> toolObjects = new ArrayList<>();
+        for (AiTool tool : enabledTools) {
+            BuiltinToolProvider provider = registeredProviders.get(tool.getToolName());
+            if (provider != null && categorySet.contains(provider.getCategories())) {
                 try {
                     Object toolBean = applicationContext.getBean(provider.getToolClass());
                     toolObjects.add(toolBean);

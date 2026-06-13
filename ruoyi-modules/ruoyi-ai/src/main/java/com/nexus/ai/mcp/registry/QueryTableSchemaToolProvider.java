@@ -31,4 +31,15 @@ public class QueryTableSchemaToolProvider implements BuiltinToolProvider {
     public Class<?> getToolClass() {
         return QueryTableSchemaTool.class;
     }
+
+    /**
+     * 获取工具类别标签
+     * <p>QUERY=数据查询专用, ALL=通用（查询和报表均可使用）</p>
+     *
+     * @return 类别标签
+     */
+    @Override
+    public String getCategories() {
+        return "QUERY";
+    }
 }

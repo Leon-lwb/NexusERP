@@ -9,12 +9,16 @@ import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.service.IAiSessionService;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.satoken.utils.LoginHelper;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.ai.service.facade.AiServiceFacade;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * AI 聊天接口
@@ -22,6 +26,7 @@ import java.util.List;
  *
  * @author NexusERP
  */
+@Slf4j
 @Validated
 @RequiredArgsConstructor
 @RestController
@@ -151,6 +156,113 @@ public class AiChatController {
             .set(AiMessage::getFeedback, "NONE".equals(feedback) ? null : feedback);
         aiMessageMapper.update(null, updateWrapper);
         return R.ok();
+    }
+
+    /**
+     * 查询当前会话的 Token 用量
+     * <p>返回会话中所有消息的 Token 用量总和，供前端显示进度条</p>
+     *
+     * @param sessionId 会话ID
+     * @return Token 用量信息
+     */
+    @GetMapping("/token-usage/{sessionId}")
+    public R<Map<String, Object>> getTokenUsage(@PathVariable Long sessionId) {
+        Long userId = LoginHelper.getUserId();
+        AiSession session = aiSessionService.selectById(sessionId);
+        if (session == null || !session.getUserId().equals(userId)) {
+            return R.fail("无权访问该会话");
+        }
+
+        List<AiMessage> messages = aiMessageMapper.selectList(
+            new LambdaQueryWrapper<AiMessage>()
+                .eq(AiMessage::getSessionId, sessionId)
+                .isNotNull(AiMessage::getTokenUsage)
+        );
+
+        int totalTokens = messages.stream()
+            .filter(m -> m.getTokenUsage() != null)
+            .mapToInt(m -> m.getTokenUsage().intValue())
+            .sum();
+
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("sessionId", sessionId);
+        result.put("totalTokens", totalTokens);
+        result.put("messageCount", messages.size());
+        return R.ok(result);
+    }
+
+    /**
+     * 导出会话聊天记录为 Markdown 文件
+     * <p>将指定会话的所有消息格式化为 Markdown 并下载</p>
+     *
+     * @param sessionId 会话ID
+     * @param response  HTTP 响应
+     */
+    @SaCheckPermission("ai:chat:export")
+    @GetMapping("/export/{sessionId}")
+    public void exportSession(@PathVariable Long sessionId, HttpServletResponse response) {
+        // 校验会话归属：只能导出自己的会话
+        Long userId = LoginHelper.getUserId();
+        AiSession session = aiSessionService.selectById(sessionId);
+        if (session == null || !session.getUserId().equals(userId)) {
+            try {
+                response.setContentType("application/json;charset=utf-8");
+                response.getWriter().write("{\"code\":500,\"msg\":\"无权访问该会话\"}");
+                return;
+            } catch (Exception ignored) {
+                return;
+            }
+        }
+
+        // 查询所有消息
+        List<AiMessage> messages = aiMessageMapper.selectList(
+            new LambdaQueryWrapper<AiMessage>()
+                .eq(AiMessage::getSessionId, sessionId)
+                .orderByAsc(AiMessage::getCreateTime)
+        );
+
+        // 格式化为 Markdown
+        String markdown = formatSessionToMarkdown(session, messages);
+
+        // 写入响应流
+        try {
+            response.setContentType("text/markdown;charset=utf-8");
+            response.setHeader("Content-Disposition",
+                "attachment;filename=" + java.net.URLEncoder.encode(
+                    (session.getTitle() != null ? session.getTitle() : "AI对话") + ".md", "UTF-8"));
+            response.getWriter().write(markdown);
+            response.getWriter().flush();
+        } catch (Exception e) {
+            log.error("导出会话失败: sessionId={}", sessionId, e);
+        }
+    }
+
+    /**
+     * 将会话格式化为 Markdown
+     *
+     * @param session  会话信息
+     * @param messages 消息列表
+     * @return Markdown 文本
+     */
+    private String formatSessionToMarkdown(AiSession session, List<AiMessage> messages) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("# ").append(session.getTitle() != null ? session.getTitle() : "AI 对话记录").append("\n\n");
+        sb.append("> 导出时间：").append(java.time.LocalDateTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
+        if (session.getModelName() != null) {
+            sb.append("> 模型：").append(session.getModelName()).append("\n");
+        }
+        sb.append("\n---\n\n");
+
+        for (AiMessage msg : messages) {
+            String role = "USER".equals(msg.getRole()) ? "用户" : "AI";
+            sb.append("### ").append(role).append("\n\n");
+            sb.append(msg.getContent() != null ? msg.getContent() : "").append("\n\n");
+            if (msg.getTokenUsage() != null) {
+                sb.append("> Token 消耗：").append(msg.getTokenUsage()).append("\n\n");
+            }
+        }
+        return sb.toString();
     }
 
 }

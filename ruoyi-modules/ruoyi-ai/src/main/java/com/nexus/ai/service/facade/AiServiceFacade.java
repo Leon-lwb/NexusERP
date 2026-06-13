@@ -317,9 +317,12 @@ public class AiServiceFacade {
         List<ChatMessage> history = persistentChatMemoryStore.getMessages(sessionId);
         String contextualQuery = buildContextualQuery(history, request.getContent());
 
-        // 动态加载已启用的工具
-        List<Object> builtinTools = toolProviderFactory.getAllEnabledBuiltinToolObjects();
-        ToolProvider mcpToolProvider = toolProviderFactory.getAllEnabledMcpToolProviders();
+        // 动态加载已启用的工具（差异化注入：QueryAgent 需要 QUERY+ALL，ReportAgent 只需要 ALL）
+        List<Object> queryTools = toolProviderFactory.getEnabledBuiltinToolObjectsByCategories("QUERY,ALL");
+        List<Object> reportTools = toolProviderFactory.getEnabledBuiltinToolObjectsByCategories("ALL");
+
+        // 会话级 MCP 工具选择：优先使用请求中的 enabledToolIds，其次使用会话保存的配置
+        ToolProvider mcpToolProvider = resolveMcpToolProvider(request, sessionId);
 
         // 注入 PromptTemplateService 渲染的动态上下文
         // 由于 LangChain4j Supervisor 模式下 SubAgent 的 @UserMessage 由框架填充，
@@ -337,18 +340,26 @@ public class AiServiceFacade {
             + "【用户问题】\n" + contextualQuery;
 
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
-        ErpQueryAgent queryAgent = AgenticServices.agentBuilder(ErpQueryAgent.class)
-            .chatModel(chatModel)
-            .tools(builtinTools.toArray())
-            .toolProvider(mcpToolProvider)
-            .build();
+        var queryAgentBuilder = AgenticServices.agentBuilder(ErpQueryAgent.class)
+            .chatModel(chatModel);
+        if (!queryTools.isEmpty()) {
+            queryAgentBuilder.tools(queryTools.toArray());
+        }
+        if (mcpToolProvider != null) {
+            queryAgentBuilder.toolProvider(mcpToolProvider);
+        }
+        ErpQueryAgent queryAgent = queryAgentBuilder.build();
 
         // 构建 ERP 报表 Agent（同样不使用持久化记忆）
-        ErpReportAgent reportAgent = AgenticServices.agentBuilder(ErpReportAgent.class)
-            .chatModel(chatModel)
-            .tools(builtinTools.toArray())
-            .toolProvider(mcpToolProvider)
-            .build();
+        var reportAgentBuilder = AgenticServices.agentBuilder(ErpReportAgent.class)
+            .chatModel(chatModel);
+        if (!reportTools.isEmpty()) {
+            reportAgentBuilder.tools(reportTools.toArray());
+        }
+        if (mcpToolProvider != null) {
+            reportAgentBuilder.toolProvider(mcpToolProvider);
+        }
+        ErpReportAgent reportAgent = reportAgentBuilder.build();
 
         // 构建 Supervisor（增大 maxAgentsInvocations，避免复杂查询耗尽迭代次数）
         SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
@@ -449,7 +460,8 @@ public class AiServiceFacade {
 
     /**
      * 构建带历史上下文的查询提示
-     * <p>将最近 10 条历史消息拼接到当前问题前，每条消息截断到 200 字符以控制 Token 消耗</p>
+     * <p>按字符数预算控制上下文窗口，超出预算时保留最近消息完整、更早消息只保留摘要</p>
+     * <p>预算分配：最近 3 轮（6 条消息）完整保留，更早消息截取前 100 字符</p>
      *
      * @param history      历史消息列表
      * @param currentQuery 当前用户问题
@@ -459,24 +471,86 @@ public class AiServiceFacade {
         if (history == null || history.size() <= 1) {
             return currentQuery;
         }
+
+        final int maxChars = 6000;
         StringBuilder sb = new StringBuilder();
         sb.append("以下是本次会话的历史对话，请参考上下文回答当前问题：\n\n");
-        // 只取最近 10 条历史消息（约 5 轮对话），每条截断到 200 字符
-        int startIdx = Math.max(0, history.size() - 11);
-        for (int i = startIdx; i < history.size() - 1; i++) {
+
+        // 从最新消息往前遍历，最近 3 轮（6 条）完整保留，更早消息截断
+        int recentFullMessages = 6; // 最近 3 轮 = 6 条消息
+        int startIdx = 0;
+        int totalChars = 0;
+
+        // 先计算最近 N 条完整消息的字符数
+        int recentStart = Math.max(0, history.size() - 1 - recentFullMessages);
+        for (int i = recentStart; i < history.size() - 1; i++) {
             ChatMessage msg = history.get(i);
-            if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                String text = um.singleText();
-                sb.append("用户：").append(text.length() > 200 ? text.substring(0, 200) + "..." : text).append("\n");
-            } else if (msg instanceof dev.langchain4j.data.message.AiMessage am) {
-                String text = am.text();
-                if (text != null) {
-                    sb.append("AI：").append(text.length() > 200 ? text.substring(0, 200) + "..." : text).append("\n");
-                }
+            totalChars += getMessageTextLength(msg);
+        }
+
+        // 如果最近消息已超出预算，只保留最近消息（截断到 200 字符）
+        if (totalChars > maxChars) {
+            int recentIdx = Math.max(0, history.size() - 1 - recentFullMessages);
+            for (int i = recentIdx; i < history.size() - 1; i++) {
+                ChatMessage msg = history.get(i);
+                appendMessage(sb, msg, 200);
+            }
+        } else {
+            // 最近消息完整保留，更早消息只保留摘要（100 字符）
+            int remainingBudget = maxChars - totalChars;
+
+            // 先输出更早的消息（摘要）
+            for (int i = 0; i < recentStart; i++) {
+                ChatMessage msg = history.get(i);
+                int summaryLen = Math.min(100, remainingBudget);
+                if (summaryLen <= 0) break;
+                appendMessage(sb, msg, summaryLen);
+                remainingBudget -= getMessageTextLength(msg);
+            }
+
+            // 输出最近消息（完整，但单条不超过 500 字符）
+            for (int i = recentStart; i < history.size() - 1; i++) {
+                ChatMessage msg = history.get(i);
+                appendMessage(sb, msg, 500);
             }
         }
+
         sb.append("\n当前问题：").append(currentQuery);
         return sb.toString();
+    }
+
+    /**
+     * 获取消息文本长度
+     *
+     * @param msg 聊天消息
+     * @return 文本字符数
+     */
+    private int getMessageTextLength(ChatMessage msg) {
+        if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
+            return um.singleText().length();
+        } else if (msg instanceof dev.langchain4j.data.message.AiMessage am) {
+            return am.text() != null ? am.text().length() : 0;
+        }
+        return 0;
+    }
+
+    /**
+     * 将消息追加到 StringBuilder，超过 maxLength 时截断
+     *
+     * @param sb        目标 StringBuilder
+     * @param msg       聊天消息
+     * @param maxLength 单条消息最大字符数
+     */
+    private void appendMessage(StringBuilder sb, ChatMessage msg, int maxLength) {
+        if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
+            String text = um.singleText();
+            sb.append("用户：").append(text.length() > maxLength ? text.substring(0, maxLength) + "..." : text).append("\n");
+        } else if (msg instanceof dev.langchain4j.data.message.AiMessage am) {
+            String text = am.text();
+            if (text != null) {
+                sb.append("AI：").append(text.length() > maxLength ? text.substring(0, maxLength) + "..." : text).append("\n");
+            }
+        }
     }
 
     /**
@@ -488,6 +562,80 @@ public class AiServiceFacade {
         aiMsg.setRole("ASSISTANT");
         aiMsg.setContent(content);
         aiMessageMapper.insert(aiMsg);
+    }
+
+    /**
+     * 解析会话级 MCP 工具选择
+     * <p>优先级：请求中的 enabledToolIds > 会话保存的 enabledToolIds > 全部已启用工具</p>
+     * <p>首次设置后保存到会话，后续对话自动复用</p>
+     *
+     * @param request   聊天请求
+     * @param sessionId 会话ID
+     * @return MCP ToolProvider（可能为 null，表示不使用 MCP 工具）
+     */
+    private ToolProvider resolveMcpToolProvider(AiChatRequest request, Long sessionId) {
+        List<Long> toolIds = null;
+
+        // 1. 优先使用请求中指定的工具 ID
+        if (request.getEnabledToolIds() != null && !request.getEnabledToolIds().isEmpty()) {
+            toolIds = request.getEnabledToolIds();
+            // 保存到会话，后续对话自动复用
+            saveEnabledToolIdsToSession(sessionId, toolIds);
+        } else {
+            // 2. 使用会话保存的工具配置
+            AiSession session = aiSessionMapper.selectById(sessionId);
+            if (session != null && session.getEnabledToolIds() != null && !session.getEnabledToolIds().isEmpty()) {
+                toolIds = parseToolIds(session.getEnabledToolIds());
+            }
+            // 3. toolIds 为 null 时，使用全部已启用工具
+        }
+
+        if (toolIds != null) {
+            if (toolIds.isEmpty()) {
+                // 空列表表示不使用任何 MCP 工具
+                return null;
+            }
+            return toolProviderFactory.getMcpToolProvidersByIds(toolIds);
+        }
+
+        // 默认：加载全部已启用的 MCP 工具
+        return toolProviderFactory.getAllEnabledMcpToolProviders();
+    }
+
+    /**
+     * 保存工具 ID 列表到会话
+     *
+     * @param sessionId 会话ID
+     * @param toolIds   工具 ID 列表
+     */
+    private void saveEnabledToolIdsToSession(Long sessionId, List<Long> toolIds) {
+        AiSession update = new AiSession();
+        update.setId(sessionId);
+        update.setEnabledToolIds(toolIds.stream()
+            .map(String::valueOf)
+            .collect(java.util.stream.Collectors.joining(",")));
+        aiSessionMapper.updateById(update);
+    }
+
+    /**
+     * 解析逗号分隔的工具 ID 字符串
+     *
+     * @param toolIdsStr 逗号分隔的 ID 字符串
+     * @return 工具 ID 列表
+     */
+    private List<Long> parseToolIds(String toolIdsStr) {
+        if (toolIdsStr == null || toolIdsStr.isBlank()) {
+            return null;
+        }
+        List<Long> ids = new ArrayList<>();
+        for (String part : toolIdsStr.split(",")) {
+            try {
+                ids.add(Long.parseLong(part.trim()));
+            } catch (NumberFormatException e) {
+                log.warn("[AI] 解析工具 ID 失败: {}", part);
+            }
+        }
+        return ids.isEmpty() ? null : ids;
     }
 
     /**

@@ -176,4 +176,70 @@ public class ErpPurchaseTool extends ErpToolHelper {
             return "查询失败：" + e.getMessage();
         }
     }
+
+    /**
+     * 查询供应商交货准时率排行
+     * <p>基于供应商评估数据，按准时交货率从低到高排序，重点关注准时率低的供应商</p>
+     *
+     * @return 供应商交货准时率排行
+     */
+    @Tool("查询供应商交货准时率排行")
+    public String queryVendorDeliveryPerformance() {
+        log.info("[AI-Purchase] 查询供应商交货准时率排行");
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            String sql = """
+                SELECT v.vendor_name AS 供应商名称,
+                       e.total_orders AS 订单总数,
+                       e.on_time_orders AS 准时交货数,
+                       ROUND(e.on_time_orders * 100.0 / NULLIF(e.total_orders, 0), 2) AS 准时交货率,
+                       e.return_qty AS 退货订单数,
+                       e.total_score AS 综合评分
+                FROM pu_vendor_evaluation e
+                JOIN bd_vendor v ON e.vendor_id = v.vendor_id
+                ORDER BY 准时交货率 ASC
+                """;
+            sql = injectTenantCondition(sql, tenantId);
+            return executeAndFormat(sql, "Purchase-VendorDelivery");
+        } catch (Exception e) {
+            log.error("[AI-Purchase] 查询供应商交货准时率排行失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
+
+    /**
+     * 查询最近N个月的采购趋势（按月聚合）
+     * <p>按月统计采购订单数和金额，用于分析采购趋势变化</p>
+     *
+     * @param months 统计月数
+     * @return 月度采购趋势
+     */
+    @Tool("查询最近N个月的采购趋势（按月聚合）")
+    public String queryPurchaseTrend(@P("统计月数") int months) {
+        log.info("[AI-Purchase] 查询采购趋势: months={}", months);
+        if (months <= 0) {
+            return "参数错误：统计月数必须大于0";
+        }
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            String sql = """
+                SELECT DATE_FORMAT(o.order_date, '%Y-%m') AS 月份,
+                       COUNT(o.order_id) AS 采购订单数,
+                       SUM(o.total_amount) AS 采购总金额,
+                       COUNT(DISTINCT o.vendor_id) AS 供应商数
+                FROM pu_purchase_order o
+                WHERE o.order_date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+                GROUP BY DATE_FORMAT(o.order_date, '%Y-%m')
+                ORDER BY 月份
+                """;
+            sql = injectTenantCondition(sql, tenantId);
+            List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
+                sql, new Object[]{months}, 100, 5);
+            log.info("[AI-Purchase] 采购趋势查询完成，返回 {} 行", results.size());
+            return formatResults(results);
+        } catch (Exception e) {
+            log.error("[AI-Purchase] 查询采购趋势失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
 }

@@ -142,4 +142,93 @@ public class ErpInventoryTool extends ErpToolHelper {
             return "查询失败：" + e.getMessage();
         }
     }
+
+    /**
+     * 查询库龄分析，识别呆滞物料
+     * <p>按入库时间计算库龄天数，筛选超过指定天数的呆滞库存</p>
+     *
+     * @param agingDays 库龄天数阈值（超过此天数视为呆滞）
+     * @return 呆滞物料列表
+     */
+    @Tool("查询库龄分析，识别呆滞物料（入库超过指定天数的库存）")
+    public String queryInventoryAging(@P("库龄天数阈值") int agingDays) {
+        log.info("[AI-Inventory] 查询库龄分析: agingDays={}", agingDays);
+        if (agingDays <= 0) {
+            return "参数错误：库龄天数阈值必须大于0";
+        }
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            String sql = """
+                SELECT s.material_code AS 物料编码,
+                       s.material_name AS 物料名称,
+                       s.warehouse_name AS 仓库名称,
+                       s.stock_quantity AS 库存数量,
+                       s.unit_cost AS 单位成本,
+                       s.total_cost AS 库存金额,
+                       DATEDIFF(CURDATE(), s.recpt_date) AS 库龄天数
+                FROM wm_material_stock s
+                WHERE DATEDIFF(CURDATE(), s.recpt_date) > ?
+                  AND s.stock_quantity > 0
+                ORDER BY 库龄天数 DESC
+                """;
+            sql = injectTenantCondition(sql, tenantId);
+            List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
+                sql, new Object[]{agingDays}, 100, 5);
+            log.info("[AI-Inventory] 库龄分析查询完成，返回 {} 行", results.size());
+            return formatResults(results);
+        } catch (Exception e) {
+            log.error("[AI-Inventory] 查询库龄分析失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
+
+    /**
+     * 查询各仓库的库存周转率
+     * <p>周转率 = 期间出库金额 / 当前库存金额，周转率越高说明库存利用效率越好</p>
+     * <p>注意：SQL 中已预置 tenant_id 条件，避免 injectTenantCondition 误注入子查询</p>
+     *
+     * @param months 统计月数
+     * @return 各仓库库存周转率
+     */
+    @Tool("查询各仓库的库存周转率分析")
+    public String queryInventoryTurnover(@P("统计月数") int months) {
+        log.info("[AI-Inventory] 查询库存周转率: months={}", months);
+        if (months <= 0) {
+            return "参数错误：统计月数必须大于0";
+        }
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            // 注意：SQL 中已预置 s.tenant_id 和 tx.tenant_id 条件，
+            // injectTenantCondition 检测到 TENANT_ID 关键字后会跳过处理，
+            // 避免将外层别名 s 的条件误注入到子查询 WHERE 中
+            String sql = """
+                SELECT s.warehouse_name AS 仓库名称,
+                       SUM(s.stock_quantity * s.unit_cost) AS 当前库存金额,
+                       COALESCE(t.outbound_amount, 0) AS 期间出库金额,
+                       CASE WHEN SUM(s.stock_quantity * s.unit_cost) > 0
+                            THEN ROUND(COALESCE(t.outbound_amount, 0) / SUM(s.stock_quantity * s.unit_cost), 2)
+                            ELSE 0 END AS 周转率
+                FROM wm_material_stock s
+                LEFT JOIN (
+                    SELECT tx.warehouse_id,
+                           SUM(tx.tx_quantity * tx.unit_cost) AS outbound_amount
+                    FROM wm_material_stock_tx tx
+                    WHERE tx.tx_flag = -1
+                      AND tx.tx_date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+                      AND tx.tenant_id = %d
+                    GROUP BY tx.warehouse_id
+                ) t ON s.warehouse_id = t.warehouse_id
+                WHERE s.tenant_id = %d
+                GROUP BY s.warehouse_name
+                ORDER BY 周转率 DESC
+                """.formatted(tenantId, tenantId);
+            List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
+                sql, new Object[]{months}, 100, 5);
+            log.info("[AI-Inventory] 库存周转率查询完成，返回 {} 行", results.size());
+            return formatResults(results);
+        } catch (Exception e) {
+            log.error("[AI-Inventory] 查询库存周转率失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
 }

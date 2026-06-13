@@ -107,4 +107,21 @@ public class McpToolController {
     public R<McpToolTestResult> test(@PathVariable Long id) {
         return R.ok(mcpToolService.testTool(id));
     }
+
+    /**
+     * 获取当前可用的 MCP 工具列表（供前端工具选择器使用）
+     * <p>返回所有状态为 ENABLED 的非内置工具，含 id/toolName/displayName/description</p>
+     *
+     * @return 可用 MCP 工具列表
+     */
+    @SaCheckPermission("ai:mcp:list")
+    @GetMapping("/available")
+    public R<List<AiTool>> getAvailableMcpTools() {
+        List<AiTool> allEnabled = mcpToolService.getAllEnabledTools();
+        // 过滤掉内置工具，只返回 MCP 外部工具
+        List<AiTool> mcpTools = allEnabled.stream()
+            .filter(t -> !"BUILTIN".equals(t.getToolType()))
+            .toList();
+        return R.ok(mcpTools);
+    }
 }

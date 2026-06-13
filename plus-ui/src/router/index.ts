@@ -670,6 +670,18 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/ai/prompt/index.vue'),
         name: 'AiPrompt',
         meta: { title: 'Prompt模板', icon: 'documentation' }
+      },
+      {
+        path: 'sqlExample',
+        component: () => import('@/views/ai/sqlExample/index.vue'),
+        name: 'AiSqlExample',
+        meta: { title: 'SQL示例', icon: 'code' }
+      },
+      {
+        path: 'abTest',
+        component: () => import('@/views/ai/abTest/index.vue'),
+        name: 'AiAbTest',
+        meta: { title: 'A/B测试', icon: 'data-analysis' }
       }
     ]
   },

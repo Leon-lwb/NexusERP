@@ -31,4 +31,7 @@ public class AiSession extends BaseEntity {
 
     /** 使用的模型名称 */
     private String modelName;
+
+    /** 会话启用的工具ID列表（逗号分隔，null=使用全部已启用工具） */
+    private String enabledToolIds;
 }

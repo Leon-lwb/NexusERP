@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * AI 聊天请求 DTO
@@ -41,4 +42,10 @@ public class AiChatRequest implements Serializable {
      * </ul>
      */
     private String mode;
+
+    /**
+     * 本次对话启用的 MCP 工具 ID 列表
+     * <p>null 表示使用会话默认工具集，非空时覆盖会话设置</p>
+     */
+    private List<Long> enabledToolIds;
 }

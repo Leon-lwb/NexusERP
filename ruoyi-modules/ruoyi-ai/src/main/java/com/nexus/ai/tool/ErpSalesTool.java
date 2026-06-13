@@ -165,4 +165,89 @@ public class ErpSalesTool extends ErpToolHelper {
             return "查询失败：" + e.getMessage();
         }
     }
+
+    /**
+     * 查询各物料分类的销售额分布
+     * <p>按物料分类维度统计销售金额和数量，用于分析品类贡献</p>
+     *
+     * @param days 统计天数
+     * @return 各品类销售额分布
+     */
+    @Tool("查询各物料分类的销售额分布")
+    public String querySalesByCategory(@P("统计天数") int days) {
+        log.info("[AI-Sales] 查询品类销售分布: days={}", days);
+        if (days <= 0) {
+            return "参数错误：统计天数必须大于0";
+        }
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            String sql = """
+                SELECT mc.category_name AS 品类名称,
+                       SUM(l.line_amount) AS 销售金额,
+                       SUM(l.ordered_qty) AS 销售数量,
+                       COUNT(DISTINCT l.so_id) AS 订单数
+                FROM so_sales_order_line l
+                JOIN so_sales_order_header h ON l.so_id = h.so_id
+                JOIN bd_material m ON l.material_id = m.material_id
+                LEFT JOIN bd_material_category mc ON m.category_id = mc.category_id
+                WHERE h.order_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                GROUP BY mc.category_name
+                ORDER BY 销售金额 DESC
+                """;
+            sql = injectTenantCondition(sql, tenantId);
+            List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
+                sql, new Object[]{days}, 100, 5);
+            log.info("[AI-Sales] 品类销售分布查询完成，返回 {} 行", results.size());
+            return formatResults(results);
+        } catch (Exception e) {
+            log.error("[AI-Sales] 查询品类销售分布失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
+
+    /**
+     * 查询物料销售金额排行 TOP N
+     * <p>按物料维度统计销售金额，返回排行前N的物料</p>
+     *
+     * @param days 统计天数
+     * @param topN 排行数量
+     * @return 物料销售排行
+     */
+    @Tool("查询物料销售金额排行TOP N")
+    public String queryTopMaterialsBySales(
+        @P("统计天数") int days,
+        @P("Top N") int topN) {
+        log.info("[AI-Sales] 查询物料销售排行: days={}, topN={}", days, topN);
+        if (days <= 0) {
+            return "参数错误：统计天数必须大于0";
+        }
+        if (topN <= 0) {
+            return "参数错误：Top N必须大于0";
+        }
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            int limitN = Math.min(topN, 100);
+            String sql = """
+                SELECT m.material_code AS 物料编码,
+                       m.material_name AS 物料名称,
+                       SUM(l.ordered_qty) AS 销售数量,
+                       SUM(l.line_amount) AS 销售金额
+                FROM so_sales_order_line l
+                JOIN so_sales_order_header h ON l.so_id = h.so_id
+                JOIN bd_material m ON l.material_id = m.material_id
+                WHERE h.order_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                GROUP BY m.material_code, m.material_name
+                ORDER BY 销售金额 DESC
+                LIMIT ?
+                """;
+            sql = injectTenantCondition(sql, tenantId);
+            List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
+                sql, new Object[]{days, limitN}, 100, 5);
+            log.info("[AI-Sales] 物料销售排行查询完成，返回 {} 行", results.size());
+            return formatResults(results);
+        } catch (Exception e) {
+            log.error("[AI-Sales] 查询物料销售排行失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
 }

@@ -38,6 +38,20 @@ public class ToolProviderFactory {
     }
 
     /**
+     * 获取指定类别的已启用内置工具对象列表
+     * <p>
+     * 根据 categories 参数过滤工具，支持逗号分隔的多个类别。
+     * 用于 Agent 构建时按需注入不同工具集。
+     * </p>
+     *
+     * @param categories 类别标签（逗号分隔，如 "QUERY,ALL"）
+     * @return 匹配类别的已启用工具对象列表
+     */
+    public List<Object> getEnabledBuiltinToolObjectsByCategories(String categories) {
+        return builtinToolRegistry.getEnabledBuiltinToolObjectsByCategories(categories);
+    }
+
+    /**
      * 获取所有已启用的 MCP 外部工具 Provider
      * <p>用于 AgenticServices.toolProvider() 注入</p>
      */
@@ -47,8 +61,22 @@ public class ToolProviderFactory {
 
     /**
      * 按工具名称列表获取 MCP 工具 Provider
+     *
+     * @param toolNames 工具名称列表
+     * @return MCP ToolProvider，无匹配时返回 null
      */
     public ToolProvider getMcpToolProvidersByNames(List<String> toolNames) {
         return mcpClientManager.getToolProvidersByNames(toolNames);
+    }
+
+    /**
+     * 按工具 ID 列表获取 MCP 工具 Provider
+     * <p>用于会话级工具选择，仅返回指定 ID 且状态为 ENABLED 的 MCP 外部工具</p>
+     *
+     * @param toolIds 工具 ID 列表
+     * @return MCP ToolProvider，无匹配时返回 null
+     */
+    public ToolProvider getMcpToolProvidersByIds(List<Long> toolIds) {
+        return mcpClientManager.getToolProvidersByIds(toolIds);
     }
 }

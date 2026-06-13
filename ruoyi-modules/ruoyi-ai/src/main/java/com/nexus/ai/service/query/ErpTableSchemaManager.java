@@ -11,10 +11,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -386,6 +383,178 @@ public class ErpTableSchemaManager {
             .sorted(Comparator.comparing(TableStructure::getTableName))
             .map(this::formatEnhancedTableSummary)
             .collect(Collectors.joining("\n\n"));
+    }
+
+    // ==================== 表优先级与优化摘要 ====================
+
+    /**
+     * 表优先级枚举
+     * <p>
+     * CORE — 核心表，几乎所有查询都需要，始终完整输出<br>
+     * IMPORTANT — 重要表，常用查询涉及，空间允许时完整输出<br>
+     * AUXILIARY — 辅助表，低频查询涉及，仅输出表名和注释
+     * </p>
+     */
+    public enum TablePriority {
+        /** 核心表：高频查询必用，始终包含 */
+        CORE,
+        /** 重要表：常用查询涉及，空间允许时包含 */
+        IMPORTANT,
+        /** 辅助表：低频查询涉及，仅列出表名 */
+        AUXILIARY
+    }
+
+    /** 表优先级映射（静态初始化，覆盖所有 ERP 业务表） */
+    private static final Map<String, TablePriority> TABLE_PRIORITY_MAP;
+
+    static {
+        Map<String, TablePriority> map = new LinkedHashMap<>();
+        // === CORE：核心主数据 + 高频查询表 ===
+        map.put("bd_material", TablePriority.CORE);
+        map.put("bd_material_category", TablePriority.CORE);
+        map.put("bd_client", TablePriority.CORE);
+        map.put("bd_vendor", TablePriority.CORE);
+        map.put("wm_material_stock", TablePriority.CORE);
+        map.put("wm_warehouse", TablePriority.CORE);
+        map.put("so_sales_order_header", TablePriority.CORE);
+        map.put("so_sales_order_line", TablePriority.CORE);
+
+        // === IMPORTANT：常用业务表 ===
+        map.put("bd_workshop", TablePriority.IMPORTANT);
+        map.put("bd_workstation", TablePriority.IMPORTANT);
+        map.put("bd_bom", TablePriority.IMPORTANT);
+        map.put("bd_bom_detail", TablePriority.IMPORTANT);
+        map.put("bd_unit_of_measure", TablePriority.IMPORTANT);
+        map.put("wm_material_stock_tx", TablePriority.IMPORTANT);
+        map.put("wm_storage_area", TablePriority.IMPORTANT);
+        map.put("wm_storage_location", TablePriority.IMPORTANT);
+        map.put("wm_batch", TablePriority.IMPORTANT);
+        map.put("wm_stock_alert", TablePriority.IMPORTANT);
+        map.put("pu_purchase_order", TablePriority.IMPORTANT);
+        map.put("pu_purchase_order_line", TablePriority.IMPORTANT);
+        map.put("pu_vendor_evaluation", TablePriority.IMPORTANT);
+        map.put("prd_work_order", TablePriority.IMPORTANT);
+        map.put("prd_work_report", TablePriority.IMPORTANT);
+        map.put("so_customer_order", TablePriority.IMPORTANT);
+        map.put("so_return", TablePriority.IMPORTANT);
+        map.put("so_return_line", TablePriority.IMPORTANT);
+        map.put("so_quotation", TablePriority.IMPORTANT);
+        map.put("so_quotation_line", TablePriority.IMPORTANT);
+        map.put("so_price_list", TablePriority.IMPORTANT);
+        map.put("so_price_list_line", TablePriority.IMPORTANT);
+
+        // === AUXILIARY：低频/辅助表（未显式列出的表默认为 AUXILIARY） ===
+        TABLE_PRIORITY_MAP = Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * 获取表的优先级
+     *
+     * @param tableName 表名
+     * @return 优先级（未在映射中的表默认返回 AUXILIARY）
+     */
+    public TablePriority getTablePriority(String tableName) {
+        return TABLE_PRIORITY_MAP.getOrDefault(tableName, TablePriority.AUXILIARY);
+    }
+
+    /**
+     * 获取按优先级裁剪的 Schema 摘要
+     * <p>
+     * 优先级策略：
+     * <ol>
+     *   <li>CORE 级别表：始终完整输出（含字段类型、枚举值、外键关系）</li>
+     *   <li>IMPORTANT 级别表：空间允许时完整输出，超出预算后仅输出表名+注释</li>
+     *   <li>AUXILIARY 级别表：仅输出表名+注释+字段数</li>
+     * </ol>
+     * </p>
+     *
+     * @param maxChars 最大字符数预算（默认 4000，约 2000 中文字）
+     * @return 裁剪后的 Schema 摘要文本
+     */
+    public String getOptimizedSchemaSummary(int maxChars) {
+        ensureInitialized();
+
+        List<TableStructure> allTables = schemaCache.values().stream()
+            .filter(t -> allowedTablePrefixes.stream().anyMatch(t.getTableName()::startsWith))
+            .sorted(Comparator.comparing(TableStructure::getTableName))
+            .collect(Collectors.toList());
+
+        // 按优先级分组
+        List<TableStructure> coreTables = new ArrayList<>();
+        List<TableStructure> importantTables = new ArrayList<>();
+        List<TableStructure> auxiliaryTables = new ArrayList<>();
+
+        for (TableStructure table : allTables) {
+            switch (getTablePriority(table.getTableName())) {
+                case CORE -> coreTables.add(table);
+                case IMPORTANT -> importantTables.add(table);
+                case AUXILIARY -> auxiliaryTables.add(table);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        int remaining = maxChars;
+
+        // 1. 输出 CORE 表完整摘要
+        for (TableStructure table : coreTables) {
+            String summary = formatEnhancedTableSummary(table);
+            if (sb.length() + summary.length() + 2 <= maxChars) {
+                if (sb.length() > 0) {
+                    sb.append("\n\n");
+                }
+                sb.append(summary);
+                remaining = maxChars - sb.length();
+            } else {
+                // 空间不足，降级为简要格式
+                if (sb.length() > 0) {
+                    sb.append("\n\n");
+                }
+                sb.append(formatBriefTableSummary(table));
+                remaining = maxChars - sb.length();
+            }
+        }
+
+        // 2. 输出 IMPORTANT 表（空间允许时完整，否则简要）
+        for (TableStructure table : importantTables) {
+            String summary = formatEnhancedTableSummary(table);
+            String brief = formatBriefTableSummary(table);
+            String toAppend = (remaining >= summary.length() + 2) ? summary : brief;
+
+            if (sb.length() + toAppend.length() + 2 <= maxChars) {
+                sb.append("\n\n").append(toAppend);
+                remaining = maxChars - sb.length();
+            } else if (sb.length() + brief.length() + 2 <= maxChars) {
+                sb.append("\n\n").append(brief);
+                remaining = maxChars - sb.length();
+            }
+            // 空间完全不够则跳过
+        }
+
+        // 3. 输出 AUXILIARY 表（仅表名+注释+字段数，一行一个）
+        if (!auxiliaryTables.isEmpty() && remaining > 50) {
+            sb.append("\n\n--- 其他辅助表 ---\n");
+            for (TableStructure table : auxiliaryTables) {
+                String line = formatBriefTableSummary(table);
+                if (sb.length() + line.length() + 1 <= maxChars) {
+                    sb.append(line).append("\n");
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 格式化表的简要摘要（仅表名+注释+字段数，一行）
+     *
+     * @param table 表结构
+     * @return 简要摘要文本
+     */
+    private String formatBriefTableSummary(TableStructure table) {
+        String comment = (table.getTableComment() != null && !table.getTableComment().isEmpty())
+            ? "（" + table.getTableComment() + "）" : "";
+        int fieldCount = table.getColumns() != null ? table.getColumns().size() : 0;
+        return table.getTableName() + comment + " [" + fieldCount + "个字段]";
     }
 
     /**

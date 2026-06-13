@@ -2,7 +2,9 @@ package com.nexus.ai.service.prompt;
 
 import com.nexus.ai.mcp.BuiltinToolRegistry;
 import com.nexus.ai.service.query.ErpTableSchemaManager;
+import com.nexus.ai.service.query.SqlExampleService;
 import com.nexus.common.ai.domain.entity.AiPromptTemplate;
+import com.nexus.common.ai.domain.vo.AiSqlExampleVo;
 import com.nexus.common.ai.service.IAiPromptTemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,6 +37,7 @@ public class PromptTemplateService {
     private final IAiPromptTemplateService promptTemplateService;
     private final ErpTableSchemaManager schemaManager;
     private final BuiltinToolRegistry builtinToolRegistry;
+    private final SqlExampleService sqlExampleService;
 
     /** 模板内容缓存：templateKey -> content（变更时清除） */
     private final ConcurrentHashMap<String, String> templateCache = new ConcurrentHashMap<>();
@@ -60,27 +64,30 @@ public class PromptTemplateService {
 
     /**
      * 渲染 ErpQueryAgent 的上下文
-     * <p>自动注入：schemaSummary、date、availableTools</p>
+     * <p>自动注入：schemaSummary（按优先级裁剪）、date、availableTools、sqlExamples</p>
      *
      * @return 渲染后的上下文文本
      */
     public String renderQueryAgentContext() {
         Map<String, String> variables = new HashMap<>();
-        variables.put("schemaSummary", schemaManager.getFullSchemaSummary());
+        variables.put("schemaSummary", schemaManager.getOptimizedSchemaSummary(4000));
         variables.put("date", LocalDate.now().toString());
         variables.put("availableTools", getAvailableToolsDescription());
+        // 注入 SQL Few-Shot 示例
+        List<AiSqlExampleVo> examples = sqlExampleService.getAllEnabledExamples();
+        variables.put("sqlExamples", sqlExampleService.formatExamplesForPrompt(examples));
         return render("erp_query_agent", variables);
     }
 
     /**
      * 渲染 ErpReportAgent 的上下文
-     * <p>自动注入：schemaSummary、date</p>
+     * <p>自动注入：schemaSummary（按优先级裁剪）、date</p>
      *
      * @return 渲染后的上下文文本
      */
     public String renderReportAgentContext() {
         Map<String, String> variables = new HashMap<>();
-        variables.put("schemaSummary", schemaManager.getFullSchemaSummary());
+        variables.put("schemaSummary", schemaManager.getOptimizedSchemaSummary(4000));
         variables.put("date", LocalDate.now().toString());
         return render("erp_report_agent", variables);
     }

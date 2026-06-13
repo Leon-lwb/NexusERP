@@ -187,4 +187,83 @@ public class ErpProductionTool extends ErpToolHelper {
             return "查询失败：" + e.getMessage();
         }
     }
+
+    /**
+     * 查询生产延期分析
+     * <p>筛选计划结束日期已过但未完成的工单，按延期天数排序</p>
+     *
+     * @param days 查询最近N天的工单
+     * @return 延期工单列表
+     */
+    @Tool("查询生产延期分析（计划结束日期已过但未完成的工单）")
+    public String queryProductionDelayAnalysis(@P("查询天数") int days) {
+        log.info("[AI-Production] 查询生产延期分析: days={}", days);
+        if (days <= 0) {
+            return "参数错误：查询天数必须大于0";
+        }
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            String sql = """
+                SELECT wo.wo_no AS 工单编号,
+                       m.material_name AS 产品名称,
+                       wo.planned_qty AS 计划数量,
+                       wo.completed_qty AS 完成数量,
+                       ROUND(wo.completed_qty * 100.0 / NULLIF(wo.planned_qty, 0), 2) AS 完成率,
+                       wo.plan_end_date AS 计划结束日期,
+                       DATEDIFF(CURDATE(), wo.plan_end_date) AS 延期天数,
+                       wo.workshop_name AS 车间
+                FROM prd_work_order wo
+                JOIN bd_material m ON wo.material_id = m.material_id
+                WHERE wo.wo_status NOT IN ('COMPLETED', 'CANCELLED')
+                  AND wo.plan_end_date < CURDATE()
+                  AND wo.plan_end_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                ORDER BY 延期天数 DESC
+                """;
+            sql = injectTenantCondition(sql, tenantId);
+            List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
+                sql, new Object[]{days}, 100, 5);
+            log.info("[AI-Production] 生产延期分析查询完成，返回 {} 行", results.size());
+            return formatResults(results);
+        } catch (Exception e) {
+            log.error("[AI-Production] 查询生产延期分析失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
+
+    /**
+     * 查询各车间的产量统计
+     * <p>按车间维度统计计划数量、完成数量和完成率</p>
+     *
+     * @param days 统计天数
+     * @return 车间产量统计
+     */
+    @Tool("查询各车间的产量统计")
+    public String queryWorkshopOutput(@P("统计天数") int days) {
+        log.info("[AI-Production] 查询车间产量统计: days={}", days);
+        if (days <= 0) {
+            return "参数错误：统计天数必须大于0";
+        }
+        try {
+            Long tenantId = AiRequestContext.getTenantId();
+            String sql = """
+                SELECT wo.workshop_name AS 车间名称,
+                       COUNT(wo.wo_id) AS 工单数,
+                       SUM(wo.planned_qty) AS 计划数量,
+                       SUM(wo.completed_qty) AS 完成数量,
+                       ROUND(SUM(wo.completed_qty) * 100.0 / NULLIF(SUM(wo.planned_qty), 0), 2) AS 完成率
+                FROM prd_work_order wo
+                WHERE wo.plan_start_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+                GROUP BY wo.workshop_name
+                ORDER BY 完成率 DESC
+                """;
+            sql = injectTenantCondition(sql, tenantId);
+            List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
+                sql, new Object[]{days}, 100, 5);
+            log.info("[AI-Production] 车间产量统计查询完成，返回 {} 行", results.size());
+            return formatResults(results);
+        } catch (Exception e) {
+            log.error("[AI-Production] 查询车间产量统计失败", e);
+            return "查询失败：" + e.getMessage();
+        }
+    }
 }

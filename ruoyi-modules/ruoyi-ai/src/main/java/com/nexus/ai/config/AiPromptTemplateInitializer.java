@@ -35,8 +35,13 @@ public class AiPromptTemplateInitializer implements ApplicationRunner {
 
             === 可用工具列表 ===
             {{availableTools}}
+
+            === SQL 查询示例 ===
+            {{sqlExamples}}
+
+            请参考以上示例生成 SQL，但不要照搬，需要根据实际问题灵活调整。
             """,
-            "为 ErpQueryAgent 提供动态 Schema 摘要和工具列表上下文");
+            "为 ErpQueryAgent 提供动态 Schema 摘要、工具列表和 SQL 示例上下文");
 
         initDefaultTemplate("erp_report_agent", "ERP 报表生成助手上下文",
             """

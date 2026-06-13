@@ -20,12 +20,14 @@ import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.ai.service.IAiKnowledgeDocumentService;
 import com.nexus.common.ai.service.IAiKnowledgeChunkService;
 import com.nexus.ai.service.rag.KnowledgeProcessService;
+import com.nexus.ai.service.rag.KnowledgeImportService;
 import com.nexus.ai.service.rag.RetrieverService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * AI 知识库管理 Controller
@@ -44,6 +46,7 @@ public class AiKnowledgeController extends BaseController {
     private final IAiKnowledgeDocumentService aiKnowledgeDocumentService;
     private final IAiKnowledgeChunkService aiKnowledgeChunkService;
     private final KnowledgeProcessService knowledgeProcessService;
+    private final KnowledgeImportService knowledgeImportService;
     private final RetrieverService retrieverService;
 
     // ==================== 知识库管理 ====================
@@ -178,6 +181,27 @@ public class AiKnowledgeController extends BaseController {
     public R<Void> retryDocument(@PathVariable Long documentId) {
         knowledgeProcessService.retryProcess(documentId);
         return R.ok();
+    }
+
+    // ==================== 批量导入 ====================
+
+    /**
+     * 批量从 URL 导入文档到知识库
+     * <p>支持从指定 URL 列表批量下载文档并导入，每个 URL 对应一个文档</p>
+     * <p>权限标识：{@code ai:knowledge:add}</p>
+     *
+     * @param knowledgeId 知识库ID
+     * @param urls        文档 URL 列表
+     * @return 导入结果（成功数/失败数/失败详情）
+     */
+    @SaCheckPermission("ai:knowledge:add")
+    @Log(title = "AI知识库文档导入", businessType = BusinessType.IMPORT)
+    @PostMapping("/document/importUrls/{knowledgeId}")
+    public R<Map<String, Object>> importUrls(
+        @PathVariable Long knowledgeId,
+        @RequestBody List<String> urls) {
+        Map<String, Object> result = knowledgeImportService.importFromUrls(knowledgeId, urls);
+        return R.ok(result);
     }
 
     // ==================== 检索测试 ====================

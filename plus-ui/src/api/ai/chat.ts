@@ -87,3 +87,26 @@ export function messageFeedback(messageId: number | string, feedback: string) {
     params: { feedback }
   })
 }
+
+/**
+ * 导出会话聊天记录为 Markdown 文件
+ * @param sessionId 会话ID
+ */
+export function exportSession(sessionId: number | string) {
+  return request({
+    url: `/ai/chat/export/${sessionId}`,
+    method: 'get',
+    responseType: 'blob'
+  })
+}
+
+/**
+ * 查询当前会话的 Token 用量
+ * @param sessionId 会话ID
+ */
+export function getTokenUsage(sessionId: number | string) {
+  return request({
+    url: `/ai/chat/token-usage/${sessionId}`,
+    method: 'get'
+  })
+}
