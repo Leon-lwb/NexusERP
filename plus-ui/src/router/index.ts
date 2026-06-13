@@ -682,6 +682,12 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/ai/abTest/index.vue'),
         name: 'AiAbTest',
         meta: { title: 'A/B测试', icon: 'data-analysis' }
+      },
+      {
+        path: 'tokenUsage',
+        component: () => import('@/views/ai/tokenUsage/index.vue'),
+        name: 'AiTokenUsage',
+        meta: { title: 'Token用量', icon: 'chart' }
       }
     ]
   },

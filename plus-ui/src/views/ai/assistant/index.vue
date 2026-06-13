@@ -106,17 +106,26 @@
 
         <!-- 输入区域 -->
         <div class="input-area">
-          <div class="mode-selector">
-            <el-radio-group v-model="chatMode" size="small">
-              <el-radio-button label="auto">自动</el-radio-button>
-              <el-radio-button label="chat">对话</el-radio-button>
-              <el-radio-button label="agent">数据查询</el-radio-button>
-              <el-radio-button label="rag">知识库</el-radio-button>
-            </el-radio-group>
-            <el-button size="small" :icon="Download" @click="openToolDrawer" plain>
-              工具({{ selectedToolIds.length }})
-            </el-button>
-            <span v-if="tokenUsage > 0" class="token-usage">{{ tokenUsage.toLocaleString() }} tokens</span>
+          <div class="input-toolbar">
+            <div class="mode-tabs">
+              <span
+                v-for="m in modeOptions"
+                :key="m.value"
+                :class="['mode-tab', { active: chatMode === m.value }]"
+                @click="chatMode = m.value"
+              >
+                <el-icon v-if="m.icon" :size="14"><component :is="m.icon" /></el-icon>
+                {{ m.label }}
+              </span>
+            </div>
+            <div class="toolbar-right">
+              <span v-if="tokenUsage > 0" class="token-usage">{{ tokenUsage.toLocaleString() }} tokens</span>
+              <el-tooltip content="MCP 工具选择" placement="top">
+                <el-button size="small" :icon="SetUp" @click="openToolDrawer" plain round>
+                  {{ selectedToolIds.length > 0 ? selectedToolIds.length + ' 个工具' : '工具' }}
+                </el-button>
+              </el-tooltip>
+            </div>
           </div>
           <el-input
             v-model="inputText"
@@ -185,7 +194,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck, Download } from '@element-plus/icons-vue'
+import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck, Download, SetUp, DataAnalysis, Collection, MagicStick } from '@element-plus/icons-vue'
 import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, messageFeedback, exportSession, getTokenUsage, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
 import { getAvailableMcpTools } from '@/api/ai/mcpTool'
 import { marked } from 'marked'
@@ -220,6 +229,14 @@ const messageListRef = ref<HTMLElement>()
 const sessions = ref<AiSession[]>([])
 const currentSessionId = ref<number | string | null>(null)
 const chatMode = ref('auto')
+
+/** 对话模式选项 */
+const modeOptions = [
+  { value: 'auto', label: '自动', icon: MagicStick },
+  { value: 'chat', label: '对话', icon: ChatDotRound },
+  { value: 'agent', label: '数据查询', icon: DataAnalysis },
+  { value: 'rag', label: '知识库', icon: Collection }
+]
 
 /** MCP 工具选择器状态 */
 const toolDrawerVisible = ref(false)
@@ -977,31 +994,58 @@ onUnmounted(() => {
   border-top: 1px solid #e4e7ed;
   padding: 12px 20px 16px;
 
-  .mode-selector {
-    margin-bottom: 10px;
+  .input-toolbar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
 
-    :deep(.el-radio-group) {
-      display: flex;
+  .mode-tabs {
+    display: flex;
+    gap: 4px;
+    background: #f5f7fa;
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .mode-tab {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #606266;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    white-space: nowrap;
+
+    &:hover {
+      color: #409eff;
+      background: #ecf5ff;
     }
 
-    .token-usage {
-      font-size: 12px;
-      color: #909399;
-      margin-left: auto;
+    &.active {
+      color: #fff;
+      background: #409eff;
+      box-shadow: 0 1px 3px rgba(64, 158, 255, 0.3);
     }
+  }
 
-    :deep(.el-radio-button) {
-      flex: 1;
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
-      .el-radio-button__inner {
-        width: 100%;
-        font-size: 12px;
-        padding: 5px 0;
-      }
-    }
+  .token-usage {
+    font-size: 12px;
+    color: #909399;
+    padding: 2px 8px;
+    background: #f5f7fa;
+    border-radius: 4px;
   }
 
   .el-textarea {

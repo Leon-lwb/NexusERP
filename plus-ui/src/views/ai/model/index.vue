@@ -24,6 +24,16 @@
             <el-tag :type="row.status === '1' ? 'success' : 'danger'">{{ row.status === '1' ? '正常' : '停用' }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="输入价格" prop="inputPricePerMillion" width="120">
+          <template #default="{ row }">
+            {{ row.inputPricePerMillion ? row.inputPricePerMillion + ' 元/M' : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="输出价格" prop="outputPricePerMillion" width="120">
+          <template #default="{ row }">
+            {{ row.outputPricePerMillion ? row.outputPricePerMillion + ' 元/M' : '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="220">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
@@ -77,6 +87,19 @@
             <el-radio value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-divider content-position="left">定价配置</el-divider>
+        <el-form-item label="输入价格" prop="inputPricePerMillion">
+          <el-input-number v-model="form.inputPricePerMillion" :min="0" :precision="6" controls-position="right" placeholder="元/百万Token" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="输出价格" prop="outputPricePerMillion">
+          <el-input-number v-model="form.outputPricePerMillion" :min="0" :precision="6" controls-position="right" placeholder="元/百万Token" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="币种" prop="currency">
+          <el-select v-model="form.currency" placeholder="请选择币种" style="width: 100%">
+            <el-option label="人民币（CNY）" value="CNY" />
+            <el-option label="美元（USD）" value="USD" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -113,7 +136,10 @@ const initFormData: AiModel = {
   maxTokens: undefined,
   temperature: undefined,
   isDefault: '0',
-  status: '1'
+  status: '1',
+  inputPricePerMillion: undefined,
+  outputPricePerMillion: undefined,
+  currency: 'CNY'
 }
 
 const data = reactive<PageData<AiModel, any>>({

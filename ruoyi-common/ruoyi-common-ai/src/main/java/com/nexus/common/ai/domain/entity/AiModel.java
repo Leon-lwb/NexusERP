@@ -50,6 +50,15 @@ public class AiModel extends BaseEntity {
     /** 状态（1正常 0停用） */
     private String status;
 
+    /** 输入价格（元/百万Token） */
+    private BigDecimal inputPricePerMillion;
+
+    /** 输出价格（元/百万Token） */
+    private BigDecimal outputPricePerMillion;
+
+    /** 币种：CNY/USD */
+    private String currency;
+
     /** 厂商 API 地址（来自 ai_provider 关联查询） */
     @TableField(exist = false)
     private String apiHost;

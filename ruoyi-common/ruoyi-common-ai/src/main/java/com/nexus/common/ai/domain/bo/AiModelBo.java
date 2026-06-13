@@ -20,6 +20,9 @@ import java.math.BigDecimal;
 @AutoMapper(target = AiModel.class, reverseConvertGenerate = false)
 public class AiModelBo extends BaseEntity {
 
+    /** 主键 */
+    private Long id;
+
     /** 关联厂商ID */
     @NotNull(message = "厂商ID不能为空")
     private Long providerId;
@@ -46,6 +49,15 @@ public class AiModelBo extends BaseEntity {
 
     /** 状态（1正常 0停用） */
     private String status;
+
+    /** 输入价格（元/百万Token） */
+    private BigDecimal inputPricePerMillion;
+
+    /** 输出价格（元/百万Token） */
+    private BigDecimal outputPricePerMillion;
+
+    /** 币种：CNY/USD */
+    private String currency;
 
     /** 批量删除ID集合 */
     private Long[] ids;

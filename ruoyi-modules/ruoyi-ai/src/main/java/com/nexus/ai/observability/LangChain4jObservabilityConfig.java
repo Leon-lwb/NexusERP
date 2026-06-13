@@ -1,5 +1,7 @@
 package com.nexus.ai.observability;
 
+import com.nexus.common.ai.mapper.AiMessageMapper;
+import com.nexus.common.ai.service.IAiTokenUsageService;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -40,14 +42,18 @@ public class LangChain4jObservabilityConfig {
     }
 
     /**
-     * ChatModel 监听器 Bean
+     * ChatModel 监听器 Bean（持久化版）
      * <p>注入到 {@code ChatModelFactory}，在构建 OpenAI 模型时传入 {@code .listeners()}</p>
+     * <p>在 LLM 响应回调中更新 ai_message 的 token 明细和 ai_token_usage 日统计</p>
      *
+     * @param aiMessageMapper     消息 Mapper
+     * @param aiTokenUsageService Token 用量服务
      * @return {@link AiChatModelListener} 实例
      */
     @Bean
-    public ChatModelListener chatModelListener() {
-        return new AiChatModelListener();
+    public ChatModelListener chatModelListener(AiMessageMapper aiMessageMapper,
+                                               IAiTokenUsageService aiTokenUsageService) {
+        return new AiChatModelListener(aiMessageMapper, aiTokenUsageService);
     }
 
     /**

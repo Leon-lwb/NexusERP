@@ -32,8 +32,17 @@ public class AiMessage extends BaseEntity {
     /** 消息内容 */
     private String content;
 
-    /** Token 消耗 */
+    /** Token 消耗（总量 = inputTokens + outputTokens） */
     private Long tokenUsage;
+
+    /** 使用的模型ID */
+    private Long modelId;
+
+    /** 输入 Token 数 */
+    private Integer inputTokens;
+
+    /** 输出 Token 数 */
+    private Integer outputTokens;
 
     /** 用户反馈: LIKE/DISLIKE */
     private String feedback;

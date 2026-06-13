@@ -66,6 +66,18 @@ public class AiModelVo implements Serializable {
     @ExcelProperty(value = "状态")
     private String status;
 
+    /** 输入价格（元/百万Token） */
+    @ExcelProperty(value = "输入价格")
+    private BigDecimal inputPricePerMillion;
+
+    /** 输出价格（元/百万Token） */
+    @ExcelProperty(value = "输出价格")
+    private BigDecimal outputPricePerMillion;
+
+    /** 币种：CNY/USD */
+    @ExcelProperty(value = "币种")
+    private String currency;
+
     /** 厂商 API 地址（来自 ai_provider 关联查询） */
     private String apiHost;
 

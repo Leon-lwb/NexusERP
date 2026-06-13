@@ -1,6 +1,6 @@
-# NexusERP AI 开发计划（优化版 v5）
+# NexusERP AI 开发计划（优化版 v6）
 
-> **优化说明**：本版在 v4 基础上，完成第五周（Schema 缓存 + SystemMessage 优化 + 业务 Tool 适配 + MCP 内置工具注册中心 + 二次审查修复）和第六周（MCP 外部工具动态接入 + Agent 流式推送 + 对话质量评估 + 工具状态动态过滤 + 工具执行过程可视化）开发任务。**Phase 0 + Phase 1 已全部完成**，主要变更：ai_tool 表从 Phase 5 提前至 Phase 1、Phase 2 重新定义为深度优化阶段、新增第六周交付物标注。
+> **优化说明**：本版在 v5 基础上，完成第七至十周开发任务（Phase 2 全部完成）。**Phase 0 + Phase 1 + Phase 2 已全部完成**，主要变更：Phase 2 各子节标注完成状态、新增第十周计划外交付物（MCP 工具按会话选择/上下文窗口管理/Token 用量监控/前端布局优化）、新增第十一周 Token 用量计算与成本分析。
 
 ---
 
@@ -1184,35 +1184,37 @@ public class AiServiceFacade {
 
 ---
 
-## 五、Phase 2：ERP 深度 AI 优化（第 7-12 周）
+## 五、Phase 2：ERP 深度 AI 优化（第 7-12 周）✅ 已完成
 
 > **目标**：Phase 1 已实现 4 个业务 Tool 的基础查询能力（ErpInventoryTool/ErpPurchaseTool/ErpSalesTool/ErpProductionTool），Phase 2 聚焦于**深度优化**：Text2SQL 准确率提升、业务 Tool 查询增强、Prompt 模板管理、对话导出、知识库自动导入、多模型 A/B 测试。
 >
 > **与原计划变更说明**：原 Phase 2 定位为"ERP 深度场景"，计划从零实现补货建议/销售预测/财务分析/排程辅助 4 个业务 Tool。实际上这 4 个 Tool 已在 Phase 1 提前实现（作为 ErpInventoryTool/ErpPurchaseTool/ErpSalesTool/ErpProductionTool），因此 Phase 2 重新定义为"深度优化"阶段。
+>
+> **完成情况**：第 7-10 周全部完成，比计划提前 2 周。额外完成了 MCP 工具按会话动态选择、对话上下文窗口管理、Token 用量监控、前端布局优化等计划外功能。
 
-### 5.1 Text2SQL 准确率优化
+### 5.1 Text2SQL 准确率优化 ✅ 已完成（第7周）
 
 > Phase 1 已实现基础的 Text2SQL 流程（ErpQueryAgent + 3 个 SQL Tool + ErpTableSchemaManager），但实际使用中 SQL 生成准确率受 Schema 信息质量、SystemMessage 引导、模型能力等因素影响。本节聚焦提升准确率。
 
-#### 5.1.1 Schema 摘要策略优化
+#### 5.1.1 Schema 摘要策略优化 ✅
 
 - 当前：ErpTableSchemaManager 缓存完整 DDL，Agent 通过 QueryTableSchemaTool 获取
 - 优化：为每张表生成**业务语义摘要**（含字段含义、枚举值、常见查询模式），减少 LLM 理解偏差
 - 实现：ErpTableSchemaManager 新增 `getTableBusinessSummary(tableName)` 方法，返回精简的业务描述
 
-#### 5.1.2 Few-Shot 示例库
+#### 5.1.2 Few-Shot 示例库 ✅
 
 - 在 SystemMessage 中注入常见查询的 SQL 示例（如"查询低库存物料"→ 对应 SQL 模板）
 - 新增 `ai_sql_example` 表存储 Few-Shot 示例，按业务域分类
 - Agent 调用时根据用户问题语义匹配 Top-K 示例注入 SystemMessage
 
-#### 5.1.3 SQL 校验与自动修复
+#### 5.1.3 SQL 校验与自动修复 ✅
 
 - LLM 生成的 SQL 可能存在语法错误或逻辑错误
 - 新增 SQL 语法校验层：执行前先 `EXPLAIN` 验证语法
 - 错误时自动重试（将错误信息反馈给 LLM 重新生成，最多 2 次）
 
-### 5.2 业务 Tool 查询增强
+### 5.2 业务 Tool 查询增强 ✅ 已完成（第8周）
 
 > Phase 1 的 4 个业务 Tool 已实现基础查询，本节增强为更智能的分析能力。
 
@@ -1238,7 +1240,7 @@ public class AiServiceFacade {
 - 新增 `queryActiveWorkOrders()`：当前在产工单及进度
 - 新增 `queryWorkstationUtilization(workshopId)`：车间/工位产能利用率
 
-### 5.3 Prompt 模板管理
+### 5.3 Prompt 模板管理 ✅ 已完成（第7周）
 
 > 当前 Agent 的 SystemMessage 硬编码在 `@SystemMessage` 注解中，修改需改代码+重启。
 
@@ -1266,23 +1268,50 @@ CREATE TABLE ai_prompt_template (
 - AiServiceFacade 构建 Agent 时从模板加载 SystemMessage，替代硬编码注解
 - 支持在线编辑模板，即时生效（无需重启）
 
-### 5.4 对话导出
+### 5.4 对话导出 ✅ 已完成（第8周）
 
 - 支持导出聊天记录为 Markdown 文件
 - 新增 `AiChatController.exportSession(sessionId)` 端点
 - 前端会话列表增加"导出"按钮
 
-### 5.5 知识库自动导入
+### 5.5 知识库自动导入 ✅ 已完成（第9周）
 
 - 实现 API 接口自动导入预置 ERP 操作文档
 - 新增 `AiKnowledgeController.importDocuments(knowledgeId, urls)` 批量导入
 - 支持从文件系统目录批量扫描导入
 
-### 5.6 多模型 A/B 测试
+### 5.6 多模型 A/B 测试 ✅ 已完成（第10周）
 
 - 支持同一问题对比不同模型回答质量
 - 新增 `ai_ab_test` 表记录测试配置和结果
 - 前端管理页面可创建 A/B 测试任务，查看对比结果
+
+### 5.7 Token 用量计算与成本分析（第11周）
+
+> **背景**：Phase 2 已完成基础 Token 监控（按会话统计），但缺少按用户/模型维度的用量统计和成本计算。本节实现完整的 Token 用量运营分析体系。
+
+#### 5.7.1 数据模型增强
+
+- `ai_message` 表新增 `model_id`、`input_tokens`、`output_tokens` 字段，支持精确到消息级别的 Token 明细
+- `ai_model` 表新增 `input_price_per_million`、`output_price_per_million`、`currency` 定价字段
+- 新建 `ai_token_usage` 日统计表，按 (用户+模型+日期) 聚合 Token 用量和成本
+
+#### 5.7.2 Token 采集与持久化
+
+- 修改 `AiChatModelListener`：从日志记录增强为持久化采集
+- 通过 `ChatMessage.metadata()` 传递 sessionId/userId/modelId，在 LLM 响应回调中更新 ai_message 和 ai_token_usage
+- 成本计算：`成本 = (inputTokens / 1,000,000) * 输入单价 + (outputTokens / 1,000,000) * 输出单价`
+
+#### 5.7.3 Token 用量管理 API
+
+- `AiTokenUsageController`：用量汇总、趋势查询、模型排行、用户排行、历史回填
+- 普通用户可查看自己的用量（`/my-usage`），管理员可查看全局统计
+
+#### 5.7.4 前端统计看板
+
+- Token 用量统计页面：统计卡片 + 趋势图表 + 模型排行 + 用户排行 + 用量明细
+- 模型管理页面增加定价配置
+- 对话页面增加个人用量概览入口
 
 ---
 
@@ -1738,8 +1767,11 @@ CREATE TABLE ai_workflow (
 | `ai_knowledge_document` | 知识库文档 | Phase 1 | ✅ 已创建 |
 | `ai_knowledge_chunk` | 知识片段 | Phase 1 | ✅ 已创建 |
 | `ai_tool` | MCP 工具配置 | Phase 1（原 Phase 5，提前实现） | ✅ 已创建 |
-| `ai_prompt_template` | Prompt 模板 | Phase 2 | 待创建 |
-| `ai_sql_example` | SQL Few-Shot 示例 | Phase 2 | 待创建 |
+| `ai_prompt_template` | Prompt 模板 | Phase 2 | ✅ 已创建 |
+| `ai_sql_example` | SQL Few-Shot 示例 | Phase 2 | ✅ 已创建 |
+| `ai_ab_test` | A/B 测试 | Phase 2 | ✅ 已创建 |
+| `ai_ab_test_result` | A/B 测试结果 | Phase 2 | ✅ 已创建 |
+| `ai_token_usage` | Token 用量统计 | Phase 2+ | 待创建 |
 | `ai_workflow` | AI 工作流定义 | Phase 6 | 待创建 |
 
 ### 10.2 数据源配置
