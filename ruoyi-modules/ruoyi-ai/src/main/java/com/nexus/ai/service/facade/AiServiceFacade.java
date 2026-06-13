@@ -10,6 +10,7 @@ import com.nexus.ai.observability.AgentStreamHelper;
 import com.nexus.ai.observability.OutputChannel;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.nexus.ai.service.chat.PersistentChatMemoryStore;
+import com.nexus.ai.service.prompt.PromptTemplateService;
 import com.nexus.ai.service.rag.RetrieverService;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
 import com.nexus.common.ai.domain.entity.AiMessage;
@@ -65,6 +66,7 @@ public class AiServiceFacade {
     private final ToolProviderFactory toolProviderFactory;
     private final RetrieverService retrieverService;
     private final AiAgentListener aiAgentListener;
+    private final PromptTemplateService promptTemplateService;
 
     @Qualifier("aiExecutor")
     private final Executor aiExecutor;
@@ -252,7 +254,11 @@ public class AiServiceFacade {
 
         // 替换最后一条用户消息为增强后的提示词
         if (!allMessages.isEmpty()) {
-            allMessages.remove(allMessages.size() - 1);
+            int lastIdx = allMessages.size() - 1;
+            ChatMessage lastMsg = allMessages.get(lastIdx);
+            if (lastMsg instanceof dev.langchain4j.data.message.UserMessage) {
+                allMessages.remove(lastIdx);
+            }
         }
         allMessages.add(dev.langchain4j.data.message.UserMessage.from(augmentedQuery));
 
@@ -304,7 +310,8 @@ public class AiServiceFacade {
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
                                  Long userId, Long sessionId, Long tenantId) {
-        ChatModel chatModel = chatModelFactory.getChatModel(modelConfig.getId());
+        // Agent 模式使用低 temperature（0.1），提高 SQL 生成准确性
+        ChatModel chatModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
 
         // 加载历史消息，构建带上下文的查询（避免多轮对话丢失上下文）
         List<ChatMessage> history = persistentChatMemoryStore.getMessages(sessionId);
@@ -313,6 +320,21 @@ public class AiServiceFacade {
         // 动态加载已启用的工具
         List<Object> builtinTools = toolProviderFactory.getAllEnabledBuiltinToolObjects();
         ToolProvider mcpToolProvider = toolProviderFactory.getAllEnabledMcpToolProviders();
+
+        // 注入 PromptTemplateService 渲染的动态上下文
+        // 由于 LangChain4j Supervisor 模式下 SubAgent 的 @UserMessage 由框架填充，
+        // 无法直接为 SubAgent 注入独立上下文，因此将所有上下文合并到 Supervisor 层，
+        // 由 Supervisor 在分发时将关键信息传递给 SubAgent
+        String queryAgentContext = promptTemplateService.renderQueryAgentContext();
+        String reportAgentContext = promptTemplateService.renderReportAgentContext();
+        String supervisorContext = promptTemplateService.renderSupervisorContext();
+
+        // 构建增强查询：将 Supervisor 上下文 + SubAgent 上下文 + 原始查询合并
+        // Supervisor 会将完整上下文连同用户问题一起分发给对应的 SubAgent
+        String enhancedQuery = supervisorContext + "\n\n"
+            + "【数据查询助手上下文】\n" + queryAgentContext + "\n\n"
+            + "【报表生成助手上下文】\n" + reportAgentContext + "\n\n"
+            + "【用户问题】\n" + contextualQuery;
 
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
         ErpQueryAgent queryAgent = AgenticServices.agentBuilder(ErpQueryAgent.class)
@@ -349,12 +371,12 @@ public class AiServiceFacade {
                 AiToolExecutedListener.setChannel(channel);
 
                 long startTime = System.currentTimeMillis();
-                aiAgentListener.onAgentStart("SupervisorAgent", contextualQuery);
+                aiAgentListener.onAgentStart("SupervisorAgent", enhancedQuery);
 
                 // 推送 Agent 开始思考
                 AgentStreamHelper.sendThinking(channel, "SupervisorAgent", "开始分析您的问题...");
 
-                String result = supervisor.invoke(contextualQuery);
+                String result = supervisor.invoke(enhancedQuery);
 
                 long duration = System.currentTimeMillis() - startTime;
                 aiAgentListener.onAgentComplete("SupervisorAgent", duration, 0);
@@ -427,7 +449,7 @@ public class AiServiceFacade {
 
     /**
      * 构建带历史上下文的查询提示
-     * <p>将最近 20 条历史消息拼接到当前问题前，确保 Agent 模式具备多轮对话能力</p>
+     * <p>将最近 10 条历史消息拼接到当前问题前，每条消息截断到 200 字符以控制 Token 消耗</p>
      *
      * @param history      历史消息列表
      * @param currentQuery 当前用户问题
@@ -439,14 +461,18 @@ public class AiServiceFacade {
         }
         StringBuilder sb = new StringBuilder();
         sb.append("以下是本次会话的历史对话，请参考上下文回答当前问题：\n\n");
-        // 只取最近 20 条历史消息（约 10 轮对话），避免超出 token 限制
-        int startIdx = Math.max(0, history.size() - 21);
+        // 只取最近 10 条历史消息（约 5 轮对话），每条截断到 200 字符
+        int startIdx = Math.max(0, history.size() - 11);
         for (int i = startIdx; i < history.size() - 1; i++) {
             ChatMessage msg = history.get(i);
             if (msg instanceof dev.langchain4j.data.message.UserMessage um) {
-                sb.append("用户：").append(um.singleText()).append("\n");
+                String text = um.singleText();
+                sb.append("用户：").append(text.length() > 200 ? text.substring(0, 200) + "..." : text).append("\n");
             } else if (msg instanceof dev.langchain4j.data.message.AiMessage am) {
-                sb.append("AI：").append(am.text()).append("\n");
+                String text = am.text();
+                if (text != null) {
+                    sb.append("AI：").append(text.length() > 200 ? text.substring(0, 200) + "..." : text).append("\n");
+                }
             }
         }
         sb.append("\n当前问题：").append(currentQuery);

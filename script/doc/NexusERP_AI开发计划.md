@@ -1,6 +1,6 @@
-# NexusERP AI 开发计划（优化版 v4）
+# NexusERP AI 开发计划（优化版 v5）
 
-> **优化说明**：本版在 v3 基础上，完成第四周开发任务（修复补齐 + 重排序集成），新增 9 处修正（含 1 处严重）。主要变更：Milvus 精确删除实现、RerankService 并行打分+ChatModelFactory复用、EmbeddingService 策略模式重构、可观测性监听器增强、前端检索测试面板参数化。
+> **优化说明**：本版在 v4 基础上，完成第五周（Schema 缓存 + SystemMessage 优化 + 业务 Tool 适配 + MCP 内置工具注册中心 + 二次审查修复）和第六周（MCP 外部工具动态接入 + Agent 流式推送 + 对话质量评估 + 工具状态动态过滤 + 工具执行过程可视化）开发任务。**Phase 0 + Phase 1 已全部完成**，主要变更：ai_tool 表从 Phase 5 提前至 Phase 1、Phase 2 重新定义为深度优化阶段、新增第六周交付物标注。
 
 ---
 
@@ -72,52 +72,78 @@ ruoyi-common-ai/
 ruoyi-ai/
 └── src/main/java/com/nexus/ai/
     ├── controller/
-    │   ├── AiChatController.java            # 聊天主接口（SSE 流式）
-    │   ├── AiKnowledgeController.java       # 知识库管理
-    │   └── AiModelController.java           # 模型配置管理
+    │   ├── AiChatController.java            # 聊天主接口（SSE 流式 + 消息反馈）✅
+    │   ├── AiKnowledgeController.java       # 知识库管理 ✅
+    │   ├── AiModelController.java           # 模型配置管理 ✅
+    │   └── AiProviderController.java        # 厂商管理 ✅
     ├── service/
     │   ├── facade/
-    │   │   └── AiServiceFacade.java         # 门面：路由 RAG/Agent/普通对话
+    │   │   └── AiServiceFacade.java         # 门面：智能路由 RAG/Agent/普通对话 + OutputChannel 流式推送 ✅
     │   ├── chat/
-    │   │   ├── ChatModelFactory.java        # 模型工厂（构建 ChatModel + StreamingChatModel，含缓存）
-    │   │   └── PersistentChatMemory.java    # 会话记忆持久化
+    │   │   ├── ChatModelFactory.java        # 模型工厂（ChatModel + StreamingChatModel + 缓存 + 监听器注入）✅
+    │   │   └── PersistentChatMemoryStore.java # 会话记忆持久化 ✅
     │   ├── query/
-    │   │   └── ErpQueryService.java         # 【关键新增】ERP 数据源 SQL 执行服务（@DS("erp")）
-    │   └── rag/
-    │       ├── DocumentParserService.java   # 文档解析（PDF/Word/Excel）
-    │       ├── ChunkingService.java         # 文本分段
-    │       ├── EmbeddingService.java        # 向量化
-    │       ├── VectorStoreService.java      # 向量存储（Milvus）
-    │       └── RetrieverService.java        # 检索+重排序
+    │   │   ├── ErpQueryService.java         # ERP 数据源 SQL 执行服务（@DS("erp")）✅
+    │   │   ├── ErpTableSchemaManager.java   # ERP 表结构缓存管理 ✅
+    │   │   └── ErpTableSchemaInitializer.java # ERP 表结构启动初始化 ✅
+    │   ├── rag/
+    │   │   ├── DocumentParserService.java   # 文档解析（PDF/Word/Excel）✅
+    │   │   ├── ChunkingService.java         # 文本分段 ✅
+    │   │   ├── EmbeddingService.java        # 向量化（策略模式 + EmbeddingProvider 工厂）✅
+    │   │   ├── VectorStoreService.java      # 向量存储（Milvus/InMemory 双模式）✅
+    │   │   ├── RetrieverService.java        # 检索 + RRF 融合 ✅
+    │   │   ├── RerankService.java           # 重排序（LLM 并行打分 + ChatModelFactory 复用）✅
+    │   │   └── KnowledgeProcessService.java # 知识处理编排 ✅
+    │   └── sse/
+    │       └── AiSseMessageHelper.java      # AI SSE 消息推送工具（9 种事件类型）✅
     ├── agent/                                # Agent 接口定义
-    │   ├── ErpQueryAgent.java               # ERP 数据查询 Agent
-    │   ├── ErpReportAgent.java              # ERP 报表生成 Agent（含 ECharts JSON 输出）
-    │   ├── MesAnalysisAgent.java            # MES 生产分析 Agent
-    │   └── IotMonitorAgent.java             # IoT 设备监控 Agent
+    │   ├── ErpQueryAgent.java               # ERP 数据查询 Agent ✅
+    │   └── ErpReportAgent.java              # ERP 报表生成 Agent（含 ECharts JSON 输出）✅
     ├── tool/                                 # Agent 可调用的工具
-    │   ├── QueryAllTablesTool.java          # 查询数据库表（注入 ErpQueryService）
-    │   ├── QueryTableSchemaTool.java        # 查询表结构（注入 ErpQueryService）
-    │   ├── ExecuteSqlQueryTool.java         # 执行 SQL（注入 ErpQueryService，含安全校验）
-    │   ├── ErpInventoryTool.java            # 库存/补货相关工具
-    │   ├── ErpPurchaseTool.java             # 采购/供应商相关工具
-    │   ├── ErpSalesTool.java                # 销售/客户相关工具
-    │   ├── ErpProductionTool.java           # 生产/排程相关工具
-    │   ├── MesProductionTool.java           # MES 生产执行工具
-    │   ├── MesQualityTool.java              # MES 质量管理工具
-    │   ├── MesEquipmentTool.java            # MES 设备管理工具
-    │   ├── IotDeviceTool.java               # IoT 设备监控工具
-    │   └── IotAlertTool.java               # IoT 告警分析工具
-    ├── mcp/
-    │   └── registry/
-    │       └── ErpBuiltinToolRegistry.java  # 内置工具注册中心
+    │   ├── ErpToolHelper.java               # ERP 工具辅助类 ✅
+    │   ├── QueryAllTablesTool.java          # 查询数据库表 ✅
+    │   ├── QueryTableSchemaTool.java        # 查询表结构 ✅
+    │   ├── ExecuteSqlQueryTool.java         # 执行 SQL（含安全校验 + 租户隔离）✅
+    │   ├── ErpInventoryTool.java            # 库存/补货相关工具 ✅
+    │   ├── ErpPurchaseTool.java             # 采购/供应商相关工具 ✅
+    │   ├── ErpSalesTool.java                # 销售/客户相关工具 ✅
+    │   └── ErpProductionTool.java           # 生产/排程相关工具 ✅
+    ├── mcp/                                  # MCP 工具管理
+    │   ├── BuiltinToolProvider.java         # 内置工具提供者接口 ✅
+    │   ├── BuiltinToolRegistry.java         # 内置工具注册中心（自动发现 + 数据库 status 过滤）✅
+    │   ├── AiToolInitializer.java           # 启动同步内置工具到 ai_tool 表 ✅
+    │   ├── controller/
+    │   │   └── McpToolController.java       # MCP 工具管理 CRUD + 测试连接 ✅
+    │   ├── dto/
+    │   │   └── McpToolTestResult.java       # 工具测试结果 DTO ✅
+    │   ├── registry/                         # 7 个 BuiltinToolProvider 实现 ✅
+    │   │   ├── ErpSalesToolProvider.java
+    │   │   ├── ErpPurchaseToolProvider.java
+    │   │   ├── ErpProductionToolProvider.java
+    │   │   ├── ErpInventoryToolProvider.java
+    │   │   ├── QueryTableSchemaToolProvider.java
+    │   │   ├── QueryAllTablesToolProvider.java
+    │   │   └── ExecuteSqlQueryToolProvider.java
+    │   └── service/
+    │       ├── McpClientManager.java        # MCP 客户端管理器（REMOTE/LOCAL + 熔断降级）✅
+    │       ├── McpToolServiceImpl.java      # MCP 工具服务（CRUD/同步/测试）✅
+    │       └── ToolProviderFactory.java     # 统一工具工厂（BUILTIN + MCP）✅
     ├── config/
-    │   ├── LangChain4jConfig.java           # LangChain4j 自动配置
-    │   ├── VectorStoreConfig.java           # 向量数据库配置
-    │   ├── AiProperties.java               # AI 属性配置（前缀 nexus.ai）
-    │   └── AiThreadPoolConfig.java          # 【新增】AI 专用线程池配置
-    └── observability/
-        ├── AiAgentListener.java
-        └── AiModelListener.java
+    │   ├── AiProperties.java               # AI 属性配置（前缀 nexus.ai）✅
+    │   └── AiThreadPoolConfig.java          # AI 专用线程池配置 ✅
+    ├── context/
+    │   └── AiRequestContext.java            # 请求上下文（ThreadLocal）✅
+    ├── listener/
+    │   └── AiModelChangeListener.java       # 模型变更监听器 ✅
+    └── observability/                        # 可观测性
+        ├── AiAgentListener.java             # Agent 执行监听器 ✅
+        ├── AiChatModelListener.java         # ChatModel 调用监听器 ✅
+        ├── AiEmbeddingModelListener.java    # Embedding 模型监听器 ✅
+        ├── AiToolExecutedListener.java      # 工具执行监听器（ThreadLocal OutputChannel）✅
+        ├── AgentStreamHelper.java           # Agent 流式事件推送工具 ✅
+        ├── LangChain4jObservabilityConfig.java # 可观测性配置中心 ✅
+        ├── OutputChannel.java               # 跨线程事件总线 ✅
+        └── StreamingToolExecutedListener.java # 流式工具执行监听器 ✅
 ```
 
 **关键修正说明（v2→v3）**：
@@ -137,21 +163,22 @@ ruoyi-ai/
 ```
 plus-ui/src/
 ├── api/ai/                          # AI 接口
-│   ├── chat.ts                      # 聊天接口
-│   ├── knowledge.ts                 # 知识库接口
-│   └── model.ts                     # 模型配置接口
-├── components/ai/                   # AI 通用组件
-│   ├── AiChatDrawer.vue             # AI 聊天抽屉（全局浮窗）
-│   ├── AiChatPanel.vue              # AI 聊天面板（嵌入页面）
-│   └── EchartsRenderer.vue          # ECharts 渲染组件
+│   ├── chat.ts                      # 聊天接口（含消息反馈）✅
+│   ├── knowledge.ts                 # 知识库接口 ✅
+│   ├── model.ts                     # 模型配置接口 ✅
+│   └── mcp.ts                       # MCP 工具管理接口 ✅
+├── utils/                           # 工具
+│   └── aiRenderers.ts               # ECharts Markdown 渲染器（含 XSS 安全过滤）✅
 └── views/ai/                        # AI 管理页面
-    ├── assistant.vue                 # 智能助手主页面
-    ├── knowledge/                    # 知识库管理
-    │   ├── index.vue
-    │   └── fragment.vue
-    └── model/                        # 模型管理
-        ├── index.vue
-        └── provider.vue
+    ├── assistant/
+    │   └── index.vue                 # 智能助手主页面（SSE + 工具调用可视化 + 反馈）✅
+    ├── knowledge/
+    │   └── index.vue                 # 知识库管理（文档上传/片段/检索测试）✅
+    ├── model/
+    │   ├── index.vue                 # 模型管理 ✅
+    │   └── provider.vue              # 厂商管理 ✅
+    └── mcp/
+        └── index.vue                 # MCP 工具管理（CRUD + 测试连接 + configJson 编辑）✅
 ```
 
 ---
@@ -694,9 +721,11 @@ const onSseMessage = (event: MessageEvent) => {
 
 ---
 
-## 四、Phase 1：ERP 智能查询与报表（第 4-8 周）
+## 四、Phase 1：ERP 智能查询与报表（第 4-8 周）✅ 已完成
 
 > **目标**：实现 ERP 数据的自然语言查询、智能报表生成、业务问答三大核心场景。
+>
+> **完成状态**：Phase 1 已于第六周全部完成，包含原计划全部功能 + 第六周新增的 MCP 外部工具动态接入、Agent 流式推送、对话质量评估、工具状态动态过滤、工具执行过程可视化。
 
 ### 4.1 场景 1：自然语言查询 ERP 数据
 
@@ -1131,124 +1160,133 @@ public class AiServiceFacade {
 }
 ```
 
-**后续优化方向**：LangChain4j 的 `langchain4j-agentic` 模块正在完善流式支持，待其 `SupervisorAgent` 支持流式回调后，可改为真正的 Token 级流式推送。ruoyi-ai 的 ChatServiceFacade 中已有被注释的 `SupervisorStreamListener`，说明此功能正在开发中。
+**流式推送已实现**：第六周已完成 Agent 流式推送升级，通过 OutputChannel 跨线程事件总线 + AgentStreamHelper + StreamingToolExecutedListener，实现了 Agent 执行过程的实时推送（工具调用开始/完成、Agent 思考过程、错误提示），前端可实时看到工具调用卡片和 Agent 思考状态。
 
 ### 4.5 Phase 1 交付清单
 
-| 序号 | 交付物 | 说明 |
-|------|--------|------|
-| 1 | `ruoyi-common-ai` + `ruoyi-ai` Maven 模块 | AI 公共模块 + 核心业务模块 |
-| 2 | 7 张数据库表 | ai_provider, ai_model, ai_session, ai_message（Phase 0）+ ai_knowledge, ai_knowledge_attach, ai_knowledge_fragment（Phase 1） |
-| 3 | 2 个 Agent 接口 | ErpQueryAgent, ErpReportAgent |
-| 4 | 3 个 SQL Tool + 4 个业务 Tool | QueryAllTablesTool, QueryTableSchemaTool, ExecuteSqlQueryTool + ErpInventoryTool 等 |
-| 5 | ErpQueryService | ERP 数据源 SQL 执行服务（@DS("erp")） |
-| 6 | AiSseMessageHelper | AI SSE 消息工具类（编码消息类型到 message JSON） |
-| 7 | AI 聊天前端页面 | AiChatDrawer + EchartsRenderer |
-| 8 | 模型管理页面 | 配置厂商/模型 |
-| 9 | 知识库管理页面 | 上传文档/管理知识库 |
+| 序号 | 交付物 | 说明 | 状态 |
+|------|--------|------|------|
+| 1 | `ruoyi-common-ai` + `ruoyi-ai` Maven 模块 | AI 公共模块 + 核心业务模块 | ✅ |
+| 2 | 8 张数据库表 | ai_provider, ai_model, ai_session, ai_message（Phase 0）+ ai_knowledge, ai_knowledge_document, ai_knowledge_chunk（Phase 1）+ ai_tool（第六周提前实现） | ✅ |
+| 3 | 2 个 Agent 接口 | ErpQueryAgent, ErpReportAgent | ✅ |
+| 4 | 3 个 SQL Tool + 4 个业务 Tool | QueryAllTablesTool, QueryTableSchemaTool, ExecuteSqlQueryTool + ErpInventoryTool 等 | ✅ |
+| 5 | ErpQueryService | ERP 数据源 SQL 执行服务（@DS("erp")）+ 表结构缓存管理 | ✅ |
+| 6 | AiSseMessageHelper | AI SSE 消息工具类（9 种事件类型：CONTENT/THINKING/DONE/ERROR/CHART/TOOL_START/TOOL_END/AGENT_THINKING/CONTENT_INCREMENT） | ✅ |
+| 7 | AI 聊天前端页面 | assistant/index.vue（SSE 流式 + 工具调用可视化 + 消息反馈 + ECharts 渲染） | ✅ |
+| 8 | 模型管理页面 | 配置厂商/模型 | ✅ |
+| 9 | 知识库管理页面 | 上传文档/管理知识库/检索测试 | ✅ |
+| 10 | MCP 工具动态接入 | McpClientManager（REMOTE/LOCAL + 熔断降级）+ ToolProviderFactory + McpToolController + 前端管理页面 | ✅ |
+| 11 | Agent 流式推送 | OutputChannel 跨线程事件总线 + AgentStreamHelper + StreamingToolExecutedListener | ✅ |
+| 12 | 工具状态动态过滤 | BuiltinToolRegistry 按 ai_tool 表 status 过滤 + AiServiceFacade 动态工具加载 | ✅ |
+| 13 | 对话质量评估 | ai_message 表 feedback/feedback_content 字段 + 前端点赞/点踩按钮 | ✅ |
+| 14 | 工具执行过程可视化 | TOOL_START/TOOL_END/AGENT_THINKING 事件 + 前端工具调用卡片渲染 | ✅ |
+| 15 | MCP 工具管理前端页面 | mcp/index.vue（CRUD + 测试连接 + configJson 编辑 + LOCAL/REMOTE 类型） | ✅ |
 
 ---
 
-## 五、Phase 2：ERP 深度 AI 场景（第 9-14 周）
+## 五、Phase 2：ERP 深度 AI 优化（第 7-12 周）
 
-> **目标**：在 Phase 1 基础上，深入供应链、财务、生产计划等 ERP 核心场景。
+> **目标**：Phase 1 已实现 4 个业务 Tool 的基础查询能力（ErpInventoryTool/ErpPurchaseTool/ErpSalesTool/ErpProductionTool），Phase 2 聚焦于**深度优化**：Text2SQL 准确率提升、业务 Tool 查询增强、Prompt 模板管理、对话导出、知识库自动导入、多模型 A/B 测试。
+>
+> **与原计划变更说明**：原 Phase 2 定位为"ERP 深度场景"，计划从零实现补货建议/销售预测/财务分析/排程辅助 4 个业务 Tool。实际上这 4 个 Tool 已在 Phase 1 提前实现（作为 ErpInventoryTool/ErpPurchaseTool/ErpSalesTool/ErpProductionTool），因此 Phase 2 重新定义为"深度优化"阶段。
 
-### 5.1 智能补货建议
+### 5.1 Text2SQL 准确率优化
 
-#### 5.1.1 实现方式
+> Phase 1 已实现基础的 Text2SQL 流程（ErpQueryAgent + 3 个 SQL Tool + ErpTableSchemaManager），但实际使用中 SQL 生成准确率受 Schema 信息质量、SystemMessage 引导、模型能力等因素影响。本节聚焦提升准确率。
 
-```java
-@Component
-@RequiredArgsConstructor
-public class ErpInventoryTool {
+#### 5.1.1 Schema 摘要策略优化
 
-    private final WmMaterialStockMapper stockMapper;
-    private final BdMaterialMapper materialMapper;
+- 当前：ErpTableSchemaManager 缓存完整 DDL，Agent 通过 QueryTableSchemaTool 获取
+- 优化：为每张表生成**业务语义摘要**（含字段含义、枚举值、常见查询模式），减少 LLM 理解偏差
+- 实现：ErpTableSchemaManager 新增 `getTableBusinessSummary(tableName)` 方法，返回精简的业务描述
 
-    @Tool("查询低于安全库存的物料列表及其当前库存、安全库存、最近供应商信息")
-    public String queryLowStockMaterials() {
-        // 联查 wm_material_stock + bd_material + bd_material_vendor + bd_vendor
-        // 返回：物料编码、名称、当前库存、安全库存、缺口数量、建议供应商
-    }
+#### 5.1.2 Few-Shot 示例库
 
-    @Tool("根据物料ID查询最近N个月的出库趋势")
-    public String queryMaterialOutboundTrend(
-        @P("物料ID") Long materialId,
-        @P("查询月数") int months) {
-        // 联查 wm_material_stock_tx
-        // 按月聚合出库数量
-    }
+- 在 SystemMessage 中注入常见查询的 SQL 示例（如"查询低库存物料"→ 对应 SQL 模板）
+- 新增 `ai_sql_example` 表存储 Few-Shot 示例，按业务域分类
+- Agent 调用时根据用户问题语义匹配 Top-K 示例注入 SystemMessage
 
-    @Tool("查询库存总金额及按仓库分布")
-    public String queryInventoryValue() {
-        // 查 wm_material_stock，quantity * avg_cost
-    }
-}
+#### 5.1.3 SQL 校验与自动修复
+
+- LLM 生成的 SQL 可能存在语法错误或逻辑错误
+- 新增 SQL 语法校验层：执行前先 `EXPLAIN` 验证语法
+- 错误时自动重试（将错误信息反馈给 LLM 重新生成，最多 2 次）
+
+### 5.2 业务 Tool 查询增强
+
+> Phase 1 的 4 个业务 Tool 已实现基础查询，本节增强为更智能的分析能力。
+
+#### 5.2.1 ErpInventoryTool 增强
+
+- 新增 `queryMaterialOutboundTrend(materialId, months)`：按月聚合出库趋势
+- 新增 `queryInventoryValue()`：库存总金额及按仓库分布
+- 新增 `queryInventoryAging()`：库龄分析（呆滞物料识别）
+
+#### 5.2.2 ErpSalesTool 增强
+
+- 新增 `queryMonthlySalesTrend(materialCode, months)`：月度销售趋势
+- 新增 `queryTopClientsBySales(days, topN)`：客户销售金额排行
+- 新增 `querySalesForecast(materialCode)`：基于历史数据的简单趋势预测
+
+#### 5.2.3 ErpPurchaseTool 增强
+
+- 新增 `queryPurchaseAmountByVendor(startDate, endDate)`：按供应商采购金额分布
+- 新增 `queryVendorRiskAssessment(vendorId)`：供应商综合评估（交货准时率/退货率/质量评分）
+
+#### 5.2.4 ErpProductionTool 增强
+
+- 新增 `queryActiveWorkOrders()`：当前在产工单及进度
+- 新增 `queryWorkstationUtilization(workshopId)`：车间/工位产能利用率
+
+### 5.3 Prompt 模板管理
+
+> 当前 Agent 的 SystemMessage 硬编码在 `@SystemMessage` 注解中，修改需改代码+重启。
+
+#### 5.3.1 数据库表设计
+
+```sql
+CREATE TABLE ai_prompt_template (
+    id              BIGINT       NOT NULL COMMENT '主键',
+    tenant_id       BIGINT       DEFAULT 0 COMMENT '租户编号',
+    template_name   VARCHAR(128) NOT NULL COMMENT '模板名称',
+    template_key    VARCHAR(64)  NOT NULL COMMENT '模板标识（如 erp_query_agent）',
+    content         TEXT         NOT NULL COMMENT '模板内容（支持 {{variable}} 占位符）',
+    description     VARCHAR(512) DEFAULT NULL COMMENT '描述',
+    is_default      CHAR(1)      DEFAULT '0' COMMENT '是否默认模板（1是 0否）',
+    status          CHAR(1)      DEFAULT '1' COMMENT '状态（1正常 0停用）',
+    -- 标准审计字段省略
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_template_key (template_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI Prompt 模板';
 ```
 
-#### 5.1.2 AI 补货对话示例
+#### 5.3.2 后端实现
 
-```
-用户：帮我看看哪些物料需要补货了？
+- 新增 `AiPromptTemplateService`：模板 CRUD + 变量渲染
+- AiServiceFacade 构建 Agent 时从模板加载 SystemMessage，替代硬编码注解
+- 支持在线编辑模板，即时生效（无需重启）
 
-AI（调用 ErpInventoryTool.queryLowStockMaterials）：
-根据当前库存分析，以下物料已低于安全库存：
+### 5.4 对话导出
 
-| 物料编码 | 物料名称 | 当前库存 | 安全库存 | 缺口 | 建议供应商 |
-|----------|----------|----------|----------|------|-----------|
-| M-001    | 螺丝M6  | 500      | 2000     | 1500 | 供应商A   |
-| M-003    | 垫片φ8  | 100      | 800      | 700  | 供应商B   |
+- 支持导出聊天记录为 Markdown 文件
+- 新增 `AiChatController.exportSession(sessionId)` 端点
+- 前端会话列表增加"导出"按钮
 
-建议立即对 M-001 下采购订单 2000 件（含 500 件缓冲），供应商 A 上月交货准时率 95%。
-需要我生成采购申请单草稿吗？
-```
+### 5.5 知识库自动导入
 
-### 5.2 销售预测与需求感知
+- 实现 API 接口自动导入预置 ERP 操作文档
+- 新增 `AiKnowledgeController.importDocuments(knowledgeId, urls)` 批量导入
+- 支持从文件系统目录批量扫描导入
 
-```java
-@Component
-public class ErpSalesTool {
-    @Tool("查询指定物料近N个月的月度销售数据，用于趋势分析")
-    public String queryMonthlySalesTrend(
-        @P("物料ID或编码") String materialCode,
-        @P("查询月数") int months) { ... }
+### 5.6 多模型 A/B 测试
 
-    @Tool("查询按客户维度的销售金额排行（Top N）")
-    public String queryTopClientsBySales(
-        @P("时间范围（天数）") int days,
-        @P("Top N") int topN) { ... }
-}
-```
-
-### 5.3 智能财务分析
-
-```java
-@Component
-public class ErpPurchaseTool {
-    @Tool("查询指定时间段的采购总金额及按供应商分布")
-    public String queryPurchaseAmountByVendor(...) { ... }
-
-    @Tool("查询供应商综合评估数据，包括交货准时率、退货率、质量评分")
-    public String queryVendorRiskAssessment(@P("供应商ID") Long vendorId) { ... }
-}
-```
-
-### 5.4 排程辅助建议
-
-```java
-@Component
-public class ErpProductionTool {
-    @Tool("查询当前在产工单及其进度")
-    public String queryActiveWorkOrders() { ... }
-
-    @Tool("查询指定车间/工位的产能利用率")
-    public String queryWorkstationUtilization(...) { ... }
-}
-```
+- 支持同一问题对比不同模型回答质量
+- 新增 `ai_ab_test` 表记录测试配置和结果
+- 前端管理页面可创建 A/B 测试任务，查看对比结果
 
 ---
 
-## 六、Phase 3：MES 智能赋能（第 15-22 周，与 MES 开发同步）
+## 六、Phase 3：MES 智能赋能（第 13-20 周，与 MES 开发同步）
 
 > **目标**：MES 模块开发过程中同步嵌入 AI 能力，让 MES 从"记录型"升级为"预测型"。
 
@@ -1403,7 +1441,7 @@ public interface MesAnalysisAgent {
 
 ---
 
-## 七、Phase 4：IoT 智能赋能（第 23-30 周，与 IoT 开发同步）
+## 七、Phase 4：IoT 智能赋能（第 21-28 周，与 IoT 开发同步）
 
 > **目标**：IoT 模块开发过程中同步嵌入 AI 能力，实现设备实时监控、预测性维护、智能告警。
 
@@ -1523,7 +1561,7 @@ public interface IotMonitorAgent {
 
 ---
 
-## 八、Phase 5：跨系统融合决策（第 31-36 周）
+## 八、Phase 5：跨系统融合决策（第 29-34 周）
 
 > **目标**：打通 ERP/MES/IoT 三系统数据壁垒，实现跨系统 AI 决策能力。
 
@@ -1584,7 +1622,9 @@ public class CrossSystemTool {
 - 关键设备故障风险（IoT 预测性维护）
 - 产能瓶颈预警（MES OEE + IoT 设备利用率）
 
-### 8.5 MCP 工具配置表
+### 8.5 MCP 工具配置表（已在 Phase 1 提前实现）
+
+> ai_tool 表已在第六周提前创建并投入使用，支持 BUILTIN/LOCAL/REMOTE 三种类型。原 Phase 5 中的 MCP 工具配置表 DDL 已无需再次创建。
 
 ```sql
 CREATE TABLE ai_tool (
@@ -1628,7 +1668,7 @@ SupervisorAgent supervisor = AgenticServices.supervisorBuilder()
 
 ---
 
-## 九、Phase 6：AI 工作流与智能体演进（第 37 周+）
+## 九、Phase 6：AI 工作流与智能体演进（第 35 周+）
 
 > **目标**：从单轮对话升级为多步工作流，实现自主决策的智能体。
 
@@ -1688,17 +1728,19 @@ CREATE TABLE ai_workflow (
 
 ### 10.1 AI 模块新增表（全部在 ry-vue 库）
 
-| 表名 | 用途 | Phase |
-|------|------|-------|
-| `ai_provider` | AI 厂商配置 | Phase 0 |
-| `ai_model` | AI 模型配置 | Phase 0 |
-| `ai_session` | 对话会话 | Phase 0 |
-| `ai_message` | 对话消息 | Phase 0 |
-| `ai_knowledge` | 知识库 | Phase 1 |
-| `ai_knowledge_attach` | 知识库附件 | Phase 1 |
-| `ai_knowledge_fragment` | 知识片段 | Phase 1 |
-| `ai_tool` | MCP 工具配置 | Phase 5 |
-| `ai_workflow` | AI 工作流定义 | Phase 6 |
+| 表名 | 用途 | Phase | 状态 |
+|------|------|-------|------|
+| `ai_provider` | AI 厂商配置 | Phase 0 | ✅ 已创建 |
+| `ai_model` | AI 模型配置 | Phase 0 | ✅ 已创建 |
+| `ai_session` | 对话会话 | Phase 0 | ✅ 已创建 |
+| `ai_message` | 对话消息 | Phase 0 | ✅ 已创建 |
+| `ai_knowledge` | 知识库 | Phase 1 | ✅ 已创建 |
+| `ai_knowledge_document` | 知识库文档 | Phase 1 | ✅ 已创建 |
+| `ai_knowledge_chunk` | 知识片段 | Phase 1 | ✅ 已创建 |
+| `ai_tool` | MCP 工具配置 | Phase 1（原 Phase 5，提前实现） | ✅ 已创建 |
+| `ai_prompt_template` | Prompt 模板 | Phase 2 | 待创建 |
+| `ai_sql_example` | SQL Few-Shot 示例 | Phase 2 | 待创建 |
+| `ai_workflow` | AI 工作流定义 | Phase 6 | 待创建 |
 
 ### 10.2 数据源配置
 
@@ -1745,42 +1787,41 @@ spring:
 
 ### 11.1 新增前端文件
 
-| 文件 | 说明 | Phase |
-|------|------|-------|
-| `api/ai/chat.ts` | 聊天接口 | Phase 0 |
-| `api/ai/model.ts` | 模型配置接口 | Phase 0 |
-| `api/ai/knowledge.ts` | 知识库接口 | Phase 1 |
-| `components/ai/AiChatDrawer.vue` | AI 聊天抽屉 | Phase 0 |
-| `components/ai/EchartsRenderer.vue` | ECharts 渲染 | Phase 1 |
-| `utils/aiRenderers.ts` | ECharts Markdown 渲染器 | Phase 1 |
-| `views/ai/assistant.vue` | 智能助手页面 | Phase 0 |
-| `views/ai/model/index.vue` | 模型管理 | Phase 0 |
-| `views/ai/model/provider.vue` | 厂商管理 | Phase 0 |
-| `views/ai/knowledge/index.vue` | 知识库管理 | Phase 1 |
-| `views/ai/knowledge/fragment.vue` | 知识片段 | Phase 1 |
+| 文件 | 说明 | Phase | 状态 |
+|------|------|-------|------|
+| `api/ai/chat.ts` | 聊天接口（含消息反馈） | Phase 0 | ✅ |
+| `api/ai/model.ts` | 模型配置接口 | Phase 0 | ✅ |
+| `api/ai/knowledge.ts` | 知识库接口 | Phase 1 | ✅ |
+| `api/ai/mcp.ts` | MCP 工具管理接口 | Phase 1（第六周新增） | ✅ |
+| `utils/aiRenderers.ts` | ECharts Markdown 渲染器（含 XSS 安全过滤） | Phase 1 | ✅ |
+| `views/ai/assistant/index.vue` | 智能助手页面（SSE + 工具调用可视化 + 反馈） | Phase 0 | ✅ |
+| `views/ai/model/index.vue` | 模型管理 | Phase 0 | ✅ |
+| `views/ai/model/provider.vue` | 厂商管理 | Phase 0 | ✅ |
+| `views/ai/knowledge/index.vue` | 知识库管理 | Phase 1 | ✅ |
+| `views/ai/mcp/index.vue` | MCP 工具管理（CRUD + 测试 + configJson） | Phase 1（第六周新增） | ✅ |
 
 ### 11.2 修改前端文件
 
-| 文件 | 修改内容 |
-|------|----------|
-| `utils/sse.ts` | 新增 AI 消息类型（AI_CONTENT/AI_THINKING/AI_DONE/AI_ERROR/AI_CHART）的处理逻辑 |
-| `layout/components/Navbar.vue` | 添加 AI 助手入口图标 |
-| `router/index.ts` | 添加 AI 管理页面路由 |
+| 文件 | 修改内容 | 状态 |
+|------|----------|------|
+| `utils/sse.ts` | 新增 AI 消息类型（9 种事件类型）的处理逻辑 | ✅ |
+| `layout/components/Navbar.vue` | 添加 AI 助手入口图标 | ✅ |
+| `router/index.ts` | 添加 AI 管理页面路由（含 mcp 路由） | ✅ |
 
 ---
 
 ## 十二、开发排期总览
 
-| 阶段 | 周期 | 核心交付 | 人天估算 |
-|------|------|----------|----------|
-| **Phase 0** AI 基础设施 | 第 1-3 周 | ruoyi-common-ai + ruoyi-ai 模块骨架 + SSE 流式对话 + 模型管理 + ErpQueryService | 18 人天 |
-| **Phase 1** ERP 智能查询与报表 | 第 4-8 周 | Text2SQL + ECharts 报表 + RAG 知识库 + 前端 | 25 人天 |
-| **Phase 2** ERP 深度场景 | 第 9-14 周 | 补货建议/销售预测/财务分析/供应商风险 | 20 人天 |
-| **Phase 3** MES 智能赋能 | 第 15-22 周 | 生产监控/质量根因/设备健康/SPC/追溯（与 MES 同步开发） | 25 人天 |
-| **Phase 4** IoT 智能赋能 | 第 23-30 周 | 设备监控/预测性维护/智能告警（与 IoT 同步开发） | 20 人天 |
-| **Phase 5** 跨系统融合 | 第 31-36 周 | CTP/ATP/动态成本/质量闭环/MCP 工具 | 15 人天 |
-| **Phase 6** 工作流与智能体 | 第 37 周+ | AI 工作流/MCP 工具市场/可解释性 | 15 人天 |
-| **合计** | 约 36 周 | | **138 人天** |
+| 阶段 | 周期 | 核心交付 | 人天估算 | 状态 |
+|------|------|----------|----------|------|
+| **Phase 0** AI 基础设施 | 第 1-3 周 | ruoyi-common-ai + ruoyi-ai 模块骨架 + SSE 流式对话 + 模型管理 + ErpQueryService | 18 人天 | ✅ 已完成 |
+| **Phase 1** ERP 智能查询与报表 | 第 4-6 周 | Text2SQL + ECharts 报表 + RAG 知识库 + MCP 工具动态接入 + Agent 流式推送 + 对话质量评估 + 前端 | 30 人天 | ✅ 已完成 |
+| **Phase 2** ERP 深度 AI 优化 | 第 7-12 周 | Text2SQL 准确率优化 + 业务 Tool 增强 + Prompt 模板管理 + 对话导出 + 知识库自动导入 + A/B 测试 | 18 人天 | 待开始 |
+| **Phase 3** MES 智能赋能 | 第 13-20 周 | 生产监控/质量根因/设备健康/SPC/追溯（与 MES 同步开发） | 25 人天 | 待开始 |
+| **Phase 4** IoT 智能赋能 | 第 21-28 周 | 设备监控/预测性维护/智能告警（与 IoT 同步开发） | 20 人天 | 待开始 |
+| **Phase 5** 跨系统融合 | 第 29-34 周 | CTP/ATP/动态成本/质量闭环/供应链风险预警 | 12 人天 | 待开始 |
+| **Phase 6** 工作流与智能体 | 第 35 周+ | AI 工作流/MCP 工具市场/可解释性 | 15 人天 | 待开始 |
+| **合计** | 约 34 周 | | **138 人天** | |
 
 ---
 
@@ -1965,3 +2006,21 @@ spring:
 | 可观测性监听器 | 仅有 AiAgentListener 内存统计（手动调用） | 新增 AiChatModelListener/AiEmbeddingModelListener/AiToolExecutedListener，通过 LangChain4j 原生接口自动回调 | 低 |
 | ChatModelFactory 缺少监听器 | 构建 ChatModel 时未注入 ChatModelListener | 注入 `List<ChatModelListener>`，OpenAI 模型构建器传入 `.listeners()` | 低 |
 | 第四周计划 Milvus API 用错 | 计划用 `Filter.builder().eq()` | 实际应用 `MetadataFilterBuilder.metadataKey().isEqualTo()` | 低 |
+
+## 附录 D：修订记录（v4→v5）
+
+| 修订项 | v4 内容 | v5 修正 | 严重度 |
+|--------|---------|---------|--------|
+| Phase 1 完成状态 | 未标注完成 | Phase 0 + Phase 1 已于第六周全部完成，标注 ✅ | 信息 |
+| ai_tool 表归属 | 归属 Phase 5（跨系统融合） | 提前至 Phase 1 实现（第六周已完成 MCP 工具管理全链路） | 中等 |
+| Phase 2 定位 | "ERP 深度场景"，从零实现 4 个业务 Tool | 4 个业务 Tool 已在 Phase 1 实现，Phase 2 重新定义为"深度优化"：Text2SQL 准确率 + Tool 增强 + Prompt 模板 + 对话导出 + 知识库自动导入 + A/B 测试 | 中等 |
+| Phase 1 交付清单 | 9 项 | 扩展至 15 项，新增 MCP 工具动态接入/Agent 流式推送/工具状态动态过滤/对话质量评估/工具执行过程可视化/MCP 前端页面 | 中等 |
+| ruoyi-ai 内部结构 | 仅列出基础目录，mcp/observability 为简化版 | 更新为实际实现的完整结构，含 mcp 全部子包（controller/dto/registry/service）+ observability 全部监听器 | 低 |
+| 前端文件结构 | 含 AiChatDrawer/AiChatPanel/EchartsRenderer/fragment.vue | 更新为实际实现：assistant/index.vue + mcp/index.vue + mcp.ts，移除未实现的组件 | 低 |
+| 数据库表名 | ai_knowledge_attach/ai_knowledge_fragment | 实际为 ai_knowledge_document/ai_knowledge_chunk，已更正 | 低 |
+| 流式推送说明 | "后续优化方向：待 SupervisorAgent 支持流式回调" | 已实现：OutputChannel + AgentStreamHelper + StreamingToolExecutedListener，前端实时展示工具调用过程 | 低 |
+| 开发排期 | Phase 1 第 4-8 周 / Phase 2 第 9-14 周 / 合计 36 周 | Phase 1 第 4-6 周（已完成）/ Phase 2 第 7-12 周 / 合计 34 周 | 低 |
+| Phase 3-6 周期编号 | 第 15-37+ 周 | 因 Phase 1 提前完成，整体前移 2 周：Phase 3 第 13-20 周 / Phase 4 第 21-28 周 / Phase 5 第 29-34 周 / Phase 6 第 35 周+ | 低 |
+| Phase 5 MCP 工具配置表 | 需创建 ai_tool 表 | 标注"已在 Phase 1 提前实现"，DDL 保留供参考 | 低 |
+| 数据库变更总览 | 9 张表，无状态列 | 更新为 11 张表（新增 ai_prompt_template/ai_sql_example），增加状态列 | 低 |
+| 前端变更总览 | 无状态列 | 增加状态列，标注已完成项 | 低 |

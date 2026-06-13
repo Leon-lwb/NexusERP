@@ -25,10 +25,10 @@ services:
       --collation-server=utf8mb4_general_ci
       --explicit_defaults_for_timestamp=true
       --lower_case_table_names=1
-      --innodb-buffer-pool-size=256M
-      --key-buffer-size=32M
+      --innodb-buffer-pool-size=192M
+      --key-buffer-size=16M
       --tmp-table-size=32M
-      --max-connections=80
+      --max-connections=60
       --performance-schema=OFF
     privileged: true
     network_mode: "host"
@@ -47,7 +47,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 256M
 
   # ==========================================
   # Redis 7.2
@@ -78,7 +78,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 96M
 
   # ==========================================
   # RabbitMQ 3.13（带管理后台）
@@ -110,7 +110,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
 
   # ==========================================
   # MinIO 文件存储
@@ -141,7 +141,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 128M
 
   # ==========================================
   # Nginx + 前端（plus-ui）
@@ -167,7 +167,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: 32M
 
   # ==========================================
   # NexusERP 主后端服务（ruoyi-admin）
@@ -179,7 +179,9 @@ services:
       TZ: Asia/Shanghai
       SERVER_PORT: 8080
       SNAIL_PORT: 28080
-      JAVA_OPTS: "-Xms256m -Xmx384m -XX:MaxMetaspaceSize=256m -XX:+UseZGC"
+      # 内存优化: 堆256~448M, Metaspace 256M(解决OOM), CodeCache 48M, DirectMemory 32M
+      # 总JVM内存上限 ≈ 448+256+48+32+64(threads) ≈ 848M, 容器限制896M留有余量
+      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xms256m -Xmx448m -XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=64m -XX:ReservedCodeCacheSize=48m -XX:MaxDirectMemorySize=32m -Xss512k -XX:+AlwaysPreTouch -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/ruoyi/server/logs/ -Dfile.encoding=UTF-8"
       # Jasypt 加密密钥（用于解密 application-prod.yml 中的 ENC(...) 密码）
       # 请替换为您的实际密钥
       JASYPT_PASSWORD: "your-jasypt-key-here"

@@ -36,6 +36,12 @@ public class ChatModelFactory {
     /** 流式模型缓存（key = modelId） */
     private final ConcurrentHashMap<Long, StreamingChatModel> streamingModelCache = new ConcurrentHashMap<>();
 
+    /** Agent 专用同步模型缓存（key = modelId，使用低 temperature） */
+    private final ConcurrentHashMap<Long, ChatModel> agentModelCache = new ConcurrentHashMap<>();
+
+    /** Agent 模式 temperature（低温度提高 SQL 生成准确性） */
+    private static final double AGENT_TEMPERATURE = 0.1;
+
     /**
      * 获取同步模型（带缓存）
      *
@@ -63,6 +69,19 @@ public class ChatModelFactory {
     }
 
     /**
+     * 获取 Agent 专用同步模型（低 temperature，提高 SQL 生成准确性）
+     *
+     * @param modelId 模型ID
+     * @return ChatModel 实例（temperature=0.1）
+     */
+    public ChatModel getAgentChatModel(Long modelId) {
+        return agentModelCache.computeIfAbsent(modelId, id -> {
+            AiModel config = aiModelService.selectModelById(id);
+            return buildChatModel(config, AGENT_TEMPERATURE);
+        });
+    }
+
+    /**
      * 根据模型名称获取同步模型
      *
      * @param modelName 模型名称
@@ -84,6 +103,7 @@ public class ChatModelFactory {
     public void evictCache(Long modelId) {
         chatModelCache.remove(modelId);
         streamingModelCache.remove(modelId);
+        agentModelCache.remove(modelId);
     }
 
     /**
@@ -92,6 +112,7 @@ public class ChatModelFactory {
     public void evictAllCache() {
         chatModelCache.clear();
         streamingModelCache.clear();
+        agentModelCache.clear();
     }
 
     /**
@@ -101,8 +122,21 @@ public class ChatModelFactory {
      * @return ChatModel 实例
      */
     private ChatModel buildChatModel(AiModel config) {
+        double temperature = config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7;
+        return buildChatModel(config, temperature);
+    }
+
+    /**
+     * 构建同步模型（指定 temperature）
+     *
+     * @param config      模型配置
+     * @param temperature 温度参数
+     * @return ChatModel 实例
+     */
+    private ChatModel buildChatModel(AiModel config, double temperature) {
         String providerType = config.getProviderType();
-        log.debug("[ChatModelFactory] 构建 ChatModel: providerType={}, modelName={}", providerType, config.getModelName());
+        log.debug("[ChatModelFactory] 构建 ChatModel: providerType={}, modelName={}, temperature={}",
+            providerType, config.getModelName(), temperature);
 
         if (providerType == null) {
             providerType = "OPENAI";
@@ -112,14 +146,14 @@ public class ChatModelFactory {
             case "OLLAMA" -> OllamaChatModel.builder()
                 .baseUrl(config.getApiHost())
                 .modelName(config.getModelName())
-                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                .temperature(temperature)
                 .build();
             // DASHSCOPE/ZHIPU 暂走 OpenAI 兼容接口
             case "OPENAI", "DASHSCOPE", "ZHIPU" -> OpenAiChatModel.builder()
                 .baseUrl(config.getApiHost())
                 .apiKey(config.getApiKey())
                 .modelName(config.getModelName())
-                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                .temperature(temperature)
                 .maxTokens(config.getMaxTokens())
                 .listeners(chatModelListeners)
                 .build();
@@ -129,7 +163,7 @@ public class ChatModelFactory {
                     .baseUrl(config.getApiHost())
                     .apiKey(config.getApiKey())
                     .modelName(config.getModelName())
-                    .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                    .temperature(temperature)
                     .maxTokens(config.getMaxTokens())
                     .listeners(chatModelListeners)
                     .build();

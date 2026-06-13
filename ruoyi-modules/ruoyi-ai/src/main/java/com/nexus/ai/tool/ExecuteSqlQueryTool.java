@@ -45,13 +45,14 @@ public class ExecuteSqlQueryTool {
         Pattern.compile("(?:FROM|JOIN)\\s+`?([a-zA-Z_][a-zA-Z0-9_]*)`?", Pattern.CASE_INSENSITIVE);
 
     /**
-     * 执行 SELECT SQL 查询
+     * 执行 ERP 数据库查询（只读）
+     * <p>包含完整安全校验：SELECT 白名单 + 危险关键词黑名单 + 表名白名单 + 租户隔离 + SQL 语法预校验</p>
      *
      * @param sql SQL 查询语句
      * @return 查询结果（Markdown 表格格式）
      */
-    @Tool("Execute a SELECT SQL query on ERP database and return the results")
-    public String executeSqlQuery(@P("SQL SELECT query statement") String sql) {
+    @Tool("执行 ERP 数据库查询（只读），返回查询结果。SQL 语法错误时会返回错误信息，请根据错误修正后重试")
+    public String executeSqlQuery(@P("SQL SELECT 查询语句") String sql) {
         log.info("[AI-SQL] 收到查询请求: {}", sql);
 
         if (sql == null || sql.trim().isEmpty()) {
@@ -62,7 +63,9 @@ public class ExecuteSqlQueryTool {
         String upperSql = sql.trim().toUpperCase();
 
         // 0. 移除 SQL 注释（防止通过注释绕过关键词检测）
-        String cleanedSql = sql.replaceAll("/\\*.*?\\*/", " ");  // 块注释 /*...*/
+        String cleanedSql = sql.replaceAll("/\\*.*?\\*/", " ");           // 块注释 /*...*/
+        cleanedSql = cleanedSql.replaceAll("--[^\\n]*", " ");              // 单行注释 --
+        cleanedSql = cleanedSql.replaceAll("#[^\\n]*", " ");              // 单行注释 #
         String cleanedUpperSql = cleanedSql.trim().toUpperCase();
 
         // 1. 必须以 SELECT 开头
@@ -101,11 +104,18 @@ public class ExecuteSqlQueryTool {
         }
 
         // 5. 追加行数限制（移除已有的 LIMIT，强制使用安全限制）
-        // 移除用户指定的 LIMIT（防止绕过行数限制）
-        sql = sql.replaceAll("(?i)\\s+LIMIT\\s+\\d+(?:\\s*,\\s*\\d+)?\\s*$", "");
+        // 移除用户指定的 LIMIT（防止绕过行数限制），兼容末尾有分号的情况
+        sql = sql.replaceAll("(?i)\\s+LIMIT\\s+\\d+(?:\\s*,\\s*\\d+)?\\s*;?\\s*$", "");
         sql = sql + " LIMIT " + aiProperties.getSqlMaxRows();
 
-        // 6. 通过 ErpQueryService 执行（走 @DS("erp") 数据源）
+        // 6. SQL 语法预校验（通过 EXPLAIN 验证，避免执行语法错误的 SQL）
+        String explainError = validateSqlSyntax(sql);
+        if (explainError != null) {
+            log.warn("[AI-SQL] SQL 语法校验失败: {}", explainError);
+            return "SQL 语法错误：" + explainError + "。请修正 SQL 后重试。原始 SQL：" + sql;
+        }
+
+        // 7. 通过 ErpQueryService 执行（走 @DS("erp") 数据源）
         try {
             log.info("[AI-SQL] 执行最终SQL: {}", sql);
             List<Map<String, Object>> results = erpQueryService.executeQuery(
@@ -275,5 +285,26 @@ public class ExecuteSqlQueryTool {
             result.append(" (displayed ").append(displayRows).append(" rows)");
         }
         return result.toString();
+    }
+
+    /**
+     * SQL 语法预校验（通过 EXPLAIN 验证）
+     * <p>在执行前先 EXPLAIN 验证语法，语法错误时返回错误信息，帮助 LLM 自动修正</p>
+     *
+     * @param sql 待校验的 SQL
+     * @return 错误信息，null 表示校验通过
+     */
+    private String validateSqlSyntax(String sql) {
+        try {
+            erpQueryService.executeQuery("EXPLAIN " + sql, 1, 2);
+            return null;
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            // 提取关键错误信息（去除堆栈噪音）
+            if (msg != null && msg.length() > 200) {
+                msg = msg.substring(0, 200);
+            }
+            return msg;
+        }
     }
 }

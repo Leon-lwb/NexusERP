@@ -664,6 +664,12 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/ai/mcp/index.vue'),
         name: 'AiMcp',
         meta: { title: '工具管理', icon: 'component' }
+      },
+      {
+        path: 'prompt',
+        component: () => import('@/views/ai/prompt/index.vue'),
+        name: 'AiPrompt',
+        meta: { title: 'Prompt模板', icon: 'documentation' }
       }
     ]
   },

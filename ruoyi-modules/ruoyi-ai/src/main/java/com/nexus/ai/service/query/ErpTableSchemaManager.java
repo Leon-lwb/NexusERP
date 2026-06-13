@@ -12,9 +12,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -232,6 +235,7 @@ public class ErpTableSchemaManager {
 
     /**
      * 从 DatabaseMetaData 加载单个表的结构信息
+     * <p>包含列信息、复合主键、外键关系、枚举值提取</p>
      */
     private TableStructure loadTableSchemaFromMetaData(DatabaseMetaData metaData, String catalog, String tableName) throws SQLException {
         TableStructure table = new TableStructure();
@@ -255,25 +259,38 @@ public class ErpTableSchemaManager {
                 if (columnSize > 0 && !isNumericType(col.getColumnType())) {
                     col.setColumnType(col.getColumnType() + "(" + columnSize + ")");
                 }
-                col.setColumnComment(rs.getString("REMARKS"));
+                String remark = rs.getString("REMARKS");
+                col.setColumnComment(remark);
                 col.setNullable("YES".equalsIgnoreCase(rs.getString("IS_NULLABLE")));
+                col.setDefaultValue(rs.getString("COLUMN_DEF"));
+                // 从注释中提取枚举值
+                col.setEnumValues(extractEnumValues(remark));
                 columns.add(col);
             }
         }
 
-        // 获取主键信息
+        // 获取主键信息（支持复合主键）
+        List<String> pkColumns = new ArrayList<>();
         try (ResultSet rs = metaData.getPrimaryKeys(catalog, null, tableName)) {
-            if (rs.next()) {
+            while (rs.next()) {
                 String pkName = rs.getString("COLUMN_NAME");
-                table.setPrimaryKey(pkName);
+                pkColumns.add(pkName);
                 for (ColumnInfo col : columns) {
                     if (col.getColumnName().equals(pkName)) {
                         col.setPrimaryKey(true);
-                        break;
                     }
                 }
             }
         }
+        table.setPrimaryKeyColumns(pkColumns);
+        // 兼容旧逻辑：primaryKey 字段存储第一个主键列名
+        if (!pkColumns.isEmpty()) {
+            table.setPrimaryKey(pkColumns.get(0));
+        }
+
+        // 获取外键关系
+        List<ForeignKeyRelation> foreignKeys = discoverForeignKeys(metaData, catalog, tableName);
+        table.setForeignKeys(foreignKeys);
 
         table.setColumns(columns);
         return table;
@@ -355,6 +372,107 @@ public class ErpTableSchemaManager {
         return sb.toString();
     }
 
+    /**
+     * 获取全量 Schema 摘要（覆盖所有允许前缀的表）
+     * <p>替代 getCoreSchemaSummary()，包含 bd_/so_/pu_/prd_/wm_/sch_ 全部前缀的表</p>
+     * <p>输出增强格式：含字段类型、枚举值、外键关系</p>
+     *
+     * @return 全量表结构摘要文本
+     */
+    public String getFullSchemaSummary() {
+        ensureInitialized();
+        return schemaCache.values().stream()
+            .filter(t -> allowedTablePrefixes.stream().anyMatch(t.getTableName()::startsWith))
+            .sorted(Comparator.comparing(TableStructure::getTableName))
+            .map(this::formatEnhancedTableSummary)
+            .collect(Collectors.joining("\n\n"));
+    }
+
+    /**
+     * 增强版表摘要格式（含字段类型、枚举值、外键关系）
+     *
+     * @param table 表结构
+     * @return 增强版摘要文本
+     */
+    public String formatEnhancedTableSummary(TableStructure table) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(table.getTableName());
+        if (table.getTableComment() != null && !table.getTableComment().isEmpty()) {
+            sb.append("（").append(table.getTableComment()).append("）");
+        }
+        sb.append(":\n");
+
+        // 字段信息（含类型、枚举值）
+        for (ColumnInfo col : table.getColumns()) {
+            sb.append("  ").append(col.getColumnName());
+            if (col.getColumnType() != null) {
+                sb.append(" ").append(col.getColumnType());
+            }
+            if (col.isPrimaryKey()) {
+                sb.append(" PK");
+            }
+            if (col.getEnumValues() != null && !col.getEnumValues().isEmpty()) {
+                sb.append(" [").append(col.getEnumValues()).append("]");
+            }
+            if (col.getColumnComment() != null && !col.getColumnComment().isEmpty()) {
+                sb.append(" -- ").append(col.getColumnComment());
+            }
+            sb.append("\n");
+        }
+
+        // 外键关系
+        if (table.getForeignKeys() != null && !table.getForeignKeys().isEmpty()) {
+            sb.append("  关联: ");
+            for (ForeignKeyRelation fk : table.getForeignKeys()) {
+                sb.append(fk.getColumnName()).append("->").append(fk.getReferencedTable())
+                    .append(".").append(fk.getReferencedColumn()).append("  ");
+            }
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 发现表的外键关系
+     *
+     * @param metaData 数据库元数据
+     * @param catalog  数据库目录
+     * @param tableName 表名
+     * @return 外键关系列表
+     */
+    private List<ForeignKeyRelation> discoverForeignKeys(DatabaseMetaData metaData, String catalog, String tableName) throws SQLException {
+        List<ForeignKeyRelation> relations = new ArrayList<>();
+        try (ResultSet rs = metaData.getImportedKeys(catalog, null, tableName)) {
+            while (rs.next()) {
+                ForeignKeyRelation fk = new ForeignKeyRelation();
+                fk.setColumnName(rs.getString("FKCOLUMN_NAME"));
+                fk.setReferencedTable(rs.getString("PKTABLE_NAME"));
+                fk.setReferencedColumn(rs.getString("PKCOLUMN_NAME"));
+                relations.add(fk);
+            }
+        }
+        return relations;
+    }
+
+    /**
+     * 从字段注释中提取枚举值
+     * <p>支持格式：注释[ENUM1/ENUM2/ENUM3] 或 注释[1-选项1/2-选项2/3-选项3]</p>
+     *
+     * @param comment 字段注释
+     * @return 枚举值字符串，无匹配时返回 null
+     */
+    private String extractEnumValues(String comment) {
+        if (comment == null || comment.isEmpty()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\[([^\\]]+)\\]").matcher(comment);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
     // ==================== 内部类 ====================
 
     /**
@@ -362,10 +480,19 @@ public class ErpTableSchemaManager {
      */
     @lombok.Data
     public static class TableStructure {
+        /** 表名 */
         private String tableName;
+        /** 表注释 */
         private String tableComment;
+        /** 主键列名（兼容旧逻辑，复合主键用逗号分隔） */
         private String primaryKey;
+        /** 主键列名列表（支持复合主键） */
+        private List<String> primaryKeyColumns = new ArrayList<>();
+        /** 列信息 */
         private List<ColumnInfo> columns = new ArrayList<>();
+        /** 外键关系 */
+        private List<ForeignKeyRelation> foreignKeys = new ArrayList<>();
+        /** 建表 DDL */
         private String ddl;
     }
 
@@ -374,10 +501,32 @@ public class ErpTableSchemaManager {
      */
     @lombok.Data
     public static class ColumnInfo {
+        /** 列名 */
         private String columnName;
+        /** 列类型 */
         private String columnType;
+        /** 列注释 */
         private String columnComment;
+        /** 是否主键 */
         private boolean isPrimaryKey;
+        /** 是否可空 */
         private boolean nullable;
+        /** 默认值 */
+        private String defaultValue;
+        /** 枚举值（从注释中提取，如 "DRAFT/CONFIRMED/DONE"） */
+        private String enumValues;
+    }
+
+    /**
+     * 外键关系
+     */
+    @lombok.Data
+    public static class ForeignKeyRelation {
+        /** 本表列名 */
+        private String columnName;
+        /** 引用表名 */
+        private String referencedTable;
+        /** 引用列名 */
+        private String referencedColumn;
     }
 }
