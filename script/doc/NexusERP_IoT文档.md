@@ -1,48 +1,73 @@
 # NexusERP - IoT模块综合文档
 
-> **文档状态**: 📋 规划设计文档 — IoT模块尚未开始实施，本文档为开发前的完整设计方案。
-> 当前项目中 `ruoyi-iot` Maven模块尚未创建，`@DS("iot")` 数据源尚未配置，15张数据表DDL尚未执行。
-> IoT开发建议在MES模块（Phase 1-2）完成后启动，预计Week 35开始。
+> **文档状态**: 📋 规划设计文档（已修订） — IoT模块尚未开始实施，本文档为开发前的完整设计方案。
+> 当前项目中 `ruoyi-iot` Maven模块尚未创建，`@DS("iot")` 数据源尚未配置，3张核心数据表DDL尚未执行。
+> IoT开发建议在MES模块完成后启动，预计Week 33开始。
 
 ## 一、IoT模块总体设计
 
 ### 1.1 IoT定位
 
-IoT(Internet of Things)物联网平台，负责设备接入、数据采集、规则引擎、告警通知、边缘网关和场景联动，为MES提供设备数据支撑。
+IoT(Internet of Things)物联网平台，负责设备接入、数据采集、实时推送和基础告警，为MES提供设备数据支撑。
 
-### 1.2 IoT模块结构（8个子模块）
+### 1.2 设计原则
+
+| 原则 | 说明 |
+|------|------|
+| 最小链路先行 | MQTT→入库→前端可见，3-4周内让一台真实设备的数据出现在仪表盘上 |
+| 已有基础设施优先 | Redis Streams替代RabbitMQ，SSE替代WebSocket，SnailJob替代自研调度 |
+| 按需引入重量级组件 | TDengine、边缘网关、规则引擎都是"有了瓶颈再加" |
+| 不为不存在的模块预留耦合 | MES集成点用接口抽象，不建外键 |
+
+### 1.3 IoT模块结构（精简版）
 
 ```
 ruoyi-iot/
 └── com/nexus/iot/
-    ├── config/     # 平台配置(租户/全局)
-    ├── common/     # 公共组件(物模型/协议适配器基类)
-    ├── device/     # 设备管理(产品/设备/分组/标签)
-    ├── protocol/   # 协议适配(MQTT/OPC UA/Modbus/HTTP)
-    ├── data/       # 数据管道(原始数据/处理数据/时序存储)
-    ├── rule/       # 规则引擎(规则定义/执行引擎)
-    ├── alert/      # 告警系统(告警规则/告警日志)
-    └── scene/      # 场景联动(场景/触发器/动作)
-    └── gateway/    # 边缘网关(网关管理/边缘脚本)
+    ├── device/     # 设备管理(产品/设备)
+    ├── mqtt/       # MQTT接入(Moquette内嵌Broker)
+    ├── pipeline/   # 数据管道(Redis Streams消费)
+    ├── realtime/   # 实时推送(SSE)
+    └── task/       # 定时任务(SnailJob: 清理/心跳)
 ```
 
-### 1.3 数据源配置
+> **重要变更**: 原规划8个子模块（config/common/device/protocol/data/rule/alert/scene/gateway）精简为5个。规则引擎、告警系统、边缘网关、场景联动均为按需扩展模块。
+
+### 1.4 数据源配置
 
 - 数据库: ry-iot (独立库) — 📋 待创建
 - 注解: `@DS("iot")` — 📋 待配置
-- 时序数据库: TDengine 或 InfluxDB (设备时序数据) — 📋 待选型部署
 
-### 1.4 数据流架构
+### 1.5 数据流架构
 
 ```
-设备 → 协议适配(MQTT/OPC UA/Modbus/HTTP) → MQ消息 → 规则引擎/数据管道/告警 → 存储(MySQL+TDengine+Redis) → WebSocket → 前端 → MES
+设备 → MQTT Publish → Moquette Broker(内嵌)
+  → MqttMessageListener → Redis Stream "iot:data:stream" (XADD)
+    → StreamConsumer (XREADGROUP, 消费者组)
+      ├── 写入 iot_device_data (MySQL)
+      ├── 更新 Redis 缓存 "iot:latest:{deviceId}:{propertyCode}"
+      └── 硬编码告警阈值检查 → SSE推送前端
+
+前端 EventSource("/iot/device/{id}/realtime")
+  → 后端 SseEmitter → 从Redis缓存读取最新值 → 定期推送
 ```
+
+### 1.6 技术栈复用
+
+| 组件 | 来源 | 用途 | 替代原方案 | 状态 |
+|------|------|------|-----------|------|
+| Redisson (Redis Streams) | ruoyi-common-redis | 设备数据管道 | 替代RabbitMQ新vhost | ✅ 可用 |
+| SseEmitter | ruoyi-common-sse | 实时数据推送 | 替代WebSocket | ✅ 可用 |
+| SnailJob | ruoyi-common-job | 定时任务(清理/心跳) | 替代自研调度 | ✅ 可用 |
+| Redis缓存 | ruoyi-common-redis | 设备最新值/在线状态 | - | ✅ 可用 |
 
 ---
 
-## 二、IoT数据表设计
+## 二、IoT数据表设计（3张核心表）
 
-### 2.1 产品与设备管理
+> **精简说明**: 原规划15张+时序库精简为3张核心表。协议配置、规则引擎、告警系统、边缘网关、场景联动均为按需扩展，不在初始版本中建表。
+
+### 2.1 产品与设备
 
 ```sql
 -- IoT产品(设备模板)
@@ -51,8 +76,8 @@ CREATE TABLE iot_product (
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     product_code     VARCHAR(64) NOT NULL,
     product_name     VARCHAR(128) NOT NULL,
-    product_type     VARCHAR(32) COMMENT 'DEVICE/GATEWAY',
-    protocol_type    VARCHAR(32) NOT NULL COMMENT 'MQTT/OPC_UA/MODBUS/HTTP',
+    product_type     VARCHAR(32) DEFAULT 'DEVICE' COMMENT 'DEVICE/GATEWAY',
+    protocol_type    VARCHAR(32) NOT NULL DEFAULT 'MQTT' COMMENT 'MQTT/OPC_UA/MODBUS/HTTP',
     description      VARCHAR(500),
     status           VARCHAR(16) DEFAULT 'ACTIVE',
     create_by        BIGINT,
@@ -64,28 +89,6 @@ CREATE TABLE iot_product (
     UNIQUE KEY uk_code (product_code, tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT产品';
 
--- IoT产品属性(物模型)
-CREATE TABLE iot_product_property (
-    property_id      BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    product_id       BIGINT NOT NULL,
-    property_code    VARCHAR(64) NOT NULL,
-    property_name    VARCHAR(128) NOT NULL,
-    property_type    VARCHAR(16) NOT NULL COMMENT 'PROPERTY/SERVICE/EVENT',
-    data_type        VARCHAR(16) NOT NULL COMMENT 'INT/FLOAT/DOUBLE/STRING/BOOL/ENUM/STRUCT',
-    unit             VARCHAR(16),
-    access_mode      VARCHAR(16) DEFAULT 'RW' COMMENT 'R/W/RW',
-    default_value    VARCHAR(256),
-    enum_values      JSON COMMENT '枚举值定义',
-    struct_definition JSON COMMENT '结构体定义',
-    description      VARCHAR(500),
-    create_by        BIGINT,
-    create_time      DATETIME,
-    update_time      DATETIME,
-    PRIMARY KEY (property_id),
-    INDEX idx_product (product_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT产品属性(物模型)';
-
 -- IoT设备实例
 CREATE TABLE iot_device (
     device_id        BIGINT NOT NULL,
@@ -94,16 +97,14 @@ CREATE TABLE iot_device (
     device_name      VARCHAR(128) NOT NULL,
     product_id       BIGINT NOT NULL,
     product_name     VARCHAR(128),
-    protocol_type    VARCHAR(32) NOT NULL,
-    gateway_id       BIGINT COMMENT '所属网关ID(子设备时)',
-    parent_device_id BIGINT COMMENT '父设备ID',
+    protocol_type    VARCHAR(32) NOT NULL DEFAULT 'MQTT',
     connection_status VARCHAR(16) DEFAULT 'OFFLINE' COMMENT 'ONLINE/OFFLINE',
     last_online_time DATETIME,
     device_secret    VARCHAR(128) COMMENT '设备密钥',
     ip_address       VARCHAR(64),
     firmware_version VARCHAR(64),
     location         VARCHAR(256),
-    mes_equipment_id BIGINT COMMENT '关联MES设备ID',
+    mes_equipment_id BIGINT COMMENT '关联MES设备ID(接口查询,无外键)',
     status           VARCHAR(16) DEFAULT 'ACTIVE',
     create_by        BIGINT,
     create_dept      BIGINT,
@@ -115,57 +116,19 @@ CREATE TABLE iot_device (
     INDEX idx_product (product_id),
     INDEX idx_status (connection_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备实例';
-
--- IoT设备分组
-CREATE TABLE iot_device_group (
-    group_id         BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    group_name       VARCHAR(128) NOT NULL,
-    group_code       VARCHAR(64) NOT NULL,
-    parent_group_id  BIGINT COMMENT '父分组',
-    description      VARCHAR(500),
-    create_by        BIGINT,
-    create_time      DATETIME,
-    update_time      DATETIME,
-    PRIMARY KEY (group_id),
-    UNIQUE KEY uk_code (group_code, tenant_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备分组';
-
--- IoT设备分组关联
-CREATE TABLE iot_device_group_relation (
-    id               BIGINT NOT NULL,
-    group_id         BIGINT NOT NULL,
-    device_id        BIGINT NOT NULL,
-    create_time      DATETIME,
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_group_device (group_id, device_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备分组关联';
-
--- IoT设备标签
-CREATE TABLE iot_device_tag (
-    tag_id           BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    tag_key          VARCHAR(64) NOT NULL,
-    tag_value        VARCHAR(256),
-    device_id        BIGINT NOT NULL,
-    create_time      DATETIME,
-    PRIMARY KEY (tag_id),
-    INDEX idx_device (device_id),
-    INDEX idx_key_value (tag_key, tag_value)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备标签';
 ```
 
-### 2.2 数据管道
+### 2.2 设备数据
 
 ```sql
--- IoT设备原始数据
-CREATE TABLE iot_device_data_raw (
+-- IoT设备数据(原始数据,先存MySQL)
+-- 触发迁移条件: 表行数超过1000万 → 引入TDengine
+CREATE TABLE iot_device_data (
     data_id          BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     device_id        BIGINT NOT NULL,
     device_code      VARCHAR(64),
-    product_id       BIGINT,
-    property_code    VARCHAR(64),
+    property_code    VARCHAR(64) NOT NULL,
     property_name    VARCHAR(128),
     data_type        VARCHAR(16),
     numeric_value    DECIMAL(14,4),
@@ -174,552 +137,298 @@ CREATE TABLE iot_device_data_raw (
     collect_time     DATETIME NOT NULL,
     receive_time     DATETIME NOT NULL,
     quality          VARCHAR(16) DEFAULT 'GOOD' COMMENT 'GOOD/BAD/UNCERTAIN',
-    source           VARCHAR(32) COMMENT 'MQTT/OPC_UA/MODBUS/HTTP',
+    source           VARCHAR(32) DEFAULT 'MQTT' COMMENT 'MQTT/OPC_UA/MODBUS/HTTP',
     create_time      DATETIME,
     PRIMARY KEY (data_id),
     INDEX idx_device_time (device_id, collect_time),
     INDEX idx_property (device_id, property_code, collect_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备原始数据';
-
--- IoT设备处理数据(聚合/计算后)
-CREATE TABLE iot_device_data_processed (
-    data_id          BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    device_id        BIGINT NOT NULL,
-    property_code    VARCHAR(64),
-    agg_type         VARCHAR(16) COMMENT 'AVG/MAX/MIN/SUM/COUNT',
-    agg_value        DECIMAL(14,4),
-    agg_period       VARCHAR(16) COMMENT 'MINUTE/HOUR/DAY',
-    period_start     DATETIME NOT NULL,
-    period_end       DATETIME NOT NULL,
-    create_time      DATETIME,
-    PRIMARY KEY (data_id),
-    INDEX idx_device_period (device_id, property_code, agg_period, period_start)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备处理数据';
-```
-
-### 2.3 协议配置
-
-```sql
--- IoT协议配置
-CREATE TABLE iot_protocol_config (
-    config_id        BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    protocol_type    VARCHAR(32) NOT NULL COMMENT 'MQTT/OPC_UA/MODBUS/HTTP',
-    config_name      VARCHAR(128) NOT NULL,
-    config_content   JSON NOT NULL COMMENT '协议连接配置(JSON)',
-    status           VARCHAR(16) DEFAULT 'ACTIVE',
-    create_by        BIGINT,
-    create_dept      BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (config_id),
-    INDEX idx_type (protocol_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT协议配置';
-
--- IoT协议映射(设备属性→协议地址)
-CREATE TABLE iot_protocol_mapping (
-    mapping_id       BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    device_id        BIGINT NOT NULL,
-    property_id      BIGINT NOT NULL,
-    protocol_type    VARCHAR(32) NOT NULL,
-    address          VARCHAR(256) NOT NULL COMMENT 'MQTT Topic/OPC UA NodeId/Modbus Register/HTTP URL',
-    data_converter   VARCHAR(256) COMMENT '数据转换表达式',
-    read_write       VARCHAR(8) DEFAULT 'R' COMMENT 'R/W/RW',
-    create_time      DATETIME,
-    update_time      DATETIME,
-    PRIMARY KEY (mapping_id),
-    INDEX idx_device (device_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT协议映射';
-```
-
-### 2.4 规则引擎
-
-```sql
--- IoT规则
-CREATE TABLE iot_rule (
-    rule_id          BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    rule_name        VARCHAR(128) NOT NULL,
-    rule_type        VARCHAR(16) NOT NULL COMMENT 'ALERT/FORWARD/TRANSFORM',
-    description      VARCHAR(500),
-    conditions       JSON NOT NULL COMMENT '触发条件(AND/OR组合)',
-    actions          JSON NOT NULL COMMENT '执行动作列表',
-    enabled          TINYINT(1) DEFAULT 1,
-    priority         INT DEFAULT 0,
-    last_trigger_time DATETIME,
-    trigger_count    INT DEFAULT 0,
-    create_by        BIGINT,
-    create_dept      BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (rule_id),
-    INDEX idx_type (rule_type),
-    INDEX idx_enabled (enabled)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT规则';
-```
-
-### 2.5 告警系统
-
-```sql
--- IoT告警规则
-CREATE TABLE iot_alert_rule (
-    alert_rule_id    BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    rule_name        VARCHAR(128) NOT NULL,
-    device_id        BIGINT,
-    product_id       BIGINT,
-    property_code    VARCHAR(64),
-    condition_type   VARCHAR(16) NOT NULL COMMENT 'GT/LT/EQ/NE/BETWEEN/CHANGE',
-    threshold_value  DECIMAL(14,4),
-    threshold_value2 DECIMAL(14,4) COMMENT 'BETWEEN上限',
-    duration_seconds INT DEFAULT 0 COMMENT '持续时长(秒)',
-    severity         VARCHAR(16) NOT NULL COMMENT 'INFO/WARNING/CRITICAL/FATAL',
-    notify_type      VARCHAR(32) COMMENT 'EMAIL/SMS/WEBHOOK/WEBSOCKET',
-    notify_targets   JSON COMMENT '通知目标列表',
-    enabled          TINYINT(1) DEFAULT 1,
-    create_by        BIGINT,
-    create_dept      BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (alert_rule_id),
-    INDEX idx_device (device_id),
-    INDEX idx_severity (severity)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT告警规则';
-
--- IoT告警日志
-CREATE TABLE iot_alert_log (
-    alert_id         BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    alert_rule_id    BIGINT NOT NULL,
-    rule_name        VARCHAR(128),
-    device_id        BIGINT NOT NULL,
-    device_code      VARCHAR(64),
-    device_name      VARCHAR(128),
-    property_code    VARCHAR(64),
-    property_name    VARCHAR(128),
-    current_value    DECIMAL(14,4),
-    threshold_value  DECIMAL(14,4),
-    severity         VARCHAR(16),
-    status           VARCHAR(16) DEFAULT 'ACTIVE' COMMENT 'ACTIVE/ACKNOWLEDGED/RESOLVED',
-    alert_time       DATETIME NOT NULL,
-    acknowledge_time DATETIME,
-    resolve_time     DATETIME,
-    acknowledge_by   BIGINT,
-    resolve_by       BIGINT,
-    notify_status    VARCHAR(16) COMMENT 'PENDING/SENT/FAILED',
-    notify_detail    VARCHAR(500),
-    create_time      DATETIME,
-    PRIMARY KEY (alert_id),
-    INDEX idx_device (device_id),
-    INDEX idx_status (status),
-    INDEX idx_time (alert_time),
-    INDEX idx_severity (severity)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT告警日志';
-```
-
-### 2.6 边缘网关
-
-```sql
--- IoT网关
-CREATE TABLE iot_gateway (
-    gateway_id       BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    gateway_code     VARCHAR(64) NOT NULL,
-    gateway_name     VARCHAR(128) NOT NULL,
-    gateway_type     VARCHAR(32) COMMENT 'EDGE/PROTOCOL_BRIDGE',
-    protocol_type    VARCHAR(32) COMMENT '支持的协议类型',
-    ip_address       VARCHAR(64),
-    port             INT,
-    connection_status VARCHAR(16) DEFAULT 'OFFLINE' COMMENT 'ONLINE/OFFLINE',
-    last_heartbeat   DATETIME,
-    firmware_version VARCHAR(64),
-    location         VARCHAR(256),
-    config_content   JSON COMMENT '网关配置',
-    status           VARCHAR(16) DEFAULT 'ACTIVE',
-    create_by        BIGINT,
-    create_dept      BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (gateway_id),
-    UNIQUE KEY uk_code (gateway_code, tenant_id),
-    INDEX idx_status (connection_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT网关';
-
--- IoT边缘脚本
-CREATE TABLE iot_edge_script (
-    script_id        BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    gateway_id       BIGINT NOT NULL,
-    script_name      VARCHAR(128) NOT NULL,
-    script_type      VARCHAR(16) NOT NULL COMMENT 'FILTER/TRANSFORM/AGGREGATE',
-    script_content   TEXT NOT NULL COMMENT '脚本内容(JavaScript/Groovy)',
-    script_lang      VARCHAR(16) DEFAULT 'JAVASCRIPT',
-    version          INT DEFAULT 1,
-    enabled          TINYINT(1) DEFAULT 1,
-    create_by        BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (script_id),
-    INDEX idx_gateway (gateway_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT边缘脚本';
-```
-
-### 2.7 场景联动
-
-```sql
--- IoT场景
-CREATE TABLE iot_scene (
-    scene_id         BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    scene_name       VARCHAR(128) NOT NULL,
-    scene_type       VARCHAR(16) NOT NULL COMMENT 'MANUAL/AUTO',
-    description      VARCHAR(500),
-    enabled          TINYINT(1) DEFAULT 1,
-    last_trigger_time DATETIME,
-    trigger_count    INT DEFAULT 0,
-    create_by        BIGINT,
-    create_dept      BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (scene_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT场景';
-
--- IoT场景触发器
-CREATE TABLE iot_scene_trigger (
-    trigger_id       BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    scene_id         BIGINT NOT NULL,
-    trigger_type     VARCHAR(16) NOT NULL COMMENT 'DEVICE/CRON/MANUAL',
-    device_id        BIGINT COMMENT '设备触发时',
-    property_code    VARCHAR(64),
-    condition_type   VARCHAR(16) COMMENT 'GT/LT/EQ/CHANGE',
-    threshold_value  DECIMAL(14,4),
-    cron_expression  VARCHAR(64) COMMENT '定时触发时',
-    create_time      DATETIME,
-    PRIMARY KEY (trigger_id),
-    INDEX idx_scene (scene_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT场景触发器';
-
--- IoT场景动作
-CREATE TABLE iot_scene_action (
-    action_id        BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    scene_id         BIGINT NOT NULL,
-    action_type      VARCHAR(16) NOT NULL COMMENT 'DEVICE_COMMAND/ALERT/NOTIFICATION/HTTP_CALLBACK',
-    target_device_id BIGINT COMMENT '设备命令时',
-    command_code     VARCHAR(64) COMMENT '设备命令编码',
-    command_params   JSON COMMENT '命令参数',
-    alert_rule_id    BIGINT COMMENT '触发告警时',
-    notify_type      VARCHAR(32) COMMENT '通知类型',
-    notify_targets   JSON COMMENT '通知目标',
-    callback_url     VARCHAR(256) COMMENT 'HTTP回调时',
-    callback_method  VARCHAR(8) COMMENT 'HTTP方法',
-    callback_body    TEXT COMMENT 'HTTP请求体',
-    sequence_num     INT DEFAULT 0 COMMENT '执行顺序',
-    create_time      DATETIME,
-    PRIMARY KEY (action_id),
-    INDEX idx_scene (scene_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT场景动作';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备数据';
 ```
 
 ---
 
-## 三、协议适配
+## 三、MQTT协议接入
 
-### 3.1 MQTT协议
+### 3.1 MQTT Broker选型
 
-- Broker: Moquette(内嵌) 或 EMQX(生产推荐)
-- Topic规范: `iot/{tenantId}/{deviceId}/property/post` (属性上报)
-- Topic规范: `iot/{tenantId}/{deviceId}/property/set` (属性设置)
-- Topic规范: `iot/{tenantId}/{deviceId}/service/invoke` (服务调用)
-- Topic规范: `iot/{tenantId}/{deviceId}/event/post` (事件上报)
+| 方案 | 结论 | 理由 |
+|------|------|------|
+| Moquette内嵌 | ✅ 开发阶段首选 | 轻量级，Spring Boot Starter集成，单JAR部署 |
+| EMQX独立部署 | 📋 生产环境备选 | 集群模式，高吞吐，适合大规模设备 |
+
+### 3.2 Topic规范
+
+| Topic | 方向 | 说明 |
+|-------|------|------|
+| `iot/{tenantId}/{deviceId}/property/post` | 设备→平台 | 属性上报 |
+| `iot/{tenantId}/{deviceId}/property/set` | 平台→设备 | 属性设置 |
+| `iot/{tenantId}/{deviceId}/event/post` | 设备→平台 | 事件上报 |
+
+### 3.3 连接参数
+
 - QoS: 1(至少一次)
 - 认证: deviceCode + deviceSecret
-- 遗嘱消息: 设备离线通知
+- 遗嘱消息: 设备离线通知 → 更新 iot_device.connection_status = OFFLINE
+- 端口: 1883 (TCP)
 
-### 3.2 OPC UA协议
+### 3.4 Moquette集成
 
-- 库: Eclipse Milo
-- 连接模式: 客户端模式(连接OPC UA Server)
-- 数据订阅: Subscription + MonitoredItem
-- 节点映射: iot_protocol_mapping.address = OPC UA NodeId
-- 安全模式: None/Sign/SignAndEncrypt
+```java
+/**
+ * Moquette MQTT Broker 内嵌配置
+ * Spring Boot Starter方式启动
+ * 依赖: org.eclipse.moquette:moquette-broker:0.17
+ */
+@Configuration
+public class MqttBrokerConfig {
+    // 启动内嵌Broker，监听1883端口
+    // 注册消息监听器 MqttMessageListener
+    // 设备连接/断开时更新Redis在线状态 + 数据库connection_status
+}
+```
 
-### 3.3 Modbus协议
+---
 
-- 库: modbus4j
-- 模式: TCP/RTU
-- 寄存器类型: Coil/Discrete/Input/Holding
-- 节点映射: iot_protocol_mapping.address = "slaveId:functionCode:offset:length"
-- 轮询间隔: 可配置(默认1秒)
-- 数据转换: 支持字节序转换和缩放因子
+## 四、数据管道 — Redis Streams
 
-### 3.4 HTTP协议
+### 4.1 为什么用Redis Streams替代RabbitMQ
 
-- 方式: 设备主动上报(POST) / 平台主动拉取(GET)
-- 数据格式: JSON
-- 认证: Token/Header
-- 适合场景: 第三方系统对接、不支持MQTT的设备
+| 维度 | RabbitMQ | Redis Streams |
+|------|---------|--------------|
+| 新增基础设施 | 需要新vhost + exchange + queue | 零新增，复用现有Redis |
+| 消费者组 | 原生支持 | 原生支持(XREADGROUP) |
+| 消息确认 | ACK机制 | XACK机制 |
+| 持久化 | 磁盘持久化 | Redis AOF + RDB |
+| 运维成本 | 独立中间件 | 复用Redis实例 |
+| 适用场景 | 复杂路由/延迟消息 | 简单发布订阅/流处理 |
 
-### 3.5 协议适配器基类
+IoT场景的设备数据上报属于简单的发布订阅模式，Redis Streams完全满足需求。
+
+### 4.2 数据流设计
+
+```
+Step 1: 设备MQTT发布 → Moquette接收 → MqttMessageListener
+Step 2: Listener解析消息 → XADD iot:data:stream * device_id xxx property_code xxx value xxx
+Step 3: StreamConsumer(XREADGROUP GROUP iot-consumers consumer-1 BLOCK 1000)
+  ├── 写入 iot_device_data 表 (MySQL批量INSERT)
+  ├── HSET iot:latest:{deviceId} {propertyCode} {value} (Redis缓存最新值)
+  ├── SET iot:status:{deviceId} ONLINE EX 3600 (设备在线状态)
+  └── 告警阈值检查(硬编码) → SseMessageUtils推送
+Step 4: XACK iot:data:stream iot-consumers {messageId}
+```
+
+### 4.3 Redisson API使用
+
+```java
+// 写入Stream
+RStream<Object, Object> stream = redissonClient.getStream("iot:data:stream");
+stream.add(StreamAddArgs.entry("device_id", deviceId)
+    .entry("property_code", propertyCode)
+    .entry("value", value)
+    .entry("collect_time", collectTime));
+
+// 消费者组读取
+StreamReadGroupArgs args = StreamReadGroupArgs.greaterThan(
+    StreamMessageId.NEWEST).count(100).timeout(Duration.ofSeconds(1));
+Map<StreamMessageId, Map<Object, Object>> messages =
+    stream.readGroup("iot-consumers", "consumer-1", args);
+
+// 确认消息
+stream.ack("iot-consumers", messageId);
+```
+
+### 4.4 Redis缓存结构
+
+| Key | 类型 | 用途 | TTL |
+|-----|------|------|-----|
+| `iot:latest:{deviceId}` | Hash | 设备最新属性值 | 无(覆盖更新) |
+| `iot:status:{deviceId}` | String | 设备在线状态(ONLINE/OFFLINE) | 1小时 |
+| `iot:data:stream` | Stream | 设备数据管道 | 由清理任务控制 |
+
+---
+
+## 五、实时推送 — SSE
+
+### 5.1 为什么用SSE替代WebSocket
+
+| 维度 | WebSocket | SSE |
+|------|-----------|-----|
+| 方向 | 双向 | 单向(服务端→客户端) |
+| 复杂度 | 需要连接管理/心跳/重连 | 原生HTTP，简单 |
+| 已有基础设施 | ruoyi-common-websocket | ruoyi-common-sse ✅ |
+| IoT需求 | 实时数据推送(单向即可) | 完全满足 |
+
+IoT场景只需要服务端向客户端推送设备数据，不需要客户端向服务端发送消息，SSE完全满足需求。
+
+### 5.2 实时数据推送实现
+
+```java
+/**
+ * IoT设备实时数据SSE端点
+ * 前端: new EventSource("/iot/device/{deviceId}/realtime")
+ */
+@GetMapping("/{deviceId}/realtime")
+public SseEmitter realtime(@PathVariable Long deviceId) {
+    SseEmitter emitter = sseEmitterManager.connect(userId, token);
+    // 定时从Redis "iot:latest:{deviceId}" 读取最新值
+    // 通过emitter.send()推送给前端
+    return emitter;
+}
+```
+
+### 5.3 告警推送
+
+硬编码告警阈值检查发现异常时：
+```java
+// 通过已有SSE基础设施推送告警
+SseMessageUtils.publishMessage(Arrays.asList(userId), alertMessage);
+```
+
+---
+
+## 六、定时任务 — SnailJob
+
+### 6.1 任务清单
+
+| 任务类 | 频率 | 说明 |
+|--------|------|------|
+| `IotDataCleanupTask` | 每天凌晨2:00 | 清理 iot_device_data 中超过90天的数据 |
+| `IotDeviceHeartbeatTask` | 每5分钟 | 检查设备last_online_time，超时(>15分钟)标记OFFLINE |
+| `IotStreamTrimTask` | 每小时 | XTRIM iot:data:stream MAXLEN 100000 (控制Stream长度) |
+
+### 6.2 SnailJob配置
+
+复用已有 `ruoyi-common-job` 模块，在SnailJob后台注册任务：
+- 任务组: `iot_group`
+- 任务类型: BEAN
+- 执行模式: 单机
+
+---
+
+## 七、告警机制（第一版: 硬编码）
+
+### 7.1 设计思路
+
+第一版不建告警规则表，直接在StreamConsumer中硬编码阈值检查：
+
+```java
+// 示例: 温度传感器告警
+if ("temperature".equals(propertyCode) && numericValue > 80) {
+    // 1. 日志记录
+    log.warn("设备{}温度过高: {}°C", deviceId, numericValue);
+    // 2. SSE推送前端
+    SseMessageUtils.publishMessage(targetUserIds, "设备温度过高告警");
+}
+```
+
+### 7.2 告警升级路径
+
+当硬编码不满足需求时，按需引入告警规则表：
+
+```sql
+-- 按需创建: 告警规则表
+CREATE TABLE iot_alert_rule ( ... );
+-- 按需创建: 告警日志表
+CREATE TABLE iot_alert_log ( ... );
+```
+
+告警生命周期: `ACTIVE → ACKNOWLEDGED → RESOLVED`
+通知方式: SSE推送 + 邮件(ruoyi-common-mail)
+
+---
+
+## 八、按需扩展模块
+
+> 以下模块按实际业务瓶颈驱动，非必须全部完成。
+
+### 8.1 OPC UA / Modbus 协议适配 (按需, ~4天)
+
+**触发条件**: 需要连接PLC/SCADA设备时。
+
+- OPC UA: Eclipse Milo客户端，订阅MonitoredItem
+- Modbus: modbus4j TCP模式，轮询读取寄存器
+- 统一适配器接口:
 
 ```java
 public abstract class BaseProtocolAdapter {
-    /** 初始化连接 */
-    public abstract void connect(ProtocolConfig config);
-
-    /** 断开连接 */
+    public abstract void connect(Map<String, String> config);
     public abstract void disconnect();
-
-    /** 读取属性 */
-    public abstract Object readProperty(Long deviceId, String propertyCode);
-
-    /** 写入属性 */
-    public abstract void writeProperty(Long deviceId, String propertyCode, Object value);
-
-    /** 订阅属性变化 */
-    public abstract void subscribe(Long deviceId, List<String> propertyCodes, Consumer<DeviceData> callback);
-
-    /** 取消订阅 */
-    public abstract void unsubscribe(Long deviceId);
+    public abstract Object readProperty(String address);
+    public abstract void subscribe(List<String> addresses, Consumer<DeviceData> callback);
 }
 ```
 
----
+### 8.2 规则引擎 (按需, ~5天)
 
-## 四、数据管道与时序数据库
+**触发条件**: 硬编码告警阈值不满足需求（多条件组合/用户可配置）。
 
-### 4.1 数据流处理
+- `iot_rule` 表 + JSON条件/动作配置
+- 简单条件评估引擎（AND/OR组合）
+- 动作: 告警/设备命令/HTTP回调
 
-```
-设备数据 → 协议适配器 → MQ消息(iot.data.exchange) → 数据管道消费者
-    ├── 原始数据存储(iot_device_data_raw)
-    ├── 时序数据库写入(TDengine/InfluxDB)
-    ├── Redis缓存(最新值)
-    ├── 规则引擎评估
-    └── 告警检查
-```
+### 8.3 时序数据库迁移 (按需, ~3天)
 
-### 4.2 数据聚合
+**触发条件**: `iot_device_data` 表行数超过1000万。
 
-- 聚合类型: AVG/MAX/MIN/SUM/COUNT
-- 聚合周期: MINUTE/HOUR/DAY
-- 聚合结果存储: iot_device_data_processed
+- 引入TDengine
+- 历史数据迁移脚本
+- 读写分离: 写入走TDengine，查询走TDengine + MySQL混合
+- TDengine超级表设计: 按产品类型建超级表，设备为子表
 
-### 4.3 时序数据库
+### 8.4 边缘网关 (按需, ~2天)
 
-- 推荐: TDengine (高性能、低存储成本)
-- 备选: InfluxDB
-- 用途: 存储设备历史时序数据
-- 超级表设计: 按产品类型建超级表，设备为子表
+**触发条件**: 设备数量超过100台或需要协议转换。
 
-### 4.4 Redis缓存
+- `iot_gateway` 表
+- MQTT桥接（网关→云端Broker）
+- 心跳检测
 
-- 最新值缓存: `iot:latest:{deviceId}:{propertyCode}` → value
-- 设备在线状态: `iot:status:{deviceId}` → ONLINE/OFFLINE
-- 缓存TTL: 可配置(默认1小时)
+### 8.5 场景联动 (按需, ~4天)
 
----
+**触发条件**: 需要设备间自动联动（如温度超限→自动开启风扇）。
 
-## 五、规则引擎
-
-### 5.1 规则类型
-
-- ALERT: 告警触发规则
-- FORWARD: 数据转发规则
-- TRANSFORM: 数据转换规则
-
-### 5.2 规则条件(conditions JSON)
-
-```json
-{
-  "logic": "AND",
-  "conditions": [
-    {
-      "type": "DEVICE_PROPERTY",
-      "deviceId": 1001,
-      "propertyCode": "temperature",
-      "operator": "GT",
-      "value": 80
-    },
-    {
-      "type": "DEVICE_PROPERTY",
-      "deviceId": 1001,
-      "propertyCode": "humidity",
-      "operator": "LT",
-      "value": 30
-    }
-  ]
-}
-```
-
-### 5.3 规则动作(actions JSON)
-
-```json
-{
-  "actions": [
-    {
-      "type": "ALERT",
-      "severity": "CRITICAL",
-      "message": "温度过高且湿度过低"
-    },
-    {
-      "type": "DEVICE_COMMAND",
-      "deviceId": 2001,
-      "commandCode": "turnOnFan",
-      "params": { "speed": 3 }
-    },
-    {
-      "type": "HTTP_CALLBACK",
-      "url": "http://mes/api/equipment/alert",
-      "method": "POST",
-      "body": "{\"deviceId\": ${deviceId}, \"alert\": \"${message}\"}"
-    }
-  ]
-}
-```
-
-### 5.4 规则执行引擎
-
-- 基于Rete算法或简单条件评估
-- 支持AND/OR逻辑组合
-- 支持嵌套条件
-- 规则优先级排序
-- 规则启用/禁用
-
----
-
-## 六、告警系统
-
-### 6.1 告警规则
-
-- 条件类型: GT(大于)/LT(小于)/EQ(等于)/NE(不等于)/BETWEEN(区间)/CHANGE(变化)
-- 严重级别: INFO/WARNING/CRITICAL/FATAL
-- 持续时长: 条件持续N秒后触发(避免瞬时波动)
-- 通知方式: EMAIL/SMS/WEBHOOK/WEBSOCKET
-
-### 6.2 告警生命周期
-
-```
-ACTIVE → ACKNOWLEDGED → RESOLVED
-```
-
-### 6.3 告警通知
-
-- WebSocket实时推送(前端)
-- 邮件通知
-- 短信通知
-- Webhook回调(MES/第三方系统)
-
-### 6.4 告警聚合
-
-- 相同设备+相同规则在未解决期间不重复告警
-- 告警升级: 超时未确认自动升级严重级别
-
----
-
-## 七、边缘网关
-
-### 7.1 网关功能
-
-- 协议转换: 将Modbus/OPC UA等协议转换为MQTT上报
-- 数据过滤: 边缘侧过滤无效数据
-- 数据聚合: 边缘侧聚合后上报
-- 离线缓存: 断网时本地缓存，恢复后上报
-- 远程配置: 平台远程下发网关配置
-
-### 7.2 边缘脚本
-
-- 脚本类型: FILTER(过滤)/TRANSFORM(转换)/AGGREGATE(聚合)
-- 脚本语言: JavaScript/Groovy
-- 版本管理: 支持多版本
-- 热更新: 平台远程更新脚本
-
-### 7.3 网关管理
-
-- 心跳监控: 定时心跳检测在线状态
-- 固件管理: 远程升级固件
-- 子设备管理: 网关下的子设备注册和管理
-
----
-
-## 八、场景联动
-
-### 8.1 场景类型
-
-- MANUAL: 手动触发
-- AUTO: 自动触发(条件满足时)
-
-### 8.2 触发器类型
-
-- DEVICE: 设备属性触发
-- CRON: 定时触发
-- MANUAL: 手动触发
-
-### 8.3 动作类型
-
-- DEVICE_COMMAND: 发送设备命令
-- ALERT: 触发告警
-- NOTIFICATION: 发送通知
-- HTTP_CALLBACK: HTTP回调
-
-### 8.4 场景执行流程
-
-1. 触发器条件评估
-2. 条件满足时按顺序执行动作列表
-3. 记录执行日志
-4. 动作执行失败时记录错误
+- `iot_scene` 场景表 + `iot_scene_trigger` 触发器 + `iot_scene_action` 动作
 
 ---
 
 ## 九、IoT实施计划
 
-### 9.1 IoT Phase 1 (Week 35-39): 模块创建 + 设备管理 + MQTT + HTTP
+### 9.1 阶段一: 最小链路 (Week 33-36, ~12人天)
+
+**目标: 3-4周内让一台真实设备的数据出现在前端仪表盘上。**
 
 | 周次 | 任务 | 人天 |
 |------|------|------|
-| Week 35 | 创建ruoyi-iot模块+数据源配置+基础框架 | 3 |
-| Week 36 | 产品管理+物模型+设备管理CRUD | 5 |
-| Week 37 | MQTT协议适配(Moquette内嵌Broker) | 5 |
-| Week 38 | HTTP协议适配+设备分组/标签 | 4 |
-| Week 39 | Phase 1前端页面+集成测试 | 4 |
+| Week 33 | 创建ruoyi-iot模块+数据源配置+Moquette内嵌Broker+产品/设备CRUD | 3 |
+| Week 34 | 数据管道: MQTT消息→Redis Streams→MySQL+Redis缓存+硬编码告警 | 3 |
+| Week 35-36 | 前端: 产品管理+设备列表+实时数据仪表盘(SSE+ECharts) | 4 |
+| Week 36 | SnailJob任务: 数据清理+心跳检测+Stream修剪 | 2 |
 
-### 9.2 IoT Phase 2 (Week 40-44): OPC UA + Modbus + 数据管道 + 时序DB
+**阶段一小计: 12人天**
 
-| 周次 | 任务 | 人天 |
-|------|------|------|
-| Week 40 | OPC UA协议适配(Eclipse Milo) | 5 |
-| Week 41 | Modbus协议适配(modbus4j) | 4 |
-| Week 42 | 数据管道(原始数据+处理数据+Redis缓存) | 5 |
-| Week 43 | 时序数据库集成(TDengine/InfluxDB) | 4 |
-| Week 44 | Phase 2前端页面+实时数据展示 | 4 |
+### 9.2 阶段二: 按需扩展 (Week 37-40, ~18人天)
 
-### 9.3 IoT Phase 3 (Week 45-50): 规则引擎 + 告警 + 边缘网关 + 场景联动
+> 以下任务按实际业务瓶颈驱动，非必须全部完成。
 
-| 周次 | 任务 | 人天 |
-|------|------|------|
-| Week 45-46 | 规则引擎(条件评估+动作执行) | 6 |
-| Week 47 | 告警系统(规则+日志+通知) | 5 |
-| Week 48 | 边缘网关+边缘脚本 | 4 |
-| Week 49 | 场景联动(触发器+动作) | 4 |
-| Week 50 | Phase 3前端+全平台集成测试 | 5 |
+| 任务 | 人天 | 触发条件 |
+|------|------|---------|
+| OPC UA / Modbus协议适配 | 4 | 需要连接PLC/SCADA设备 |
+| 规则引擎 | 5 | 硬编码告警不满足需求 |
+| 告警系统(规则表+日志表) | 4 | 需要完整告警生命周期管理 |
+| 时序数据库迁移(TDengine) | 3 | 数据量超1000万行 |
+| 边缘网关 | 2 | 设备超100台或需协议转换 |
 
-### 9.4 工作量汇总
+**阶段二小计: ~18人天(按需)**
+
+### 9.3 工作量汇总
 
 | 阶段 | 周次 | 人天 |
 |------|------|------|
-| Phase 1 | Week 35-39 | 21 |
-| Phase 2 | Week 40-44 | 22 |
-| Phase 3 | Week 45-50 | 24 |
-| **合计** | Week 35-50 (16周) | **67** |
+| 阶段一(最小链路) | Week 33-36 | 12 |
+| 阶段二(按需扩展) | Week 37-40 | ~18 |
+| **合计** | **Week 33-40 (8周)** | **~30** |
+
+> **对比原计划**: 原67人天/16周 → 修订30人天/8周（削减55%，按需扩展另计）
 
 ---
 
@@ -730,53 +439,36 @@ ACTIVE → ACKNOWLEDGED → RESOLVED
 ```
 plus-ui/src/views/iot/
 ├── product/               # 产品管理
-│   ├── index.vue          # 产品列表
-│   └── property.vue       # 物模型定义
+│   └── index.vue          # 产品列表
 ├── device/                # 设备管理
-│   ├── index.vue          # 设备列表
-│   ├── detail.vue         # 设备详情
-│   ├── group.vue          # 设备分组
-│   └── tag.vue            # 设备标签
-├── protocol/              # 协议配置
-│   ├── config.vue         # 协议配置列表
-│   └── mapping.vue        # 协议映射
-├── data/                  # 数据管理
-│   ├── realtime.vue       # 实时数据
-│   ├── history.vue        # 历史数据
-│   └── aggregate.vue      # 聚合数据
-├── rule/                  # 规则引擎
-│   └── index.vue          # 规则管理
-├── alert/                 # 告警管理
-│   ├── rule.vue           # 告警规则
-│   └── log.vue            # 告警日志
-├── scene/                 # 场景联动
-│   ├── index.vue          # 场景管理
-│   ├── trigger.vue        # 触发器配置
-│   └── action.vue         # 动作配置
-└── gateway/               # 边缘网关
-    ├── index.vue          # 网关管理
-    └── script.vue         # 边缘脚本
+│   ├── index.vue          # 设备列表(含在线状态)
+│   └── realtime.vue       # 实时数据仪表盘
 ```
 
-### 10.2 新增页面估算
+### 10.2 按需扩展页面
 
-- 产品管理: 2页面
-- 设备管理: 4页面
-- 协议配置: 2页面
-- 数据管理: 3页面
-- 规则引擎: 1页面
-- 告警管理: 2页面
-- 场景联动: 3页面
-- 边缘网关: 2页面
-- 合计: ~19页面
+```
+├── rule/index.vue         # 规则管理(按需)
+├── alert/                 # 告警管理(按需)
+│   ├── rule.vue
+│   └── log.vue
+└── gateway/index.vue      # 网关管理(按需)
+```
 
-### 10.3 关键前端组件
+### 10.3 核心页面估算
 
-- 实时数据仪表盘: WebSocket + ECharts实时刷新
-- 设备拓扑图: 设备与网关关系可视化
-- 告警看板: 实时告警展示
-- 规则编辑器: 可视化条件/动作配置
-- 物模型编辑器: 属性/服务/事件定义
+| 页面 | 说明 |
+|------|------|
+| 产品管理 | 1页面 |
+| 设备管理 | 2页面(列表+实时仪表盘) |
+| **阶段一合计** | **3页面** |
+
+### 10.4 关键前端组件
+
+- 实时数据仪表盘: SSE + ECharts实时刷新
+- 数值卡片: 显示设备最新属性值
+- 历史趋势图: ECharts折线图，查询MySQL历史数据
+- 设备状态指示灯: 绿色ONLINE / 灰色OFFLINE
 
 ---
 
@@ -784,51 +476,55 @@ plus-ui/src/views/iot/
 
 ### 11.1 数据流向
 
-IoT设备数据 → 数据管道 → MES数据采集模块(mes_dc)
+IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 
 ### 11.2 集成方式
 
-- MQ消息: IoT数据管道 → MQ → MES数据采集消费者
-- REST API: MES查询IoT设备最新数据
-- 共享数据库: IoT设备表关联MES设备表(mes_eq_equipment.iot_device_id)
+| 方式 | 说明 |
+|------|------|
+| REST API | MES查询IoT设备最新数据(从Redis缓存) |
+| 接口抽象 | `IMesAndonService.createAndonFromAlert()` — IoT告警触发MES安灯 |
+| 字段预留 | `iot_device.mes_equipment_id` ↔ `mes_eq_equipment.iot_device_id` |
+
+> **关键原则**: MES与IoT之间不建外键，通过接口抽象解耦。两个模块可独立开发和部署。
 
 ### 11.3 集成场景
 
-- 设备状态实时监控(MES安灯+IoT告警)
-- 设备数据自动采集(IoT→MES数据采集点)
-- 设备故障联动(IoT告警→MES安灯呼叫)
-- OEE计算(IoT设备运行数据→MES设备OEE)
+- 设备状态实时监控: IoT设备在线状态 → MES安灯看板
+- 设备数据自动采集: IoT Redis缓存 → MES数据采集点读取
+- 设备故障联动: IoT告警 → MES安灯呼叫(通过接口)
 
 ---
 
 ## 十二、技术架构决策
 
-### 12.1 为什么选择RabbitMQ而非Kafka
+### 12.1 为什么用Redis Streams替代RabbitMQ
 
-- IoT当前规模不需要Kafka的高吞吐
-- RabbitMQ原生支持延迟消息和死信队列
-- 运维成本低，单节点即可
-- 与ERP模块MQ基础设施统一
+- IoT当前规模不需要独立消息中间件
+- Redisson已原生支持Stream API（RStream）
+- 消费者组（XREADGROUP）天然支持多消费者并行
+- 消息确认（XACK）+ 持久化（AOF+RDB）保证可靠性
+- 零新增基础设施，复用现有Redis实例
 
-### 12.2 为什么选择TDengine而非InfluxDB
+### 12.2 为什么用SSE替代WebSocket
 
-- TDengine写入性能更优(10x+)
-- 存储成本更低(压缩率高)
-- 原生支持超级表/子表模型，适合设备数据
-- 国产开源，社区活跃
+- IoT场景只需服务端→客户端单向推送
+- 已有 ruoyi-common-sse 基础设施
+- SSE基于HTTP，无需额外端口和连接管理
+- 自动重连由浏览器EventSource原生支持
 
-### 12.3 为什么内嵌Moquette而非独立EMQX
+### 12.3 为什么MySQL先用而非直接上TDengine
 
-- 开发阶段简化部署
-- Moquette轻量级，适合中小规模
-- 生产环境可切换为EMQX集群
+- 开发阶段数据量小，MySQL完全够用
+- TDengine需要额外部署和运维
+- 当数据量超1000万行时再迁移，有明确的触发条件
+- 迁移方案已规划（阶段二按需任务）
 
-### 12.4 与ktg-mes对比
+### 12.4 为什么内嵌Moquette而非独立EMQX
 
-- ktg-mes: Spring Cloud微服务架构，复杂度高
-- NexusERP IoT: 单体模块化架构，简单可控
-- ktg-mes: 自研MQTT Broker
-- NexusERP IoT: Moquette/EMQX，成熟稳定
+- 开发阶段简化部署，单JAR启动
+- Moquette轻量级，适合中小规模(<1000设备)
+- 生产环境可切换为EMQX集群（接口兼容）
 
 ---
 
@@ -836,16 +532,16 @@ IoT设备数据 → 数据管道 → MES数据采集模块(mes_dc)
 
 ### 13.1 关系型数据库
 
-- ry-iot: IoT业务数据(产品/设备/规则/告警/场景)
+- ry-iot: IoT业务数据(产品/设备/数据)
 - 字符集: utf8mb4
 - 引擎: InnoDB
 
-### 13.2 时序数据库
+### 13.2 时序数据库（按需引入）
 
 - TDengine (推荐) 或 InfluxDB
-- 用途: 设备历史时序数据
+- 触发条件: `iot_device_data` 行数 > 1000万
 - 保留策略: 原始数据90天，聚合数据1年
 
 ### 13.3 缓存
 
-- Redis: 最新值缓存、设备在线状态、规则引擎缓存
+- Redis: 最新值缓存(`iot:latest:{deviceId}`)、设备在线状态(`iot:status:{deviceId}`)、Stream数据管道(`iot:data:stream`)

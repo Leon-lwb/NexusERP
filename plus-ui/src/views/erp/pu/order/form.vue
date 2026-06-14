@@ -64,7 +64,7 @@
               <el-input v-model="form.vendorName" readonly>
                 <template #append>
                   <!-- 选择供应商按钮 -->
-                  <el-button icon="Search" @click="openVendor" />
+                  <el-button icon="Search" @click="openVendor()" />
                 </template>
               </el-input>
             </el-form-item>
@@ -224,10 +224,15 @@
           <el-button type="primary" icon="Search" @click="queryVendors">搜索</el-button>
           <el-button icon="Refresh" @click="resetVendorQuery">重置</el-button>
         </el-form-item>
+        <el-form-item v-if="vendorDialog.currentMaterialId">
+          <el-checkbox v-model="vendorDialog.filterByMaterial" @change="queryVendors">仅显示该物料供应商</el-checkbox>
+        </el-form-item>
       </el-form>
       <el-table :data="vendorDialog.list" height="400" @row-dblclick="selectVendor">
         <el-table-column label="供应商编码" prop="vendorCode" />
         <el-table-column label="供应商名称" prop="vendorName" />
+        <el-table-column label="单价" prop="price" width="100" v-if="vendorDialog.filterByMaterial" />
+        <el-table-column label="供货周期(天)" prop="leadTime" width="110" v-if="vendorDialog.filterByMaterial" />
         <el-table-column label="操作" width="100">
           <template #default="scope">
             <el-button link type="primary" @click="selectVendor(scope.row)">选择</el-button>
@@ -272,6 +277,8 @@ import { addPurchaseOrder, getPurchaseOrder, updatePurchaseOrder, generateFromRe
 import { listMaterial } from '@/api/erp/bd/material'
 // 导入供应商管理API
 import { listVendor } from '@/api/erp/bd/vendor'
+// 导入物料-供应商关系API
+import { listMaterialVendor } from '@/api/erp/bd/material-vendor'
 // 导入审批流API
 import { getProcesss } from '@/api/workflow/process'
 // 导入路由相关功能
@@ -314,6 +321,8 @@ const formDisabled = computed(() => isViewMode.value || props.disabled)
 const vendorDialog = reactive({
   visible: false,                        // 对话框是否可见
   list: [] as any[],                     // 供应商列表
+  filterByMaterial: false,               // 是否按物料筛选供应商
+  currentMaterialId: null as number | null, // 当前选中行的物料ID
   query: {                               // 查询条件
     pageNum: 1,
     pageSize: 10,
@@ -566,8 +575,11 @@ function selectMaterial(row: any) {
 
 /**
  * 打开供应商选择对话框
+ * @param materialId 当前选中行的物料ID（可选）
  */
-function openVendor() {
+function openVendor(materialId?: number) {
+  vendorDialog.currentMaterialId = materialId || null
+  vendorDialog.filterByMaterial = false
   vendorDialog.visible = true
   queryVendors()
 }
@@ -576,10 +588,23 @@ function openVendor() {
  * 查询供应商列表
  */
 function queryVendors() {
-  listVendor(vendorDialog.query as any).then((res: any) => {
-    vendorDialog.list = res.rows || res.data || []
-    vendorDialog.visible = true
-  })
+  if (vendorDialog.filterByMaterial && vendorDialog.currentMaterialId) {
+    // 按物料筛选供应商
+    listMaterialVendor({
+      materialId: vendorDialog.currentMaterialId,
+      status: 1,
+      pageNum: 1,
+      pageSize: 100
+    }).then((res: any) => {
+      vendorDialog.list = res.rows || res.data || []
+      vendorDialog.visible = true
+    })
+  } else {
+    listVendor(vendorDialog.query as any).then((res: any) => {
+      vendorDialog.list = res.rows || res.data || []
+      vendorDialog.visible = true
+    })
+  }
 }
 
 /**
@@ -603,6 +628,14 @@ function selectVendor(row: any) {
   form.value.vendorId = row.vendorId
   form.value.vendorCode = row.vendorCode
   form.value.vendorName = row.vendorName
+  // 如果是从物料供应商列表选择的，自动填充价格到当前行
+  if (vendorDialog.filterByMaterial && row.price && currentMaterialIndex.value >= 0) {
+    const target = lineList.value[currentMaterialIndex.value]
+    if (target) {
+      target.unitPrice = row.price
+      target.lineAmount = ((parseFloat(target.orderQuantity) || 0) * (parseFloat(target.unitPrice) || 0) * (parseFloat(form.value.exchangeRate) || 1)).toFixed(2)
+    }
+  }
   vendorDialog.visible = false
 }
 

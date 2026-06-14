@@ -159,18 +159,20 @@
 
     <!-- 添加或修改物料产品主对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
-      <el-form ref="materialRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="基本信息" name="basic">
+          <el-form ref="materialRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-row :gutter="20">
           <el-col :span="16">
             <el-form-item label="物料编码" prop="materialCode">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input 
-                  v-model="form.materialCode" 
-                  placeholder="请输入物料编码" 
-                  :disabled="autoGenFlag || isViewMode" 
-                  style="flex: 1;" 
+                <el-input
+                  v-model="form.materialCode"
+                  placeholder="请输入物料编码"
+                  :disabled="autoGenFlag || isViewMode"
+                  style="flex: 1;"
                 />
-                <el-switch 
+                <el-switch
                   v-model="autoGenFlag"
                   active-color="#13ce66"
                   active-text="自动生成"
@@ -418,9 +420,36 @@
           </el-col>
         </el-row>
       </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="供应商" name="vendor" v-if="form.materialId">
+          <el-table v-loading="vendorLoading" :data="vendorList" border size="small">
+            <el-table-column label="供应商编码" align="center" prop="vendorCode" width="120" />
+            <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="150" />
+            <el-table-column label="单价" align="center" prop="price" width="100" />
+            <el-table-column label="币种" align="center" prop="currency" width="80" />
+            <el-table-column label="供货周期(天)" align="center" prop="leadTime" width="110" />
+            <el-table-column label="最小订货量" align="center" prop="minOrderQty" width="110" />
+            <el-table-column label="优先级" align="center" prop="priority" width="80" />
+            <el-table-column label="默认" align="center" prop="isDefault" width="70">
+              <template #default="scope">
+                <el-tag :type="scope.row.isDefault === 1 ? 'success' : 'info'" size="small">
+                  {{ scope.row.isDefault === 1 ? '是' : '否' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" align="center" prop="status" width="70">
+              <template #default="scope">
+                <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="small">
+                  {{ scope.row.status === 1 ? '启用' : '停用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
+          <el-button type="primary" @click="submitForm" v-if="!isViewMode && activeTab === 'basic'">确 定</el-button>
           <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
         </div>
       </template>
@@ -460,6 +489,7 @@
 import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial } from "@/api/erp/bd/material"
 import { listCategory, getCategory, addCategory, updateCategory,delCategory,listDeptExcludeChild,getAllChildrenIds } from "@/api/erp/bd/category"
 import { listMeasureAll } from "@/api/erp/bd/measure"
+import { listMaterialVendor } from "@/api/erp/bd/material-vendor"
 import { genCode } from "@/api/system/autocode/rule"
 import { debounce } from 'lodash'
 
@@ -483,6 +513,10 @@ const categoryTreeRef = ref()
 const uomList  = ref([])
 // 添加分类树过滤相关数据
 const categoryFilterText = ref('')
+// 供应商Tab相关数据
+const activeTab = ref("basic")
+const vendorList = ref([])
+const vendorLoading = ref(false)
 
 const defaultProps = {
   children: 'children',
@@ -623,6 +657,8 @@ function reset() {
   }
   proxy.resetForm("materialRef")
   data.autoGenFlag = false
+  activeTab.value = "basic"
+  vendorList.value = []
 }
 
 // 分类表单重置
@@ -704,6 +740,7 @@ function handleNodeClick(data) {
 function handleAdd() {
   reset()
   isViewMode.value = false
+  activeTab.value = "basic"
   open.value = true
   title.value = "添加物料/产品"
 }
@@ -712,11 +749,13 @@ function handleAdd() {
 function handleUpdate(row) {
   reset()
   isViewMode.value = false
+  activeTab.value = "basic"
   const _materialId = row.materialId || ids.value
   getMaterial(_materialId).then(response => {
     form.value = response.data
     open.value = true
     title.value = "修改物料/产品"
+    loadVendorList(_materialId)
   })
 }
 
@@ -724,11 +763,24 @@ function handleUpdate(row) {
 function handleView(row) {
   reset()
   isViewMode.value = true
+  activeTab.value = "basic"
   const _materialId = row.materialId || ids.value
   getMaterial(_materialId).then(response => {
     form.value = response.data
     open.value = true
     title.value = "查看物料产品主"
+    loadVendorList(_materialId)
+  })
+}
+
+/** 加载物料关联的供应商列表 */
+function loadVendorList(materialId) {
+  vendorLoading.value = true
+  listMaterialVendor({ materialId: materialId, pageNum: 1, pageSize: 100 }).then(response => {
+    vendorList.value = response.rows || []
+    vendorLoading.value = false
+  }).catch(() => {
+    vendorLoading.value = false
   })
 }
 

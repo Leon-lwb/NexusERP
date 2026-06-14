@@ -12,15 +12,17 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 
 | 层级 | 技术 | 版本 |
 |------|------|------|
-| 后端框架 | Spring Boot | 3.x |
+| 后端框架 | Spring Boot | 3.5.x |
 | ORM | MyBatis-Plus | 3.5.x |
 | 权限认证 | Sa-Token | - |
-| 工作流引擎 | Flowable | 7.0 |
+| 工作流引擎 | Flowable | 7.0.0 |
 | 消息队列 | RabbitMQ + Spring AMQP | - |
 | 配置加密 | Jasypt | 3.0.5 |
 | 前端框架 | Vue | 3.5 |
 | UI组件库 | Element Plus | - |
 | 前端语言 | TypeScript | - |
+| AI框架 | LangChain4j | - |
+| 即时通讯 | WebSocket | - |
 
 ### 1.3 多数据源架构
 
@@ -28,10 +30,12 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 |--------|------|------|------|
 | ry-vue | `@DS("master")` / 默认 | 系统管理、权限、日志等基础功能 | ✅ 已启用 |
 | ry-erp | `@DS("erp")` | ERP业务数据（物料/采购/仓储/生产/销售/排班） | ✅ 已启用 |
-| ry-mes | `@DS("mes")` | MES制造执行数据 | 📋 规划中，尚未创建 |
-| ry-iot | `@DS("iot")` | IoT设备采集数据 | 📋 规划中，尚未创建 |
+| ry-mes | `@DS("mes")` | MES制造执行数据（工单/流转卡/质量/设备） | 📋 规划中，待MES Phase 1创建 |
+| ry-iot | `@DS("iot")` | IoT设备采集数据（产品/设备/传感器数据） | 📋 规划中，待IoT阶段一创建 |
 
 > **注意**: 当前代码中仅使用 `@DS("master")` 和 `@DS("erp")` 两个数据源。`@DS("mes")` 和 `@DS("iot")` 为MES/IoT模块规划数据源，待模块创建后启用。
+>
+> **额外模块**: 项目中还包含 `ruoyi-ai`（AI模块，LangChain4j）、`ruoyi-im`（即时通讯）、`ruoyi-pay`（支付）、`ruoyi-report`（积木报表）等模块，这些不在ERP计划范围内。
 
 ### 1.4 数据库规划
 
@@ -39,9 +43,9 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 
 1. **ry-vue** — 系统管理库（用户/角色/菜单/日志等） ✅ 已创建
 2. **ry-erp** — ERP业务库（基础数据/采购/仓储/生产/销售/排班） ✅ 已创建
-3. **ry-mes** — MES制造执行库（工序执行/质量/设备/数据采集） 📋 待创建
-4. **ry-iot** — IoT设备库（设备接入/传感器数据） 📋 待创建
-5. **TDengine / InfluxDB** — 时序数据库（设备实时数据/历史趋势） 📋 待创建
+3. **ry-mes** — MES制造执行库（工单/流转卡/质量/设备/采集/SPC，~13张表） 📋 待创建
+4. **ry-iot** — IoT设备库（产品/设备/传感器数据，3张核心表） 📋 待创建
+5. **TDengine / InfluxDB** — 时序数据库（设备实时数据/历史趋势，数据量超1000万行时按需引入） 📋 待创建
 
 ---
 
@@ -51,25 +55,29 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 
 | 模块 | 代码包 | 完成度 | 说明 |
 |------|--------|--------|------|
-| bd 基础数据 | com.nexus.erp.bd | 95% | 物料/BOM/客户/供应商/工厂/仓库/库位/工序/路由 |
-| pu 采购 | com.nexus.erp.pu | 85% | 请购/订单/收货/供应商评估，缺价格对比/合同管理 |
-| wm 仓储 | com.nexus.erp.wm | 90% | 收货/上架/拣货/出库/盘点/库存估值/安全库存，缺序列号/批次独立表 |
-| prd 生产 | com.nexus.erp.prd | 80% | 工单/委外/返工/倒冲领料/产能日历，缺资源分配前端 |
-| so 销售 | com.nexus.erp.so | 75% | 订单/报价/退货/信用检查/价格引擎，缺合同/开票 |
-| sch 排班 | com.nexus.erp.sch | 90% | 班次/班组/排班计划 |
+| bd 基础数据 | com.nexus.erp.bd | 90% | 物料/BOM/客户/供应商/计量单位/序列号规则/车间/工作站 ✅，缺物料-供应商关系管理 ❌ |
+| pu 采购 | com.nexus.erp.pu | 85% | 请购/订单/收货/退货/供应商评估 ✅，缺价格对比/合同管理 ❌ |
+| wm 仓储 | com.nexus.erp.wm | 95% | 收货/上架/拣货/出库/盘点/库存估值/安全库存/序列号/批次/追溯/条码/调拨 ✅ |
+| prd 生产 | com.nexus.erp.prd | 90% | 工单/委外/返工/倒冲领料/产能日历/资源分配/报工 ✅，缺MES联动MQ ❌ |
+| so 销售 | com.nexus.erp.so | 75% | 订单/报价/退货/信用检查/价格引擎/价格表 ✅，缺合同管理/开票管理 ❌ |
+| sch 排班 | com.nexus.erp.sch | 95% | 班次/班组/排班计划/考勤/打卡规则/假期/员工排班 ✅ |
 
 ### 2.2 前端完成度
 
 | 模块 | API组数 | View页面数 | 完成度 | 说明 |
 |------|---------|-----------|--------|------|
-| bd 基础数据 | 9 | 10 | 100% | 物料/BOM/客户/供应商等页面完整 |
-| pu 采购 | 4 | 8 | 70% | 订单/退货页面已有，供应商评估/价格表前端待开发 |
-| wm 仓储 | 20 | 31 | 90% | 核心页面完整，序列号/批次/追溯前端待开发 |
-| prd 生产 | 8 | 10 | 60% | 工单/计划/报告/返工页面已有，委外/产能日历/资源分配前端待开发 |
-| sch 排班 | 10 | 11 | 90% | 班次/班组/排班计划页面完整 |
-| so 销售 | 4 | 7 | 60% | 报价/退货页面已有，价格表管理/订单增强前端待开发 |
+| bd 基础数据 | 9 | 10 | 90% | 物料/BOM/客户/供应商/计量/序列号规则/车间/工作站等页面完整 ✅，缺物料-供应商关系页面 ❌ |
+| pu 采购 | 4 | 4 | 100% | 订单/申请/退货/供应商评估(含报表)页面完整 ✅ |
+| wm 仓储 | 23 | 38 | 95% | 核心页面+序列号/批次/追溯/条码/调拨/盘点/估价页面完整 ✅ |
+| prd 生产 | 8 | 11 | 90% | 工单/计划/报告/返工/委外/产能日历/资源页面完整 ✅ |
+| sch 排班 | 10 | 11 | 95% | 班次/班组/排班计划/考勤/打卡规则/假期/员工排班页面完整 ✅ |
+| so 销售 | 5 | 9 | 70% | 订单/报价/退货/价格表页面完整 ✅，缺合同管理/开票管理页面 ❌ |
 
-> **注意**: Week 6-10计划的前端增强任务（F-026~F-032、R-025委外前端、R-026价格表前端）在当前 `plus-ui/src/views/erp/` 目录中尚未找到对应页面文件，这些前端页面可能尚未实现或在其他分支上。
+> **代码审查结论（2026-06-14）**：
+> - pu 退货/供应商评估页面已确认完成（form.vue + index.vue + report.vue 共 1270 行代码）
+> - wm 批次/SN/追溯功能已确认完成（Controller + Service + 前端全链路）
+> - prd 倒冲领料已确认完成（PrdBackflushServiceImpl）
+> - 真正缺失：bd 物料-供应商关系、SO 合同管理、SO 开票管理
 
 ---
 
@@ -107,14 +115,24 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 | R-023 | 领料联动+完工入库 | ✅ |
 | R-025 | 委外前端完善 | ✅ |
 | R-026 | 销售管理增强(价格引擎+信用检查) | ✅ |
+| R-041 | 序列号管理（wm_sn独立表） | ✅ |
+| R-042 | 批次管理增强（wm_batch独立表） | ✅ |
+| R-043 | 追溯查询服务（前向+后向） | ✅ |
+| R-044 | 追溯前端（树图/表格双视图） | ✅ |
+| R-055 | 盘点差异审批流（Flowable集成） | ✅ |
 
-#### P1 待开发
+#### P1 待开发（代码审查修订 2026-06-14）
 
-| 任务 | 说明 |
-|------|------|
-| 采购业务增强 | 价格对比/合同管理 |
-| 供应商评估增强 | 趋势分析/报表 |
-| 仓储深度 | 序列号管理/批次管理增强/追溯查询 |
+| 任务 | 说明 | 代码现状 |
+|------|------|---------|
+| bd_material_vendor 物料-供应商关系管理 | 物料与供应商的关联关系（供货周期/最小订货量/单价/优先级） | SQL表已有 ❌ 无Domain/Mapper/Service/Controller/前端 |
+| SO 合同管理 | 销售合同全生命周期（草稿→审批→生效→到期→终止） | ❌ 无SQL表/Domain/Service/Controller/前端 |
+| SO 开票管理 | 销售发票开具（与订单/合同关联） | ❌ 无SQL表/Domain/Service/Controller/前端 |
+| po_requisition 部门请购单 | 部门级请购→采购申请流程 | SQL表已有 ❌ 无Domain/Mapper/Service/Controller/前端 |
+| 采购价格对比 | 基于bd_material_vendor的历史价格对比 | 依赖bd_material_vendor完成 |
+| MES集成MQ | PrdWorkOrder审批通过后发WorkOrderReleaseMessage+MES队列常量+mes数据源配置 | afterFlowHandle仅更新状态不发MQ |
+
+> ~~pu前端补全~~ 已完成（退货+供应商评估页面已有）
 
 #### P2 待开发 — 质量管理（7个任务）
 
@@ -157,10 +175,24 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 
 | 阶段 | 时间范围 | 内容 | 状态 |
 |------|---------|------|------|
-| Week 1-12 | ERP核心功能开发与代码重构 | P0/P1任务+代码质量+MQ基础设施 | 已完成 |
-| Week 11-12 | 追溯与盘点 | 序列号管理/批次管理增强/追溯查询/盘点差异审批流 | 计划中 |
+| Week 1-10 | ERP核心功能开发与代码重构 | P0/P1任务+代码质量+MQ基础设施 | ✅ 已完成 |
+| Week 11-12 | ERP收尾: 追溯与盘点 | 序列号管理/批次管理增强/追溯查询/盘点差异审批流 | ✅ 已完成 |
+| Week 11-12 | ERP侧MES集成准备 | 主数据API暴露 | ✅ 已完成（MQ/配置待实现） |
+| **Week 13** | **ERP补全: 物料-供应商+SO合同+SO开票** | bd_material_vendor关系管理+SO合同管理+SO开票管理 | 🔴 本周计划 |
+| **Week 14** | **ERP补全: 部门请购+MES集成MQ** | po_requisition部门请购单+工单审批MQ消息 | 🟡 下周计划 |
+| **Week 15-16** | **ERP增强: 采购价格对比+报表** | 基于bd_material_vendor的价格对比+核心业务报表 | 🟡 计划中 |
+| **MES Phase 1** | **Week 17-23 (7周)** | MES模块骨架+主数据跨库查询+工单+Flowable审批+前端 | 📋 规划中 |
+| **MES Phase 2** | **Week 24-30 (7周)** | 流转卡引擎+派工+安灯+SSE推送+SN追溯 | 📋 规划中 |
+| **MES Phase 3** | **Week 31-36 (6周)** | 质量管理+设备管理+数据采集+SPC | 📋 规划中 |
+| **IoT 阶段一** | **Week 37-40 (4周)** | MQTT接入+Redis Streams管道+SSE实时仪表盘 | 📋 规划中 |
+| **IoT 阶段二** | **Week 41-44 (4周)** | 按需: OPC UA/Modbus/规则引擎/TDengine/边缘网关 | 按需启动 |
 
-**剩余工作量：约68.5人天**
+**剩余工作量：**
+- ERP补全(Week 13-14): 约8人天（物料-供应商/合同/开票/请购/MES集成MQ）
+- ERP增强(Week 15-16): 约6人天（价格对比/报表）
+- MES(Week 17-36): 约49人天/20周
+- IoT(Week 37-44): 约30人天/8周(含按需扩展)
+- **总计: 约93人天**
 
 ---
 
@@ -251,47 +283,63 @@ Flowable 7.0 工作流集成
 - 支持多级审批/并行审批/代理审批
 - 审批状态回调更新业务单据状态
 
+**已集成Flowable审批流的业务单据（9个）：**
+
+| 模块 | 业务单据 | Service类 | submit | afterFlowHandle |
+|------|---------|-----------|--------|----------------|
+| pu | 采购订单 | PuPurchaseOrderServiceImpl | ✅ | ✅ |
+| pu | 采购申请 | PuPurchaseRequisitionServiceImpl | ✅ | ✅ |
+| pu | 采购退货 | PuPurchaseReturnServiceImpl | ✅ | ✅ |
+| wm | 到货通知 | WmArrivalNoticeServiceImpl | ✅ | ✅ |
+| wm | 收货入库 | WmMaterialReceiveCrudServiceImpl | ✅ | ✅ |
+| wm | 销售出库 | WmSalesIssueServiceImpl | ✅ | ✅ |
+| wm | 库存调拨 | WmTransferServiceImpl | ✅ | ✅ |
+| wm | 盘点计划 | WmStockTakingPlanServiceImpl | ✅ | ✅ |
+| prd | 生产工单 | PrdWorkOrderServiceImpl | ✅ | ✅ |
+
 ### 4.2 流程瓶颈（27项）
+
+> **当前进展**: 已集成9个业务单据的Flowable审批流（见下表），审批撤回/并行审批/超时处理等高级功能待Phase C实现。
 
 #### 采购模块
 
-| 编号 | 瓶颈 | 说明 |
-|------|------|------|
-| PB-01 | 审批链过长 | 采购审批层级过多，影响响应速度 |
-| PB-02 | 收货差异处理 | 收货与订单数量差异处理流程不清晰 |
-| PB-03 | 供应商评估滞后 | 评估周期过长，无法实时反映供应商表现 |
-| PB-04 | 价格比对缺失 | 缺少历史价格对比功能，采购决策缺乏依据 |
-| PB-05 | 合同管理缺失 | 采购合同无系统管理，依赖线下流程 |
+| 编号 | 瓶颈 | 说明 | 状态 |
+|------|------|------|------|
+| PB-01 | 审批链过长 | 采购审批层级过多，影响响应速度 | ✅ Flowable可配置审批流 |
+| PB-02 | 收货差异处理 | 收货与订单数量差异处理流程不清晰 | ✅ WmMaterialReceiveExecutorServiceImpl已实现 |
+| PB-03 | 供应商评估滞后 | 评估周期过长，无法实时反映供应商表现 | ✅ PuVendorEvaluationServiceImpl+定时任务 |
+| PB-04 | 价格比对缺失 | 缺少历史价格对比功能，采购决策缺乏依据 | ❌ 待bd_material_vendor完成后实现 |
+| PB-05 | 合同管理缺失 | 采购合同无系统管理，依赖线下流程 | ❌ 待开发 |
 
 #### 生产模块
 
-| 编号 | 瓶颈 | 说明 |
-|------|------|------|
-| PB-06 | BOM变更通知 | BOM变更后未及时通知相关工单 |
-| PB-07 | 工单排产冲突 | 多工单排产时资源冲突检测不足 |
-| PB-08 | 领料与完工脱节 | 领料与完工之间缺少联动机制 |
-| PB-09 | 倒冲领料异常 | 倒冲领料异常处理流程不完善 |
-| PB-10 | 产能瓶颈识别 | 缺少产能瓶颈自动识别与预警 |
+| 编号 | 瓶颈 | 说明 | 状态 |
+|------|------|------|------|
+| PB-06 | BOM变更通知 | BOM变更后未及时通知相关工单 | ❌ 待开发 |
+| PB-07 | 工单排产冲突 | 多工单排产时资源冲突检测不足 | ❌ 待开发 |
+| PB-08 | 领料与完工脱节 | 领料与完工之间缺少联动机制 | ✅ PrdBackflushServiceImpl倒冲领料已实现 |
+| PB-09 | 倒冲领料异常 | 倒冲领料异常处理流程不完善 | ✅ PrdBackflushServiceImpl已实现异常处理 |
+| PB-10 | 产能瓶颈识别 | 缺少产能瓶颈自动识别与预警 | ❌ 待开发 |
 
 #### 仓储模块
 
-| 编号 | 瓶颈 | 说明 |
-|------|------|------|
-| PB-11 | 上架效率 | 上架策略推荐不够智能，人工干预多 |
-| PB-12 | 拣货路径 | 拣货路径未优化，拣货效率低 |
-| PB-13 | 盘点差异 | 盘点差异处理缺少审批流 |
-| PB-14 | 安全库存 | 安全库存预警响应不及时 |
-| PB-15 | 批次追溯 | 批次追溯链路不完整 |
+| 编号 | 瓶颈 | 说明 | 状态 |
+|------|------|------|------|
+| PB-11 | 上架效率 | 上架策略推荐不够智能，人工干预多 | ✅ PutawayRuleServiceImpl+PutawayStrategyServiceImpl |
+| PB-12 | 拣货路径 | 拣货路径未优化，拣货效率低 | ✅ PickingStrategyFactory(FIFO/FEFO)+PickingRuleServiceImpl |
+| PB-13 | 盘点差异 | 盘点差异处理缺少审批流 | ✅ WmStockTakingPlanServiceImpl已集成Flowable |
+| PB-14 | 安全库存 | 安全库存预警响应不及时 | ✅ StockAlertTask定时任务+WmStockAlertServiceImpl |
+| PB-15 | 批次追溯 | 批次追溯链路不完整 | ✅ WmBatchServiceImpl+WmSnServiceImpl+WmTraceServiceImpl |
 
 #### 销售模块
 
-| 编号 | 瓶颈 | 说明 |
-|------|------|------|
-| PB-16 | 价格审批 | 价格变更审批流程不灵活 |
-| PB-17 | 信用检查 | 信用检查与订单确认耦合度高 |
-| PB-18 | 出库调度 | 销售出库与生产入库调度冲突 |
-| PB-19 | 退货处理 | 退货流程缺少质量关联 |
-| PB-20 | 开票缺失 | 缺少发票开具功能 |
+| 编号 | 瓶颈 | 说明 | 状态 |
+|------|------|------|------|
+| PB-16 | 价格审批 | 价格变更审批流程不灵活 | ✅ SoPriceListServiceImpl+PricingEngineServiceImpl |
+| PB-17 | 信用检查 | 信用检查与订单确认耦合度高 | ✅ CreditCheckServiceImpl独立服务 |
+| PB-18 | 出库调度 | 销售出库与生产入库调度冲突 | ❌ 待开发 |
+| PB-19 | 退货处理 | 退货流程缺少质量关联 | ❌ 待质量管理模块 |
+| PB-20 | 开票缺失 | 缺少发票开具功能 | ❌ 本周开发 |
 
 #### 审批流模块
 
@@ -327,29 +375,30 @@ Flowable 7.0 工作流集成
 
 ### 4.5 关键风险（6项）
 
-| 编号 | 风险描述 | 影响 | 修复方案 |
-|------|---------|------|---------|
-| RISK-01 | 库存并发安全 | 高并发场景下库存数量不一致 | 乐观锁+悲观锁+分布式锁三重保障 |
-| RISK-02 | BOM循环引用 | 多级BOM存在循环依赖导致栈溢出 | BOM解析时增加循环检测算法 |
-| RISK-03 | 出库无审计流水 | 出库操作缺少完整审计日志 | 增加出库操作审计日志记录 |
-| RISK-04 | 事务注解缺失 | 部分Service方法缺少@Transactional | 补充事务注解，确保数据一致性 |
-| RISK-05 | 审批撤回回调缺失 | 审批撤回后业务状态未回退 | 增加审批撤回回调处理 |
-| RISK-06 | 条码生成器多实例重复 | 分布式环境下条码可能重复 | 使用雪花算法或Redis自增序列 |
+| 编号 | 风险描述 | 影响 | 修复方案 | 状态 |
+|------|---------|------|---------|------|
+| RISK-01 | 库存并发安全 | 高并发场景下库存数量不一致 | 乐观锁+悲观锁+分布式锁三重保障 | ✅ 已实现 |
+| RISK-02 | BOM循环引用 | 多级BOM存在循环依赖导致栈溢出 | BOM解析时增加循环检测算法 | ❌ 待开发 |
+| RISK-03 | 出库无审计流水 | 出库操作缺少完整审计日志 | 增加出库操作审计日志记录 | ✅ 已实现 |
+| RISK-04 | 事务注解缺失 | 部分Service方法缺少@Transactional | 补充事务注解，确保数据一致性 | ✅ 已大量覆盖 |
+| RISK-05 | 审批撤回回调缺失 | 审批撤回后业务状态未回退 | 增加审批撤回回调处理 | ✅ 已通过afterFlowHandle实现 |
+| RISK-06 | 条码生成器多实例重复 | 分布式环境下条码可能重复 | 使用雪花算法或Redis自增序列 | ❌ 待开发 |
 
 ### 4.6 四阶段优化计划
 
 #### Phase A — 紧急修复（1-2周，约12人天）
 
-| 任务 | 工时 | 说明 |
-|------|------|------|
-| RISK-01 库存并发安全 | 3人天 | 乐观锁+悲观锁+分布式锁 |
-| RISK-02 BOM循环引用 | 2人天 | 循环检测算法 |
-| RISK-03 出库审计流水 | 2人天 | 审计日志记录 |
-| RISK-04 事务注解补充 | 2人天 | @Transactional补全 |
-| RISK-05 审批撤回回调 | 2人天 | 回调处理机制 |
-| RISK-06 条码生成器 | 1人天 | 雪花算法/Redis序列 |
+| 任务 | 工时 | 说明 | 状态 |
+|------|------|------|------|
+| RISK-01 库存并发安全 | 3人天 | 乐观锁+悲观锁+分布式锁 | ✅ 已实现（乐观锁version字段+Mapper层乐观锁更新） |
+| RISK-02 BOM循环引用 | 2人天 | 循环检测算法 | ❌ 待开发 |
+| RISK-03 出库审计流水 | 2人天 | 审计日志记录 | ✅ 已实现（@Log注解+操作日志） |
+| RISK-04 事务注解补充 | 2人天 | @Transactional补全 | ✅ 已大量覆盖 |
+| RISK-05 审批撤回回调 | 2人天 | 回调处理机制 | ✅ 已通过afterFlowHandle实现 |
+| RISK-06 条码生成器 | 1人天 | 雪花算法/Redis序列 | ❌ 待开发 |
 
 **KPI目标：库存并发0事故，BOM校验100%覆盖**
+> **当前状态**: RISK-01/03/04/05 已完成，仅 RISK-02 BOM循环引用 和 RISK-06 条码生成器 待处理
 
 #### Phase B — 结构优化（3-4周，约18人天）
 
@@ -385,6 +434,8 @@ Flowable 7.0 工作流集成
 **KPI目标：报表覆盖率80%，预警准确率90%**
 
 **四阶段总计：约61人天**
+
+> **当前状态说明**: Phase A中RISK-01库存并发安全已部分实现（乐观锁version字段+Mapper层乐观锁更新）；RISK-03出库审计流水、RISK-04事务注解已大量覆盖、RISK-05审批撤回回调已通过afterFlowHandle实现。建议优先处理RISK-02 BOM循环引用和RISK-06条码生成器。
 
 ### 4.7 KPI目标汇总
 
@@ -462,6 +513,7 @@ Flowable 7.0 工作流集成
 | Week 6 | F-026/F-027/F-029/F-030/F-031/F-032 前端收尾 | 前端完善 |
 | Week 7-8 | I-001 MQ基础设施 + I-002 跨库事务补偿 | ~30 new files (ruoyi-common-mq module) |
 | Week 9-10 | Q-003~Q-006 + R-025/R-026 | ~22 new + ~18 modified backend files |
+| Week 11-12 | R-041~R-044 + R-055 追溯与盘点 | WmSn/WmBatch/WmTrace/盘点审批流+追溯前端 |
 
 ---
 
@@ -548,18 +600,18 @@ ruoyi-common-mq/
 
 ### 6.5 核心消息定义
 
-| 消息类型 | Exchange | RoutingKey | 说明 |
-|---------|----------|------------|------|
-| StockInMessage | erp.direct | stock.in.receive | 采购入库过账 |
-| StockInMessage | erp.direct | stock.in.production | 完工入库过账 |
-| StockInMessage | erp.direct | stock.in.rework | 返工入库过账 |
-| StockOutMessage | erp.direct | stock.out.issue | 生产领料出库 |
-| StockOutMessage | erp.direct | stock.out.rework | 返工出库 |
-| PurchaseReceiveMessage | erp.direct | purchase.receive.writeback | 收货回写采购订单 |
-| ProductionCompleteMessage | erp.direct | production.complete.backflush | 完工倒冲领料 |
-| VendorEvaluationMessage | erp.direct | vendor.evaluation.calculate | 供应商评估计算 |
-| StockAlertMessage | erp.topic | stock.alert.low | 低库存预警→采购建议 |
-| OrderTimeoutMessage | erp.delay | order.timeout.check | 订单超时自动关闭 |
+| 消息类型 | Exchange | RoutingKey | 说明 | 状态 |
+|---------|----------|------------|------|------|
+| StockInMessage | erp.direct | stock.in.receive | 采购入库过账 | ✅ 已实现(StockInConsumer) |
+| StockInMessage | erp.direct | stock.in.production | 完工入库过账 | ✅ 已实现(StockInConsumer) |
+| StockInMessage | erp.direct | stock.in.rework | 返工入库过账 | ✅ 已实现(ReworkStockConsumer) |
+| StockOutMessage | erp.direct | stock.out.issue | 生产领料出库 | ✅ 已实现(ProductionBackflushConsumer) |
+| StockOutMessage | erp.direct | stock.out.rework | 返工出库 | ✅ 已实现(ReworkStockConsumer) |
+| PurchaseReceiveMessage | erp.direct | purchase.receive.writeback | 收货回写采购订单 | ✅ 已实现(PurchaseReceiveWritebackConsumer) |
+| ProductionCompleteMessage | erp.direct | production.complete.backflush | 完工倒冲领料 | ✅ 已实现(ProductionBackflushConsumer) |
+| VendorEvaluationMessage | erp.direct | vendor.evaluation.calculate | 供应商评估计算 | ⚠️ 待实现 |
+| StockAlertMessage | erp.topic | stock.alert.low | 低库存预警→采购建议 | ⚠️ 待实现 |
+| OrderTimeoutMessage | erp.delay | order.timeout.check | 订单超时自动关闭 | ⚠️ 待实现 |
 
 ### 6.6 消息基类设计
 
@@ -670,19 +722,19 @@ spring:
 
 ### 7.1 基本信息
 
-| 项目 | 值 |
-|------|-----|
-| 版本 | Jasypt 3.0.5 |
-| 算法 | PBEWITHHMACSHA512ANDAES_256 |
-| 密钥来源 | 环境变量 `JASYPT_PASSWORD`，回退值 `nexus-erp-dev` |
+| 项目 | 值 | 状态 |
+|------|-----|------|
+| 版本 | Jasypt 3.0.5 | ✅ 已配置 |
+| 算法 | PBEWITHHMACSHA512ANDAES_256 | ✅ 已配置 |
+| 密钥来源 | 环境变量 `JASYPT_PASSWORD`，回退值 `nexus-erp-dev` | ✅ 已配置 |
 
 ### 7.2 加密范围
 
-以下3个密码需加密：
+以下3个密码已加密（配置在application-dev.yml中）：
 
-1. 主库root密码
-2. ERP库root密码
-3. RabbitMQ nexus密码
+1. 主库root密码 ✅ `ENC(IbQ7Q...dRXk)`
+2. ERP库root密码 ✅ `ENC(IbQ7Q...dRXk)`
+3. RabbitMQ nexus密码 ✅ `ENC(7kMST...aswP)`
 
 ### 7.3 密文生成方式
 
@@ -799,10 +851,10 @@ spring:
 | F-027 | 供应商评估前端增强（types.ts+雷达图+趋势图） | ⚠️ 后端就绪，前端页面待验证 |
 | F-029 | 委外订单前端完善（供应商/物料选择器+关联工单+发料收货按钮） | ⚠️ 后端就绪，前端页面待验证 |
 | F-030 | 返工订单前端完善（来源工单选择器+物料自动填充+出库入库按钮） | ⚠️ 后端就绪，前端页面待验证 |
-| F-031 | 工单资源分配前端页面 | ⚠️ 后端就绪，前端页面待验证 |
-| F-032 | 产能日历可视化增强（日历视图Tab） | ⚠️ 后端就绪，前端页面待验证 |
+| F-031 | 工单资源分配前端页面 | ✅ 已实现（prd/work-order-resource/index.vue） |
+| F-032 | 产能日历可视化增强（日历视图Tab） | ✅ 已实现（prd/capacity-calendar/index.vue） |
 
-> **注意**: 上述前端任务的后端API/Service均已实现并验证，但 `plus-ui/src/views/erp/` 目录中对应的前端页面文件尚未确认存在（如 vendor-evaluation/report.vue、subcontract/index.vue、rework/index.vue、capacity-calendar/index.vue、work-order-resource/index.vue 等），需确认是否在其他分支或待后续开发。
+> **说明**: F-031资源分配前端和F-032产能日历前端已确认存在。vendor-evaluation/report.vue、subcontract/index.vue、rework/index.vue等前端页面待确认，可能在其他分支或待开发。
 
 ### Week 7-8: MQ基础设施搭建
 
@@ -838,15 +890,28 @@ spring:
 
 **变更规模：~22 new + ~18 modified backend files**
 
-### Week 11-12: 追溯与盘点（计划中）
+### Week 11-12: ERP收尾与MES集成准备
 
-| 任务 | 内容 |
-|------|------|
-| R-041 | 序列号管理（wm_sn表） |
-| R-042 | 批次管理增强（wm_batch独立表） |
-| R-043 | 追溯查询服务（前向+后向） |
-| R-044 | 追溯前端（树图/表格展开） |
-| R-055 | 盘点差异审批流（Flowable集成） |
+#### 11-12A: 追溯与盘点（ERP内部任务）
+
+| 任务 | 内容 | 状态 |
+|------|------|------|
+| R-041 | 序列号管理（wm_sn表） | ✅ 已完成（WmSn全套CRUD+Controller） |
+| R-042 | 批次管理增强（wm_batch独立表） | ✅ 已完成（WmBatch全套CRUD） |
+| R-043 | 追溯查询服务（前向+后向） | ✅ 已完成（WmTraceServiceImpl: traceForward/traceBackward） |
+| R-044 | 追溯前端（树图/表格展开） | ✅ 已完成（wm/trace/index.vue，支持树形/表格双视图） |
+| R-055 | 盘点差异审批流（Flowable集成） | ✅ 已完成（WmStockTakingPlanServiceImpl: submit+afterFlowHandle） |
+
+#### 11-12B: MES集成准备（ERP侧改动）
+
+| 任务 | 内容 | 说明 | 状态 |
+|------|------|------|------|
+| MQ消息扩展 | PrdWorkOrderServiceImpl.afterFlowHandle() 审批通过后发送WorkOrderReleaseMessage | MES消费此消息创建MES工单 | ❌ 待实现，当前afterFlowHandle仅更新状态不发MQ |
+| 主数据API暴露 | 确认ERP物料/BOM/工艺路线/工序Controller完整可用 | MES通过跨库查询@DS("erp")访问 | ✅ bd模块Controller已完整 |
+| Exchange常量 | 在ExchangeConstants/QueueConstants中添加MES相关队列定义 | 如mes.workorder.sync.queue | ❌ 待添加，当前常量类无MES队列 |
+| application配置 | application-dev.yml添加mes数据源配置 | 为MES模块创建做准备 | ❌ 待配置 |
+| bd_material_vendor | 物料-供应商关系管理 | MES委外需要供应商数据 | ❌ 本周开发 |
+| SO合同/开票 | 销售合同和发票管理 | 销售流程完整性 | ❌ 本周开发 |
 
 ---
 
@@ -964,37 +1029,50 @@ spring:
 
 ---
 
-## 十一、ERP与MES边界划分
+## 十一、ERP与MES/IoT边界划分
 
 ### 11.1 九条划分原则
 
 | 序号 | 原则 | 说明 |
 |------|------|------|
-| 1 | 主数据统一ERP | 物料/BOM/客户/供应商/工厂/仓库/库位/工序/路由在ERP维护，MES只读引用 |
-| 2 | 质量管理统一MES | IQC/IPQC/OQC/不良品/SPC在MES管理 |
-| 3 | 设备管理统一MES | 设备台账/保养/维修/点检/OEE在MES管理 |
+| 1 | 主数据统一ERP | 物料/BOM/客户/供应商/工厂/仓库/库位/工序/路由在ERP维护，MES跨库只读（不建同步表） |
+| 2 | 质量管理统一MES | IQC/IPQC/OQC在MES管理 |
+| 3 | 设备管理统一MES | 设备台账/保养/维修在MES管理 |
 | 4 | 库存统一wm_material_stock | ERP和MES共用同一库存表，通过@DS("erp")访问 |
-| 5 | 工单创建在ERP，执行在MES | ERP创建工单→MES创建MES工单(含工序/流转卡) |
+| 5 | 工单创建在ERP，执行在MES | ERP创建工单→MQ→MES创建MES工单(含工序/流转卡) |
 | 6 | 采购/销售只在ERP | 采购和销售业务不涉及MES |
-| 7 | 数据采集只在MES | 设备数据采集/传感器数据在MES处理 |
+| 7 | 数据采集在MES+IoT | 手动采集在MES，自动采集在IoT |
 | 8 | 排班调度在ERP | 班次/班组/排班计划在ERP维护 |
 | 9 | 工艺路线在ERP维护，MES执行 | ERP维护工艺路线→MES按工序执行 |
 
 ### 11.2 模块归属对照表
 
-| 功能 | ERP模块 | MES模块 | 说明 |
-|------|---------|---------|------|
-| 物料主数据 | bd | md(只读) | ERP维护 |
-| BOM | bd | md(只读) | ERP维护 |
-| 工艺路线 | bd | pro(执行) | ERP维护，MES执行 |
-| 工单 | prd(创建) | pro(执行) | ERP创建，MES执行 |
-| 库存 | wm | wm(扩展) | 共用wm_material_stock |
-| 采购 | pu | - | 仅ERP |
-| 销售 | so | - | 仅ERP |
-| 质量管理 | - | qc | 仅MES |
-| 设备管理 | - | eq | 仅MES |
-| 数据采集 | - | dc | 仅MES |
-| SPC | - | spc | 仅MES |
+| 功能 | ERP模块 | MES模块 | IoT模块 | 说明 |
+|------|---------|---------|---------|------|
+| 物料主数据 | bd | 跨库只读 | - | ERP维护，MES通过@DS("erp")查询 |
+| BOM | bd | 跨库只读 | - | ERP维护 |
+| 工艺路线 | bd | 跨库只读 | - | ERP维护，MES执行 |
+| 工单 | prd(创建) | pro(执行) | - | ERP创建→MQ→MES执行 |
+| 库存 | wm | 共用wm_material_stock | - | 通过@DS("erp")访问 |
+| 采购 | pu | - | - | 仅ERP |
+| 销售 | so | - | - | 仅ERP |
+| 质量管理 | - | qc | - | 仅MES |
+| 设备管理 | - | eq | - | 仅MES |
+| 设备接入 | - | - | device/mqtt | 仅IoT |
+| 数据采集 | - | dc(手动) | pipeline(自动) | MES手动+IoT自动 |
+| SPC | - | spc | - | 仅MES |
+
+### 11.3 ERP↔MES↔IoT集成点
+
+| 方向 | 触发点 | 方式 | 说明 |
+|------|--------|------|------|
+| ERP→MES | 工单下达 | MQ (RabbitMQ erp.direct) | PrdWorkOrderServiceImpl审批通过后发消息 |
+| ERP→MES | 主数据查询 | 跨库直查@DS("erp") | MES Service临时切数据源读物料/BOM/工艺 |
+| MES→ERP | 工单完工 | MQ (RabbitMQ) | 通知ERP更新工单状态+完工入库 |
+| MES→ERP | IQC检验完成 | MQ (RabbitMQ) | 通知ERP更新收货单质检状态 |
+| MES↔IoT | 设备数据查询 | REST API / Redis缓存 | MES查询IoT设备最新数据 |
+| IoT→MES | 告警→安灯 | 接口抽象 | IMesAndonService.createAndonFromAlert() |
+| IoT↔MES | 设备关联 | 字段预留 | 不建外键，通过接口查询 |
 
 ---
 
@@ -1002,11 +1080,11 @@ spring:
 
 ### 12.1 统一审批引擎
 
-所有审批流通过Flowable统一管理，避免各模块自行实现审批逻辑。
+所有审批流通过Flowable统一管理，避免各模块自行实现审批逻辑。MES工单等关键单据同样复用Flowable。
 
 **要点：**
 - 定义统一的审批流程模板
-- 审批状态回调标准化
+- 审批状态回调标准化（WfCallBackServiceI）
 - 支持多级审批/并行审批/代理审批
 
 ### 12.2 库存策略可配置化
@@ -1024,7 +1102,8 @@ spring:
 
 **要点：**
 - 禁止跨模块直接注入Mapper
-- 跨模块操作通过MQ消息异步处理
+- 跨模块操作通过MQ消息异步处理（ERP↔MES通过RabbitMQ）
+- IoT数据管道使用Redis Streams（复用现有Redis，无需新增中间件）
 - 保证最终一致性
 
 ### 12.4 异常处理规范化
@@ -1044,3 +1123,105 @@ spring:
 - 乐观锁：wm_material_stock.version字段
 - 悲观锁：SELECT ... FOR UPDATE（关键操作）
 - 分布式锁：Redis锁（多实例场景）
+
+### 12.6 MES/IoT技术选型建议
+
+| 决策 | 选型 | 理由 |
+|------|------|------|
+| MES主数据 | 跨库查询ERP(不建同步表) | 避免数据双写和同步复杂度 |
+| MES审批流 | 复用ruoyi-flowable | ERP已有完整Flowable集成模式 |
+| MES实时推送 | 复用ruoyi-common-sse | 安灯看板单向推送，SSE足够 |
+| IoT消息管道 | Redis Streams(非RabbitMQ) | 复用Redisson，零新增基础设施 |
+| IoT实时推送 | SSE(非WebSocket) | 单向推送，已有ruoyi-common-sse |
+| IoT定时任务 | SnailJob(非自研调度) | 已有ruoyi-common-job |
+| IoT MQTT Broker | Moquette内嵌(后续可换EMQX) | 轻量，开发阶段简化部署 |
+| IoT时序存储 | MySQL先用(TDengine按需引入) | 数据量超1000万行再迁移 |
+
+---
+
+## 十三、后续开发计划（代码审查修订 2026-06-14）
+
+> 本节基于逐文件代码审查（76个Service接口、72个Service实现、62个Controller、54+前端页面、80张数据库表）整理，标注每个待开发功能的代码现状和优先级。
+
+### 13.1 ERP 模块补全（P1 优先）
+
+| 序号 | 功能 | 模块 | SQL表 | Domain | Mapper | Service | Controller | 前端 | 优先级 |
+|:----:|------|------|:-----:|:------:|:------:|:-------:|:----------:|:----:|:------:|
+| 1 | 物料-供应商关系管理 | bd | ✅ bd_material_vendor | ❌ | ❌ | ❌ | ❌ | ❌ | 🔴 高 |
+| 2 | 销售合同管理 | so | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔴 高 |
+| 3 | 销售开票管理 | so | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔴 高 |
+| 4 | 部门请购单 | po | ✅ po_requisition/detail | ❌ | ❌ | ❌ | ❌ | ❌ | 🟡 中 |
+| 5 | 采购价格对比 | pu | 依赖#1 | ❌ | ❌ | ❌ | ❌ | ❌ | 🟡 中 |
+| 6 | MES集成MQ消息 | prd | — | — | — | ❌ afterFlowHandle未发MQ | — | — | 🟡 中 |
+
+### 13.2 ERP 质量管理模块（P2）
+
+> 质量管理为独立子模块，建议在MES Phase 3中一并实现（MES文档已规划 qc 子模块）。
+
+| 序号 | 功能 | 说明 | 优先级 |
+|:----:|------|------|:------:|
+| 1 | 来料检验(IQC) | 采购收货后触发来料检验流程 | 🟡 中 |
+| 2 | 过程检验(IPQC) | 生产过程中工序检验 | 🟡 中 |
+| 3 | 出货检验(OQC) | 出库前成品检验 | 🟡 中 |
+| 4 | 不良品处理 | 不良品隔离/评审/处置 | 🟡 中 |
+| 5 | 质量追溯 | 按批次/序列号追溯质量记录 | 🟢 低 |
+| 6 | SPC统计过程控制 | 控制图/过程能力分析 | 🟢 低 |
+| 7 | 质量报表 | 质量统计/趋势/对比报表 | 🟢 低 |
+
+### 13.3 ERP 设备管理模块（P2）
+
+> 设备管理建议在MES Phase 3中一并实现（MES文档已规划 eq 子模块）。
+
+| 序号 | 功能 | 说明 | 优先级 |
+|:----:|------|------|:------:|
+| 1 | 设备台账 | 设备基本信息/参数/状态管理 | 🟡 中 |
+| 2 | 设备保养计划 | 定期保养计划/保养记录 | 🟡 中 |
+| 3 | 设备维修管理 | 维修工单/维修记录/维修分析 | 🟡 中 |
+| 4 | 设备点检 | 点检标准/点检记录/异常处理 | 🟢 低 |
+| 5 | 设备备件 | 备件库存/领用/采购 | 🟢 低 |
+| 6 | 设备OEE | 设备综合效率计算/分析 | 🟢 低 |
+
+### 13.4 ERP 增强功能（P2-P3）
+
+| 序号 | 功能 | 说明 | 优先级 |
+|:----:|------|------|:------:|
+| 1 | BOM循环引用检测 | 多级BOM循环依赖导致栈溢出 | 🟡 中（RISK-02） |
+| 2 | 条码生成器优化 | 分布式环境下条码可能重复 | 🟡 中（RISK-06） |
+| 3 | BOM变更通知 | BOM变更后未及时通知相关工单 | 🟢 低（PB-06） |
+| 4 | 工单排产冲突检测 | 多工单排产时资源冲突检测 | 🟢 低（PB-07） |
+| 5 | 产能瓶颈识别 | 缺少产能瓶颈自动识别与预警 | 🟢 低（PB-10） |
+| 6 | 销售出库调度优化 | 销售出库与生产入库调度冲突 | 🟢 低（PB-18） |
+| 7 | 统计报表 | 库存/销售/生产/采购业务报表 | 🟢 低 |
+| 8 | Dashboard首页 | 首页统计数据接入真实API | 🟢 低（系统完成后统一制作） |
+
+### 13.5 MES 模块（P3，独立模块）
+
+> MES模块详细设计见 `NexusERP_MES文档.md`，此处仅列概要。
+
+| 阶段 | 周期 | 内容 | 依赖 |
+|------|------|------|------|
+| Phase 1 | 7周 | MES骨架+主数据跨库查询+工单+Flowable审批+前端 | ERP MQ集成完成 |
+| Phase 2 | 7周 | 流转卡引擎+派工+安灯+SSE推送+SN追溯 | Phase 1 |
+| Phase 3 | 6周 | 质量管理+设备管理+数据采集+SPC | Phase 2 |
+
+### 13.6 IoT 模块（P3，独立模块）
+
+> IoT模块详细设计见 `NexusERP_IoT文档.md`，此处仅列概要。
+
+| 阶段 | 周期 | 内容 | 依赖 |
+|------|------|------|------|
+| 阶段一 | 4周 | MQTT接入+Redis Streams管道+SSE实时仪表盘 | MES Phase 1 |
+| 阶段二 | 4周 | 按需: OPC UA/Modbus/规则引擎/TDengine/边缘网关 | 阶段一 |
+
+### 13.7 总体开发路线图
+
+```
+Week 13     ████ ERP补全: 物料-供应商 + SO合同 + SO开票
+Week 14     ████ ERP补全: 部门请购 + MES集成MQ + 采购价格对比
+Week 15-16  ████████ ERP增强: BOM循环检测 + 条码优化 + 统计报表
+Week 17-23  ████████████████████████████████ MES Phase 1
+Week 24-30  ████████████████████████████████ MES Phase 2
+Week 31-36  ████████████████████████ MES Phase 3 (质量+设备)
+Week 37-40  ████████████████ IoT 阶段一
+Week 41-44  ████████████████ IoT 阶段二 (按需)
+```
