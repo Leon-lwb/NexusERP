@@ -51,6 +51,9 @@ public class ChatModelFactory {
     public ChatModel getChatModel(Long modelId) {
         return chatModelCache.computeIfAbsent(modelId, id -> {
             AiModel config = aiModelService.selectModelById(id);
+            if (config == null) {
+                throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
+            }
             return buildChatModel(config);
         });
     }
@@ -64,6 +67,9 @@ public class ChatModelFactory {
     public StreamingChatModel getStreamingChatModel(Long modelId) {
         return streamingModelCache.computeIfAbsent(modelId, id -> {
             AiModel config = aiModelService.selectModelById(id);
+            if (config == null) {
+                throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
+            }
             return buildStreamingChatModel(config);
         });
     }
@@ -77,6 +83,9 @@ public class ChatModelFactory {
     public ChatModel getAgentChatModel(Long modelId) {
         return agentModelCache.computeIfAbsent(modelId, id -> {
             AiModel config = aiModelService.selectModelById(id);
+            if (config == null) {
+                throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
+            }
             return buildChatModel(config, AGENT_TEMPERATURE);
         });
     }
@@ -147,6 +156,7 @@ public class ChatModelFactory {
                 .baseUrl(config.getApiHost())
                 .modelName(config.getModelName())
                 .temperature(temperature)
+                .listeners(chatModelListeners)
                 .build();
             // DASHSCOPE/ZHIPU 暂走 OpenAI 兼容接口
             case "OPENAI", "DASHSCOPE", "ZHIPU" -> OpenAiChatModel.builder()
@@ -190,6 +200,7 @@ public class ChatModelFactory {
                 .baseUrl(config.getApiHost())
                 .modelName(config.getModelName())
                 .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+                .listeners(chatModelListeners)
                 .build();
             // DASHSCOPE/ZHIPU 暂走 OpenAI 兼容接口
             case "OPENAI", "DASHSCOPE", "ZHIPU" -> OpenAiStreamingChatModel.builder()

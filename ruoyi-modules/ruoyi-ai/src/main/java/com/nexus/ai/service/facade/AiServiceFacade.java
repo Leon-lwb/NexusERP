@@ -265,15 +265,19 @@ public class AiServiceFacade {
             augmentedQuery = retrieverService.augmentPrompt(request.getContent());
         }
 
-        // 替换最后一条用户消息为增强后的提示词
-        if (!allMessages.isEmpty()) {
-            int lastIdx = allMessages.size() - 1;
-            ChatMessage lastMsg = allMessages.get(lastIdx);
-            if (lastMsg instanceof dev.langchain4j.data.message.UserMessage) {
-                allMessages.remove(lastIdx);
+        // 从后往前查找最后一条 UserMessage 并替换为增强后的提示词
+        // （避免当末尾是 AiMessage 时误删，或连续多条 UserMessage 时删错）
+        boolean replaced = false;
+        for (int i = allMessages.size() - 1; i >= 0; i--) {
+            if (allMessages.get(i) instanceof dev.langchain4j.data.message.UserMessage) {
+                allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(augmentedQuery));
+                replaced = true;
+                break;
             }
         }
-        allMessages.add(dev.langchain4j.data.message.UserMessage.from(augmentedQuery));
+        if (!replaced) {
+            allMessages.add(dev.langchain4j.data.message.UserMessage.from(augmentedQuery));
+        }
 
         AiSseMessageHelper.sendThinking(userId);
 
@@ -521,7 +525,7 @@ public class AiServiceFacade {
                 int summaryLen = Math.min(100, remainingBudget);
                 if (summaryLen <= 0) break;
                 appendMessage(sb, msg, summaryLen);
-                remainingBudget -= getMessageTextLength(msg);
+                remainingBudget -= summaryLen;
             }
 
             // 输出最近消息（完整，但单条不超过 500 字符）
