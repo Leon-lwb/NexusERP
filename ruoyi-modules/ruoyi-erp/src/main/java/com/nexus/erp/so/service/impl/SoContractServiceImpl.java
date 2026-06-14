@@ -54,11 +54,18 @@ public class SoContractServiceImpl implements ISoContractService {
     }
 
     /**
-     * 根据ID查询销售合同
+     * 根据ID查询销售合同（含明细行）
      */
     @Override
     public SoContractVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        SoContractVo vo = baseMapper.selectVoById(id);
+        if (vo != null) {
+            LambdaQueryWrapper<SoContractLine> lqw = Wrappers.lambdaQuery();
+            lqw.eq(SoContractLine::getContractId, vo.getContractId());
+            lqw.orderByAsc(SoContractLine::getSortOrder);
+            vo.setSoContractLineList(lineMapper.selectList(lqw));
+        }
+        return vo;
     }
 
     /**

@@ -54,11 +54,18 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     }
 
     /**
-     * 根据ID查询销售发票
+     * 根据ID查询销售发票（含明细行）
      */
     @Override
     public SoInvoiceVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        SoInvoiceVo vo = baseMapper.selectVoById(id);
+        if (vo != null) {
+            LambdaQueryWrapper<SoInvoiceLine> lqw = Wrappers.lambdaQuery();
+            lqw.eq(SoInvoiceLine::getInvoiceId, vo.getInvoiceId());
+            lqw.orderByAsc(SoInvoiceLine::getSortOrder);
+            vo.setSoInvoiceLineList(lineMapper.selectList(lqw));
+        }
+        return vo;
     }
 
     /**

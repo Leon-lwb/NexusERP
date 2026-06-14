@@ -4,6 +4,10 @@
 export interface MaterialVendorQuery extends PageQuery {
   /** 物料ID */
   materialId?: number;
+  /** 物料编码 */
+  materialCode?: string;
+  /** 物料名称 */
+  materialName?: string;
   /** 供应商ID */
   vendorId?: number;
   /** 供应商编码 */

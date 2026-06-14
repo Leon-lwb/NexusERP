@@ -419,7 +419,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-      </el-form>
+        </el-form>
         </el-tab-pane>
         <el-tab-pane label="供应商" name="vendor" v-if="form.materialId">
           <el-table v-loading="vendorLoading" :data="vendorList" border size="small">
