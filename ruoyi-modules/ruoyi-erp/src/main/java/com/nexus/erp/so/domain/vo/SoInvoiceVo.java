@@ -5,11 +5,13 @@ import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import com.nexus.erp.so.domain.SoInvoice;
+import com.nexus.erp.so.domain.SoInvoiceLine;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 销售发票视图对象 so_invoice
@@ -120,4 +122,9 @@ public class SoInvoiceVo implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+
+    /**
+     * 发票明细行列表
+     */
+    private List<SoInvoiceLine> soInvoiceLineList;
 }

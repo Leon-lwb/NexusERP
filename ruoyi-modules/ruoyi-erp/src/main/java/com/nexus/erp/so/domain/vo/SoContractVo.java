@@ -5,11 +5,13 @@ import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import com.nexus.erp.so.domain.SoContract;
+import com.nexus.erp.so.domain.SoContractLine;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 销售合同视图对象 so_contract
@@ -126,4 +128,9 @@ public class SoContractVo implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+
+    /**
+     * 合同明细行列表
+     */
+    private List<SoContractLine> soContractLineList;
 }
