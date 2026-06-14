@@ -1,8 +1,11 @@
 package com.nexus.ai.config;
 
+import com.nexus.ai.observability.OutputChannel;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -14,6 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  *
  * @author NexusERP
  */
+@Slf4j
 @Configuration
 public class AiThreadPoolConfig {
 
@@ -32,5 +36,14 @@ public class AiThreadPoolConfig {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
+    }
+
+    /**
+     * 定时清理 OutputChannel 注册表中的过期条目（每 10 分钟执行一次）
+     * <p>防止 Agent 异常退出时注册表泄漏</p>
+     */
+    @Scheduled(fixedRate = 600_000)
+    public void cleanupOutputChannelRegistry() {
+        OutputChannel.cleanupStaleEntries();
     }
 }

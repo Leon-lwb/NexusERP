@@ -232,7 +232,7 @@ public class AiChatController {
                     (session.getTitle() != null ? session.getTitle() : "AI对话") + ".md", "UTF-8"));
             response.getWriter().write(markdown);
             response.getWriter().flush();
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
             log.error("导出会话失败: sessionId={}", sessionId, e);
         }
     }

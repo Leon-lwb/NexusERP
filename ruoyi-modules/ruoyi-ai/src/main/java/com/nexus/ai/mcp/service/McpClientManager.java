@@ -184,35 +184,43 @@ public class McpClientManager {
             return cachedClient;
         }
 
-        // 创建新的客户端
-        return activeClients.compute(toolId, (id, existingClient) -> {
-            AiTool tool = aiToolMapper.selectById(id);
+        // 使用 per-toolId 锁替代 ConcurrentHashMap.compute() 的全局锁，
+        // 避免数据库查询和进程启动在 compute 锁内执行时阻塞其他工具的操作
+        synchronized (("mcp-tool-" + toolId).intern()) {
+            // 双重检查
+            cachedClient = activeClients.get(toolId);
+            if (cachedClient != null && isToolHealthy(toolId)) {
+                return cachedClient;
+            }
+
+            AiTool tool = aiToolMapper.selectById(toolId);
             if (tool == null || !"ENABLED".equals(tool.getStatus())) {
-                // 关闭旧客户端
-                closeQuietly(existingClient);
+                closeQuietly(cachedClient);
+                activeClients.remove(toolId);
                 return null;
             }
 
-            // 跳过内置工具
             if (BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
-                closeQuietly(existingClient);
+                closeQuietly(cachedClient);
+                activeClients.remove(toolId);
                 return null;
             }
 
             try {
                 McpClient client = createMcpClient(tool);
-                markToolHealthy(id);
-                // 关闭旧客户端
-                closeQuietly(existingClient);
+                markToolHealthy(toolId);
+                closeQuietly(cachedClient);
+                activeClients.put(toolId, client);
                 log.info("[MCP] 成功创建客户端: toolName={}", tool.getToolName());
                 return client;
             } catch (Exception e) {
                 log.error("[MCP] 创建客户端失败: toolName={}, error={}", tool.getToolName(), e.getMessage());
-                handleToolFailure(id);
-                closeQuietly(existingClient);
+                handleToolFailure(toolId);
+                closeQuietly(cachedClient);
+                activeClients.remove(toolId);
                 return null;
             }
-        });
+        }
     }
 
     /**

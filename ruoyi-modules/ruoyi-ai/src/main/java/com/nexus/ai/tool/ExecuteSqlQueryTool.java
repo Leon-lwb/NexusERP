@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,13 +31,17 @@ public class ExecuteSqlQueryTool {
     private final ErpQueryService erpQueryService;
     private final AiProperties aiProperties;
 
-    /** 禁止出现的 SQL 关键词（大小写不敏感） */
-    private static final Set<String> FORBIDDEN_KEYWORDS = Set.of(
-        "INTO OUTFILE", "INTO DUMPFILE", "LOAD_FILE", "LOAD DATA",
-        "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE",
-        "GRANT", "REVOKE", "EXECUTE", "INFORMATION_SCHEMA",
-        "SLEEP", "BENCHMARK", "WAITFOR", "UNION"
-    );
+    /** 禁止出现的 SQL 关键词正则（使用单词边界避免子串误匹配，如 UPDATE_TIME 不会命中 UPDATE） */
+    private static final Pattern FORBIDDEN_KEYWORD_PATTERN = Pattern.compile(
+        "\\b(INTO\\s+OUTFILE|INTO\\s+DUMPFILE|LOAD_FILE|LOAD\\s+DATA|" +
+        "INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|" +
+        "GRANT|REVOKE|EXECUTE|INFORMATION_SCHEMA|" +
+        "SLEEP|BENCHMARK|WAITFOR)\\b",
+        Pattern.CASE_INSENSITIVE);
+
+    /** 禁止 UNION SELECT（允许 UNION ALL 用于 CTE 递归查询） */
+    private static final Pattern FORBIDDEN_UNION_SELECT = Pattern.compile(
+        "\\bUNION\\s+SELECT\\b", Pattern.CASE_INSENSITIVE);
 
     /** 表名提取正则（匹配 FROM/JOIN 后的表名） */
     private static final Pattern TABLE_NAME_PATTERN =
@@ -74,12 +77,19 @@ public class ExecuteSqlQueryTool {
             return "Error: Only SELECT queries are allowed";
         }
 
-        // 2. 禁止危险关键词（在清理注释后的 SQL 上检测）
-        for (String keyword : FORBIDDEN_KEYWORDS) {
-            if (cleanedUpperSql.contains(keyword)) {
-                log.warn("[AI-SQL] 包含禁止关键词 '{}': {}", keyword, sql);
-                return "Error: SQL contains forbidden keyword: " + keyword;
-            }
+        // 2. 禁止危险关键词（单词边界匹配，避免列名 UPDATE_TIME 误触发 UPDATE）
+        Matcher forbiddenMatcher = FORBIDDEN_KEYWORD_PATTERN.matcher(cleanedUpperSql);
+        if (forbiddenMatcher.find()) {
+            String matched = cleanedUpperSql.substring(
+                Math.max(0, forbiddenMatcher.start() - 10),
+                Math.min(cleanedUpperSql.length(), forbiddenMatcher.end() + 10)).trim();
+            log.warn("[AI-SQL] 包含禁止关键词: {}", matched);
+            return "Error: SQL contains forbidden keyword: " + forbiddenMatcher.group();
+        }
+        // 禁止 UNION SELECT（允许 UNION ALL 用于 CTE 递归）
+        if (FORBIDDEN_UNION_SELECT.matcher(cleanedUpperSql).find()) {
+            log.warn("[AI-SQL] 包含禁止的 UNION SELECT: {}", sql);
+            return "Error: SQL contains forbidden keyword: UNION SELECT";
         }
 
         // 3. 表名白名单校验（动态查库，确保与实际 ERP 表一致）
@@ -196,21 +206,8 @@ public class ExecuteSqlQueryTool {
         if (sql.toUpperCase().contains("TENANT_ID")) {
             return sql;
         }
-        // 提取主表名/别名：FROM table_name [AS] alias
-        Pattern fromPattern = Pattern.compile(
-            "FROM\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:AS\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)?",
-            Pattern.CASE_INSENSITIVE);
-        Matcher fromMatcher = fromPattern.matcher(sql);
-        String tenantCol;
-        if (fromMatcher.find()) {
-            if (fromMatcher.group(2) != null) {
-                tenantCol = fromMatcher.group(2) + ".tenant_id";
-            } else {
-                tenantCol = fromMatcher.group(1) + ".tenant_id";
-            }
-        } else {
-            tenantCol = "tenant_id";
-        }
+        // 提取主表名/别名：查找最外层（不在括号内）的 FROM 子句
+        String tenantCol = extractOuterTenantColumn(sql);
 
         String tenantCondition = tenantCol + " = " + tenantId;
         String upperSql = sql.toUpperCase();
@@ -234,6 +231,39 @@ public class ExecuteSqlQueryTool {
             }
         }
         return sql;
+    }
+
+    /**
+     * 提取最外层 FROM 子句的表名/别名，用于构建租户隔离列名
+     * <p>跳过括号内的 FROM（子查询/CTE），只匹配最外层的主表</p>
+     */
+    private String extractOuterTenantColumn(String sql) {
+        Pattern fromPattern = Pattern.compile(
+            "FROM\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?:AS\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)?",
+            Pattern.CASE_INSENSITIVE);
+        Matcher matcher = fromPattern.matcher(sql);
+        while (matcher.find()) {
+            if (!isInsideParentheses(sql, matcher.start())) {
+                if (matcher.group(2) != null) {
+                    return matcher.group(2) + ".tenant_id";
+                }
+                return matcher.group(1) + ".tenant_id";
+            }
+        }
+        return "tenant_id";
+    }
+
+    /**
+     * 判断给定位置是否在括号内（子查询/CTE 内）
+     */
+    private boolean isInsideParentheses(String sql, int position) {
+        int depth = 0;
+        for (int i = 0; i < position; i++) {
+            char c = sql.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+        }
+        return depth > 0;
     }
 
     /**

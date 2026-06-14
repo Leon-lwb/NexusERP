@@ -198,7 +198,7 @@ public class ErpInventoryTool extends ErpToolHelper {
         }
         try {
             Long tenantId = AiRequestContext.getTenantId();
-            // 注意：SQL 中已预置 s.tenant_id 和 tx.tenant_id 条件，
+            // 注意：SQL 中已预置 s.tenant_id 和 tx.tenant_id 条件（使用参数化占位符），
             // injectTenantCondition 检测到 TENANT_ID 关键字后会跳过处理，
             // 避免将外层别名 s 的条件误注入到子查询 WHERE 中
             String sql = """
@@ -215,15 +215,15 @@ public class ErpInventoryTool extends ErpToolHelper {
                     FROM wm_material_stock_tx tx
                     WHERE tx.tx_flag = -1
                       AND tx.tx_date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-                      AND tx.tenant_id = %d
+                      AND tx.tenant_id = ?
                     GROUP BY tx.warehouse_id
                 ) t ON s.warehouse_id = t.warehouse_id
-                WHERE s.tenant_id = %d
+                WHERE s.tenant_id = ?
                 GROUP BY s.warehouse_name
                 ORDER BY 周转率 DESC
-                """.formatted(tenantId, tenantId);
+                """;
             List<Map<String, Object>> results = erpQueryService.executeParameterizedQuery(
-                sql, new Object[]{months}, 100, 5);
+                sql, new Object[]{months, tenantId, tenantId}, 100, 5);
             log.info("[AI-Inventory] 库存周转率查询完成，返回 {} 行", results.size());
             return formatResults(results);
         } catch (Exception e) {

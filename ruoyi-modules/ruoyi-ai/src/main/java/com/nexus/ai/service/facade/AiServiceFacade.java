@@ -647,26 +647,13 @@ public class AiServiceFacade {
         aiMsg.setContent(content);
         aiMsg.setModelId(modelId);
 
-        // 提取 Token 用量
+        // 提取 Token 用量（仅写入消息记录，日统计由 AiChatModelListener.onResponse() 统一处理，避免双重计数）
         if (response != null && response.tokenUsage() != null) {
             int inputTokens = response.tokenUsage().inputTokenCount() != null ? response.tokenUsage().inputTokenCount() : 0;
             int outputTokens = response.tokenUsage().outputTokenCount() != null ? response.tokenUsage().outputTokenCount() : 0;
             aiMsg.setInputTokens(inputTokens);
             aiMsg.setOutputTokens(outputTokens);
             aiMsg.setTokenUsage((long) (inputTokens + outputTokens));
-
-            // 更新日统计（使用闭包捕获的参数，而非 AiRequestContext）
-            if (userId != null && modelId != null) {
-                try {
-                    java.math.BigDecimal cost = aiTokenUsageService.calculateCost(modelId, inputTokens, outputTokens);
-                    aiTokenUsageService.incrementDailyUsage(tenantId, userId,
-                        userName != null ? userName : String.valueOf(userId),
-                        modelId, modelName != null ? modelName : "unknown",
-                        inputTokens, outputTokens, cost);
-                } catch (Exception e) {
-                    log.warn("[AiServiceFacade] 更新日统计失败: {}", e.getMessage());
-                }
-            }
         }
 
         aiMessageMapper.insert(aiMsg);

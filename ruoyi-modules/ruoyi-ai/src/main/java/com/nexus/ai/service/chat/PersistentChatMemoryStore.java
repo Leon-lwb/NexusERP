@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 会话记忆持久化存储
@@ -26,6 +27,9 @@ import java.util.List;
 public class PersistentChatMemoryStore implements ChatMemoryStore {
 
     private final AiMessageMapper aiMessageMapper;
+
+    /** 内存缓存：sessionId -> 最近一次保存的 ASSISTANT 消息内容，避免每次 updateMessages 都查库去重 */
+    private final ConcurrentHashMap<Long, String> lastSavedContentCache = new ConcurrentHashMap<>();
 
     /**
      * 根据 sessionId 获取历史消息，转换为 LangChain4j ChatMessage 列表
@@ -97,17 +101,26 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
             return;
         }
 
-        // 去重：若数据库最后一条 ASSISTANT 消息内容相同，则不再插入
-        List<AiMessage> existing = aiMessageMapper.selectList(
-            new LambdaQueryWrapper<AiMessage>()
-                .eq(AiMessage::getSessionId, sessionId)
-                .eq(AiMessage::getRole, "ASSISTANT")
-                .orderByDesc(AiMessage::getCreateTime)
-                .last("LIMIT 1")
-        );
-        if (!existing.isEmpty() && existing.get(0).getContent().equals(content)) {
-            log.debug("AI 回复已存在，跳过重复保存, sessionId={}", sessionId);
+        // 去重：优先使用内存缓存，缓存未命中时查库
+        String cachedContent = lastSavedContentCache.get(sessionId);
+        if (cachedContent != null && cachedContent.equals(content)) {
+            log.debug("AI 回复已存在（缓存命中），跳过重复保存, sessionId={}", sessionId);
             return;
+        }
+        if (cachedContent == null) {
+            // 缓存未命中，查库确认
+            List<AiMessage> existing = aiMessageMapper.selectList(
+                new LambdaQueryWrapper<AiMessage>()
+                    .eq(AiMessage::getSessionId, sessionId)
+                    .eq(AiMessage::getRole, "ASSISTANT")
+                    .orderByDesc(AiMessage::getCreateTime)
+                    .last("LIMIT 1")
+            );
+            if (!existing.isEmpty() && existing.get(0).getContent().equals(content)) {
+                log.debug("AI 回复已存在，跳过重复保存, sessionId={}", sessionId);
+                lastSavedContentCache.put(sessionId, content);
+                return;
+            }
         }
 
         AiMessage entity = new AiMessage();
@@ -115,6 +128,7 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
         entity.setRole("ASSISTANT");
         entity.setContent(content);
         aiMessageMapper.insert(entity);
+        lastSavedContentCache.put(sessionId, content);
         log.debug("PersistentChatMemoryStore 自动保存 AI 回复, sessionId={}, length={}", sessionId, content.length());
     }
 
@@ -131,6 +145,7 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
                 new LambdaQueryWrapper<AiMessage>()
                     .eq(AiMessage::getSessionId, sessionId)
             );
+            lastSavedContentCache.remove(sessionId);
         }
     }
 

@@ -194,7 +194,14 @@ public class RetrieverService {
         for (int i = 0; i < vectorMatches.size(); i++) {
             EmbeddingMatch<TextSegment> match = vectorMatches.get(i);
             String chunkIdStr = match.embedded().metadata().getString("chunkId");
-            Long chunkId = chunkIdStr != null ? Long.parseLong(chunkIdStr) : null;
+            Long chunkId = null;
+            if (chunkIdStr != null) {
+                try {
+                    chunkId = Long.parseLong(chunkIdStr);
+                } catch (NumberFormatException e) {
+                    log.warn("[Retriever] 向量搜索结果 chunkId 解析失败: {}", chunkIdStr);
+                }
+            }
             if (chunkId != null) {
                 double rrfScore = (1 - alpha) * (1.0 / (RRF_K + i + 1));
                 scoreMap.merge(chunkId, rrfScore, Double::sum);

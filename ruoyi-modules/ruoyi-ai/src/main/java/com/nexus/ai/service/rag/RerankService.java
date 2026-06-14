@@ -99,7 +99,7 @@ public class RerankService {
                     log.warn("[Rerank] chunk[{}] 打分失败: {}", index, e.getMessage());
                     return new ScoredChunk(chunk, 0.0, index);
                 }
-            }, aiExecutor).orTimeout(SCORE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            }, aiExecutor).orTimeout(SCORE_TIMEOUT_SECONDS, TimeUnit.SECONDS) // Java 9+ API，项目 Java 17+ 无影响
                 .exceptionally(e -> {
                     log.warn("[Rerank] chunk[{}] 超时或异常: {}", index, e.getMessage());
                     return new ScoredChunk(candidates.get(index), 0.0, index);

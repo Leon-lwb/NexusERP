@@ -198,6 +198,8 @@ import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, Circl
 import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, messageFeedback, exportSession, getTokenUsage, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
 import { getAvailableMcpTools } from '@/api/ai/mcpTool'
 import { marked } from 'marked'
+import * as echarts from 'echarts'
+import { ElMessageBox } from 'element-plus'
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers'
 import 'github-markdown-css'
 
@@ -638,12 +640,14 @@ async function handleDelete() {
   }
 }
 
-import { ElMessageBox } from 'element-plus'
-
 /** 点击空白处关闭右键菜单 */
 function onGlobalClick() {
   hideContextMenu()
 }
+
+/** 跟踪 ECharts 实例和 ResizeObserver，用于组件卸载时清理 */
+const echartsInstances: echarts.ECharts[] = []
+const echartsResizeObservers: ResizeObserver[] = []
 
 /** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例 */
 function mountEchartsContainers() {
@@ -660,16 +664,16 @@ function mountEchartsContainers() {
       el.setAttribute('data-mounted', 'true')
       const chart = echarts.init(el as HTMLElement)
       chart.setOption(option, true)
+      echartsInstances.push(chart)
       // 监听容器大小变化
       const ro = new ResizeObserver(() => chart.resize())
       ro.observe(el as HTMLElement)
+      echartsResizeObservers.push(ro)
     } catch (e) {
       console.error('ECharts 容器挂载失败:', e)
     }
   })
 }
-
-import * as echarts from 'echarts'
 
 onMounted(() => {
   window.addEventListener('ai-sse-message', onAiSseMessage)
@@ -680,6 +684,11 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('ai-sse-message', onAiSseMessage)
   window.removeEventListener('click', onGlobalClick)
+  // 清理 ECharts 实例和 ResizeObserver，防止内存泄漏
+  echartsResizeObservers.forEach(ro => ro.disconnect())
+  echartsResizeObservers.length = 0
+  echartsInstances.forEach(chart => chart.dispose())
+  echartsInstances.length = 0
 })
 </script>
 

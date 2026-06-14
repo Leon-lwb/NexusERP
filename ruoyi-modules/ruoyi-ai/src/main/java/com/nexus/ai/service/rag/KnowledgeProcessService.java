@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -183,9 +184,11 @@ public class KnowledgeProcessService {
 
     /**
      * 重新处理文档（从 OSS 重新下载解析）
+     * <p>删除旧片段和向量使用事务保证一致性</p>
      *
      * @param documentId 文档ID
      */
+    @Transactional(rollbackFor = Exception.class)
     public void retryProcess(Long documentId) {
         AiKnowledgeDocument document = documentMapper.selectById(documentId);
         if (document == null) {

@@ -47,6 +47,9 @@ public class VectorStoreService {
     /** Milvus 模式：按知识库ID缓存 EmbeddingStore 实例 */
     private final ConcurrentHashMap<Long, EmbeddingStore<TextSegment>> milvusStores = new ConcurrentHashMap<>();
 
+    /** 批量向量化批大小（Embedding API 通常支持批量请求，减少网络往返） */
+    private static final int EMBEDDING_BATCH_SIZE = 32;
+
     /**
      * 获取全局默认向量存储类型（未指定知识库时使用）
      */
@@ -117,23 +120,54 @@ public class VectorStoreService {
         EmbeddingStore<TextSegment> store = getStore(knowledgeId);
         List<String> vectorIds = new ArrayList<>();
 
-        for (AiKnowledgeChunk chunk : chunks) {
-            try {
-                dev.langchain4j.data.document.Metadata metadata = new dev.langchain4j.data.document.Metadata();
-                metadata.put("knowledgeId", knowledgeId.toString());
-                metadata.put("documentId", chunk.getDocumentId().toString());
-                metadata.put("chunkId", chunk.getId().toString());
+        // 分批处理：每批 EMBEDDING_BATCH_SIZE 个片段，批量向量化后批量存入
+        for (int batchStart = 0; batchStart < chunks.size(); batchStart += EMBEDDING_BATCH_SIZE) {
+            int batchEnd = Math.min(batchStart + EMBEDDING_BATCH_SIZE, chunks.size());
+            List<AiKnowledgeChunk> batch = chunks.subList(batchStart, batchEnd);
 
-                TextSegment segment = TextSegment.from(chunk.getContent(), metadata);
-                Embedding embedding = embeddingModel.embed(segment).content();
-                String vectorId = store.add(embedding, segment);
-                vectorIds.add(vectorId);
+            try {
+                // 构建 TextSegment 列表
+                List<TextSegment> segments = new ArrayList<>();
+                for (AiKnowledgeChunk chunk : batch) {
+                    dev.langchain4j.data.document.Metadata metadata = new dev.langchain4j.data.document.Metadata();
+                    metadata.put("knowledgeId", knowledgeId.toString());
+                    metadata.put("documentId", chunk.getDocumentId().toString());
+                    metadata.put("chunkId", chunk.getId().toString());
+                    segments.add(TextSegment.from(chunk.getContent(), metadata));
+                }
+
+                // 批量向量化（一次 API 调用替代 N 次）
+                List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
+
+                // 批量存入向量库
+                List<String> batchIds = store.addAll(embeddings, segments);
+                vectorIds.addAll(batchIds);
 
                 // 更新片段的向量ID
-                chunk.setVectorId(vectorId);
-                chunkMapper.updateById(chunk);
+                for (int i = 0; i < batch.size(); i++) {
+                    AiKnowledgeChunk chunk = batch.get(i);
+                    chunk.setVectorId(batchIds.get(i));
+                    chunkMapper.updateById(chunk);
+                }
             } catch (Exception e) {
-                log.error("向量化片段失败: chunkId={}, error={}", chunk.getId(), e.getMessage());
+                log.error("批量向量化失败，回退到逐条处理: batchStart={}, error={}", batchStart, e.getMessage());
+                // 降级：逐条处理，跳过失败片段
+                for (AiKnowledgeChunk chunk : batch) {
+                    try {
+                        dev.langchain4j.data.document.Metadata metadata = new dev.langchain4j.data.document.Metadata();
+                        metadata.put("knowledgeId", knowledgeId.toString());
+                        metadata.put("documentId", chunk.getDocumentId().toString());
+                        metadata.put("chunkId", chunk.getId().toString());
+                        TextSegment segment = TextSegment.from(chunk.getContent(), metadata);
+                        Embedding embedding = embeddingModel.embed(segment).content();
+                        String vectorId = store.add(embedding, segment);
+                        vectorIds.add(vectorId);
+                        chunk.setVectorId(vectorId);
+                        chunkMapper.updateById(chunk);
+                    } catch (Exception ex) {
+                        log.error("向量化片段失败: chunkId={}, error={}", chunk.getId(), ex.getMessage());
+                    }
+                }
             }
         }
 
@@ -214,11 +248,15 @@ public class VectorStoreService {
      */
     public void deleteByKnowledgeId(Long knowledgeId) {
         if ("milvus".equalsIgnoreCase(getStoreType(knowledgeId))) {
-            // Milvus: 移除缓存，Collection 在下次创建时会自动重建
+            // Milvus: 先尝试通过 removeAll 清除全部数据，再移除本地缓存
+            EmbeddingStore<TextSegment> store = getStore(knowledgeId);
+            try {
+                store.removeAll();
+                log.info("[VectorStore] Milvus 已删除知识库全部向量: knowledgeId={}", knowledgeId);
+            } catch (Exception e) {
+                log.warn("[VectorStore] Milvus removeAll 失败，回退到清除缓存: knowledgeId={}, error={}", knowledgeId, e.getMessage());
+            }
             milvusStores.remove(knowledgeId);
-            log.info("[VectorStore] 已移除 Milvus 知识库缓存: knowledgeId={}", knowledgeId);
-            // 注意：Milvus Collection 的实际删除需要通过 Milvus 管理工具或 SDK 操作
-            // 此处仅清除本地缓存，避免使用已删除的知识库数据
         } else {
             inMemoryStores.remove(knowledgeId);
             log.info("[VectorStore] 已删除 InMemory 存储: knowledgeId={}", knowledgeId);

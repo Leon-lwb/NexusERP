@@ -30,6 +30,9 @@ public class OutputChannel {
     private static final long MAX_DRAIN_MS = 10 * 60 * 1000;
     private static final Map<String, OutputChannel> REGISTRY = new ConcurrentHashMap<>();
 
+    /** 注册表条目最大存活时间：30 分钟，防止异常退出时泄漏 */
+    private static final long MAX_ENTRY_AGE_MS = 30 * 60 * 1000;
+
     private final BlockingQueue<String> queue = new LinkedBlockingQueue<>(4096);
     private final AtomicReference<Throwable> error = new AtomicReference<>();
     private final CountDownLatch completed = new CountDownLatch(1);
@@ -56,6 +59,27 @@ public class OutputChannel {
      */
     public static OutputChannel get(String requestId) {
         return REGISTRY.get(requestId);
+    }
+
+    /**
+     * 清理注册表中的过期条目（已完成或超时）
+     * <p>由调度任务定期调用，防止异常退出时注册表泄漏</p>
+     */
+    public static void cleanupStaleEntries() {
+        long now = System.currentTimeMillis();
+        int removed = 0;
+        var iterator = REGISTRY.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            OutputChannel ch = entry.getValue();
+            if (ch.isCompleted() || (now - ch.createTime > MAX_ENTRY_AGE_MS)) {
+                iterator.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            System.err.println("[OutputChannel] 清理 " + removed + " 个过期注册表条目，剩余 " + REGISTRY.size());
+        }
     }
 
     /**
