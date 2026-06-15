@@ -140,7 +140,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="合同编号" prop="contractNo">
-              <el-input v-model="form.contractNo" readonly placeholder="待合同模块开发后可选择" />
+              <el-input v-model="form.contractNo" readonly placeholder="请选择已批准的采购合同">
+                <template #append>
+                  <el-button icon="Search" @click="openContractDialog" />
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
           <el-col :span="16">
@@ -272,6 +276,33 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+
+    <!-- 合同选择对话框 -->
+    <el-dialog v-model="contractDialog.visible" title="选择采购合同" width="900px" append-to-body>
+      <el-form :model="contractDialog.query" :inline="true">
+        <el-form-item label="合同编号">
+          <el-input v-model="contractDialog.query.contractNo" clearable @keyup.enter="queryContracts" />
+        </el-form-item>
+        <el-form-item label="合同名称">
+          <el-input v-model="contractDialog.query.contractName" clearable @keyup.enter="queryContracts" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryContracts">搜索</el-button>
+          <el-button icon="Refresh" @click="resetContractQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="contractDialog.list" height="400" @row-dblclick="selectContract">
+        <el-table-column label="合同编号" prop="contractNo" min-width="140" />
+        <el-table-column label="合同名称" prop="contractName" min-width="160" show-overflow-tooltip />
+        <el-table-column label="供应商" prop="vendorName" min-width="140" show-overflow-tooltip />
+        <el-table-column label="合同金额" prop="totalAmount" width="120" align="right" />
+        <el-table-column label="操作" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectContract(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
@@ -286,6 +317,8 @@ import { listVendor } from '@/api/erp/bd/vendor'
 import { listMaterialVendor } from '@/api/erp/bd/material-vendor'
 // 导入审批流API
 import { getProcesss } from '@/api/workflow/process'
+// 导入采购合同API
+import { listApprovedContract } from '@/api/erp/pu/contract'
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
@@ -345,6 +378,18 @@ const materialDialog = reactive({
     pageSize: 10,
     materialCode: null,
     materialName: null
+  }
+})
+
+// 合同选择对话框数据
+const contractDialog = reactive({
+  visible: false,                        // 对话框是否可见
+  list: [] as any[],                     // 合同列表
+  query: {                               // 查询条件
+    pageNum: 1,
+    pageSize: 10,
+    contractNo: null,
+    contractName: null
   }
 })
 
@@ -689,6 +734,53 @@ function handleAutoGenChange(autoGenFlag) {
 
 function cancel() {
   router.push('/erp/pu/order')
+}
+
+/**
+ * 打开合同选择对话框
+ */
+function openContractDialog() {
+  contractDialog.visible = true
+  queryContracts()
+}
+
+/**
+ * 查询已批准的合同列表
+ */
+function queryContracts() {
+  listApprovedContract(contractDialog.query as any).then((res: any) => {
+    contractDialog.list = res.rows || res.data || []
+    contractDialog.visible = true
+  })
+}
+
+/**
+ * 重置合同查询条件
+ */
+function resetContractQuery() {
+  contractDialog.query = {
+    pageNum: 1,
+    pageSize: 10,
+    contractNo: null,
+    contractName: null
+  }
+  queryContracts()
+}
+
+/**
+ * 选择合同
+ * @param row 选中的合同数据
+ */
+function selectContract(row: any) {
+  form.value.contractId = row.contractId
+  form.value.contractNo = row.contractNo
+  // 如果供应商为空，自动填充合同中的供应商信息
+  if (!form.value.vendorId && row.vendorId) {
+    form.value.vendorId = row.vendorId
+    form.value.vendorCode = row.vendorCode
+    form.value.vendorName = row.vendorName
+  }
+  contractDialog.visible = false
 }
 </script>
 

@@ -99,9 +99,14 @@ public class SoInvoice extends TenantEntity {
     private BigDecimal verifiedAmount;
 
     /**
-     * 发票状态 DRAFT-草稿 ISSUED-已开 VERIFIED-已核销 CANCELLED-已作废
+     * 发票状态 DRAFT-草稿 APPROVING-审批中 ISSUED-已开 VERIFIED-已核销 REJECTED-已驳回 CANCELLED-已作废
      */
     private String status;
+
+    /**
+     * 审批流程ID
+     */
+    private Long selectFlowId;
 
     /**
      * 备注

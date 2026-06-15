@@ -56,10 +56,10 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 | 模块 | 代码包 | 完成度 | 说明 |
 |------|--------|--------|------|
 | bd 基础数据 | com.nexus.erp.bd | 95% | 物料/BOM/客户/供应商/计量单位/序列号规则/车间/工作站 ✅，物料-供应商关系 ✅，BOM循环引用检测 ✅ |
-| pu 采购 | com.nexus.erp.pu | 90% | 请购/订单/收货/退货/供应商评估 ✅，价格对比 ✅，合同字段预留 ✅ |
-| wm 仓储 | com.nexus.erp.wm | 95% | 收货/上架/拣货/出库/盘点/库存估值/安全库存/序列号/批次/追溯/条码/调拨 ✅，条码并发安全 ✅ |
-| prd 生产 | com.nexus.erp.prd | 90% | 工单/委外/返工/倒冲领料/产能日历/资源分配/报工 ✅，缺MES联动MQ ❌ |
-| so 销售 | com.nexus.erp.so | 75% | 订单/报价/退货/信用检查/价格引擎/价格表 ✅，缺合同管理/开票管理 ❌ |
+| pu 采购 | com.nexus.erp.pu | 98% | 请购/订单/收货/退货/供应商评估 ✅，价格对比 ✅，合同管理+审批流 ✅，采购报表 ✅ |
+| wm 仓储 | com.nexus.erp.wm | 98% | 收货/上架/拣货/出库/盘点/库存估值/安全库存/序列号/批次/追溯/条码/调拨 ✅，条码并发安全 ✅，库存报表 ✅ |
+| prd 生产 | com.nexus.erp.prd | 95% | 工单/委外/返工/倒冲领料/产能日历/资源分配/报工 ✅，MES联动MQ ✅，生产报表 ✅ |
+| so 销售 | com.nexus.erp.so | 93% | 订单/报价/退货/信用检查/价格引擎/价格表/合同管理/开票管理 ✅，合同/发票审批流 ✅，销售报表 ✅ |
 | sch 排班 | com.nexus.erp.sch | 95% | 班次/班组/排班计划/考勤/打卡规则/假期/员工排班 ✅ |
 
 ### 2.2 前端完成度
@@ -67,17 +67,17 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 | 模块 | API组数 | View页面数 | 完成度 | 说明 |
 |------|---------|-----------|--------|------|
 | bd 基础数据 | 9 | 10 | 90% | 物料/BOM/客户/供应商/计量/序列号规则/车间/工作站等页面完整 ✅，缺物料-供应商关系页面 ❌ |
-| pu 采购 | 5 | 5 | 100% | 订单/申请/退货/供应商评估(含报表)/价格对比页面完整 ✅ |
-| wm 仓储 | 23 | 38 | 95% | 核心页面+序列号/批次/追溯/条码/调拨/盘点/估价页面完整 ✅ |
-| prd 生产 | 8 | 11 | 90% | 工单/计划/报告/返工/委外/产能日历/资源页面完整 ✅ |
+| pu 采购 | 7 | 7 | 100% | 订单/申请/退货/供应商评估(含报表)/价格对比/合同管理页面完整 ✅ |
+| wm 仓储 | 24 | 39 | 98% | 核心页面+序列号/批次/追溯/条码/调拨/盘点/估价/库存报表页面完整 ✅ |
+| prd 生产 | 9 | 12 | 95% | 工单/计划/报告/返工/委外/产能日历/资源/生产报表页面完整 ✅ |
 | sch 排班 | 10 | 11 | 95% | 班次/班组/排班计划/考勤/打卡规则/假期/员工排班页面完整 ✅ |
-| so 销售 | 5 | 9 | 70% | 订单/报价/退货/价格表页面完整 ✅，缺合同管理/开票管理页面 ❌ |
+| so 销售 | 5 | 9 | 90% | 订单/报价/退货/价格表/合同管理/开票管理页面完整 ✅ |
 
 > **代码审查结论（2026-06-14）**：
 > - pu 退货/供应商评估页面已确认完成（form.vue + index.vue + report.vue 共 1270 行代码）
 > - wm 批次/SN/追溯功能已确认完成（Controller + Service + 前端全链路）
 > - prd 倒冲领料已确认完成（PrdBackflushServiceImpl）
-> - 真正缺失：bd 物料-供应商关系、SO 合同管理、SO 开票管理
+> - 真正缺失：bd 物料-供应商关系（✅ Week 13已完成）、SO 合同管理（✅ Week 13已完成）、SO 开票管理（✅ Week 13已完成）
 
 ---
 
@@ -122,14 +122,16 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 | R-055 | 盘点差异审批流（Flowable集成） | ✅ |
 | RISK-02 | BOM循环引用检测加固 | ✅ Week 15完成 |
 | RISK-06 | 条码生成器并发安全（SELECT FOR UPDATE） | ✅ Week 15完成 |
+| SO 合同管理 | 销售合同全生命周期（CRUD+前端） | ✅ Week 13完成 |
+| SO 开票管理 | 销售发票管理（CRUD+前端） | ✅ Week 13完成 |
+| 采购价格对比 | 基于bd_material_vendor的价格对比 | ✅ Week 14完成 |
+| 客户选择弹窗 | ClientSelectDialog.vue+集成到合同/发票页面 | ✅ Week 15完成 |
 
 #### P1 待开发（代码审查修订 2026-06-14）
 
 | 任务 | 说明 | 代码现状 |
 |------|------|---------|
-| SO 合同管理 | 销售合同全生命周期（草稿→审批→生效→到期→终止） | ❌ 无SQL表/Domain/Service/Controller/前端 |
-| SO 开票管理 | 销售发票开具（与订单/合同关联） | ❌ 无SQL表/Domain/Service/Controller/前端 |
-| MES集成MQ | PrdWorkOrder审批通过后发WorkOrderReleaseMessage+MES队列常量+mes数据源配置 | afterFlowHandle仅更新状态不发MQ（待MES系统搭建后开始） |
+| MES集成MQ | PrdWorkOrder审批通过后发WorkOrderReleaseMessage+MES队列常量+mes数据源配置（唯一剩余P1项） | afterFlowHandle仅更新状态不发MQ（待MES系统搭建后开始） |
 
 > ~~pu前端补全~~ 已完成（退货+供应商评估页面已有）
 
@@ -180,7 +182,7 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 | **Week 13** | **ERP补全: 物料-供应商+SO合同+SO开票** | bd_material_vendor关系管理+SO合同管理+SO开票管理 | ✅ 已完成 |
 | **Week 14** | **ERP补全: 部门请购+价格对比** | po_requisition部门请购单+采购价格对比 | ✅ 已完成 |
 | **Week 15** | **ERP加固: BOM循环检测+条码并发+遗留修复** | BOM循环引用检测+条码并发安全+价格对比API+客户弹窗 | ✅ 已完成 |
-| **Week 16** | **ERP增强: 采购价格对比+报表** | 基于bd_material_vendor的价格对比+核心业务报表 | 🟡 计划中 |
+| **Week 16** | **ERP增强: 审批流+MES集成+采购合同+报表** | SO审批流+MES集成MQ+采购合同+业务报表 | ✅ 已完成 |
 | **MES Phase 1** | **Week 17-23 (7周)** | MES模块骨架+主数据跨库查询+工单+Flowable审批+前端 | 📋 规划中 |
 | **MES Phase 2** | **Week 24-30 (7周)** | 流转卡引擎+派工+安灯+SSE推送+SN追溯 | 📋 规划中 |
 | **MES Phase 3** | **Week 31-36 (6周)** | 质量管理+设备管理+数据采集+SPC | 📋 规划中 |
@@ -339,7 +341,7 @@ Flowable 7.0 工作流集成
 | PB-17 | 信用检查 | 信用检查与订单确认耦合度高 | ✅ CreditCheckServiceImpl独立服务 |
 | PB-18 | 出库调度 | 销售出库与生产入库调度冲突 | ❌ 待开发 |
 | PB-19 | 退货处理 | 退货流程缺少质量关联 | ❌ 待质量管理模块 |
-| PB-20 | 开票缺失 | 缺少发票开具功能 | ❌ 本周开发 |
+| PB-20 | 开票缺失 | 缺少发票开具功能 | ✅ 已完成 |
 
 #### 审批流模块
 
@@ -378,11 +380,11 @@ Flowable 7.0 工作流集成
 | 编号 | 风险描述 | 影响 | 修复方案 | 状态 |
 |------|---------|------|---------|------|
 | RISK-01 | 库存并发安全 | 高并发场景下库存数量不一致 | 乐观锁+悲观锁+分布式锁三重保障 | ✅ 已实现 |
-| RISK-02 | BOM循环引用 | 多级BOM存在循环依赖导致栈溢出 | BOM解析时增加循环检测算法 | ❌ 待开发 |
+| RISK-02 | BOM循环引用 | 多级BOM存在循环依赖导致栈溢出 | BOM解析时增加循环检测算法 | ✅ 已完成（Week 15） |
 | RISK-03 | 出库无审计流水 | 出库操作缺少完整审计日志 | 增加出库操作审计日志记录 | ✅ 已实现 |
 | RISK-04 | 事务注解缺失 | 部分Service方法缺少@Transactional | 补充事务注解，确保数据一致性 | ✅ 已大量覆盖 |
 | RISK-05 | 审批撤回回调缺失 | 审批撤回后业务状态未回退 | 增加审批撤回回调处理 | ✅ 已通过afterFlowHandle实现 |
-| RISK-06 | 条码生成器多实例重复 | 分布式环境下条码可能重复 | 使用雪花算法或Redis自增序列 | ❌ 待开发 |
+| RISK-06 | 条码生成器多实例重复 | 分布式环境下条码可能重复 | 使用雪花算法或Redis自增序列 | ✅ 已完成（Week 15） |
 
 ### 4.6 四阶段优化计划
 
@@ -391,14 +393,14 @@ Flowable 7.0 工作流集成
 | 任务 | 工时 | 说明 | 状态 |
 |------|------|------|------|
 | RISK-01 库存并发安全 | 3人天 | 乐观锁+悲观锁+分布式锁 | ✅ 已实现（乐观锁version字段+Mapper层乐观锁更新） |
-| RISK-02 BOM循环引用 | 2人天 | 循环检测算法 | ❌ 待开发 |
+| RISK-02 BOM循环引用 | 2人天 | 循环检测算法 | ✅ 已完成（Week 15） |
 | RISK-03 出库审计流水 | 2人天 | 审计日志记录 | ✅ 已实现（@Log注解+操作日志） |
 | RISK-04 事务注解补充 | 2人天 | @Transactional补全 | ✅ 已大量覆盖 |
 | RISK-05 审批撤回回调 | 2人天 | 回调处理机制 | ✅ 已通过afterFlowHandle实现 |
-| RISK-06 条码生成器 | 1人天 | 雪花算法/Redis序列 | ❌ 待开发 |
+| RISK-06 条码生成器 | 1人天 | 雪花算法/Redis序列 | ✅ 已完成（Week 15） |
 
 **KPI目标：库存并发0事故，BOM校验100%覆盖**
-> **当前状态**: RISK-01/03/04/05 已完成，仅 RISK-02 BOM循环引用 和 RISK-06 条码生成器 待处理
+> **当前状态**: Phase A 全部完成（RISK-01/02/03/04/05/06 均已实现）
 
 #### Phase B — 结构优化（3-4周，约18人天）
 
@@ -435,7 +437,7 @@ Flowable 7.0 工作流集成
 
 **四阶段总计：约61人天**
 
-> **当前状态说明**: Phase A中RISK-01库存并发安全已部分实现（乐观锁version字段+Mapper层乐观锁更新）；RISK-03出库审计流水、RISK-04事务注解已大量覆盖、RISK-05审批撤回回调已通过afterFlowHandle实现。建议优先处理RISK-02 BOM循环引用和RISK-06条码生成器。
+> **当前状态说明**: Phase A 全部完成（RISK-01/02/03/04/05/06 均已实现）。
 
 ### 4.7 KPI目标汇总
 
@@ -906,12 +908,52 @@ spring:
 
 | 任务 | 内容 | 说明 | 状态 |
 |------|------|------|------|
-| MQ消息扩展 | PrdWorkOrderServiceImpl.afterFlowHandle() 审批通过后发送WorkOrderReleaseMessage | MES消费此消息创建MES工单 | ❌ 待实现，当前afterFlowHandle仅更新状态不发MQ |
+| MQ消息扩展 | PrdWorkOrderServiceImpl.afterFlowHandle() 审批通过后发送WorkOrderReleaseMessage | MES消费此消息创建MES工单 | ✅ 已完成(Week 16) |
 | 主数据API暴露 | 确认ERP物料/BOM/工艺路线/工序Controller完整可用 | MES通过跨库查询@DS("erp")访问 | ✅ bd模块Controller已完整 |
-| Exchange常量 | 在ExchangeConstants/QueueConstants中添加MES相关队列定义 | 如mes.workorder.sync.queue | ❌ 待添加，当前常量类无MES队列 |
+| Exchange常量 | 在ExchangeConstants/QueueConstants中添加MES相关队列定义 | mes.workorder.queue + mes.workorder.release | ✅ 已完成(Week 16) |
 | application配置 | application-dev.yml添加mes数据源配置 | 为MES模块创建做准备 | ❌ 待配置 |
-| bd_material_vendor | 物料-供应商关系管理 | MES委外需要供应商数据 | ❌ 本周开发 |
-| SO合同/开票 | 销售合同和发票管理 | 销售流程完整性 | ❌ 本周开发 |
+| bd_material_vendor | 物料-供应商关系管理 | MES委外需要供应商数据 | ✅ 已完成 |
+| SO合同/开票 | 销售合同和发票管理 | 销售流程完整性 | ✅ 已完成 |
+
+### Week 13: ERP补全 - 物料-供应商 + SO合同 + SO开票
+
+| 任务 | 内容 | 状态 |
+|------|------|------|
+| bd_material_vendor | 物料-供应商关系管理（CRUD+前端） | ✅ 已完成 |
+| SO 合同管理 | 销售合同全生命周期（CRUD+前端） | ✅ 已完成 |
+| SO 开票管理 | 销售发票管理（CRUD+前端） | ✅ 已完成 |
+
+### Week 14: ERP补全 - 部门请购 + 采购价格对比
+
+| 任务 | 内容 | 状态 |
+|------|------|------|
+| 部门请购单 | po_requisition CRUD+前端 | ✅ 已完成 |
+| 采购价格对比 | 基于bd_material_vendor的价格对比 | ✅ 已完成 |
+
+### Week 15: ERP加固 - BOM循环检测 + 条码并发 + 遗留修复
+
+| 任务 | 内容 | 状态 |
+|------|------|------|
+| RISK-02 BOM循环引用 | buildTreeNode/buildIndentedLines添加visited+depth保护 | ✅ 已完成 |
+| RISK-06 条码并发安全 | DatabaseSequenceProvider改用SELECT FOR UPDATE | ✅ 已完成 |
+| 价格对比API补全 | 前端API模块化+ECharts图表 | ✅ 已完成 |
+| 客户选择弹窗 | ClientSelectDialog.vue+集成到合同/发票页面 | ✅ 已完成 |
+| 采购订单合同字段 | contractId/contractNo预留字段 | ✅ 已完成 |
+
+### Week 16: ERP增强 - 审批流 + MES集成 + 采购合同 + 业务报表
+
+| 任务 | 内容 | 状态 |
+|------|------|------|
+| SO合同审批流 | SoContractServiceImpl集成WfCallBackServiceI+submit/afterFlowHandle | ✅ 已完成 |
+| SO发票审批流 | SoInvoiceServiceImpl集成WfCallBackServiceI+selectFlowId字段+submit/afterFlowHandle | ✅ 已完成 |
+| MES集成MQ | WorkOrderReleaseMessage+Consumer+PrdWorkOrder审批通过发MQ | ✅ 已完成 |
+| 采购合同管理 | pu_contract/pu_contract_line建表+Domain+Service+Controller+审批流+前端页面 | ✅ 已完成 |
+| 采购订单合同选择 | pu/order/form.vue合同编号改为可选择已生效合同 | ✅ 已完成 |
+| 库存业务报表 | 库存汇总/库龄分析/库存周转率（后端+前端+ECharts） | ✅ 已完成 |
+| 采购业务报表 | 采购执行趋势/供应商交货准时率（后端+前端+ECharts） | ✅ 已完成 |
+| 销售业务报表 | 销售趋势/客户销售排名（后端+前端+ECharts） | ✅ 已完成 |
+| 生产业务报表 | 工单完工率/生产效率分析（后端+前端+ECharts） | ✅ 已完成 |
+| ERP文档同步 | RISK-02/06/SO合同发票状态更新+模块完成度更新 | ✅ 已完成 |
 
 ---
 
@@ -1148,10 +1190,10 @@ spring:
 | 序号 | 功能 | 模块 | SQL表 | Domain | Mapper | Service | Controller | 前端 | 优先级 |
 |:----:|------|------|:-----:|:------:|:------:|:-------:|:----------:|:----:|:------:|
 | 1 | 物料-供应商关系管理 | bd | ✅ bd_material_vendor | ❌ | ❌ | ❌ | ❌ | ❌ | 🔴 高 |
-| 2 | 销售合同管理 | so | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔴 高 |
-| 3 | 销售开票管理 | so | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔴 高 |
+| 2 | 销售合同管理 | so | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | 🔴 高 |
+| 3 | 销售开票管理 | so | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | 🔴 高 |
 | 4 | 部门请购单 | po | ✅ po_requisition/detail | ❌ | ❌ | ❌ | ❌ | ❌ | 🟡 中 |
-| 5 | 采购价格对比 | pu | 依赖#1 | ❌ | ❌ | ❌ | ❌ | ❌ | 🟡 中 |
+| 5 | 采购价格对比 | pu | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | 🟡 中 |
 | 6 | MES集成MQ消息 | prd | — | — | — | ❌ afterFlowHandle未发MQ | — | — | 🟡 中 |
 
 ### 13.2 ERP 质量管理模块（P2）
@@ -1185,8 +1227,8 @@ spring:
 
 | 序号 | 功能 | 说明 | 优先级 |
 |:----:|------|------|:------:|
-| 1 | BOM循环引用检测 | 多级BOM循环依赖导致栈溢出 | 🟡 中（RISK-02） |
-| 2 | 条码生成器优化 | 分布式环境下条码可能重复 | 🟡 中（RISK-06） |
+| 1 | BOM循环引用检测 | 多级BOM循环依赖导致栈溢出 | ✅ 已完成（Week 15） |
+| 2 | 条码生成器优化 | 分布式环境下条码可能重复 | ✅ 已完成（Week 15） |
 | 3 | BOM变更通知 | BOM变更后未及时通知相关工单 | 🟢 低（PB-06） |
 | 4 | 工单排产冲突检测 | 多工单排产时资源冲突检测 | 🟢 低（PB-07） |
 | 5 | 产能瓶颈识别 | 缺少产能瓶颈自动识别与预警 | 🟢 低（PB-10） |

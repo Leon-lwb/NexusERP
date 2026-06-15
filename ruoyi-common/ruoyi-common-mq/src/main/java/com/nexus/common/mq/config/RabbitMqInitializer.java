@@ -51,6 +51,7 @@ public class RabbitMqInitializer {
         declareQueueWithDLX(QueueConstants.VENDOR_EVALUATION_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "vendor.evaluation.#");
         declareQueueWithDLX(QueueConstants.SUBCONTRACT_STOCK_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "subcontract.stock.#");
         declareQueueWithDLX(QueueConstants.REWORK_STOCK_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "rework.stock.#");
+        declareQueueWithDLX(QueueConstants.MES_WORKORDER_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "mes.workorder.#");
 
         declareQueueWithDLX(QueueConstants.STOCK_ALERT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.alert.#");
 

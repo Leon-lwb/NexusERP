@@ -17,5 +17,6 @@ public interface RoutingKeyConstants {
     String STOCK_ALERT_LOW = "stock.alert.low";
     String SUBCONTRACT_STOCK = "subcontract.stock";
     String REWORK_STOCK = "rework.stock";
+    String MES_WORKORDER_RELEASE = "mes.workorder.release";
     String DELAY_ORDER_TIMEOUT = "delay.order.timeout";
 }

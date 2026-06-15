@@ -14,6 +14,7 @@ public interface QueueConstants {
     String STOCK_ALERT_QUEUE = "erp.stock.alert.queue";
     String SUBCONTRACT_STOCK_QUEUE = "erp.subcontract.stock.queue";
     String REWORK_STOCK_QUEUE = "erp.rework.stock.queue";
+    String MES_WORKORDER_QUEUE = "erp.mes.workorder.queue";
     String DELAY_QUEUE = "erp.delay.queue";
     String DLX_QUEUE = "erp.dlx.queue";
 }

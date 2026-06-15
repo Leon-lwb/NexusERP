@@ -27,6 +27,7 @@ import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
+import com.nexus.erp.mq.message.WorkOrderReleaseMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -482,12 +483,38 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             entity.setWoStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
             entity.setWoStatus(STATUS_APPROVED);
+            // 审批通过后发送工单下达消息到MES
+            sendWorkOrderReleaseMessage(entity);
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             entity.setWoStatus(STATUS_CREATED);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
             entity.setWoStatus(STATUS_CREATED);
         }
         baseMapper.updateById(entity);
+    }
+
+    /**
+     * 发送工单下达消息到MES队列
+     */
+    private void sendWorkOrderReleaseMessage(PrdWorkOrder entity) {
+        try {
+            WorkOrderReleaseMessage message = new WorkOrderReleaseMessage();
+            message.setWoId(entity.getWoId());
+            message.setWoNo(entity.getWoNo());
+            message.setMaterialId(entity.getMaterialId());
+            message.setMaterialCode(entity.getMaterialCode());
+            message.setMaterialName(entity.getMaterialName());
+            message.setPlannedQty(entity.getPlannedQty());
+            message.setPlannedStartDate(entity.getPlanStartDate());
+            message.setPlannedEndDate(entity.getPlanEndDate());
+            message.setWorkshopId(entity.getWorkshopId());
+            message.setBomId(entity.getBomId());
+            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.MES_WORKORDER_RELEASE, message);
+            log.info("工单下达消息已发送: woId={}, woNo={}", entity.getWoId(), entity.getWoNo());
+        } catch (Exception e) {
+            log.error("工单下达消息发送失败: woId={}", entity.getWoId(), e);
+            // 消息发送失败不影响审批状态更新，补偿任务会重新投递
+        }
     }
 
     @Override
