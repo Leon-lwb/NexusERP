@@ -73,3 +73,4 @@ replay_pid*
 .flattened-pom.xml
 
 application-prod.yml
+.agents/

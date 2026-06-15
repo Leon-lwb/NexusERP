@@ -88,4 +88,11 @@ public class PuPurchaseOrderVo extends BaseEntity {
 
     /** 采购订单明细行列表 */
     private List<PuPurchaseOrderLine> lineList;
+
+    /** 合同ID（预留字段，待合同模块开发后使用） */
+    private Long contractId;
+
+    /** 合同编号（预留字段，待合同模块开发后使用） */
+    @ExcelProperty(value = "合同编号")
+    private String contractNo;
 }

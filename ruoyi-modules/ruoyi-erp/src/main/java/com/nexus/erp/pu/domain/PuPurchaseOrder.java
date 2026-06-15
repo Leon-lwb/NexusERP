@@ -101,4 +101,10 @@ public class PuPurchaseOrder extends BaseEntity {
 
     /** 选用的审批流ID，关联wf_custom_form表 */
     private Long selectFlowId;
+
+    /** 合同ID，关联pu_contract表（预留字段，待合同模块开发后使用） */
+    private Long contractId;
+
+    /** 合同编号（预留字段，待合同模块开发后使用） */
+    private String contractNo;
 }

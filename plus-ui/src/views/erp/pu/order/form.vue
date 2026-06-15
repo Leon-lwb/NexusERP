@@ -136,9 +136,14 @@
           </el-col>
         </el-row>
 
-        <!-- 第四行：备注 -->
+        <!-- 第四行：合同编号、备注 -->
         <el-row :gutter="20">
-          <el-col :span="24">
+          <el-col :span="8">
+            <el-form-item label="合同编号" prop="contractNo">
+              <el-input v-model="form.contractNo" readonly placeholder="待合同模块开发后可选择" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="16">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" />
             </el-form-item>

@@ -235,6 +235,9 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 客户选择弹窗 -->
+    <ClientSelectDialog ref="clientSelectDialogRef" @confirm="handleClientConfirm" />
   </div>
 </template>
 
@@ -242,8 +245,12 @@
 import { listContract, getContract, delContract, addContract, updateContract } from "@/api/erp/so/contract";
 import { listMaterial } from "@/api/erp/bd/material";
 import { ContractVO, ContractForm, ContractLineForm } from "@/api/erp/so/contract/types";
+import ClientSelectDialog from "@/views/erp/so/components/ClientSelectDialog.vue";
 
 const { proxy } = getCurrentInstance();
+
+// 客户选择弹窗引用
+const clientSelectDialogRef = ref();
 
 // 列表数据
 const dataList = ref<ContractVO[]>([]);
@@ -502,9 +509,15 @@ function selectMaterial(row: any) {
   materialDialogVisible.value = false;
 }
 
-/** 打开客户选择对话框（简化实现） */
+/** 打开客户选择对话框 */
 function openClientDialog() {
-  proxy.$modal.msgInfo("客户选择功能待实现");
+  clientSelectDialogRef.value?.open();
+}
+
+/** 客户选择确认 */
+function handleClientConfirm(client: any) {
+  form.value.clientId = client.clientId;
+  form.value.clientName = client.clientName;
 }
 
 getList();

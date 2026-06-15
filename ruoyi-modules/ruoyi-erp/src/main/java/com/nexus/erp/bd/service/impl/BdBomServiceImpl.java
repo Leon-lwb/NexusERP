@@ -46,6 +46,9 @@ import java.util.stream.Collectors;
 @Service
 public class BdBomServiceImpl implements IBdBomService {
 
+    /** BOM最大递归深度，防止异常数据导致栈溢出 */
+    private static final int MAX_BOM_DEPTH = 20;
+
     private final BdBomMapper baseMapper;
     private final BdBomDetailMapper bomDetailMapper;
     private final BdMaterialMapper materialMapper;
@@ -174,6 +177,12 @@ public class BdBomServiceImpl implements IBdBomService {
         return false;
     }
 
+    /**
+     * 获取BOM树形结构
+     *
+     * @param bomId BOM主键
+     * @return BOM树形结构根节点
+     */
     @Override
     public BomTreeNodeVo getBomTree(Long bomId) {
         BdBom bom = baseMapper.selectById(bomId);
@@ -198,20 +207,41 @@ public class BdBomServiceImpl implements IBdBomService {
         rootNode.setQuantityPerParent(BigDecimal.ONE);
         rootNode.setLossRate(BigDecimal.ZERO);
         rootNode.setTotalQuantity(BigDecimal.ONE);
+        // 初始化循环引用检测集合
+        Set<Long> visited = new HashSet<>();
+        visited.add(bom.getParentMaterialId());
         // 递归构建子树
         List<BdBomDetail> details = bomDetailMapper.selectList(
             Wrappers.lambdaQuery(BdBomDetail.class).eq(BdBomDetail::getBomId, bomId));
         List<BomTreeNodeVo> children = new ArrayList<>();
         for (BdBomDetail detail : details) {
-            BomTreeNodeVo childNode = buildTreeNode(detail, bomId, 1);
-            children.add(childNode);
+            children.add(buildTreeNode(detail, bomId, 1, visited));
         }
         rootNode.setChildren(children);
         rootNode.setLeaf(children.isEmpty());
         return rootNode;
     }
 
-    private BomTreeNodeVo buildTreeNode(BdBomDetail detail, Long parentBomId, int level) {
+    /**
+     * 递归构建BOM树节点（含循环引用检测和深度保护）
+     *
+     * @param detail       BOM明细行
+     * @param parentBomId  父BOM ID
+     * @param level        当前层级
+     * @param visited      已访问的物料ID集合（用于循环引用检测）
+     * @return 树节点
+     * @throws ServiceException 当检测到循环引用或超过最大深度时抛出
+     */
+    private BomTreeNodeVo buildTreeNode(BdBomDetail detail, Long parentBomId, int level, Set<Long> visited) {
+        // 深度保护：超过最大递归深度时终止
+        if (level > MAX_BOM_DEPTH) {
+            throw new ServiceException("BOM层级超过最大深度限制(" + MAX_BOM_DEPTH + ")，物料ID: " + detail.getChildMaterialId() + "，请检查是否存在异常数据");
+        }
+        // 循环引用检测：子物料已在访问路径中出现过
+        if (visited.contains(detail.getChildMaterialId())) {
+            throw new ServiceException("BOM存在循环引用，物料ID: " + detail.getChildMaterialId() + " 已在上级路径中出现");
+        }
+
         BomTreeNodeVo node = new BomTreeNodeVo();
         node.setDetailId(detail.getDetailId());
         node.setMaterialId(detail.getChildMaterialId());
@@ -240,12 +270,15 @@ public class BdBomServiceImpl implements IBdBomService {
             node.setBomId(childBom.getBomId());
             node.setHasChildren(true);
             node.setLeaf(false);
+            // 将当前子物料加入已访问集合（传递副本，兄弟节点间不共享）
+            Set<Long> childVisited = new HashSet<>(visited);
+            childVisited.add(detail.getChildMaterialId());
             // 递归展开子BOM
             List<BdBomDetail> childDetails = bomDetailMapper.selectList(
                 Wrappers.lambdaQuery(BdBomDetail.class).eq(BdBomDetail::getBomId, childBom.getBomId()));
             List<BomTreeNodeVo> grandchildren = new ArrayList<>();
             for (BdBomDetail childDetail : childDetails) {
-                grandchildren.add(buildTreeNode(childDetail, childBom.getBomId(), level + 1));
+                grandchildren.add(buildTreeNode(childDetail, childBom.getBomId(), level + 1, childVisited));
             }
             node.setChildren(grandchildren);
         } else {
@@ -257,6 +290,12 @@ public class BdBomServiceImpl implements IBdBomService {
         return node;
     }
 
+    /**
+     * 获取BOM缩进式扁平列表
+     *
+     * @param bomId BOM主键
+     * @return 缩进式BOM行列表
+     */
     @Override
     public List<IndentedBomLineVo> getIndentedBom(Long bomId) {
         BdBom bom = baseMapper.selectById(bomId);
@@ -284,15 +323,39 @@ public class BdBomServiceImpl implements IBdBomService {
         topLine.setCumulativeQuantity(BigDecimal.ONE);
         topLine.setExpandable(true);
         result.add(topLine);
+        // 初始化循环引用检测集合
+        Set<Long> visited = new HashSet<>();
+        visited.add(bom.getParentMaterialId());
         // 递归添加子节点
-        buildIndentedLines(bomId, 1, BigDecimal.ONE, result);
+        buildIndentedLines(bomId, 1, BigDecimal.ONE, result, visited);
         return result;
     }
 
-    private void buildIndentedLines(Long bomId, int level, BigDecimal parentCumulativeQty, List<IndentedBomLineVo> result) {
+    /**
+     * 递归构建BOM缩进式行列表（含循环引用检测和深度保护）
+     *
+     * @param bomId               当前BOM ID
+     * @param level               当前层级
+     * @param parentCumulativeQty 父级累计用量
+     * @param result              结果列表
+     * @param visited             已访问的物料ID集合（用于循环引用检测）
+     * @throws ServiceException 当检测到循环引用或超过最大深度时抛出
+     */
+    private void buildIndentedLines(Long bomId, int level, BigDecimal parentCumulativeQty,
+                                     List<IndentedBomLineVo> result, Set<Long> visited) {
+        // 深度保护
+        if (level > MAX_BOM_DEPTH) {
+            throw new ServiceException("BOM层级超过最大深度限制(" + MAX_BOM_DEPTH + ")，BOM ID: " + bomId + "，请检查是否存在异常数据");
+        }
+
         List<BdBomDetail> details = bomDetailMapper.selectList(
             Wrappers.lambdaQuery(BdBomDetail.class).eq(BdBomDetail::getBomId, bomId));
         for (BdBomDetail detail : details) {
+            // 循环引用检测
+            if (visited.contains(detail.getChildMaterialId())) {
+                throw new ServiceException("BOM存在循环引用，物料ID: " + detail.getChildMaterialId() + " 已在上级路径中出现");
+            }
+
             IndentedBomLineVo line = new IndentedBomLineVo();
             line.setLevel(level);
             line.setIndent("  ".repeat(level));
@@ -323,8 +386,11 @@ public class BdBomServiceImpl implements IBdBomService {
                 line.setBomId(childBom.getBomId());
                 line.setExpandable(true);
                 result.add(line);
+                // 将当前子物料加入已访问集合（传递副本，兄弟节点间不共享）
+                Set<Long> childVisited = new HashSet<>(visited);
+                childVisited.add(detail.getChildMaterialId());
                 // 递归添加子节点
-                buildIndentedLines(childBom.getBomId(), level + 1, line.getCumulativeQuantity(), result);
+                buildIndentedLines(childBom.getBomId(), level + 1, line.getCumulativeQuantity(), result, childVisited);
             } else {
                 line.setNodeType("PART");
                 line.setExpandable(false);

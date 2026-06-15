@@ -101,6 +101,26 @@
       </el-row>
     </el-card>
 
+    <!-- 价格对比图表 -->
+    <el-row :gutter="20" style="margin-top: 20px;" v-if="priceList.length > 0">
+      <el-col :span="12">
+        <el-card>
+          <template #header>
+            <span class="card-title">供应商价格柱状图</span>
+          </template>
+          <div ref="barChartRef" style="height: 350px;"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card>
+          <template #header>
+            <span class="card-title">价格趋势折线图</span>
+          </template>
+          <div ref="trendChartRef" style="height: 350px;"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <!-- 空状态 -->
     <el-empty v-if="selectedMaterialId && priceList.length === 0 && !loading" description="该物料暂无供应商报价信息" />
   </div>
@@ -108,7 +128,8 @@
 
 <script setup lang="ts" name="PriceComparison">
 import { listMaterial } from "@/api/erp/bd/material";
-import request from '@/utils/request';
+import { listPriceComparison, getPriceTrend } from "@/api/erp/pu/price-comparison";
+import * as echarts from 'echarts';
 
 const { proxy } = getCurrentInstance();
 
@@ -121,6 +142,12 @@ const materialLoading = ref(false);
 // 价格数据
 const priceList = ref<any[]>([]);
 const loading = ref(false);
+
+// 图表引用
+const barChartRef = ref<HTMLElement | null>(null);
+const trendChartRef = ref<HTMLElement | null>(null);
+let barChart: echarts.ECharts | null = null;
+let trendChart: echarts.ECharts | null = null;
 
 /** 格式化价格 */
 function formatPrice(price: number) {
@@ -181,15 +208,137 @@ function handleMaterialChange(materialId: number) {
 function queryPriceComparison() {
   if (!selectedMaterialId.value) return;
   loading.value = true;
-  request({
-    url: '/erp/bd/materialVendor/report/priceComparison',
-    method: 'get',
-    params: { materialId: selectedMaterialId.value }
-  }).then((response: any) => {
+  listPriceComparison({ materialId: selectedMaterialId.value }).then((response: any) => {
     priceList.value = response.data || [];
     loading.value = false;
+    // 数据加载后渲染图表
+    nextTick(() => {
+      renderBarChart();
+      renderTrendChart();
+    });
   }).catch(() => {
     loading.value = false;
+  });
+}
+
+/** 渲染价格柱状图 */
+function renderBarChart() {
+  if (!barChartRef.value || priceList.value.length === 0) return;
+
+  if (!barChart) {
+    barChart = echarts.init(barChartRef.value);
+  }
+
+  const vendorNames = priceList.value.map(item => item.vendorName);
+  const prices = priceList.value.map(item => item.price);
+  const minPrice = Math.min(...prices);
+
+  barChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const data = params[0];
+        return `${data.name}<br/>单价: ${data.value.toFixed(4)}`;
+      }
+    },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: vendorNames,
+      axisLabel: { rotate: vendorNames.length > 5 ? 30 : 0 }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { formatter: (val: number) => val.toFixed(2) }
+    },
+    series: [{
+      type: 'bar',
+      data: prices.map((price, index) => ({
+        value: price,
+        itemStyle: {
+          color: price === minPrice ? '#67c23a' : '#409eff'
+        }
+      })),
+      barMaxWidth: 50,
+      label: {
+        show: true,
+        position: 'top',
+        formatter: (params: any) => params.value.toFixed(2)
+      }
+    }]
+  });
+}
+
+/** 渲染价格趋势折线图 */
+function renderTrendChart() {
+  if (!trendChartRef.value) return;
+
+  if (!trendChart) {
+    trendChart = echarts.init(trendChartRef.value);
+  }
+
+  if (!selectedMaterialId.value) return;
+
+  // 查询价格趋势数据
+  getPriceTrend(selectedMaterialId.value, 12).then((response: any) => {
+    const trendData = response.data || [];
+
+    if (trendData.length === 0) {
+      trendChart.setOption({
+        title: {
+          text: '暂无趋势数据',
+          left: 'center',
+          top: 'center',
+          textStyle: { color: '#999', fontSize: 14 }
+        }
+      });
+      return;
+    }
+
+    // 按供应商分组
+    const vendorMap = new Map<string, { months: string[]; prices: number[] }>();
+    trendData.forEach((item: any) => {
+      if (!vendorMap.has(item.vendorName)) {
+        vendorMap.set(item.vendorName, { months: [], prices: [] });
+      }
+      vendorMap.get(item.vendorName)!.months.push(item.month);
+      vendorMap.get(item.vendorName)!.prices.push(item.price);
+    });
+
+    // 获取所有月份（去重排序）
+    const allMonths = [...new Set(trendData.map((item: any) => item.month))].sort();
+
+    const series = Array.from(vendorMap.entries()).map(([vendorName, data]) => ({
+      name: vendorName,
+      type: 'line' as const,
+      data: allMonths.map(month => {
+        const idx = data.months.indexOf(month);
+        return idx >= 0 ? data.prices[idx] : null;
+      }),
+      smooth: true,
+      connectNulls: true
+    }));
+
+    trendChart.setOption({
+      tooltip: { trigger: 'axis' },
+      legend: { bottom: 0 },
+      grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+      xAxis: { type: 'category', data: allMonths, boundaryGap: false },
+      yAxis: {
+        type: 'value',
+        axisLabel: { formatter: (val: number) => val.toFixed(2) }
+      },
+      series
+    });
+  }).catch(() => {
+    trendChart.setOption({
+      title: {
+        text: '暂无趋势数据',
+        left: 'center',
+        top: 'center',
+        textStyle: { color: '#999', fontSize: 14 }
+      }
+    });
   });
 }
 
@@ -199,6 +348,8 @@ function resetQuery() {
   selectedMaterial.value = null;
   materialOptions.value = [];
   priceList.value = [];
+  if (barChart) barChart.clear();
+  if (trendChart) trendChart.clear();
 }
 
 /** 导出价格对比数据 */
@@ -207,22 +358,28 @@ function handleExport() {
     proxy.$modal.msgWarning("暂无数据可导出");
     return;
   }
-  // 构建导出数据
-  const exportData = priceList.value.map((item, index) => ({
-    排名: index + 1,
-    供应商编码: item.vendorCode,
-    供应商名称: item.vendorName,
-    单价: item.price,
-    币种: item.currency,
-    供货周期: item.leadTime,
-    最小订货量: item.minOrderQty,
-    是否默认: item.isDefault === 1 ? '是' : '否',
-    优先级: item.priority
-  }));
   proxy.download('erp/bd/materialVendor/export', {
     materialId: selectedMaterialId.value
   }, `price_comparison_${new Date().getTime()}.xlsx`);
 }
+
+/** 窗口大小变化时自适应图表 */
+function handleResize() {
+  barChart?.resize();
+  trendChart?.resize();
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+  barChart?.dispose();
+  trendChart?.dispose();
+  barChart = null;
+  trendChart = null;
+});
 </script>
 
 <style scoped>
