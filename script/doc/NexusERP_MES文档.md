@@ -1,8 +1,11 @@
 # NexusERP - MES模块综合文档
 
 > **文档状态**: 📋 规划设计文档（已修订） — MES模块尚未开始实施，本文档为开发前的完整设计方案。
-> 当前项目中 `ruoyi-mes` Maven模块尚未创建，`@DS("mes")` 数据源尚未配置，~13张数据表DDL尚未执行。
-> ERP侧集成准备状态：主数据API已就绪✅，MQ消息发送/队列常量/数据源配置待实现❌。
+> 当前项目中 `ruoyi-mes` Maven模块尚未创建，`@DS("mes")` 数据源尚未配置，~17张数据表DDL尚未执行。
+> ERP侧集成准备状态：主数据API已就绪✅，MQ消息发送+队列常量已完成✅，数据源配置待实现❌。
+>
+> **命名规范**: MES表命名与ERP保持一致，采用一级前缀 `{模块缩写}_{业务实体名}`（如 `pro_work_order`、`qc_iqc`），
+> 不使用 `mes_` 二级前缀，因为MES在独立库 `ry-mes` 中，库名已标识来源。
 
 ## 一、MES模块总体设计
 
@@ -55,19 +58,21 @@ ERP工单审批通过 → MQ消息(RabbitMQ erp.direct) → MES消费创建MES�
 
 ---
 
-## 二、MES数据表设计（~13张表）
+## 二、MES数据表设计（~17张表）
 
-> **精简说明**: 原规划28张表精简为~13张。主要削减：
+> **精简说明**: 原规划28张表精简为~17张。主要削减：
 > - 主数据表4张 → 0张（跨库查询ERP）
 > - 仓储扩展表3张 → 0张（复用ERP wm_material_stock）
 > - 质量管理表5张 → 3张（不良品+检验项目合入检验表JSON字段）
 > - 设备管理表4张 → 3张（点检合入设备台账JSON字段）
+>
+> **命名规范**: 与ERP一致，一级前缀 `{模块}_{实体}`，如 `pro_work_order`、`qc_iqc`、`eq_equipment`。
 
 ### 2.1 生产执行模块(pro) — 7张表
 
 ```sql
 -- MES工单
-CREATE TABLE mes_pro_workorder (
+CREATE TABLE pro_work_order (
     wo_id            BIGINT NOT NULL COMMENT '主键',
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     wo_no            VARCHAR(64) NOT NULL COMMENT 'MES工单编号',
@@ -102,7 +107,7 @@ CREATE TABLE mes_pro_workorder (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES工单';
 
 -- MES工单工序
-CREATE TABLE mes_pro_wo_step (
+CREATE TABLE pro_work_order_step (
     wo_step_id       BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     wo_id            BIGINT NOT NULL,
@@ -125,7 +130,7 @@ CREATE TABLE mes_pro_wo_step (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES工单工序';
 
 -- MES流转卡
-CREATE TABLE mes_pro_flow_card (
+CREATE TABLE pro_flow_card (
     card_id          BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     card_no          VARCHAR(64) NOT NULL,
@@ -154,7 +159,7 @@ CREATE TABLE mes_pro_flow_card (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES流转卡';
 
 -- MES流转卡工序记录
-CREATE TABLE mes_pro_flow_card_step (
+CREATE TABLE pro_flow_card_step (
     step_record_id   BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     card_id          BIGINT NOT NULL,
@@ -184,7 +189,7 @@ CREATE TABLE mes_pro_flow_card_step (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES流转卡工序记录';
 
 -- MES派工单
-CREATE TABLE mes_pro_dispatch (
+CREATE TABLE pro_dispatch (
     dispatch_id      BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     dispatch_no      VARCHAR(64) NOT NULL,
@@ -218,7 +223,7 @@ CREATE TABLE mes_pro_dispatch (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES派工单';
 
 -- MES安灯呼叫
-CREATE TABLE mes_pro_andon (
+CREATE TABLE pro_andon (
     andon_id         BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     andon_no         VARCHAR(64) NOT NULL,
@@ -248,7 +253,7 @@ CREATE TABLE mes_pro_andon (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES安灯呼叫';
 
 -- MES SN序列号追溯
-CREATE TABLE mes_pro_sn (
+CREATE TABLE pro_sn (
     sn_id            BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     sn_code          VARCHAR(128) NOT NULL,
@@ -278,7 +283,7 @@ CREATE TABLE mes_pro_sn (
 
 ```sql
 -- MES来料检验(IQC)
-CREATE TABLE mes_qc_iqc (
+CREATE TABLE qc_iqc (
     iqc_id           BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     iqc_no           VARCHAR(64) NOT NULL,
@@ -307,7 +312,7 @@ CREATE TABLE mes_qc_iqc (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES来料检验';
 
 -- MES过程检验(IPQC)
-CREATE TABLE mes_qc_ipqc (
+CREATE TABLE qc_ipqc (
     ipqc_id          BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     ipqc_no          VARCHAR(64) NOT NULL,
@@ -339,7 +344,7 @@ CREATE TABLE mes_qc_ipqc (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES过程检验';
 
 -- MES出货检验(OQC)
-CREATE TABLE mes_qc_oqc (
+CREATE TABLE qc_oqc (
     oqc_id           BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     oqc_no           VARCHAR(64) NOT NULL,
@@ -370,7 +375,7 @@ CREATE TABLE mes_qc_oqc (
 
 ```sql
 -- MES设备台账
-CREATE TABLE mes_eq_equipment (
+CREATE TABLE eq_equipment (
     equipment_id     BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     equipment_code   VARCHAR(64) NOT NULL,
@@ -399,7 +404,7 @@ CREATE TABLE mes_eq_equipment (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES设备台账';
 
 -- MES设备保养计划
-CREATE TABLE mes_eq_maintenance_plan (
+CREATE TABLE eq_maintenance_plan (
     plan_id          BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     plan_name        VARCHAR(128) NOT NULL,
@@ -421,7 +426,7 @@ CREATE TABLE mes_eq_maintenance_plan (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES设备保养计划';
 
 -- MES设备维修记录
-CREATE TABLE mes_eq_repair (
+CREATE TABLE eq_repair (
     repair_id        BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     repair_no        VARCHAR(64) NOT NULL,
@@ -453,7 +458,7 @@ CREATE TABLE mes_eq_repair (
 
 ```sql
 -- MES数据采集点
-CREATE TABLE mes_dc_collection_point (
+CREATE TABLE dc_collection_point (
     point_id         BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     point_code       VARCHAR(64) NOT NULL,
@@ -475,7 +480,7 @@ CREATE TABLE mes_dc_collection_point (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES数据采集点';
 
 -- MES采集数据记录(先存MySQL,数据量超500万行后考虑迁移TDengine)
-CREATE TABLE mes_dc_data_record (
+CREATE TABLE dc_data_record (
     record_id        BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     point_id         BIGINT NOT NULL,
@@ -496,7 +501,7 @@ CREATE TABLE mes_dc_data_record (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES采集数据记录';
 
 -- MES SPC控制图
-CREATE TABLE mes_spc_control_chart (
+CREATE TABLE spc_control_chart (
     chart_id         BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     chart_name       VARCHAR(128) NOT NULL,
@@ -518,7 +523,7 @@ CREATE TABLE mes_spc_control_chart (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='MES SPC控制图';
 
 -- MES SPC数据点
-CREATE TABLE mes_spc_data_point (
+CREATE TABLE spc_data_point (
     data_id          BIGINT NOT NULL,
     tenant_id        BIGINT NOT NULL DEFAULT 0,
     chart_id         BIGINT NOT NULL,
@@ -543,11 +548,11 @@ CREATE TABLE mes_spc_data_point (
 
 | 维度 | 原方案 | 修订方案 | 原因 |
 |------|--------|---------|------|
-| 物料 | mes_md_material 同步表 | 跨库查询ERP bd_material | 避免数据双写 |
-| BOM | mes_md_bom + bom_line | 跨库查询ERP bd_bom | 减少同步复杂度 |
-| 工艺路线 | mes_md_routing + routing_step | 跨库查询ERP | ERP已有完整数据 |
-| WIP库存 | mes_wm_wip_stock | 复用ERP wm_material_stock | 避免库存双写 |
-| 线边仓 | mes_wm_line_side_warehouse | 复用ERP仓库+location区分 | 减少表冗余 |
+| 物料 | md_material 同步表 | 跨库查询ERP bd_material | 避免数据双写 |
+| BOM | md_bom + bom_line | 跨库查询ERP bd_bom | 减少同步复杂度 |
+| 工艺路线 | md_routing + routing_step | 跨库查询ERP | ERP已有完整数据 |
+| WIP库存 | wm_wip_stock | 复用ERP wm_material_stock | 避免库存双写 |
+| 线边仓 | wm_line_side_warehouse | 复用ERP仓库+location区分 | 减少表冗余 |
 
 ### 3.2 跨库查询实现
 
@@ -587,15 +592,14 @@ MES前端页面直接调用ERP已有API：
 ERP PrdWorkOrderServiceImpl.afterFlowHandle() 审批通过(APPROVED)
   → ReliableMessageProducer 发送消息到 RabbitMQ erp.direct exchange
     → MesWorkOrderSyncConsumer(@DS("mes")) 消费
-      → 创建 mes_pro_workorder
-      → 根据ERP工艺路线自动生成 mes_pro_wo_step
+      → 创建 pro_work_order
+      → 根据ERP工艺路线自动生成 pro_work_order_step
 ```
 
 **ERP侧改动（`PrdWorkOrderServiceImpl.afterFlowHandle()`）：**
 - 在APPROVED分支增加MQ消息发送逻辑
 - 消息类型：`WorkOrderReleaseMessage`，包含ERP工单ID、物料ID、数量、工艺路线ID、BOM ID等
-- **当前状态：❌ 待实现**。当前`afterFlowHandle()`仅更新工单状态（APPROVING/APPROVED/CREATED），不发送MQ消息
-- 注：`PrdWorkOrderServiceImpl`已注入`ReliableMessageProducer`，并在`complete()`方法中发送了`ProductionCompleteMessage`，说明MQ基础设施已可用，只需在`afterFlowHandle()`中添加发送逻辑
+- **当前状态：✅ 已实现(Week 16)**。`afterFlowHandle()`审批通过后发送`WorkOrderReleaseMessage`到`mes.workorder.queue`
 
 ### 4.2 MES工单审批流（复用Flowable）
 
@@ -670,7 +674,7 @@ public interface IMesFlowCardService {
 
 ### 5.3 流转卡工序流转逻辑
 
-1. 创建流转卡时，根据工艺路线自动生成所有工序步骤记录(mes_pro_flow_card_step)
+1. 创建流转卡时，根据工艺路线自动生成所有工序步骤记录(pro_flow_card_step)
 2. 下达流转卡时，状态从CREATED→RELEASED
 3. 开始第一道工序时，状态从RELEASED→IN_PROGRESS
 4. 完成当前工序后，自动流转到下一道工序
@@ -788,48 +792,48 @@ OOC(超控制限)规则（硬编码）：
 
 ## 十、MES实施计划
 
-### 10.1 MES Phase 1 (Week 13-19): 基础框架 + 主数据 + 工单
+### 10.1 MES Phase 1 (Week 17-21): 基础框架 + 主数据 + 工单
 
 | 周次 | 任务 | 人天 | 前置条件 |
 |------|------|------|----------|
-| Week 13 | 创建ruoyi-mes模块+数据源配置+基础框架+公共组件 | 3 | ERP侧完成MQ消息扩展+Exchange常量+mes数据源配置 |
-| Week 14 | 主数据跨库查询(MesErpBridgeService)+前端只读页面 | 3 | bd模块Controller已就绪 ✅ |
-| Week 15-16 | MES工单+工单工序+Flowable审批流集成+ERP→MES MQ联动 | 5 | 复用ERP已有Flowable模式(9个单据已集成) |
-| Week 17-19 | Phase 1前端页面(工单列表/详情/工序Tab/主数据只读)+菜单权限 | 5 | - |
+| Week 17 | 创建ruoyi-mes模块+数据源配置+基础框架+公共组件 | 3 | ERP侧MQ消息+Exchange常量 ✅ 已完成 |
+| Week 18 | 主数据跨库查询(MesErpBridgeService)+前端只读页面 | 3 | bd模块Controller已就绪 ✅ |
+| Week 19-20 | MES工单+工单工序+Flowable审批流集成+ERP→MES MQ联动 | 5 | 复用ERP已有Flowable模式(9个单据已集成) |
+| Week 21 | Phase 1前端页面(工单列表/详情/工序Tab/主数据只读)+菜单权限 | 3 | - |
 
-**Phase 1 小计: 16人天**
+**Phase 1 小计: 14人天**
 
-### 10.2 MES Phase 2 (Week 20-26): 流转卡 + 工序执行 + 安灯 + SN
-
-| 周次 | 任务 | 人天 |
-|------|------|------|
-| Week 20-21 | 流转卡引擎(状态机+服务+自动生成工序) | 5 |
-| Week 22-23 | 派工+工序执行(扫码开工/完工/数量记录) | 4 |
-| Week 24 | 安灯系统(CRUD+SSE实时推送看板) | 3 |
-| Week 25-26 | SN追溯体系+Phase 2前端页面 | 4 |
-
-**Phase 2 小计: 16人天**
-
-### 10.3 MES Phase 3 (Week 27-32): 质量 + 设备 + 数据采集 + SPC
+### 10.2 MES Phase 2 (Week 22-27): 流转卡 + 工序执行 + 安灯 + SN
 
 | 周次 | 任务 | 人天 |
 |------|------|------|
-| Week 27-28 | 质量管理(IQC/IPQC/OQC+ERP联动) | 5 |
-| Week 29-30 | 设备管理(台账+保养+维修) | 4 |
+| Week 22-23 | 流转卡引擎(状态机+服务+自动生成工序) | 5 |
+| Week 24-25 | 派工+工序执行(扫码开工/完工/数量记录) | 4 |
+| Week 26 | 安灯系统(CRUD+SSE实时推送看板) | 3 |
+| Week 27 | SN追溯体系+Phase 2前端页面 | 3 |
+
+**Phase 2 小计: 15人天**
+
+### 10.3 MES Phase 3 (Week 28-32): 质量 + 设备 + 数据采集 + SPC
+
+| 周次 | 任务 | 人天 |
+|------|------|------|
+| Week 28-29 | 质量管理(IQC/IPQC/OQC+ERP联动) | 5 |
+| Week 30 | 设备管理(台账+保养+维修) | 3 |
 | Week 31-32 | 数据采集+SPC+Phase 3前端页面+集成测试 | 4 |
 
-**Phase 3 小计: 13人天**
+**Phase 3 小计: 12人天**
 
 ### 10.4 工作量汇总
 
 | 阶段 | 周次 | 人天 |
 |------|------|------|
-| Phase 1 | Week 13-19 | 16 |
-| Phase 2 | Week 20-26 | 16 |
-| Phase 3 | Week 27-32 | 17 |
-| **合计** | **Week 13-32 (20周)** | **~49** |
+| Phase 1 | Week 17-21 | 14 |
+| Phase 2 | Week 22-27 | 15 |
+| Phase 3 | Week 28-32 | 12 |
+| **合计** | **Week 17-32 (16周)** | **~41** |
 
-> **对比原计划**: 原66人天/22周 → 修订49人天/20周（削减26%）
+> **对比原计划**: 原66人天/22周 → 修订41人天/16周（削减38%）
 
 ---
 
@@ -927,7 +931,7 @@ plus-ui/src/views/mes/
 
 | 方向 | 触发点 | 方式 | 说明 | 状态 |
 |------|--------|------|------|------|
-| ERP→MES | 工单下达 | MQ (RabbitMQ) | PrdWorkOrderServiceImpl审批通过后发消息 | ❌ afterFlowHandle未发MQ，待实现 |
+| ERP→MES | 工单下达 | MQ (RabbitMQ) | PrdWorkOrderServiceImpl审批通过后发消息 | ✅ Week 16已实现 |
 | ERP→MES | 主数据查询 | 跨库直查 | MES Service切@DS("erp")读物料/BOM/工艺 | ✅ bd模块Controller已完整 |
 | MES→ERP | 工单完工 | MQ (RabbitMQ) | 通知ERP更新工单状态+完工入库 | ❌ MES模块未创建 |
 | MES→ERP | IQC检验完成 | MQ (RabbitMQ) | 通知ERP更新收货单质检状态 | ❌ MES模块未创建 |
@@ -938,4 +942,4 @@ plus-ui/src/views/mes/
 |------|------|------|
 | MES查设备数据 | REST API / Redis缓存 | MES查询IoT设备最新数据 |
 | IoT告警→MES安灯 | 接口抽象 | `IMesAndonService.createAndonFromAlert()` 接口 |
-| 设备关联 | 字段预留 | `mes_eq_equipment.iot_device_id` + `iot_device.mes_equipment_id` |
+| 设备关联 | 字段预留 | `eq_equipment.iot_device_id` + `iot_device.mes_equipment_id` |

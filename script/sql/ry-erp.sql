@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 15/06/2026 00:23:35
+ Date: 16/06/2026 00:01:40
 */
 
 SET NAMES utf8mb4;
@@ -1281,6 +1281,82 @@ CREATE TABLE `prd_work_report`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for pu_contract
+-- ----------------------------
+DROP TABLE IF EXISTS `pu_contract`;
+CREATE TABLE `pu_contract`  (
+  `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
+  `contract_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '合同编号',
+  `contract_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同名称',
+  `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
+  `vendor_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `contract_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同类型 FRAMEWORK-框架合同 SPOT-现货合同 SERVICE-服务合同',
+  `sign_date` datetime NULL DEFAULT NULL COMMENT '签订日期',
+  `effective_date` datetime NULL DEFAULT NULL COMMENT '生效日期',
+  `expiry_date` datetime NULL DEFAULT NULL COMMENT '失效日期',
+  `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '合同总金额',
+  `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY' COMMENT '币种',
+  `payment_terms` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '付款条款',
+  `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '合同状态 DRAFT-草稿 APPROVING-审批中 APPROVED-已批准 EXECUTING-执行中 COMPLETED-已完成 TERMINATED-已终止 REJECTED-已驳回',
+  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
+  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段2',
+  `attr3` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段3',
+  `attr4` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段4',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
+  PRIMARY KEY (`contract_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of pu_contract
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for pu_contract_line
+-- ----------------------------
+DROP TABLE IF EXISTS `pu_contract_line`;
+CREATE TABLE `pu_contract_line`  (
+  `line_id` bigint(20) NOT NULL COMMENT '行ID',
+  `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
+  `material_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料规格',
+  `unit` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计量单位',
+  `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
+  `quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '数量',
+  `line_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '行金额',
+  `delivery_date` datetime NULL DEFAULT NULL COMMENT '交货日期',
+  `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
+  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段2',
+  `attr3` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段3',
+  `attr4` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段4',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_contract_id`(`contract_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of pu_contract_line
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for pu_purchase_order
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_purchase_order`;
@@ -1317,6 +1393,8 @@ CREATE TABLE `pu_purchase_order`  (
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
+  `contract_id` bigint(20) NULL DEFAULT NULL COMMENT '合同ID，关联pu_contract表（预留字段）',
+  `contract_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同编号（预留字段）',
   PRIMARY KEY (`order_id`) USING BTREE,
   UNIQUE INDEX `uk_order_no`(`order_no`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2062092892921307139 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购订单表' ROW_FORMAT = DYNAMIC;
@@ -1324,7 +1402,7 @@ CREATE TABLE `pu_purchase_order`  (
 -- ----------------------------
 -- Records of pu_purchase_order
 -- ----------------------------
-INSERT INTO `pu_purchase_order` VALUES (2062092892921307138, 'CGDD202606030001', 2062086009753870338, 'CGSQ202606030002', 2062098763051089921, 'V00001', '钢板产出商', '2026-06-03 16:43:52', '2026-06-05 00:00:00', 'CNY', 1.000000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202606030002】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:43:52', -1, '2026-06-07 22:13:52', '0', NULL);
+INSERT INTO `pu_purchase_order` VALUES (2062092892921307138, 'CGDD202606030001', 2062086009753870338, 'CGSQ202606030002', 2062098763051089921, 'V00001', '钢板产出商', '2026-06-03 16:43:52', '2026-06-05 00:00:00', 'CNY', 1.000000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202606030002】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:43:52', -1, '2026-06-07 22:13:52', '0', NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for pu_purchase_order_line
@@ -2573,6 +2651,7 @@ CREATE TABLE `so_invoice`  (
   `total_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '价税合计',
   `verified_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '已核销金额',
   `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '发票状态 DRAFT-草稿 ISSUED-已开 VERIFIED-已核销 CANCELLED-已作废',
+  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -4178,9 +4257,9 @@ INSERT INTO `wm_stock_alert` VALUES (2059923485663133698, 0, 1, 'IF20251016004',
 INSERT INTO `wm_stock_alert` VALUES (2059923485772185602, 0, 2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', '千克', NULL, NULL, NULL, 0.0000, 2.0000, 3.0000, 9.0000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
 INSERT INTO `wm_stock_alert` VALUES (2059923485839294466, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 0.0000, 3.0000, 4.5000, 13.5000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
 INSERT INTO `wm_stock_alert` VALUES (2063647119193014274, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 0.0000, 10.0000, 15.0000, 45.0000, 'BELOW_MIN', 'CRITICAL', 1, '2026-06-08 00:04:02', NULL, '库存状态变更，自动关闭', '0', 103, 1, '2026-06-07 23:39:49', 1, '2026-06-08 00:04:02', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2063647119255928834, 0, 2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', '千克', NULL, NULL, NULL, 0.0000, 2.0000, 3.0000, 9.0000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:39:49', -1, '2026-06-14 13:19:53', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2063647119255928835, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 0.0000, 3.0000, 4.5000, 13.5000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:39:49', -1, '2026-06-14 13:19:53', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2063651383273455617, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 1000.0000, 10.0000, 15.0000, 45.0000, 'ABOVE_MAX', 'INFO', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:56:45', -1, '2026-06-14 13:19:53', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2063647119255928834, 0, 2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', '千克', NULL, NULL, NULL, 0.0000, 2.0000, 3.0000, 9.0000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:39:49', -1, '2026-06-15 21:03:11', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2063647119255928835, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 0.0000, 3.0000, 4.5000, 13.5000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:39:49', -1, '2026-06-15 21:03:11', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2063651383273455617, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 1000.0000, 10.0000, 15.0000, 45.0000, 'ABOVE_MAX', 'INFO', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:56:45', -1, '2026-06-15 21:03:11', NULL);
 
 -- ----------------------------
 -- Table structure for wm_stock_reconciliation
