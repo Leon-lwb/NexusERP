@@ -46,6 +46,16 @@ public class BdBomDetailBo extends BaseEntity {
 
     private String workstationName;
 
+    /**
+     * 工序ID(关联bd_process)
+     */
+    private Long processId;
+
+    /**
+     * 工艺路线步骤ID(关联bd_routing_step)
+     */
+    private Long routingStepId;
+
     private Integer leadTime;
 
     private LocalDate effectiveDate;

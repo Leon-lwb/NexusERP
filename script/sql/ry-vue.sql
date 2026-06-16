@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : 本地5.7
+ Source Server         : whbuild
  Source Server Type    : MySQL
- Source Server Version : 50714 (5.7.14)
+ Source Server Version : 50720
  Source Host           : localhost:3306
  Source Schema         : ry-vue
 
  Target Server Type    : MySQL
- Target Server Version : 50714 (5.7.14)
+ Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 16/06/2026 00:01:19
+ Date: 16/06/2026 18:13:05
 */
 
 SET NAMES utf8mb4;
@@ -35,11 +35,7 @@ CREATE TABLE `act_evt_log`  (
   `LOCK_TIME_` timestamp(3) NULL DEFAULT NULL,
   `IS_PROCESSED_` tinyint(4) NULL DEFAULT 0,
   PRIMARY KEY (`LOG_NR_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_evt_log
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ge_bytearray
@@ -55,7 +51,7 @@ CREATE TABLE `act_ge_bytearray`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `ACT_FK_BYTEARR_DEPL`(`DEPLOYMENT_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_BYTEARR_DEPL` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_ge_bytearray
@@ -135,7 +131,7 @@ CREATE TABLE `act_ge_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_ge_property
@@ -181,7 +177,7 @@ CREATE TABLE `act_hi_actinst`  (
   INDEX `ACT_IDX_HI_ACT_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_PROCINST`(`PROC_INST_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_EXEC`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_hi_actinst
@@ -282,11 +278,7 @@ CREATE TABLE `act_hi_attachment`  (
   `CONTENT_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TIME_` datetime(3) NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_hi_attachment
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_hi_comment
@@ -303,7 +295,7 @@ CREATE TABLE `act_hi_comment`  (
   `MESSAGE_` varchar(4000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `FULL_MSG_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_hi_comment
@@ -360,11 +352,7 @@ CREATE TABLE `act_hi_detail`  (
   INDEX `ACT_IDX_HI_DETAIL_TIME`(`TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_NAME`(`NAME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_TASK_ID`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_hi_detail
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_hi_entitylink
@@ -390,11 +378,7 @@ CREATE TABLE `act_hi_entitylink`  (
   INDEX `ACT_IDX_HI_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_hi_entitylink
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_hi_identitylink
@@ -419,7 +403,7 @@ CREATE TABLE `act_hi_identitylink`  (
   INDEX `ACT_IDX_HI_IDENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_TASK`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_hi_identitylink
@@ -516,7 +500,7 @@ CREATE TABLE `act_hi_procinst`  (
   INDEX `ACT_IDX_HI_PRO_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_I_BUSKEY`(`BUSINESS_KEY_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_SUPER_PROCINST`(`SUPER_PROCESS_INSTANCE_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_hi_procinst
@@ -572,7 +556,7 @@ CREATE TABLE `act_hi_taskinst`  (
   INDEX `ACT_IDX_HI_TASK_SUB_SCOPE`(`SUB_SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_INST_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_hi_taskinst
@@ -622,11 +606,7 @@ CREATE TABLE `act_hi_tsk_log`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_hi_tsk_log
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_hi_varinst
@@ -658,7 +638,7 @@ CREATE TABLE `act_hi_varinst`  (
   INDEX `ACT_IDX_HI_PROCVAR_PROC_INST`(`PROC_INST_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_TASK_ID`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_EXE`(`EXECUTION_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_hi_varinst
@@ -818,11 +798,7 @@ CREATE TABLE `act_id_bytearray`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_bytearray
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_id_group
@@ -834,11 +810,7 @@ CREATE TABLE `act_id_group`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_group
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_id_info
@@ -854,11 +826,7 @@ CREATE TABLE `act_id_info`  (
   `PASSWORD_` longblob NULL,
   `PARENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_info
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_id_membership
@@ -871,11 +839,7 @@ CREATE TABLE `act_id_membership`  (
   INDEX `ACT_FK_MEMB_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_MEMB_GROUP` FOREIGN KEY (`GROUP_ID_`) REFERENCES `act_id_group` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MEMB_USER` FOREIGN KEY (`USER_ID_`) REFERENCES `act_id_user` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_membership
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_id_priv
@@ -886,11 +850,7 @@ CREATE TABLE `act_id_priv`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PRIV_NAME`(`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_priv
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_id_priv_mapping
@@ -906,11 +866,7 @@ CREATE TABLE `act_id_priv_mapping`  (
   INDEX `ACT_IDX_PRIV_USER`(`USER_ID_`) USING BTREE,
   INDEX `ACT_IDX_PRIV_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_PRIV_MAPPING` FOREIGN KEY (`PRIV_ID_`) REFERENCES `act_id_priv` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_priv_mapping
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_id_property
@@ -921,7 +877,7 @@ CREATE TABLE `act_id_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_id_property
@@ -942,11 +898,7 @@ CREATE TABLE `act_id_token`  (
   `USER_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TOKEN_DATA_` varchar(2000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_token
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_id_user
@@ -963,11 +915,7 @@ CREATE TABLE `act_id_user`  (
   `PICTURE_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_id_user
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_procdef_info
@@ -984,11 +932,7 @@ CREATE TABLE `act_procdef_info`  (
   INDEX `ACT_FK_INFO_JSON_BA`(`INFO_JSON_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_INFO_JSON_BA` FOREIGN KEY (`INFO_JSON_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_INFO_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_procdef_info
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_re_deployment
@@ -1006,7 +950,7 @@ CREATE TABLE `act_re_deployment`  (
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `ENGINE_VERSION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_re_deployment
@@ -1052,7 +996,7 @@ CREATE TABLE `act_re_model`  (
   CONSTRAINT `ACT_FK_MODEL_DEPLOYMENT` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE` FOREIGN KEY (`EDITOR_SOURCE_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE_EXTRA` FOREIGN KEY (`EDITOR_SOURCE_EXTRA_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_re_model
@@ -1113,7 +1057,7 @@ CREATE TABLE `act_re_procdef`  (
   `DERIVED_VERSION_` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PROCDEF`(`KEY_`, `VERSION_`, `DERIVED_VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_re_procdef
@@ -1163,7 +1107,7 @@ CREATE TABLE `act_ru_actinst`  (
   INDEX `ACT_IDX_RU_ACTI_EXEC`(`EXECUTION_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_EXEC_ACT`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_TASK`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_ru_actinst
@@ -1228,11 +1172,7 @@ CREATE TABLE `act_ru_deadletter_job`  (
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_deadletter_job
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_entitylink
@@ -1259,11 +1199,7 @@ CREATE TABLE `act_ru_entitylink`  (
   INDEX `ACT_IDX_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_entitylink
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_event_subscr
@@ -1292,11 +1228,7 @@ CREATE TABLE `act_ru_event_subscr`  (
   INDEX `ACT_IDX_EVENT_SUBSCR_SCOPEREF_`(`SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_FK_EVENT_EXEC`(`EXECUTION_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_EVENT_EXEC` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_event_subscr
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_execution
@@ -1354,7 +1286,7 @@ CREATE TABLE `act_ru_execution`  (
   CONSTRAINT `ACT_FK_EXE_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXE_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `ACT_FK_EXE_SUPER` FOREIGN KEY (`SUPER_EXEC_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_ru_execution
@@ -1407,11 +1339,7 @@ CREATE TABLE `act_ru_external_job`  (
   INDEX `ACT_IDX_EJOB_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_CUSTOM_VALUES` FOREIGN KEY (`CUSTOM_VALUES_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_EXCEPTION` FOREIGN KEY (`EXCEPTION_STACK_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_external_job
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_history_job
@@ -1433,11 +1361,7 @@ CREATE TABLE `act_ru_history_job`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_history_job
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_identitylink
@@ -1468,7 +1392,7 @@ CREATE TABLE `act_ru_identitylink`  (
   CONSTRAINT `ACT_FK_ATHRZ_PROCEDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_IDL_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TSKASS_TASK` FOREIGN KEY (`TASK_ID_`) REFERENCES `act_ru_task` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_ru_identitylink
@@ -1530,11 +1454,7 @@ CREATE TABLE `act_ru_job`  (
   CONSTRAINT `ACT_FK_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_job
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_suspended_job
@@ -1581,11 +1501,7 @@ CREATE TABLE `act_ru_suspended_job`  (
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_suspended_job
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_task
@@ -1633,7 +1549,7 @@ CREATE TABLE `act_ru_task`  (
   CONSTRAINT `ACT_FK_TASK_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_ru_task
@@ -1690,11 +1606,7 @@ CREATE TABLE `act_ru_timer_job`  (
   CONSTRAINT `ACT_FK_TIMER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of act_ru_timer_job
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for act_ru_variable
@@ -1727,7 +1639,7 @@ CREATE TABLE `act_ru_variable`  (
   CONSTRAINT `ACT_FK_VAR_BYTEARRAY` FOREIGN KEY (`BYTEARRAY_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of act_ru_variable
@@ -1782,15 +1694,11 @@ CREATE TABLE `ai_ab_test`  (
   `result_summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '结果摘要（JSON）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of ai_ab_test
--- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_ab_test_result
@@ -1807,14 +1715,10 @@ CREATE TABLE `ai_ab_test_result`  (
   `token_usage` int(11) NULL DEFAULT NULL COMMENT 'Token 用量',
   `latency_ms` int(11) NULL DEFAULT NULL COMMENT '响应延迟（毫秒）',
   `score` int(11) NULL DEFAULT NULL COMMENT '人工评分（1-5）',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_test_id`(`test_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试结果' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of ai_ab_test_result
--- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_knowledge
@@ -1840,16 +1744,16 @@ CREATE TABLE `ai_knowledge`  (
   `system_prompt` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '系统提示词',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_knowledge
@@ -1870,9 +1774,9 @@ CREATE TABLE `ai_knowledge_chunk`  (
   `vector_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '向量数据库中的ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -1882,7 +1786,7 @@ CREATE TABLE `ai_knowledge_chunk`  (
   INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
   INDEX `idx_document_id`(`document_id`) USING BTREE,
   FULLTEXT INDEX `ft_content`(`content`) WITH PARSER `ngram`
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_knowledge_chunk
@@ -1913,9 +1817,9 @@ CREATE TABLE `ai_knowledge_document`  (
   `error_message` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -1923,7 +1827,7 @@ CREATE TABLE `ai_knowledge_document`  (
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_knowledge_document
@@ -1945,9 +1849,9 @@ CREATE TABLE `ai_message`  (
   `feedback_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '反馈内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -1958,7 +1862,7 @@ CREATE TABLE `ai_message`  (
   `output_tokens` int(11) NULL DEFAULT NULL COMMENT '输出 Token 数',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_session_id`(`session_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_message
@@ -2019,9 +1923,9 @@ CREATE TABLE `ai_model`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2032,7 +1936,7 @@ CREATE TABLE `ai_model`  (
   `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种：CNY/USD',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_provider_id`(`provider_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_model
@@ -2057,9 +1961,9 @@ CREATE TABLE `ai_prompt_template`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_template_key`(`template_key`, `tenant_id`) USING BTREE
@@ -2086,16 +1990,16 @@ CREATE TABLE `ai_provider`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_provider
@@ -2116,9 +2020,9 @@ CREATE TABLE `ai_session`  (
   `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的模型名称',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2127,7 +2031,7 @@ CREATE TABLE `ai_session`  (
   `enabled_tool_ids` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '会话启用的工具ID列表（逗号分隔，null=全部）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_session
@@ -2158,9 +2062,9 @@ CREATE TABLE `ai_sql_example`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
@@ -2196,8 +2100,8 @@ CREATE TABLE `ai_token_usage`  (
   `total_tokens` bigint(20) NULL DEFAULT 0 COMMENT '当日 Token 总量（input+output）',
   `request_count` int(11) NULL DEFAULT 0 COMMENT '当日请求次数',
   `total_cost` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '当日总成本（元）',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_model_date`(`tenant_id`, `user_id`, `model_id`, `usage_date`) USING BTREE,
   INDEX `idx_user_date`(`tenant_id`, `user_id`, `usage_date`) USING BTREE,
@@ -2226,9 +2130,9 @@ CREATE TABLE `ai_tool`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ENABLED' COMMENT '状态: ENABLED/DISABLED',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2236,7 +2140,7 @@ CREATE TABLE `ai_tool`  (
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_tool_name`(`tool_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 工具配置' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 工具配置' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of ai_tool
@@ -2268,11 +2172,7 @@ CREATE TABLE `flw_channel_definition`  (
   `IMPLEMENTATION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_CHANNEL_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of flw_channel_definition
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for flw_ev_databasechangelog
@@ -2282,7 +2182,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `DATEEXECUTED` datetime NULL DEFAULT NULL,
+  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
   `ORDEREXECUTED` int(11) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
@@ -2293,7 +2193,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `CONTEXTS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `LABELS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `DEPLOYMENT_ID` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangelog
@@ -2309,10 +2209,10 @@ DROP TABLE IF EXISTS `flw_ev_databasechangeloglock`;
 CREATE TABLE `flw_ev_databasechangeloglock`  (
   `ID` int(11) NOT NULL,
   `LOCKED` tinyint(4) NOT NULL,
-  `LOCKGRANTED` datetime NULL DEFAULT NULL,
+  `LOCKGRANTED` datetime(0) NULL DEFAULT NULL,
   `LOCKEDBY` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangeloglock
@@ -2335,11 +2235,7 @@ CREATE TABLE `flw_event_definition`  (
   `DESCRIPTION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_EVENT_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of flw_event_definition
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for flw_event_deployment
@@ -2353,11 +2249,7 @@ CREATE TABLE `flw_event_deployment`  (
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of flw_event_deployment
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for flw_event_resource
@@ -2369,11 +2261,7 @@ CREATE TABLE `flw_event_resource`  (
   `DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `RESOURCE_BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of flw_event_resource
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for flw_ru_batch
@@ -2391,11 +2279,7 @@ CREATE TABLE `flw_ru_batch`  (
   `BATCH_DOC_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of flw_ru_batch
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for flw_ru_batch_part
@@ -2419,11 +2303,7 @@ CREATE TABLE `flw_ru_batch_part`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `FLW_IDX_BATCH_PART`(`BATCH_ID_`) USING BTREE,
   CONSTRAINT `FLW_FK_BATCH_PART_PARENT` FOREIGN KEY (`BATCH_ID_`) REFERENCES `flw_ru_batch` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of flw_ru_batch_part
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for gen_table
@@ -2452,14 +2332,14 @@ CREATE TABLE `gen_table`  (
   `options` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE,
   INDEX `idx_gen_table_design_id`(`design_id`) USING BTREE,
   INDEX `idx_gen_table_source_type`(`source_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2509,11 +2389,11 @@ CREATE TABLE `gen_table_column`  (
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -2929,15 +2809,11 @@ CREATE TABLE `gen_table_design_history`  (
   `design_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设计JSON内容',
   `version` int(11) NULL DEFAULT 1 COMMENT '版本号',
   `create_by` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`history_id`) USING BTREE,
   INDEX `idx_design_history_table_id`(`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of gen_table_design_history
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for im_friend
@@ -2950,14 +2826,14 @@ CREATE TABLE `im_friend`  (
   `friend_user_id` bigint(20) NOT NULL COMMENT '好友用户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_im_friend`(`tenant_id`, `user_id`, `friend_user_id`) USING BTREE,
   INDEX `idx_im_friend_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM好友关系' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM好友关系' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of im_friend
@@ -2978,13 +2854,13 @@ CREATE TABLE `im_group`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1解散）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`group_id`) USING BTREE,
   INDEX `idx_im_group_tenant`(`tenant_id`, `status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of im_group
@@ -3001,16 +2877,16 @@ CREATE TABLE `im_group_member`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `group_id` bigint(20) NOT NULL COMMENT '群ID',
   `user_id` bigint(20) NOT NULL COMMENT '成员用户ID',
-  `join_time` datetime NULL DEFAULT NULL COMMENT '加入时间',
+  `join_time` datetime(0) NULL DEFAULT NULL COMMENT '加入时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_group_user`(`group_id`, `user_id`) USING BTREE,
   INDEX `idx_igm_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of im_group_member
@@ -3039,14 +2915,14 @@ CREATE TABLE `im_message`  (
   `forward_from` bigint(20) NULL DEFAULT NULL COMMENT '杞?彂鏉ユ簮娑堟伅ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`message_id`) USING BTREE,
   INDEX `idx_im_msg_private`(`tenant_id`, `from_user_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_to`(`tenant_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_group`(`tenant_id`, `group_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of im_message
@@ -3085,14 +2961,14 @@ CREATE TABLE `jimu_dict`  (
   `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '描述',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `type` int(1) UNSIGNED ZEROFILL NULL DEFAULT 0 COMMENT '字典类型0为string,1为number',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_sd_dict_code`(`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_dict
@@ -3171,15 +3047,15 @@ CREATE TABLE `jimu_dict_item`  (
   `sort_order` int(10) NULL DEFAULT NULL COMMENT '排序',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态（1启用 0不启用）',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `create_time` datetime NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_sdi_role_dict_id`(`dict_id`) USING BTREE,
   INDEX `idx_sdi_role_sort_order`(`sort_order`) USING BTREE,
   INDEX `idx_sdi_status`(`status`) USING BTREE,
   INDEX `idx_sdi_dict_val`(`dict_id`, `item_value`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_dict_item
@@ -3418,9 +3294,9 @@ CREATE TABLE `jimu_report`  (
   `api_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求地址',
   `thumb` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '缩略图',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   `api_method` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求方法0-get,1-post',
   `api_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求编码',
@@ -3437,7 +3313,7 @@ CREATE TABLE `jimu_report`  (
   UNIQUE INDEX `uniq_jmreport_code`(`code`) USING BTREE,
   INDEX `uniq_jmreport_createby`(`create_by`) USING BTREE,
   INDEX `uniq_jmreport_delflag`(`del_flag`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report
@@ -3528,14 +3404,14 @@ CREATE TABLE `jimu_report_category`  (
   `iz_leaf` int(1) NULL DEFAULT NULL COMMENT '是否为叶子节点(0 否 1是)',
   `source_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型( report 积木报表 screen 大屏  drag 仪表盘)',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态(0未删除，1已删除，2临时删除)',
   `sort_no` int(11) NULL DEFAULT NULL COMMENT '排序',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_category
@@ -3564,16 +3440,16 @@ CREATE TABLE `jimu_report_data_source`  (
   `db_username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户名',
   `db_password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   `connect_times` int(11) NULL DEFAULT 0 COMMENT '连接失败次数',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   `type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型(report:报表;drag:仪表盘)',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jmdatasource_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jmdatasource_code`(`code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_data_source
@@ -3600,8 +3476,8 @@ CREATE TABLE `jimu_report_db`  (
   `jimu_report_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '主键字段',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   `db_code` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集编码',
   `db_ch_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集名字',
   `db_type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源类型',
@@ -3626,7 +3502,7 @@ CREATE TABLE `jimu_report_db`  (
   INDEX `idx_jmreportdb_db_key`(`db_key`) USING BTREE,
   INDEX `idx_jimu_report_id`(`jimu_report_id`) USING BTREE,
   INDEX `idx_db_source_id`(`db_source`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_db
@@ -3775,9 +3651,9 @@ DROP TABLE IF EXISTS `jimu_report_db_field`;
 CREATE TABLE `jimu_report_db_field`  (
   `id` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   `jimu_report_db_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源ID',
   `field_name` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字段名',
   `field_name_physics` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '物理字段名（文件数据集使用，存的是excel的字段标题）',
@@ -3794,7 +3670,7 @@ CREATE TABLE `jimu_report_db_field`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdf_jimu_report_db_id`(`jimu_report_db_id`) USING BTREE,
   INDEX `idx_dbfield_order_num`(`order_num`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_db_field
@@ -4718,9 +4594,9 @@ CREATE TABLE `jimu_report_db_param`  (
   `param_value` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '参数默认值',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   `search_flag` int(1) NULL DEFAULT NULL COMMENT '查询标识0否1是 默认0',
   `widget_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询控件类型',
   `search_mode` int(1) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
@@ -4729,7 +4605,7 @@ CREATE TABLE `jimu_report_db_param`  (
   `ext_json` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '参数配置',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdp_jimu_report_head_id`(`jimu_report_head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_db_param
@@ -4771,21 +4647,21 @@ DROP TABLE IF EXISTS `jimu_report_export_job`;
 CREATE TABLE `jimu_report_export_job`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务名称',
-  `begin_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
-  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
+  `begin_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
   `exec_interval` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '执行频率',
   `report_conf` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '导出报表配置',
-  `last_run_time` datetime NULL DEFAULT NULL COMMENT '最后执行时间',
+  `last_run_time` datetime(0) NULL DEFAULT NULL COMMENT '最后执行时间',
   `receiver_email` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '接收通知的邮件',
   `file_sync_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件同步路径',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态(0:停止;1:启动)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_export_job
@@ -4809,11 +4685,11 @@ CREATE TABLE `jimu_report_export_log`  (
   `status` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '状态',
   `err_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误消息',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_export_log
@@ -5106,12 +4982,12 @@ CREATE TABLE `jimu_report_ext_data`  (
   `metadata` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '元数据，用于存储补充信息',
   `status` tinyint(4) NULL DEFAULT 1 COMMENT '状态标识：1正常 0禁用',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_biz`(`biz_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_ext_data
@@ -5128,12 +5004,12 @@ CREATE TABLE `jimu_report_icon_lib`  (
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图片类型',
   `image_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '图片地址',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户id',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_icon_lib
@@ -5369,7 +5245,7 @@ CREATE TABLE `jimu_report_link`  (
   `requirement` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '条件',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `uniq_link_reportid`(`report_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_link
@@ -5390,14 +5266,14 @@ CREATE TABLE `jimu_report_map`  (
   `name` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '地图编码',
   `data` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '地图数据',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '0表示未删除,1表示删除',
   `sys_org_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '所属部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_jmreport_map_name`(`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_map
@@ -5423,7 +5299,7 @@ CREATE TABLE `jimu_report_share`  (
   `report_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线excel设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，2:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁状态(0不存在密码锁，1存在密码锁)',
@@ -5431,7 +5307,7 @@ CREATE TABLE `jimu_report_share`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jrs_share_token`(`share_token`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_share
@@ -5456,14 +5332,14 @@ CREATE TABLE `jimu_report_sheet`  (
   `sheet_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Sheet名称',
   `sheet_order` int(11) NOT NULL COMMENT '排序（可以为负数，负数表示在默认sheet前面）',
   `json_str` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '该sheet的完整jsonStr',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_report_id`(`report_id`) USING BTREE,
   INDEX `idx_sheet_order`(`report_id`, `sheet_order`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jimu_report_sheet
@@ -5491,17 +5367,13 @@ CREATE TABLE `mq_compensation_record`  (
   `compensation_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '补偿参数JSON',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 5 COMMENT '最大重试次数',
-  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_compensation_status`(`compensation_status`, `next_retry_time`) USING BTREE,
   INDEX `idx_business`(`business_type`, `business_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mq_compensation_record
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for mq_dead_letter_record
@@ -5516,15 +5388,11 @@ CREATE TABLE `mq_dead_letter_record`  (
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/RESOLVED/RESENT',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mq_dead_letter_record
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for mq_message_record
@@ -5539,14 +5407,14 @@ CREATE TABLE `mq_message_record`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'SENDING' COMMENT '状态: SENDING/SENT/CONSUMED/FAILED',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 3 COMMENT '最大重试次数',
-  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_message_id`(`message_id`) USING BTREE,
   INDEX `idx_status_create`(`status`, `create_time`) USING BTREE,
   INDEX `idx_next_retry`(`next_retry_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of mq_message_record
@@ -5568,11 +5436,11 @@ CREATE TABLE `onl_drag_comp`  (
   `comp_config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `status` varchar(2) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态0:无效 1:有效',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of onl_drag_comp
@@ -5716,14 +5584,14 @@ CREATE TABLE `onl_drag_dataset_head`  (
   `iz_agent` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT 'iz_agent',
   `data_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据类型',
   `api_method` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'api方法：get/post',
-  `create_time` datetime NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `low_app_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_head
@@ -5840,12 +5708,12 @@ CREATE TABLE `onl_drag_dataset_item`  (
   `search_mode` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询模式',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddi_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_item
@@ -6121,12 +5989,12 @@ CREATE TABLE `onl_drag_dataset_param`  (
   `search_mode` int(11) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
   `dict_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字典',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddp_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_param
@@ -6157,16 +6025,16 @@ CREATE TABLE `onl_drag_page`  (
   `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件夹类',
   `iz_template` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否模板(1:是；0不是)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   `update_count` int(10) NULL DEFAULT 1,
   `visits_num` int(11) NULL DEFAULT NULL COMMENT '访问次数',
   `del_flag` int(11) NULL DEFAULT NULL COMMENT '删除状态( 0未删除 1已删除)',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of onl_drag_page
@@ -6234,11 +6102,11 @@ CREATE TABLE `onl_drag_page_comp`  (
   `component` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件名称',
   `config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of onl_drag_page_comp
@@ -7215,14 +7083,14 @@ CREATE TABLE `onl_drag_share`  (
   `drag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线仪表盘设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，7:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为密码锁(0 否,1是)',
   `share_token` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分享token',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_ods_drag_id`(`drag_id`) USING BTREE COMMENT '仪表盘id唯一索引'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of onl_drag_share
@@ -7246,19 +7114,15 @@ CREATE TABLE `onl_drag_table_relation`  (
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户ID',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_aggregation_name`(`aggregation_name`) USING BTREE,
   INDEX `idx_del_flag`(`del_flag`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_create_by`(`create_by`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of onl_drag_table_relation
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for pay_invoice
@@ -7276,12 +7140,12 @@ CREATE TABLE `pay_invoice`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`invoice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pay_invoice
@@ -7302,18 +7166,18 @@ CREATE TABLE `pay_order`  (
   `order_content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '订单内容',
   `order_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负载信息',
   `pay_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付方式',
-  `pay_time` datetime NULL DEFAULT NULL COMMENT '支付时间',
+  `pay_time` datetime(0) NULL DEFAULT NULL COMMENT '支付时间',
   `pay_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '支付人',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`order_id`) USING BTREE,
   INDEX `idx_order_number`(`order_number`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pay_order
@@ -7342,98 +7206,22 @@ INSERT INTO `pay_order` VALUES (26, '7a88c68d29cc4c6ea55d', NULL, '待支付', '
 INSERT INTO `pay_order` VALUES (27, '74091f41e3fd4a2b8ded', NULL, '待支付', '120', '120', '测试商品', NULL, 'alipay', NULL, '', '000000', 103, 1, '2026-05-03 00:20:20', 1, '2026-05-03 00:20:20', NULL);
 
 -- ----------------------------
--- Table structure for pu_contract
--- ----------------------------
-DROP TABLE IF EXISTS `pu_contract`;
-CREATE TABLE `pu_contract`  (
-  `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
-  `contract_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '合同编号',
-  `contract_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同名称',
-  `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
-  `vendor_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
-  `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
-  `contract_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同类型',
-  `sign_date` datetime NULL DEFAULT NULL COMMENT '签订日期',
-  `effective_date` datetime NULL DEFAULT NULL COMMENT '生效日期',
-  `expiry_date` datetime NULL DEFAULT NULL COMMENT '失效日期',
-  `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '合同总金额',
-  `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY' COMMENT '币种',
-  `payment_terms` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '付款条款',
-  `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '合同状态',
-  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
-  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段2',
-  `attr3` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段3',
-  `attr4` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段4',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
-  PRIMARY KEY (`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of pu_contract
--- ----------------------------
-
--- ----------------------------
--- Table structure for pu_contract_line
--- ----------------------------
-DROP TABLE IF EXISTS `pu_contract_line`;
-CREATE TABLE `pu_contract_line`  (
-  `line_id` bigint(20) NOT NULL COMMENT '行ID',
-  `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
-  `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
-  `material_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码',
-  `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称',
-  `material_spec` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料规格',
-  `unit` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计量单位',
-  `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
-  `quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '数量',
-  `line_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '行金额',
-  `delivery_date` datetime NULL DEFAULT NULL COMMENT '交货日期',
-  `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
-  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段2',
-  `attr3` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段3',
-  `attr4` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段4',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
-  PRIMARY KEY (`line_id`) USING BTREE,
-  INDEX `idx_contract_id`(`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of pu_contract_line
--- ----------------------------
-
--- ----------------------------
 -- Table structure for rep_demo_dxtj
 -- ----------------------------
 DROP TABLE IF EXISTS `rep_demo_dxtj`;
 CREATE TABLE `rep_demo_dxtj`  (
   `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '姓名',
-  `gtime` datetime NULL DEFAULT NULL COMMENT '雇佣日期',
+  `gtime` datetime(0) NULL DEFAULT NULL COMMENT '雇佣日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '职务',
   `jphone` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '家庭电话',
-  `birth` datetime NULL DEFAULT NULL COMMENT '出生日期',
+  `birth` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
   `hukou` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '户口所在地',
   `laddress` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系地址',
   `jperson` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '紧急联系人',
   `sex` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'xingbie',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of rep_demo_dxtj
@@ -7473,7 +7261,7 @@ CREATE TABLE `rep_demo_employee`  (
   `num` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '编号',
   `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
   `sex` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '性别',
-  `birthday` datetime NULL DEFAULT NULL COMMENT '出生日期',
+  `birthday` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
   `nation` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '民族',
   `political` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '政治面貌',
   `native_place` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '籍贯',
@@ -7491,18 +7279,18 @@ CREATE TABLE `rep_demo_employee`  (
   `foreign_language` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语语种',
   `foreign_language_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语水平',
   `computer_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '计算机水平',
-  `graduation_time` datetime NULL DEFAULT NULL COMMENT '毕业时间',
-  `arrival_time` datetime NULL DEFAULT NULL COMMENT '到职时间',
+  `graduation_time` datetime(0) NULL DEFAULT NULL COMMENT '毕业时间',
+  `arrival_time` datetime(0) NULL DEFAULT NULL COMMENT '到职时间',
   `positional_titles` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '职称',
   `education_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '教育经历',
   `work_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '工作经历',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of rep_demo_employee
@@ -7523,7 +7311,7 @@ CREATE TABLE `rep_demo_gongsi`  (
   `zhaiyao` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `num` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of rep_demo_gongsi
@@ -7547,7 +7335,7 @@ CREATE TABLE `rep_demo_jianpiao`  (
   `shihelv` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `s_id` int(11) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of rep_demo_jianpiao
@@ -7657,7 +7445,7 @@ CREATE TABLE `rep_demo_xiaoshou`  (
   `beizhu` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `s_id` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of rep_demo_xiaoshou
@@ -7690,25 +7478,25 @@ CREATE TABLE `sj_distributed_lock`  (
   `lock_until` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '锁定时长',
   `locked_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '锁定时间',
   `locked_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '锁定者',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_distributed_lock
 -- ----------------------------
-INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-06-15 21:03:41.301', '2026-06-15 21:02:41.301', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-15 21:02:41');
-INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-06-16 00:01:25.260', '2026-06-16 00:01:20.260', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-16 00:01:20');
-INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-06-15 21:03:40.898', '2026-06-15 21:02:40.898', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-15 21:02:41');
-INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-06-16 00:01:40.901', '2026-06-16 00:00:40.901', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-16 00:00:41');
-INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-06-16 00:01:00.901', '2026-06-16 00:00:40.901', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-16 00:00:41');
-INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-06-16 00:01:26.252', '2026-06-16 00:01:21.252', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-16 00:01:21');
-INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-06-15 23:53:41.517', '2026-06-15 23:52:41.517', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-15 23:52:42');
-INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-06-15 23:03:40.909', '2026-06-15 23:02:40.909', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-15 23:02:41');
-INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-06-16 00:01:00.901', '2026-06-16 00:00:40.901', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-16 00:00:41');
-INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-06-15 23:53:41.517', '2026-06-15 23:52:41.517', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-15 23:52:42');
-INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-06-16 00:01:00.901', '2026-06-16 00:00:40.901', '2066506672767139840', '2026-06-15 21:02:41', '2026-06-16 00:00:41');
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-06-14 21:20:21.466', '2026-06-14 21:19:21.466', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-14 21:19:21');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-06-15 00:23:27.351', '2026-06-15 00:23:22.351', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:23:22');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-06-14 21:20:21.459', '2026-06-14 21:19:21.459', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-14 21:19:21');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-06-15 00:24:21.453', '2026-06-15 00:23:21.453', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:23:21');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-06-15 00:23:41.453', '2026-06-15 00:23:21.453', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:23:21');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-06-15 00:23:29.760', '2026-06-15 00:23:24.760', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:23:25');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-06-15 00:20:22.731', '2026-06-15 00:19:22.731', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:19:23');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-06-15 00:20:21.459', '2026-06-15 00:19:21.459', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:19:21');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-06-15 00:23:41.453', '2026-06-15 00:23:21.453', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:23:21');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-06-15 00:20:22.731', '2026-06-15 00:19:22.731', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:19:23');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-06-15 00:23:41.453', '2026-06-15 00:23:21.453', '2066027691295023104', '2026-06-14 13:19:23', '2026-06-15 00:23:21');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -7725,11 +7513,11 @@ CREATE TABLE `sj_group_config`  (
   `group_partition` int(11) NOT NULL COMMENT '分区',
   `id_generator_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '唯一id生成模式 默认号段模式',
   `init_scene` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否初始化场景 0:否 1:是',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_group_config
@@ -7769,20 +7557,20 @@ CREATE TABLE `sj_job`  (
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_job_status_bucket_index`(`job_status`, `bucket_index`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_job
 -- ----------------------------
-INSERT INTO `sj_job` VALUES (1, 'dev', 'ruoyi_group', 'demo-job', NULL, 1, 1781539390909, 1, 1, 4, 1, 'testJobExecutor', 2, '600', 1, 60, 3, 1, 1, 116, 0, '', 1, '{}', '', '', 0, '2026-04-15 10:51:35', '2026-06-15 23:53:10');
-INSERT INTO `sj_job` VALUES (2, 'dev', 'ruoyi_group', '应商绩效批量评估任务', '', 1, 1781542800000, 1, 1, 4, 1, 'vendorEvaluationTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 69, 0, '', 1, '{}', '', '', 0, '2026-05-28 10:57:55', '2026-06-15 21:03:10');
-INSERT INTO `sj_job` VALUES (3, 'dev', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1781542800000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-06-15 21:03:10');
+INSERT INTO `sj_job` VALUES (1, 'dev', 'ruoyi_group', 'demo-job', NULL, 1, 1781454592864, 1, 1, 4, 1, 'testJobExecutor', 2, '600', 1, 60, 3, 1, 1, 116, 0, '', 1, '{}', '', '', 0, '2026-04-15 10:51:35', '2026-06-15 00:19:51');
+INSERT INTO `sj_job` VALUES (2, 'dev', 'ruoyi_group', '应商绩效批量评估任务', '', 1, 1781456400000, 1, 1, 4, 1, 'vendorEvaluationTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 69, 0, '', 1, '{}', '', '', 0, '2026-05-28 10:57:55', '2026-06-14 13:19:52');
+INSERT INTO `sj_job` VALUES (3, 'dev', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1781456400000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-06-14 13:19:52');
 
 -- ----------------------------
 -- Table structure for sj_job_executor
@@ -7794,12 +7582,12 @@ CREATE TABLE `sj_job_executor`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `executor_info` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '任务执行器名称',
   `executor_type` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '1:java 2:python 3:go',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_job_executor
@@ -7835,12 +7623,12 @@ CREATE TABLE `sj_job_log_message`  (
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_id`(`task_batch_id`, `task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1989 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1969 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_job_log_message
@@ -7857,6 +7645,23 @@ INSERT INTO `sj_job_log_message` VALUES (1583, 'dev', 'ruoyi_group', 1, 1492, 13
 INSERT INTO `sj_job_log_message` VALUES (1584, 'dev', 'ruoyi_group', 1, 1549, 1437, '[{\"time_stamp\":\"1778136438798\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[1]. \"},{\"time_stamp\":\"1778136439803\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[2]. \"},{\"time_stamp\":\"1778136440812\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[3]. \"},{\"time_stamp\":\"1778136436761\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task ID:[1437] Task scheduling failed. \"}]', 4, 1778136438798, '', '2026-05-07 14:47:19');
 INSERT INTO `sj_job_log_message` VALUES (1585, 'dev', 'ruoyi_group', 1, 1550, 1438, '[{\"time_stamp\":\"1778136498808\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[1]. \"},{\"time_stamp\":\"1778136499821\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[2]. \"},{\"time_stamp\":\"1778136500830\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[3]. \"},{\"time_stamp\":\"1778136496758\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task ID:[1438] Task scheduling failed. \"}]', 4, 1778136498808, '', '2026-05-07 14:48:19');
 INSERT INTO `sj_job_log_message` VALUES (1738, 'dev', 'ruoyi_group', 1, 1762, 1624, '[{\"time_stamp\":\"1780073317000\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[1]. \"},{\"time_stamp\":\"1780073318012\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[2]. \"},{\"time_stamp\":\"1780073319015\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[3]. \"},{\"time_stamp\":\"1780073314961\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task ID:[1624] Task scheduling failed. \"}]', 4, 1780073317000, '', '2026-05-30 00:48:37');
+INSERT INTO `sj_job_log_message` VALUES (1766, 'dev', 'ruoyi_group', 1, 1807, 1662, '[{\"time_stamp\":\"1780838907473\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1807] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780838907480\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,807-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1807,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780838907481\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,807-1\",\"message\":\"Task executed successfully taskBatchId:[1807] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780838907473, '', '2026-06-07 21:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1767, 'dev', 'ruoyi_group', 1, 1808, 1663, '[{\"time_stamp\":\"1780839507456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1808] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780839507464\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,808-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1808,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780839507465\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,808-1\",\"message\":\"Task executed successfully taskBatchId:[1808] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780839507456, '', '2026-06-07 21:38:32');
+INSERT INTO `sj_job_log_message` VALUES (1768, 'dev', 'ruoyi_group', 1, 1809, 1664, '[{\"time_stamp\":\"1780840107406\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1809] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780840107407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,809-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1809,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780840107407\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,809-1\",\"message\":\"Task executed successfully taskBatchId:[1809] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780840107406, '', '2026-06-07 21:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1769, 'dev', 'ruoyi_group', 1, 1810, 1665, '[{\"time_stamp\":\"1780840707481\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1810] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780840707489\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,810-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1810,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780840707491\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,810-1\",\"message\":\"Task executed successfully taskBatchId:[1810] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780840707481, '', '2026-06-07 21:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1770, 'dev', 'ruoyi_group', 1, 1811, 1666, '[{\"time_stamp\":\"1780841307485\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1811] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780841307494\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,811-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1811,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780841307495\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,811-1\",\"message\":\"Task executed successfully taskBatchId:[1811] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780841307485, '', '2026-06-07 22:08:32');
+INSERT INTO `sj_job_log_message` VALUES (1771, 'dev', 'ruoyi_group', 1, 1812, 1667, '[{\"time_stamp\":\"1780841907513\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1812] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780841907521\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,812-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1812,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780841907521\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,812-1\",\"message\":\"Task executed successfully taskBatchId:[1812] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780841907513, '', '2026-06-07 22:18:33');
+INSERT INTO `sj_job_log_message` VALUES (1772, 'dev', 'ruoyi_group', 1, 1813, 1668, '[{\"time_stamp\":\"1780842507461\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1813] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780842507462\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,813-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1813,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780842507462\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,813-1\",\"message\":\"Task executed successfully taskBatchId:[1813] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780842507461, '', '2026-06-07 22:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1773, 'dev', 'ruoyi_group', 1, 1814, 1669, '[{\"time_stamp\":\"1780843107456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1814] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780843107456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,814-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1814,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780843107456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,814-1\",\"message\":\"Task executed successfully taskBatchId:[1814] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780843107456, '', '2026-06-07 22:38:32');
+INSERT INTO `sj_job_log_message` VALUES (1774, 'dev', 'ruoyi_group', 1, 1815, 1670, '[{\"time_stamp\":\"1780843707456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1815] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780843707456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,815-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1815,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780843707456\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,815-1\",\"message\":\"Task executed successfully taskBatchId:[1815] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780843707456, '', '2026-06-07 22:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1775, 'dev', 'ruoyi_group', 1, 1816, 1671, '[{\"time_stamp\":\"1780844307464\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1816] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780844307464\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,816-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1816,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780844307464\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,816-1\",\"message\":\"Task executed successfully taskBatchId:[1816] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780844307464, '', '2026-06-07 22:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1776, 'dev', 'ruoyi_group', 1, 1817, 1672, '[{\"time_stamp\":\"1780844907454\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1817] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780844907455\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,817-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1817,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780844907455\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,817-1\",\"message\":\"Task executed successfully taskBatchId:[1817] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780844907454, '', '2026-06-07 23:08:32');
+INSERT INTO `sj_job_log_message` VALUES (1777, 'dev', 'ruoyi_group', 1, 1818, 1673, '[{\"time_stamp\":\"1780845507450\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1818] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780845507450\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,818-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1818,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780845507450\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,818-1\",\"message\":\"Task executed successfully taskBatchId:[1818] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780845507450, '', '2026-06-07 23:18:32');
+INSERT INTO `sj_job_log_message` VALUES (1778, 'dev', 'ruoyi_group', 1, 1819, 1674, '[{\"time_stamp\":\"1780846107446\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1819] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780846107447\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,819-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1819,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780846107448\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,819-1\",\"message\":\"Task executed successfully taskBatchId:[1819] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780846107446, '', '2026-06-07 23:28:32');
+INSERT INTO `sj_job_log_message` VALUES (1779, 'dev', 'ruoyi_group', 1, 1820, 1675, '[{\"time_stamp\":\"1780846707452\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1820] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780846707453\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,820-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1820,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780846707453\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,820-1\",\"message\":\"Task executed successfully taskBatchId:[1820] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780846707452, '', '2026-06-07 23:38:32');
+INSERT INTO `sj_job_log_message` VALUES (1780, 'dev', 'ruoyi_group', 1, 1821, 1676, '[{\"time_stamp\":\"1780847307463\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1821] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780847307463\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,821-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1821,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780847307463\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,821-1\",\"message\":\"Task executed successfully taskBatchId:[1821] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780847307463, '', '2026-06-07 23:48:32');
+INSERT INTO `sj_job_log_message` VALUES (1781, 'dev', 'ruoyi_group', 1, 1822, 1677, '[{\"time_stamp\":\"1780847907457\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1822] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780847907458\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,822-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1822,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780847907458\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,822-1\",\"message\":\"Task executed successfully taskBatchId:[1822] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780847907457, '', '2026-06-07 23:58:32');
+INSERT INTO `sj_job_log_message` VALUES (1782, 'dev', 'ruoyi_group', 1, 1823, 1678, '[{\"time_stamp\":\"1780848507528\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1823] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780848507535\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,823-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1823,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780848507537\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,823-1\",\"message\":\"Task executed successfully taskBatchId:[1823] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780848507528, '', '2026-06-08 00:08:33');
 INSERT INTO `sj_job_log_message` VALUES (1783, 'dev', 'ruoyi_group', 3, 1825, 1680, '[{\"time_stamp\":\"1780927234821\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[3] Task batch:[1825] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780927234831\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.wm.task.StockAlertTask.jobExecute(StockAlertTask.java:31)\",\"thread\":\"snail-job-job-1,825-1\",\"message\":\"开始执行安全库存预警检查任务\"},{\"time_stamp\":\"1780927234966\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.wm.task.StockAlertTask.jobExecute(StockAlertTask.java:34)\",\"thread\":\"snail-job-job-1,825-1\",\"message\":\"安全库存预警检查任务执行完成\"},{\"time_stamp\":\"1780927234967\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,825-1\",\"message\":\"Task executed successfully taskBatchId:[1825] [{\\\"status\\\":1,\\\"result\\\":\\\"安全库存预警检查完成\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 4, 1780927234821, '', '2026-06-08 22:00:40');
 INSERT INTO `sj_job_log_message` VALUES (1784, 'dev', 'ruoyi_group', 1, 1824, 1681, '[{\"time_stamp\":\"1780927234821\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[1824] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780927234832\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-1,824-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":1824,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1780927234837\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,824-1\",\"message\":\"Task executed successfully taskBatchId:[1824] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1780927234821, '', '2026-06-08 22:00:40');
 INSERT INTO `sj_job_log_message` VALUES (1785, 'dev', 'ruoyi_group', 2, 1826, 1679, '[{\"time_stamp\":\"1780927234821\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[2] Task batch:[1826] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1780927234831\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:38)\",\"thread\":\"snail-job-job-1,826-1\",\"message\":\"开始执行供应商绩效批量评估任务\"},{\"time_stamp\":\"1780927235041\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:41)\",\"thread\":\"snail-job-job-1,826-1\",\"message\":\"供应商绩效批量评估任务执行完成\"},{\"time_stamp\":\"1780927235041\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1,826-1\",\"message\":\"Task executed successfully taskBatchId:[1826] [{\\\"status\\\":1,\\\"result\\\":\\\"供应商绩效批量评估完成\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 4, 1780927234821, '', '2026-06-08 22:00:40');
@@ -8035,26 +7840,6 @@ INSERT INTO `sj_job_log_message` VALUES (1965, 'dev', 'ruoyi_group', 1, 2003, 18
 INSERT INTO `sj_job_log_message` VALUES (1966, 'dev', 'ruoyi_group', 1, 2004, 1854, '[{\"time_stamp\":\"1781444392904\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-15\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2004] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781444392905\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,004-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2004,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781444392905\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,004-1\",\"message\":\"Task executed successfully taskBatchId:[2004] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781444392904, '', '2026-06-14 21:39:58');
 INSERT INTO `sj_job_log_message` VALUES (1967, 'dev', 'ruoyi_group', 1, 2005, 1855, '[{\"time_stamp\":\"1781444992899\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-16\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2005] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781444992900\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,005-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2005,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781444992900\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,005-1\",\"message\":\"Task executed successfully taskBatchId:[2005] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781444992899, '', '2026-06-14 21:49:58');
 INSERT INTO `sj_job_log_message` VALUES (1968, 'dev', 'ruoyi_group', 1, 2006, 1856, '[{\"time_stamp\":\"1781445592906\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2006] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781445592907\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,006-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2006,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781445592907\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.105\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,006-1\",\"message\":\"Task executed successfully taskBatchId:[2006] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781445592906, '', '2026-06-14 21:59:58');
-INSERT INTO `sj_job_log_message` VALUES (1969, 'dev', 'ruoyi_group', 1, 2024, 1857, '[{\"time_stamp\":\"1781528591195\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2024] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781528591208\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,024-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2024,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781528591210\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,024-1\",\"message\":\"Task executed successfully taskBatchId:[2024] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781528591195, '', '2026-06-15 21:03:16');
-INSERT INTO `sj_job_log_message` VALUES (1970, 'dev', 'ruoyi_group', 2, 2022, 1858, '[{\"time_stamp\":\"1781528591195\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[2] Task batch:[2022] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781528591207\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:38)\",\"thread\":\"snail-job-job-2,022-1\",\"message\":\"开始执行供应商绩效批量评估任务\"},{\"time_stamp\":\"1781528591285\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.pu.task.VendorEvaluationTask.jobExecute(VendorEvaluationTask.java:41)\",\"thread\":\"snail-job-job-2,022-1\",\"message\":\"供应商绩效批量评估任务执行完成\"},{\"time_stamp\":\"1781528591285\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,022-1\",\"message\":\"Task executed successfully taskBatchId:[2022] [{\\\"status\\\":1,\\\"result\\\":\\\"供应商绩效批量评估完成\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 4, 1781528591195, '', '2026-06-15 21:03:16');
-INSERT INTO `sj_job_log_message` VALUES (1971, 'dev', 'ruoyi_group', 3, 2023, 1859, '[{\"time_stamp\":\"1781528591195\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[3] Task batch:[2023] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781528591207\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.wm.task.StockAlertTask.jobExecute(StockAlertTask.java:31)\",\"thread\":\"snail-job-job-2,023-1\",\"message\":\"开始执行安全库存预警检查任务\"},{\"time_stamp\":\"1781528591257\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.erp.wm.task.StockAlertTask.jobExecute(StockAlertTask.java:34)\",\"thread\":\"snail-job-job-2,023-1\",\"message\":\"安全库存预警检查任务执行完成\"},{\"time_stamp\":\"1781528591257\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,023-1\",\"message\":\"Task executed successfully taskBatchId:[2023] [{\\\"status\\\":1,\\\"result\\\":\\\"安全库存预警检查完成\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 4, 1781528591195, '', '2026-06-15 21:03:16');
-INSERT INTO `sj_job_log_message` VALUES (1972, 'dev', 'ruoyi_group', 1, 2025, 1860, '[{\"time_stamp\":\"1781529190948\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2025] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781529190949\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,025-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2025,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781529190949\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,025-1\",\"message\":\"Task executed successfully taskBatchId:[2025] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781529190948, '', '2026-06-15 21:13:16');
-INSERT INTO `sj_job_log_message` VALUES (1973, 'dev', 'ruoyi_group', 1, 2026, 1861, '[{\"time_stamp\":\"1781529790945\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2026] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781529790946\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,026-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2026,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781529790946\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,026-1\",\"message\":\"Task executed successfully taskBatchId:[2026] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781529790945, '', '2026-06-15 21:23:16');
-INSERT INTO `sj_job_log_message` VALUES (1974, 'dev', 'ruoyi_group', 1, 2027, 1862, '[{\"time_stamp\":\"1781530390944\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2027] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781530390946\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,027-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2027,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781530390946\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,027-1\",\"message\":\"Task executed successfully taskBatchId:[2027] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781530390944, '', '2026-06-15 21:33:16');
-INSERT INTO `sj_job_log_message` VALUES (1975, 'dev', 'ruoyi_group', 1, 2028, 1863, '[{\"time_stamp\":\"1781530990952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-7\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2028] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781530990953\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,028-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2028,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781530990953\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,028-1\",\"message\":\"Task executed successfully taskBatchId:[2028] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781530990952, '', '2026-06-15 21:43:16');
-INSERT INTO `sj_job_log_message` VALUES (1976, 'dev', 'ruoyi_group', 1, 2029, 1864, '[{\"time_stamp\":\"1781531590955\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-8\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2029] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781531590956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,029-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2029,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781531590956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,029-1\",\"message\":\"Task executed successfully taskBatchId:[2029] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781531590955, '', '2026-06-15 21:53:16');
-INSERT INTO `sj_job_log_message` VALUES (1977, 'dev', 'ruoyi_group', 1, 2030, 1865, '[{\"time_stamp\":\"1781532190946\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-9\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2030] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781532190947\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,030-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2030,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781532190947\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,030-1\",\"message\":\"Task executed successfully taskBatchId:[2030] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781532190946, '', '2026-06-15 22:03:16');
-INSERT INTO `sj_job_log_message` VALUES (1978, 'dev', 'ruoyi_group', 1, 2031, 1866, '[{\"time_stamp\":\"1781532790947\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-10\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2031] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781532790947\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,031-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2031,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781532790947\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,031-1\",\"message\":\"Task executed successfully taskBatchId:[2031] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781532790947, '', '2026-06-15 22:13:16');
-INSERT INTO `sj_job_log_message` VALUES (1979, 'dev', 'ruoyi_group', 1, 2032, 1867, '[{\"time_stamp\":\"1781533390956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-11\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2032] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781533390957\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,032-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2032,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781533390957\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,032-1\",\"message\":\"Task executed successfully taskBatchId:[2032] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781533390956, '', '2026-06-15 22:23:16');
-INSERT INTO `sj_job_log_message` VALUES (1980, 'dev', 'ruoyi_group', 1, 2033, 1868, '[{\"time_stamp\":\"1781533990952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-12\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2033] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781533990953\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,033-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2033,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781533990953\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,033-1\",\"message\":\"Task executed successfully taskBatchId:[2033] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781533990952, '', '2026-06-15 22:33:16');
-INSERT INTO `sj_job_log_message` VALUES (1981, 'dev', 'ruoyi_group', 1, 2034, 1869, '[{\"time_stamp\":\"1781534590941\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-13\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2034] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781534590942\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,034-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2034,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781534590942\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,034-1\",\"message\":\"Task executed successfully taskBatchId:[2034] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781534590941, '', '2026-06-15 22:43:16');
-INSERT INTO `sj_job_log_message` VALUES (1982, 'dev', 'ruoyi_group', 1, 2035, 1870, '[{\"time_stamp\":\"1781535190955\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-14\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2035] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781535190955\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,035-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2035,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781535190956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,035-1\",\"message\":\"Task executed successfully taskBatchId:[2035] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781535190955, '', '2026-06-15 22:53:16');
-INSERT INTO `sj_job_log_message` VALUES (1983, 'dev', 'ruoyi_group', 1, 2036, 1871, '[{\"time_stamp\":\"1781535791000\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2036] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781535791010\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,036-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2036,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781535791012\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,036-1\",\"message\":\"Task executed successfully taskBatchId:[2036] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781535791000, '', '2026-06-15 23:03:16');
-INSERT INTO `sj_job_log_message` VALUES (1984, 'dev', 'ruoyi_group', 1, 2037, 1872, '[{\"time_stamp\":\"1781536390944\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2037] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781536390945\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,037-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2037,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781536390945\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,037-1\",\"message\":\"Task executed successfully taskBatchId:[2037] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781536390944, '', '2026-06-15 23:13:16');
-INSERT INTO `sj_job_log_message` VALUES (1985, 'dev', 'ruoyi_group', 1, 2038, 1873, '[{\"time_stamp\":\"1781536990956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2038] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781536990956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,038-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2038,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781536990956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,038-1\",\"message\":\"Task executed successfully taskBatchId:[2038] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781536990956, '', '2026-06-15 23:23:16');
-INSERT INTO `sj_job_log_message` VALUES (1986, 'dev', 'ruoyi_group', 1, 2039, 1874, '[{\"time_stamp\":\"1781537590952\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2039] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781537590953\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,039-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2039,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781537590953\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,039-1\",\"message\":\"Task executed successfully taskBatchId:[2039] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781537590952, '', '2026-06-15 23:33:16');
-INSERT INTO `sj_job_log_message` VALUES (1987, 'dev', 'ruoyi_group', 1, 2040, 1875, '[{\"time_stamp\":\"1781538190956\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-5\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2040] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781538190957\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,040-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2040,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781538190957\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,040-1\",\"message\":\"Task executed successfully taskBatchId:[2040] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781538190956, '', '2026-06-15 23:43:16');
-INSERT INTO `sj_job_log_message` VALUES (1988, 'dev', 'ruoyi_group', 1, 2041, 1876, '[{\"time_stamp\":\"1781538790949\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-6\",\"message\":\" Task scheduler:[job] Task ID:[1] Task batch:[2041] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1781538790949\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.nexus.job.snailjob.TestAnnoJobExecutor.jobExecute(TestAnnoJobExecutor.java:22)\",\"thread\":\"snail-job-job-2,041-1\",\"message\":\"testJobExecutor. jobArgs:{\\\"executorInfo\\\":\\\"testJobExecutor\\\",\\\"taskBatchId\\\":2041,\\\"jobId\\\":1,\\\"wfContext\\\":{},\\\"changeWfContext\\\":{}}\"},{\"time_stamp\":\"1781538790949\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.104\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-2,041-1\",\"message\":\"Task executed successfully taskBatchId:[2041] [{\\\"status\\\":1,\\\"result\\\":\\\"测试成功\\\",\\\"message\\\":\\\"Task executed successfully\\\"}]\"}]', 3, 1781538790949, '', '2026-06-15 23:53:16');
 
 -- ----------------------------
 -- Table structure for sj_job_summary
@@ -8066,7 +7851,7 @@ CREATE TABLE `sj_job_summary`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `business_id` bigint(20) NOT NULL COMMENT '业务id (job_id或workflow_id)',
   `system_task_type` tinyint(4) NOT NULL DEFAULT 3 COMMENT '任务类型 3、JOB任务 4、WORKFLOW任务',
-  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `success_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行成功-日志数量',
   `fail_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `fail_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
@@ -8074,12 +7859,12 @@ CREATE TABLE `sj_job_summary`  (
   `stop_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
   `cancel_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `cancel_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_trigger_at_system_task_type_business_id`(`trigger_at`, `system_task_type`, `business_id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_business_id`(`namespace_id`, `group_name`, `business_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 41 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 39 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_job_summary
@@ -8121,9 +7906,7 @@ INSERT INTO `sj_job_summary` VALUES (34, 'dev', 'ruoyi_group', 3, 3, '2026-06-13
 INSERT INTO `sj_job_summary` VALUES (35, 'dev', 'ruoyi_group', 1, 3, '2026-06-14 00:00:00', 50, 0, '[]', 0, '[]', 15, '[{\"reason\":2,\"total\":15}]', '2026-06-14 13:20:22', '2026-06-15 00:00:21');
 INSERT INTO `sj_job_summary` VALUES (36, 'dev', 'ruoyi_group', 2, 3, '2026-06-14 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-14 13:20:22', '2026-06-14 13:20:22');
 INSERT INTO `sj_job_summary` VALUES (37, 'dev', 'ruoyi_group', 3, 3, '2026-06-14 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-14 13:20:22', '2026-06-14 13:20:22');
-INSERT INTO `sj_job_summary` VALUES (38, 'dev', 'ruoyi_group', 1, 3, '2026-06-15 00:00:00', 18, 0, '[]', 0, '[]', 3, '[{\"reason\":2,\"total\":3}]', '2026-06-15 00:10:21', '2026-06-15 23:53:40');
-INSERT INTO `sj_job_summary` VALUES (39, 'dev', 'ruoyi_group', 2, 3, '2026-06-15 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-15 21:03:40', '2026-06-15 21:03:40');
-INSERT INTO `sj_job_summary` VALUES (40, 'dev', 'ruoyi_group', 3, 3, '2026-06-15 00:00:00', 1, 0, '[]', 0, '[]', 0, '[]', '2026-06-15 21:03:40', '2026-06-15 21:03:40');
+INSERT INTO `sj_job_summary` VALUES (38, 'dev', 'ruoyi_group', 1, 3, '2026-06-15 00:00:00', 0, 0, '[]', 0, '[]', 2, '[{\"reason\":2,\"total\":2}]', '2026-06-15 00:10:21', '2026-06-15 00:20:21');
 
 -- ----------------------------
 -- Table structure for sj_job_task
@@ -8147,17 +7930,34 @@ CREATE TABLE `sj_job_task`  (
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '执行方法参数',
   `args_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '参数类型 ',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_status`(`task_batch_id`, `task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1877 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1857 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_job_task
 -- ----------------------------
+INSERT INTO `sj_job_task` VALUES (1662, 'dev', 'ruoyi_group', 1, 1807, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063612557033340928@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:28:27', '2026-06-07 21:28:27');
+INSERT INTO `sj_job_task` VALUES (1663, 'dev', 'ruoyi_group', 1, 1808, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063615289085575168@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:38:27', '2026-06-07 21:38:27');
+INSERT INTO `sj_job_task` VALUES (1664, 'dev', 'ruoyi_group', 1, 1809, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063615289085575168@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:48:27', '2026-06-07 21:48:27');
+INSERT INTO `sj_job_task` VALUES (1665, 'dev', 'ruoyi_group', 1, 1810, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063620426155933696@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 21:58:27', '2026-06-07 21:58:27');
+INSERT INTO `sj_job_task` VALUES (1666, 'dev', 'ruoyi_group', 1, 1811, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063622789000204288@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 22:08:27', '2026-06-07 22:08:28');
+INSERT INTO `sj_job_task` VALUES (1667, 'dev', 'ruoyi_group', 1, 1812, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 22:18:27', '2026-06-07 22:18:28');
+INSERT INTO `sj_job_task` VALUES (1668, 'dev', 'ruoyi_group', 1, 1813, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 22:28:27', '2026-06-07 22:28:27');
+INSERT INTO `sj_job_task` VALUES (1669, 'dev', 'ruoyi_group', 1, 1814, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 22:38:27', '2026-06-07 22:38:27');
+INSERT INTO `sj_job_task` VALUES (1670, 'dev', 'ruoyi_group', 1, 1815, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 22:48:27', '2026-06-07 22:48:27');
+INSERT INTO `sj_job_task` VALUES (1671, 'dev', 'ruoyi_group', 1, 1816, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 22:58:27', '2026-06-07 22:58:27');
+INSERT INTO `sj_job_task` VALUES (1672, 'dev', 'ruoyi_group', 1, 1817, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 23:08:27', '2026-06-07 23:08:27');
+INSERT INTO `sj_job_task` VALUES (1673, 'dev', 'ruoyi_group', 1, 1818, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 23:18:27', '2026-06-07 23:18:27');
+INSERT INTO `sj_job_task` VALUES (1674, 'dev', 'ruoyi_group', 1, 1819, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 23:28:27', '2026-06-07 23:28:27');
+INSERT INTO `sj_job_task` VALUES (1675, 'dev', 'ruoyi_group', 1, 1820, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 23:38:27', '2026-06-07 23:38:27');
+INSERT INTO `sj_job_task` VALUES (1676, 'dev', 'ruoyi_group', 1, 1821, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 23:48:27', '2026-06-07 23:48:27');
+INSERT INTO `sj_job_task` VALUES (1677, 'dev', 'ruoyi_group', 1, 1822, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063624952946491392@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-07 23:58:27', '2026-06-07 23:58:27');
+INSERT INTO `sj_job_task` VALUES (1678, 'dev', 'ruoyi_group', 1, 1823, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063653142670749696@192.168.1.103:28080', NULL, '测试成功', '{}', 2, '', '2026-06-08 00:08:27', '2026-06-08 00:08:28');
 INSERT INTO `sj_job_task` VALUES (1679, 'dev', 'ruoyi_group', 2, 1826, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063983925809774592@192.168.1.104:28080', NULL, '供应商绩效批量评估完成', '{\"jobParams\":\"\"}', 2, '', '2026-06-08 22:00:35', '2026-06-08 22:00:35');
 INSERT INTO `sj_job_task` VALUES (1680, 'dev', 'ruoyi_group', 3, 1825, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063983925809774592@192.168.1.104:28080', NULL, '安全库存预警检查完成', '{\"jobParams\":\"\"}', 2, '', '2026-06-08 22:00:35', '2026-06-08 22:00:35');
 INSERT INTO `sj_job_task` VALUES (1681, 'dev', 'ruoyi_group', 1, 1824, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2063983925809774592@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-08 22:00:35', '2026-06-08 22:00:35');
@@ -8336,26 +8136,6 @@ INSERT INTO `sj_job_task` VALUES (1853, 'dev', 'ruoyi_group', 1, 2003, 0, 3, 0, 
 INSERT INTO `sj_job_task` VALUES (1854, 'dev', 'ruoyi_group', 1, 2004, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066076767369744384@192.168.1.105:28080', NULL, '测试成功', '{}', 2, '', '2026-06-14 21:39:53', '2026-06-14 21:39:53');
 INSERT INTO `sj_job_task` VALUES (1855, 'dev', 'ruoyi_group', 1, 2005, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066076767369744384@192.168.1.105:28080', NULL, '测试成功', '{}', 2, '', '2026-06-14 21:49:53', '2026-06-14 21:49:53');
 INSERT INTO `sj_job_task` VALUES (1856, 'dev', 'ruoyi_group', 1, 2006, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066076767369744384@192.168.1.105:28080', NULL, '测试成功', '{}', 2, '', '2026-06-14 21:59:53', '2026-06-14 21:59:53');
-INSERT INTO `sj_job_task` VALUES (1857, 'dev', 'ruoyi_group', 1, 2024, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 21:03:11', '2026-06-15 21:03:11');
-INSERT INTO `sj_job_task` VALUES (1858, 'dev', 'ruoyi_group', 2, 2022, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '供应商绩效批量评估完成', '{\"jobParams\":\"\"}', 2, '', '2026-06-15 21:03:11', '2026-06-15 21:03:11');
-INSERT INTO `sj_job_task` VALUES (1859, 'dev', 'ruoyi_group', 3, 2023, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '安全库存预警检查完成', '{\"jobParams\":\"\"}', 2, '', '2026-06-15 21:03:11', '2026-06-15 21:03:11');
-INSERT INTO `sj_job_task` VALUES (1860, 'dev', 'ruoyi_group', 1, 2025, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 21:13:11', '2026-06-15 21:13:11');
-INSERT INTO `sj_job_task` VALUES (1861, 'dev', 'ruoyi_group', 1, 2026, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 21:23:11', '2026-06-15 21:23:11');
-INSERT INTO `sj_job_task` VALUES (1862, 'dev', 'ruoyi_group', 1, 2027, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 21:33:11', '2026-06-15 21:33:11');
-INSERT INTO `sj_job_task` VALUES (1863, 'dev', 'ruoyi_group', 1, 2028, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 21:43:11', '2026-06-15 21:43:11');
-INSERT INTO `sj_job_task` VALUES (1864, 'dev', 'ruoyi_group', 1, 2029, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 21:53:11', '2026-06-15 21:53:11');
-INSERT INTO `sj_job_task` VALUES (1865, 'dev', 'ruoyi_group', 1, 2030, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 22:03:11', '2026-06-15 22:03:11');
-INSERT INTO `sj_job_task` VALUES (1866, 'dev', 'ruoyi_group', 1, 2031, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 22:13:11', '2026-06-15 22:13:11');
-INSERT INTO `sj_job_task` VALUES (1867, 'dev', 'ruoyi_group', 1, 2032, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 22:23:11', '2026-06-15 22:23:11');
-INSERT INTO `sj_job_task` VALUES (1868, 'dev', 'ruoyi_group', 1, 2033, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 22:33:11', '2026-06-15 22:33:11');
-INSERT INTO `sj_job_task` VALUES (1869, 'dev', 'ruoyi_group', 1, 2034, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 22:43:11', '2026-06-15 22:43:11');
-INSERT INTO `sj_job_task` VALUES (1870, 'dev', 'ruoyi_group', 1, 2035, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066506768367886336@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 22:53:11', '2026-06-15 22:53:11');
-INSERT INTO `sj_job_task` VALUES (1871, 'dev', 'ruoyi_group', 1, 2036, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066536489864527872@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 23:03:11', '2026-06-15 23:03:11');
-INSERT INTO `sj_job_task` VALUES (1872, 'dev', 'ruoyi_group', 1, 2037, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066536489864527872@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 23:13:11', '2026-06-15 23:13:11');
-INSERT INTO `sj_job_task` VALUES (1873, 'dev', 'ruoyi_group', 1, 2038, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066536489864527872@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 23:23:11', '2026-06-15 23:23:11');
-INSERT INTO `sj_job_task` VALUES (1874, 'dev', 'ruoyi_group', 1, 2039, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066536489864527872@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 23:33:11', '2026-06-15 23:33:11');
-INSERT INTO `sj_job_task` VALUES (1875, 'dev', 'ruoyi_group', 1, 2040, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066536489864527872@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 23:43:11', '2026-06-15 23:43:11');
-INSERT INTO `sj_job_task` VALUES (1876, 'dev', 'ruoyi_group', 1, 2041, 0, 3, 0, NULL, 1, 'CLUSTER_TASK', '2066536489864527872@192.168.1.104:28080', NULL, '测试成功', '{}', 2, '', '2026-06-15 23:53:11', '2026-06-15 23:53:11');
 
 -- ----------------------------
 -- Table structure for sj_job_task_batch
@@ -8376,18 +8156,35 @@ CREATE TABLE `sj_job_task_batch`  (
   `parent_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '父节点',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`job_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_workflow_task_batch_id_workflow_node_id`(`workflow_task_batch_id`, `workflow_node_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2042 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2021 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_job_task_batch
 -- ----------------------------
+INSERT INTO `sj_job_task_batch` VALUES (1807, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780838907410, 3, '', '', 0, '2026-06-07 21:28:27', '2026-06-07 21:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1808, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780839507396, 3, '', '', 0, '2026-06-07 21:38:27', '2026-06-07 21:38:27');
+INSERT INTO `sj_job_task_batch` VALUES (1809, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780840107396, 3, '', '', 0, '2026-06-07 21:48:27', '2026-06-07 21:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1810, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780840707406, 3, '', '', 0, '2026-06-07 21:58:27', '2026-06-07 21:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1811, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780841307409, 3, '', '', 0, '2026-06-07 22:08:27', '2026-06-07 22:08:28');
+INSERT INTO `sj_job_task_batch` VALUES (1812, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780841907450, 3, '', '', 0, '2026-06-07 22:18:26', '2026-06-07 22:18:28');
+INSERT INTO `sj_job_task_batch` VALUES (1813, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780842507451, 3, '', '', 0, '2026-06-07 22:28:26', '2026-06-07 22:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1814, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780843107447, 3, '', '', 0, '2026-06-07 22:38:26', '2026-06-07 22:38:27');
+INSERT INTO `sj_job_task_batch` VALUES (1815, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780843707447, 3, '', '', 0, '2026-06-07 22:48:26', '2026-06-07 22:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1816, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780844307454, 3, '', '', 0, '2026-06-07 22:58:26', '2026-06-07 22:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1817, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780844907446, 3, '', '', 0, '2026-06-07 23:08:26', '2026-06-07 23:08:27');
+INSERT INTO `sj_job_task_batch` VALUES (1818, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780845507442, 3, '', '', 0, '2026-06-07 23:18:26', '2026-06-07 23:18:27');
+INSERT INTO `sj_job_task_batch` VALUES (1819, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780846107439, 3, '', '', 0, '2026-06-07 23:28:26', '2026-06-07 23:28:27');
+INSERT INTO `sj_job_task_batch` VALUES (1820, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780846707441, 3, '', '', 0, '2026-06-07 23:38:26', '2026-06-07 23:38:27');
+INSERT INTO `sj_job_task_batch` VALUES (1821, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780847307454, 3, '', '', 0, '2026-06-07 23:48:26', '2026-06-07 23:48:27');
+INSERT INTO `sj_job_task_batch` VALUES (1822, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780847907447, 3, '', '', 0, '2026-06-07 23:58:26', '2026-06-07 23:58:27');
+INSERT INTO `sj_job_task_batch` VALUES (1823, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780848507442, 3, '', '', 0, '2026-06-08 00:08:26', '2026-06-08 00:08:28');
 INSERT INTO `sj_job_task_batch` VALUES (1824, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1780927234646, 3, '', '', 0, '2026-06-08 22:00:35', '2026-06-08 22:00:35');
 INSERT INTO `sj_job_task_batch` VALUES (1825, 'dev', 'ruoyi_group', 3, 0, 0, 0, 3, 0, 1780927234646, 3, '', '', 0, '2026-06-08 22:00:35', '2026-06-08 22:00:35');
 INSERT INTO `sj_job_task_batch` VALUES (1826, 'dev', 'ruoyi_group', 2, 0, 0, 0, 3, 0, 1780927234646, 3, '', '', 0, '2026-06-08 22:00:35', '2026-06-08 22:00:35');
@@ -8585,27 +8382,6 @@ INSERT INTO `sj_job_task_batch` VALUES (2017, 'dev', 'ruoyi_group', 1, 0, 0, 0, 
 INSERT INTO `sj_job_task_batch` VALUES (2018, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-14 23:59:51', '2026-06-14 23:59:51');
 INSERT INTO `sj_job_task_batch` VALUES (2019, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-15 00:09:51', '2026-06-15 00:09:51');
 INSERT INTO `sj_job_task_batch` VALUES (2020, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-15 00:19:51', '2026-06-15 00:19:51');
-INSERT INTO `sj_job_task_batch` VALUES (2021, 'dev', 'ruoyi_group', 1, 0, 0, 0, 6, 2, 0, 3, '', '', 0, '2026-06-15 00:29:51', '2026-06-15 00:29:51');
-INSERT INTO `sj_job_task_batch` VALUES (2022, 'dev', 'ruoyi_group', 2, 0, 0, 0, 3, 0, 1781528591046, 3, '', '', 0, '2026-06-15 21:03:11', '2026-06-15 21:03:11');
-INSERT INTO `sj_job_task_batch` VALUES (2023, 'dev', 'ruoyi_group', 3, 0, 0, 0, 3, 0, 1781528591046, 3, '', '', 0, '2026-06-15 21:03:11', '2026-06-15 21:03:11');
-INSERT INTO `sj_job_task_batch` VALUES (2024, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781528591046, 3, '', '', 0, '2026-06-15 21:03:11', '2026-06-15 21:03:11');
-INSERT INTO `sj_job_task_batch` VALUES (2025, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781529190937, 3, '', '', 0, '2026-06-15 21:13:11', '2026-06-15 21:13:11');
-INSERT INTO `sj_job_task_batch` VALUES (2026, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781529790933, 3, '', '', 0, '2026-06-15 21:23:11', '2026-06-15 21:23:11');
-INSERT INTO `sj_job_task_batch` VALUES (2027, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781530390933, 3, '', '', 0, '2026-06-15 21:33:01', '2026-06-15 21:33:11');
-INSERT INTO `sj_job_task_batch` VALUES (2028, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781530990942, 3, '', '', 0, '2026-06-15 21:43:11', '2026-06-15 21:43:11');
-INSERT INTO `sj_job_task_batch` VALUES (2029, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781531590946, 3, '', '', 0, '2026-06-15 21:53:11', '2026-06-15 21:53:11');
-INSERT INTO `sj_job_task_batch` VALUES (2030, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781532190935, 3, '', '', 0, '2026-06-15 22:03:11', '2026-06-15 22:03:11');
-INSERT INTO `sj_job_task_batch` VALUES (2031, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781532790938, 3, '', '', 0, '2026-06-15 22:13:11', '2026-06-15 22:13:11');
-INSERT INTO `sj_job_task_batch` VALUES (2032, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781533390947, 3, '', '', 0, '2026-06-15 22:23:11', '2026-06-15 22:23:11');
-INSERT INTO `sj_job_task_batch` VALUES (2033, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781533990945, 3, '', '', 0, '2026-06-15 22:33:11', '2026-06-15 22:33:11');
-INSERT INTO `sj_job_task_batch` VALUES (2034, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781534590934, 3, '', '', 0, '2026-06-15 22:43:11', '2026-06-15 22:43:11');
-INSERT INTO `sj_job_task_batch` VALUES (2035, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781535190946, 3, '', '', 0, '2026-06-15 22:53:11', '2026-06-15 22:53:11');
-INSERT INTO `sj_job_task_batch` VALUES (2036, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781535790941, 3, '', '', 0, '2026-06-15 23:03:11', '2026-06-15 23:03:11');
-INSERT INTO `sj_job_task_batch` VALUES (2037, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781536390934, 3, '', '', 0, '2026-06-15 23:13:11', '2026-06-15 23:13:11');
-INSERT INTO `sj_job_task_batch` VALUES (2038, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781536990944, 3, '', '', 0, '2026-06-15 23:23:11', '2026-06-15 23:23:11');
-INSERT INTO `sj_job_task_batch` VALUES (2039, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781537590941, 3, '', '', 0, '2026-06-15 23:33:11', '2026-06-15 23:33:11');
-INSERT INTO `sj_job_task_batch` VALUES (2040, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781538190946, 3, '', '', 0, '2026-06-15 23:43:11', '2026-06-15 23:43:11');
-INSERT INTO `sj_job_task_batch` VALUES (2041, 'dev', 'ruoyi_group', 1, 0, 0, 0, 3, 0, 1781538790940, 3, '', '', 0, '2026-06-15 23:53:11', '2026-06-15 23:53:11');
 
 -- ----------------------------
 -- Table structure for sj_namespace
@@ -8617,12 +8393,12 @@ CREATE TABLE `sj_namespace`  (
   `unique_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '唯一id',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_unique_id`(`unique_id`) USING BTREE,
   INDEX `idx_name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_namespace
@@ -8647,15 +8423,11 @@ CREATE TABLE `sj_notify_config`  (
   `rate_limiter_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '限流状态 0、未启用 1、启用',
   `rate_limiter_threshold` int(11) NOT NULL DEFAULT 0 COMMENT '每秒限流阈值',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_notify_config
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_notify_recipient
@@ -8668,15 +8440,11 @@ CREATE TABLE `sj_notify_recipient`  (
   `notify_type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '通知类型 1、钉钉 2、邮件 3、企业微信 4 飞书 5 webhook',
   `notify_attribute` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置属性',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id`(`namespace_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_notify_recipient
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_retry
@@ -8702,8 +8470,8 @@ CREATE TABLE `sj_retry`  (
   `bucket_index` int(11) NOT NULL DEFAULT 0 COMMENT 'bucket',
   `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父节点id',
   `deleted` bigint(20) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_tasktype_idempotentid_deleted`(`scene_id`, `task_type`, `idempotent_id`, `deleted`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
@@ -8711,11 +8479,7 @@ CREATE TABLE `sj_retry`  (
   INDEX `idx_retry_status_bucket_index`(`retry_status`, `bucket_index`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_retry
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_retry_dead_letter
@@ -8734,17 +8498,13 @@ CREATE TABLE `sj_retry_dead_letter`  (
   `serializer_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'jackson' COMMENT '执行方法参数序列化器名称',
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '执行方法参数',
   `ext_attrs` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '扩展字段',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `idx_idempotent_id`(`idempotent_id`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_retry_dead_letter
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_retry_scene_config
@@ -8771,15 +8531,11 @@ CREATE TABLE `sj_retry_scene_config`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_retry_scene_config
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_retry_summary
@@ -8790,21 +8546,17 @@ CREATE TABLE `sj_retry_summary`  (
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `scene_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '场景名称',
-  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `running_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试中-日志数量',
   `finish_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试完成-日志数量',
   `max_count_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试到达最大次数-日志数量',
   `suspend_num` int(11) NOT NULL DEFAULT 0 COMMENT '暂停重试-日志数量',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_name_trigger_at`(`namespace_id`, `group_name`, `scene_name`, `trigger_at`) USING BTREE,
   INDEX `idx_trigger_at`(`trigger_at`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_retry_summary
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_retry_task
@@ -8821,18 +8573,14 @@ CREATE TABLE `sj_retry_task`  (
   `task_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '任务类型 1、重试数据 2、回调数据',
   `operation_reason` tinyint(4) NOT NULL DEFAULT 0 COMMENT '操作原因',
   `client_info` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '客户端地址 clientId#ip:port',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `task_status`(`task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_retry_id`(`retry_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_retry_task
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_retry_task_log_message
@@ -8847,15 +8595,11 @@ CREATE TABLE `sj_retry_task_log_message`  (
   `message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '异常信息',
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_retry_task_id`(`namespace_id`, `group_name`, `retry_task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_retry_task_log_message
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_server_node
@@ -8868,23 +8612,22 @@ CREATE TABLE `sj_server_node`  (
   `host_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主机id',
   `host_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '机器ip',
   `host_port` int(16) NOT NULL COMMENT '机器端口',
-  `expire_at` datetime NOT NULL COMMENT '过期时间',
+  `expire_at` datetime(0) NOT NULL COMMENT '过期时间',
   `node_type` tinyint(4) NOT NULL COMMENT '节点类型 1、客户端 2、是服务端',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 56 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 49 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (53, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2066506672767139840', '192.168.1.104', 17888, '2026-06-16 00:01:51', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-06-15 21:02:41', '2026-06-16 00:01:21');
-INSERT INTO `sj_server_node` VALUES (55, 'dev', 'ruoyi_group', '2066536489864527872', '192.168.1.104', 28080, '2026-06-16 00:01:51', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-06-15 23:01:09', '2026-06-16 00:01:21');
+INSERT INTO `sj_server_node` VALUES (48, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2066027691295023104', '192.168.1.105', 17888, '2026-06-15 00:23:52', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-06-14 13:19:23', '2026-06-15 00:23:21');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -8895,11 +8638,11 @@ CREATE TABLE `sj_system_user`  (
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '账号',
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '密码',
   `role` tinyint(4) NOT NULL DEFAULT 0 COMMENT '角色：1-普通用户、2-管理员',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_system_user
@@ -8915,15 +8658,11 @@ CREATE TABLE `sj_system_user_permission`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `system_user_id` bigint(20) NOT NULL COMMENT '系统用户id',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_system_user_id`(`namespace_id`, `group_name`, `system_user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_system_user_permission
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_workflow
@@ -8949,16 +8688,12 @@ CREATE TABLE `sj_workflow`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_workflow
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_workflow_node
@@ -8980,16 +8715,12 @@ CREATE TABLE `sj_workflow_node`  (
   `version` int(11) NOT NULL COMMENT '版本号',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_workflow_node
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sj_workflow_task_batch
@@ -9008,17 +8739,13 @@ CREATE TABLE `sj_workflow_task_batch`  (
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `version` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`workflow_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sj_workflow_task_batch
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for sys_auto_code_part
@@ -9048,14 +8775,14 @@ CREATE TABLE `sys_auto_code_part`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`part_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -9163,15 +8890,15 @@ CREATE TABLE `sys_auto_code_result`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`code_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_gen_date`(`gen_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -9220,14 +8947,14 @@ CREATE TABLE `sys_auto_code_rule`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -9280,13 +9007,13 @@ CREATE TABLE `sys_client`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `appid` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appid',
   `app_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appSecret',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_client
@@ -9308,12 +9035,12 @@ CREATE TABLE `sys_config`  (
   `config_type` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_config
@@ -9348,11 +9075,11 @@ CREATE TABLE `sys_dept`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -9409,16 +9136,16 @@ CREATE TABLE `sys_dic_area`  (
   `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`pkid`) USING BTREE,
   INDEX `idx_layered`(`layered`) USING BTREE,
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   INDEX `idx_parent_area_id`(`parent_area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dic_area
@@ -11101,12 +10828,12 @@ CREATE TABLE `sys_dict_data`  (
   `is_default` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -11468,6 +11195,10 @@ INSERT INTO `sys_dict_data` VALUES (600101, '000000', 2, '阿里云 DashScope', 
 INSERT INTO `sys_dict_data` VALUES (600102, '000000', 3, '智谱 AI', 'ZHIPU', 'ai_provider_type', '', 'warning', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '智谱 GLM');
 INSERT INTO `sys_dict_data` VALUES (600103, '000000', 4, 'Ollama', 'OLLAMA', 'ai_provider_type', '', 'info', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Ollama 本地模型');
 INSERT INTO `sys_dict_data` VALUES (600104, '000000', 5, 'DeepSeek', 'DEEPSEEK', 'ai_provider_type', '', 'danger', 'Y', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'DeepSeek');
+INSERT INTO `sys_dict_data` VALUES (600106, '000000', 1, '加工', 'PROCESSING', 'bd_process_category', '', 'primary', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '加工工序');
+INSERT INTO `sys_dict_data` VALUES (600107, '000000', 2, '装配', 'ASSEMBLY', 'bd_process_category', '', 'success', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '装配工序');
+INSERT INTO `sys_dict_data` VALUES (600108, '000000', 3, '检验', 'INSPECTION', 'bd_process_category', '', 'warning', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '检验工序');
+INSERT INTO `sys_dict_data` VALUES (600109, '000000', 4, '包装', 'PACKAGING', 'bd_process_category', '', 'info', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '包装工序');
 INSERT INTO `sys_dict_data` VALUES (600110, '000000', 1, '对话模型', 'CHAT', 'ai_model_type', '', 'primary', 'Y', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Chat 对话模型');
 INSERT INTO `sys_dict_data` VALUES (600111, '000000', 2, '嵌入模型', 'EMBEDDING', 'ai_model_type', '', 'success', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Embedding 向量模型');
 INSERT INTO `sys_dict_data` VALUES (600112, '000000', 3, '重排序模型', 'RERANK', 'ai_model_type', '', 'warning', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Rerank 重排序模型');
@@ -11482,6 +11213,13 @@ INSERT INTO `sys_dict_data` VALUES (600141, '000000', 2, '本地工具', 'LOCAL'
 INSERT INTO `sys_dict_data` VALUES (600142, '000000', 3, '远程工具', 'REMOTE', 'ai_tool_type', '', 'warning', 'N', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'HTTP/SSE 方式的远程 MCP 工具');
 INSERT INTO `sys_dict_data` VALUES (600150, '000000', 1, '启用', 'ENABLED', 'ai_tool_status', '', 'success', 'Y', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '工具已启用');
 INSERT INTO `sys_dict_data` VALUES (600151, '000000', 2, '停用', 'DISABLED', 'ai_tool_status', '', 'danger', 'N', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '工具已停用');
+INSERT INTO `sys_dict_data` VALUES (610110, '000000', 1, '工程BOM', 'EBOM', 'bd_bom_type', '', 'primary', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '工程BOM - 设计部门维护');
+INSERT INTO `sys_dict_data` VALUES (610111, '000000', 2, '制造BOM', 'MBOM', 'bd_bom_type', '', 'success', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '制造BOM - 工艺部门维护');
+INSERT INTO `sys_dict_data` VALUES (610112, '000000', 3, '服务BOM', 'SBOM', 'bd_bom_type', '', 'warning', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '服务BOM - 售后部门维护');
+INSERT INTO `sys_dict_data` VALUES (610113, '000000', 4, '配置BOM', 'CBOM', 'bd_bom_type', '', 'info', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '配置BOM - 可选配产品(预留)');
+INSERT INTO `sys_dict_data` VALUES (610114, '000000', 1, '完全替代', 'FULL', 'bd_substitution_type', '', 'success', 'N', 103, 1, '2026-06-16 18:04:57', NULL, NULL, '完全替代 - 1:1替换');
+INSERT INTO `sys_dict_data` VALUES (610115, '000000', 2, '部分替代', 'PARTIAL', 'bd_substitution_type', '', 'warning', 'N', 103, 1, '2026-06-16 18:04:57', NULL, NULL, '部分替代 - 按比例替换');
+INSERT INTO `sys_dict_data` VALUES (610116, '000000', 3, '互换', 'INTERCHANGEABLE', 'bd_substitution_type', '', 'primary', 'N', 103, 1, '2026-06-16 18:04:57', NULL, NULL, '互换 - 双向可替换');
 INSERT INTO `sys_dict_data` VALUES (3000011, '000000', 1, '草稿', 'DRAFT', 'pu_purchase_requisition_status', '', 'info', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '草稿');
 INSERT INTO `sys_dict_data` VALUES (3000012, '000000', 2, '已提交', 'SUBMITTED', 'pu_purchase_requisition_status', '', 'primary', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '已提交');
 INSERT INTO `sys_dict_data` VALUES (3000013, '000000', 3, '审批中', 'APPROVING', 'pu_purchase_requisition_status', '', 'warning', 'N', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '审批中');
@@ -11580,13 +11318,13 @@ CREATE TABLE `sys_dict_type`  (
   `dict_type` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '字典类型',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `tenant_id`(`tenant_id`, `dict_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -11700,6 +11438,9 @@ INSERT INTO `sys_dict_type` VALUES (600102, '000000', 'AI 消息角色', 'ai_mes
 INSERT INTO `sys_dict_type` VALUES (600103, '000000', 'AI 会话状态', 'ai_session_status', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'AI 会话状态列表');
 INSERT INTO `sys_dict_type` VALUES (600104, '000000', 'AI 工具类型', 'ai_tool_type', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'AI 工具类型列表');
 INSERT INTO `sys_dict_type` VALUES (600105, '000000', 'AI 工具状态', 'ai_tool_status', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'AI 工具状态列表');
+INSERT INTO `sys_dict_type` VALUES (600106, '000000', '工序类别', 'bd_process_category', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '工序类别: 加工/装配/检验/包装');
+INSERT INTO `sys_dict_type` VALUES (600107, '000000', 'BOM类型', 'bd_bom_type', 103, 1, '2026-06-16 18:01:18', NULL, NULL, 'BOM类型: 工程BOM/制造BOM/服务BOM/配置BOM');
+INSERT INTO `sys_dict_type` VALUES (600108, '000000', '替代料类型', 'bd_substitution_type', 103, 1, '2026-06-16 18:04:28', NULL, NULL, 'BOM替代料替代类型');
 INSERT INTO `sys_dict_type` VALUES (3000097, '000000', '产能日历状态', 'prd_calendar_status', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历记录状态');
 INSERT INTO `sys_dict_type` VALUES (3000100, '000000', '产能对象类型', 'prd_calendar_object_type', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历关联对象类型');
 INSERT INTO `sys_dict_type` VALUES (3000210, '000000', '产能对象类型', 'prd_capacity_object_type', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '产能日历对象类型');
@@ -11724,11 +11465,11 @@ CREATE TABLE `sys_logininfor`  (
   `os` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '操作系统',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
   `msg` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '提示消息',
-  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
+  `login_time` datetime(0) NULL DEFAULT NULL COMMENT '访问时间',
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -11811,9 +11552,6 @@ INSERT INTO `sys_logininfor` VALUES (2066164864220553218, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2066177542653624322, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-06-14 23:14:49');
 INSERT INTO `sys_logininfor` VALUES (2066177564409479169, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-14 23:14:54');
 INSERT INTO `sys_logininfor` VALUES (2066191107125141505, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-15 00:08:43');
-INSERT INTO `sys_logininfor` VALUES (2066515538535915522, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-15 21:37:53');
-INSERT INTO `sys_logininfor` VALUES (2066536691593773058, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '1', '验证码已失效', '2026-06-15 23:01:56');
-INSERT INTO `sys_logininfor` VALUES (2066536714314317825, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-15 23:02:02');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -11836,12 +11574,12 @@ CREATE TABLE `sys_menu`  (
   `icon` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -12245,12 +11983,6 @@ INSERT INTO `sys_menu` VALUES (2820, '返工出库', 2150, 6, '', NULL, NULL, 1,
 INSERT INTO `sys_menu` VALUES (2821, '返工入库', 2150, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:rework:receive', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2830, '委外发料', 2144, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:issue', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2831, '委外收货', 2144, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:receive', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2840, '采购合同', 2500, 10, 'contract', 'erp/pu/contract/index', '', 1, 0, 'C', '0', '0', 'pu:contract:list', 'documentation', 103, 1, '2026-06-15 22:55:42', NULL, NULL, '采购合同菜单');
-INSERT INTO `sys_menu` VALUES (2841, '采购合同查询', 2840, 1, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:query', '#', 103, 1, '2026-06-15 22:56:06', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2842, '采购合同新增', 2840, 2, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:add', '#', 103, 1, '2026-06-15 22:56:07', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2843, '采购合同修改', 2840, 3, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:edit', '#', 103, 1, '2026-06-15 22:56:09', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2844, '采购合同删除', 2840, 4, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:remove', '#', 103, 1, '2026-06-15 22:56:10', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2845, '采购合同导出', 2840, 5, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:export', '#', 103, 1, '2026-06-15 22:56:11', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3000, '支付管理', 0, 7, 'pay', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:46:03', '支付管理目录');
 INSERT INTO `sys_menu` VALUES (3001, '订单管理', 3000, 1, 'order', 'pay/order/index', '', 1, 0, 'C', '0', '0', 'pay:order:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:14', '订单管理菜单');
 INSERT INTO `sys_menu` VALUES (3002, '订单查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:query', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
@@ -12268,6 +12000,20 @@ INSERT INTO `sys_menu` VALUES (3013, '支付测试', 3000, 3, 'paytest', 'pay/pa
 INSERT INTO `sys_menu` VALUES (3020, '积木报表', 0, 8, 'report', NULL, '', 1, 0, 'M', '0', '0', '', 'tab', 103, 1, '2026-05-03 14:54:28', 1, '2026-05-05 22:10:34', '积木报表目录');
 INSERT INTO `sys_menu` VALUES (3021, '报表设计', 3020, 1, 'reportDesign', 'report/design/index', '', 1, 0, 'C', '0', '0', 'report:design:list', 'edit', 103, 1, '2026-05-03 14:54:28', NULL, NULL, '积木报表设计器菜单');
 INSERT INTO `sys_menu` VALUES (3022, '报表大屏', 3020, 2, 'reportDashboard', 'report/dashboard/index', '', 1, 0, 'C', '0', '0', 'report:dashboard:list', 'dashboard', 103, 1, '2026-05-03 14:54:28', NULL, NULL, '积木报表大屏设计器菜单');
+INSERT INTO `sys_menu` VALUES (4000, 'MES系统', 0, 7, 'mes', NULL, '', 1, 0, 'M', '0', '0', '', 'setting', 103, 1, '2026-06-16 18:00:58', NULL, NULL, 'MES制造执行系统');
+INSERT INTO `sys_menu` VALUES (4001, '生产执行', 4000, 1, 'pro', NULL, '', 1, 0, 'M', '0', '0', '', 'tool', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '生产执行管理');
+INSERT INTO `sys_menu` VALUES (4002, '质量管理', 4000, 2, 'qc', NULL, '', 1, 0, 'M', '0', '0', '', 'documentation', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '质量管理(IQC/IPQC/OQC)');
+INSERT INTO `sys_menu` VALUES (4003, '设备管理', 4000, 3, 'eq', NULL, '', 1, 0, 'M', '0', '0', '', 'computer', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '设备台账/保养/维修');
+INSERT INTO `sys_menu` VALUES (4004, '数据采集', 4000, 4, 'dc', NULL, '', 1, 0, 'M', '0', '0', '', 'monitor', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '数据采集点/采集记录');
+INSERT INTO `sys_menu` VALUES (4005, 'SPC分析', 4000, 5, 'spc', NULL, '', 1, 0, 'M', '0', '0', '', 'chart', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '统计过程控制(SPC)');
+INSERT INTO `sys_menu` VALUES (4010, 'MES工单', 4001, 1, 'workorder', 'mes/pro/workorder/index', '', 1, 0, 'C', '0', '0', 'mes:workorder:list', 'list', 103, 1, '2026-06-16 18:00:58', NULL, NULL, 'MES工单列表');
+INSERT INTO `sys_menu` VALUES (4011, 'MES工单查询', 4010, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:workorder:query', '#', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4012, 'MES工单新增', 4010, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:workorder:add', '#', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4013, 'MES工单修改', 4010, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:workorder:edit', '#', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4014, 'MES工单删除', 4010, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:workorder:remove', '#', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4015, 'MES工单导出', 4010, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:workorder:export', '#', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4016, 'MES工单审批', 4010, 6, '', '', '', 1, 0, 'F', '0', '0', 'mes:workorder:approve', '#', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4017, 'MES工单下达', 4010, 7, '', '', '', 1, 0, 'F', '0', '0', 'mes:workorder:release', '#', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (5000, '序列号管理', 2600, 10, 'sn', 'erp/wm/sn/index', NULL, 1, 0, 'C', '0', '0', 'wm:sn:list', 'code', 103, 1, '2026-06-03 00:38:59', 1, '2026-06-03 11:09:57', '序列号管理菜单');
 INSERT INTO `sys_menu` VALUES (5001, '序列号查询', 5000, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:query', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (5002, '序列号新增', 5000, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:add', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
@@ -12346,12 +12092,12 @@ CREATE TABLE `sys_notice`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2052226250938740738 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2052226250938740738 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -12383,13 +12129,13 @@ CREATE TABLE `sys_oper_log`  (
   `json_result` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '返回参数',
   `status` int(1) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
   `error_msg` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '错误消息',
-  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
+  `oper_time` datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
   `cost_time` bigint(20) NULL DEFAULT 0 COMMENT '消耗时间',
   PRIMARY KEY (`oper_id`) USING BTREE,
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -12521,13 +12267,13 @@ CREATE TABLE `sys_oss`  (
   `url` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'URL地址',
   `ext1` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '上传人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `service` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'minio' COMMENT '服务商',
   PRIMARY KEY (`oss_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oss
@@ -12556,12 +12302,12 @@ CREATE TABLE `sys_oss_config`  (
   `ext1` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`oss_config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_oss_config
@@ -12587,12 +12333,12 @@ CREATE TABLE `sys_post`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_post
@@ -12619,12 +12365,12 @@ CREATE TABLE `sys_role`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role
@@ -12642,7 +12388,7 @@ CREATE TABLE `sys_role_dept`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `dept_id` bigint(20) NOT NULL COMMENT '部门ID',
   PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role_dept
@@ -12657,7 +12403,7 @@ CREATE TABLE `sys_role_menu`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -12924,12 +12670,12 @@ CREATE TABLE `sys_social`  (
   `oauth_token_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Twitter平台用户的附带属性，部分平台可能没有',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_social
@@ -12952,17 +12698,17 @@ CREATE TABLE `sys_tenant`  (
   `domain` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '域名',
   `remark` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   `package_id` bigint(20) NULL DEFAULT NULL COMMENT '租户套餐编号',
-  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
+  `expire_time` datetime(0) NULL DEFAULT NULL COMMENT '过期时间',
   `account_count` int(11) NULL DEFAULT -1 COMMENT '用户数量（-1不限制）',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '租户状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_tenant
@@ -12984,11 +12730,11 @@ CREATE TABLE `sys_tenant_package`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`package_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_tenant_package
@@ -13014,20 +12760,20 @@ CREATE TABLE `sys_user`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `login_ip` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `login_date` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-15 23:02:02', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-15 23:02:02', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2052649712470769666, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-15 00:08:43', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-15 00:08:43', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-06-13 02:44:41', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-13 02:44:41', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2025-10-23 19:33:53', NULL, 1, '2025-10-23 17:03:16', 1, '2025-12-17 15:40:54', '耳朵聋');
@@ -13066,14 +12812,14 @@ CREATE TABLE `sys_user_notification`  (
   `ext_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '扩展JSON',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notification_id`) USING BTREE,
   INDEX `idx_sun_user_read`(`tenant_id`, `user_id`, `read_flag`, `create_time`) USING BTREE,
   INDEX `idx_sun_category`(`tenant_id`, `user_id`, `category`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_notification
@@ -13117,7 +12863,7 @@ CREATE TABLE `sys_user_post`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
   PRIMARY KEY (`user_id`, `post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_post
@@ -13132,7 +12878,7 @@ CREATE TABLE `sys_user_role`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -13165,7 +12911,7 @@ CREATE TABLE `test_customer`  (
   `tbr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '填表人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of test_customer
@@ -13190,13 +12936,13 @@ CREATE TABLE `test_demo`  (
   `value` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of test_demo
@@ -13224,18 +12970,18 @@ CREATE TABLE `test_leave`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `apply_code` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '申请编号',
   `leave_type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '请假类型',
-  `start_date` datetime NOT NULL COMMENT '开始时间',
-  `end_date` datetime NOT NULL COMMENT '结束时间',
+  `start_date` datetime(0) NOT NULL COMMENT '开始时间',
+  `end_date` datetime(0) NOT NULL COMMENT '结束时间',
   `leave_days` int(10) NOT NULL COMMENT '请假天数',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请假原因',
   `status` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of test_leave
@@ -13285,11 +13031,7 @@ CREATE TABLE `test_monthly_report`  (
   `by_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '本月-弃水天数',
   `lj_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '累计-弃水天数',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of test_monthly_report
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for test_order
@@ -13299,19 +13041,15 @@ CREATE TABLE `test_order`  (
   `id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `order_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单名称',
   `order_no` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单编号',
-  `order_sign_date` datetime NULL DEFAULT NULL COMMENT '订单签订日期',
-  `order_delivery_date` datetime NULL DEFAULT NULL COMMENT '订单交付日期',
+  `order_sign_date` datetime(0) NULL DEFAULT NULL COMMENT '订单签订日期',
+  `order_delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '订单交付日期',
   `order_coms` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户名称',
   `order_pers` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系人',
   `order_phone` varchar(15) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系方式',
   `fzr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of test_order
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for test_order_pros
@@ -13327,11 +13065,7 @@ CREATE TABLE `test_order_pros`  (
   `pro_model` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '型号',
   `main_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外键',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of test_order_pros
--- ----------------------------
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for test_resume
@@ -13355,7 +13089,7 @@ CREATE TABLE `test_resume`  (
   `edu_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '教育经历',
   `work_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '工作经历',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of test_resume
@@ -13376,13 +13110,13 @@ CREATE TABLE `test_tree`  (
   `tree_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of test_tree
@@ -13412,7 +13146,7 @@ CREATE TABLE `tmp_report_data_1`  (
   `his_lowest` decimal(10, 2) NULL DEFAULT NULL,
   `his_average` decimal(10, 2) NULL DEFAULT NULL,
   `his_highest` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tmp_report_data_1
@@ -13443,7 +13177,7 @@ CREATE TABLE `tmp_report_data_income`  (
   `tb_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `neikong_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `total` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tmp_report_data_income
@@ -13466,14 +13200,14 @@ CREATE TABLE `wf_category`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`category_id`) USING BTREE,
   UNIQUE INDEX `codeIndex`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_category
@@ -13503,16 +13237,12 @@ CREATE TABLE `wf_copy`  (
   `state` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`copy_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of wf_copy
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wf_custom_form
@@ -13528,13 +13258,13 @@ CREATE TABLE `wf_custom_form`  (
   `component` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件注入方法',
   `table_id` bigint(20) NULL DEFAULT NULL COMMENT '业务主表ID',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_custom_form
@@ -13567,15 +13297,11 @@ CREATE TABLE `wf_custom_rule`  (
   `attribute` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '属性0-隐藏1-只读默认2-可编辑',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of wf_custom_rule
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wf_dd_flow
@@ -13586,15 +13312,11 @@ CREATE TABLE `wf_dd_flow`  (
   `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '流程名称',
   `flow_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '流程JSON数据',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of wf_dd_flow
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wf_default_operate
@@ -13607,15 +13329,11 @@ CREATE TABLE `wf_default_operate`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of wf_default_operate
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wf_demo
@@ -13630,14 +13348,14 @@ CREATE TABLE `wf_demo`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`demo_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_demo
@@ -13657,7 +13375,7 @@ CREATE TABLE `wf_deploy_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`deploy_id`, `form_key`, `node_key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_deploy_form
@@ -13680,15 +13398,11 @@ CREATE TABLE `wf_flow_config`  (
   `form_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表单Key',
   `app_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用类型',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of wf_flow_config
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wf_form
@@ -13700,20 +13414,16 @@ CREATE TABLE `wf_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `db` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否保存数据库',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of wf_form
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for wf_my_business
@@ -13722,9 +13432,9 @@ DROP TABLE IF EXISTS `wf_my_business`;
 CREATE TABLE `wf_my_business`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
   `process_definition_key` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义key 一个key会有多个版本的id',
   `process_definition_id` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义id 一个流程定义唯一',
   `process_instance_id` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程业务实例id 一个流程业务唯一，本表中也唯一',
@@ -13745,7 +13455,7 @@ CREATE TABLE `wf_my_business`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `dataid`(`data_id`) USING BTREE COMMENT '业务数据Id索引'
-) ENGINE = InnoDB AUTO_INCREMENT = 2062399117227671555 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062399117227671555 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_my_business
@@ -13784,12 +13494,12 @@ CREATE TABLE `wf_nform`  (
   `form_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wf_nform
@@ -13814,14 +13524,10 @@ CREATE TABLE `wf_operate_rule`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of wf_operate_rule
--- ----------------------------
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

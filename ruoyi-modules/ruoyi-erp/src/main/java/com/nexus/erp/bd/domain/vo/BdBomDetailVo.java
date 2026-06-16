@@ -69,6 +69,18 @@ public class BdBomDetailVo implements Serializable {
     @ExcelProperty("工作中心名称")
     private String workstationName;
 
+    @ExcelProperty("工序ID")
+    private Long processId;
+
+    @ExcelProperty("工序编码")
+    private String processCode;
+
+    @ExcelProperty("工序名称")
+    private String processName;
+
+    @ExcelProperty("工艺路线步骤ID")
+    private Long routingStepId;
+
     @ExcelProperty("提前期(小时)")
     private Integer leadTime;
 

@@ -4,6 +4,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
+import com.nexus.erp.bd.domain.vo.BomComparisonVo;
 import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 
@@ -98,4 +99,30 @@ public interface IBdBomService {
      * @return 叶子物料汇总列表
      */
     List<IndentedBomLineVo> explodeBom(Long bomId);
+
+    /**
+     * Where-Used反查：查询某物料被哪些BOM使用（作为子项物料）
+     *
+     * @param materialId 物料ID
+     * @return 引用该物料的BOM列表
+     */
+    List<BdBomVo> whereUsed(Long materialId);
+
+    /**
+     * BOM复制：从已有BOM复制创建新版本
+     *
+     * @param sourceBomId 源BOM ID
+     * @param newVersion  新版本号
+     * @return 新BOM的ID
+     */
+    Long copyBom(Long sourceBomId, String newVersion);
+
+    /**
+     * BOM比较：对比两个版本的差异
+     *
+     * @param bomId1 BOM1 ID
+     * @param bomId2 BOM2 ID
+     * @return 比较结果
+     */
+    BomComparisonVo compareBom(Long bomId1, Long bomId2);
 }

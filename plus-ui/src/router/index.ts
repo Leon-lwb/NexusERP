@@ -262,6 +262,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/bd/routing/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['bd:routing:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/bd/routing/form.vue'),
+        name: 'RoutingForm',
+        meta: { title: '工艺路线表单', activeMenu: '/erp/bd/routing' }
+      }
+    ]
+  },
+  {
     path: '/erp/prd/requirement/form',
     component: Layout,
     hidden: true,

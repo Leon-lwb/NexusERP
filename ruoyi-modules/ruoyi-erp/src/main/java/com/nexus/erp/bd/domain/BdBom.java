@@ -73,6 +73,16 @@ public class BdBom extends TenantEntity {
     private String sourceType;
 
     /**
+     * BOM类型: EBOM-工程BOM, MBOM-制造BOM, SBOM-服务BOM, CBOM-配置BOM
+     */
+    private String bomType;
+
+    /**
+     * 关联工艺路线ID
+     */
+    private Long routingId;
+
+    /**
      * 预留字段1
      */
     private String attr1;

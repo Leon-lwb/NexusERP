@@ -14,6 +14,7 @@ import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
+import com.nexus.erp.bd.domain.vo.BomComparisonVo;
 import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.mapper.BdBomMapper;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -409,6 +411,252 @@ public class BdBomServiceImpl implements IBdBomService {
     }
 
     /**
+     * Where-Used反查：查询某物料被哪些BOM作为子项使用
+     */
+    @Override
+    public List<BdBomVo> whereUsed(Long materialId) {
+        if (materialId == null) {
+            return Collections.emptyList();
+        }
+        // 查找所有 bom_detail 中引用了该物料的 bom_id
+        List<BdBomDetail> details = bomDetailMapper.selectList(
+            Wrappers.lambdaQuery(BdBomDetail.class)
+                .eq(BdBomDetail::getChildMaterialId, materialId));
+        if (details == null || details.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> bomIds = details.stream()
+            .map(BdBomDetail::getBomId)
+            .distinct()
+            .collect(Collectors.toList());
+        // 查询这些BOM的主表信息
+        List<BdBom> boms = baseMapper.selectBatchIds(bomIds);
+        if (boms == null || boms.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 转换为VO并补充父项物料信息
+        List<BdBomVo> result = new ArrayList<>();
+        for (BdBom bom : boms) {
+            BdBomVo vo = MapstructUtils.convert(bom, BdBomVo.class);
+            if (bom.getParentMaterialId() != null) {
+                BdMaterial parentMaterial = materialMapper.selectById(bom.getParentMaterialId());
+                if (parentMaterial != null) {
+                    vo.setParentMaterialCode(parentMaterial.getMaterialCode());
+                    vo.setParentMaterialName(parentMaterial.getMaterialName());
+                }
+            }
+            result.add(vo);
+        }
+        return result;
+    }
+
+    /**
+     * BOM复制：从已有BOM复制创建新版本
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long copyBom(Long sourceBomId, String newVersion) {
+        // 1. 查询源BOM
+        BdBom sourceBom = baseMapper.selectById(sourceBomId);
+        if (sourceBom == null) {
+            throw new ServiceException("源BOM不存在");
+        }
+        // 2. 检查新版本号是否已存在
+        Long existCount = baseMapper.selectCount(
+            Wrappers.lambdaQuery(BdBom.class)
+                .eq(BdBom::getParentMaterialId, sourceBom.getParentMaterialId())
+                .eq(BdBom::getBomVersion, newVersion));
+        if (existCount > 0) {
+            throw new ServiceException("版本号 " + newVersion + " 已存在，请使用其他版本号");
+        }
+        // 3. 创建新BOM主表
+        BdBom newBom = new BdBom();
+        newBom.setParentMaterialId(sourceBom.getParentMaterialId());
+        newBom.setBomVersion(newVersion);
+        newBom.setBomName(sourceBom.getBomName() + "（复制）");
+        newBom.setBomType(sourceBom.getBomType());
+        newBom.setSourceType(sourceBom.getSourceType());
+        newBom.setRoutingId(sourceBom.getRoutingId());
+        newBom.setIsCurrent(0L);
+        newBom.setStatus(0L);
+        newBom.setRemark("从BOM " + sourceBom.getBomId() + " (v" + sourceBom.getBomVersion() + ") 复制");
+        baseMapper.insert(newBom);
+        // 4. 复制BOM明细
+        List<BdBomDetail> sourceDetails = bomDetailMapper.selectList(
+            Wrappers.lambdaQuery(BdBomDetail.class)
+                .eq(BdBomDetail::getBomId, sourceBomId));
+        if (sourceDetails != null && !sourceDetails.isEmpty()) {
+            for (BdBomDetail sourceDetail : sourceDetails) {
+                BdBomDetail newDetail = new BdBomDetail();
+                newDetail.setBomId(newBom.getBomId());
+                newDetail.setChildMaterialId(sourceDetail.getChildMaterialId());
+                newDetail.setQuantityPerParent(sourceDetail.getQuantityPerParent());
+                newDetail.setLossRate(sourceDetail.getLossRate());
+                newDetail.setOperationStep(sourceDetail.getOperationStep());
+                newDetail.setWorkstationId(sourceDetail.getWorkstationId());
+                newDetail.setProcessId(sourceDetail.getProcessId());
+                newDetail.setRoutingStepId(sourceDetail.getRoutingStepId());
+                newDetail.setLeadTime(sourceDetail.getLeadTime());
+                newDetail.setSourceType(sourceDetail.getSourceType());
+                newDetail.setEffectiveDate(sourceDetail.getEffectiveDate());
+                newDetail.setExpiryDate(sourceDetail.getExpiryDate());
+                newDetail.setSortOrder(sourceDetail.getSortOrder());
+                newDetail.setStatus(sourceDetail.getStatus());
+                newDetail.setRemark(sourceDetail.getRemark());
+                bomDetailMapper.insert(newDetail);
+            }
+        }
+        return newBom.getBomId();
+    }
+
+    /**
+     * BOM比较：对比两个版本的差异
+     */
+    @Override
+    public BomComparisonVo compareBom(Long bomId1, Long bomId2) {
+        BdBom bom1 = baseMapper.selectById(bomId1);
+        BdBom bom2 = baseMapper.selectById(bomId2);
+        if (bom1 == null || bom2 == null) {
+            throw new ServiceException("BOM不存在");
+        }
+
+        BomComparisonVo result = new BomComparisonVo();
+
+        // 填充摘要信息
+        result.setBom1(buildBomSummary(bom1));
+        result.setBom2(buildBomSummary(bom2));
+
+        // 获取两个BOM的明细
+        List<BdBomDetail> details1 = bomDetailMapper.selectList(
+            Wrappers.lambdaQuery(BdBomDetail.class).eq(BdBomDetail::getBomId, bomId1));
+        List<BdBomDetail> details2 = bomDetailMapper.selectList(
+            Wrappers.lambdaQuery(BdBomDetail.class).eq(BdBomDetail::getBomId, bomId2));
+
+        // 构建 materialId -> detail 的映射
+        Map<Long, BdBomDetail> map1 = new HashMap<>();
+        if (details1 != null) {
+            details1.forEach(d -> map1.put(d.getChildMaterialId(), d));
+        }
+        Map<Long, BdBomDetail> map2 = new HashMap<>();
+        if (details2 != null) {
+            details2.forEach(d -> map2.put(d.getChildMaterialId(), d));
+        }
+
+        // 收集所有物料ID
+        Set<Long> allMaterialIds = new HashSet<>();
+        allMaterialIds.addAll(map1.keySet());
+        allMaterialIds.addAll(map2.keySet());
+
+        List<BomComparisonVo.ComparisonLine> onlyInBom1 = new ArrayList<>();
+        List<BomComparisonVo.ComparisonLine> onlyInBom2 = new ArrayList<>();
+        List<BomComparisonVo.ComparisonLine> changed = new ArrayList<>();
+        List<BomComparisonVo.ComparisonLine> unchanged = new ArrayList<>();
+
+        for (Long materialId : allMaterialIds) {
+            BdBomDetail d1 = map1.get(materialId);
+            BdBomDetail d2 = map2.get(materialId);
+
+            BomComparisonVo.ComparisonLine line = new BomComparisonVo.ComparisonLine();
+            line.setChildMaterialId(materialId);
+
+            // 补充物料信息
+            BdMaterial material = materialMapper.selectById(materialId);
+            if (material != null) {
+                line.setChildMaterialCode(material.getMaterialCode());
+                line.setChildMaterialName(material.getMaterialName());
+                line.setChildMaterialSpec(material.getMaterialSpec());
+            }
+
+            if (d1 != null && d2 == null) {
+                // 仅在BOM1中
+                line.setQuantity1(d1.getQuantityPerParent());
+                line.setLossRate1(d1.getLossRate());
+                line.setOperationStep1(d1.getOperationStep());
+                line.setChangeType("REMOVED");
+                line.setChangeDetail("该子项在新版本中被移除");
+                onlyInBom1.add(line);
+            } else if (d1 == null && d2 != null) {
+                // 仅在BOM2中
+                line.setQuantity2(d2.getQuantityPerParent());
+                line.setLossRate2(d2.getLossRate());
+                line.setOperationStep2(d2.getOperationStep());
+                line.setChangeType("ADDED");
+                line.setChangeDetail("该子项为新增");
+                onlyInBom2.add(line);
+            } else {
+                // 两边都有，比较差异
+                line.setQuantity1(d1.getQuantityPerParent());
+                line.setQuantity2(d2.getQuantityPerParent());
+                line.setLossRate1(d1.getLossRate());
+                line.setLossRate2(d2.getLossRate());
+                line.setOperationStep1(d1.getOperationStep());
+                line.setOperationStep2(d2.getOperationStep());
+
+                boolean isQtyChanged = compareDecimal(d1.getQuantityPerParent(), d2.getQuantityPerParent());
+                boolean isLossChanged = compareDecimal(d1.getLossRate(), d2.getLossRate());
+                boolean isStepChanged = !Objects.equals(d1.getOperationStep(), d2.getOperationStep());
+
+                if (isQtyChanged || isLossChanged || isStepChanged) {
+                    line.setChangeType("MODIFIED");
+                    StringBuilder detail = new StringBuilder();
+                    if (isQtyChanged) {
+                        detail.append("用量: ").append(d1.getQuantityPerParent()).append(" → ").append(d2.getQuantityPerParent()).append("; ");
+                    }
+                    if (isLossChanged) {
+                        detail.append("损耗率: ").append(d1.getLossRate()).append("% → ").append(d2.getLossRate()).append("%; ");
+                    }
+                    if (isStepChanged) {
+                        detail.append("工序步骤: ").append(d1.getOperationStep()).append(" → ").append(d2.getOperationStep()).append("; ");
+                    }
+                    line.setChangeDetail(detail.toString().trim());
+                    changed.add(line);
+                } else {
+                    line.setChangeType("UNCHANGED");
+                    unchanged.add(line);
+                }
+            }
+        }
+
+        result.setOnlyInBom1(onlyInBom1);
+        result.setOnlyInBom2(onlyInBom2);
+        result.setChanged(changed);
+        result.setUnchanged(unchanged);
+        return result;
+    }
+
+    /**
+     * 构建BOM摘要信息
+     */
+    private BomComparisonVo.BomSummary buildBomSummary(BdBom bom) {
+        BomComparisonVo.BomSummary summary = new BomComparisonVo.BomSummary();
+        summary.setBomId(bom.getBomId());
+        summary.setBomName(bom.getBomName());
+        summary.setBomVersion(bom.getBomVersion());
+        summary.setBomType(bom.getBomType());
+        if (bom.getParentMaterialId() != null) {
+            BdMaterial material = materialMapper.selectById(bom.getParentMaterialId());
+            if (material != null) {
+                summary.setMaterialCode(material.getMaterialCode());
+                summary.setMaterialName(material.getMaterialName());
+            }
+        }
+        // 统计明细行数
+        Long count = bomDetailMapper.selectCount(
+            Wrappers.lambdaQuery(BdBomDetail.class).eq(BdBomDetail::getBomId, bom.getBomId()));
+        summary.setTotalItems(count != null ? count.intValue() : 0);
+        return summary;
+    }
+
+    /**
+     * 比较两个BigDecimal是否不同
+     */
+    private boolean compareDecimal(BigDecimal a, BigDecimal b) {
+        if (a == null && b == null) return false;
+        if (a == null || b == null) return true;
+        return a.compareTo(b) != 0;
+    }
+
+    /**
      * 查找物料的当前有效BOM
      */
     private BdBom findCurrentBom(Long materialId) {
@@ -430,6 +678,8 @@ public class BdBomServiceImpl implements IBdBomService {
         lqw.eq(bo.getParentMaterialId() != null, BdBom::getParentMaterialId, bo.getParentMaterialId());
         lqw.eq(bo.getIsCurrent() != null, BdBom::getIsCurrent, bo.getIsCurrent());
         lqw.eq(bo.getStatus() != null, BdBom::getStatus, bo.getStatus());
+        lqw.eq(StringUtils.isNotBlank(bo.getBomType()), BdBom::getBomType, bo.getBomType());
+        lqw.eq(bo.getRoutingId() != null, BdBom::getRoutingId, bo.getRoutingId());
         return lqw;
     }
 }

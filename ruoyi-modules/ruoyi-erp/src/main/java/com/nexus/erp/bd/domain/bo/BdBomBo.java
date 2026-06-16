@@ -90,6 +90,16 @@ public class BdBomBo extends BaseEntity {
     private String sourceType;
 
     /**
+     * BOM类型: EBOM-工程BOM, MBOM-制造BOM, SBOM-服务BOM, CBOM-配置BOM
+     */
+    private String bomType;
+
+    /**
+     * 关联工艺路线ID
+     */
+    private Long routingId;
+
+    /**
      * 批量删除ID集合
      */
     private Long[] ids;

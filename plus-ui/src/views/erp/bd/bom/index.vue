@@ -9,6 +9,11 @@
                         @keyup.enter="handleQuery"
                     />
                   </el-form-item>
+                  <el-form-item label="BOM类型" prop="bomType">
+                    <el-select v-model="queryParams.bomType" placeholder="请选择BOM类型" clearable>
+                      <el-option v-for="dict in bd_bom_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                    </el-select>
+                  </el-form-item>
                   <el-form-item label="生效日期" prop="effectiveDate">
                     <el-date-picker clearable
                                     v-model="queryParams.effectiveDate"
@@ -112,6 +117,14 @@
         <el-button type="primary" plain icon="Share" :disabled="single" @click="handleViewBomTree"
           v-hasPermi="['bd:bom:query']">BOM树</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="DocumentCopy" :disabled="single" @click="handleCopyBom"
+          v-hasPermi="['bd:bom:add']">复制BOM</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="DataAnalysis" :disabled="compareDisabled" @click="handleCompareBom"
+          v-hasPermi="['bd:bom:query']">BOM比较</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -120,6 +133,11 @@
               <el-table-column label="序号" type="index" width="50" align="center" prop="bomId" />
               <el-table-column label="BOM版本号" align="center" prop="bomVersion" />
               <el-table-column label="BOM名称" align="center" prop="bomName" />
+              <el-table-column label="BOM类型" align="center" prop="bomType" width="100">
+                <template #default="scope">
+                  <dict-tag :options="bd_bom_type" :value="scope.row.bomType" />
+                </template>
+              </el-table-column>
               <el-table-column label="生效日期" align="center" prop="effectiveDate" width="180">
                 <template #default="scope">
                   <span>{{ parseTime(scope.row.effectiveDate, '{y}-{m}-{d}') }}</span>
@@ -419,11 +437,102 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- BOM比较对话框 -->
+    <el-dialog title="BOM比较" v-model="compareOpen" width="1200px" append-to-body>
+      <div v-loading="compareLoading">
+        <template v-if="compareData">
+          <!-- 摘要信息 -->
+          <el-row :gutter="20" class="mb8">
+            <el-col :span="12">
+              <el-card shadow="never">
+                <template #header><span>BOM1: {{ compareData.bom1.bomName }} (v{{ compareData.bom1.bomVersion }})</span></template>
+                <el-descriptions :column="2" size="small">
+                  <el-descriptions-item label="物料编码">{{ compareData.bom1.materialCode }}</el-descriptions-item>
+                  <el-descriptions-item label="物料名称">{{ compareData.bom1.materialName }}</el-descriptions-item>
+                  <el-descriptions-item label="BOM类型">{{ compareData.bom1.bomType }}</el-descriptions-item>
+                  <el-descriptions-item label="子项数">{{ compareData.bom1.totalItems }}</el-descriptions-item>
+                </el-descriptions>
+              </el-card>
+            </el-col>
+            <el-col :span="12">
+              <el-card shadow="never">
+                <template #header><span>BOM2: {{ compareData.bom2.bomName }} (v{{ compareData.bom2.bomVersion }})</span></template>
+                <el-descriptions :column="2" size="small">
+                  <el-descriptions-item label="物料编码">{{ compareData.bom2.materialCode }}</el-descriptions-item>
+                  <el-descriptions-item label="物料名称">{{ compareData.bom2.materialName }}</el-descriptions-item>
+                  <el-descriptions-item label="BOM类型">{{ compareData.bom2.bomType }}</el-descriptions-item>
+                  <el-descriptions-item label="子项数">{{ compareData.bom2.totalItems }}</el-descriptions-item>
+                </el-descriptions>
+              </el-card>
+            </el-col>
+          </el-row>
+
+          <!-- 差异统计 -->
+          <el-row :gutter="10" class="mb8">
+            <el-col :span="6"><el-tag type="danger" size="large">移除: {{ compareData.onlyInBom1.length }}</el-tag></el-col>
+            <el-col :span="6"><el-tag type="success" size="large">新增: {{ compareData.onlyInBom2.length }}</el-tag></el-col>
+            <el-col :span="6"><el-tag type="warning" size="large">修改: {{ compareData.changed.length }}</el-tag></el-col>
+            <el-col :span="6"><el-tag type="info" size="large">相同: {{ compareData.unchanged.length }}</el-tag></el-col>
+          </el-row>
+
+          <!-- 差异明细 -->
+          <el-tabs v-model="compareActiveTab">
+            <el-tab-pane label="移除" name="removed" v-if="compareData.onlyInBom1.length > 0">
+              <el-table :data="compareData.onlyInBom1" border size="small">
+                <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
+                <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
+                <el-table-column label="规格" prop="childMaterialSpec" width="120" />
+                <el-table-column label="BOM1用量" prop="quantity1" width="100" align="right" />
+                <el-table-column label="BOM1损耗率" prop="lossRate1" width="100" align="right" />
+                <el-table-column label="说明" prop="changeDetail" min-width="150" />
+              </el-table>
+            </el-tab-pane>
+            <el-tab-pane label="新增" name="added" v-if="compareData.onlyInBom2.length > 0">
+              <el-table :data="compareData.onlyInBom2" border size="small">
+                <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
+                <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
+                <el-table-column label="规格" prop="childMaterialSpec" width="120" />
+                <el-table-column label="BOM2用量" prop="quantity2" width="100" align="right" />
+                <el-table-column label="BOM2损耗率" prop="lossRate2" width="100" align="right" />
+                <el-table-column label="说明" prop="changeDetail" min-width="150" />
+              </el-table>
+            </el-tab-pane>
+            <el-tab-pane label="修改" name="changed" v-if="compareData.changed.length > 0">
+              <el-table :data="compareData.changed" border size="small">
+                <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
+                <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
+                <el-table-column label="规格" prop="childMaterialSpec" width="120" />
+                <el-table-column label="BOM1用量" prop="quantity1" width="90" align="right" />
+                <el-table-column label="BOM2用量" prop="quantity2" width="90" align="right" />
+                <el-table-column label="BOM1损耗率" prop="lossRate1" width="90" align="right" />
+                <el-table-column label="BOM2损耗率" prop="lossRate2" width="90" align="right" />
+                <el-table-column label="变更详情" prop="changeDetail" min-width="200" />
+              </el-table>
+            </el-tab-pane>
+            <el-tab-pane label="相同" name="unchanged" v-if="compareData.unchanged.length > 0">
+              <el-table :data="compareData.unchanged" border size="small">
+                <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
+                <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
+                <el-table-column label="规格" prop="childMaterialSpec" width="120" />
+                <el-table-column label="用量" prop="quantity1" width="100" align="right" />
+                <el-table-column label="损耗率" prop="lossRate1" width="100" align="right" />
+              </el-table>
+            </el-tab-pane>
+          </el-tabs>
+        </template>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="compareOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="Bom">
-import { listBom, getBom, delBom, addBom, updateBom, activateBomVersion, verifyBom, getBomTree } from "@/api/erp/bd/bom"
+import { listBom, getBom, delBom, addBom, updateBom, activateBomVersion, verifyBom, getBomTree, copyBom, compareBom } from "@/api/erp/bd/bom"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/erp/bd/category"
 import { useRouter } from 'vue-router'
@@ -431,7 +540,7 @@ import { debounce } from 'lodash'
 
   const router = useRouter();
   const { proxy } = getCurrentInstance()
-  const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type'))
+  const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, bd_bom_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type', 'bd_bom_type'))
 
   const bomList = ref([])
   const open = ref(false)
@@ -443,6 +552,13 @@ import { debounce } from 'lodash'
   const total = ref(0)
   const title = ref("")
   const isViewMode = ref(false) // 新增：标识是否为查看模式
+  const compareDisabled = ref(true) // BOM比较按钮是否禁用（需选中2条）
+
+  // BOM比较相关
+  const compareOpen = ref(false)
+  const compareData = ref(null)
+  const compareLoading = ref(false)
+  const compareActiveTab = ref('changed')
   
   // BOM树形视图相关
   const bomTreeOpen = ref(false)
@@ -636,6 +752,7 @@ import { debounce } from 'lodash'
     ids.value = selection.map(item => item.bomId)
     single.value = selection.length != 1
     multiple.value = !selection.length
+    compareDisabled.value = selection.length != 2 // BOM比较需要选中2条
   }
 
   /** 新增按钮操作 */
@@ -778,6 +895,44 @@ import { debounce } from 'lodash'
       bomTreeLoading.value = false
     }).catch(() => {
       bomTreeLoading.value = false
+    })
+  }
+
+  /** 复制BOM */
+  function handleCopyBom(row?: any) {
+    const bomId = row?.bomId || ids.value[0]
+    if (!bomId) { proxy.$modal.msgWarning("请选择一个BOM"); return }
+    const bomRow = bomList.value.find(item => item.bomId == bomId)
+    const bomName = bomRow?.bomName || ''
+    const currentVersion = bomRow?.bomVersion || '1.0'
+    proxy.$prompt('请输入新版本号（当前版本: ' + currentVersion + '）', '复制BOM - ' + bomName, {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: currentVersion + '.1',
+      inputPattern: /^.+$/,
+      inputErrorMessage: '版本号不能为空'
+    }).then(({ value }) => {
+      copyBom(bomId, value).then((response) => {
+        proxy.$modal.msgSuccess("复制成功，新BOM ID: " + response.data)
+        getList()
+      })
+    }).catch(() => {})
+  }
+
+  /** BOM比较 */
+  function handleCompareBom() {
+    if (ids.value.length !== 2) {
+      proxy.$modal.msgWarning("请选择两条BOM记录进行比较")
+      return
+    }
+    compareLoading.value = true
+    compareOpen.value = true
+    compareBom(ids.value[0], ids.value[1]).then(response => {
+      compareData.value = response.data
+      compareLoading.value = false
+    }).catch(() => {
+      compareLoading.value = false
+      compareOpen.value = false
     })
   }
 

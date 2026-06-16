@@ -12,6 +12,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
+import com.nexus.erp.bd.domain.vo.BomComparisonVo;
 import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.service.IBdBomService;
@@ -192,5 +193,48 @@ public class BdBomController extends BaseController {
     @GetMapping("/explode/{bomId}")
     public R<List<IndentedBomLineVo>> explodeBom(@PathVariable Long bomId) {
         return R.ok(bdBomService.explodeBom(bomId));
+    }
+
+    /**
+     * Where-Used反查：查询某物料被哪些BOM使用
+     * <p>权限标识：{@code bd:bom:query}</p>
+     *
+     * @param materialId 物料ID
+     * @return 引用该物料的BOM列表
+     */
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/whereUsed/{materialId}")
+    public R<List<BdBomVo>> whereUsed(@PathVariable Long materialId) {
+        return R.ok(bdBomService.whereUsed(materialId));
+    }
+
+    /**
+     * BOM复制：从已有BOM复制创建新版本
+     * <p>权限标识：{@code bd:bom:add}</p>
+     * <p>日志记录：title="BOM"，businessType=INSERT</p>
+     *
+     * @param sourceBomId 源BOM ID
+     * @param newVersion  新版本号
+     * @return 新BOM的ID
+     */
+    @SaCheckPermission("bd:bom:add")
+    @Log(title = "BOM", businessType = BusinessType.INSERT)
+    @PostMapping("/copy/{sourceBomId}")
+    public R<Long> copyBom(@PathVariable Long sourceBomId, @RequestParam String newVersion) {
+        return R.ok(bdBomService.copyBom(sourceBomId, newVersion));
+    }
+
+    /**
+     * BOM比较：对比两个版本的差异
+     * <p>权限标识：{@code bd:bom:query}</p>
+     *
+     * @param bomId1 BOM1 ID
+     * @param bomId2 BOM2 ID
+     * @return 比较结果
+     */
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/compare")
+    public R<BomComparisonVo> compareBom(@RequestParam Long bomId1, @RequestParam Long bomId2) {
+        return R.ok(bdBomService.compareBom(bomId1, bomId2));
     }
 }

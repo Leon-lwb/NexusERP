@@ -107,4 +107,27 @@ public class BdBomVo implements Serializable {
     @ExcelProperty(value = "来源类型")
     private String sourceType;
 
+    /**
+     * BOM类型
+     */
+    @ExcelProperty(value = "BOM类型")
+    private String bomType;
+
+    /**
+     * 关联工艺路线ID
+     */
+    private Long routingId;
+
+    /**
+     * 工艺路线编码
+     */
+    @ExcelProperty(value = "工艺路线编码")
+    private String routingCode;
+
+    /**
+     * 工艺路线名称
+     */
+    @ExcelProperty(value = "工艺路线名称")
+    private String routingName;
+
 }

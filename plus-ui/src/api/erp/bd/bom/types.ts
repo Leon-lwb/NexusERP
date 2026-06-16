@@ -2,6 +2,7 @@ export interface BomQuery extends PageQuery {
   parentMaterialId?: number;
   bomVersion?: string;
   bomName?: string;
+  bomType?: string;
   isCurrent?: number;
   status?: number;
 }
@@ -19,6 +20,10 @@ export interface BomVO {
   status: number;
   remark: string;
   sourceType?: string;
+  bomType?: string;
+  routingId?: number;
+  routingCode?: string;
+  routingName?: string;
   createBy: number;
   createTime: string;
   updateBy: number;
@@ -36,6 +41,8 @@ export interface BomForm {
   status?: number;
   remark?: string;
   sourceType?: string;
+  bomType?: string;
+  routingId?: number;
   backflushFlag?: number;
 }
 
@@ -57,6 +64,10 @@ export interface BomDetailVO {
   operationStep: number;
   workstationId: number;
   workstationName: string;
+  processId?: number;
+  processCode?: string;
+  processName?: string;
+  routingStepId?: number;
   leadTime: number;
   effectiveDate: string;
   expiryDate: string;
@@ -79,6 +90,8 @@ export interface BomDetailForm {
   operationStep: number;
   workstationId?: number;
   workstationName?: string;
+  processId?: number;
+  routingStepId?: number;
   leadTime?: number;
   effectiveDate?: string;
   expiryDate?: string;
@@ -129,4 +142,39 @@ export interface IndentedBomLineVo {
   expandable: boolean;
   detailId: number;
   parentBomId: number;
+}
+
+/** BOM比较结果 */
+export interface BomComparisonVo {
+  bom1: BomSummary;
+  bom2: BomSummary;
+  onlyInBom1: ComparisonLine[];
+  onlyInBom2: ComparisonLine[];
+  changed: ComparisonLine[];
+  unchanged: ComparisonLine[];
+}
+
+export interface BomSummary {
+  bomId: number;
+  bomName: string;
+  bomVersion: string;
+  bomType: string;
+  materialCode: string;
+  materialName: string;
+  totalItems: number;
+}
+
+export interface ComparisonLine {
+  childMaterialId: number;
+  childMaterialCode: string;
+  childMaterialName: string;
+  childMaterialSpec: string;
+  quantity1: number;
+  quantity2: number;
+  lossRate1: number;
+  lossRate2: number;
+  operationStep1: number;
+  operationStep2: number;
+  changeType: 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
+  changeDetail: string;
 }

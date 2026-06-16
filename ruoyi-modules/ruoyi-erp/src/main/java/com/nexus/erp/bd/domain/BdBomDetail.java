@@ -68,6 +68,18 @@ public class BdBomDetail extends TenantEntity {
     private Long workstationId;
 
     /**
+     * 工序ID(关联bd_process)
+     */
+    @ExcelProperty("工序ID")
+    private Long processId;
+
+    /**
+     * 工艺路线步骤ID(关联bd_routing_step)
+     */
+    @ExcelProperty("工艺路线步骤ID")
+    private Long routingStepId;
+
+    /**
      * 提前期(小时)
      */
     @ExcelProperty("提前期(小时)")

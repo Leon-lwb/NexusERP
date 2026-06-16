@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { BomQuery, BomVO, BomForm, BomDetailVO, BomDetailForm, BomTreeNodeVo, IndentedBomLineVo } from './types';
+import { BomQuery, BomVO, BomForm, BomDetailVO, BomDetailForm, BomTreeNodeVo, IndentedBomLineVo, BomComparisonVo } from './types';
 
 export const listBom = (query: BomQuery): AxiosPromise<BomVO[]> => {
   return request({
@@ -124,5 +124,37 @@ export const explodeBom = (bomId: number): AxiosPromise<IndentedBomLineVo[]> => 
   return request({
     url: '/erp/bd/bom/explode/' + bomId,
     method: 'get'
+  });
+};
+
+/**
+ * Where-Used反查：查询某物料被哪些BOM使用
+ */
+export const whereUsedBom = (materialId: number): AxiosPromise<BomVO[]> => {
+  return request({
+    url: '/erp/bd/bom/whereUsed/' + materialId,
+    method: 'get'
+  });
+};
+
+/**
+ * BOM复制：从已有BOM复制创建新版本
+ */
+export const copyBom = (sourceBomId: number, newVersion: string): AxiosPromise<number> => {
+  return request({
+    url: '/erp/bd/bom/copy/' + sourceBomId,
+    method: 'post',
+    params: { newVersion }
+  });
+};
+
+/**
+ * BOM比较：对比两个版本的差异
+ */
+export const compareBom = (bomId1: number, bomId2: number): AxiosPromise<BomComparisonVo> => {
+  return request({
+    url: '/erp/bd/bom/compare',
+    method: 'get',
+    params: { bomId1, bomId2 }
   });
 };
