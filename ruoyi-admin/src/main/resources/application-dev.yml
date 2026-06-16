@@ -68,6 +68,13 @@ spring:
           username: root
           # Jasypt加密: 原明文 root, 加密算法 PBEWITHHMACSHA512ANDAES_256
           password: ENC(IbQ7QDkGO3jJKpujQv/j+wRrg8BBZvYxiPx/BgweywjGzv8D4otQxGK+YyW1dRXk)
+        # MES制造执行库
+        mes:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/ry-mes?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: root
+          password: ENC(IbQ7QDkGO3jJKpujQv/j+wRrg8BBZvYxiPx/BgweywjGzv8D4otQxGK+YyW1dRXk)
 #        # 从库数据源
 #        slave:
 #          lazy: true

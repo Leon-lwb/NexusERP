@@ -1,43 +1,13 @@
 package com.nexus.erp.mq.message;
 
-import com.nexus.common.mq.domain.BaseMessage;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.io.Serial;
-import java.math.BigDecimal;
-import java.util.Date;
-
 /**
- * 工单下达消息，审批通过后发送到MES系统
+ * @deprecated 已迁移至 ruoyi-common-mq 模块: com.nexus.common.mq.message.WorkOrderReleaseMessage
+ * <p>
+ * 此类保留仅作向后兼容，ERP侧代码应逐步迁移到公共模块的WorkOrderReleaseMessage。
+ * 新增字段(routingId)仅在公共模块版本中可用。
  *
- * @author Nexus
+ * @see com.nexus.common.mq.message.WorkOrderReleaseMessage
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class WorkOrderReleaseMessage extends BaseMessage {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
-
-    /** 工单ID */
-    private Long woId;
-    /** 工单编号 */
-    private String woNo;
-    /** 产品物料ID */
-    private Long materialId;
-    /** 产品编码 */
-    private String materialCode;
-    /** 产品名称 */
-    private String materialName;
-    /** 计划生产数量 */
-    private BigDecimal plannedQty;
-    /** 计划开工日期 */
-    private Date plannedStartDate;
-    /** 计划完工日期 */
-    private Date plannedEndDate;
-    /** 车间ID */
-    private Long workshopId;
-    /** BOM ID */
-    private Long bomId;
+@Deprecated
+public class WorkOrderReleaseMessage extends com.nexus.common.mq.message.WorkOrderReleaseMessage {
 }

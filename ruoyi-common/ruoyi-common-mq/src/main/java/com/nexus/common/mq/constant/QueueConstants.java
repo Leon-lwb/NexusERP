@@ -15,6 +15,10 @@ public interface QueueConstants {
     String SUBCONTRACT_STOCK_QUEUE = "erp.subcontract.stock.queue";
     String REWORK_STOCK_QUEUE = "erp.rework.stock.queue";
     String MES_WORKORDER_QUEUE = "erp.mes.workorder.queue";
+    /** MES工单完工队列 (MES->ERP) */
+    String ERP_WORKORDER_COMPLETED_QUEUE = "erp.workorder.completed.queue";
+    /** MES IQC检验完成队列 (MES->ERP) */
+    String ERP_IQC_COMPLETED_QUEUE = "erp.iqc.completed.queue";
     String DELAY_QUEUE = "erp.delay.queue";
     String DLX_QUEUE = "erp.dlx.queue";
 }

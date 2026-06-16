@@ -105,6 +105,12 @@
             <artifactId>ruoyi-erp</artifactId>
         </dependency>
 
+        <!--  MES制造执行模块  -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-mes</artifactId>
+        </dependency>
+
         <!--  支付业务模块  -->
         <dependency>
             <groupId>com.nexus</groupId>

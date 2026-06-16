@@ -3,12 +3,13 @@ package com.nexus.erp.mq.consumer;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
-import com.nexus.erp.mq.message.WorkOrderReleaseMessage;
+import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@ConditionalOnProperty(name = "mes.placeholder-consumer.enabled", havingValue = "true", matchIfMissing = false)
 @DS("erp")
 public class WorkOrderReleaseConsumer extends BaseMessageConsumer<WorkOrderReleaseMessage> {
 

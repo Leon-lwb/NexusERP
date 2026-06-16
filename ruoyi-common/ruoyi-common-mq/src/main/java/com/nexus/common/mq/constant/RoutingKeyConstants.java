@@ -18,5 +18,9 @@ public interface RoutingKeyConstants {
     String SUBCONTRACT_STOCK = "subcontract.stock";
     String REWORK_STOCK = "rework.stock";
     String MES_WORKORDER_RELEASE = "mes.workorder.release";
+    /** MES工单完工路由键 (MES->ERP) */
+    String ERP_WORKORDER_COMPLETED = "erp.workorder.completed";
+    /** MES IQC检验完成路由键 (MES->ERP) */
+    String ERP_IQC_COMPLETED = "erp.iqc.completed";
     String DELAY_ORDER_TIMEOUT = "delay.order.timeout";
 }

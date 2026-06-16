@@ -1,8 +1,13 @@
 # NexusERP - IoT模块综合文档
 
-> **文档状态**: 📋 规划设计文档（已修订） — IoT模块尚未开始实施，本文档为开发前的完整设计方案。
+> **文档状态**: 📋 实施开发文档 — 本文档为IoT模块的完整设计方案与可执行开发计划。
 > 当前项目中 `ruoyi-iot` Maven模块尚未创建，`@DS("iot")` 数据源尚未配置，3张核心数据表DDL尚未执行。
-> IoT开发建议在MES模块完成后启动，预计Week 33开始。
+> IoT阶段一（最小链路）可在MES Phase 3设备模型稳定后启动，预计Week 33开始。
+> 参考实施计划：[MES Phase 1~3 + IoT 阶段一实施计划](../superpowers/plans/2026-06-16-mes-iot-phase-plan.md)
+>
+> **数据采集归属**: IoT负责自动设备采集（MQTT/传感器数据），MES负责手工/业务采集（质检、工序录入）。
+> IoT采集的数据写入 `iot_device_data`，MES的 `dc_collection_point` 通过 `point_type=AUTO` 关联IoT设备。
+> SPC消费MES归档后的采集结果，不直接消费IoT原始数据。
 
 ## 一、IoT模块总体设计
 
@@ -545,3 +550,347 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 ### 13.3 缓存
 
 - Redis: 最新值缓存(`iot:latest:{deviceId}`)、设备在线状态(`iot:status:{deviceId}`)、Stream数据管道(`iot:data:stream`)
+
+---
+
+## 十四、开发前置条件与检查清单
+
+> **关键原则**: 以下每一项都是 IoT 阶段一开始编码前必须完成的前置条件。
+
+### 14.1 基础设施检查清单
+
+| 检查项 | 当前状态 | 说明 |
+|--------|----------|------|
+| `ruoyi-iot` Maven模块已创建 | ❌ 待完成 | 参照 `ruoyi-erp` 模块结构创建 |
+| `ruoyi-modules/pom.xml` 注册 iot 模块 | ❌ 待完成 | `<module>ruoyi-iot</module>` |
+| 根 `pom.xml` 注册 iot 模块 | ❌ 待完成 | `<module>ruoyi-iot</module>` |
+| `application-dev.yml` 配置 iot 数据源 | ❌ 待完成 | `spring.datasource.dynamic.datasource.iot` |
+| `@DS("iot")` 注解可用 | ❌ 待完成 | 验证 DynamicDataSource 能切换到 iot |
+| `ry-iot` 数据库已创建 | ❌ 待完成 | `CREATE DATABASE ry-iot` |
+| 3张核心DDL已执行 | ❌ 待完成 | iot_product + iot_device + iot_device_data |
+| Moquette依赖已引入 | ❌ 待完成 | `org.eclipse.moquette:moquette-broker:0.17` |
+| Redis Streams消费者组已创建 | ❌ 待完成 | `XGROUP CREATE iot:data:stream iot-consumers 0 MKSTREAM` |
+
+### 14.2 已有基础设施确认
+
+| 依赖项 | 来源 | 状态 | 说明 |
+|--------|------|------|------|
+| Redisson (Redis Streams) | `ruoyi-common-redis` | ✅ 可用 | RStream API |
+| SseEmitter | `ruoyi-common-sse` | ✅ 可用 | 实时数据推送 |
+| SnailJob | `ruoyi-common-job` | ✅ 可用 | 定时任务 |
+| Redis缓存 | `ruoyi-common-redis` | ✅ 可用 | 设备最新值/在线状态 |
+
+### 14.3 MES侧依赖确认（联动阶段）
+
+| 依赖项 | 来源 | 状态 | 说明 |
+|--------|------|------|------|
+| 设备台账 | `mes/eq/equipment` | ❌ MES Phase 3 | IoT设备关联MES设备 |
+| 安灯接口 | `IMesAndonService` | ❌ MES Phase 2 | IoT告警触发MES安灯 |
+| 数据采集点 | `mes/dc/collection-point` | ❌ MES Phase 3 | IoT自动采集关联 |
+
+---
+
+## 十五、阶段一最小可运行范围
+
+### 15.1 最小链路定义
+
+**目标**: 3-4周内让一台真实设备的数据出现在前端仪表盘上。
+
+**最小链路**:
+```
+真实设备 → MQTT Publish → Moquette Broker
+  → MqttMessageListener → Redis Stream XADD
+    → StreamConsumer XREADGROUP
+      ├── 写入 iot_device_data (MySQL)
+      ├── HSET iot:latest:{deviceId} {propertyCode} {value}
+      └── SET iot:status:{deviceId} ONLINE EX 3600
+
+前端 EventSource("/iot/device/{deviceId}/realtime")
+  → 后端从 Redis 读取最新值 → SSE推送
+```
+
+### 15.2 阶段一包含范围
+
+| 能力 | 包含 | 说明 |
+|------|------|------|
+| 产品管理 | ✅ | 产品CRUD |
+| 设备管理 | ✅ | 设备CRUD + 在线状态 |
+| MQTT接入 | ✅ | Moquette内嵌Broker + 设备认证 |
+| 数据管道 | ✅ | MQTT→Redis Streams→MySQL+Redis |
+| 实时推送 | ✅ | SSE + Redis最新值缓存 |
+| 硬编码告警 | ✅ | StreamConsumer中阈值检查 |
+| 定时任务 | ✅ | 数据清理/心跳检测/Stream修剪 |
+| 实时仪表盘 | ✅ | SSE+ECharts |
+
+### 15.3 阶段一不包含范围
+
+| 能力 | 不包含 | 触发条件 |
+|------|--------|----------|
+| OPC UA / Modbus | ❌ | 需要连接PLC/SCADA设备 |
+| 规则引擎 | ❌ | 硬编码告警不满足需求 |
+| 告警规则表 | ❌ | 需要完整告警生命周期 |
+| 时序数据库 | ❌ | iot_device_data 超1000万行 |
+| 边缘网关 | ❌ | 设备超100台 |
+| 场景联动 | ❌ | 需要设备间自动联动 |
+| MES深度联动 | ❌ | MES Phase 3 设备模型稳定后 |
+
+---
+
+## 十六、设备接入与数据链路契约
+
+### 16.1 MQTT连接契约
+
+| 参数 | 值 | 说明 |
+|------|------|------|
+| Broker地址 | `localhost:1883` | 开发阶段内嵌Moquette |
+| QoS | 1 | 至少一次 |
+| 认证方式 | deviceCode + deviceSecret | 连接时校验 |
+| 遗嘱消息 | 设备离线通知 | 更新 connection_status = OFFLINE |
+| ClientID | `{deviceCode}` | 唯一标识 |
+
+### 16.2 Topic契约
+
+| Topic | 方向 | 负载格式 | 说明 |
+|-------|------|----------|------|
+| `iot/{tenantId}/{deviceId}/property/post` | 设备→平台 | `{"property":"temperature","value":25.5,"timestamp":1234567890}` | 属性上报 |
+| `iot/{tenantId}/{deviceId}/property/set` | 平台→设备 | `{"property":"switch","value":"on"}` | 属性设置 |
+| `iot/{tenantId}/{deviceId}/event/post` | 设备→平台 | `{"event":"alarm","level":"HIGH","msg":"温度过高"}` | 事件上报 |
+
+### 16.3 消息负载格式
+
+```json
+{
+  "property": "temperature",
+  "value": 25.5,
+  "dataType": "NUMERIC",
+  "unit": "°C",
+  "timestamp": 1234567890,
+  "quality": "GOOD"
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| property | String | 是 | 属性编码 |
+| value | Object | 是 | 属性值（数值/字符串/布尔） |
+| dataType | String | 否 | NUMERIC/TEXT/BOOL，默认NUMERIC |
+| unit | String | 否 | 单位 |
+| timestamp | Long | 否 | 设备采集时间戳（毫秒），缺失则用服务端时间 |
+| quality | String | 否 | GOOD/BAD/UNCERTAIN，默认GOOD |
+
+### 16.4 Redis Streams数据格式
+
+| 字段 | 说明 |
+|------|------|
+| `device_id` | 设备ID |
+| `device_code` | 设备编码 |
+| `property_code` | 属性编码 |
+| `property_name` | 属性名称（可选） |
+| `data_type` | 数据类型 |
+| `value` | 属性值 |
+| `collect_time` | 采集时间 |
+| `quality` | 数据质量 |
+
+### 16.5 Redis缓存契约
+
+| Key | 类型 | 字段 | TTL | 说明 |
+|-----|------|------|-----|------|
+| `iot:latest:{deviceId}` | Hash | `{propertyCode}` → `{value}` | 无（覆盖更新） | 设备最新属性值 |
+| `iot:status:{deviceId}` | String | `ONLINE` / `OFFLINE` | 1小时 | 设备在线状态 |
+| `iot:data:stream` | Stream | 见16.4 | 由清理任务控制 | 设备数据管道 |
+
+---
+
+## 十七、与MES的接口边界
+
+### 17.1 IoT→MES接口（预留）
+
+| 接口 | 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|------|
+| 查询设备最新数据 | GET | `/iot/device/{deviceId}/latest` | MES从Redis缓存读取 | ❌ 阶段二实现 |
+| 查询设备在线状态 | GET | `/iot/device/{deviceId}/status` | MES从Redis缓存读取 | ❌ 阶段二实现 |
+| 查询设备历史数据 | GET | `/iot/device/{deviceId}/data?start=&end=` | MES查询MySQL历史 | ❌ 阶段二实现 |
+
+### 17.2 IoT→MES安灯接口（预留）
+
+```java
+/**
+ * MES安灯服务接口（IoT调用MES）
+ * IoT发现设备异常时，通过此接口触发MES安灯呼叫
+ */
+public interface IMesAndonService {
+    /**
+     * 从IoT告警创建安灯呼叫
+     * @param alert IoT告警信息
+     * @return 安灯ID
+     */
+    Long createAndonFromAlert(IotAlert alert);
+}
+```
+
+**IotAlert 字段：**
+```java
+public class IotAlert implements Serializable {
+    private Long deviceId;       // IoT设备ID
+    private String deviceCode;   // 设备编码
+    private Long mesEquipmentId; // 关联MES设备ID（可选）
+    private String alertType;    // 告警类型：TEMPERATURE/VIBRATION/PRESSURE/OTHER
+    private String alertLevel;   // 告警级别：HIGH/MEDIUM/LOW
+    private String alertMessage; // 告警描述
+    private BigDecimal value;    // 触发值
+    private BigDecimal threshold;// 阈值
+    private Long tenantId;
+}
+```
+
+### 17.3 设备关联字段
+
+| 表 | 字段 | 说明 |
+|------|------|------|
+| `iot_device` | `mes_equipment_id` | 关联MES设备ID（接口查询，无外键） |
+| `eq_equipment` | `iot_device_id` | 关联IoT设备ID（接口查询，无外键） |
+
+**关联方式**: 通过REST接口查询，不建外键。两个模块可独立开发和部署。
+
+---
+
+## 十八、详细实施任务表
+
+### 18.1 IoT阶段一详细任务（Week 33-36）
+
+#### Week 33：模块骨架 + MQTT接入（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 创建 `ruoyi-iot` Maven模块 | pom.xml + 目录结构 | 模块可编译，无报错 |
+| 注册到 `ruoyi-modules/pom.xml` 和根 `pom.xml` | `<module>ruoyi-iot</module>` | `mvn compile` 通过 |
+| 配置 `application-dev.yml` iot 数据源 | `spring.datasource.dynamic.datasource.iot` | 启动无报错 |
+| 创建 `ry-iot` 数据库 | `CREATE DATABASE ry-iot` | 可连接 |
+| 执行3张核心DDL | iot_product + iot_device + iot_device_data | 表结构正确 |
+| 创建公共包结构 | `com/nexus/iot/{device,mqtt,pipeline,realtime,task}` | 目录存在 |
+| 引入Moquette依赖 | `pom.xml` 添加 moquette-broker | 依赖无冲突 |
+| 实现Moquette Broker配置 | `MqttBrokerConfig.java` | Broker启动，监听1883端口 |
+| 实现设备认证 | deviceCode + deviceSecret 校验 | 认证通过/拒绝正确 |
+| 实现产品CRUD | `IotProductServiceImpl` | 可增删改查产品 |
+| 实现设备CRUD | `IotDeviceServiceImpl` | 可增删改查设备 |
+
+#### Week 34：数据管道 + 告警 + 缓存（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现MqttMessageListener | 监听设备消息 | 收到MQTT消息并解析 |
+| 实现Redis Stream XADD | 写入 `iot:data:stream` | Stream中有消息 |
+| 实现StreamConsumer XREADGROUP | 消费者组消费 | 消息被正确消费 |
+| 实现写入 iot_device_data | MySQL批量INSERT | 数据库有记录 |
+| 实现Redis缓存更新 | `iot:latest:{deviceId}` + `iot:status:{deviceId}` | 缓存有最新值 |
+| 实现硬编码告警阈值检查 | StreamConsumer中阈值判断 | 超限时日志+推送 |
+| 实现设备连接/断开状态更新 | Redis + MySQL联动 | 在线状态正确 |
+| 实现遗嘱消息处理 | 设备离线→OFFLINE | 断开后状态变为OFFLINE |
+| 固定MES↔IoT接口契约 | IoTAlert DTO + IMesAndonService 接口定义 | 接口编译通过 |
+
+#### Week 35-36：前端 + 定时任务 + 联调（6人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现SSE实时数据端点 | `GET /iot/device/{deviceId}/realtime` | EventSource连接成功 |
+| 实现SSE定时推送 | 从Redis读取最新值→推送 | 前端收到实时数据 |
+| 前端：产品管理页 | `iot/product/index.vue` | 可增删改查产品 |
+| 前端：设备列表页 | `iot/device/index.vue` | 含在线状态指示灯 |
+| 前端：实时数据仪表盘 | `iot/device/realtime.vue` | SSE+ECharts实时刷新 |
+| 前端：数值卡片组件 | 设备最新属性值展示 | 数值正确显示 |
+| 前端：历史趋势图 | ECharts折线图 | 查询MySQL历史数据 |
+| 实现IotDataCleanupTask | SnailJob注册 | 每天凌晨2:00清理90天前数据 |
+| 实现IotDeviceHeartbeatTask | SnailJob注册 | 每5分钟检查超时设备 |
+| 实现IotStreamTrimTask | SnailJob注册 | 每小时XTRIM MAXLEN 100000 |
+| 真实设备联调 | 一台设备接入 | 数据出现在仪表盘 |
+| 阶段一集成测试 | 测试报告 | MQTT→Redis→MySQL→SSE 全链路 |
+
+---
+
+## 十九、上线前检查项与验收标准
+
+### 19.1 阶段一验收标准
+
+| 验收项 | 验收标准 | 验证方法 |
+|--------|----------|----------|
+| 模块启动 | `ruoyi-iot` 模块可独立启动，无报错 | 启动日志无ERROR |
+| 数据源切换 | `@DS("iot")` 可正常切换 | CRUD操作返回正确数据 |
+| MQTT Broker | Moquette启动，监听1883端口 | MQTT客户端可连接 |
+| 设备认证 | deviceCode+deviceSecret校验正确 | 正确凭证连接成功，错误凭证拒绝 |
+| 数据管道 | MQTT消息→Redis Stream→MySQL | 数据库有记录 |
+| Redis缓存 | `iot:latest:{deviceId}` 有最新值 | Redis查询有数据 |
+| 设备在线状态 | 连接→ONLINE，断开→OFFLINE | 状态变更正确 |
+| 硬编码告警 | 超阈值→日志+推送 | 超限时有告警 |
+| SSE推送 | EventSource连接→收到实时数据 | 前端数据实时更新 |
+| 定时任务 | 数据清理/心跳检测/Stream修剪 | SnailJob任务执行正常 |
+| 真实设备联调 | 一台设备数据出现在仪表盘 | 端到端验证 |
+
+### 19.2 上线前安全检查
+
+| 检查项 | 说明 |
+|--------|------|
+| MQTT认证 | 生产环境必须启用设备认证，禁止匿名连接 |
+| MQTT端口 | 生产环境考虑TLS加密（端口8883） |
+| Redis Stream | 确认Stream长度控制策略（XTRIM） |
+| 数据清理 | 确认90天清理策略是否满足业务需求 |
+| 告警阈值 | 确认硬编码阈值是否合理 |
+| 多租户隔离 | 确认 `tenant_id` 过滤正确 |
+
+---
+
+## 二十、联调与测试策略
+
+### 20.1 测试层次
+
+| 层次 | 说明 | 工具 |
+|------|------|------|
+| 单元测试 | Service层逻辑测试 | JUnit + Mockito |
+| MQTT测试 | Broker连接/消息收发 | MQTTX / mosquitto_pub |
+| Redis Streams测试 | Stream读写/消费者组 | redis-cli |
+| SSE测试 | 实时推送正确性 | 浏览器EventSource / curl |
+| 接口测试 | REST API测试 | Postman / Swagger |
+| 集成测试 | 全链路测试 | 真实设备 + 前端页面 |
+
+### 20.2 联调顺序
+
+```
+阶段一联调:
+  Step 1: Moquette启动 → MQTT客户端连接 → 认证通过
+  Step 2: MQTT发布消息 → MqttMessageListener收到 → Redis Stream XADD
+  Step 3: StreamConsumer消费 → MySQL写入 + Redis缓存更新
+  Step 4: 前端EventSource连接 → SSE推送实时数据
+  Step 5: SnailJob执行 → 数据清理/心跳检测/Stream修剪
+  Step 6: 真实设备接入 → 数据出现在仪表盘
+```
+
+### 20.3 测试数据准备
+
+| 数据 | 说明 |
+|------|------|
+| 测试产品 | 至少2个产品（DEVICE/GATEWAY） |
+| 测试设备 | 至少3个设备（不同产品） |
+| MQTT测试消息 | 模拟温度/湿度/压力等属性上报 |
+| 告警测试数据 | 超阈值消息（验证告警逻辑） |
+
+### 20.4 MQTT测试命令示例
+
+```bash
+# 安装mosquitto客户端
+# 发布属性上报消息
+mosquitto_pub -h localhost -p 1883 \
+  -u "device001" -P "secret123" \
+  -t "iot/1/device001/property/post" \
+  -m '{"property":"temperature","value":25.5,"dataType":"NUMERIC","unit":"°C"}'
+
+# 发布超温告警消息
+mosquitto_pub -h localhost -p 1883 \
+  -u "device001" -P "secret123" \
+  -t "iot/1/device001/property/post" \
+  -m '{"property":"temperature","value":85.0,"dataType":"NUMERIC","unit":"°C"}'
+
+# 发布事件消息
+mosquitto_pub -h localhost -p 1883 \
+  -u "device001" -P "secret123" \
+  -t "iot/1/device001/event/post" \
+  -m '{"event":"alarm","level":"HIGH","msg":"温度过高"}'
+```

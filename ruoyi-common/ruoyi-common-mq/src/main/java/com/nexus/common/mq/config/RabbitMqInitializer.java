@@ -53,6 +53,10 @@ public class RabbitMqInitializer {
         declareQueueWithDLX(QueueConstants.REWORK_STOCK_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "rework.stock.#");
         declareQueueWithDLX(QueueConstants.MES_WORKORDER_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "mes.workorder.#");
 
+        // MES -> ERP 队列（Phase 3 使用，提前声明）
+        declareQueueWithDLX(QueueConstants.ERP_WORKORDER_COMPLETED_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "erp.workorder.completed.#");
+        declareQueueWithDLX(QueueConstants.ERP_IQC_COMPLETED_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "erp.iqc.completed.#");
+
         declareQueueWithDLX(QueueConstants.STOCK_ALERT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.alert.#");
 
         declareDelayQueue();

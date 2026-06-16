@@ -17,6 +17,7 @@
         <module>ruoyi-online</module>
         <module>ruoyi-flowable</module>
         <module>ruoyi-erp</module>
+        <module>ruoyi-mes</module>
         <module>ruoyi-pay</module>
         <module>ruoyi-report</module>
         <module>ruoyi-im</module>

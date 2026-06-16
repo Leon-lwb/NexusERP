@@ -1,11 +1,15 @@
 # NexusERP - MES模块综合文档
 
-> **文档状态**: 📋 规划设计文档（已修订） — MES模块尚未开始实施，本文档为开发前的完整设计方案。
+> **文档状态**: 📋 实施开发文档 — 本文档为MES模块的完整设计方案与可执行开发计划。
 > 当前项目中 `ruoyi-mes` Maven模块尚未创建，`@DS("mes")` 数据源尚未配置，~17张数据表DDL尚未执行。
 > ERP侧集成准备状态：主数据API已就绪✅，MQ消息发送+队列常量已完成✅，数据源配置待实现❌。
+> 参考实施计划：[MES Phase 1~3 + IoT 阶段一实施计划](../superpowers/plans/2026-06-16-mes-iot-phase-plan.md)
 >
 > **命名规范**: MES表命名与ERP保持一致，采用一级前缀 `{模块缩写}_{业务实体名}`（如 `pro_work_order`、`qc_iqc`），
 > 不使用 `mes_` 二级前缀，因为MES在独立库 `ry-mes` 中，库名已标识来源。
+>
+> **数据采集归属**: MES负责手工/业务采集（质检记录、工序数据录入等），IoT负责自动设备采集（MQTT/传感器数据）。
+> SPC消费MES归档后的采集结果。MES的 `dc_collection_point` 表中 `point_type` 字段区分 `MANUAL`（MES采集）和 `AUTO`（IoT采集）。
 
 ## 一、MES模块总体设计
 
@@ -907,7 +911,7 @@ plus-ui/src/views/mes/
 | 4 | 库存统一wm_material_stock | ERP和MES共用同一库存表，通过@DS("erp")访问 |
 | 5 | 工单创建在ERP，执行在MES | ERP创建工单→MQ→MES创建MES工单(含工序/流转卡) |
 | 6 | 采购/销售只在ERP | 采购和销售业务不涉及MES |
-| 7 | 数据采集只在MES | 设备数据采集/传感器数据在MES处理 |
+| 7 | 数据采集分层 | MES负责手工/业务采集（质检、工序录入），IoT负责自动设备采集（MQTT/传感器），SPC消费MES归档结果 |
 | 8 | 排班调度在ERP | 班次/班组/排班计划在ERP维护 |
 | 9 | 工艺路线在ERP维护，MES执行 | ERP维护工艺路线→MES按工序执行 |
 
@@ -943,3 +947,411 @@ plus-ui/src/views/mes/
 | MES查设备数据 | REST API / Redis缓存 | MES查询IoT设备最新数据 |
 | IoT告警→MES安灯 | 接口抽象 | `IMesAndonService.createAndonFromAlert()` 接口 |
 | 设备关联 | 字段预留 | `eq_equipment.iot_device_id` + `iot_device.mes_equipment_id` |
+
+---
+
+## 十三、开发前置条件与检查清单
+
+> **关键原则**: 以下每一项都是 MES Phase 1 开始编码前必须完成的前置条件。
+
+### 13.1 基础设施检查清单
+
+| 检查项 | 当前状态 | 说明 |
+|--------|----------|------|
+| `ruoyi-mes` Maven模块已创建 | ❌ 待完成 | 参照 `ruoyi-erp` 模块结构创建 |
+| `ruoyi-modules/pom.xml` 注册 mes 模块 | ❌ 待完成 | `<module>ruoyi-mes</module>` |
+| 根 `pom.xml` 注册 mes 模块 | ❌ 待完成 | `<module>ruoyi-mes</module>` |
+| `application-dev.yml` 配置 mes 数据源 | ❌ 待完成 | `spring.datasource.dynamic.datasource.mes` |
+| `@DS("mes")` 注解可用 | ❌ 待完成 | 验证 DynamicDataSource 能切换到 mes |
+| `ry-mes` 数据库已创建 | ❌ 待完成 | `CREATE DATABASE ry-mes` |
+| ~17张DDL已执行 | ❌ 待完成 | 按 Phase 顺序分批执行 |
+| ERP MQ占位消费者已处理 | ❌ 待完成 | 禁用或移除 `WorkOrderReleaseConsumer` |
+| 工单下达消息发送时序已修正 | ❌ 待完成 | 改为事务提交后发送 |
+
+### 13.2 ERP侧依赖确认
+
+| 依赖项 | 来源 | 状态 | 说明 |
+|--------|------|------|------|
+| 物料API | `/erp/bd/material/list` | ✅ 已存在 | MES跨库只读 |
+| BOM API | `/erp/bd/bom/list` | ✅ 已存在 | MES跨库只读 |
+| 工艺路线API | ERP工艺路线Controller | ✅ 已存在 | MES跨库只读 |
+| 工序API | ERP工序Controller | ✅ 已存在 | MES跨库只读 |
+| 工作中心API | ERP工作中心Controller | ✅ 已存在 | MES跨库只读 |
+| 工单下达MQ消息 | `PrdWorkOrderServiceImpl.afterFlowHandle()` | ✅ 已实现 | 发送端已完成 |
+| MQ队列常量 | `MesMqConstants` | ✅ 已存在 | `WORK_ORDER_RELEASE_QUEUE` 等 |
+| Flowable审批流 | `ruoyi-flowable` (74个Java文件) | ✅ 已存在 | MES复用ERP已有模式 |
+| SSE基础设施 | `ruoyi-common-sse` | ✅ 已存在 | 安灯看板使用 |
+| SnailJob | `ruoyi-common-job` | ✅ 已存在 | 定时任务使用 |
+| Redisson | `ruoyi-common-redis` | ✅ 已存在 | 分布式锁/缓存使用 |
+
+---
+
+## 十四、接口与消息契约清单
+
+### 14.1 ERP→MES 消息契约
+
+| 消息 | Exchange | RoutingKey | Queue | 消息体 | 生产者 | 消费者 |
+|------|----------|------------|-------|--------|--------|--------|
+| 工单下达 | `erp.direct` | `mes.workorder.release` | `mes.workorder.queue` | `WorkOrderReleaseMessage` | `ERP PrdWorkOrderServiceImpl` | `MES MesWorkOrderSyncConsumer` |
+
+**WorkOrderReleaseMessage 字段：**
+```java
+public class WorkOrderReleaseMessage implements Serializable {
+    private Long erpWoId;        // ERP工单ID
+    private String woNo;         // 工单编号
+    private Long materialId;     // 物料ID
+    private String materialCode; // 物料编码
+    private String materialName; // 物料名称
+    private String materialSpec; // 规格型号
+    private BigDecimal quantity; // 计划数量
+    private Long routingId;      // 工艺路线ID
+    private Long bomId;          // BOM ID
+    private Long tenantId;       // 租户ID
+    private Long operatorId;     // 操作人ID
+}
+```
+
+### 14.2 MES→ERP 消息契约
+
+| 消息 | Exchange | RoutingKey | Queue | 消息体 | 生产者 | 消费者 |
+|------|----------|------------|-------|--------|--------|--------|
+| 工单完工 | `mes.direct` | `erp.workorder.completed` | `erp.workorder.completed.queue` | `WorkOrderCompletedMessage` | `MES ProWorkOrderServiceImpl` | `ERP ErpWorkOrderCompletedConsumer` |
+| IQC检验完成 | `mes.direct` | `erp.iqc.completed` | `erp.iqc.completed.queue` | `IqcCompletedMessage` | `MES QcIqcServiceImpl` | `ERP ErpIqcCompletedConsumer` |
+
+**WorkOrderCompletedMessage 字段：**
+```java
+public class WorkOrderCompletedMessage implements Serializable {
+    private Long mesWoId;        // MES工单ID
+    private Long erpWoId;        // ERP工单ID
+    private String woNo;         // 工单编号
+    private BigDecimal completedQty; // 完工数量
+    private BigDecimal scrappedQty;  // 报废数量
+    private Long tenantId;
+}
+```
+
+**IqcCompletedMessage 字段：**
+```java
+public class IqcCompletedMessage implements Serializable {
+    private Long iqcId;          // IQC检验ID
+    private Long receiveId;      // ERP收货单ID
+    private String inspectResult;// QUALIFIED/UNQUALIFIED
+    private BigDecimal quantity; // 检验数量
+    private Long tenantId;
+}
+```
+
+### 14.3 MES→ERP REST接口（跨库桥接）
+
+| 接口 | 方法 | 路径 | 说明 |
+|------|------|------|------|
+| 查询物料 | GET | `/erp/bd/material/{id}` | MES前端直接调用ERP API |
+| 查询BOM明细 | GET | `/erp/bd/bom-line/list?bomId=` | MES前端直接调用ERP API |
+| 查询工艺路线 | GET | `/erp/bd/routing/{id}` | MES前端直接调用ERP API |
+| 查询工序 | GET | `/erp/bd/process/list` | MES前端直接调用ERP API |
+| 查询工作中心 | GET | `/erp/bd/workcenter/list` | MES前端直接调用ERP API |
+
+### 14.4 MES内部REST接口清单
+
+| 模块 | 接口前缀 | 方法示例 | 说明 |
+|------|----------|----------|------|
+| MES工单 | `/mes/pro/workorder` | list/get/add/edit/del/submit/approve | 含Flowable审批 |
+| 流转卡 | `/mes/pro/flow-card` | list/get/create/release/startStep/completeStep/completeCard | 状态机驱动 |
+| 派工 | `/mes/pro/dispatch` | list/get/add/edit/del/start/complete | - |
+| 安灯 | `/mes/pro/andon` | list/get/call/respond/resolve | SSE实时推送 |
+| SN | `/mes/pro/sn` | list/get/add/trace | 追溯树查询 |
+| IQC | `/mes/qc/iqc` | list/get/add/inspect/submit | 含ERP回传 |
+| IPQC | `/mes/qc/ipqc` | list/get/add/inspect | - |
+| OQC | `/mes/qc/oqc` | list/get/add/inspect | - |
+| 设备 | `/mes/eq/equipment` | list/get/add/edit/del | 含点检 |
+| 保养 | `/mes/eq/maintenance-plan` | list/get/add/edit | - |
+| 维修 | `/mes/eq/repair` | list/get/add/start/complete | - |
+| 采集点 | `/mes/dc/collection-point` | list/get/add/edit | - |
+| 采集记录 | `/mes/dc/data-record` | list/get/add | - |
+| SPC控制图 | `/mes/spc/control-chart` | list/get/add/edit/analyze | ECharts数据 |
+
+### 14.5 MES↔IoT接口契约（预留）
+
+| 方向 | 接口 | 方法 | 说明 |
+|------|------|------|------|
+| MES→IoT | 查询设备最新数据 | GET `/iot/device/{deviceId}/latest` | 从Redis缓存读取 |
+| MES→IoT | 查询设备在线状态 | GET `/iot/device/{deviceId}/status` | 从Redis缓存读取 |
+| IoT→MES | 告警触发安灯 | `IMesAndonService.createAndonFromAlert(alert)` | 接口抽象，IoT调用MES |
+
+---
+
+## 十五、详细实施任务表
+
+### 15.1 MES Phase 1 详细任务（Week 17-21）
+
+#### Week 17：模块骨架 + 数据源（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 创建 `ruoyi-mes` Maven模块 | pom.xml + 目录结构 | 模块可编译，无报错 |
+| 注册到 `ruoyi-modules/pom.xml` 和根 `pom.xml` | `<module>ruoyi-mes</module>` | `mvn compile` 通过 |
+| 配置 `application-dev.yml` mes 数据源 | `spring.datasource.dynamic.datasource.mes` | 启动无报错 |
+| 创建 `ry-mes` 数据库 | `CREATE DATABASE ry-mes` | 可连接 |
+| 执行 Phase 1 DDL | pro_work_order + pro_work_order_step | 表结构正确 |
+| 创建公共包结构 | `com/nexus/mes/{pro,wm,qc,eq,dc,spc,common}` | 目录存在 |
+| 创建 `MesErpBridgeService` 接口 + 实现 | `IMesErpBridgeService.java` | 跨库查询可返回数据 |
+| 暂时禁用 ERP 侧 `WorkOrderReleaseConsumer` | 配置开关或注释 | 不会误消费消息 |
+
+#### Week 18：主数据桥接 + 只读页面（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现 `MesErpBridgeService` 物料查询 | `getMaterial(Long materialId)` | 返回ERP物料数据 |
+| 实现 `MesErpBridgeService` BOM查询 | `getBomLines(Long bomId)` | 返回ERP BOM明细 |
+| 实现 `MesErpBridgeService` 工艺路线查询 | `getRoutingSteps(Long routingId)` | 返回ERP工艺步骤 |
+| 创建 MES 工单 Entity/Mapper/Service/Controller 骨架 | 完整CRUD骨架 | 可增删改查（空数据） |
+| 前端：物料只读页面 | `mes/md/material/readonly.vue` | 调ERP API显示物料 |
+| 前端：BOM只读页面 | `mes/md/bom/readonly.vue` | 调ERP API显示BOM |
+| 前端：工艺路线只读页面 | `mes/md/routing/readonly.vue` | 调ERP API显示工艺路线 |
+
+#### Week 19-20：MES工单 + Flowable审批 + MQ联动（5人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现 `MesWorkOrderSyncConsumer` | 消费 `mes.workorder.queue` | ERP工单下达后自动创建MES工单 |
+| 实现工单工序自动生成 | 根据工艺路线创建 `pro_work_order_step` | 工单有完整工序列表 |
+| 修正工单下达消息发送时序 | 事务提交后发送 | 消息发送时ERP工单状态已更新 |
+| 集成 Flowable 审批流 | `submit()` + `afterFlowHandle()` | MES工单可提交审批 |
+| 审批通过后工单状态→RELEASED | 状态联动 | 审批通过自动变更状态 |
+| 前端：审批流选择器 + 提交按钮 | 工单详情页审批区 | 可选审批流、提交、查看流程 |
+| 执行 Phase 2 DDL（流转卡相关） | pro_flow_card + pro_flow_card_step | 表结构正确 |
+
+#### Week 21：Phase 1 前端 + 菜单权限（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 前端：MES工单列表页 | `mes/pro/workorder/index.vue` | 含审批状态筛选、分页 |
+| 前端：MES工单详情页 | `mes/pro/workorder/form.vue` | 含工序列表Tab |
+| 配置菜单与权限 | sys_menu 数据 | MES菜单可见、权限控制生效 |
+| Phase 1 集成测试 | 测试报告 | ERP下达→MES工单→审批→RELEASED 全链路 |
+
+---
+
+### 15.2 MES Phase 2 详细任务（Week 22-27）
+
+#### Week 22-23：流转卡引擎（5人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现流转卡状态机 | `IMesFlowCardService` + 实现类 | 状态流转正确 |
+| 创建流转卡（从MES工单） | `createFlowCard(woId, quantity)` | 自动生成工序步骤记录 |
+| 下达流转卡 | `releaseCard(cardId)` | CREATED→RELEASED |
+| 开始/完成工序 | `startStep()` / `completeStep()` | 流转卡自动流转到下一道工序 |
+| 完成/关闭/取消流转卡 | `completeCard()` / `closeCard()` / `cancelCard()` | 状态正确联动 |
+| 工单完工聚合 | 所有流转卡完成→工单COMPLETED | 数量汇总正确 |
+| 前端：流转卡列表 | `mes/pro/flow-card/index.vue` | 含状态筛选 |
+| 前端：流转卡详情 | `mes/pro/flow-card/form.vue` | 含工序进度展示 |
+
+#### Week 24-25：派工 + 工序执行（4人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现派工CRUD | `ProDispatchServiceImpl` | 可创建/编辑/查询派工单 |
+| 实现派工状态流转 | PENDING→IN_PROGRESS→COMPLETED | 状态联动正确 |
+| 实现扫码开工/完工 | 扫码接口 + 数量记录 | 支持条码扫描操作 |
+| 良品/不良/报废数量记录 | `completeStep()` 参数校验 | 数量逻辑正确 |
+| 前端：派工管理页 | `mes/pro/dispatch/index.vue` | 含操作员/工作中心筛选 |
+| 执行 Phase 2 剩余 DDL | pro_dispatch + pro_andon + pro_sn | 表结构正确 |
+
+#### Week 26：安灯系统（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现安灯CRUD | `ProAndonServiceImpl` | 可呼叫/响应/解决 |
+| 实现SSE实时推送 | `SseMessageUtils.publishMessage()` | 安灯状态变更实时推送前端 |
+| 实现 `IMesAndonService` 接口 | 接口定义 + 基础实现 | IoT可通过接口触发安灯 |
+| 前端：安灯看板 | `mes/pro/andon/index.vue` | SSE实时刷新，颜色编码区分类型 |
+
+#### Week 27：SN追溯 + Phase 2 收尾（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现SN CRUD | `ProSnServiceImpl` | 可创建/查询SN |
+| 实现SN父子关系 | `parent_sn_id` 关联 | 组装追溯正确 |
+| 实现SN状态流转 | IN_PRODUCTION→COMPLETED→SCRAPPED→SHIPPED | 状态联动正确 |
+| 实现追溯树查询 | 前向/后向追溯API | 返回完整追溯链 |
+| 前端：SN查询页 | `mes/pro/sn/index.vue` | 含状态筛选 |
+| 前端：追溯树 | `mes/pro/sn/trace.vue` | 树形展示追溯关系 |
+| Phase 2 集成测试 | 测试报告 | 工单→流转卡→派工→工序→安灯→SN 全链路 |
+
+---
+
+### 15.3 MES Phase 3 详细任务（Week 28-32）
+
+#### Week 28-29：质量管理（5人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现IQC CRUD + 检验 | `QcIqcServiceImpl` | 可创建/检验/完成IQC |
+| 实现IQC→ERP MQ回传 | `IqcCompletedMessage` 生产者 | 检验完成后通知ERP |
+| ERP侧实现IQC消费端 | `ErpIqcCompletedConsumer` | 更新收货单质检状态 |
+| 实现IPQC CRUD + 检验 | `QcIpqcServiceImpl` | 可创建/检验IPQC |
+| 实现OQC CRUD + 检验 | `QcOqcServiceImpl` | 可创建/检验OQC |
+| 实现MES→ERP完工MQ回传 | `WorkOrderCompletedMessage` 生产者 | 工单完工后通知ERP |
+| ERP侧实现完工消费端 | `ErpWorkOrderCompletedConsumer` | 更新ERP工单状态+完工入库 |
+| 前端：IQC/IPQC/OQC页面 | 3个列表+详情页 | 可录入检验结果 |
+| 执行 Phase 3 DDL | qc_iqc + qc_ipqc + qc_oqc | 表结构正确 |
+
+#### Week 30：设备管理（3人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现设备台账CRUD | `EqEquipmentServiceImpl` | 可增删改查设备 |
+| 实现保养计划CRUD | `EqMaintenancePlanServiceImpl` | 可创建/编辑保养计划 |
+| 实现维修记录CRUD | `EqRepairServiceImpl` | 可报修/维修/完成 |
+| 前端：设备台账页 | `mes/eq/equipment/index.vue` | 含状态筛选 |
+| 前端：保养计划页 | `mes/eq/maintenance/index.vue` | - |
+| 前端：维修记录页 | `mes/eq/repair/index.vue` | - |
+| 执行 Phase 3 DDL | eq_equipment + eq_maintenance_plan + eq_repair | 表结构正确 |
+
+#### Week 31-32：数据采集 + SPC + 集成测试（4人天）
+
+| 任务 | 交付物 | 验收标准 |
+|------|--------|----------|
+| 实现采集点CRUD | `DcCollectionPointServiceImpl` | 可增删改查采集点 |
+| 实现采集记录CRUD | `DcDataRecordServiceImpl` | 可录入/查询采集数据 |
+| 实现SPC控制图 | `SpcControlChartServiceImpl` | 可创建/分析控制图 |
+| 实现OOC规则判定 | 硬编码4条规则 | 自动标注超限点 |
+| 前端：采集点页面 | `mes/dc/collection-point/index.vue` | - |
+| 前端：采集记录页面 | `mes/dc/data-record/index.vue` | - |
+| 前端：SPC控制图 | `mes/spc/control-chart/index.vue` | ECharts绘制，标注OOC点 |
+| 执行 Phase 3 DDL | dc_collection_point + dc_data_record + spc_control_chart + spc_data_point | 表结构正确 |
+| Phase 3 集成测试 | 测试报告 | 质量→设备→采集→SPC 全链路 |
+| MES全链路集成测试 | 测试报告 | ERP→MES工单→流转卡→派工→质检→完工→ERP 全闭环 |
+
+---
+
+## 十六、阶段验收标准
+
+### 16.1 Phase 1 验收标准
+
+| 验收项 | 验收标准 | 验证方法 |
+|--------|----------|----------|
+| 模块启动 | `ruoyi-mes` 模块可独立启动，无报错 | 启动日志无ERROR |
+| 数据源切换 | `@DS("mes")` 和 `@DS("erp")` 可正常切换 | 跨库查询返回正确数据 |
+| ERP工单下达联动 | ERP审批工单→MQ→MES自动创建工单+工序 | 端到端测试 |
+| MES工单审批 | MES工单可提交Flowable审批→通过→RELEASED | 审批流程测试 |
+| 主数据只读 | MES页面可查看ERP物料/BOM/工艺路线 | 页面展示正确 |
+| 菜单权限 | MES菜单可见，权限控制生效 | 不同角色权限测试 |
+
+### 16.2 Phase 2 验收标准
+
+| 验收项 | 验收标准 | 验证方法 |
+|--------|----------|----------|
+| 流转卡全生命周期 | 创建→下达→开工→完工→关闭 流转正确 | 状态机测试 |
+| 工序自动流转 | 完成当前工序→自动流转到下一道工序 | 流转卡工序测试 |
+| 派工执行 | 可派工→开工→完工→数量记录 | 派工流程测试 |
+| 安灯实时推送 | 安灯呼叫→SSE实时推送到前端看板 | SSE连接测试 |
+| SN追溯 | 创建SN→父子关系→前向/后向追溯树 | 追溯查询测试 |
+| 工单完工聚合 | 所有流转卡完成→工单COMPLETED | 聚合逻辑测试 |
+
+### 16.3 Phase 3 验收标准
+
+| 验收项 | 验收标准 | 验证方法 |
+|--------|----------|----------|
+| IQC检验+回传 | IQC完成→MQ→ERP更新收货单状态 | 端到端测试 |
+| IPQC/OQC检验 | 过程检验/出货检验可录入并查询 | 检验流程测试 |
+| 设备台账 | 设备可增删改查，含点检项目 | CRUD测试 |
+| 保养计划 | 保养计划可创建，下次保养日期自动计算 | 计划逻辑测试 |
+| 维修记录 | 故障报修→维修→完成，记录停机时长 | 维修流程测试 |
+| SPC控制图 | 控制图可创建，OOC点自动标注 | ECharts展示测试 |
+| MES全链路 | ERP→MES工单→流转卡→派工→质检→完工→ERP | 全链路集成测试 |
+
+---
+
+## 十七、联调与测试策略
+
+### 17.1 测试层次
+
+| 层次 | 说明 | 工具 |
+|------|------|------|
+| 单元测试 | Service层逻辑测试 | JUnit + Mockito |
+| 接口测试 | REST API测试 | Postman / Swagger |
+| 集成测试 | 跨模块联动测试 | 手动 + 自动化脚本 |
+| MQ消息测试 | 消息发送/消费正确性 | RabbitMQ Management Console |
+| Flowable测试 | 审批流正确性 | Flowable Actuator |
+| SSE测试 | 实时推送正确性 | 浏览器EventSource |
+
+### 17.2 联调顺序
+
+```
+Phase 1 联调:
+  ERP工单审批 → MQ消息 → MES工单创建 → MES工单审批 → RELEASED
+  MES页面 → ERP主数据API → 物料/BOM/工艺路线显示
+
+Phase 2 联调:
+  MES工单 → 流转卡创建 → 派工 → 工序执行 → 安灯 → SN
+  流转卡完工 → MES工单完工聚合
+
+Phase 3 联调:
+  IQC检验 → MQ → ERP收货单状态更新
+  MES工单完工 → MQ → ERP工单状态+完工入库
+  设备台账 → 保养/维修
+  采集点 → 采集数据 → SPC控制图
+```
+
+### 17.3 测试数据准备
+
+| 数据 | 来源 | 说明 |
+|------|------|------|
+| 物料 | ERP bd_material | 至少5条测试物料 |
+| BOM | ERP bd_bom + bd_bom_line | 至少2条BOM |
+| 工艺路线 | ERP bd_routing + bd_routing_step | 至少2条工艺路线（含3+步骤） |
+| 工单 | ERP prd_work_order | 至少3条测试工单（不同状态） |
+| 审批流 | Flowable wf_deploy_info | 至少1个MES工单审批流 |
+
+---
+
+## 十八、ERP→MES占位消费处理方案
+
+### 18.1 问题说明
+
+当前 `WorkOrderReleaseConsumer`（位于 `ruoyi-erp` 模块内）是占位实现，仅打印日志。如果 `ruoyi-mes` 创建后直接部署，已发送到 `mes.workorder.queue` 的消息会被占位消费者"吃掉"，导致 MES 无法接收到这些工单下达消息。
+
+### 18.2 处理方案
+
+**推荐方案：配置开关禁用占位消费者**
+
+```yaml
+# application-dev.yml
+mes:
+  consumer:
+    enabled: false  # 禁用ERP侧占位消费者，由MES侧消费者接管
+```
+
+```java
+@Component
+@ConditionalOnProperty(name = "mes.consumer.enabled", havingValue = "true", matchIfMissing = true)
+public class WorkOrderReleaseConsumer extends BaseMessageConsumer {
+    // 当 mes.consumer.enabled=false 时不注册此消费者
+}
+```
+
+**备选方案：直接删除占位消费者**
+
+在 `ruoyi-mes` 模块创建并部署后，直接删除 `ruoyi-erp` 中的 `WorkOrderReleaseConsumer`，由 MES 侧的 `MesWorkOrderSyncConsumer` 接管。
+
+### 18.3 工单下达消息发送时序修正
+
+**当前问题**: `afterFlowHandle()` 中先发送MQ消息，再更新工单状态为APPROVED。如果消息发送成功但后续状态更新失败，MES会收到一条ERP侧未成功审批的工单下达消息。
+
+**修正方案**: 改为事务提交后发送消息。
+
+```java
+// 方案1: 使用 TransactionSynchronizationManager
+TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+    @Override
+    public void afterCommit() {
+        reliableMessageProducer.sendMessage(MesMqConstants.WORK_ORDER_RELEASE_EXCHANGE,
+            MesMqConstants.WORK_ORDER_RELEASE_ROUTING_KEY, message);
+    }
+});
+
+// 方案2: 使用本地消息表(outbox pattern)
+// 将消息写入本地消息表，由定时任务扫描发送
+```

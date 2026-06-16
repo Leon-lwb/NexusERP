@@ -406,6 +406,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!--  MES制造执行模块  -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-mes</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.nexus</groupId>
                 <artifactId>ruoyi-im</artifactId>

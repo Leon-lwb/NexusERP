@@ -27,7 +27,7 @@ import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
-import com.nexus.erp.mq.message.WorkOrderReleaseMessage;
+import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -40,6 +40,7 @@ import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
@@ -483,8 +484,15 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             entity.setWoStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
             entity.setWoStatus(STATUS_APPROVED);
-            // 审批通过后发送工单下达消息到MES
-            sendWorkOrderReleaseMessage(entity);
+            // 审批通过后，事务提交后再发送工单下达消息到MES（确保ERP状态已持久化）
+            final PrdWorkOrder msgEntity = entity;
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sendWorkOrderReleaseMessage(msgEntity);
+                    }
+                });
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             entity.setWoStatus(STATUS_CREATED);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
