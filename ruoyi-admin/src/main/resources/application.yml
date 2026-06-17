@@ -321,6 +321,18 @@ nexus:
       port: 1883
       allow-anonymous: false
       status-ttl-seconds: 3600
+    # 数据管道（MQTT → Redis Streams → MySQL + Redis 缓存，Week 34）
+    pipeline:
+      stream-key: iot:data:stream
+      consumer-group: iot-consumers
+      consumer-name: iot-consumer-1
+      batch-size: 100
+      block-ms: 1000
+      max-retry: 3
+      consumer-enabled: true
+      # 硬编码告警阈值：propertyCode → 阈值（numericValue 超过即告警）
+      alert-thresholds:
+        temperature: 80
   ai:
     default-provider: deepseek
     default-model: deepseek-chat

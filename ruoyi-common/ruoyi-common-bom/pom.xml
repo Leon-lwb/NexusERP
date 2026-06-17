@@ -200,6 +200,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- IoT 公共契约模块 -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-common-iot</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

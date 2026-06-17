@@ -11,15 +11,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.service.IIotDeviceService;
+import com.nexus.iot.pipeline.IotMessagePipelineService;
 import org.springframework.stereotype.Component;
 
 /**
  * IoT MQTT 消息拦截器。
  * <p>
- * Week 33 职责：
+ * 职责：
  * <ul>
- *   <li>onConnect / onDisconnect / onConnectionLost — 更新设备在线状态（DB + Redis）</li>
- *   <li>onPublish — 仅记录日志（Week 34 由 MqttMessageListener 写入 Redis Stream）</li>
+ *   <li>onConnect — 更新设备 ONLINE（DB + Redis），若声明遗嘱则缓存 will payload；</li>
+ *   <li>onDisconnect — 正常断开，置 OFFLINE 并清空 will；</li>
+ *   <li>onConnectionLost — 异常断开（reason=CONNECTION_LOST），置 OFFLINE 并清空 will；</li>
+ *   <li>onPublish — 解析属性上报并 XADD iot:data:stream（Week 34 数据管道生产端）。</li>
  * </ul>
  *
  * @author nexus
@@ -31,6 +34,7 @@ public class IotMqttInterceptHandler extends AbstractInterceptHandler {
 
     private final IIotDeviceService deviceService;
     private final IotDeviceStatusCache statusCache;
+    private final IotMessagePipelineService messagePipelineService;
 
     @Override
     public String getID() {
@@ -46,38 +50,59 @@ public class IotMqttInterceptHandler extends AbstractInterceptHandler {
     public void onConnect(InterceptConnectMessage msg) {
         String deviceCode = msg.getClientID();
         log.info("MQTT 设备连接：deviceCode={}", deviceCode);
-        updateStatus(deviceCode, true);
+        IotDevice device = updateStatus(deviceCode, true);
+        // 遗嘱消息：连接时声明，缓存以便排查异常断开
+        if (device != null && msg.isWillFlag()) {
+            byte[] will = msg.getWillMessage();
+            String willPayload = will != null ? new String(will, CharsetUtil.UTF_8) : "";
+            statusCache.storeWill(device.getDeviceId(), willPayload);
+            log.debug("设备声明遗嘱：deviceCode={}, willTopic={}", deviceCode, msg.getWillTopic());
+        }
     }
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage msg) {
         String deviceCode = msg.getClientID();
-        log.info("MQTT 设备断开：deviceCode={}", deviceCode);
-        updateStatus(deviceCode, false);
+        log.info("MQTT 设备正常断开：deviceCode={}", deviceCode);
+        IotDevice device = updateStatus(deviceCode, false);
+        if (device != null) {
+            statusCache.clearWill(device.getDeviceId());
+        }
     }
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
         String deviceCode = msg.getClientID();
-        log.warn("MQTT 设备连接丢失：deviceCode={}", deviceCode);
-        updateStatus(deviceCode, false);
+        log.warn("MQTT 设备连接丢失（reason=CONNECTION_LOST）：deviceCode={}", deviceCode);
+        IotDevice device = updateStatus(deviceCode, false);
+        if (device != null) {
+            statusCache.clearWill(device.getDeviceId());
+        }
     }
 
     @Override
     public void onPublish(InterceptPublishMessage msg) {
-        // Week 33：仅记录日志；Week 34 改为解析消息并 XADD iot:data:stream
+        // Week 34：解析消息并 XADD iot:data:stream；解析/写入异常由管道服务内部吞掉，不影响 Broker
         String deviceCode = msg.getClientID();
         String topic = msg.getTopicName();
         ByteBuf payload = msg.getPayload();
         String body = payload.toString(CharsetUtil.UTF_8);
-        log.debug("MQTT 属性上报：deviceCode={}, topic={}, payload={}", deviceCode, topic, body);
+        if (log.isDebugEnabled()) {
+            log.debug("MQTT 属性上报：deviceCode={}, topic={}, payload={}", deviceCode, topic, body);
+        }
+        messagePipelineService.publishToStream(deviceCode, topic, body);
     }
 
-    private void updateStatus(String deviceCode, boolean online) {
+    /**
+     * 更新设备在线状态（DB connection_status + Redis iot:status）。
+     *
+     * @return 解析到的设备（用于后续 will 处理）；设备不存在返回 null
+     */
+    private IotDevice updateStatus(String deviceCode, boolean online) {
         IotDevice device = deviceService.selectEntityByCode(deviceCode);
         if (device == null) {
             log.warn("设备状态更新失败：设备不存在，deviceCode={}", deviceCode);
-            return;
+            return null;
         }
         deviceService.updateConnectionStatus(device.getDeviceId(), online);
         if (online) {
@@ -85,5 +110,6 @@ public class IotMqttInterceptHandler extends AbstractInterceptHandler {
         } else {
             statusCache.markOffline(device);
         }
+        return device;
     }
 }

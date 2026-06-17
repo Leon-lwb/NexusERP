@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.nexus</groupId>
+        <artifactId>ruoyi-common</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ruoyi-common-iot</artifactId>
+
+    <description>
+        ruoyi-common-iot IoT公共契约模块
+        仅存放跨模块共享的 DTO / 接口契约（IotAlert、IMesAndonService、IotDeviceDataQueryService），
+        供 ruoyi-iot 与未来 ruoyi-mes 共同依赖，两个业务模块互不依赖。纯契约，无 Spring Bean。
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

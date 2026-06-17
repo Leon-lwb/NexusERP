@@ -1,0 +1,58 @@
+package com.nexus.iot.pipeline;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * IoT 数据管道配置属性（前缀 {@code nexus.iot.pipeline}）。
+ *
+ * @author nexus
+ */
+@Data
+@ConfigurationProperties(prefix = "nexus.iot.pipeline")
+public class IotPipelineProperties {
+
+    /**
+     * Redis Stream key
+     */
+    private String streamKey = "iot:data:stream";
+
+    /**
+     * 消费者组名
+     */
+    private String consumerGroup = "iot-consumers";
+
+    /**
+     * 消费者名（单机开发阶段固定；多实例时改 iot-consumer-{instanceId}）
+     */
+    private String consumerName = "iot-consumer-1";
+
+    /**
+     * 单批拉取消息数
+     */
+    private int batchSize = 100;
+
+    /**
+     * XREADGROUP BLOCK 超时（毫秒）
+     */
+    private long blockMs = 1000;
+
+    /**
+     * 毒消息最大重试次数，超过则单条 ACK 跳过并记 ERROR
+     */
+    private int maxRetry = 3;
+
+    /**
+     * 是否启用消费线程（false 时不启动 StreamConsumer，仅生产 XADD）
+     */
+    private boolean consumerEnabled = true;
+
+    /**
+     * 硬编码告警阈值：propertyCode → 阈值（numericValue 超过即告警）
+     */
+    private Map<String, java.math.BigDecimal> alertThresholds = new HashMap<>();
+
+}

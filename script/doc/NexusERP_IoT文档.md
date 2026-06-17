@@ -2,8 +2,8 @@
 
 > **文档状态**: 📋 实施开发文档 — 本文档为IoT模块的完整设计方案与可执行开发计划。
 > **Week 33 进度**：`ruoyi-iot` 模块已创建并编译通过，`@DS("iot")` 数据源已配置，Moquette 内嵌 Broker + 设备认证 + 产品/设备 CRUD 已实现；3 张核心表 DDL 脚本已产出（`script/sql/ry-iot-week33.sql`），待开发者本地执行建库。
-> IoT阶段一（最小链路）可在MES Phase 3设备模型稳定后启动，预计Week 33开始。
-> 参考实施计划：[IoT 阶段一 Week 33 开发计划](../superpowers/plans/2026-06-17-iot-week33-plan.md)
+> **Week 34 进度**：数据管道已打通——MQTT onPublish→Redis Stream XADD→`IotStreamConsumer`(XREADGROUP)→批量落 `iot_device_data`+`iot:latest` 缓存；硬编码告警(限频+租户在线用户 SSE 推送)、遗嘱消息、MES↔IoT 接口契约(抽 `ruoyi-common-iot` 公共模块) 均已实现并编译通过。SSE 实时端点/SnailJob 定时任务/前端属 Week 35-36。
+> 参考实施计划：[IoT 阶段一 Week 33 开发计划](../superpowers/plans/2026-06-17-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](../superpowers/plans/2026-06-23-iot-week34-plan.md)
 >
 > **数据采集归属**: IoT负责自动设备采集（MQTT/传感器数据），MES负责手工/业务采集（质检、工序录入）。
 > IoT采集的数据写入 `iot_device_data`，MES的 `dc_collection_point` 通过 `point_type=AUTO` 关联IoT设备。
@@ -569,7 +569,13 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 | `ry-iot` 数据库已创建 | ⏳ 待执行 | DDL 脚本已产出 `script/sql/ry-iot-week33.sql`，由开发者本地执行 |
 | 3张核心DDL已执行 | ⏳ 待执行 | iot_product + iot_device + iot_device_data，脚本内含修正版 DDL（见脚本头注释） |
 | Moquette依赖已引入 | ✅ 已完成 | `io.moquette:moquette-broker:0.17`（注：0.17 groupId 为 `io.moquette`，非 `io.github.moquette`），T6 已排查 Netty 收敛无冲突 |
-| Redis Streams消费者组已创建 | ❌ 待完成 | 属 Week 34 数据管道，本周不创建 |
+| Redis Streams消费者组已创建 | ✅ 已完成 | Week 34 `IotStreamConsumer` 启动时幂等创建 `iot-consumers` 组（`StreamCreateGroupArgs.name(...).id(NEWEST).makeStream()`），BUSYGROUP 幂等忽略 |
+| 数据管道(MQTT→Stream→MySQL+缓存) | ✅ 已完成 | Week 34：`IotMqttInterceptHandler.onPublish`→`IotMessagePipelineService`(XADD)→`IotStreamConsumer`(XREADGROUP)→`IotDeviceDataService.batchInsert`+`IotDeviceLatestCache`(HSET) |
+| 硬编码告警 | ✅ 已完成 | Week 34 `IotAlertChecker`(阈值 `nexus.iot.pipeline.alert-thresholds`)+`IotAlertNotifier`(限频+租户在线用户 SSE 推送) |
+| 遗嘱消息处理 | ✅ 已完成 | Week 34 `onConnect` 缓存 will、`onConnectionLost` 标注 `reason=CONNECTION_LOST` 并清 will |
+| MES↔IoT 接口契约 | ✅ 已完成 | Week 34 抽 `ruoyi-common-iot` 公共契约模块：`IotAlert`/`IMesAndonService`/`IotDeviceDataQueryService`；`ruoyi-iot` 提供 no-op 默认实现 |
+| SSE 实时数据端点 | ❌ 待完成 | 属 Week 35-36 前端实时仪表盘 |
+| SnailJob 定时任务(清理/心跳/Stream修剪) | ❌ 待完成 | 属 Week 36 |
 
 > **Week 33 DDL 修正说明**：与本文档第二节 DDL 的差异已记录在 `script/sql/ry-iot-week33.sql` 头注释——`tenant_id` 改 `VARCHAR(20) DEFAULT '000000'` 对齐项目规范；业务表补 `del_flag` + 审计列；`iot_device_data` 不补审计列（实体独立）。以脚本为准。
 
@@ -780,15 +786,15 @@ public class IotAlert implements Serializable {
 
 | 任务 | 交付物 | 验收标准 |
 |------|--------|----------|
-| 实现MqttMessageListener | 监听设备消息 | 收到MQTT消息并解析 |
-| 实现Redis Stream XADD | 写入 `iot:data:stream` | Stream中有消息 |
-| 实现StreamConsumer XREADGROUP | 消费者组消费 | 消息被正确消费 |
-| 实现写入 iot_device_data | MySQL批量INSERT | 数据库有记录 |
-| 实现Redis缓存更新 | `iot:latest:{deviceId}` + `iot:status:{deviceId}` | 缓存有最新值 |
-| 实现硬编码告警阈值检查 | StreamConsumer中阈值判断 | 超限时日志+推送 |
-| 实现设备连接/断开状态更新 | Redis + MySQL联动 | 在线状态正确 |
-| 实现遗嘱消息处理 | 设备离线→OFFLINE | 断开后状态变为OFFLINE |
-| 固定MES↔IoT接口契约 | IoTAlert DTO + IMesAndonService 接口定义 | 接口编译通过 |
+| 实现MqttMessageListener | `IotMqttInterceptHandler.onPublish` 升级 + `IotMessagePipelineService` | 收到MQTT消息并解析 ✅ |
+| 实现Redis Stream XADD | 写入 `iot:data:stream`（`StreamAddArgs.entries(Map)`） | Stream中有消息 ✅ |
+| 实现StreamConsumer XREADGROUP | `IotStreamConsumer`（pending=ALL/fresh=neverDelivered，毒消息隔离） | 消息被正确消费 ✅ |
+| 实现写入 iot_device_data | `IotDeviceDataService.batchInsert`（@DS iot） | 数据库有记录 ✅ |
+| 实现Redis缓存更新 | `IotDeviceLatestCache`(HSET `iot:latest`) + `IotDeviceStatusCache` | 缓存有最新值 ✅ |
+| 实现硬编码告警阈值检查 | `IotAlertChecker` + `IotAlertNotifier`(限频+租户在线用户SSE) | 超限时日志+推送 ✅ |
+| 实现设备连接/断开状态更新 | `IotMqttInterceptHandler` onConnect/Disconnect + 状态缓存 | 在线状态正确 ✅ |
+| 实现遗嘱消息处理 | onConnect 缓存 will / onConnectionLost 标注 CONNECTION_LOST | 断开后状态变为OFFLINE ✅ |
+| 固定MES↔IoT接口契约 | 抽 `ruoyi-common-iot`：`IotAlert` + `IMesAndonService` + `IotDeviceDataQueryService` | 接口编译通过 ✅ |
 
 #### Week 35-36：前端 + 定时任务 + 联调（6人天）
 

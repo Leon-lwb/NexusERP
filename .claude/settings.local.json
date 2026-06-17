@@ -199,7 +199,14 @@
       "Bash(MAVEN_OPTS=\"-Xmx1280m -Xms256m -XX:MaxMetaspaceSize=448m\" mvn -pl ruoyi-admin -am compile -o)",
       "Bash(rm -f hs_err_pid*.log replay_pid*.log)",
       "Bash(powershell -NoProfile -Command 'Get-Process java -ErrorAction SilentlyContinue | Select-Object Id,@{N='\\\\''WS_MB'\\\\'';E={[math]::Round\\($_.WorkingSet64/1MB\\)}},Path | Format-Table -AutoSize')",
-      "Bash(MAVEN_OPTS=\"-Xmx896m -XX:MaxMetaspaceSize=640m -XX:ReservedCodeCacheSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=200\" mvn -pl ruoyi-admin -am compile -o -T1)"
+      "Bash(MAVEN_OPTS=\"-Xmx896m -XX:MaxMetaspaceSize=640m -XX:ReservedCodeCacheSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=200\" mvn -pl ruoyi-admin -am compile -o -T1)",
+      "Bash(javap -cp moquette-broker-0.17.jar io.moquette.interception.messages.InterceptConnectMessage io.moquette.interception.messages.InterceptConnectionLostMessage io.moquette.interception.messages.InterceptDisconnectMessage)",
+      "Bash(mvn -q -pl ruoyi-common/ruoyi-common-iot,ruoyi-modules/ruoyi-iot -am compile -DskipTests)",
+      "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot -am compile -DskipTests)",
+      "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot test -DskipTests=false -Dtest='IotMqttTopicParserTest,IotDataValueResolverTest' -DfailIfNoTests=false)",
+      "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot -am test -DskipTests=false -Dtest='IotMqttTopicParserTest,IotDataValueResolverTest' -DfailIfNoTests=false)",
+      "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot -am test -DskipTests=false -Dtest='IotMqttTopicParserTest,IotDataValueResolverTest' -Dsurefire.failIfNoSpecifiedTests=false)",
+      "Bash(mvn -q compile -DskipTests)"
     ]
   }
 }

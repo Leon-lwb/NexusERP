@@ -22,6 +22,12 @@
             <artifactId>ruoyi-common-core</artifactId>
         </dependency>
 
+        <!-- IoT 公共契约（IotAlert / IMesAndonService / IotDeviceDataQueryService），供 MES 共享 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-iot</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-doc</artifactId>
