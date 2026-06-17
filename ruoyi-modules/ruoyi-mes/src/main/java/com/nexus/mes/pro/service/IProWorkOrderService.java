@@ -111,4 +111,13 @@ public interface IProWorkOrderService extends WfCallBackServiceI {
      * @return 流程实例ID，可能为null
      */
     String getProcInsId(String mesWoIdStr);
+
+    /**
+     * 工单完工(IN_PROGRESS -> COMPLETED)
+     * <p>
+     * 由流转卡完工聚合触发。完工后发送MQ消息通知ERP。
+     *
+     * @param mesWoId MES工单ID
+     */
+    void completeWo(Long mesWoId);
 }

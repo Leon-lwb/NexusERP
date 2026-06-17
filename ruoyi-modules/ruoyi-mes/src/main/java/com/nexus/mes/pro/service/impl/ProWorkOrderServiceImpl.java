@@ -11,7 +11,9 @@ import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
+import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
@@ -31,8 +33,12 @@ import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +61,7 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final MesMqSendService mesMqSendService;
 
     @Override
     public TableDataInfo<ProWorkOrderVo> selectPageList(ProWorkOrderBo bo, PageQuery pageQuery) {
@@ -378,6 +385,45 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
+    }
+
+    /**
+     * 工单完工(IN_PROGRESS -> COMPLETED) + MQ通知ERP
+     * <p>
+     * 由流转卡完工聚合触发。CAS更新状态，事务提交后异步发送MQ消息。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void completeWo(Long mesWoId) {
+        // CAS更新 IN_PROGRESS -> COMPLETED
+        int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+            .set(ProWorkOrder::getWoStatus, STATUS_COMPLETED)
+            .set(ProWorkOrder::getActualEndDate, new Date())
+            .eq(ProWorkOrder::getMesWoId, mesWoId)
+            .eq(ProWorkOrder::getWoStatus, STATUS_IN_PROGRESS));
+        if (rows == 0) {
+            log.warn("工单状态不满足完工条件，跳过: mesWoId={}", mesWoId);
+            return;
+        }
+
+        ProWorkOrder wo = baseMapper.selectById(mesWoId);
+        log.info("MES工单完工: mesWoId={}, woNo={}, completedQty={}, scrapQty={}",
+            mesWoId, wo.getWoNo(), wo.getCompletedQty(), wo.getScrapQty());
+
+        // 事务提交后异步发送MQ消息通知ERP
+        final BigDecimal completedQty = wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
+        final BigDecimal scrappedQty = wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
+        final String woNo = wo.getWoNo();
+        final Long erpWoId = wo.getErpWoId();
+        TransactionSynchronizationManager.registerSynchronization(
+            new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    String tenantId = TenantHelper.getTenantId();
+                    mesMqSendService.sendWorkOrderCompleted(
+                        mesWoId, erpWoId, woNo, completedQty, scrappedQty, tenantId);
+                }
+            });
     }
 
     // ==================== 私有辅助方法 ====================
