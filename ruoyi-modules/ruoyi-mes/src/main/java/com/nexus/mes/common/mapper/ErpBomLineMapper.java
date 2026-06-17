@@ -8,14 +8,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ERP BOM行只读Mapper（跨库查询）
+ * ERP BOM明细只读Mapper（跨库查询）
+ * <p>
+ * ERP实际表名为bd_bom_detail（非bd_bom_line），主键为detail_id
  *
  * @author Nexus
  */
 @Mapper
 public interface ErpBomLineMapper {
 
-    @Select("SELECT bom_line_id, bom_id, material_id, material_code, material_name, " +
-        "quantity, unit_id, sequence_num FROM bd_bom_line WHERE bom_id = #{bomId} ORDER BY sequence_num")
+    @Select("SELECT detail_id, bom_id, child_material_id, quantity_per_parent, source_type, " +
+        "loss_rate, operation_step, workstation_id, process_id, routing_step_id " +
+        "FROM bd_bom_detail WHERE bom_id = #{bomId} ORDER BY operation_step")
     List<Map<String, Object>> selectBomLinesByBomId(@Param("bomId") Long bomId);
 }

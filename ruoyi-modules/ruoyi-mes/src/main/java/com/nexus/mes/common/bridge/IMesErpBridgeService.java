@@ -25,7 +25,7 @@ public interface IMesErpBridgeService {
      * 查询BOM明细(从ERP)
      *
      * @param bomId BOM ID
-     * @return BOM行列表，每行包含material_id/material_code/material_code/quantity等
+     * @return BOM行列表，每行包含child_material_id/quantity_per_parent等
      */
     List<Map<String, Object>> getBomLines(Long bomId);
 
@@ -33,12 +33,15 @@ public interface IMesErpBridgeService {
      * 查询工艺路线步骤(从ERP)
      *
      * @param routingId 工艺路线ID
-     * @return 工艺步骤列表，按sequence_num排序，每行包含process_id/process_code/process_name/sequence_num等
+     * @return 工艺步骤列表，按sequence_num排序，每行包含process_id/process_code/process_name等
      */
     List<Map<String, Object>> getRoutingSteps(Long routingId);
 
     /**
      * 根据物料ID查询默认工艺路线ID(从ERP)
+     * <p>
+     * bd_material表无default_routing_id字段，通过bd_routing表查询:
+     * material_id匹配且is_current=1且status=1的当前版本工艺路线
      *
      * @param materialId 物料ID
      * @return 工艺路线ID，可能为null

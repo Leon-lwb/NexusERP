@@ -17,9 +17,17 @@ import java.util.Map;
 public interface ErpMaterialMapper {
 
     @Select("SELECT material_id, material_code, material_name, material_spec, category_id, " +
-        "unit_id, reference_price FROM bd_material WHERE material_id = #{materialId}")
+        "base_uom_id, reference_price FROM bd_material WHERE material_id = #{materialId}")
     Map<String, Object> selectMaterialById(@Param("materialId") Long materialId);
 
-    @Select("SELECT default_routing_id FROM bd_material WHERE material_id = #{materialId}")
+    /**
+     * 查询物料的默认工艺路线ID
+     * <p>
+     * bd_material表无default_routing_id字段，通过bd_routing表查询:
+     * material_id匹配且is_current=1且status=1的当前版本工艺路线
+     */
+    @Select("SELECT routing_id FROM bd_routing " +
+        "WHERE material_id = #{materialId} AND is_current = 1 AND status = 1 AND del_flag = '0' " +
+        "ORDER BY create_time DESC LIMIT 1")
     Long selectDefaultRoutingId(@Param("materialId") Long materialId);
 }
