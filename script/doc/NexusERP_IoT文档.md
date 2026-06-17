@@ -1,9 +1,9 @@
 # NexusERP - IoT模块综合文档
 
 > **文档状态**: 📋 实施开发文档 — 本文档为IoT模块的完整设计方案与可执行开发计划。
-> 当前项目中 `ruoyi-iot` Maven模块尚未创建，`@DS("iot")` 数据源尚未配置，3张核心数据表DDL尚未执行。
+> **Week 33 进度**：`ruoyi-iot` 模块已创建并编译通过，`@DS("iot")` 数据源已配置，Moquette 内嵌 Broker + 设备认证 + 产品/设备 CRUD 已实现；3 张核心表 DDL 脚本已产出（`script/sql/ry-iot-week33.sql`），待开发者本地执行建库。
 > IoT阶段一（最小链路）可在MES Phase 3设备模型稳定后启动，预计Week 33开始。
-> 参考实施计划：[MES Phase 1~3 + IoT 阶段一实施计划](../superpowers/plans/2026-06-16-mes-iot-phase-plan.md)
+> 参考实施计划：[IoT 阶段一 Week 33 开发计划](../superpowers/plans/2026-06-17-iot-week33-plan.md)
 >
 > **数据采集归属**: IoT负责自动设备采集（MQTT/传感器数据），MES负责手工/业务采集（质检、工序录入）。
 > IoT采集的数据写入 `iot_device_data`，MES的 `dc_collection_point` 通过 `point_type=AUTO` 关联IoT设备。
@@ -561,15 +561,17 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 
 | 检查项 | 当前状态 | 说明 |
 |--------|----------|------|
-| `ruoyi-iot` Maven模块已创建 | ❌ 待完成 | 参照 `ruoyi-erp` 模块结构创建 |
-| `ruoyi-modules/pom.xml` 注册 iot 模块 | ❌ 待完成 | `<module>ruoyi-iot</module>` |
-| 根 `pom.xml` 注册 iot 模块 | ❌ 待完成 | `<module>ruoyi-iot</module>` |
-| `application-dev.yml` 配置 iot 数据源 | ❌ 待完成 | `spring.datasource.dynamic.datasource.iot` |
-| `@DS("iot")` 注解可用 | ❌ 待完成 | 验证 DynamicDataSource 能切换到 iot |
-| `ry-iot` 数据库已创建 | ❌ 待完成 | `CREATE DATABASE ry-iot` |
-| 3张核心DDL已执行 | ❌ 待完成 | iot_product + iot_device + iot_device_data |
-| Moquette依赖已引入 | ❌ 待完成 | `org.eclipse.moquette:moquette-broker:0.17` |
-| Redis Streams消费者组已创建 | ❌ 待完成 | `XGROUP CREATE iot:data:stream iot-consumers 0 MKSTREAM` |
+| `ruoyi-iot` Maven模块已创建 | ✅ 已完成 | Week 33 完成，参照 `ruoyi-mes` 模块结构创建 |
+| `ruoyi-modules/pom.xml` 注册 iot 模块 | ✅ 已完成 | `<module>ruoyi-iot</module>` |
+| 根 `pom.xml` 注册 iot 模块 | ✅ 已完成 | dependencyManagement 注册 `ruoyi-iot`，`ruoyi-admin` 引入 |
+| `application-dev.yml` 配置 iot 数据源 | ✅ 已完成 | `spring.datasource.dynamic.datasource.iot`（prod 同步占位） |
+| `@DS("iot")` 注解可用 | ✅ 已完成 | `IotProductServiceImpl`/`IotDeviceServiceImpl` 标注 `@DS("iot")`，编译通过 |
+| `ry-iot` 数据库已创建 | ⏳ 待执行 | DDL 脚本已产出 `script/sql/ry-iot-week33.sql`，由开发者本地执行 |
+| 3张核心DDL已执行 | ⏳ 待执行 | iot_product + iot_device + iot_device_data，脚本内含修正版 DDL（见脚本头注释） |
+| Moquette依赖已引入 | ✅ 已完成 | `io.moquette:moquette-broker:0.17`（注：0.17 groupId 为 `io.moquette`，非 `io.github.moquette`），T6 已排查 Netty 收敛无冲突 |
+| Redis Streams消费者组已创建 | ❌ 待完成 | 属 Week 34 数据管道，本周不创建 |
+
+> **Week 33 DDL 修正说明**：与本文档第二节 DDL 的差异已记录在 `script/sql/ry-iot-week33.sql` 头注释——`tenant_id` 改 `VARCHAR(20) DEFAULT '000000'` 对齐项目规范；业务表补 `del_flag` + 审计列；`iot_device_data` 不补审计列（实体独立）。以脚本为准。
 
 ### 14.2 已有基础设施确认
 

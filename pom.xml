@@ -324,6 +324,12 @@
                 <groupId>org.flowable</groupId>
                 <artifactId>flowable-spring-boot-starter-process</artifactId>
                 <version>${flowable.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-reload4j</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.flowable</groupId>
@@ -410,6 +416,13 @@
             <dependency>
                 <groupId>com.nexus</groupId>
                 <artifactId>ruoyi-mes</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!--  IoT物联网模块  -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-iot</artifactId>
                 <version>${revision}</version>
             </dependency>
 

@@ -313,6 +313,14 @@ mq:
 
 --- # NexusERP AI 配置
 nexus:
+  # IoT MQTT 内嵌 Broker（Moquette）
+  iot:
+    mqtt:
+      enabled: true
+      host: 0.0.0.0
+      port: 1883
+      allow-anonymous: false
+      status-ttl-seconds: 3600
   ai:
     default-provider: deepseek
     default-model: deepseek-chat

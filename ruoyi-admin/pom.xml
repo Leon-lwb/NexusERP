@@ -111,6 +111,12 @@
             <artifactId>ruoyi-mes</artifactId>
         </dependency>
 
+        <!--  IoT物联网模块  -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-iot</artifactId>
+        </dependency>
+
         <!--  支付业务模块  -->
         <dependency>
             <groupId>com.nexus</groupId>
