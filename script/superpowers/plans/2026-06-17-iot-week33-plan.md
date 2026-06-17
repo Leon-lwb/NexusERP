@@ -104,8 +104,8 @@
 
 ### T10 · 菜单权限 SQL（0.2d）
 - 产出 `script/sql/ry-iot-week33-menu.sql`（目标库 `ry-vue`，写 `sys_menu`）。
-- ID 段：**5000~5999**（MES 占用 4000 段，ERP 占 2000 段，5000 段空闲）。
-- 一级目录 `IoT平台`(5000) → 二级 `设备管理`(5001) → 菜单 `产品管理`(5010, `iot/product/index`)、`设备管理`(5020, `iot/device/index`)，及对应按钮权限 `iot:product:list/add/edit/remove/export`、`iot:device:*`。
+- ID 段：**6000~6999**（MES 占用 4000 段，ERP 占 2000 段，实际执行改为 6000 段空闲）。
+- 一级目录 `IoT平台`(6000) → 二级 `设备管理`(6001) → 菜单 `产品管理`(6010, `iot/product/index`)、`设备管理`(6020, `iot/device/index`)，及对应按钮权限 `iot:product:list/add/edit/remove/export`、`iot:device:*`。
 - 前端路由/页面本周不做，仅埋菜单，供 Week 35 前端对接。
 - **验收**：SQL 在 ry-vue 执行成功，菜单可见（需分配角色权限后）。
 
@@ -140,7 +140,7 @@
 3. ✅ `iot_device_data` 若继承 `BaseEntity` 会触发不存在的审计列填充 → 改为独立实体（第 1 节 C/D）。
 4. ✅ Moquette 传递 Netty，可能与现有 Netty 冲突 → T6 显式 `dependency:tree` 校验。
 5. ✅ Moquette 1883 端口随应用启动，测试/端口占用场景需可关 → `nexus.iot.mqtt.enabled` 开关。
-6. ✅ 菜单 ID 段需避开 MES(4000)/ERP(2000) → 选 5000 段。
+6. ✅ 菜单 ID 段需避开 MES(4000)/ERP(2000) → 计划选 5000 段，实际执行时改为 6000 段（已在 SQL 文件中修正）。
 7. ✅ Week 33 文档任务含“Redis Streams 消费者组创建”，但消费者组属 Week 34 数据管道 → 本周不创建，避免无消费者的空 group；检查清单该项保持 ❌。
 8. ✅ 文档 Week 33 提到 `MqttMessageListener`，但完整消息消费（XADD）在 Week 34 → 本周 listener 仅落日志，明确边界，避免提前实现下周逻辑。
 
