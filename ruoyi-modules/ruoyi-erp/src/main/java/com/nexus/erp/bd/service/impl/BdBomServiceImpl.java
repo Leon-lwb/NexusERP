@@ -24,8 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.erp.bd.domain.BdBomAlternative;
 import com.nexus.erp.bd.domain.BdBomDetail;
+import com.nexus.erp.bd.mapper.BdBomAlternativeMapper;
 import com.nexus.erp.bd.mapper.BdBomDetailMapper;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
+import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -53,7 +57,13 @@ public class BdBomServiceImpl implements IBdBomService {
 
     private final BdBomMapper baseMapper;
     private final BdBomDetailMapper bomDetailMapper;
+    private final BdBomAlternativeMapper bomAlternativeMapper;
     private final BdMaterialMapper materialMapper;
+    private final PrdWorkOrderMapper workOrderMapper;
+
+    /** 工单终态状态：处于这些状态的工单不再使用BOM，删除BOM时不阻断 */
+    private static final List<String> WORK_ORDER_TERMINAL_STATUS =
+        List.of("COMPLETED", "CLOSED", "CANCELLED");
 
     @Override
     public TableDataInfo<BdBomVo> selectPageList(BdBomBo bo, PageQuery pageQuery) {
@@ -75,6 +85,8 @@ public class BdBomServiceImpl implements IBdBomService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdBomBo bo) {
+        // 校验同一父项物料下版本号唯一
+        checkVersionUnique(bo.getParentMaterialId(), bo.getBomVersion(), null);
         BdBom entity = MapstructUtils.convert(bo, BdBom.class);
         return baseMapper.insert(entity);
     }
@@ -82,6 +94,8 @@ public class BdBomServiceImpl implements IBdBomService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdBomBo bo) {
+        // 校验同一父项物料下版本号唯一（排除自身）
+        checkVersionUnique(bo.getParentMaterialId(), bo.getBomVersion(), bo.getBomId());
         BdBom entity = MapstructUtils.convert(bo, BdBom.class);
         return baseMapper.updateById(entity);
     }
@@ -89,7 +103,46 @@ public class BdBomServiceImpl implements IBdBomService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        List<Long> idList = List.of(ids);
+        // 1. 校验是否有非终态生产工单引用这些BOM
+        Long referencingCount = workOrderMapper.selectCount(
+            Wrappers.lambdaQuery(PrdWorkOrder.class)
+                .in(PrdWorkOrder::getBomId, idList)
+                .notIn(PrdWorkOrder::getWoStatus, WORK_ORDER_TERMINAL_STATUS));
+        if (referencingCount != null && referencingCount > 0) {
+            throw new ServiceException("所选BOM已被" + referencingCount + "张未完成的生产工单引用，无法删除");
+        }
+        // 2. 级联删除替代料（按bomId）
+        bomAlternativeMapper.delete(
+            Wrappers.lambdaQuery(BdBomAlternative.class)
+                .in(BdBomAlternative::getBomId, idList));
+        // 3. 级联删除BOM明细（按bomId）
+        bomDetailMapper.delete(
+            Wrappers.lambdaQuery(BdBomDetail.class)
+                .in(BdBomDetail::getBomId, idList));
+        // 4. 删除BOM主表
+        return baseMapper.deleteBatchIds(idList);
+    }
+
+    /**
+     * 校验同一父项物料下BOM版本号唯一
+     *
+     * @param parentMaterialId 父项物料ID
+     * @param bomVersion       BOM版本号
+     * @param excludeBomId     排除的BOM ID（更新时传自身ID，新增时传null）
+     */
+    private void checkVersionUnique(Long parentMaterialId, String bomVersion, Long excludeBomId) {
+        if (parentMaterialId == null || StringUtils.isBlank(bomVersion)) {
+            return;
+        }
+        Long count = baseMapper.selectCount(
+            Wrappers.lambdaQuery(BdBom.class)
+                .eq(BdBom::getParentMaterialId, parentMaterialId)
+                .eq(BdBom::getBomVersion, bomVersion)
+                .ne(excludeBomId != null, BdBom::getBomId, excludeBomId));
+        if (count != null && count > 0) {
+            throw new ServiceException("该父项物料下已存在版本号 " + bomVersion + " 的BOM，请使用其他版本号");
+        }
     }
 
     @Override
@@ -462,13 +515,7 @@ public class BdBomServiceImpl implements IBdBomService {
             throw new ServiceException("源BOM不存在");
         }
         // 2. 检查新版本号是否已存在
-        Long existCount = baseMapper.selectCount(
-            Wrappers.lambdaQuery(BdBom.class)
-                .eq(BdBom::getParentMaterialId, sourceBom.getParentMaterialId())
-                .eq(BdBom::getBomVersion, newVersion));
-        if (existCount > 0) {
-            throw new ServiceException("版本号 " + newVersion + " 已存在，请使用其他版本号");
-        }
+        checkVersionUnique(sourceBom.getParentMaterialId(), newVersion, null);
         // 3. 创建新BOM主表
         BdBom newBom = new BdBom();
         newBom.setParentMaterialId(sourceBom.getParentMaterialId());
@@ -481,10 +528,11 @@ public class BdBomServiceImpl implements IBdBomService {
         newBom.setStatus(0L);
         newBom.setRemark("从BOM " + sourceBom.getBomId() + " (v" + sourceBom.getBomVersion() + ") 复制");
         baseMapper.insert(newBom);
-        // 4. 复制BOM明细
+        // 4. 复制BOM明细，并建立 旧明细ID -> 新明细ID 的映射（用于复制替代料）
         List<BdBomDetail> sourceDetails = bomDetailMapper.selectList(
             Wrappers.lambdaQuery(BdBomDetail.class)
                 .eq(BdBomDetail::getBomId, sourceBomId));
+        Map<Long, Long> detailIdMapping = new HashMap<>();
         if (sourceDetails != null && !sourceDetails.isEmpty()) {
             for (BdBomDetail sourceDetail : sourceDetails) {
                 BdBomDetail newDetail = new BdBomDetail();
@@ -504,6 +552,37 @@ public class BdBomServiceImpl implements IBdBomService {
                 newDetail.setStatus(sourceDetail.getStatus());
                 newDetail.setRemark(sourceDetail.getRemark());
                 bomDetailMapper.insert(newDetail);
+                // 记录映射（插入后newDetail.getDetailId()已被回填）
+                if (sourceDetail.getDetailId() != null) {
+                    detailIdMapping.put(sourceDetail.getDetailId(), newDetail.getDetailId());
+                }
+            }
+        }
+        // 5. 复制BOM替代料（按源BOM的所有明细归集，重映射detailId和bomId）
+        List<BdBomAlternative> sourceAlternatives = bomAlternativeMapper.selectList(
+            Wrappers.lambdaQuery(BdBomAlternative.class)
+                .eq(BdBomAlternative::getBomId, sourceBomId));
+        if (sourceAlternatives != null && !sourceAlternatives.isEmpty() && !detailIdMapping.isEmpty()) {
+            for (BdBomAlternative sourceAlt : sourceAlternatives) {
+                Long newDetailId = detailIdMapping.get(sourceAlt.getDetailId());
+                if (newDetailId == null) {
+                    // 源明细已被删除等异常情况，跳过
+                    continue;
+                }
+                BdBomAlternative newAlt = new BdBomAlternative();
+                newAlt.setDetailId(newDetailId);
+                newAlt.setBomId(newBom.getBomId());
+                newAlt.setAltMaterialId(sourceAlt.getAltMaterialId());
+                newAlt.setAltMaterialCode(sourceAlt.getAltMaterialCode());
+                newAlt.setAltMaterialName(sourceAlt.getAltMaterialName());
+                newAlt.setAltQuantity(sourceAlt.getAltQuantity());
+                newAlt.setPriority(sourceAlt.getPriority());
+                newAlt.setSubstitutionType(sourceAlt.getSubstitutionType());
+                newAlt.setEffectiveDate(sourceAlt.getEffectiveDate());
+                newAlt.setExpiryDate(sourceAlt.getExpiryDate());
+                newAlt.setStatus(sourceAlt.getStatus());
+                newAlt.setRemark(sourceAlt.getRemark());
+                bomAlternativeMapper.insert(newAlt);
             }
         }
         return newBom.getBomId();
@@ -595,8 +674,10 @@ public class BdBomServiceImpl implements IBdBomService {
                 boolean isQtyChanged = compareDecimal(d1.getQuantityPerParent(), d2.getQuantityPerParent());
                 boolean isLossChanged = compareDecimal(d1.getLossRate(), d2.getLossRate());
                 boolean isStepChanged = !Objects.equals(d1.getOperationStep(), d2.getOperationStep());
+                boolean isProcessChanged = !Objects.equals(d1.getProcessId(), d2.getProcessId());
+                boolean isRoutingStepChanged = !Objects.equals(d1.getRoutingStepId(), d2.getRoutingStepId());
 
-                if (isQtyChanged || isLossChanged || isStepChanged) {
+                if (isQtyChanged || isLossChanged || isStepChanged || isProcessChanged || isRoutingStepChanged) {
                     line.setChangeType("MODIFIED");
                     StringBuilder detail = new StringBuilder();
                     if (isQtyChanged) {
@@ -607,6 +688,12 @@ public class BdBomServiceImpl implements IBdBomService {
                     }
                     if (isStepChanged) {
                         detail.append("工序步骤: ").append(d1.getOperationStep()).append(" → ").append(d2.getOperationStep()).append("; ");
+                    }
+                    if (isProcessChanged) {
+                        detail.append("工序: ").append(d1.getProcessId()).append(" → ").append(d2.getProcessId()).append("; ");
+                    }
+                    if (isRoutingStepChanged) {
+                        detail.append("工艺步骤: ").append(d1.getRoutingStepId()).append(" → ").append(d2.getRoutingStepId()).append("; ");
                     }
                     line.setChangeDetail(detail.toString().trim());
                     changed.add(line);

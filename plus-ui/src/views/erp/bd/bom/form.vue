@@ -72,6 +72,47 @@
           </el-col>
         </el-row>
 
+        <!-- BOM类型 / 工艺路线 -->
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="BOM类型" prop="bomType">
+              <el-select v-model="form.bomType" placeholder="请选择BOM类型" :disabled="isViewMode" clearable style="width: 100%">
+                <el-option
+                  v-for="dict in bd_bom_type"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="工艺路线" prop="routingId">
+              <el-select
+                v-model="form.routingId"
+                placeholder="请选择工艺路线"
+                :disabled="isViewMode"
+                clearable
+                filterable
+                style="width: 100%"
+                @change="handleRoutingChange"
+              >
+                <el-option
+                  v-for="item in routingOptions"
+                  :key="item.routingId"
+                  :label="item.routingCode + ' - ' + item.routingName + (item.isCurrent === 1 ? '(当前)' : '')"
+                  :value="item.routingId"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8" v-if="form.routingId">
+            <el-form-item label="路线版本">
+              <el-input v-model="currentRoutingVersion" readonly placeholder="—" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <!-- 状态信息 -->
         <el-divider content-position="left">状态信息</el-divider>
         <el-row :gutter="20">
@@ -238,8 +279,9 @@
             <span v-else>{{ scope.row.backflushFlag === 1 ? '是' : '否' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" width="100" v-if="!isViewMode">
+        <el-table-column label="操作" align="center" width="140" v-if="!isViewMode">
           <template #default="scope">
+            <el-button link type="primary" @click="openAlternativeDialog(scope.row)" v-if="scope.row.detailId">替代料</el-button>
             <el-button link type="danger" @click="removeMaterialRow(scope.$index)">删除</el-button>
           </template>
         </el-table-column>
@@ -418,6 +460,71 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 替代料管理对话框 -->
+    <el-dialog title="替代料管理" v-model="alternativeOpen" width="1100px" append-to-body @close="handleAlternativeClose">
+      <el-alert v-if="alternativeCurrentDetail" type="info" :closable="false" show-icon style="margin-bottom: 12px">
+        子项物料：{{ alternativeCurrentDetail.childMaterialName }}（用量 {{ alternativeCurrentDetail.quantityPerParent }}）
+      </el-alert>
+      <el-row :gutter="10" class="mb8" v-if="!isViewMode">
+        <el-col :span="1.5">
+          <el-button type="primary" icon="Plus" @click="addAlternativeRow">添加替代料</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="success" icon="Check" @click="saveAlternatives">保存</el-button>
+        </el-col>
+      </el-row>
+      <el-table :data="alternativeItems" style="width: 100%">
+        <el-table-column type="index" width="50" align="center" label="序号" />
+        <el-table-column label="替代物料" align="center" min-width="200">
+          <template #default="scope">
+            <el-input v-model="scope.row.altMaterialName" placeholder="请选择替代物料" readonly>
+              <template #append>
+                <el-button icon="Search" @click="openAltMaterialSelect(scope.$index)" :disabled="isViewMode" />
+              </template>
+            </el-input>
+          </template>
+        </el-table-column>
+        <el-table-column label="替代用量" align="center" width="140">
+          <template #default="scope">
+            <el-input-number v-model="scope.row.altQuantity" :min="0" :precision="6" controls-position="right" :disabled="isViewMode" style="width: 100%" />
+          </template>
+        </el-table-column>
+        <el-table-column label="优先级" align="center" width="110">
+          <template #default="scope">
+            <el-input-number v-model="scope.row.priority" :min="1" controls-position="right" :disabled="isViewMode" style="width: 100%" />
+          </template>
+        </el-table-column>
+        <el-table-column label="替代类型" align="center" width="130">
+          <template #default="scope">
+            <el-select v-model="scope.row.substitutionType" placeholder="请选择" :disabled="isViewMode" style="width: 100%">
+              <el-option v-for="dict in bd_substitution_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </template>
+        </el-table-column>
+        <el-table-column label="生效日期" align="center" width="150">
+          <template #default="scope">
+            <el-date-picker v-model="scope.row.effectiveDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" :readonly="isViewMode" />
+          </template>
+        </el-table-column>
+        <el-table-column label="失效日期" align="center" width="150">
+          <template #default="scope">
+            <el-date-picker v-model="scope.row.expiryDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 100%" :readonly="isViewMode" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="80" v-if="!isViewMode">
+          <template #default="scope">
+            <el-button link type="danger" @click="removeAlternativeRow(scope.$index)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="alternativeItems.length === 0" description="暂无替代料" />
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="alternativeOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -425,13 +532,15 @@
 import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail, saveBomDetailsBatch, getBomTree, getIndentedBom } from "@/api/erp/bd/bom"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/erp/bd/category"
+import { listRouting } from "@/api/erp/bd/routing"
+import { listAlternativeByDetail, saveAlternativeBatch } from "@/api/erp/bd/bom/alternative"
 import { useRouter, useRoute } from 'vue-router'
 import { debounce } from 'lodash'
 
 const router = useRouter()
 const route = useRoute()
 const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, prd_backflush_flag } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type', 'prd_backflush_flag'))
+const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, prd_backflush_flag, bd_bom_type, bd_substitution_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type', 'prd_backflush_flag', 'bd_bom_type', 'bd_substitution_type'))
 
 // 表单相关
 const formRef = ref(null)
@@ -446,7 +555,9 @@ const form = ref({
   isCurrent: null,
   status: null,
   remark: null,
-  sourceType: null
+  sourceType: null,
+  bomType: null,
+  routingId: null
 })
 
 // 查看模式标识
@@ -503,6 +614,18 @@ const materialList = ref([])
 const materialLoading = ref(false)
 const materialTotal = ref(0)
 const materialDialogTitle = ref("选择物料")
+// 物料选择模式：detail=选择子项物料，alt=选择替代物料
+const materialSelectMode = ref('detail')
+const currentAltRowIndex = ref(-1)
+
+// 工艺路线选项
+const routingOptions = ref([])
+const currentRoutingVersion = ref('')
+
+// 替代料管理相关
+const alternativeOpen = ref(false)
+const alternativeItems = ref([])
+const alternativeCurrentDetail = ref(null)
 
 // 物料分类相关
 const categoryTree = ref([])
@@ -532,17 +655,35 @@ const materialQueryParams = ref({
 onMounted(() => {
   const id = route.query.id
   const action = route.query.action
-  
+
   // 设置查看模式
   isViewMode.value = action === 'view'
-  
+
   // 获取物料分类树
   getCategoryTree()
-  
+
+  // 加载工艺路线选项
+  loadRoutingOptions()
+
   if (id) {
     getBomDetails(id)
   }
 })
+
+// 加载工艺路线选项（仅加载启用状态）
+function loadRoutingOptions() {
+  listRouting({ status: 1, pageNum: 1, pageSize: 1000 }).then(response => {
+    routingOptions.value = response.rows || []
+  }).catch(() => {
+    routingOptions.value = []
+  })
+}
+
+// 工艺路线变更：同步显示版本号
+function handleRoutingChange(routingId) {
+  const matched = routingOptions.value.find(r => r.routingId === routingId)
+  currentRoutingVersion.value = matched ? matched.routingVersion : ''
+}
 
 // 获取BOM详情
 function getBomDetails(id) {
@@ -555,7 +696,12 @@ function getBomDetails(id) {
     if (form.value.parentMaterialId) {
       getMaterialNameById(form.value.parentMaterialId);
     }
-    
+
+    // 同步工艺路线版本号显示
+    if (form.value.routingId) {
+      handleRoutingChange(form.value.routingId);
+    }
+
     // 获取BOM子表信息
     getBomDetailsList(id);
   })
@@ -709,20 +855,118 @@ function resetMaterialQuery() {
 
 // 打开物料选择对话框
 function openMaterialSelect(rowIndex) {
+  materialSelectMode.value = 'detail'
   currentMaterialRowIndex.value = rowIndex
   materialSelectOpen.value = true
-  materialDialogTitle.value = "选择物料"
+  materialDialogTitle.value = "选择子项物料"
   getMaterialList()
+}
+
+// 打开替代料物料选择对话框
+function openAltMaterialSelect(rowIndex) {
+  materialSelectMode.value = 'alt'
+  currentAltRowIndex.value = rowIndex
+  materialSelectOpen.value = true
+  materialDialogTitle.value = "选择替代物料"
+  getMaterialList()
+}
+
+// 打开替代料管理对话框
+function openAlternativeDialog(detailRow) {
+  if (!detailRow.detailId) {
+    proxy.$modal.msgWarning("请先保存BOM明细后再管理替代料")
+    return
+  }
+  if (!form.value.bomId) {
+    proxy.$modal.msgWarning("请先保存BOM主表")
+    return
+  }
+  alternativeCurrentDetail.value = detailRow
+  alternativeOpen.value = true
+  listAlternativeByDetail(detailRow.detailId).then(response => {
+    alternativeItems.value = (response.data || []).map(item => ({
+      alternativeId: item.alternativeId,
+      detailId: item.detailId,
+      bomId: item.bomId,
+      altMaterialId: item.altMaterialId,
+      altMaterialCode: item.altMaterialCode,
+      altMaterialName: item.altMaterialName,
+      altQuantity: item.altQuantity,
+      priority: item.priority,
+      substitutionType: item.substitutionType,
+      effectiveDate: item.effectiveDate,
+      expiryDate: item.expiryDate,
+      status: item.status,
+      remark: item.remark
+    }))
+  }).catch(() => {
+    alternativeItems.value = []
+  })
+}
+
+// 新增替代料行
+function addAlternativeRow() {
+  alternativeItems.value.push({
+    alternativeId: null,
+    detailId: alternativeCurrentDetail.value.detailId,
+    bomId: form.value.bomId,
+    altMaterialId: null,
+    altMaterialCode: '',
+    altMaterialName: '',
+    altQuantity: alternativeCurrentDetail.value.quantityPerParent || 1,
+    priority: alternativeItems.value.length + 1,
+    substitutionType: 'FULL',
+    effectiveDate: null,
+    expiryDate: null,
+    status: 1,
+    remark: ''
+  })
+}
+
+// 删除替代料行
+function removeAlternativeRow(index) {
+  alternativeItems.value.splice(index, 1)
+}
+
+// 保存替代料（批量：先删后插）
+function saveAlternatives() {
+  const detailId = alternativeCurrentDetail.value.detailId
+  const bomId = form.value.bomId
+  // 校验替代料行
+  const invalid = alternativeItems.value.find(item => !item.altMaterialId || item.altQuantity === null || item.altQuantity === undefined)
+  if (invalid) {
+    proxy.$modal.msgWarning("请完善替代物料和替代用量")
+    return
+  }
+  saveAlternativeBatch(detailId, bomId, alternativeItems.value).then(() => {
+    proxy.$modal.msgSuccess("替代料保存成功")
+  }).catch(() => {
+    proxy.$modal.msgError("替代料保存失败")
+  })
+}
+
+// 替代料对话框关闭
+function handleAlternativeClose() {
+  alternativeItems.value = []
+  alternativeCurrentDetail.value = null
 }
 
 // 选择物料
 function selectMaterial(row) {
-  if (currentMaterialRowIndex.value >= 0) {
+  if (materialSelectMode.value === 'alt') {
+    // 替代料物料选择
+    if (currentAltRowIndex.value >= 0) {
+      alternativeItems.value[currentAltRowIndex.value].altMaterialId = row.materialId
+      alternativeItems.value[currentAltRowIndex.value].altMaterialCode = row.materialCode
+      alternativeItems.value[currentAltRowIndex.value].altMaterialName = row.materialName
+    }
+  } else if (currentMaterialRowIndex.value >= 0) {
     materialItems.value[currentMaterialRowIndex.value].childMaterialId = row.materialId
     materialItems.value[currentMaterialRowIndex.value].childMaterialName = row.materialName
   }
   materialSelectOpen.value = false
   currentMaterialRowIndex.value = -1
+  currentAltRowIndex.value = -1
 }
 
 // 清除已选择的物料

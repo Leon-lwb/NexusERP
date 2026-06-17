@@ -125,6 +125,10 @@
         <el-button type="warning" plain icon="DataAnalysis" :disabled="compareDisabled" @click="handleCompareBom"
           v-hasPermi="['bd:bom:query']">BOM比较</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="info" plain icon="Aim" @click="handleWhereUsed"
+          v-hasPermi="['bd:bom:query']">Where-Used反查</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -278,6 +282,33 @@
                     :key="dict.value"
                     :label="dict.label"
                     :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="BOM类型" prop="bomType">
+              <el-select v-model="form.bomType" placeholder="请选择BOM类型" clearable>
+                <el-option
+                    v-for="dict in bd_bom_type"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="工艺路线" prop="routingId">
+              <el-select v-model="form.routingId" placeholder="请选择工艺路线" clearable filterable>
+                <el-option
+                    v-for="item in routingOptions"
+                    :key="item.routingId"
+                    :label="item.routingCode + ' - ' + item.routingName + (item.isCurrent === 1 ? '(当前)' : '')"
+                    :value="item.routingId"
                 />
               </el-select>
             </el-form-item>
@@ -528,13 +559,45 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- Where-Used 反查结果对话框 -->
+    <el-dialog :title="'Where-Used反查 - ' + whereUsedMaterialName" v-model="whereUsedOpen" width="900px" append-to-body>
+      <el-table v-loading="whereUsedLoading" :data="whereUsedData" border size="small">
+        <el-table-column label="BOM名称" prop="bomName" min-width="150" />
+        <el-table-column label="版本号" prop="bomVersion" width="100" align="center" />
+        <el-table-column label="BOM类型" prop="bomType" width="100" align="center">
+          <template #default="scope">
+            <dict-tag :options="bd_bom_type" :value="scope.row.bomType" />
+          </template>
+        </el-table-column>
+        <el-table-column label="父项物料编码" prop="parentMaterialCode" width="140" align="center" />
+        <el-table-column label="父项物料名称" prop="parentMaterialName" min-width="140" />
+        <el-table-column label="是否当前" prop="isCurrent" width="90" align="center">
+          <template #default="scope">
+            <dict-tag :options="sys_true_or_false" :value="scope.row.isCurrent" />
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" prop="status" width="80" align="center">
+          <template #default="scope">
+            <dict-tag :options="sys_core_status" :value="scope.row.status" />
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="!whereUsedLoading && whereUsedData.length === 0" description="该物料未被任何BOM使用" />
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="whereUsedOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="Bom">
-import { listBom, getBom, delBom, addBom, updateBom, activateBomVersion, verifyBom, getBomTree, copyBom, compareBom } from "@/api/erp/bd/bom"
+import { listBom, getBom, delBom, addBom, updateBom, activateBomVersion, verifyBom, getBomTree, copyBom, compareBom, whereUsedBom } from "@/api/erp/bd/bom"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/erp/bd/category"
+import { listRouting } from "@/api/erp/bd/routing"
 import { useRouter } from 'vue-router'
 import { debounce } from 'lodash'
 
@@ -559,6 +622,16 @@ import { debounce } from 'lodash'
   const compareData = ref(null)
   const compareLoading = ref(false)
   const compareActiveTab = ref('changed')
+
+  // Where-Used反查相关
+  const whereUsedOpen = ref(false)
+  const whereUsedData = ref([])
+  const whereUsedLoading = ref(false)
+  const whereUsedMaterialName = ref('')
+  // 物料选择模式：detail=选择父项物料，whereused=选择反查目标物料
+  const materialSelectMode = ref('detail')
+  // 工艺路线选项（内嵌对话框使用）
+  const routingOptions = ref([])
   
   // BOM树形视图相关
   const bomTreeOpen = ref(false)
@@ -684,14 +757,42 @@ import { debounce } from 'lodash'
   
   /** 打开物料选择对话框 */
   function openMaterialSelect() {
+    materialSelectMode.value = 'detail'
     materialSelectOpen.value = true
-    materialDialogTitle.value = "选择物料"
+    materialDialogTitle.value = "选择父项物料"
     // 每次打开时重新加载物料列表
     getMaterialList()
   }
-  
+
+  /** Where-Used反查：先选择目标物料 */
+  function handleWhereUsed() {
+    materialSelectMode.value = 'whereused'
+    materialSelectOpen.value = true
+    materialDialogTitle.value = "选择要反查的物料"
+    getMaterialList()
+  }
+
+  /** 执行Where-Used反查 */
+  function doWhereUsed(materialId, materialName) {
+    whereUsedMaterialName.value = materialName || ''
+    whereUsedOpen.value = true
+    whereUsedLoading.value = true
+    whereUsedData.value = []
+    whereUsedBom(materialId).then(response => {
+      whereUsedData.value = response.data || []
+      whereUsedLoading.value = false
+    }).catch(() => {
+      whereUsedLoading.value = false
+    })
+  }
+
   /** 选择物料 */
   function selectMaterial(row) {
+    if (materialSelectMode.value === 'whereused') {
+      materialSelectOpen.value = false
+      doWhereUsed(row.materialId, row.materialName)
+      return
+    }
     form.value.parentMaterialId = row.materialId
     form.value.parentMaterialName = row.materialName
     materialSelectOpen.value = false
@@ -723,6 +824,8 @@ import { debounce } from 'lodash'
                     status: null,
                     remark: null,
                     sourceType: null,
+                    bomType: null,
+                    routingId: null,
                     attr1: null,
                     attr2: null,
                     attr3: null,
@@ -1042,6 +1145,10 @@ import { debounce } from 'lodash'
   onMounted(() => {
     getList()
     getCategoryTree()  // 确保调用获取分类树的方法
+    // 加载工艺路线选项（内嵌对话框使用）
+    listRouting({ status: 1, pageNum: 1, pageSize: 1000 }).then(response => {
+      routingOptions.value = response.rows || []
+    }).catch(() => {})
   })
 
   // 添加组件销毁时的清理逻辑
