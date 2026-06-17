@@ -47,4 +47,28 @@ public interface IMesErpBridgeService {
      * @return 工艺路线ID，可能为null
      */
     Long getDefaultRoutingId(Long materialId);
+
+    /**
+     * 查询车间信息(从ERP)
+     *
+     * @param workshopId 车间ID
+     * @return 车间信息Map，包含workshop_code/workshop_name等
+     */
+    Map<String, Object> getWorkshop(Long workshopId);
+
+    /**
+     * 查询工作站信息(从ERP)
+     *
+     * @param workstationId 工作站ID
+     * @return 工作站信息Map，包含workstation_code/workstation_name等
+     */
+    Map<String, Object> getWorkstation(Long workstationId);
+
+    /**
+     * 查询计量单位名称(从ERP)
+     *
+     * @param unitId 单位ID
+     * @return 单位名称，可能为null
+     */
+    String getUnitName(Long unitId);
 }

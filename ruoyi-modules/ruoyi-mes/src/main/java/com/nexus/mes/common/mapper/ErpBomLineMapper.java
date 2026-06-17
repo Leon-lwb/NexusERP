@@ -19,6 +19,6 @@ public interface ErpBomLineMapper {
 
     @Select("SELECT detail_id, bom_id, child_material_id, quantity_per_parent, source_type, " +
         "loss_rate, operation_step, workstation_id, process_id, routing_step_id " +
-        "FROM bd_bom_detail WHERE bom_id = #{bomId} ORDER BY operation_step")
+        "FROM bd_bom_detail WHERE bom_id = #{bomId} AND del_flag = '0' ORDER BY operation_step")
     List<Map<String, Object>> selectBomLinesByBomId(@Param("bomId") Long bomId);
 }

@@ -17,7 +17,7 @@ import java.util.Map;
 public interface ErpMaterialMapper {
 
     @Select("SELECT material_id, material_code, material_name, material_spec, category_id, " +
-        "base_uom_id, reference_price FROM bd_material WHERE material_id = #{materialId}")
+        "base_uom_id, reference_price FROM bd_material WHERE material_id = #{materialId} AND del_flag = '0'")
     Map<String, Object> selectMaterialById(@Param("materialId") Long materialId);
 
     /**

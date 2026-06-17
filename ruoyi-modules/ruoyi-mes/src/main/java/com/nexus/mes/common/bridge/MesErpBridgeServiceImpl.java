@@ -4,6 +4,9 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.mes.common.mapper.ErpMaterialMapper;
 import com.nexus.mes.common.mapper.ErpBomLineMapper;
 import com.nexus.mes.common.mapper.ErpRoutingStepMapper;
+import com.nexus.mes.common.mapper.ErpWorkshopMapper;
+import com.nexus.mes.common.mapper.ErpWorkstationMapper;
+import com.nexus.mes.common.mapper.ErpUnitMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,9 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     private final ErpMaterialMapper erpMaterialMapper;
     private final ErpBomLineMapper erpBomLineMapper;
     private final ErpRoutingStepMapper erpRoutingStepMapper;
+    private final ErpWorkshopMapper erpWorkshopMapper;
+    private final ErpWorkstationMapper erpWorkstationMapper;
+    private final ErpUnitMapper erpUnitMapper;
 
     @Override
     public Map<String, Object> getMaterial(Long materialId) {
@@ -64,6 +70,36 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
         try {
             DynamicDataSourceContextHolder.push("erp");
             return erpMaterialMapper.selectDefaultRoutingId(materialId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    @Override
+    public Map<String, Object> getWorkshop(Long workshopId) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpWorkshopMapper.selectWorkshopById(workshopId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    @Override
+    public Map<String, Object> getWorkstation(Long workstationId) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpWorkstationMapper.selectWorkstationById(workstationId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    @Override
+    public String getUnitName(Long unitId) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpUnitMapper.selectUnitNameById(unitId);
         } finally {
             DynamicDataSourceContextHolder.poll();
         }
