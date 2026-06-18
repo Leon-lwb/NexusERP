@@ -61,6 +61,7 @@ import type { ProFlowCardVO, ProFlowCardQuery } from '@/api/mes/pro/flowcard';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
+const route = useRoute();
 
 const dataList = ref<ProFlowCardVO[]>([]);
 const loading = ref(true);
@@ -129,6 +130,9 @@ const statusTagType = (status: string) => {
 };
 
 onMounted(() => {
+  if (route.query.mesWoId) {
+    queryParams.value.mesWoId = route.query.mesWoId as any;
+  }
   getList();
 });
 </script>
