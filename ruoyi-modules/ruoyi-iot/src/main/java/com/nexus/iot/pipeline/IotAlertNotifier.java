@@ -30,7 +30,8 @@ import java.util.Set;
  *   <li>扫描 Sa-Token 在线 Token，过滤同租户在线用户作为推送目标（多租户隔离）；</li>
  *   <li>无在线用户 → 仅落日志；有 → {@code SseMessageUtils.publishMessage} 推送 {@code type=IOT_ALERT} 消息。</li>
  * </ol>
- * MES 安灯联动（{@link IMesAndonService#createAndonFromAlert}）属 Phase 2，此处预留调用点。
+ * MES 安灯联动（{@link IMesAndonService#createAndonFromAlert}）：限频通过后触发 EQUIPMENT 类型安灯呼叫，
+ * 失败仅告警日志不阻断主流程。
  * <p>
  * 注意：在线 Token 全量扫描在用户量大时较重，故前置限频；规则引擎阶段应改为订阅式推送。
  *
@@ -55,14 +56,23 @@ public class IotAlertNotifier {
         log.warn("IoT 告警：device={}, type={}, level={}, msg={}",
             alert.getDeviceCode(), alert.getAlertType(), alert.getAlertLevel(), alert.getAlertMessage());
 
-        // TODO Phase2: MES 安灯联动 —— mesAndonService.createAndonFromAlert(alert);
-        // 当前 no-op 实现仅记日志，留作 MES 接入后的调用点。
-
         // 1. 限频：每设备每告警类型每分钟最多推送一次
         String rlKey = RATE_LIMIT_PREFIX + alert.getDeviceId() + ":" + alert.getAlertType();
         if (!RedisUtils.setObjectIfAbsent(rlKey, "1", RATE_LIMIT_TTL)) {
             log.debug("告警推送限频中，跳过：device={}, type={}", alert.getDeviceCode(), alert.getAlertType());
             return;
+        }
+
+        // 2. MES 安灯联动：限频通过后触发安灯呼叫(EQUIPMENT 类型)。
+        //    MES 侧 MesAndonServiceImpl(@Primary) 提供真实实现；未接入时由 Noop 兜底返回 null。
+        //    try-catch 隔离，安灯创建失败不阻断 IoT 告警主流程。
+        try {
+            Long andonId = mesAndonService.createAndonFromAlert(alert);
+            if (andonId != null) {
+                log.info("IoT 告警已联动 MES 安灯：device={}, andonId={}", alert.getDeviceCode(), andonId);
+            }
+        } catch (Exception e) {
+            log.warn("IoT 告警联动 MES 安灯失败，不阻断告警推送：device={}, err={}", alert.getDeviceCode(), e.getMessage());
         }
 
         if (!SseMessageUtils.isEnable()) {

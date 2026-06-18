@@ -66,6 +66,12 @@ export const initSSE = (url: any) => {
           data.value = null;
           return;
         }
+        // MES 安灯消息（type=ANDON），分发到安灯看板自行处理
+        if (obj.type === 'ANDON') {
+          window.dispatchEvent(new CustomEvent('mes-andon', { detail: obj }));
+          data.value = null;
+          return;
+        }
         // AI 消息类型处理（message 字段为 JSON，含 type/content）
         // 注意：AI 消息格式与系统通知不同，独立处理
         if (obj.message && typeof obj.message === 'string') {
