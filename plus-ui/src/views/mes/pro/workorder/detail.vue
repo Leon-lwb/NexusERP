@@ -147,7 +147,7 @@ const handleViewFlow = () => {
 };
 
 const handleCreateFlowCard = async () => {
-  const qty = await proxy?.$modal.prompt(
+  const { value: qty } = await proxy?.$modal.prompt(
     `请输入本流转卡计划数量（工单计划数量 ${workOrder.value.plannedQty}）：`,
     '创建流转卡 - ' + workOrder.value.woNo
   );
