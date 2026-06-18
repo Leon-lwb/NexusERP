@@ -92,7 +92,7 @@ const handleStartStep = async (row: ProFlowCardStepVO) => {
 };
 
 const handleCompleteStep = async (row: ProFlowCardStepVO) => {
-  const goodQty = await proxy?.$modal.prompt('请输入良品数量:', '完工 - ' + row.processName);
+  const { value: goodQty } = await proxy?.$modal.prompt('请输入良品数量:', '完工 - ' + row.processName);
   if (!goodQty || isNaN(Number(goodQty))) {
     proxy?.$modal.msgWarning('请输入有效数量');
     return;
