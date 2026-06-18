@@ -28,6 +28,10 @@
       <!-- 操作栏 -->
       <el-row :gutter="10" class="mb8">
         <el-col :span="1.5">
+          <el-button type="primary" plain icon="Plus" @click="handleAdd"
+            v-hasPermi="['mes:pro:work:add']">新增</el-button>
+        </el-col>
+        <el-col :span="1.5">
           <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()"
             v-hasPermi="['mes:pro:work:remove']">删除</el-button>
         </el-col>
@@ -49,9 +53,11 @@
           </template>
         </el-table-column>
         <el-table-column label="计划开工" prop="planStartDate" width="160" />
-        <el-table-column label="操作" width="200" align="center">
+        <el-table-column label="操作" width="240" align="center">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+              v-if="scope.row.woStatus === 'CREATED'" v-hasPermi="['mes:pro:work:edit']">修改</el-button>
             <el-button link type="primary" icon="Promotion" @click="handleRelease(scope.row)"
               v-if="scope.row.woStatus === 'CREATED'" v-hasPermi="['mes:pro:work:edit']">下达</el-button>
           </template>
@@ -62,12 +68,14 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
         v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
+    <Form ref="formRef" @refresh="getList" />
   </div>
 </template>
 
 <script setup lang="ts" name="MesWorkOrder">
 import { listWorkOrder, delWorkOrder, releaseWorkOrder } from '@/api/mes/pro/workorder';
 import type { ProWorkOrderVO, ProWorkOrderQuery } from '@/api/mes/pro/types';
+import Form from './form.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
@@ -79,6 +87,7 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
+const formRef = ref<InstanceType<typeof Form>>();
 
 const queryParams = ref<ProWorkOrderQuery>({
   pageNum: 1,
@@ -118,6 +127,9 @@ const handleSelectionChange = (selection: ProWorkOrderVO[]) => {
 const handleDetail = (row: ProWorkOrderVO) => {
   router.push(`/mes/pro/workorder/detail/${row.mesWoId}`);
 };
+
+const handleAdd = () => formRef.value?.open();
+const handleUpdate = (row: ProWorkOrderVO) => formRef.value?.open(row);
 
 const handleRelease = async (row: ProWorkOrderVO) => {
   await proxy?.$modal.confirm('确认下达工单"' + row.woNo + '"？');

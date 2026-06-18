@@ -58,6 +58,8 @@ export interface ProWorkOrderForm {
   routingId?: number;
   woStatus?: string;
   priority?: number;
+  planStartDate?: string;
+  planEndDate?: string;
   remark?: string;
   selectFlowId?: number;
 }
