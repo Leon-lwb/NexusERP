@@ -78,6 +78,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     /**
      * 创建派工单(从流转卡工序)
      */
+    @Lock4j(keys = {"#stepRecordId"})
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProDispatchVo createDispatch(Long cardId, Long stepRecordId, Long operatorId,
