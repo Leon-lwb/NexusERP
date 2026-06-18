@@ -5,6 +5,14 @@
         <div class="clearfix">
           <span>流转卡详情 - {{ flowCard.cardNo }}</span>
           <el-button style="float: right" type="primary" plain @click="goBack">返回</el-button>
+          <el-button style="float: right; margin-right: 8px" type="warning" plain icon="CircleCheck"
+            v-if="flowCard.cardStatus === 'IN_PROGRESS'"
+            v-hasPermi="['mes:pro:flowcard:complete']"
+            @click="handleCompleteFlowCard">完工流转卡</el-button>
+          <el-button style="float: right; margin-right: 8px" type="info" plain icon="Lock"
+            v-if="flowCard.cardStatus === 'COMPLETED'"
+            v-hasPermi="['mes:pro:flowcard:edit']"
+            @click="handleCloseFlowCard">关闭流转卡</el-button>
         </div>
       </template>
 
@@ -61,7 +69,7 @@
 </template>
 
 <script setup lang="ts" name="MesFlowCardDetail">
-import { getFlowCard, startStep, completeStep } from '@/api/mes/pro/flowcardApi';
+import { getFlowCard, startStep, completeStep, completeFlowCard, closeFlowCard } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO, ProFlowCardStepVO } from '@/api/mes/pro/flowcard';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -91,6 +99,20 @@ const handleCompleteStep = async (row: ProFlowCardStepVO) => {
   }
   await completeStep(row.cardId, row.stepRecordId, Number(goodQty));
   proxy?.$modal.msgSuccess('完工成功');
+  loadDetail();
+};
+
+const handleCompleteFlowCard = async () => {
+  await proxy?.$modal.confirm('确认完成该流转卡？将聚合完工数量到工单。');
+  await completeFlowCard(flowCard.value.cardId);
+  proxy?.$modal.msgSuccess('流转卡完工成功');
+  loadDetail();
+};
+
+const handleCloseFlowCard = async () => {
+  await proxy?.$modal.confirm('确认关闭该流转卡？关闭后不可再操作。');
+  await closeFlowCard(flowCard.value.cardId);
+  proxy?.$modal.msgSuccess('流转卡已关闭');
   loadDetail();
 };
 
