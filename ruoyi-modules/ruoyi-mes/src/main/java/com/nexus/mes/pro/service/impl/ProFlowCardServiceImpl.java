@@ -1,6 +1,7 @@
 package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -113,6 +114,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         flowCard.setScrapQty(BigDecimal.ZERO);
         flowCard.setCardStatus(STATUS_CREATED);
         baseMapper.insert(flowCard);
+        flowCard.setBarcode("FC" + String.format("%016d", flowCard.getCardId()));
+        baseMapper.updateById(flowCard);
         log.info("流转卡创建成功: cardId={}, cardNo={}", flowCard.getCardId(), flowCard.getCardNo());
 
         // 3. 查工单工序步骤，自动生成流转卡工序记录
@@ -140,8 +143,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     /**
      * 开始工序
      */
-    @Override
+    @Lock4j(keys = {"#cardId"})
     @Transactional(rollbackFor = Exception.class)
+    @Override
     public void startStep(Long cardId, Long stepRecordId, Long operatorId) {
         log.info("开始工序: cardId={}, stepRecordId={}, operatorId={}", cardId, stepRecordId, operatorId);
 
@@ -178,8 +182,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     /**
      * 完成工序
      */
-    @Override
+    @Lock4j(keys = {"#cardId"})
     @Transactional(rollbackFor = Exception.class)
+    @Override
     public void completeStep(Long cardId, Long stepRecordId,
                              BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
         log.info("完成工序: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
@@ -270,6 +275,47 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("仅已完工状态的流转卡可关闭");
         }
         log.info("流转卡关闭: cardId={}", cardId);
+    }
+
+    /**
+     * 按条码查询流转卡(含工序)
+     */
+    @Override
+    public ProFlowCardVo selectByBarcode(String barcode) {
+        ProFlowCardVo vo = baseMapper.selectVoOne(Wrappers.<ProFlowCard>lambdaQuery()
+            .eq(ProFlowCard::getBarcode, barcode));
+        if (vo == null) {
+            throw new RuntimeException("条码对应的流转卡不存在: " + barcode);
+        }
+        vo.setSteps(selectStepsByCardId(vo.getCardId()));
+        return vo;
+    }
+
+    /**
+     * 检查并完成工序(派工完工聚合后调用)
+     * CAS工序→COMPLETED + 检查所有工序完成→completeCard
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void checkAndCompleteStep(Long cardId, Long stepRecordId) {
+        // CAS 工序 IN_PROGRESS -> COMPLETED
+        int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
+            .set(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
+            .set(ProFlowCardStep::getActualEndTime, new Date())
+            .eq(ProFlowCardStep::getStepRecordId, stepRecordId)
+            .eq(ProFlowCardStep::getCardId, cardId)
+            .eq(ProFlowCardStep::getStepStatus, STEP_IN_PROGRESS));
+        if (rows == 0) {
+            return;
+        }
+        // 检查所有工序完成 -> completeCard
+        Long pendingCount = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, cardId)
+            .ne(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
+            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED));
+        if (pendingCount == 0) {
+            completeCard(cardId);
+        }
     }
 
     // ==================== 私有辅助方法 ====================

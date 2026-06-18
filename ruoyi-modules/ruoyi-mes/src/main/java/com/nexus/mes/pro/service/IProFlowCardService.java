@@ -110,4 +110,10 @@ public interface IProFlowCardService {
      * 关闭流转卡(COMPLETED -> CLOSED)
      */
     void closeCard(Long cardId);
+
+    /** 按条码查询流转卡(含工序) */
+    ProFlowCardVo selectByBarcode(String barcode);
+
+    /** 检查并完成工序(派工完工聚合后调用) — CAS工序→COMPLETED + 检查所有工序完成→completeCard */
+    void checkAndCompleteStep(Long cardId, Long stepRecordId);
 }

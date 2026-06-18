@@ -77,6 +77,15 @@ public class ProFlowCardController extends BaseController {
     }
 
     /**
+     * 按条码查询流转卡(扫码)
+     */
+    @SaCheckPermission("mes:pro:flowcard:query")
+    @GetMapping("/by-barcode/{barcode}")
+    public R<ProFlowCardVo> getByBarcode(@PathVariable String barcode) {
+        return R.ok(proFlowCardService.selectByBarcode(barcode));
+    }
+
+    /**
      * 创建流转卡(从MES工单)
      */
     @SaCheckPermission("mes:pro:flowcard:add")
