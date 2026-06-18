@@ -5,9 +5,15 @@
         <div class="clearfix">
           <span>MES工单详情 - {{ workOrder.woNo }}</span>
           <div style="float: right">
-            <el-button type="success" icon="Stamp" @click="handleCreateFlowCard"
+            <el-button
+              type="success"
+              icon="Stamp"
+              @click="handleCreateFlowCard"
               v-if="workOrder.woStatus === 'RELEASED' || workOrder.woStatus === 'IN_PROGRESS'"
-              v-hasPermi="['mes:pro:flowcard:add']" style="margin-right: 8px">创建流转卡</el-button>
+              v-hasPermi="['mes:pro:flowcard:add']"
+              style="margin-right: 8px"
+              >创建流转卡</el-button
+            >
             <el-button type="primary" plain @click="goBack">返回</el-button>
           </div>
         </div>
@@ -57,20 +63,15 @@
         <el-tab-pane label="审批流程" name="approval">
           <el-form :inline="true">
             <el-form-item label="审批流程" v-if="workOrder.woStatus === 'CREATED'">
-              <el-select v-model="selectFlowId" clearable filterable placeholder="请选择审批流程"
-                style="width: 300px">
-                <el-option v-for="f in flowOptions" :key="f.id"
-                  :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              <el-select v-model="selectFlowId" clearable filterable placeholder="请选择审批流程" style="width: 300px">
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Promotion" @click="handleSubmitFlow"
-                v-if="workOrder.woStatus === 'CREATED'" :disabled="!selectFlowId">
+              <el-button type="primary" icon="Promotion" @click="handleSubmitFlow" v-if="workOrder.woStatus === 'CREATED'" :disabled="!selectFlowId">
                 提交审批
               </el-button>
-              <el-button type="info" icon="View" @click="handleViewFlow" v-if="procInsId">
-                查看流程
-              </el-button>
+              <el-button type="info" icon="View" @click="handleViewFlow" v-if="procInsId"> 查看流程 </el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -166,25 +167,43 @@ const goBack = () => {
 
 const statusLabel = (status: string) => {
   const map: Record<string, string> = {
-    CREATED: '新建', APPROVING: '审批中', RELEASED: '已下达', IN_PROGRESS: '生产中', COMPLETED: '已完工', CANCELLED: '已取消'
+    CREATED: '新建',
+    APPROVING: '审批中',
+    RELEASED: '已下达',
+    IN_PROGRESS: '生产中',
+    COMPLETED: '已完工',
+    CANCELLED: '已取消'
   };
   return map[status] || status;
 };
 const statusTagType = (status: string) => {
   const map: Record<string, string> = {
-    CREATED: 'info', APPROVING: 'warning', RELEASED: 'success', IN_PROGRESS: 'warning', COMPLETED: 'primary', CANCELLED: 'danger'
+    CREATED: 'info',
+    APPROVING: 'warning',
+    RELEASED: 'success',
+    IN_PROGRESS: 'warning',
+    COMPLETED: 'primary',
+    CANCELLED: 'danger'
   };
   return map[status] || 'info';
 };
 const stepStatusLabel = (status: string) => {
   const map: Record<string, string> = {
-    PENDING: '待开始', READY: '就绪', IN_PROGRESS: '进行中', COMPLETED: '已完成', SKIPPED: '已跳过'
+    PENDING: '待开始',
+    READY: '就绪',
+    IN_PROGRESS: '进行中',
+    COMPLETED: '已完成',
+    SKIPPED: '已跳过'
   };
   return map[status] || status;
 };
 const stepStatusTagType = (status: string) => {
   const map: Record<string, string> = {
-    PENDING: 'info', READY: 'warning', IN_PROGRESS: 'warning', COMPLETED: 'success', SKIPPED: 'info'
+    PENDING: 'info',
+    READY: 'warning',
+    IN_PROGRESS: 'warning',
+    COMPLETED: 'success',
+    SKIPPED: 'info'
   };
   return map[status] || 'info';
 };

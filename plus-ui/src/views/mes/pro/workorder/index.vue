@@ -28,12 +28,12 @@
       <!-- 操作栏 -->
       <el-row :gutter="10" class="mb8">
         <el-col :span="1.5">
-          <el-button type="primary" plain icon="Plus" @click="handleAdd"
-            v-hasPermi="['mes:pro:work:add']">新增</el-button>
+          <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:pro:work:add']">新增</el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()"
-            v-hasPermi="['mes:pro:work:remove']">删除</el-button>
+          <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:pro:work:remove']"
+            >删除</el-button
+          >
         </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
@@ -56,17 +56,30 @@
         <el-table-column label="操作" width="240" align="center">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-              v-if="scope.row.woStatus === 'CREATED'" v-hasPermi="['mes:pro:work:edit']">修改</el-button>
-            <el-button link type="primary" icon="Promotion" @click="handleRelease(scope.row)"
-              v-if="scope.row.woStatus === 'CREATED'" v-hasPermi="['mes:pro:work:edit']">下达</el-button>
+            <el-button
+              link
+              type="primary"
+              icon="Edit"
+              @click="handleUpdate(scope.row)"
+              v-if="scope.row.woStatus === 'CREATED'"
+              v-hasPermi="['mes:pro:work:edit']"
+              >修改</el-button
+            >
+            <el-button
+              link
+              type="primary"
+              icon="Promotion"
+              @click="handleRelease(scope.row)"
+              v-if="scope.row.woStatus === 'CREATED'"
+              v-hasPermi="['mes:pro:work:edit']"
+              >下达</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
 
       <!-- 分页 -->
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
-        v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
     <Form ref="formRef" @refresh="getList" />
   </div>

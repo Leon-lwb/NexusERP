@@ -54,8 +54,7 @@ export const startStep = (cardId: number | string, stepRecordId: number | string
 };
 
 /** 完成工序 */
-export const completeStep = (cardId: number | string, stepRecordId: number | string,
-  goodQty: number, defectQty?: number, scrapQty?: number) => {
+export const completeStep = (cardId: number | string, stepRecordId: number | string, goodQty: number, defectQty?: number, scrapQty?: number) => {
   return request({
     url: '/mes/pro/flow-card/complete-step',
     method: 'put',

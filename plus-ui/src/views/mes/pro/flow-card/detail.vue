@@ -5,14 +5,26 @@
         <div class="clearfix">
           <span>流转卡详情 - {{ flowCard.cardNo }}</span>
           <el-button style="float: right" type="primary" plain @click="goBack">返回</el-button>
-          <el-button style="float: right; margin-right: 8px" type="warning" plain icon="CircleCheck"
+          <el-button
+            style="float: right; margin-right: 8px"
+            type="warning"
+            plain
+            icon="CircleCheck"
             v-if="flowCard.cardStatus === 'IN_PROGRESS'"
             v-hasPermi="['mes:pro:flowcard:complete']"
-            @click="handleCompleteFlowCard">完工流转卡</el-button>
-          <el-button style="float: right; margin-right: 8px" type="info" plain icon="Lock"
+            @click="handleCompleteFlowCard"
+            >完工流转卡</el-button
+          >
+          <el-button
+            style="float: right; margin-right: 8px"
+            type="info"
+            plain
+            icon="Lock"
             v-if="flowCard.cardStatus === 'COMPLETED'"
             v-hasPermi="['mes:pro:flowcard:edit']"
-            @click="handleCloseFlowCard">关闭流转卡</el-button>
+            @click="handleCloseFlowCard"
+            >关闭流转卡</el-button
+          >
         </div>
       </template>
 
@@ -55,12 +67,24 @@
         </el-table-column>
         <el-table-column label="操作" width="160" align="center">
           <template #default="scope">
-            <el-button link type="primary" icon="VideoPlay" @click="handleStartStep(scope.row)"
+            <el-button
+              link
+              type="primary"
+              icon="VideoPlay"
+              @click="handleStartStep(scope.row)"
               v-if="scope.row.stepStatus === 'PENDING' && flowCard.cardStatus === 'RELEASED'"
-              v-hasPermi="['mes:pro:flowcard:start']">开工</el-button>
-            <el-button link type="success" icon="CircleCheck" @click="handleCompleteStep(scope.row)"
+              v-hasPermi="['mes:pro:flowcard:start']"
+              >开工</el-button
+            >
+            <el-button
+              link
+              type="success"
+              icon="CircleCheck"
+              @click="handleCompleteStep(scope.row)"
               v-if="scope.row.stepStatus === 'IN_PROGRESS'"
-              v-hasPermi="['mes:pro:flowcard:complete']">完工</el-button>
+              v-hasPermi="['mes:pro:flowcard:complete']"
+              >完工</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -122,25 +146,39 @@ const goBack = () => {
 
 const statusLabel = (status: string) => {
   const map: Record<string, string> = {
-    CREATED: '新建', RELEASED: '已下达', IN_PROGRESS: '生产中', COMPLETED: '已完工', CLOSED: '已关闭'
+    CREATED: '新建',
+    RELEASED: '已下达',
+    IN_PROGRESS: '生产中',
+    COMPLETED: '已完工',
+    CLOSED: '已关闭'
   };
   return map[status] || status;
 };
 const statusTagType = (status: string) => {
   const map: Record<string, string> = {
-    CREATED: 'info', RELEASED: 'success', IN_PROGRESS: 'warning', COMPLETED: 'primary', CLOSED: 'info'
+    CREATED: 'info',
+    RELEASED: 'success',
+    IN_PROGRESS: 'warning',
+    COMPLETED: 'primary',
+    CLOSED: 'info'
   };
   return map[status] || 'info';
 };
 const stepStatusLabel = (status: string) => {
   const map: Record<string, string> = {
-    PENDING: '待开始', IN_PROGRESS: '进行中', COMPLETED: '已完成', SKIPPED: '已跳过'
+    PENDING: '待开始',
+    IN_PROGRESS: '进行中',
+    COMPLETED: '已完成',
+    SKIPPED: '已跳过'
   };
   return map[status] || status;
 };
 const stepStatusTagType = (status: string) => {
   const map: Record<string, string> = {
-    PENDING: 'info', IN_PROGRESS: 'warning', COMPLETED: 'success', SKIPPED: 'info'
+    PENDING: 'info',
+    IN_PROGRESS: 'warning',
+    COMPLETED: 'success',
+    SKIPPED: 'info'
   };
   return map[status] || 'info';
 };

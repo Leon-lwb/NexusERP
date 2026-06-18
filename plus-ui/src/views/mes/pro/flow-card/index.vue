@@ -37,14 +37,20 @@
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-            <el-button link type="primary" icon="Promotion" @click="handleRelease(scope.row)"
-              v-if="scope.row.cardStatus === 'CREATED'" v-hasPermi="['mes:pro:flowcard:release']">下达</el-button>
+            <el-button
+              link
+              type="primary"
+              icon="Promotion"
+              @click="handleRelease(scope.row)"
+              v-if="scope.row.cardStatus === 'CREATED'"
+              v-hasPermi="['mes:pro:flowcard:release']"
+              >下达</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
-        v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
   </div>
 </template>
@@ -103,13 +109,21 @@ const handleRelease = async (row: ProFlowCardVO) => {
 
 const statusLabel = (status: string) => {
   const map: Record<string, string> = {
-    CREATED: '新建', RELEASED: '已下达', IN_PROGRESS: '生产中', COMPLETED: '已完工', CLOSED: '已关闭'
+    CREATED: '新建',
+    RELEASED: '已下达',
+    IN_PROGRESS: '生产中',
+    COMPLETED: '已完工',
+    CLOSED: '已关闭'
   };
   return map[status] || status;
 };
 const statusTagType = (status: string) => {
   const map: Record<string, string> = {
-    CREATED: 'info', RELEASED: 'success', IN_PROGRESS: 'warning', COMPLETED: 'primary', CLOSED: 'info'
+    CREATED: 'info',
+    RELEASED: 'success',
+    IN_PROGRESS: 'warning',
+    COMPLETED: 'primary',
+    CLOSED: 'info'
   };
   return map[status] || 'info';
 };
