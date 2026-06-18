@@ -640,6 +640,35 @@ export const dynamicRoutes: RouteRecordRaw[] = [
       }
     ]
   },
+  // IoT 物联网平台
+  {
+    path: '/iot/product/index',
+    component: Layout,
+    hidden: true,
+    permissions: ['iot:product:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/iot/product/index.vue'),
+        name: 'IotProduct',
+        meta: { title: '产品管理', activeMenu: '/iot/product' }
+      }
+    ]
+  },
+  {
+    path: '/iot/device/index',
+    component: Layout,
+    hidden: true,
+    permissions: ['iot:device:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/iot/device/index.vue'),
+        name: 'IotDevice',
+        meta: { title: '设备管理', activeMenu: '/iot/device' }
+      }
+    ]
+  },
   // AI 智能助手
   {
     path: '/ai',
