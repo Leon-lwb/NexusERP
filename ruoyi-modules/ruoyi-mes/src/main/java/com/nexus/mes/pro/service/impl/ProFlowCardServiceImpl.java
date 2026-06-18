@@ -295,8 +295,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 检查并完成工序(派工完工聚合后调用)
      * CAS工序→COMPLETED + 检查所有工序完成→completeCard
      */
-    @Override
+    @Lock4j(keys = {"#cardId"})
     @Transactional(rollbackFor = Exception.class)
+    @Override
     public void checkAndCompleteStep(Long cardId, Long stepRecordId) {
         // CAS 工序 IN_PROGRESS -> COMPLETED
         int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
