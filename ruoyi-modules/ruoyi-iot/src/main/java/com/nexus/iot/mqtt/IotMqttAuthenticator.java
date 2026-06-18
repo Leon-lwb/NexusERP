@@ -8,6 +8,9 @@ import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.service.IIotDeviceService;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 /**
  * IoT MQTT 设备认证器。
  * <p>
@@ -41,7 +44,11 @@ public class IotMqttAuthenticator implements IAuthenticator {
             log.warn("MQTT 认证失败：设备未启用，deviceCode={}, status={}", deviceCode, device.getStatus());
             return false;
         }
-        if (StringUtils.isBlank(device.getDeviceSecret()) || !device.getDeviceSecret().equals(secret)) {
+        // 常量时间比较，防止时序攻击泄露密钥前缀匹配长度
+        if (StringUtils.isBlank(device.getDeviceSecret())
+            || !MessageDigest.isEqual(
+                device.getDeviceSecret().getBytes(StandardCharsets.UTF_8),
+                secret.getBytes(StandardCharsets.UTF_8))) {
             log.warn("MQTT 认证失败：密钥不匹配，deviceCode={}", deviceCode);
             return false;
         }

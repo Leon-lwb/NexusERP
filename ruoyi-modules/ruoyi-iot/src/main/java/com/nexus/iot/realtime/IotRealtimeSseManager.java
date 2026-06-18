@@ -64,7 +64,7 @@ public class IotRealtimeSseManager {
      * <p>
      * payload: {"deviceId":123,"timestamp":<ms>,"connectionStatus":"ONLINE","properties":{"temperature":"25.3"}}
      */
-    @Scheduled(fixedRate = 3000)
+    @Scheduled(fixedRate = 3000, scheduler = "iotTaskScheduler")
     public void pushRealtimeData() {
         if (deviceEmitters.isEmpty()) {
             return;

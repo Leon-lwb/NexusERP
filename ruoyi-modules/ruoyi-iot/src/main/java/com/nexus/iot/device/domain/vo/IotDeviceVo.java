@@ -2,7 +2,9 @@ package com.nexus.iot.device.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.linpeilie.annotations.AutoMapper;
+
 import lombok.Data;
 import com.nexus.iot.device.domain.IotDevice;
 
@@ -73,7 +75,9 @@ public class IotDeviceVo implements Serializable {
 
     /**
      * 设备密钥(MQTT认证)
+     * API 响应中隐藏，防止泄露认证凭证
      */
+    @JsonIgnore
     private String deviceSecret;
 
     /**

@@ -53,6 +53,7 @@
 
 <script setup lang="ts" name="IotDeviceRealtime">
 import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue';
+import { ElMessage } from 'element-plus';
 import { useRoute } from 'vue-router';
 import * as echarts from 'echarts';
 import { getDevice } from '@/api/iot/device';
@@ -232,8 +233,25 @@ function subscribeSSE() {
       // ignore parse errors
     }
   });
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
   eventSource.onerror = () => {
-    // EventSource will auto-reconnect by default; close on permanent failure
+    if (eventSource?.readyState === EventSource.CLOSED) {
+      // 连接已永久关闭（如 401/403），停止重连
+      eventSource?.close();
+      eventSource = null;
+      connectionStatus.value = 'OFFLINE';
+      ElMessage.error('实时数据连接已断开，请刷新页面重试');
+      return;
+    }
+    // 连接异常但未关闭，EventSource 会自动重连
+    reconnectAttempts++;
+    if (reconnectAttempts > maxReconnectAttempts) {
+      eventSource?.close();
+      eventSource = null;
+      connectionStatus.value = 'OFFLINE';
+      ElMessage.warning('实时数据连接不稳定，已停止重连，请刷新页面');
+    }
   };
 }
 

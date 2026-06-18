@@ -3,7 +3,6 @@ package com.nexus.iot.mqtt;
 import io.moquette.broker.Server;
 import io.moquette.broker.config.IConfig;
 import io.moquette.broker.config.MemoryConfig;
-import io.moquette.broker.security.PermitAllAuthorizatorPolicy;
 import io.moquette.interception.InterceptHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,8 @@ import java.util.Properties;
  * Moquette MQTT 内嵌 Broker 配置。
  * <p>
  * 启动内嵌 Broker 监听 {@code nexus.iot.mqtt.port}（默认 1883），
- * 注册设备认证器与消息拦截器；{@code nexus.iot.mqtt.enabled=false} 时不启动。
+ * 注册设备认证器、消息拦截器与 Topic 访问控制策略；
+ * {@code nexus.iot.mqtt.enabled=false} 时不启动。
  *
  * @author nexus
  */
@@ -34,6 +34,7 @@ public class MqttBrokerConfig {
     private final IotMqttProperties properties;
     private final IotMqttAuthenticator authenticator;
     private final IotMqttInterceptHandler interceptHandler;
+    private final IotMqttAuthorizatorPolicy authorizatorPolicy;
 
     @Bean(destroyMethod = "stopServer")
     public Server mqttBrokerServer() throws IOException {
@@ -47,7 +48,8 @@ public class MqttBrokerConfig {
 
         Server server = new Server();
         List<InterceptHandler> handlers = List.of(interceptHandler);
-        server.startServer(config, handlers, null, authenticator, new PermitAllAuthorizatorPolicy());
+        // 使用租户隔离策略替代 PermitAllAuthorizatorPolicy，防止跨租户 Topic 访问
+        server.startServer(config, handlers, null, authenticator, authorizatorPolicy);
 
         log.info("IoT MQTT Broker 已启动：host={}, port={}, allowAnonymous={}",
             properties.getHost(), properties.getPort(), properties.isAllowAnonymous());

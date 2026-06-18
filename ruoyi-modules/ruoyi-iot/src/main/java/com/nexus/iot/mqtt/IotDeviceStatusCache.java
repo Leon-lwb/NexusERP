@@ -36,13 +36,17 @@ public class IotDeviceStatusCache {
     }
 
     /**
-     * 标记设备离线（删除在线标记）
+     * 标记设备离线。
+     * <p>
+     * 设置 OFFLINE 值（短 TTL 30 秒），而非直接删除 key。
+     * 避免在心跳任务更新 DB 状态前，其他读取方因 key 不存在而穿透到 DB。
      */
     public void markOffline(IotDevice device) {
         if (device == null || device.getDeviceId() == null) {
             return;
         }
-        RedisUtils.deleteObject(STATUS_KEY_PREFIX + device.getDeviceId());
+        RedisUtils.setCacheObject(STATUS_KEY_PREFIX + device.getDeviceId(), "OFFLINE",
+            Duration.ofSeconds(30));
     }
 
     /**

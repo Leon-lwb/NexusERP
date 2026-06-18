@@ -6,6 +6,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
+import java.io.IOException;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
@@ -165,12 +167,14 @@ public class IotDeviceController extends BaseController {
      */
     @SaIgnore
     @GetMapping(value = "/{deviceId}/realtime", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter realtime(@PathVariable Long deviceId, HttpServletResponse response) {
+    public SseEmitter realtime(@PathVariable Long deviceId, HttpServletResponse response) throws IOException {
         if (!StpUtil.isLogin()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "未登录");
             return null;
         }
         StpUtil.checkPermission("iot:device:query");
         if (iotDeviceService.selectById(deviceId) == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "设备不存在");
             return null;
         }
         // 关闭 nginx/代理缓冲，保证实时性
