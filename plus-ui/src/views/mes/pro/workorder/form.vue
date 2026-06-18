@@ -88,15 +88,27 @@ const rules = {
   plannedQty: [{ required: true, message: '计划数量不能为空', trigger: 'blur' }]
 };
 
-const open = (row?: ProWorkOrderVO) => {
+const open = async (row?: ProWorkOrderVO) => {
   reset();
   if (row && row.mesWoId) {
     title.value = '修改MES工单';
-    form.value = { ...row };
+    form.value = {
+      ...initForm,
+      mesWoId: row.mesWoId,
+      woNo: row.woNo,
+      materialId: row.materialId,
+      materialCode: row.materialCode,
+      materialName: row.materialName,
+      plannedQty: row.plannedQty,
+      priority: row.priority,
+      planStartDate: row.planStartDate,
+      planEndDate: row.planEndDate,
+      remark: row.remark
+    };
   } else {
     title.value = '新增MES工单';
   }
-  loadMaterials();
+  await loadMaterials();
   visible.value = true;
 };
 
