@@ -90,13 +90,7 @@ const handleCompleteStep = async () => {
   }
   const { value: defectQty } = await proxy?.$modal.prompt('请输入不良品数量（默认0）:', '完工 - ' + currentStep.value.processName);
   const { value: scrapQty } = await proxy?.$modal.prompt('请输入报废数量（默认0）:', '完工 - ' + currentStep.value.processName);
-  await completeStep(
-    flowCard.value.cardId,
-    currentStep.value.stepRecordId,
-    Number(goodQty),
-    Number(defectQty || 0),
-    Number(scrapQty || 0)
-  );
+  await completeStep(flowCard.value.cardId, currentStep.value.stepRecordId, Number(goodQty), Number(defectQty || 0), Number(scrapQty || 0));
   proxy?.$modal.msgSuccess('完工成功');
   handleScan();
 };

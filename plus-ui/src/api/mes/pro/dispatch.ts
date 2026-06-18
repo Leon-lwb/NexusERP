@@ -54,14 +54,12 @@ export const listDispatchByOperator = (operatorId: string | number): AxiosPromis
 export const addDispatch = (cardId: number, stepRecordId: number, operatorId: number, operatorName: string, quantity: number) =>
   request({ url: '/mes/pro/dispatch', method: 'post', params: { cardId, stepRecordId, operatorId, operatorName, quantity } });
 
-export const startDispatch = (dispatchId: string | number) =>
-  request({ url: `/mes/pro/dispatch/start/${dispatchId}`, method: 'put' });
+export const startDispatch = (dispatchId: string | number) => request({ url: `/mes/pro/dispatch/start/${dispatchId}`, method: 'put' });
 
 export const completeDispatch = (dispatchId: string | number, goodQty: number, defectQty?: number, scrapQty?: number) =>
   request({ url: `/mes/pro/dispatch/complete/${dispatchId}`, method: 'put', params: { goodQty, defectQty, scrapQty } });
 
-export const cancelDispatch = (dispatchId: string | number) =>
-  request({ url: `/mes/pro/dispatch/cancel/${dispatchId}`, method: 'put' });
+export const cancelDispatch = (dispatchId: string | number) => request({ url: `/mes/pro/dispatch/cancel/${dispatchId}`, method: 'put' });
 
 export const getFlowCardByBarcode = (barcode: string): AxiosPromise<any> =>
   request({ url: `/mes/pro/flow-card/by-barcode/${barcode}`, method: 'get' });
