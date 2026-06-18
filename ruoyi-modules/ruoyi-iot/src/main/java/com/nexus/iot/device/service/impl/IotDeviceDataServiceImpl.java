@@ -51,4 +51,15 @@ public class IotDeviceDataServiceImpl implements IIotDeviceDataService {
         return baseMapper.selectList(lqw);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteBefore(Date deadline) {
+        if (deadline == null) {
+            return 0;
+        }
+        LambdaQueryWrapper<IotDeviceData> lqw = Wrappers.<IotDeviceData>lambdaQuery()
+            .lt(IotDeviceData::getCollectTime, deadline);
+        return baseMapper.delete(lqw);
+    }
+
 }

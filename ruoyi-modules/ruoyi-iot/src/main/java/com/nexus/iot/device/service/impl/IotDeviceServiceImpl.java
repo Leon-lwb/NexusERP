@@ -129,6 +129,17 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         baseMapper.updateById(update);
     }
 
+    @Override
+    public List<IotDevice> selectStaleOnlineDevices(Date deadline) {
+        if (deadline == null) {
+            return List.of();
+        }
+        LambdaQueryWrapper<IotDevice> lqw = Wrappers.<IotDevice>lambdaQuery()
+            .eq(IotDevice::getConnectionStatus, "ONLINE")
+            .lt(IotDevice::getLastOnlineTime, deadline);
+        return baseMapper.selectList(lqw);
+    }
+
     private LambdaQueryWrapper<IotDevice> buildQueryWrapper(IotDeviceBo bo) {
         LambdaQueryWrapper<IotDevice> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getDeviceCode()), IotDevice::getDeviceCode, bo.getDeviceCode());

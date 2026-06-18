@@ -6,6 +6,7 @@ import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.domain.bo.IotDeviceBo;
 import com.nexus.iot.device.domain.vo.IotDeviceVo;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -57,4 +58,12 @@ public interface IIotDeviceService {
      * @param online   true=ONLINE false=OFFLINE
      */
     void updateConnectionStatus(Long deviceId, boolean online);
+
+    /**
+     * 查询在线但最后在线时间早于 deadline 的设备（Week 36 心跳任务调用，识别异常掉线设备）。
+     *
+     * @param deadline 截止时间
+     * @return 超时在线设备实体集合
+     */
+    List<IotDevice> selectStaleOnlineDevices(Date deadline);
 }

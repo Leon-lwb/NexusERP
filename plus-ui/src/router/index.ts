@@ -669,6 +669,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
       }
     ]
   },
+  {
+    path: '/iot/device/realtime/:deviceId',
+    component: Layout,
+    hidden: true,
+    permissions: ['iot:device:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/iot/device/realtime.vue'),
+        name: 'IotDeviceRealtime',
+        meta: { title: '设备实时数据', activeMenu: '/iot/device' }
+      }
+    ]
+  },
   // AI 智能助手
   {
     path: '/ai',

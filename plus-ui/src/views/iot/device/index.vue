@@ -73,6 +73,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary" icon="DataLine" @click="handleRealtime(scope.row)" v-hasPermi="['iot:device:query']">实时</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['iot:device:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['iot:device:remove']">删除</el-button>
@@ -246,6 +247,11 @@ function handleSelectionChange(selection) {
   ids.value = selection.map((item) => item.deviceId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
+}
+
+/** 实时数据按钮操作 */
+function handleRealtime(row) {
+  proxy.$router.push('/iot/device/realtime/' + row.deviceId);
 }
 
 /** 新增按钮操作 */

@@ -206,7 +206,15 @@
       "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot test -DskipTests=false -Dtest='IotMqttTopicParserTest,IotDataValueResolverTest' -DfailIfNoTests=false)",
       "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot -am test -DskipTests=false -Dtest='IotMqttTopicParserTest,IotDataValueResolverTest' -DfailIfNoTests=false)",
       "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot -am test -DskipTests=false -Dtest='IotMqttTopicParserTest,IotDataValueResolverTest' -Dsurefire.failIfNoSpecifiedTests=false)",
-      "Bash(mvn -q compile -DskipTests)"
+      "Bash(mvn -q compile -DskipTests)",
+      "Bash(javap *)",
+      "Bash(echo \"===StreamReferencesArgs===\")",
+      "Bash(mvn -q -pl ruoyi-modules/ruoyi-iot -am compile)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist //FI \"PID eq 45820\")",
+      "Bash(taskkill //F //PID 45820)"
     ]
   }
 }

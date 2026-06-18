@@ -39,4 +39,12 @@ public interface IIotDeviceDataService {
      */
     List<IotDeviceData> selectHistory(Long deviceId, Date start, Date end);
 
+    /**
+     * 删除采集时间早于 deadline 的设备数据（Week 36 清理任务调用）。
+     *
+     * @param deadline 截止时间（早于此时间的数据被删除）
+     * @return 删除行数
+     */
+    int deleteBefore(Date deadline);
+
 }

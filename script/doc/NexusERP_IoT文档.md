@@ -3,8 +3,9 @@
 > **文档状态**: 📋 实施开发文档 — 本文档为IoT模块的完整设计方案与可执行开发计划。
 > **Week 33 进度**：`ruoyi-iot` 模块已创建并编译通过，`@DS("iot")` 数据源已配置，Moquette 内嵌 Broker + 设备认证 + 产品/设备 CRUD 已实现；3 张核心表 DDL 脚本已产出（`script/sql/ry-iot-week33.sql`），待开发者本地执行建库。
 > **Week 34 进度**：数据管道已打通——MQTT onPublish→Redis Stream XADD→`IotStreamConsumer`(XREADGROUP)→批量落 `iot_device_data`+`iot:latest` 缓存；硬编码告警(限频+租户在线用户 SSE 推送)、遗嘱消息、MES↔IoT 接口契约(抽 `ruoyi-common-iot` 公共模块) 均已实现并编译通过。SSE 实时端点/SnailJob 定时任务/前端属 Week 35-36。
-> **Week 35 进度**：后端实时数据暴露（`/iot/device/{id}/latest|status|data` + SSE `/realtime` 端点，`IotRealtimeSseManager` 3s 轮询推送）；前端产品/设备管理页（el-table CRUD + 在线状态指示灯）已落地，路由+菜单对接 Week 33 菜单；4 个 IoT 字典已产出（`ry-iot-week35.sql`）。ECharts 仪表盘/SnailJob 三任务/真实设备联调属 Week 36。
-> 参考实施计划：[IoT 阶段一 Week 33 开发计划](../superpowers/plans/2026-06-17-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](../superpowers/plans/2026-06-23-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](../superpowers/plans/2026-06-18-iot-week35-plan.md)
+> **Week 35 进度**：后端实时数据暴露（`/iot/device/{id}/latest|status|data` + SSE `/realtime` 端点，`IotRealtimeSseManager` 3s 轮询推送）；前端产品/设备管理页（el-table CRUD + 在线状态指示灯）已落地，路由+菜单对接 Week 33 菜单；4 个 IoT 字典已产出（`ry-iot-week35.sql`）。
+> **Week 36 进度**：ECharts 实时仪表盘（专用 EventSource 订阅 `/realtime` + 数值卡片 + 实时折线图 + 历史趋势图）；SnailJob 三任务（`IotDataCleanupTask` 清理90天、`IotDeviceHeartbeatTask` 心跳15min置离线、`IotStreamTrimTask` XTRIM MAXLEN 100000）；阶段一最小链路全链路打通，验收报告已产出。
+> 参考实施计划：[IoT 阶段一 Week 33 开发计划](../superpowers/plans/2026-06-17-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](../superpowers/plans/2026-06-23-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](../superpowers/plans/2026-06-18-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](../superpowers/plans/2026-06-18-iot-week36-plan.md)
 >
 > **数据采集归属**: IoT负责自动设备采集（MQTT/传感器数据），MES负责手工/业务采集（质检、工序录入）。
 > IoT采集的数据写入 `iot_device_data`，MES的 `dc_collection_point` 通过 `point_type=AUTO` 关联IoT设备。
@@ -579,7 +580,9 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 | 设备数据 REST 端点(latest/status/data) | ✅ 已完成 | Week 35 `IotDeviceController` 加 3 端点，包装 Week 34 缓存/历史查询，`selectById` 校验设备归属 |
 | 前端产品/设备管理页 | ✅ 已完成 | Week 35 `plus-ui/src/views/iot/{product,device}` + `api/iot/*`，对接 Week 33 菜单(6000-6025)，在线状态指示灯 |
 | IoT 字典 | ✅ 已完成 | Week 35 `script/sql/ry-iot-week35.sql`：`product_type`/`iot_protocol_type`/`iot_connection_status`/`iot_device_status` |
-| SnailJob 定时任务(清理/心跳/Stream修剪) | ❌ 待完成 | 属 Week 36 |
+| 实时仪表盘(ECharts+SSE) | ✅ 已完成 | Week 36 `views/iot/device/realtime.vue`: 专用 EventSource 订阅 `/realtime` + 数值卡片 + 实时折线图(60点滚动窗口) + 历史趋势图(近1h `/data`) + 设备信息卡(在线状态指示灯) |
+| SnailJob 定时任务(清理/心跳/Stream修剪) | ✅ 已完成 | Week 36 `com.nexus.iot.task`: `IotDataCleanupTask`(90天, cron 0 0 2 * * ?), `IotDeviceHeartbeatTask`(15min, cron 0 */5 * * * ?), `IotStreamTrimTask`(MAXLEN 100000, cron 0 0 * * * ?); SnailJob 后台 ruoyi_group 配置 |
+| 真实设备联调 | ✅ 已完成 | Week 36 端到端: MQTT 设备上报 -> Stream -> MySQL+缓存 -> SSE `/realtime` -> 仪表盘实时可见; 心跳任务兜底异常掉线; 清理/修剪任务运维 |
 
 > **Week 33 DDL 修正说明**：与本文档第二节 DDL 的差异已记录在 `script/sql/ry-iot-week33.sql` 头注释——`tenant_id` 改 `VARCHAR(20) DEFAULT '000000'` 对齐项目规范；业务表补 `del_flag` + 审计列；`iot_device_data` 不补审计列（实体独立）。以脚本为准。
 
