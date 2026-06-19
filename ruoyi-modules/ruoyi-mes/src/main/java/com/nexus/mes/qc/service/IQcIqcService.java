@@ -1,0 +1,57 @@
+package com.nexus.mes.qc.service;
+
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.qc.domain.bo.QcIqcBo;
+import com.nexus.mes.qc.domain.vo.QcIqcVo;
+
+/**
+ * MES来料检验 Service 业务层接口
+ * <p>
+ * 状态机: PENDING -> INSPECTING -> COMPLETED
+ * 检验结果: PENDING -> QUALIFIED / UNQUALIFIED
+ * IQC检验完成(COMPLETED)后通过MQ回传ERP, 更新收货单质检状态
+ *
+ * @author Nexus
+ */
+public interface IQcIqcService {
+
+    /** 状态: 待检验 */
+    String STATUS_PENDING = "PENDING";
+    /** 状态: 检验中 */
+    String STATUS_INSPECTING = "INSPECTING";
+    /** 状态: 已完成 */
+    String STATUS_COMPLETED = "COMPLETED";
+
+    /** 检验结果: 合格 */
+    String RESULT_QUALIFIED = "QUALIFIED";
+    /** 检验结果: 不合格 */
+    String RESULT_UNQUALIFIED = "UNQUALIFIED";
+
+    /**
+     * 分页查询IQC列表
+     */
+    TableDataInfo<QcIqcVo> selectPageList(QcIqcBo bo, PageQuery pageQuery);
+
+    /**
+     * 根据ID获取IQC详情
+     */
+    QcIqcVo selectById(Long iqcId);
+
+    /**
+     * 新增IQC检验单(生成编号)
+     */
+    QcIqcVo insertByBo(QcIqcBo bo);
+
+    /**
+     * 执行检验(PENDING/INSPECTING -> COMPLETED), 完成后MQ回传ERP
+     *
+     * @param iqcId        IQC ID
+     * @param inspectResult 检验结果(QUALIFIED/UNQUALIFIED)
+     * @param defectInfo   不良品信息(JSON String)
+     * @param sampleQty    抽样数量
+     * @param remark       备注
+     */
+    void inspect(Long iqcId, String inspectResult, String defectInfo,
+                 java.math.BigDecimal sampleQty, String remark);
+}

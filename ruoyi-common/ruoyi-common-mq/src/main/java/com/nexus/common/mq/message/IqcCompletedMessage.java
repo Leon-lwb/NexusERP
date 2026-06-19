@@ -1,4 +1,4 @@
-package com.nexus.mes.common.mq.message;
+package com.nexus.common.mq.message;
 
 import com.nexus.common.mq.domain.BaseMessage;
 import lombok.Data;
@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 
 /**
  * IQC检验完成消息，MES质检完成后发送到ERP
+ * <p>
+ * 位于 ruoyi-common-mq 供 MES(生产者) 与 ERP(消费者) 跨模块共享。
  *
  * @author Nexus
  */
@@ -21,6 +23,8 @@ public class IqcCompletedMessage extends BaseMessage {
 
     /** IQC检验ID */
     private Long iqcId;
+    /** IQC检验编号 */
+    private String iqcCode;
     /** ERP收货单ID */
     private Long receiveId;
     /** 检验结果: QUALIFIED/UNQUALIFIED */

@@ -1,4 +1,4 @@
-package com.nexus.mes.common.mq.message;
+package com.nexus.common.mq.message;
 
 import com.nexus.common.mq.domain.BaseMessage;
 import lombok.Data;
@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 
 /**
  * MES工单完工消息，MES工单完成后发送到ERP
+ * <p>
+ * 位于 ruoyi-common-mq 供 MES(生产者) 与 ERP(消费者) 跨模块共享。
  *
  * @author Nexus
  */
