@@ -1,0 +1,57 @@
+package com.nexus.mes.eq.service;
+
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.eq.domain.bo.EqRepairBo;
+import com.nexus.mes.eq.domain.vo.EqRepairVo;
+
+import java.math.BigDecimal;
+
+/**
+ * MES设备维修记录 Service 业务层接口
+ * <p>
+ * 状态机: REPORTED -> REPAIRING -> COMPLETED
+ * 设备状态联动: 报修复设备FAULT; 完成且无其他活跃报修复NORMAL
+ *
+ * @author Nexus
+ */
+public interface IEqRepairService {
+
+    /** 状态: 已报修 */
+    String STATUS_REPORTED = "REPORTED";
+    /** 状态: 维修中 */
+    String STATUS_REPAIRING = "REPAIRING";
+    /** 状态: 已完成 */
+    String STATUS_COMPLETED = "COMPLETED";
+
+    /**
+     * 分页查询维修记录列表
+     */
+    TableDataInfo<EqRepairVo> selectPageList(EqRepairBo bo, PageQuery pageQuery);
+
+    /**
+     * 根据ID获取维修详情
+     */
+    EqRepairVo selectById(Long repairId);
+
+    /**
+     * 报修(新增维修单 REPORTED), 联动置设备FAULT
+     */
+    EqRepairVo insertByBo(EqRepairBo bo);
+
+    /**
+     * 开工(REPORTED -> REPAIRING), 置维修人/维修开始时间
+     */
+    void startRepair(Long repairId);
+
+    /**
+     * 完成(REPAIRING -> COMPLETED), 置维修结束时间/停机时长/维修成本,
+     * 联动: 该设备无其他活跃报修则恢复NORMAL
+     *
+     * @param repairId      维修ID
+     * @param downtimeHours 停机时长(小时)
+     * @param repairCost    维修成本
+     * @param remark        备注
+     */
+    void completeRepair(Long repairId, BigDecimal downtimeHours, BigDecimal repairCost, String remark);
+}
