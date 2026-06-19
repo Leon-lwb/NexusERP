@@ -1,9 +1,11 @@
 # NexusERP - MES模块综合文档
 
-> **文档状态**: 📋 实施开发文档 — 本文档为MES模块的完整设计方案与可执行开发计划。
-> 当前项目中 `ruoyi-mes` Maven模块尚未创建，`@DS("mes")` 数据源尚未配置，~17张数据表DDL尚未执行。
-> ERP侧集成准备状态：主数据API已就绪✅，MQ消息发送+队列常量已完成✅，数据源配置待实现❌。
+> **文档状态**: ✅ 实施完成文档 — 本文档为MES模块的完整设计方案与可执行开发记录。
+> MES Phase 1-3 全部交付（实际 Week 17-27，领先原计划约 5 周），详见 §十九。
+> ERP侧集成准备状态：主数据API已就绪✅，MQ消息发送+队列常量已完成✅，MES→ERP MQ双向贯通✅（Week 25 ErpIqcCompletedConsumer + ErpWorkOrderCompletedConsumer）。
+> MES↔IoT集成状态：IMesAndonService 安灯联动✅（Week 23），设备关联字段已建✅，IoT自动采集归档⏳待打通。
 > 参考实施计划：[MES Phase 1~3 + IoT 阶段一实施计划](../superpowers/plans/2026-06-16-mes-iot-phase-plan.md)
+> 后续升级方案：[NexusERP 三模块共同升级方案](NexusERP_三模块共同升级方案.md)
 >
 > **命名规范**: MES表命名与ERP保持一致，采用一级前缀 `{模块缩写}_{业务实体名}`（如 `pro_work_order`、`qc_iqc`），
 > 不使用 `mes_` 二级前缀，因为MES在独立库 `ry-mes` 中，库名已标识来源。
@@ -796,48 +798,52 @@ OOC(超控制限)规则（硬编码）：
 
 ## 十、MES实施计划
 
-### 10.1 MES Phase 1 (Week 17-21): 基础框架 + 主数据 + 工单
+> **⚠️ 实际交付进度**: Phase 1-3 全部完成（实际 Week 17-27），领先原计划约 5 周。详见 §十九。
+> 下表保留原计划列作对照，实际列标注各模块实际完成周次。
 
-| 周次 | 任务 | 人天 | 前置条件 |
-|------|------|------|----------|
-| Week 17 | 创建ruoyi-mes模块+数据源配置+基础框架+公共组件 | 3 | ERP侧MQ消息+Exchange常量 ✅ 已完成 |
-| Week 18 | 主数据跨库查询(MesErpBridgeService)+前端只读页面 | 3 | bd模块Controller已就绪 ✅ |
-| Week 19-20 | MES工单+工单工序+Flowable审批流集成+ERP→MES MQ联动 | 5 | 复用ERP已有Flowable模式(9个单据已集成) |
-| Week 21 | Phase 1前端页面(工单列表/详情/工序Tab/主数据只读)+菜单权限 | 3 | - |
+### 10.1 MES Phase 1 (计划 Week 17-21 / 实际 Week 17-21): 基础框架 + 主数据 + 工单
 
-**Phase 1 小计: 14人天**
+| 周次 | 任务 | 人天 | 实际周次 | 实际状态 |
+|------|------|------|---------|---------|
+| Week 17 | 创建ruoyi-mes模块+数据源配置+基础框架+公共组件 | 3 | Week 17 | ✅ 已完成 |
+| Week 18 | 主数据跨库查询(MesErpBridgeService)+前端只读页面 | 3 | Week 18 | ✅ 已完成 |
+| Week 19-20 | MES工单+工单工序+Flowable审批流集成+ERP→MES MQ联动 | 5 | Week 19-20 | ✅ 已完成 |
+| Week 21 | Phase 1前端页面(工单列表/详情/工序Tab/主数据只读)+菜单权限 | 3 | Week 21 | ✅ 已完成 |
 
-### 10.2 MES Phase 2 (Week 22-27): 流转卡 + 工序执行 + 安灯 + SN
+**Phase 1 小计: 14人天 — ✅ 已全部交付**
 
-| 周次 | 任务 | 人天 |
-|------|------|------|
-| Week 22-23 | 流转卡引擎(状态机+服务+自动生成工序) | 5 |
-| Week 24-25 | 派工+工序执行(扫码开工/完工/数量记录) | 4 |
-| Week 26 | 安灯系统(CRUD+SSE实时推送看板) | 3 |
-| Week 27 | SN追溯体系+Phase 2前端页面 | 3 |
+### 10.2 MES Phase 2 (计划 Week 22-27 / 实际 Week 20-24): 流转卡 + 工序执行 + 安灯 + SN
 
-**Phase 2 小计: 15人天**
+| 周次 | 任务 | 人天 | 实际周次 | 实际状态 |
+|------|------|------|---------|---------|
+| Week 22-23 | 流转卡引擎(状态机+服务+自动生成工序) | 5 | Week 20 | ✅ 已完成（领先2周） |
+| Week 24-25 | 派工+工序执行(扫码开工/完工/数量记录) | 4 | Week 22 | ✅ 已完成（领先2周） |
+| Week 26 | 安灯系统(CRUD+SSE实时推送看板+IoT联动) | 3 | Week 23 | ✅ 已完成 |
+| Week 27 | SN追溯体系+Phase 2前端页面 | 3 | Week 24 | ✅ 已完成 |
 
-### 10.3 MES Phase 3 (Week 28-32): 质量 + 设备 + 数据采集 + SPC
+**Phase 2 小计: 15人天 — ✅ 已全部交付**
 
-| 周次 | 任务 | 人天 |
-|------|------|------|
-| Week 28-29 | 质量管理(IQC/IPQC/OQC+ERP联动) | 5 |
-| Week 30 | 设备管理(台账+保养+维修) | 3 |
-| Week 31-32 | 数据采集+SPC+Phase 3前端页面+集成测试 | 4 |
+### 10.3 MES Phase 3 (计划 Week 28-32 / 实际 Week 25-27): 质量 + 设备 + 数据采集 + SPC
 
-**Phase 3 小计: 12人天**
+| 周次 | 任务 | 人天 | 实际周次 | 实际状态 |
+|------|------|------|---------|---------|
+| Week 28-29 | 质量管理(IQC/IPQC/OQC+ERP联动) | 5 | Week 25 | ✅ 已完成（领先3周） |
+| Week 30 | 设备管理(台账+保养+维修) | 3 | Week 26 | ✅ 已完成 |
+| Week 31-32 | 数据采集+SPC+Phase 3前端页面+集成测试 | 4 | Week 27 | ✅ 已完成 |
+
+**Phase 3 小计: 12人天 — ✅ 已全部交付**
 
 ### 10.4 工作量汇总
 
-| 阶段 | 周次 | 人天 |
-|------|------|------|
-| Phase 1 | Week 17-21 | 14 |
-| Phase 2 | Week 22-27 | 15 |
-| Phase 3 | Week 28-32 | 12 |
-| **合计** | **Week 17-32 (16周)** | **~41** |
+| 阶段 | 计划周次 | 实际周次 | 人天 | 状态 |
+|------|---------|---------|------|------|
+| Phase 1 | Week 17-21 | Week 17-21 | 14 | ✅ |
+| Phase 2 | Week 22-27 | Week 20-24 | 15 | ✅ |
+| Phase 3 | Week 28-32 | Week 25-27 | 12 | ✅ |
+| **合计** | **Week 17-32 (16周)** | **Week 17-27 (11周)** | **~41** | **✅ 全部交付** |
 
-> **对比原计划**: 原66人天/22周 → 修订41人天/16周（削减38%）
+> **交付效率**: 原计划 41 人天 / 16 周 → 实际 41 人天 / 11 周（提前 5 周完成，节约 31% 周期）
+> **归档计划文档**: `docs/superpowers/plans/2026-06-{16~25}-mes-week{17~27}*.md`
 
 ---
 
@@ -937,16 +943,21 @@ plus-ui/src/views/mes/
 |------|--------|------|------|------|
 | ERP→MES | 工单下达 | MQ (RabbitMQ) | PrdWorkOrderServiceImpl审批通过后发消息 | ✅ Week 16已实现 |
 | ERP→MES | 主数据查询 | 跨库直查 | MES Service切@DS("erp")读物料/BOM/工艺 | ✅ bd模块Controller已完整 |
-| MES→ERP | 工单完工 | MQ (RabbitMQ) | 通知ERP更新工单状态+完工入库 | ❌ MES模块未创建 |
-| MES→ERP | IQC检验完成 | MQ (RabbitMQ) | 通知ERP更新收货单质检状态 | ❌ MES模块未创建 |
+| MES→ERP | 工单完工 | MQ (RabbitMQ) | 通知ERP更新工单状态+完工入库 | ✅ Week 25已实现(ErpWorkOrderCompletedConsumer) |
+| MES→ERP | IQC检验完成 | MQ (RabbitMQ) | 通知ERP更新收货单质检状态 | ✅ Week 25已实现(ErpIqcCompletedConsumer) |
 
-### 12.4 MES↔IoT集成点（预留）
+> **Week 25 修复**: MES→ERP MQ producer `sendWorkOrderCompleted` 原发 `DIRECT_EXCHANGE`（与队列绑定 `TOPIC_EXCHANGE` 不匹配，消息无法路由），已修正为 `TOPIC_EXCHANGE`。
+> DTO `IqcCompletedMessage`/`MesWorkOrderCompletedMessage` 已从 `ruoyi-mes` 迁移至 `ruoyi-common-mq`，供 ERP 消费端引用。
 
-| 方向 | 方式 | 说明 |
-|------|------|------|
-| MES查设备数据 | REST API / Redis缓存 | MES查询IoT设备最新数据 |
-| IoT告警→MES安灯 | 接口抽象 | `IMesAndonService.createAndonFromAlert()` 接口 |
-| 设备关联 | 字段预留 | `eq_equipment.iot_device_id` + `iot_device.mes_equipment_id` |
+### 12.4 MES↔IoT集成点
+
+| 方向 | 方式 | 说明 | 状态 |
+|------|------|------|------|
+| MES查设备数据 | REST API / Redis缓存 | MES查询IoT设备最新数据（IotDeviceDataQueryService） | ⏳ 契约就绪(common-iot)，MES侧待调用 |
+| IoT告警→MES安灯 | 接口抽象 | `IMesAndonService.createAndonFromAlert()` 接口 | ✅ Week 23已上线(MesAndonServiceImpl @Primary + IotAlertNotifier) |
+| 设备关联 | 字段预留 | `eq_equipment.iot_device_id` + `iot_device.mes_equipment_id` | ⏳ 双向字段已建(Week 26 eq + IoT阶段一)，双向查询未打通 |
+
+> MES与IoT之间不建外键，通过接口抽象(`IMesAndonService`/`IotDeviceDataQueryService`)解耦。两个模块可独立开发和部署。
 
 ---
 
@@ -958,15 +969,15 @@ plus-ui/src/views/mes/
 
 | 检查项 | 当前状态 | 说明 |
 |--------|----------|------|
-| `ruoyi-mes` Maven模块已创建 | ❌ 待完成 | 参照 `ruoyi-erp` 模块结构创建 |
-| `ruoyi-modules/pom.xml` 注册 mes 模块 | ❌ 待完成 | `<module>ruoyi-mes</module>` |
-| 根 `pom.xml` 注册 mes 模块 | ❌ 待完成 | `<module>ruoyi-mes</module>` |
-| `application-dev.yml` 配置 mes 数据源 | ❌ 待完成 | `spring.datasource.dynamic.datasource.mes` |
-| `@DS("mes")` 注解可用 | ❌ 待完成 | 验证 DynamicDataSource 能切换到 mes |
-| `ry-mes` 数据库已创建 | ❌ 待完成 | `CREATE DATABASE ry-mes` |
-| ~17张DDL已执行 | ❌ 待完成 | 按 Phase 顺序分批执行 |
-| ERP MQ占位消费者已处理 | ❌ 待完成 | 禁用或移除 `WorkOrderReleaseConsumer` |
-| 工单下达消息发送时序已修正 | ❌ 待完成 | 改为事务提交后发送 |
+| `ruoyi-mes` Maven模块已创建 | ✅ Week 17完成 | 模块可编译 |
+| `ruoyi-modules/pom.xml` 注册 mes 模块 | ✅ Week 17完成 | `<module>ruoyi-mes</module>` |
+| 根 `pom.xml` 注册 mes 模块 | ✅ Week 17完成 | `<module>ruoyi-mes</module>` |
+| `application-dev.yml` 配置 mes 数据源 | ✅ Week 17完成 | `spring.datasource.dynamic.datasource.mes` |
+| `@DS("mes")` 注解可用 | ✅ Week 17完成 | DynamicDataSource 切换正常 |
+| `ry-mes` 数据库已创建 | ✅ Week 17完成 | `CREATE DATABASE ry-mes` |
+| ~17张DDL已执行 | ✅ Week 17-27分批执行 | pro×4+flow×2+dispatch/andon/sn+qc×3+eq×3+dc×2+spc×2=20张 |
+| ERP MQ占位消费者已处理 | ✅ Week 16完成 | `@ConditionalOnProperty` 配置开关禁用占位 |
+| 工单下达消息发送时序已修正 | ✅ Week 19完成 | `TransactionSynchronization.afterCommit()` |
 
 ### 13.2 ERP侧依赖确认
 
@@ -1070,13 +1081,14 @@ public class IqcCompletedMessage implements Serializable {
 | 采集记录 | `/mes/dc/data-record` | list/get/add | - |
 | SPC控制图 | `/mes/spc/control-chart` | list/get/add/edit/analyze | ECharts数据 |
 
-### 14.5 MES↔IoT接口契约（预留）
+### 14.5 MES↔IoT接口契约
 
-| 方向 | 接口 | 方法 | 说明 |
-|------|------|------|------|
-| MES→IoT | 查询设备最新数据 | GET `/iot/device/{deviceId}/latest` | 从Redis缓存读取 |
-| MES→IoT | 查询设备在线状态 | GET `/iot/device/{deviceId}/status` | 从Redis缓存读取 |
-| IoT→MES | 告警触发安灯 | `IMesAndonService.createAndonFromAlert(alert)` | 接口抽象，IoT调用MES |
+| 方向 | 接口 | 方法 | 说明 | 状态 |
+|------|------|------|------|------|
+| MES→IoT | 查询设备最新数据 | GET `/iot/device/{deviceId}/latest` | 从Redis缓存读取 | ⏳ 契约就绪，MES侧未调用 |
+| MES→IoT | 查询设备在线状态 | GET `/iot/device/{deviceId}/status` | 从Redis缓存读取 | ⏳ 契约就绪，MES侧未调用 |
+| MES→IoT | 查询设备历史数据 | GET `/iot/device/{deviceId}/data?start=&end=` | MySQL查询 | ⏳ 契约就绪，MES侧未调用 |
+| IoT→MES | 告警触发安灯 | `IMesAndonService.createAndonFromAlert(alert)` | 接口抽象，IoT调用MES | ✅ Week 23已上线 |
 
 ---
 
@@ -1181,48 +1193,50 @@ public class IqcCompletedMessage implements Serializable {
 
 ---
 
-### 15.3 MES Phase 3 详细任务（Week 28-32）
+### 15.3 MES Phase 3 详细任务（计划 Week 28-32 / 实际 Week 25-27）
 
-#### Week 28-29：质量管理（5人天）
+> Phase 3 提前 5 周完成，各模块任务表保留原计划作对照，实际交付物详见 `docs/superpowers/plans/` 归档。
 
-| 任务 | 交付物 | 验收标准 |
+#### Week 28-29：质量管理 → 实际 Week 25 ✅（5人天）
+
+| 任务 | 交付物 | 实际交付物 |
 |------|--------|----------|
-| 实现IQC CRUD + 检验 | `QcIqcServiceImpl` | 可创建/检验/完成IQC |
-| 实现IQC→ERP MQ回传 | `IqcCompletedMessage` 生产者 | 检验完成后通知ERP |
-| ERP侧实现IQC消费端 | `ErpIqcCompletedConsumer` | 更新收货单质检状态 |
-| 实现IPQC CRUD + 检验 | `QcIpqcServiceImpl` | 可创建/检验IPQC |
-| 实现OQC CRUD + 检验 | `QcOqcServiceImpl` | 可创建/检验OQC |
-| 实现MES→ERP完工MQ回传 | `WorkOrderCompletedMessage` 生产者 | 工单完工后通知ERP |
-| ERP侧实现完工消费端 | `ErpWorkOrderCompletedConsumer` | 更新ERP工单状态+完工入库 |
-| 前端：IQC/IPQC/OQC页面 | 3个列表+详情页 | 可录入检验结果 |
-| 执行 Phase 3 DDL | qc_iqc + qc_ipqc + qc_oqc | 表结构正确 |
+| 实现IQC CRUD + 检验 | `QcIqcServiceImpl` | ✅ `com.nexus.mes.qc.service.impl.QcIqcServiceImpl` |
+| 实现IQC→ERP MQ回传 | `IqcCompletedMessage` 生产者 | ✅ `MesMqSendService.sendIqcCompleted` + DTO迁移至 common-mq |
+| ERP侧实现IQC消费端 | `ErpIqcCompletedConsumer` | ✅ `com.nexus.erp.mq.consumer.ErpIqcCompletedConsumer` |
+| 实现IPQC CRUD + 检验 | `QcIpqcServiceImpl` | ✅ 含不良率自动计算(defectQty/sampleQty*100) |
+| 实现OQC CRUD + 检验 | `QcOqcServiceImpl` | ✅ |
+| 实现MES→ERP完工MQ回传 | `WorkOrderCompletedMessage` 生产者 | ✅ 已在Phase2 ProWorkOrderServiceImpl.completeWo afterCommit触发 |
+| ERP侧实现完工消费端 | `ErpWorkOrderCompletedConsumer` | ✅ `com.nexus.erp.mq.consumer.ErpWorkOrderCompletedConsumer` + 修复exchange bug(DIRECT→TOPIC) |
+| 前端：IQC/IPQC/OQC页面 | 3个列表+检验弹窗 | ✅ `plus-ui/src/views/mes/qc/{iqc,ipqc,oqc}/index.vue` |
+| 执行 Phase 3 DDL | qc_iqc + qc_ipqc + qc_oqc | ✅ `script/sql/ry-mes-week25.sql` |
 
-#### Week 30：设备管理（3人天）
+#### Week 30：设备管理 → 实际 Week 26 ✅（3人天）
 
-| 任务 | 交付物 | 验收标准 |
+| 任务 | 交付物 | 实际交付物 |
 |------|--------|----------|
-| 实现设备台账CRUD | `EqEquipmentServiceImpl` | 可增删改查设备 |
-| 实现保养计划CRUD | `EqMaintenancePlanServiceImpl` | 可创建/编辑保养计划 |
-| 实现维修记录CRUD | `EqRepairServiceImpl` | 可报修/维修/完成 |
-| 前端：设备台账页 | `mes/eq/equipment/index.vue` | 含状态筛选 |
-| 前端：保养计划页 | `mes/eq/maintenance/index.vue` | - |
-| 前端：维修记录页 | `mes/eq/repair/index.vue` | - |
-| 执行 Phase 3 DDL | eq_equipment + eq_maintenance_plan + eq_repair | 表结构正确 |
+| 实现设备台账CRUD | `EqEquipmentServiceImpl` | ✅ 含设备状态联动维修(FAULT/NORMAL) |
+| 实现保养计划CRUD | `EqMaintenancePlanServiceImpl` | ✅ 含下次保养日期自动计算(today+cycleDays) |
+| 实现维修记录CRUD | `EqRepairServiceImpl` | ✅ REPORTED→REPAIRING→COMPLETED 状态机 |
+| 前端：设备台账页 | `mes/eq/equipment/index.vue` | ✅ |
+| 前端：保养计划页 | `mes/eq/maintenance/index.vue` | ✅ 过期标红 |
+| 前端：维修记录页 | `mes/eq/repair/index.vue` | ✅ 开工/完成操作按钮 |
+| 执行 Phase 3 DDL | eq_equipment + eq_maintenance_plan + eq_repair | ✅ `script/sql/ry-mes-week26.sql` |
 
-#### Week 31-32：数据采集 + SPC + 集成测试（4人天）
+#### Week 31-32：数据采集 + SPC + 集成测试 → 实际 Week 27 ✅（4人天）
 
-| 任务 | 交付物 | 验收标准 |
+| 任务 | 交付物 | 实际交付物 |
 |------|--------|----------|
-| 实现采集点CRUD | `DcCollectionPointServiceImpl` | 可增删改查采集点 |
-| 实现采集记录CRUD | `DcDataRecordServiceImpl` | 可录入/查询采集数据 |
-| 实现SPC控制图 | `SpcControlChartServiceImpl` | 可创建/分析控制图 |
-| 实现OOC规则判定 | 硬编码4条规则 | 自动标注超限点 |
-| 前端：采集点页面 | `mes/dc/collection-point/index.vue` | - |
-| 前端：采集记录页面 | `mes/dc/data-record/index.vue` | - |
-| 前端：SPC控制图 | `mes/spc/control-chart/index.vue` | ECharts绘制，标注OOC点 |
-| 执行 Phase 3 DDL | dc_collection_point + dc_data_record + spc_control_chart + spc_data_point | 表结构正确 |
-| Phase 3 集成测试 | 测试报告 | 质量→设备→采集→SPC 全链路 |
-| MES全链路集成测试 | 测试报告 | ERP→MES工单→流转卡→派工→质检→完工→ERP 全闭环 |
+| 实现采集点CRUD | `DcCollectionPointServiceImpl` | ✅ point_type MANUAL/AUTO 预留 |
+| 实现采集记录CRUD | `DcDataRecordServiceImpl` | ✅ source MANUAL/IoT 预留，仅手动录入 |
+| 实现SPC控制图 | `SpcControlChartServiceImpl` | ✅ 5种图表(X_BAR_R/X_BAR_S/P/C/U) + A2/A3系数表 |
+| 实现OOC规则判定 | 硬编码4条规则 | ✅ RULE1(超限)/RULE2(9点同侧)/RULE3(6点递增递减)/RULE4(14点交替) |
+| 前端：采集点页面 | `mes/dc/collection-point/index.vue` | ✅ |
+| 前端：采集记录页面 | `mes/dc/data-record/index.vue` | ✅ |
+| 前端：SPC控制图 | `mes/spc/control-chart/index.vue` | ✅ ECharts UCL/CL/LCL参考线+OOC红点 |
+| 执行 Phase 3 DDL | dc/spc 四表 | ✅ `script/sql/ry-mes-week27.sql` |
+| Phase 3 集成测试 | 测试报告 | ⏳ 待人工运行时验证 |
+| MES全链路集成测试 | 测试报告 | ⏳ 待人工运行时验证 |
 
 ---
 
@@ -1252,15 +1266,17 @@ public class IqcCompletedMessage implements Serializable {
 
 ### 16.3 Phase 3 验收标准
 
-| 验收项 | 验收标准 | 验证方法 |
-|--------|----------|----------|
-| IQC检验+回传 | IQC完成→MQ→ERP更新收货单状态 | 端到端测试 |
-| IPQC/OQC检验 | 过程检验/出货检验可录入并查询 | 检验流程测试 |
-| 设备台账 | 设备可增删改查，含点检项目 | CRUD测试 |
-| 保养计划 | 保养计划可创建，下次保养日期自动计算 | 计划逻辑测试 |
-| 维修记录 | 故障报修→维修→完成，记录停机时长 | 维修流程测试 |
-| SPC控制图 | 控制图可创建，OOC点自动标注 | ECharts展示测试 |
-| MES全链路 | ERP→MES工单→流转卡→派工→质检→完工→ERP | 全链路集成测试 |
+| 验收项 | 验收标准 | 验证方法 | 状态 |
+|--------|----------|----------|------|
+| IQC检验+回传 | IQC完成→MQ→ERP更新收货单状态 | 端到端测试 | ✅ 代码就绪，⏳ 运行时待验证 |
+| IPQC/OQC检验 | 过程检验/出货检验可录入并查询 | 检验流程测试 | ✅ 代码就绪，⏳ 运行时待验证 |
+| 设备台账 | 设备可增删改查，含点检项目 | CRUD测试 | ✅ 代码就绪，⏳ 运行时待验证 |
+| 保养计划 | 保养计划可创建，下次保养日期自动计算 | 计划逻辑测试 | ✅ 代码就绪，⏳ 运行时待验证 |
+| 维修记录 | 故障报修→维修→完成，记录停机时长 | 维修流程测试 | ✅ 代码就绪，⏳ 运行时待验证 |
+| SPC控制图 | 控制图可创建，OOC点自动标注 | ECharts展示测试 | ✅ 代码就绪，⏳ 运行时待验证 |
+| MES全链路 | ERP→MES工单→流转卡→派工→质检→完工→ERP | 全链路集成测试 | ✅ 代码就绪，⏳ 运行时待验证 |
+
+> 代码交付全部完成（Week 17-27），运行时集成测试待人工执行四库+Redis+RabbitMQ 联调验证。
 
 ---
 
@@ -1355,3 +1371,78 @@ TransactionSynchronizationManager.registerSynchronization(new TransactionSynchro
 // 方案2: 使用本地消息表(outbox pattern)
 // 将消息写入本地消息表，由定时任务扫描发送
 ```
+
+---
+
+## 十九、实施进度更新（截至 2026-06-25）
+
+> **结论**: MES Phase 1-3 全部交付（Week 17-27，领先原计划约 5 周），代码交付 100% 完成，运行时集成测试待人工。
+
+### 19.1 实际交付周次表
+
+| 原计划周次 | 实际周次 | 模块 | 交付物 | 验证 |
+|-----------|---------|------|--------|------|
+| Week 17 | Week 17 | 模块骨架+数据源 | ruoyi-mes pom+配置+MesErpBridgeService | mvn compile ✅ |
+| Week 18 | Week 18 | 主数据桥接 | ErpMaterialMapper/BomLine/RoutingStep + 前端只读 | eslint ✅ |
+| Week 19-20 | Week 19-20 | MES工单+MQ+Flowable | ProWorkOrder + WorkOrderReleaseConsumer + 审批流 | mvn compile ✅ |
+| Week 21 | Week 21 | Phase 1 前端收尾 | workorder/index+form + 菜单4001-4032 | eslint ✅ |
+| Week 22-23 | **Week 20** | 流转卡引擎 | ProFlowCard + 状态机+自动生成工序 | mvn compile ✅ |
+| Week 24-25 | **Week 22** | 派工+工序执行 | ProDispatch + 状态机+扫码+Lock4j | mvn compile ✅ |
+| Week 26 | **Week 23** | 安灯系统 | ProAndon + SSE + MesAndonServiceImpl(IoT联动) | mvn compile ✅ |
+| Week 27 | **Week 24** | SN追溯 | ProSn + 追溯树 + 组装父子关系 | mvn compile ✅ |
+| Week 28-29 | **Week 25** | 质量管理+MQ贯通 | QcIqc/Ipqc/Oqc + DTO迁移 + ErpIqcCompletedConsumer + ErpWorkOrderCompletedConsumer + exchange bug修复 | mvn compile ✅ |
+| Week 30 | **Week 26** | 设备管理 | EqEquipment/MaintenancePlan/Repair + 状态联动 | mvn compile ✅ |
+| Week 31-32 | **Week 27** | 数据采集+SPC | DcCollectionPoint/DataRecord + SpcControlChart/DataPoint + 5种控制图 + 4条OOC规则 + ECharts | mvn compile ✅ |
+
+### 19.2 关键架构决策汇总
+
+| 决策 | 周次 | 选择 | 原因 |
+|------|------|------|------|
+| MES 不建主数据表 | Week 17 | 跨库查询 ERP（`@DS("erp")`） | 避免双写 |
+| 事务提交后发 MQ | Week 19 | `TransactionSynchronization.afterCommit()` | 避免消息先于状态持久化 |
+| SN 生成操作员触发 | Week 24 | 不自动耦合 completeCard | 避免 FlowCard→Sn 循环依赖 |
+| 安灯 SSE 推送 | Week 23 | `SseMessageUtils.publishMessage` + `collectOnlineUsersByTenant` | 镜像 IotAlertNotifier 模式 |
+| IQC 不合格仅标记 | Week 25 | ERP 收货单置 REJECTED，不实现不良品入库 | 避免 Week 25 范围膨胀 |
+| 设备状态联动维修 | Week 26 | 报修复 FAULT，完成恢复 NORMAL（活跃报修为 0 时） | 周末信息一致 |
+| 仅手动采集 | Week 27 | dc_data_record 仅 MANUAL，AUTO 预留 | IoT 归档为后续增强 |
+| 全五种控制图 | Week 27 | X_BAR_R/S/P/C/U + A2/A3 系数表 | 完整 SPC 能力 |
+
+### 19.3 代码交付统计
+
+| 类型 | Phase 1 | Phase 2 | Phase 3 | 合计 |
+|------|---------|---------|---------|------|
+| SQL DDL 表 | 4（pro_work_order等） | 6（pro_flow_card/step/dispatch/andon/sn） | 10（qc×3+eq×3+dc×2+spc×2） | 20 表 |
+| SQL 菜单 | Week17-21 | Week22-24 | Week25-27 | 7 个菜单 SQL |
+| Java 后端 | ~40 文件 | ~80 文件 | ~100 文件 | ~220 文件 |
+| Vue/TS 前端 | ~15 文件 | ~30 文件 | ~40 文件 | ~85 文件 |
+| 归档计划 | 5 个 | 5 个 | 3 个 | 13 个 |
+
+### 19.4 集成点打通状态
+
+| 集成点 | 状态 | 完成周次 |
+|--------|------|---------|
+| ERP→MES 工单下达 MQ | ✅ 已通 | Week 16 |
+| MES→ERP 工单完工 MQ | ✅ 已通（Week 25 修复 exchange bug） | Week 25 |
+| MES→ERP IQC 检验完成 MQ | ✅ 已通 | Week 25 |
+| IoT→MES 安灯联动（IMesAndonService） | ✅ 已通 | Week 23 |
+| MES→IoT 设备数据查询 | ⏳ 契约就绪，MES 侧未调用 | - |
+| 设备软关联（iot_device_id ↔ mes_equipment_id） | ⏳ 字段已建，双向查询未打通 | - |
+| IoT 自动采集归档到 dc_data_record | ⏳ 常量预留，无写入逻辑 | - |
+
+### 19.5 归档计划文档清单
+
+| 文件 | 内容 |
+|------|------|
+| `docs/superpowers/plans/2026-06-16-mes-iot-phase-plan.md` | Phase 1~3 + IoT 总计划 |
+| `docs/superpowers/plans/2026-06-16-mes-week17-implementation-report.md` | Week17 模块骨架 |
+| `docs/superpowers/plans/2026-06-17-mes-week18-implementation-plan.md` | Week18 主数据桥接 |
+| `docs/superpowers/plans/2026-06-17-mes-week19-implementation-plan.md` | Week19 MES工单+MQ |
+| `docs/superpowers/plans/2026-06-18-mes-week20-implementation-plan.md` | Week20 流转卡引擎 |
+| `docs/superpowers/plans/2026-06-19-mes-week21-implementation-plan.md` | Week21 Phase1前端收尾 |
+| `docs/superpowers/plans/2026-06-19-mes-week21-verification-report.md` | Week21 验证报告 |
+| `docs/superpowers/plans/2026-06-20-mes-week22-implementation-plan.md` | Week22 派工引擎 |
+| `docs/superpowers/plans/2026-06-21-mes-week23-implementation-plan.md` | Week23 安灯系统 |
+| `docs/superpowers/plans/2026-06-22-mes-week24-implementation-plan.md` | Week24 SN追溯 |
+| `docs/superpowers/plans/2026-06-23-mes-week25-implementation-plan.md` | Week25 质量管理+MQ贯通 |
+| `docs/superpowers/plans/2026-06-24-mes-week26-implementation-plan.md` | Week26 设备管理 |
+| `docs/superpowers/plans/2026-06-25-mes-week27-implementation-plan.md` | Week27 数据采集+SPC |

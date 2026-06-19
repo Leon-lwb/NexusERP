@@ -1,10 +1,12 @@
 # NexusERP - IoT模块综合文档
 
-> **文档状态**: 📋 实施开发文档 — 本文档为IoT模块的完整设计方案与可执行开发计划。
-> **Week 33 进度**：`ruoyi-iot` 模块已创建并编译通过，`@DS("iot")` 数据源已配置，Moquette 内嵌 Broker + 设备认证 + 产品/设备 CRUD 已实现；3 张核心表 DDL 脚本已产出（`script/sql/ry-iot-week33.sql`），待开发者本地执行建库。
-> **Week 34 进度**：数据管道已打通——MQTT onPublish→Redis Stream XADD→`IotStreamConsumer`(XREADGROUP)→批量落 `iot_device_data`+`iot:latest` 缓存；硬编码告警(限频+租户在线用户 SSE 推送)、遗嘱消息、MES↔IoT 接口契约(抽 `ruoyi-common-iot` 公共模块) 均已实现并编译通过。SSE 实时端点/SnailJob 定时任务/前端属 Week 35-36。
-> **Week 35 进度**：后端实时数据暴露（`/iot/device/{id}/latest|status|data` + SSE `/realtime` 端点，`IotRealtimeSseManager` 3s 轮询推送）；前端产品/设备管理页（el-table CRUD + 在线状态指示灯）已落地，路由+菜单对接 Week 33 菜单；4 个 IoT 字典已产出（`ry-iot-week35.sql`）。
-> **Week 36 进度**：ECharts 实时仪表盘（专用 EventSource 订阅 `/realtime` + 数值卡片 + 实时折线图 + 历史趋势图）；SnailJob 三任务（`IotDataCleanupTask` 清理90天、`IotDeviceHeartbeatTask` 心跳15min置离线、`IotStreamTrimTask` XTRIM MAXLEN 100000）；阶段一最小链路全链路打通，验收报告已产出。
+> **文档状态**: ✅ 阶段一已完成文档 — 本文档为IoT模块的完整设计方案与可执行开发计划。
+> **阶段一（Week 33-36）**: ✅ 全部完成，验收报告已产出（`script/doc/NexusERP_IoT阶段一验收报告.md`）。
+> **Week 34 额外**: MQTT 租户访问控制策略已实现（`git cc3781a`），设备认证含多租户隔离。
+> **MES 联动实际进度**: IMesAndonService 安灯联动✅（MES Week 23），设备台账✅（MES Week 26），数据采集点✅（MES Week 27）。
+> **MES↔IoT 未打通**: IoT→MES REST 查询（契约就绪，MES 侧未调用）、设备双向软关联查询、IoT 自动采集归档到 dc_data_record。详见 §二十一。
+> 后续升级方案：[NexusERP 三模块共同升级方案](NexusERP_三模块共同升级方案.md)
+>
 > 参考实施计划：[IoT 阶段一 Week 33 开发计划](../superpowers/plans/2026-06-17-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](../superpowers/plans/2026-06-23-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](../superpowers/plans/2026-06-18-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](../superpowers/plans/2026-06-18-iot-week36-plan.md)
 >
 > **数据采集归属**: IoT负责自动设备采集（MQTT/传感器数据），MES负责手工/业务采集（质检、工序录入）。
@@ -400,18 +402,21 @@ public abstract class BaseProtocolAdapter {
 
 ## 九、IoT实施计划
 
-### 9.1 阶段一: 最小链路 (Week 33-36, ~12人天)
+### 9.1 阶段一: 最小链路 (Week 33-36, ~12人天) ✅ 已完成
 
-**目标: 3-4周内让一台真实设备的数据出现在前端仪表盘上。**
+**目标: 3-4周内让一台真实设备的数据出现在前端仪表盘上。** ✅ 已达成。
 
-| 周次 | 任务 | 人天 |
-|------|------|------|
-| Week 33 | 创建ruoyi-iot模块+数据源配置+Moquette内嵌Broker+产品/设备CRUD | 3 |
-| Week 34 | 数据管道: MQTT消息→Redis Streams→MySQL+Redis缓存+硬编码告警 | 3 |
-| Week 35-36 | 前端: 产品管理+设备列表+实时数据仪表盘(SSE+ECharts) | 4 |
-| Week 36 | SnailJob任务: 数据清理+心跳检测+Stream修剪 | 2 |
+| 周次 | 任务 | 人天 | 状态 |
+|------|------|------|------|
+| Week 33 | 创建ruoyi-iot模块+数据源配置+Moquette内嵌Broker+产品/设备CRUD | 3 | ✅ |
+| Week 34 | 数据管道: MQTT消息→Redis Streams→MySQL+Redis缓存+硬编码告警+MQTT租户访问控制 | 3 | ✅ |
+| Week 35-36 | 前端: 产品管理+设备列表+实时数据仪表盘(SSE+ECharts) | 4 | ✅ |
+| Week 36 | SnailJob任务: 数据清理+心跳检测+Stream修剪 | 2 | ✅ |
 
-**阶段一小计: 12人天**
+**阶段一小计: 12人天 — ✅ 已全部交付**
+
+> 验收报告：`script/doc/NexusERP_IoT阶段一验收报告.md`（2026-06-18），11项验收标准全部✅通过。
+> Week 34 额外：MQTT 租户访问控制策略（`cc3781a`），设备认证含多租户隔离。
 
 ### 9.2 阶段二: 按需扩展 (Week 37-40, ~18人天)
 
@@ -595,13 +600,15 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 | SnailJob | `ruoyi-common-job` | ✅ 可用 | 定时任务 |
 | Redis缓存 | `ruoyi-common-redis` | ✅ 可用 | 设备最新值/在线状态 |
 
-### 14.3 MES侧依赖确认（联动阶段）
+### 14.3 MES侧依赖确认
 
 | 依赖项 | 来源 | 状态 | 说明 |
 |--------|------|------|------|
-| 设备台账 | `mes/eq/equipment` | ❌ MES Phase 3 | IoT设备关联MES设备 |
-| 安灯接口 | `IMesAndonService` | ❌ MES Phase 2 | IoT告警触发MES安灯 |
-| 数据采集点 | `mes/dc/collection-point` | ❌ MES Phase 3 | IoT自动采集关联 |
+| 设备台账 | `mes/eq/equipment` | ✅ MES Week 26已建 | IoT设备可关联MES设备 |
+| 安灯接口 | `IMesAndonService` | ✅ MES Week 23已通 | IoT告警→MES安灯（MesAndonServiceImpl @Primary + IotAlertNotifier 第70行） |
+| 数据采集点 | `mes/dc/collection-point` | ✅ MES Week 27已建 | IoT自动采集可关联 dc point_type=AUTO |
+| 数据采集记录 | `mes/dc/data-record` | ⏳ MES侧仅手动录入 | IoT自动采集归档到 dc_data_record 待打通 |
+| 设备双向软关联查询 | `iot_device.mes_equipment_id` ↔ `eq_equipment.iot_device_id` | ⏳ 字段已建 | 双向查询 API 待实现 |
 
 ---
 
@@ -647,7 +654,7 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 | 时序数据库 | ❌ | iot_device_data 超1000万行 |
 | 边缘网关 | ❌ | 设备超100台 |
 | 场景联动 | ❌ | 需要设备间自动联动 |
-| MES深度联动 | ❌ | MES Phase 3 设备模型稳定后 |
+| MES深度联动 | ⏳ | MES设备模型已稳定(Week26)，联动待打通 — 详见§二十一 |
 
 ---
 
@@ -718,15 +725,17 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 
 ## 十七、与MES的接口边界
 
-### 17.1 IoT→MES接口（预留）
+### 17.1 IoT→MES接口
 
 | 接口 | 方法 | 路径 | 说明 | 状态 |
 |------|------|------|------|------|
-| 查询设备最新数据 | GET | `/iot/device/{deviceId}/latest` | MES从Redis缓存读取 | ❌ 阶段二实现 |
-| 查询设备在线状态 | GET | `/iot/device/{deviceId}/status` | MES从Redis缓存读取 | ❌ 阶段二实现 |
-| 查询设备历史数据 | GET | `/iot/device/{deviceId}/data?start=&end=` | MES查询MySQL历史 | ❌ 阶段二实现 |
+| 查询设备最新数据 | GET | `/iot/device/{deviceId}/latest` | MES从Redis缓存读取 | ⏳ IoT已实现(IotDeviceController)，MES侧未调用 |
+| 查询设备在线状态 | GET | `/iot/device/{deviceId}/status` | MES从Redis缓存读取 | ⏳ IoT已实现，MES侧未调用 |
+| 查询设备历史数据 | GET | `/iot/device/{deviceId}/data?start=&end=` | MES查询MySQL历史 | ⏳ IoT已实现，MES侧未调用 |
 
-### 17.2 IoT→MES安灯接口（预留）
+> 契约接口 `IotDeviceDataQueryService` 已在 `ruoyi-common-iot` 定义，IoT 侧 `IotDeviceDataQueryServiceImpl` 已实现。MES 侧在 eq 设备台账页查 IoT 状态时调用，预计在共同升级方案第一波次打通。
+
+### 17.2 IoT→MES安灯接口
 
 ```java
 /**
@@ -742,6 +751,8 @@ public interface IMesAndonService {
     Long createAndonFromAlert(IotAlert alert);
 }
 ```
+
+> **状态**: ✅ 已实现。MES Week 23 产出 `MesAndonServiceImpl`（`@Primary @Service` 覆盖 `IotMesAndonServiceNoop`），IoT `IotAlertNotifier` 第 70 行 `mesAndonService.createAndonFromAlert(alert)` 实际调用。限频通过后自动创建 EQUIPMENT 类型安灯，含 try-catch 隔离。
 
 **IotAlert 字段：**
 ```java
@@ -765,7 +776,7 @@ public class IotAlert implements Serializable {
 | `iot_device` | `mes_equipment_id` | 关联MES设备ID（接口查询，无外键） |
 | `eq_equipment` | `iot_device_id` | 关联IoT设备ID（接口查询，无外键） |
 
-**关联方式**: 通过REST接口查询，不建外键。两个模块可独立开发和部署。
+> **状态**: ⏳ 双向字段已建（IoT 阶段一 Week 33 + MES Week 26 eq），双向查询 API 待实现。关联方式：通过 REST 接口查询，不建外键，两个模块可独立开发和部署。
 
 ---
 
@@ -909,3 +920,44 @@ mosquitto_pub -h localhost -p 1883 \
   -t "iot/1/device001/event/post" \
   -m '{"event":"alarm","level":"HIGH","msg":"温度过高"}'
 ```
+
+---
+
+## 二十一、实施进度更新（截至 2026-06-25）
+
+> **结论**: IoT 阶段一（Week 33-36）全部完成并验收通过，阶段二按需未启动。MES 联动部分已通（安灯），其余待打通。
+
+### 21.1 阶段一交付状态
+
+| 周次 | 交付物 | 状态 | 验证 |
+|------|--------|------|------|
+| Week 33 | ruoyi-iot 模块+Moquette+3 表 DDL+产品/设备 CRUD | ✅ | mvn compile ✅ |
+| Week 34 | MQTT 管道+Redis 缓存+告警+SSE+MES↔IoT 契约(common-iot)+MQTT 租户访问控制 | ✅ | mvn compile ✅ |
+| Week 35 | 后端 REST+前端产品/设备页+4 字典 | ✅ | eslint ✅ |
+| Week 36 | ECharts 仪表盘+SnailJob 3 任务+验收报告 | ✅ | 验收 11 项全通过 |
+
+### 21.2 MES 联动状态（对照 §14.3 / §17）
+
+| 联动点 | 状态 | 完成周次 | 说明 |
+|--------|------|---------|------|
+| IoT 告警→MES 安灯（IMesAndonService） | ✅ 已通 | MES Week 23 | MesAndonServiceImpl @Primary + IotAlertNotifier |
+| IoT→MES REST 查询（latest/status/data） | ⏳ 契约就绪 | IoT Week 34（实现） | IoT 已实现，MES 侧未调用（计划在共同升级方案第一波次打通） |
+| 设备双向软关联查询 | ⏳ 字段已建 | IoT Week 33 + MES Week 26 | iot_device.mes_equipment_id + eq_equipment.iot_device_id，查询 API 未实现 |
+| IoT 自动采集归档到 dc_data_record | ⏳ 常量预留 | MES Week 27 | point_type=AUTO + source=IoT 已预留，写入逻辑未实现 |
+
+### 21.3 阶段二状态
+
+| 任务 | 状态 | 触发条件 |
+|------|------|---------|
+| OPC UA / Modbus | 未启动 | 需连接 PLC/SCADA 设备时 |
+| 规则引擎 | 未启动 | 硬编码告警不满足需求时 |
+| 告警系统（规则表+日志表） | 未启动 | 需完整告警生命周期管理时 |
+| 时序数据库迁移（TDengine） | 未启动 | iot_device_data > 1000 万行时 |
+| 边缘网关 | 未启动 | 设备超 100 台或需协议转换时 |
+
+> 以上均保持触发条件驱动。详见 [三模块共同升级方案](NexusERP_三模块共同升级方案.md) 第二波次。
+
+### 21.4 验收报告
+
+`script/doc/NexusERP_IoT阶段一验收报告.md`（2026-06-18），11 项验收标准全部 ✅ 通过。
+已知限制 5 项 + 阶段二条件任务 6 项，均在报告中记录。

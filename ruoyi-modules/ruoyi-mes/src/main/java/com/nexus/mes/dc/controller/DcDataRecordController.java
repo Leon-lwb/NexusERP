@@ -1,0 +1,48 @@
+package com.nexus.mes.dc.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.domain.R;
+import com.nexus.common.log.annotation.Log;
+import com.nexus.common.log.enums.BusinessType;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.web.core.BaseController;
+import com.nexus.mes.dc.domain.bo.DcDataRecordBo;
+import com.nexus.mes.dc.domain.vo.DcDataRecordVo;
+import com.nexus.mes.dc.service.IDcDataRecordService;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * MES采集数据记录 Controller
+ *
+ * @author Nexus
+ */
+@Validated
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/mes/dc/data-record")
+public class DcDataRecordController extends BaseController {
+
+    private final IDcDataRecordService dcDataRecordService;
+
+    @SaCheckPermission("mes:dc:record:list")
+    @GetMapping("/list")
+    public TableDataInfo<DcDataRecordVo> list(DcDataRecordBo bo, PageQuery pageQuery) {
+        return dcDataRecordService.selectPageList(bo, pageQuery);
+    }
+
+    @SaCheckPermission("mes:dc:record:query")
+    @GetMapping("/{recordId}")
+    public R<DcDataRecordVo> getInfo(@PathVariable Long recordId) {
+        return R.ok(dcDataRecordService.selectById(recordId));
+    }
+
+    @SaCheckPermission("mes:dc:record:add")
+    @Log(title = "采集数据录入", businessType = BusinessType.INSERT)
+    @PostMapping
+    public R<DcDataRecordVo> add(@RequestBody DcDataRecordBo bo) {
+        return R.ok(dcDataRecordService.insertByBo(bo));
+    }
+}

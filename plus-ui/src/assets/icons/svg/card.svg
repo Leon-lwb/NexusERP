@@ -1,0 +1,5 @@
+<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+  <path d="M104 16H24c-4.4 0-8 3.6-8 8v80c0 4.4 3.6 8 8 8h80c4.4 0 8-3.6 8-8V24c0-4.4-3.6-8-8-8zm-4 84H28V28h72v72z"/>
+  <path d="M28 28h72v28H28z"/>
+  <path d="M40 68h48v4H40zm0 12h48v4H40zm0 12h32v4H40z"/>
+</svg>

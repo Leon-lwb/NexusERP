@@ -30,10 +30,10 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 |--------|------|------|------|
 | ry-vue | `@DS("master")` / 默认 | 系统管理、权限、日志等基础功能 | ✅ 已启用 |
 | ry-erp | `@DS("erp")` | ERP业务数据（物料/采购/仓储/生产/销售/排班） | ✅ 已启用 |
-| ry-mes | `@DS("mes")` | MES制造执行数据（工单/流转卡/质量/设备） | 📋 规划中，待MES Phase 1创建 |
-| ry-iot | `@DS("iot")` | IoT设备采集数据（产品/设备/传感器数据） | 📋 规划中，待IoT阶段一创建 |
+| ry-mes | `@DS("mes")` | MES制造执行数据（工单/流转卡/质量/设备） | ✅ MES Week 17已配置 |
+| ry-iot | `@DS("iot")` | IoT设备采集数据（产品/设备/传感器数据） | ✅ IoT Week 33已配置 |
 
-> **注意**: 当前代码中仅使用 `@DS("master")` 和 `@DS("erp")` 两个数据源。`@DS("mes")` 和 `@DS("iot")` 为MES/IoT模块规划数据源，待模块创建后启用。
+> **注意**: `@DS("master")`、`@DS("erp")`、`@DS("mes")`、`@DS("iot")` 四个数据源均已启用。
 >
 > **额外模块**: 项目中还包含 `ruoyi-ai`（AI模块，LangChain4j）、`ruoyi-im`（即时通讯）、`ruoyi-pay`（支付）、`ruoyi-report`（积木报表）等模块，这些不在ERP计划范围内。
 
@@ -43,8 +43,8 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 
 1. **ry-vue** — 系统管理库（用户/角色/菜单/日志等） ✅ 已创建
 2. **ry-erp** — ERP业务库（基础数据/采购/仓储/生产/销售/排班） ✅ 已创建
-3. **ry-mes** — MES制造执行库（工单/流转卡/质量/设备/采集/SPC，~13张表） 📋 待创建
-4. **ry-iot** — IoT设备库（产品/设备/传感器数据，3张核心表） 📋 待创建
+3. **ry-mes** — MES制造执行库（工单/流转卡/质量/设备/采集/SPC，~20张表） ✅ MES Week 17创建
+4. **ry-iot** — IoT设备库（产品/设备/传感器数据，3张核心表） ✅ IoT Week 33创建
 5. **TDengine / InfluxDB** — 时序数据库（设备实时数据/历史趋势，数据量超1000万行时按需引入） 📋 待创建
 
 ---
@@ -178,23 +178,29 @@ NexusERP 是一套面向制造企业的 ERP 系统，基于 RuoYi-Vue-Plus 5.6.0
 |------|---------|------|------|
 | Week 1-10 | ERP核心功能开发与代码重构 | P0/P1任务+代码质量+MQ基础设施 | ✅ 已完成 |
 | Week 11-12 | ERP收尾: 追溯与盘点 | 序列号管理/批次管理增强/追溯查询/盘点差异审批流 | ✅ 已完成 |
-| Week 11-12 | ERP侧MES集成准备 | 主数据API暴露 | ✅ 已完成（MQ/配置待实现） |
+| Week 11-12 | ERP侧MES集成准备 | 主数据API暴露 | ✅ 已完成 |
 | **Week 13** | **ERP补全: 物料-供应商+SO合同+SO开票** | bd_material_vendor关系管理+SO合同管理+SO开票管理 | ✅ 已完成 |
 | **Week 14** | **ERP补全: 部门请购+价格对比** | po_requisition部门请购单+采购价格对比 | ✅ 已完成 |
 | **Week 15** | **ERP加固: BOM循环检测+条码并发+遗留修复** | BOM循环引用检测+条码并发安全+价格对比API+客户弹窗 | ✅ 已完成 |
-| **Week 16** | **ERP增强: 审批流+MES集成+采购合同+报表** | SO审批流+MES集成MQ+采购合同+业务报表 | ✅ 已完成 |
-| **MES Phase 1** | **Week 17-23 (7周)** | MES模块骨架+主数据跨库查询+工单+Flowable审批+前端 | 📋 规划中 |
-| **MES Phase 2** | **Week 24-30 (7周)** | 流转卡引擎+派工+安灯+SSE推送+SN追溯 | 📋 规划中 |
-| **MES Phase 3** | **Week 31-36 (6周)** | 质量管理+设备管理+数据采集+SPC | 📋 规划中 |
-| **IoT 阶段一** | **Week 37-40 (4周)** | MQTT接入+Redis Streams管道+SSE实时仪表盘 | 📋 规划中 |
-| **IoT 阶段二** | **Week 41-44 (4周)** | 按需: OPC UA/Modbus/规则引擎/TDengine/边缘网关 | 按需启动 |
+| **Week 16** | **ERP增强: 审批流+MES集成MQ+采购合同+报表** | SO审批流+MES集成MQ+采购合同+业务报表 | ✅ 已完成 |
+| **MES Phase 1** | **Week 17-21** | MES模块骨架+主数据跨库查询+工单+Flowable审批+前端 | ✅ 已完成 |
+| **MES Phase 2** | **Week 22-24** | 流转卡引擎+派工+安灯+SSE推送+SN追溯 | ✅ 已完成（领先原计划） |
+| **MES Phase 3** | **Week 25-27** | 质量管理(IQC/IPQC/OQC)+设备管理(台账/保养/维修)+数据采集+SPC | ✅ 已完成（领先原计划） |
+| **IoT 阶段一** | **Week 33-36** | MQTT接入+Redis Streams管道+SSE实时仪表盘+MQTT租户访问控制 | ✅ 已完成 |
+| **IoT 阶段二** | **按需** | OPC UA/Modbus/规则引擎/TDengine/边缘网关 | 按需启动（触发条件未满足） |
+
+> **MES 实际进度**：Phase 1-3 提前 5 周完成（实际 Week 17-27，原计划 Week 17-32）。详见 `NexusERP_MES文档.md` §十九。
+> **IoT 实际进度**：阶段一 Week 33-36 完成并验收通过。详见 `NexusERP_IoT文档.md` §二十一。
+> **后续升级方案**：三模块共同升级方案（集成联动/功能补齐/可观测性），详见 `NexusERP_三模块共同升级方案.md`。
 
 **剩余工作量：**
-- ERP补全(Week 13-14): 约8人天（物料-供应商/合同/开票/请购/MES集成MQ）
+- ERP补全(Week 13-14): 约8人天（物料-供应商/合同/开票/请购）—— MES集成MQ ✅已完成
 - ERP增强(Week 15-16): 约6人天（价格对比/报表）
-- MES(Week 17-36): 约49人天/20周
-- IoT(Week 37-44): 约30人天/8周(含按需扩展)
-- **总计: 约93人天**
+- MES(Week 17-27): ~41人天/11周 — ✅ 已全部交付
+- IoT 阶段一(Week 33-36): ~12人天/4周 — ✅ 已全部交付
+- IoT 阶段二(按需): ~18人天 — 按需启动
+- 三模块共同升级(后续): ~50人天 — 详见升级方案
+- **ERP自身剩余: ~14人天 (P1补全+增强)，三模块协同升级另行规划**
 
 ---
 
@@ -1106,15 +1112,15 @@ spring:
 
 ### 11.3 ERP↔MES↔IoT集成点
 
-| 方向 | 触发点 | 方式 | 说明 |
-|------|--------|------|------|
-| ERP→MES | 工单下达 | MQ (RabbitMQ erp.direct) | PrdWorkOrderServiceImpl审批通过后发消息 |
-| ERP→MES | 主数据查询 | 跨库直查@DS("erp") | MES Service临时切数据源读物料/BOM/工艺 |
-| MES→ERP | 工单完工 | MQ (RabbitMQ) | 通知ERP更新工单状态+完工入库 |
-| MES→ERP | IQC检验完成 | MQ (RabbitMQ) | 通知ERP更新收货单质检状态 |
-| MES↔IoT | 设备数据查询 | REST API / Redis缓存 | MES查询IoT设备最新数据 |
-| IoT→MES | 告警→安灯 | 接口抽象 | IMesAndonService.createAndonFromAlert() |
-| IoT↔MES | 设备关联 | 字段预留 | 不建外键，通过接口查询 |
+| 方向 | 触发点 | 方式 | 说明 | 状态 |
+|------|--------|------|------|------|
+| ERP→MES | 工单下达 | MQ (RabbitMQ erp.direct) | PrdWorkOrderServiceImpl审批通过后发消息 | ✅ Week 16 |
+| ERP→MES | 主数据查询 | 跨库直查@DS("erp") | MES Service临时切数据源读物料/BOM/工艺 | ✅ Week 18 |
+| MES→ERP | 工单完工 | MQ (RabbitMQ) | 通知ERP更新工单状态+完工入库 | ✅ Week 25 (ErpWorkOrderCompletedConsumer) |
+| MES→ERP | IQC检验完成 | MQ (RabbitMQ) | 通知ERP更新收货单质检状态 | ✅ Week 25 (ErpIqcCompletedConsumer) |
+| MES↔IoT | 设备数据查询 | REST API / Redis缓存 | MES查询IoT设备最新数据 | ⏳ 契约就绪，MES侧未调用 |
+| IoT→MES | 告警→安灯 | 接口抽象 | IMesAndonService.createAndonFromAlert() | ✅ Week 23 |
+| IoT↔MES | 设备关联 | 字段预留 | 不建外键，通过接口查询 | ⏳ 字段已建，查询未打通 |
 
 ---
 
@@ -1194,11 +1200,12 @@ spring:
 | 3 | 销售开票管理 | so | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | ✅ Week 13已完成 | 🔴 高 |
 | 4 | 部门请购单 | po | ✅ po_requisition/detail | ❌ | ❌ | ❌ | ❌ | ❌ | 🟡 中 |
 | 5 | 采购价格对比 | pu | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | ✅ Week 14已完成 | 🟡 中 |
-| 6 | MES集成MQ消息 | prd | — | — | — | ❌ afterFlowHandle未发MQ | — | — | 🟡 中 |
+| 6 | MES集成MQ消息 | prd | — | — | — | ✅ Week 16发送+Week 25双向贯通 | — | — | ✅ 已完成 |
 
 ### 13.2 ERP 质量管理模块（P2）
 
-> 质量管理为独立子模块，建议在MES Phase 3中一并实现（MES文档已规划 qc 子模块）。
+> 质量管理为独立子模块，已由 MES Phase 3 实现（MES Week 25 完成，含 IQC/IPQC/OQC CRUD+检验+MQ 回传）。
+> ERP 侧仅消费端：ErpIqcCompletedConsumer 回写收货单质检状态（QUALIFIED→APPROVED / UNQUALIFIED→REJECTED）。
 
 | 序号 | 功能 | 说明 | 优先级 |
 |:----:|------|------|:------:|
@@ -1212,7 +1219,8 @@ spring:
 
 ### 13.3 ERP 设备管理模块（P2）
 
-> 设备管理建议在MES Phase 3中一并实现（MES文档已规划 eq 子模块）。
+> 设备管理已由 MES Phase 3 实现（MES Week 26 完成，含设备台账+保养计划+维修记录+设备状态联动）。
+> ERP 侧无独立设备管理模块，设备主数据由 MES 维护（bd_workstation.equipment_id 为悬空槽，后续可打通软关联）。
 
 | 序号 | 功能 | 说明 | 优先级 |
 |:----:|------|------|:------:|
@@ -1236,34 +1244,82 @@ spring:
 | 7 | 统计报表 | 库存/销售/生产/采购业务报表 | 🟢 低 |
 | 8 | Dashboard首页 | 首页统计数据接入真实API | 🟢 低（系统完成后统一制作） |
 
-### 13.5 MES 模块（P3，独立模块）
+### 13.5 MES 模块（已全部交付）
 
-> MES模块详细设计见 `NexusERP_MES文档.md`，此处仅列概要。
+> MES模块详细设计见 `NexusERP_MES文档.md`，实施进度更新见该文档 §十九。
 
-| 阶段 | 周期 | 内容 | 依赖 |
-|------|------|------|------|
-| Phase 1 | 7周 | MES骨架+主数据跨库查询+工单+Flowable审批+前端 | ERP MQ集成完成 |
-| Phase 2 | 7周 | 流转卡引擎+派工+安灯+SSE推送+SN追溯 | Phase 1 |
-| Phase 3 | 6周 | 质量管理+设备管理+数据采集+SPC | Phase 2 |
+| 阶段 | 实际周期 | 内容 | 状态 |
+|------|---------|------|------|
+| Phase 1 | Week 17-21 (5周) | MES骨架+主数据跨库查询+工单+Flowable审批+前端 | ✅ 已完成 |
+| Phase 2 | Week 22-24 (3周) | 流转卡引擎+派工+安灯+SSE推送+SN追溯 | ✅ 已完成（领先原计划2周） |
+| Phase 3 | Week 25-27 (3周) | 质量管理+设备管理+数据采集+SPC | ✅ 已完成（领先原计划5周） |
 
-### 13.6 IoT 模块（P3，独立模块）
+### 13.6 IoT 模块（阶段一已交付，阶段二按需）
 
-> IoT模块详细设计见 `NexusERP_IoT文档.md`，此处仅列概要。
+> IoT模块详细设计见 `NexusERP_IoT文档.md`，实施进度更新见该文档 §二十一。
 
-| 阶段 | 周期 | 内容 | 依赖 |
-|------|------|------|------|
-| 阶段一 | 4周 | MQTT接入+Redis Streams管道+SSE实时仪表盘 | MES Phase 1 |
-| 阶段二 | 4周 | 按需: OPC UA/Modbus/规则引擎/TDengine/边缘网关 | 阶段一 |
+| 阶段 | 实际周期 | 内容 | 状态 |
+|------|---------|------|------|
+| 阶段一 | Week 33-36 (4周) | MQTT接入+Redis Streams管道+SSE实时仪表盘+MQTT租户访问控制 | ✅ 已完成并验收通过 |
+| 阶段二 | 按需 | OPC UA/Modbus/规则引擎/TDengine/边缘网关 | 按需启动（触发条件未满足） |
 
-### 13.7 总体开发路线图
+### 13.7 总体开发路线图（实际进展）
 
 ```
-Week 13     ████ ERP补全: 物料-供应商 + SO合同 + SO开票
-Week 14     ████ ERP补全: 部门请购 + MES集成MQ + 采购价格对比
-Week 15-16  ████████ ERP增强: BOM循环检测 + 条码优化 + 统计报表
-Week 17-23  ████████████████████████████████ MES Phase 1
-Week 24-30  ████████████████████████████████ MES Phase 2
-Week 31-36  ████████████████████████ MES Phase 3 (质量+设备)
-Week 37-40  ████████████████ IoT 阶段一
-Week 41-44  ████████████████ IoT 阶段二 (按需)
+Week 13     ████ ERP补全: 物料-供应商 + SO合同 + SO开票                               ✅
+Week 14     ████ ERP补全: 部门请购 + MES集成MQ + 采购价格对比                           ✅
+Week 15-16  ████████ ERP增强: BOM循环检测 + 条码优化 + 统计报表                         ✅
+Week 17-21  ████████████████████ MES Phase 1 (骨架+工单+审批)                          ✅
+Week 22-24  ████████████ MES Phase 2 (流转卡+派工+安灯+SN)                             ✅ 提前2周
+Week 25-27  ████████████ MES Phase 3 (质量+设备+采集+SPC)                              ✅ 提前5周
+Week 28-32  ░░░░░░░░░░░░ 原MES Phase 3计划周次（实际已提前完成，此段空闲）
+Week 33-36  ████████████████ IoT 阶段一 (MQTT+管道+仪表盘+租户访问控制)                 ✅
+Week 37+    ░░░░░░░░ IoT 阶段二 (按需, 触发条件未满足)                                   ⏳
+            ▸ 三模块共同升级方案 (集成联动+功能补齐+可观测性)                             待启动
 ```
+
+> **关键里程碑**: MES 全量交付(Week 27) + IoT 阶段一验收(Week 36)。三模块协同闭环见 `NexusERP_三模块共同升级方案.md`。
+
+---
+
+## 十四、实施进度更新（截至 2026-06-25）
+
+> **结论**: ERP 核心功能（Week 1-16）全部完成；MES Phase 1-3（Week 17-27）提前 5 周全量交付；IoT 阶段一（Week 33-36）完成并验收。三文档时间线已对齐统一。
+
+### 14.1 各模块交付现状
+
+| 模块 | 阶段 | 时间线 | 状态 |
+|------|------|--------|------|
+| ERP | 核心功能 + 补全 + 增强 | Week 1-16 | ✅ 已完成 |
+| MES | Phase 1-3（全部 3 阶段） | Week 17-27（原计划 17-32，提前 5 周） | ✅ 已完成 |
+| IoT | 阶段一 | Week 33-36 | ✅ 已完成并验收 |
+
+### 14.2 ERP 侧集成 MQ 状态
+
+| MQ 流向 | 状态 | 说明 |
+|---------|------|------|
+| ERP→MES 工单下达 | ✅ Week 16 已发 | PrdWorkOrderServiceImpl.afterFlowHandle → afterCommit → sendWorkOrderReleaseMessage |
+| MES→ERP 工单完工 | ✅ Week 25 双向贯通 | MES: sendWorkOrderCompleted → ErpWorkOrderCompletedConsumer（ERP 更新工单+触发 ProductionCompleteMessage→倒冲入库） |
+| MES→ERP IQC 检验完成 | ✅ Week 25 双向贯通 | MES: sendIqcCompleted → ErpIqcCompletedConsumer（ERP 回写收货单 QUALIFIED→APPROVED / UNQUALIFIED→REJECTED） |
+
+> **Week 25 修复**: `sendWorkOrderCompleted` 原发 `DIRECT_EXCHANGE`（与队列绑定 `TOPIC_EXCHANGE` 不匹配），已修正。DTO 已从 `ruoyi-mes` 迁移至 `ruoyi-common-mq`。
+
+### 14.3 ERP 剩余工作量
+
+| 任务 | 优先级 | 人天 | 说明 |
+|------|--------|------|------|
+| 物料-供应商关系管理 | P1 高 | ~2 | bd_material_vendor Entity/Service/Controller/Frontend |
+| 部门请购单 | P1 中 | ~3 | po_requisition/detail Entity/Service/Controller/Frontend |
+| SO 审批流增强 | P1 中 | ~2 | Flowable 集成（Week 16 已部分完成） |
+| 采购合同管理 | P1 中 | ~3 | 采购合同 CRUD |
+| 统计报表 | P2 低 | ~4 | 库存/销售/生产/采购业务报表 |
+| **ERP 自身剩余** | | **~14** | |
+
+> **不重复建设**：质量管理(IQC/IPQC/OQC)和设备管理(台账/保养/维修)已在 MES Phase 3 实现（Week 25/26），ERP 仅消费端（IQC 回写收货单+完工回写工单），不在 ERP 侧独立建设。
+
+### 14.4 三模块共同升级方案
+
+后续升级路线图详见 `NexusERP_三模块共同升级方案.md`，三波次：
+1. **集成联动深化**（~12人天）：设备软关联、IoT自动采集归档、SPC OOC→安灯、ERP收货单驱动IQC
+2. **各模块功能补齐**（~30人天）：ERP Phase B/C/D、IoT阶段二按需、MES不良品入库/保养提醒
+3. **可观测性与运维**（~8人天）：统一traceId、健康检查聚合、数据归档、租户隔离巡检
