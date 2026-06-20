@@ -18,9 +18,15 @@
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          <el-button type="warning" icon="WarnTriangleFilled" @click="handleOpenAdd" v-hasPermi="['mes:eq:repair:add']">故障报修</el-button>
         </el-form-item>
       </el-form>
+
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="WarnTriangleFilled" @click="handleOpenAdd" v-hasPermi="['mes:eq:repair:add']">故障报修</el-button>
+        </el-col>
+        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+      </el-row>
 
       <el-table v-loading="loading" :data="dataList">
         <el-table-column label="维修单号" prop="repairNo" width="190" />

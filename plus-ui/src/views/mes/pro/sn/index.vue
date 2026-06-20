@@ -28,10 +28,18 @@
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          <el-button type="success" icon="Plus" @click="handleOpenGenerate" v-hasPermi="['mes:pro:sn:add']">批量生成SN</el-button>
-          <el-button type="warning" icon="Edit" @click="handleOpenCreate" v-hasPermi="['mes:pro:sn:add']">手动建SN</el-button>
         </el-form-item>
       </el-form>
+
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button type="success" plain icon="Plus" @click="handleOpenGenerate" v-hasPermi="['mes:pro:sn:add']">批量生成SN</el-button>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="Edit" @click="handleOpenCreate" v-hasPermi="['mes:pro:sn:add']">手动建SN</el-button>
+        </el-col>
+        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+      </el-row>
 
       <el-table v-loading="loading" :data="dataList">
         <el-table-column label="SN编码" prop="snCode" width="220" />

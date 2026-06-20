@@ -29,9 +29,15 @@
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          <el-button type="success" icon="Aim" @click="handleOpenScan" v-hasPermi="['mes:pro:dispatch:scan']">扫码执行</el-button>
         </el-form-item>
       </el-form>
+
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button type="success" plain icon="Aim" @click="handleOpenScan" v-hasPermi="['mes:pro:dispatch:scan']">扫码执行</el-button>
+        </el-col>
+        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+      </el-row>
 
       <el-table v-loading="loading" :data="dataList">
         <el-table-column label="派工单号" prop="dispatchNo" width="180" />

@@ -23,9 +23,15 @@
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          <el-button type="success" icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:spc:chart:add']">新增控制图</el-button>
         </el-form-item>
       </el-form>
+
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:spc:chart:add']">新增控制图</el-button>
+        </el-col>
+        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+      </el-row>
 
       <el-table v-loading="loading" :data="dataList">
         <el-table-column label="控制图名称" prop="chartName" width="200" />

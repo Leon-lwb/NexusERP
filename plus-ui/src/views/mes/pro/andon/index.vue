@@ -66,9 +66,15 @@
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          <el-button type="warning" icon="Bell" @click="handleOpenCall" v-hasPermi="['mes:pro:andon:call']">发起呼叫</el-button>
         </el-form-item>
       </el-form>
+
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="Bell" @click="handleOpenCall" v-hasPermi="['mes:pro:andon:call']">发起呼叫</el-button>
+        </el-col>
+        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+      </el-row>
 
       <el-table v-loading="loading" :data="dataList">
         <el-table-column label="安灯编号" prop="andonNo" width="200" />
