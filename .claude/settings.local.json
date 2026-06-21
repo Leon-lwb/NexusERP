@@ -219,7 +219,9 @@
       "Bash(mvn dependency:build-classpath -pl ruoyi-modules/ruoyi-iot -q)",
       "Bash(javap -p io/moquette/broker/security/IAuthorizatorPolicy.class)",
       "Bash(rm -rf io/)",
-      "Bash(javap -p io/moquette/broker/subscriptions/Topic.class)"
+      "Bash(javap -p io/moquette/broker/subscriptions/Topic.class)",
+      "Bash(grep -c \"^  \\\\`\" script/sql/ry-vue.sql)",
+      "Bash(grep -oP '`\\\\w+`')"
     ]
   }
 }

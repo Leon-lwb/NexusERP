@@ -99,7 +99,6 @@ public class BdBomDetailServiceImpl implements IBdBomDetailService {
         lqw.eq(bo.getBomId() != null, BdBomDetail::getBomId, bo.getBomId());
         lqw.eq(bo.getChildMaterialId() != null, BdBomDetail::getChildMaterialId, bo.getChildMaterialId());
         lqw.eq(bo.getOperationStep() != null, BdBomDetail::getOperationStep, bo.getOperationStep());
-        lqw.eq(bo.getWorkstationId() != null, BdBomDetail::getWorkstationId, bo.getWorkstationId());
         lqw.eq(bo.getStatus() != null, BdBomDetail::getStatus, bo.getStatus());
         lqw.like(StringUtils.isNotBlank(bo.getRemark()), BdBomDetail::getRemark, bo.getRemark());
         return lqw;
@@ -117,12 +116,20 @@ public class BdBomDetailServiceImpl implements IBdBomDetailService {
         if (materialIds.isEmpty()) {
             return list;
         }
-        Map<Long, String> materialNameMap = materialMapper.selectVoList(Wrappers.<BdMaterial>lambdaQuery()
-                .select(BdMaterial::getMaterialId, BdMaterial::getMaterialName)
+        Map<Long, BdMaterialVo> materialMap = materialMapper.selectVoList(Wrappers.<BdMaterial>lambdaQuery()
                 .in(BdMaterial::getMaterialId, materialIds))
             .stream()
-            .collect(Collectors.toMap(BdMaterialVo::getMaterialId, BdMaterialVo::getMaterialName, (a, b) -> a, HashMap::new));
-        list.forEach(item -> item.setChildMaterialName(materialNameMap.get(item.getChildMaterialId())));
+            .collect(Collectors.toMap(BdMaterialVo::getMaterialId, m -> m, (a, b) -> a, HashMap::new));
+        list.forEach(item -> {
+            BdMaterialVo material = materialMap.get(item.getChildMaterialId());
+            if (material != null) {
+                item.setChildMaterialName(material.getMaterialName());
+                item.setChildMaterialCode(material.getMaterialCode());
+                item.setChildMaterialSpec(material.getMaterialSpec());
+                item.setBaseUomId(material.getBaseUomId());
+                item.setBaseUomName(material.getBaseUomName());
+            }
+        });
         return list;
     }
 }

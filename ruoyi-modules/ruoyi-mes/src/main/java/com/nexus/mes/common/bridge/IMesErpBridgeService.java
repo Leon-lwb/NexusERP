@@ -22,12 +22,44 @@ public interface IMesErpBridgeService {
     Map<String, Object> getMaterial(Long materialId);
 
     /**
-     * 查询BOM明细(从ERP)
+     * 查询物料完整信息(从ERP,含标准成本/基本单位)
+     *
+     * @param materialId 物料ID
+     * @return 物料信息Map，包含material_code/material_name/material_spec/standard_cost/base_uom_id/base_uom_name等
+     */
+    Map<String, Object> getMaterialFull(Long materialId);
+
+    /**
+     * 查询BOM明细(从ERP,纯物料+用量)
      *
      * @param bomId BOM ID
-     * @return BOM行列表，每行包含child_material_id/quantity_per_parent等
+     * @return BOM行列表，每行包含detail_id/child_material_id/quantity_per_parent/loss_rate/operation_step等
      */
-    List<Map<String, Object>> getBomLines(Long bomId);
+    List<Map<String, Object>> getBomDetails(Long bomId);
+
+    /**
+     * 查询BOM头信息(从ERP,含父项物料编码/名称/版本/路线)
+     *
+     * @param bomId BOM ID
+     * @return BOM头信息Map
+     */
+    Map<String, Object> getBomHeader(Long bomId);
+
+    /**
+     * 查询工艺路线头信息(从ERP,含路线编码/名称/版本/物料编码/名称)
+     *
+     * @param routingId 工艺路线ID
+     * @return 路线头信息Map
+     */
+    Map<String, Object> getRoutingHeader(Long routingId);
+
+    /**
+     * 查询工位完整信息(从ERP)
+     *
+     * @param workstationId 工位ID
+     * @return 工位信息Map，包含workstation_code/workstation_name等
+     */
+    Map<String, Object> getWorkstationFull(Long workstationId);
 
     /**
      * 查询工艺路线步骤(从ERP)

@@ -24,6 +24,38 @@
       <el-form-item label="计划数量" prop="plannedQty">
         <el-input-number v-model="form.plannedQty" :min="0.0001" :precision="4" :step="1" style="width: 100%" />
       </el-form-item>
+      <el-form-item label="BOM" prop="bomId">
+        <el-select
+          v-model="form.bomId"
+          placeholder="请选择BOM"
+          filterable
+          clearable
+          style="width: 100%"
+        >
+          <el-option
+            v-for="item in bomOptions"
+            :key="item.bomId"
+            :label="(item.parentMaterialCode || '') + ' - ' + (item.parentMaterialName || '') + ' v' + (item.bomVersion || '')"
+            :value="item.bomId"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="工艺路线" prop="routingId">
+        <el-select
+          v-model="form.routingId"
+          placeholder="请选择工艺路线"
+          filterable
+          clearable
+          style="width: 100%"
+        >
+          <el-option
+            v-for="item in routingOptions"
+            :key="item.routingId"
+            :label="item.routingCode + ' - ' + item.routingName + ' v' + (item.routingVersion || '')"
+            :value="item.routingId"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="优先级" prop="priority">
         <el-input-number v-model="form.priority" :min="0" style="width: 100%" />
       </el-form-item>
@@ -59,6 +91,8 @@
 <script setup lang="ts" name="MesWorkOrderForm">
 import { addWorkOrder, updateWorkOrder } from '@/api/mes/pro/workorder';
 import { listMaterial } from '@/api/erp/bd/material/index';
+import { listBom } from '@/api/erp/bd/bom/index';
+import { listRouting } from '@/api/erp/bd/routing/index';
 import type { ProWorkOrderForm, ProWorkOrderVO } from '@/api/mes/pro/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -68,6 +102,8 @@ const visible = ref(false);
 const title = ref('');
 const formRef = ref();
 const materialOptions = ref<any[]>([]);
+const bomOptions = ref<any[]>([]);
+const routingOptions = ref<any[]>([]);
 
 const initForm: ProWorkOrderForm = {
   woNo: undefined,
@@ -75,6 +111,8 @@ const initForm: ProWorkOrderForm = {
   materialCode: undefined,
   materialName: undefined,
   plannedQty: undefined,
+  bomId: undefined,
+  routingId: undefined,
   priority: 0,
   planStartDate: undefined,
   planEndDate: undefined,
@@ -103,6 +141,8 @@ const open = async (row?: ProWorkOrderVO) => {
       priority: row.priority,
       planStartDate: row.planStartDate,
       planEndDate: row.planEndDate,
+      bomId: row.bomId,
+      routingId: row.routingId,
       remark: row.remark
     };
   } else {
@@ -113,8 +153,14 @@ const open = async (row?: ProWorkOrderVO) => {
 };
 
 const loadMaterials = async () => {
-  const res = await listMaterial({ pageNum: 1, pageSize: 1000 } as any);
-  materialOptions.value = res.rows || [];
+  const [matRes, bomRes, routingRes] = await Promise.all([
+    listMaterial({ pageNum: 1, pageSize: 1000 } as any),
+    listBom({ status: 1, isCurrent: 1, pageNum: 1, pageSize: 1000 } as any),
+    listRouting({ status: 1, pageNum: 1, pageSize: 1000 } as any)
+  ]);
+  materialOptions.value = matRes.rows || [];
+  bomOptions.value = bomRes.rows || [];
+  routingOptions.value = routingRes.rows || [];
 };
 
 const handleMaterialChange = (materialId: number) => {

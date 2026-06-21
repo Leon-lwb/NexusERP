@@ -17,8 +17,14 @@ import java.util.Map;
 public interface ErpMaterialMapper {
 
     @Select("SELECT material_id, material_code, material_name, material_spec, category_id, " +
-        "base_uom_id, reference_price FROM bd_material WHERE material_id = #{materialId} AND del_flag = '0'")
+        "base_uom_id, reference_price, standard_cost FROM bd_material WHERE material_id = #{materialId} AND del_flag = '0'")
     Map<String, Object> selectMaterialById(@Param("materialId") Long materialId);
+
+    @Select("SELECT m.material_id, m.material_code, m.material_name, m.material_spec, m.category_id, " +
+        "m.base_uom_id, m.reference_price, m.standard_cost, u.unit_name AS base_uom_name " +
+        "FROM bd_material m LEFT JOIN bd_unit u ON m.base_uom_id = u.unit_id " +
+        "WHERE m.material_id = #{materialId} AND m.del_flag = '0'")
+    Map<String, Object> selectMaterialFullById(@Param("materialId") Long materialId);
 
     /**
      * 查询物料的默认工艺路线ID

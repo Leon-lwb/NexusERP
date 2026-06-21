@@ -19,7 +19,7 @@
         <el-table-column label="工艺路线名称" prop="routingName" show-overflow-tooltip />
         <el-table-column label="物料编码" prop="materialCode" width="140" />
         <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="版本" prop="version" width="80" align="center" />
+        <el-table-column label="版本" prop="routingVersion" width="80" align="center" />
         <el-table-column label="是否当前版本" prop="isCurrent" width="120" align="center">
           <template #default="scope">
             <el-tag v-if="scope.row.isCurrent === 1" type="success">是</el-tag>
@@ -28,8 +28,8 @@
         </el-table-column>
         <el-table-column label="状态" prop="status" width="80" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
-              {{ scope.row.status === '0' ? '正常' : '停用' }}
+            <el-tag :type="Number(scope.row.status) === 1 ? 'success' : 'danger'">
+              {{ Number(scope.row.status) === 1 ? '正常' : '停用' }}
             </el-tag>
           </template>
         </el-table-column>

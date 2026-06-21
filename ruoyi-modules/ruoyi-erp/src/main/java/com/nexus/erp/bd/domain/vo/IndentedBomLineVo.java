@@ -78,6 +78,16 @@ public class IndentedBomLineVo implements Serializable {
     private BigDecimal cumulativeQuantity;
 
     /**
+     * 单位成本(取物料标准成本,无则取参考价)
+     */
+    private BigDecimal unitCost;
+
+    /**
+     * 行成本 = 单位成本 × 累计用量(含损耗)
+     */
+    private BigDecimal lineCost;
+
+    /**
      * 单位名称
      */
     private String unitName;

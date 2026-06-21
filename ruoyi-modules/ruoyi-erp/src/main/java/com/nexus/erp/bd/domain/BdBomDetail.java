@@ -56,28 +56,10 @@ public class BdBomDetail extends TenantEntity {
     private BigDecimal lossRate;
 
     /**
-     * 工序步骤
+     * 工序步骤(软引用工艺路线步骤序号,制造工序/工位关联已迁移至 MES MBOM)
      */
     @ExcelProperty("工序步骤")
     private Integer operationStep;
-
-    /**
-     * 工作中心ID
-     */
-    @ExcelProperty("工作中心ID")
-    private Long workstationId;
-
-    /**
-     * 工序ID(关联bd_process)
-     */
-    @ExcelProperty("工序ID")
-    private Long processId;
-
-    /**
-     * 工艺路线步骤ID(关联bd_routing_step)
-     */
-    @ExcelProperty("工艺路线步骤ID")
-    private Long routingStepId;
 
     /**
      * 提前期(小时)

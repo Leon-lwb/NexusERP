@@ -9,6 +9,7 @@ import com.nexus.erp.bd.domain.BdRouting;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 工艺路线业务对象 bd_routing
@@ -51,6 +52,11 @@ public class BdRoutingBo extends BaseEntity {
     private Long status;
 
     private String remark;
+
+    /**
+     * 工序步骤列表(随工艺路线一起保存:先删后插)
+     */
+    private List<BdRoutingStepBo> steps;
 
     private Long[] ids;
 }

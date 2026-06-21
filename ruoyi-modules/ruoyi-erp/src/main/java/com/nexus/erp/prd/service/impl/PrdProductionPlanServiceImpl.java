@@ -406,8 +406,6 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 dto.setLossRate(detail.getLossRate());
                 dto.setOperationStep(detail.getOperationStep() != null ?
                         Long.valueOf(detail.getOperationStep()) : null);
-                dto.setWorkstationId(detail.getWorkstationId());
-                dto.setWorkstationName(detail.getWorkstationName());
                 dto.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
                 dto.setSourceType(sourceType);
                 // 尝试补充物料基础信息

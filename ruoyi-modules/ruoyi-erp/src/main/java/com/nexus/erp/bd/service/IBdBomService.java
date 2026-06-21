@@ -5,6 +5,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
 import com.nexus.erp.bd.domain.vo.BomComparisonVo;
+import com.nexus.erp.bd.domain.vo.BomCostRollupVo;
 import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 
@@ -125,4 +126,12 @@ public interface IBdBomService {
      * @return 比较结果
      */
     BomComparisonVo compareBom(Long bomId1, Long bomId2);
+
+    /**
+     * BOM成本卷积: 物料成本(叶子标准成本×累计用量) + 工序成本(工时×费率)
+     *
+     * @param bomId BOM ID
+     * @return 成本卷积结果
+     */
+    BomCostRollupVo costRollup(Long bomId);
 }

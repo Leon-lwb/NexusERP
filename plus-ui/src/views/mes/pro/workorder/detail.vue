@@ -29,7 +29,8 @@
             <el-descriptions-item label="产品名称">{{ workOrder.materialName }}</el-descriptions-item>
             <el-descriptions-item label="计划数量">{{ workOrder.plannedQty }} {{ workOrder.unitName }}</el-descriptions-item>
             <el-descriptions-item label="车间">{{ workOrder.workshopName }}</el-descriptions-item>
-            <el-descriptions-item label="工艺路线ID">{{ workOrder.routingId }}</el-descriptions-item>
+            <el-descriptions-item label="BOM版本">{{ workOrder.bomVersion || workOrder.bomId || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="工艺路线">{{ workOrder.routingCode && workOrder.routingName ? (workOrder.routingCode + ' - ' + workOrder.routingName) : (workOrder.routingId || '-') }}</el-descriptions-item>
             <el-descriptions-item label="状态">
               <el-tag :type="statusTagType(workOrder.woStatus)">{{ statusLabel(workOrder.woStatus) }}</el-tag>
             </el-descriptions-item>
@@ -58,6 +59,32 @@
               </template>
             </el-table-column>
           </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane label="物料明细(MBOM)" name="bom">
+          <el-table :data="workOrder.bomLines || []" border>
+            <el-table-column label="排序" prop="sortOrder" width="60" align="center" />
+            <el-table-column label="物料编码" prop="childMaterialCode" width="150" />
+            <el-table-column label="物料名称" prop="childMaterialName" min-width="150" show-overflow-tooltip />
+            <el-table-column label="单位用量" prop="quantityPerParent" width="100" align="right" />
+            <el-table-column label="损耗率(%)" prop="lossRate" width="90" align="right" />
+            <el-table-column label="含损耗用量" prop="totalQuantity" width="110" align="right">
+              <template #default="scope">
+                <span style="font-weight: bold;">{{ scope.row.totalQuantity }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="工序步骤" prop="sequenceNum" width="80" align="center" />
+            <el-table-column label="工序" prop="processName" width="100" />
+            <el-table-column label="工位" prop="workstationName" width="100" />
+            <el-table-column label="作业内容" prop="operationContent" min-width="150" show-overflow-tooltip />
+            <el-table-column label="倒冲" prop="backflushFlag" width="60" align="center">
+              <template #default="scope">
+                <el-tag v-if="scope.row.backflushFlag === 1" type="warning" size="small">是</el-tag>
+                <span v-else>否</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty v-if="!workOrder.bomLines || workOrder.bomLines.length === 0" description="暂无MBOM快照数据" />
         </el-tab-pane>
 
         <el-tab-pane label="审批流程" name="approval">

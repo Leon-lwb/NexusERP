@@ -12,9 +12,12 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.BdRouting;
 import com.nexus.erp.bd.domain.BdRoutingStep;
+import com.nexus.erp.bd.domain.BdBom;
 import com.nexus.erp.bd.domain.bo.BdRoutingBo;
+import com.nexus.erp.bd.domain.bo.BdRoutingStepBo;
 import com.nexus.erp.bd.domain.vo.BdRoutingStepVo;
 import com.nexus.erp.bd.domain.vo.BdRoutingVo;
+import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
 import com.nexus.erp.bd.service.IBdRoutingService;
@@ -37,6 +40,7 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
 
     private final BdRoutingMapper baseMapper;
     private final BdRoutingStepMapper stepMapper;
+    private final BdBomMapper bomMapper;
 
     @Override
     public TableDataInfo<BdRoutingVo> selectPageList(BdRoutingBo bo, PageQuery pageQuery) {
@@ -59,20 +63,75 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdRoutingBo bo) {
         BdRouting entity = MapstructUtils.convert(bo, BdRouting.class);
-        return baseMapper.insert(entity);
+        computeTotals(entity, bo.getSteps());
+        int rows = baseMapper.insert(entity);
+        saveSteps(entity.getRoutingId(), bo.getSteps());
+        return rows;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdRoutingBo bo) {
         BdRouting entity = MapstructUtils.convert(bo, BdRouting.class);
-        return baseMapper.updateById(entity);
+        computeTotals(entity, bo.getSteps());
+        int rows = baseMapper.updateById(entity);
+        saveSteps(entity.getRoutingId(), bo.getSteps());
+        return rows;
+    }
+
+    /**
+     * 保存工艺路线步骤(先删后插)
+     */
+    private void saveSteps(Long routingId, List<BdRoutingStepBo> steps) {
+        if (routingId == null) {
+            return;
+        }
+        stepMapper.delete(Wrappers.lambdaQuery(BdRoutingStep.class)
+            .eq(BdRoutingStep::getRoutingId, routingId));
+        if (steps == null || steps.isEmpty()) {
+            return;
+        }
+        for (BdRoutingStepBo stepBo : steps) {
+            BdRoutingStep step = MapstructUtils.convert(stepBo, BdRoutingStep.class);
+            step.setStepId(null);
+            step.setRoutingId(routingId);
+            stepMapper.insert(step);
+        }
+    }
+
+    /**
+     * 根据步骤列表计算总工序数与总工时
+     */
+    private void computeTotals(BdRouting entity, List<BdRoutingStepBo> steps) {
+        if (steps == null || steps.isEmpty()) {
+            entity.setTotalSteps(0);
+            entity.setTotalHours(BigDecimal.ZERO);
+            return;
+        }
+        entity.setTotalSteps(steps.size());
+        BigDecimal totalHours = BigDecimal.ZERO;
+        for (BdRoutingStepBo s : steps) {
+            if (s.getStandardHours() != null) {
+                totalHours = totalHours.add(s.getStandardHours());
+            }
+            if (s.getSetupHours() != null) {
+                totalHours = totalHours.add(s.getSetupHours());
+            }
+        }
+        entity.setTotalHours(totalHours);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        // 删除工艺路线时，同步删除步骤
+        // 校验是否有BOM引用这些工艺路线
+        Long ref = bomMapper.selectCount(
+            Wrappers.lambdaQuery(BdBom.class)
+                .in(BdBom::getRoutingId, List.of(ids)));
+        if (ref != null && ref > 0) {
+            throw new ServiceException("所选工艺路线已被" + ref + "个BOM引用，无法删除");
+        }
+        // 级联删除步骤
         for (Long routingId : ids) {
             stepMapper.delete(Wrappers.lambdaQuery(BdRoutingStep.class)
                 .eq(BdRoutingStep::getRoutingId, routingId));

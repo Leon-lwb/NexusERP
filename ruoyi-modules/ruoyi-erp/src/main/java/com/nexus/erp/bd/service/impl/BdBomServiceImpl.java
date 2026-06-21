@@ -15,10 +15,14 @@ import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomDetailVo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
 import com.nexus.erp.bd.domain.vo.BomComparisonVo;
+import com.nexus.erp.bd.domain.vo.BomCostRollupVo;
 import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdRoutingMapper;
+import com.nexus.erp.bd.domain.BdRouting;
+import com.nexus.erp.bd.domain.vo.BdRoutingVo;
 import com.nexus.erp.bd.service.IBdBomService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,8 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.erp.bd.domain.BdBomAlternative;
 import com.nexus.erp.bd.domain.BdBomDetail;
+import com.nexus.erp.bd.domain.BdRoutingStep;
 import com.nexus.erp.bd.mapper.BdBomAlternativeMapper;
 import com.nexus.erp.bd.mapper.BdBomDetailMapper;
+import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 
@@ -36,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,6 +66,8 @@ public class BdBomServiceImpl implements IBdBomService {
     private final BdBomDetailMapper bomDetailMapper;
     private final BdBomAlternativeMapper bomAlternativeMapper;
     private final BdMaterialMapper materialMapper;
+    private final BdRoutingMapper routingMapper;
+    private final BdRoutingStepMapper routingStepMapper;
     private final PrdWorkOrderMapper workOrderMapper;
 
     /** 工单终态状态：处于这些状态的工单不再使用BOM，删除BOM时不阻断 */
@@ -69,17 +78,67 @@ public class BdBomServiceImpl implements IBdBomService {
     public TableDataInfo<BdBomVo> selectPageList(BdBomBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<BdBom> lqw = buildQueryWrapper(bo);
         Page<BdBomVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        enrichBomVo(page.getRecords());
         return TableDataInfo.build(page);
     }
 
     @Override
     public List<BdBomVo> selectList(BdBomBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<BdBomVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        enrichBomVo(list);
+        return list;
     }
 
     @Override
     public BdBomVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        BdBomVo vo = baseMapper.selectVoById(id);
+        enrichBomVo(List.of(vo));
+        return vo;
+    }
+
+    /**
+     * 富集BOM VO: 填充父项物料编码/名称、工艺路线编码/名称
+     * (这些字段在实体上不存在,需跨表查询,用于列表/详情展示及 MES 只读视图)
+     */
+    private void enrichBomVo(List<BdBomVo> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        // 批量加载父项物料
+        Set<Long> materialIds = list.stream()
+            .map(BdBomVo::getParentMaterialId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<Long, BdMaterial> materialMap = materialIds.isEmpty() ? Collections.emptyMap() :
+            materialMapper.selectList(Wrappers.<BdMaterial>lambdaQuery()
+                    .in(BdMaterial::getMaterialId, materialIds))
+                .stream()
+                .collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (a, b) -> a));
+        // 批量加载工艺路线
+        Set<Long> routingIds = list.stream()
+            .map(BdBomVo::getRoutingId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<Long, BdRoutingVo> routingMap = routingIds.isEmpty() ? Collections.emptyMap() :
+            routingMapper.selectVoList(Wrappers.<BdRouting>lambdaQuery()
+                    .in(BdRouting::getRoutingId, routingIds))
+                .stream()
+                .collect(Collectors.toMap(BdRoutingVo::getRoutingId, r -> r, (a, b) -> a));
+        for (BdBomVo vo : list) {
+            if (vo == null) {
+                continue;
+            }
+            BdMaterial material = materialMap.get(vo.getParentMaterialId());
+            if (material != null) {
+                vo.setParentMaterialCode(material.getMaterialCode());
+                vo.setParentMaterialName(material.getMaterialName());
+            }
+            BdRoutingVo routing = routingMap.get(vo.getRoutingId());
+            if (routing != null) {
+                vo.setRoutingCode(routing.getRoutingCode());
+                vo.setRoutingName(routing.getRoutingName());
+            }
+        }
     }
 
     @Override
@@ -87,6 +146,10 @@ public class BdBomServiceImpl implements IBdBomService {
     public int insertByBo(BdBomBo bo) {
         // 校验同一父项物料下版本号唯一
         checkVersionUnique(bo.getParentMaterialId(), bo.getBomVersion(), null);
+        // 防护多当前版本: 若新建BOM标记为当前版本,先取消同父项其他BOM的当前标记
+        if (bo.getIsCurrent() != null && bo.getIsCurrent() == 1L) {
+            clearCurrentFlag(bo.getParentMaterialId());
+        }
         BdBom entity = MapstructUtils.convert(bo, BdBom.class);
         return baseMapper.insert(entity);
     }
@@ -96,8 +159,25 @@ public class BdBomServiceImpl implements IBdBomService {
     public int updateByBo(BdBomBo bo) {
         // 校验同一父项物料下版本号唯一（排除自身）
         checkVersionUnique(bo.getParentMaterialId(), bo.getBomVersion(), bo.getBomId());
+        // 防护多当前版本: 若更新后为当前版本,先取消同父项其他BOM的当前标记
+        if (bo.getIsCurrent() != null && bo.getIsCurrent() == 1L) {
+            clearCurrentFlag(bo.getParentMaterialId());
+        }
         BdBom entity = MapstructUtils.convert(bo, BdBom.class);
         return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 取消同父项物料下所有BOM的当前版本标记
+     */
+    private void clearCurrentFlag(Long parentMaterialId) {
+        if (parentMaterialId == null) {
+            return;
+        }
+        baseMapper.update(Wrappers.lambdaUpdate(BdBom.class)
+            .set(BdBom::getIsCurrent, 0L)
+            .eq(BdBom::getParentMaterialId, parentMaterialId)
+            .eq(BdBom::getIsCurrent, 1L));
     }
 
     @Override
@@ -376,6 +456,8 @@ public class BdBomServiceImpl implements IBdBomService {
         topLine.setQuantityPerParent(BigDecimal.ONE);
         topLine.setLossRate(BigDecimal.ZERO);
         topLine.setCumulativeQuantity(BigDecimal.ONE);
+        topLine.setUnitCost(materialCost(parentMaterial));
+        topLine.setLineCost(topLine.getUnitCost());
         topLine.setExpandable(true);
         result.add(topLine);
         // 初始化循环引用检测集合
@@ -434,6 +516,8 @@ public class BdBomServiceImpl implements IBdBomService {
                 line.setMaterialSpec(material.getMaterialSpec());
                 line.setMaterialType(String.valueOf(material.getMaterialType()));
             }
+            line.setUnitCost(materialCost(material));
+            line.setLineCost(line.getUnitCost().multiply(line.getCumulativeQuantity()));
             // 检查是否有子BOM
             BdBom childBom = findCurrentBom(detail.getChildMaterialId());
             if (childBom != null) {
@@ -457,10 +541,39 @@ public class BdBomServiceImpl implements IBdBomService {
     @Override
     public List<IndentedBomLineVo> explodeBom(Long bomId) {
         List<IndentedBomLineVo> allLines = getIndentedBom(bomId);
-        // 只返回叶子节点（PART类型）
-        return allLines.stream()
-            .filter(line -> "PART".equals(line.getNodeType()))
-            .collect(Collectors.toList());
+        // 只取叶子节点（PART类型），并按物料聚合(同一叶子在多分支出现时合并累计用量与行成本)
+        Map<Long, IndentedBomLineVo> merged = new LinkedHashMap<>();
+        for (IndentedBomLineVo line : allLines) {
+            if (!"PART".equals(line.getNodeType()) || line.getMaterialId() == null) {
+                continue;
+            }
+            merged.merge(line.getMaterialId(), line, (a, b) -> {
+                a.setCumulativeQuantity(safeAdd(a.getCumulativeQuantity(), b.getCumulativeQuantity()));
+                a.setLineCost(safeAdd(a.getLineCost(), b.getLineCost()));
+                return a;
+            });
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    /**
+     * 取物料单位成本: 优先标准成本,其次参考价,均为空返回0
+     */
+    private BigDecimal materialCost(BdMaterial material) {
+        if (material == null) {
+            return BigDecimal.ZERO;
+        }
+        if (material.getStandardCost() != null) {
+            return material.getStandardCost();
+        }
+        if (material.getReferencePrice() != null) {
+            return material.getReferencePrice();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private BigDecimal safeAdd(BigDecimal a, BigDecimal b) {
+        return (a == null ? BigDecimal.ZERO : a).add(b == null ? BigDecimal.ZERO : b);
     }
 
     /**
@@ -541,9 +654,6 @@ public class BdBomServiceImpl implements IBdBomService {
                 newDetail.setQuantityPerParent(sourceDetail.getQuantityPerParent());
                 newDetail.setLossRate(sourceDetail.getLossRate());
                 newDetail.setOperationStep(sourceDetail.getOperationStep());
-                newDetail.setWorkstationId(sourceDetail.getWorkstationId());
-                newDetail.setProcessId(sourceDetail.getProcessId());
-                newDetail.setRoutingStepId(sourceDetail.getRoutingStepId());
                 newDetail.setLeadTime(sourceDetail.getLeadTime());
                 newDetail.setSourceType(sourceDetail.getSourceType());
                 newDetail.setEffectiveDate(sourceDetail.getEffectiveDate());
@@ -674,10 +784,8 @@ public class BdBomServiceImpl implements IBdBomService {
                 boolean isQtyChanged = compareDecimal(d1.getQuantityPerParent(), d2.getQuantityPerParent());
                 boolean isLossChanged = compareDecimal(d1.getLossRate(), d2.getLossRate());
                 boolean isStepChanged = !Objects.equals(d1.getOperationStep(), d2.getOperationStep());
-                boolean isProcessChanged = !Objects.equals(d1.getProcessId(), d2.getProcessId());
-                boolean isRoutingStepChanged = !Objects.equals(d1.getRoutingStepId(), d2.getRoutingStepId());
 
-                if (isQtyChanged || isLossChanged || isStepChanged || isProcessChanged || isRoutingStepChanged) {
+                if (isQtyChanged || isLossChanged || isStepChanged) {
                     line.setChangeType("MODIFIED");
                     StringBuilder detail = new StringBuilder();
                     if (isQtyChanged) {
@@ -688,12 +796,6 @@ public class BdBomServiceImpl implements IBdBomService {
                     }
                     if (isStepChanged) {
                         detail.append("工序步骤: ").append(d1.getOperationStep()).append(" → ").append(d2.getOperationStep()).append("; ");
-                    }
-                    if (isProcessChanged) {
-                        detail.append("工序: ").append(d1.getProcessId()).append(" → ").append(d2.getProcessId()).append("; ");
-                    }
-                    if (isRoutingStepChanged) {
-                        detail.append("工艺步骤: ").append(d1.getRoutingStepId()).append(" → ").append(d2.getRoutingStepId()).append("; ");
                     }
                     line.setChangeDetail(detail.toString().trim());
                     changed.add(line);
@@ -709,6 +811,116 @@ public class BdBomServiceImpl implements IBdBomService {
         result.setChanged(changed);
         result.setUnchanged(unchanged);
         return result;
+    }
+
+    /**
+     * BOM成本卷积
+     * 物料成本: 复用 explodeBom(已按叶子聚合,含累计用量与行成本)
+     * 工序成本: 遍历关联工艺路线步骤, stepCost = 标准工时 × (人工费率×人数 + 机器费率×机台数)
+     */
+    @Override
+    public BomCostRollupVo costRollup(Long bomId) {
+        BdBom bom = baseMapper.selectById(bomId);
+        if (bom == null) {
+            throw new ServiceException("BOM不存在");
+        }
+        BomCostRollupVo result = new BomCostRollupVo();
+        result.setBomId(bomId);
+        result.setBomVersion(bom.getBomVersion());
+        result.setRoutingId(bom.getRoutingId());
+
+        // 父项物料信息
+        BdMaterial parent = materialMapper.selectById(bom.getParentMaterialId());
+        if (parent != null) {
+            result.setParentMaterialId(parent.getMaterialId());
+            result.setParentMaterialCode(parent.getMaterialCode());
+            result.setParentMaterialName(parent.getMaterialName());
+        }
+
+        // 物料成本(叶子聚合)
+        List<IndentedBomLineVo> leaves = explodeBom(bomId);
+        List<BomCostRollupVo.MaterialCostLine> materialLines = new ArrayList<>();
+        BigDecimal totalMaterialCost = BigDecimal.ZERO;
+        for (IndentedBomLineVo leaf : leaves) {
+            BomCostRollupVo.MaterialCostLine ml = new BomCostRollupVo.MaterialCostLine();
+            ml.setMaterialId(leaf.getMaterialId());
+            ml.setMaterialCode(leaf.getMaterialCode());
+            ml.setMaterialName(leaf.getMaterialName());
+            ml.setMaterialSpec(leaf.getMaterialSpec());
+            ml.setCumulativeQuantity(leaf.getCumulativeQuantity());
+            ml.setUnitCost(leaf.getUnitCost());
+            ml.setLineCost(leaf.getLineCost());
+            materialLines.add(ml);
+            totalMaterialCost = safeAdd(totalMaterialCost, leaf.getLineCost());
+        }
+        result.setMaterialLines(materialLines);
+        result.setTotalMaterialCost(totalMaterialCost);
+
+        // 工序成本
+        BigDecimal totalRoutingCost = BigDecimal.ZERO;
+        boolean routingAvailable = false;
+        List<BomCostRollupVo.RoutingCostLine> routingLines = new ArrayList<>();
+        if (bom.getRoutingId() != null) {
+            BdRouting routing = routingMapper.selectById(bom.getRoutingId());
+            if (routing != null) {
+                result.setRoutingCode(routing.getRoutingCode());
+            }
+            List<BdRoutingStep> steps = routingStepMapper.selectList(
+                Wrappers.lambdaQuery(BdRoutingStep.class)
+                    .eq(BdRoutingStep::getRoutingId, bom.getRoutingId())
+                    .orderByAsc(BdRoutingStep::getSequenceNum));
+            boolean allStepsCostable = !steps.isEmpty();
+            for (BdRoutingStep step : steps) {
+                BomCostRollupVo.RoutingCostLine rl = new BomCostRollupVo.RoutingCostLine();
+                rl.setStepId(step.getStepId());
+                rl.setSequenceNum(step.getSequenceNum());
+                rl.setProcessName(step.getProcessName());
+                rl.setWorkstationName(step.getWorkstationName());
+                rl.setStandardHours(step.getStandardHours());
+                rl.setLaborCount(step.getLaborCount());
+                rl.setLaborRate(step.getLaborRate());
+                rl.setMachineCount(step.getMachineCount());
+                rl.setMachineRate(step.getMachineRate());
+                BigDecimal stepCost = computeStepCost(step);
+                rl.setStepCost(stepCost);
+                routingLines.add(rl);
+                if (stepCost == null) {
+                    allStepsCostable = false;
+                } else {
+                    totalRoutingCost = totalRoutingCost.add(stepCost);
+                }
+            }
+            routingAvailable = allStepsCostable;
+        }
+        result.setRoutingLines(routingLines);
+        result.setRoutingCostAvailable(routingAvailable);
+        result.setTotalRoutingCost(routingAvailable ? totalRoutingCost : BigDecimal.ZERO);
+        result.setTotalCostPerUnit(result.getTotalMaterialCost().add(result.getTotalRoutingCost()));
+        return result;
+    }
+
+    /**
+     * 计算单步工序成本: 标准工时 × (人工费率×人数 + 机器费率×机台数)
+     * 任一费率/工时为空返回 null(表示该步不可计算)
+     */
+    private BigDecimal computeStepCost(BdRoutingStep step) {
+        if (step.getStandardHours() == null) {
+            return null;
+        }
+        BigDecimal laborPart = BigDecimal.ZERO;
+        BigDecimal machinePart = BigDecimal.ZERO;
+        boolean hasLabor = step.getLaborRate() != null && step.getLaborCount() != null;
+        boolean hasMachine = step.getMachineRate() != null && step.getMachineCount() != null;
+        if (!hasLabor && !hasMachine) {
+            return null;
+        }
+        if (hasLabor) {
+            laborPart = step.getLaborRate().multiply(BigDecimal.valueOf(step.getLaborCount()));
+        }
+        if (hasMachine) {
+            machinePart = step.getMachineRate().multiply(BigDecimal.valueOf(step.getMachineCount()));
+        }
+        return step.getStandardHours().multiply(laborPart.add(machinePart));
     }
 
     /**

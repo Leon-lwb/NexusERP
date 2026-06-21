@@ -15,12 +15,18 @@ import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
+import com.nexus.mes.pro.domain.vo.ProWorkOrderBomLineVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderStepVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
+import com.nexus.mes.pro.mapper.ProWorkOrderBomLineMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
+import com.nexus.mes.pro.service.IMesMbomService;
+import com.nexus.mes.pro.domain.vo.MesMbomVo;
+import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -56,7 +62,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
     private final ProWorkOrderMapper baseMapper;
     private final ProWorkOrderStepMapper stepMapper;
+    private final ProWorkOrderBomLineMapper woBomLineMapper;
     private final IMesErpBridgeService mesErpBridgeService;
+    private final IMesMbomService mesMbomService;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
@@ -80,8 +88,40 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         ProWorkOrderVo vo = baseMapper.selectVoById(mesWoId);
         if (vo != null) {
             vo.setSteps(selectStepsByWoId(mesWoId));
+            // 加载MBOM快照明细
+            vo.setBomLines(selectBomLinesByWoId(mesWoId));
+            // 富集工艺路线信息(若routingId/bomId存在)
+            enrichWorkOrderVo(vo);
         }
         return vo;
+    }
+
+    /**
+     * 查询工单MBOM快照明细
+     */
+    private List<ProWorkOrderBomLineVo> selectBomLinesByWoId(Long mesWoId) {
+        return woBomLineMapper.selectVoList(Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
+            .eq(ProWorkOrderBomLine::getMesWoId, mesWoId)
+            .orderByAsc(ProWorkOrderBomLine::getSortOrder));
+    }
+
+    /**
+     * 富集工单VO: 填充工艺路线编码/名称、BOM版本
+     */
+    private void enrichWorkOrderVo(ProWorkOrderVo vo) {
+        if (vo.getRoutingId() != null) {
+            Map<String, Object> routingHeader = mesErpBridgeService.getRoutingHeader(vo.getRoutingId());
+            if (routingHeader != null) {
+                vo.setRoutingCode((String) routingHeader.get("routing_code"));
+                vo.setRoutingName((String) routingHeader.get("routing_name"));
+            }
+        }
+        if (vo.getBomId() != null) {
+            Map<String, Object> bomHeader = mesErpBridgeService.getBomHeader(vo.getBomId());
+            if (bomHeader != null) {
+                vo.setBomVersion((String) bomHeader.get("bom_version"));
+            }
+        }
     }
 
     @Override
@@ -133,15 +173,53 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void release(Long mesWoId) {
-        // CAS风格更新，避免并发竞争
+        // 先读取工单信息(在事务外,通过桥接服务读取ERP数据)
+        ProWorkOrder wo = baseMapper.selectById(mesWoId);
+        if (wo == null) {
+            throw new RuntimeException("工单不存在: mesWoId=" + mesWoId);
+        }
+        if (!STATUS_CREATED.equals(wo.getWoStatus())) {
+            throw new RuntimeException("仅新建状态工单可下达");
+        }
+        // 事务外桥接读取ERP数据(MES来源工单的路由步骤+MBOM)
+        List<Map<String, Object>> routingSteps = null;
+        if (wo.getRoutingId() != null) {
+            routingSteps = mesErpBridgeService.getRoutingSteps(wo.getRoutingId());
+        }
+        MesMbomVo mbom = null;
+        if (wo.getBomId() != null) {
+            mbom = mesMbomService.selectByBomId(wo.getBomId());
+        }
+        // 事务内: CAS状态更新 + 幂等快照步骤/BOM
+        doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom);
+    }
+
+    /**
+     * 事务内下达 + 幂等快照(ERP来源工单可能已在createFromErpMessage时快照,此处幂等保护)
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void doReleaseAndSnapshot(Long mesWoId, ProWorkOrder wo,
+                                     List<Map<String, Object>> routingSteps, MesMbomVo mbom) {
+        // CAS更新状态
         int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
             .set(ProWorkOrder::getWoStatus, STATUS_RELEASED)
             .eq(ProWorkOrder::getMesWoId, mesWoId)
             .eq(ProWorkOrder::getWoStatus, STATUS_CREATED));
         if (rows == 0) {
             throw new RuntimeException("工单状态已变更或不存在，仅新建状态工单可下达");
+        }
+        // 幂等快照步骤(若尚未生成)
+        Long stepCount = stepMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderStep.class)
+            .eq(ProWorkOrderStep::getMesWoId, mesWoId));
+        if ((stepCount == null || stepCount == 0) && routingSteps != null && !routingSteps.isEmpty()) {
+            generateStepsFromRouting(wo, routingSteps);
+        }
+        // 幂等快照MBOM(若尚未生成)
+        Long bomLineCount = woBomLineMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
+            .eq(ProWorkOrderBomLine::getMesWoId, mesWoId));
+        if ((bomLineCount == null || bomLineCount == 0) && mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
+            snapshotBomLines(wo, mbom);
         }
         log.info("MES工单下达成功: mesWoId={}", mesWoId);
     }
@@ -195,8 +273,14 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             routingSteps = mesErpBridgeService.getRoutingSteps(routingId);
         }
 
-        // 3. 【事务内】创建MES工单及工序（仅写mes库）
-        doCreateWorkOrderAndSteps(message, unitId, unitName, workshopName, routingId, routingSteps);
+        // 读取MBOM明细(若BOM已编制MBOM)
+        MesMbomVo mbom = null;
+        if (message.getBomId() != null) {
+            mbom = mesMbomService.selectByBomId(message.getBomId());
+        }
+
+        // 3. 【事务内】创建MES工单及工序及BOM快照（仅写mes库）
+        doCreateWorkOrderAndSteps(message, unitId, unitName, workshopName, routingId, routingSteps, mbom);
     }
 
     /**
@@ -206,7 +290,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     public void doCreateWorkOrderAndSteps(WorkOrderReleaseMessage message,
                                           Long unitId, String unitName,
                                           String workshopName, Long routingId,
-                                          List<Map<String, Object>> routingSteps) {
+                                          List<Map<String, Object>> routingSteps,
+                                          MesMbomVo mbom) {
         // 创建MES工单主记录
         ProWorkOrder workOrder = new ProWorkOrder();
         workOrder.setErpWoId(message.getWoId());
@@ -233,6 +318,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             generateStepsFromRouting(workOrder, routingSteps);
         } else {
             log.warn("未找到工艺路线或无步骤,跳过工序生成: woNo={}, routingId={}", message.getWoNo(), routingId);
+        }
+
+        // MBOM快照: 将MBOM明细快照到 pro_work_order_bom_line(隔离后续MBOM/ERP变更)
+        if (mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
+            snapshotBomLines(workOrder, mbom);
         }
 
         log.info("MES工单及工序创建完成: mesWoId={}, woNo={}", workOrder.getMesWoId(), workOrder.getWoNo());
@@ -263,6 +353,51 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             stepMapper.insert(step);
         }
         log.info("工序步骤生成完成: mesWoId={}, stepCount={}", workOrder.getMesWoId(), steps.size());
+    }
+
+    /**
+     * 快照MBOM明细到工单BOM快照表(事务内调用, MBOM行已含富集信息)
+     */
+    private void snapshotBomLines(ProWorkOrder workOrder, MesMbomVo mbom) {
+        List<MesMbomLineVo> lines = mbom.getLines();
+        if (lines == null || lines.isEmpty()) {
+            return;
+        }
+        List<ProWorkOrderBomLine> snapshots = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            MesMbomLineVo line = lines.get(i);
+            ProWorkOrderBomLine snapshot = new ProWorkOrderBomLine();
+            snapshot.setMesWoId(workOrder.getMesWoId());
+            snapshot.setMbomLineId(line.getMbomLineId());
+            snapshot.setBomId(mbom.getBomId());
+            snapshot.setBomDetailId(line.getBomDetailId());
+            snapshot.setChildMaterialId(line.getChildMaterialId());
+            snapshot.setChildMaterialCode(line.getChildMaterialCode());
+            snapshot.setChildMaterialName(line.getChildMaterialName());
+            snapshot.setQuantityPerParent(line.getQuantityPerParent());
+            snapshot.setLossRate(line.getLossRate() != null ? line.getLossRate() : BigDecimal.ZERO);
+            // 计算含损耗总用量
+            BigDecimal qty = line.getQuantityPerParent() != null ? line.getQuantityPerParent() : BigDecimal.ZERO;
+            BigDecimal loss = line.getLossRate() != null ? line.getLossRate() : BigDecimal.ZERO;
+            snapshot.setTotalQuantity(qty.multiply(BigDecimal.ONE.add(loss.divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP))));
+            snapshot.setRoutingStepId(line.getRoutingStepId());
+            snapshot.setSequenceNum(line.getRoutingStepSequence());
+            snapshot.setProcessId(line.getProcessId());
+            snapshot.setProcessCode(line.getProcessCode());
+            snapshot.setProcessName(line.getProcessName());
+            snapshot.setWorkstationId(line.getWorkstationId());
+            snapshot.setWorkstationCode(line.getWorkstationCode());
+            snapshot.setWorkstationName(line.getWorkstationName());
+            snapshot.setOperationContent(line.getOperationContent());
+            snapshot.setBackflushFlag(line.getBackflushFlag());
+            snapshot.setSortOrder(line.getSortOrder() != null ? line.getSortOrder() : i + 1);
+            snapshot.setRemark(line.getRemark());
+            snapshots.add(snapshot);
+        }
+        for (ProWorkOrderBomLine snapshot : snapshots) {
+            woBomLineMapper.insert(snapshot);
+        }
+        log.info("MBOM快照生成完成: mesWoId={}, bomLineCount={}", workOrder.getMesWoId(), snapshots.size());
     }
 
     // ==================== Flowable 审批流方法 ====================

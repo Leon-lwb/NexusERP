@@ -2,7 +2,9 @@ package com.nexus.mes.common.bridge;
 
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.mes.common.mapper.ErpMaterialMapper;
-import com.nexus.mes.common.mapper.ErpBomLineMapper;
+import com.nexus.mes.common.mapper.ErpBomDetailMapper;
+import com.nexus.mes.common.mapper.ErpBomHeaderMapper;
+import com.nexus.mes.common.mapper.ErpRoutingHeaderMapper;
 import com.nexus.mes.common.mapper.ErpRoutingStepMapper;
 import com.nexus.mes.common.mapper.ErpWorkshopMapper;
 import com.nexus.mes.common.mapper.ErpWorkstationMapper;
@@ -29,7 +31,9 @@ import java.util.Map;
 public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
 
     private final ErpMaterialMapper erpMaterialMapper;
-    private final ErpBomLineMapper erpBomLineMapper;
+    private final ErpBomDetailMapper erpBomDetailMapper;
+    private final ErpBomHeaderMapper erpBomHeaderMapper;
+    private final ErpRoutingHeaderMapper erpRoutingHeaderMapper;
     private final ErpRoutingStepMapper erpRoutingStepMapper;
     private final ErpWorkshopMapper erpWorkshopMapper;
     private final ErpWorkstationMapper erpWorkstationMapper;
@@ -46,10 +50,50 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
-    public List<Map<String, Object>> getBomLines(Long bomId) {
+    public Map<String, Object> getMaterialFull(Long materialId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
-            return erpBomLineMapper.selectBomLinesByBomId(bomId);
+            return erpMaterialMapper.selectMaterialFullById(materialId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> getBomDetails(Long bomId) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpBomDetailMapper.selectBomDetailsByBomId(bomId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    @Override
+    public Map<String, Object> getBomHeader(Long bomId) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpBomHeaderMapper.selectBomHeaderById(bomId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    @Override
+    public Map<String, Object> getRoutingHeader(Long routingId) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpRoutingHeaderMapper.selectRoutingHeaderById(routingId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    @Override
+    public Map<String, Object> getWorkstationFull(Long workstationId) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpWorkstationMapper.selectWorkstationById(workstationId);
         } finally {
             DynamicDataSourceContextHolder.poll();
         }

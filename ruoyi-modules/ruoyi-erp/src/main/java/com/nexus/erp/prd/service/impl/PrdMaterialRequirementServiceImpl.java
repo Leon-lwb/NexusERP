@@ -311,8 +311,6 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             reqDetail.setStockQuantity(BigDecimal.ZERO);
             reqDetail.setShortageQuantity(BigDecimal.ZERO);
             reqDetail.setOperationStep(detail.getOperationStep() != null ? Long.valueOf(detail.getOperationStep()) : null);
-            reqDetail.setWorkstationId(detail.getWorkstationId());
-            reqDetail.setWorkstationName(detail.getWorkstationName());
             reqDetail.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
             reqDetail.setRequiredDate(resolveRequiredDate(detail.getLeadTime()));
             reqDetail.setStatus(1L);

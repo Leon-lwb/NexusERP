@@ -65,6 +65,12 @@ public class BdRoutingStepVo implements Serializable {
     @ExcelProperty(value = "标准机台数")
     private Integer machineCount;
 
+    @ExcelProperty(value = "人工费率")
+    private BigDecimal laborRate;
+
+    @ExcelProperty(value = "机器费率")
+    private BigDecimal machineRate;
+
     @ExcelProperty(value = "是否关键工序")
     private Integer isKeyProcess;
 

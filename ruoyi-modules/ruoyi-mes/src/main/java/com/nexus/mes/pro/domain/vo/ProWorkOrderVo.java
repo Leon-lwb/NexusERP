@@ -109,4 +109,16 @@ public class ProWorkOrderVo implements Serializable {
 
     /** 工序步骤列表(详情查询时填充) */
     private List<ProWorkOrderStepVo> steps;
+
+    /** MBOM快照明细列表(详情查询时填充) */
+    private List<ProWorkOrderBomLineVo> bomLines;
+
+    /** 工艺路线编码(富集,不持久化) */
+    private String routingCode;
+
+    /** 工艺路线名称(富集,不持久化) */
+    private String routingName;
+
+    /** BOM版本号(富集,不持久化) */
+    private String bomVersion;
 }

@@ -204,14 +204,21 @@
               style="width: 100%" />
           </template>
         </el-table-column>
-        <el-table-column label="工序步骤" align="center" prop="operationStep" width="140">
+        <el-table-column label="工序步骤" align="center" prop="operationStep" width="180">
           <template #default="scope">
-            <el-input-number 
-              v-model="scope.row.operationStep" 
-              :min="0" 
-              controls-position="right" 
+            <el-select
+              v-model="scope.row.operationStep"
+              placeholder="选择工序步骤"
+              clearable
+              filterable
               :disabled="isViewMode"
-              style="width: 100%" />
+              style="width: 100%">
+              <el-option
+                v-for="step in routingSteps"
+                :key="step.stepId"
+                :label="step.sequenceNum + ' - ' + (step.processName || '未命名')"
+                :value="step.sequenceNum" />
+            </el-select>
           </template>
         </el-table-column>
         <el-table-column label="提前期(小时)" align="center" prop="leadTime" width="140">
@@ -351,10 +358,84 @@
                 </span>
               </template>
             </el-table-column>
+            <el-table-column label="单位成本" prop="unitCost" width="100" align="right">
+              <template #default="scope">
+                {{ scope.row.unitCost != null ? scope.row.unitCost.toFixed(2) : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="行成本" prop="lineCost" width="120" align="right">
+              <template #default="scope">
+                <span :class="{ 'leaf-material': scope.row.nodeType === 'PART' }">
+                  {{ scope.row.lineCost != null ? scope.row.lineCost.toFixed(2) : '-' }}
+                </span>
+              </template>
+            </el-table-column>
             <el-table-column label="来源" prop="sourceType" width="80" align="center" />
             <el-table-column label="提前期(h)" prop="leadTime" width="100" align="right" />
           </el-table>
           <el-empty v-if="!indentedLoading && indentedBomData.length === 0" description="暂无BOM数据" />
+        </el-tab-pane>
+
+        <el-tab-pane label="成本卷积" name="cost">
+          <div v-loading="costLoading">
+            <template v-if="costRollupData">
+              <!-- 成本汇总卡片 -->
+              <el-row :gutter="16" style="margin-bottom: 16px;">
+                <el-col :span="8">
+                  <el-card shadow="hover">
+                    <el-statistic title="物料成本合计" :value="costRollupData.totalMaterialCost" :precision="2" prefix="¥" />
+                  </el-card>
+                </el-col>
+                <el-col :span="8">
+                  <el-card shadow="hover">
+                    <el-statistic title="工序成本合计" :value="costRollupData.totalRoutingCost" :precision="2" prefix="¥" />
+                    <el-tag v-if="!costRollupData.routingCostAvailable" type="warning" size="small" style="margin-top:4px">
+                      部分工序缺费率,工序成本为0
+                    </el-tag>
+                  </el-card>
+                </el-col>
+                <el-col :span="8">
+                  <el-card shadow="hover">
+                    <el-statistic title="单位总成本" :value="costRollupData.totalCostPerUnit" :precision="2" prefix="¥" />
+                  </el-card>
+                </el-col>
+              </el-row>
+
+              <!-- 物料成本明细 -->
+              <h4>物料成本明细（按叶子聚合）</h4>
+              <el-table :data="costRollupData.materialLines" size="small" style="width: 100%; margin-bottom: 16px;">
+                <el-table-column label="物料编码" prop="materialCode" width="140" />
+                <el-table-column label="物料名称" prop="materialName" min-width="150" show-overflow-tooltip />
+                <el-table-column label="规格" prop="materialSpec" width="100" />
+                <el-table-column label="累计用量" prop="cumulativeQuantity" width="120" align="right" />
+                <el-table-column label="单位成本" prop="unitCost" width="100" align="right">
+                  <template #default="scope">{{ scope.row.unitCost?.toFixed(2) }}</template>
+                </el-table-column>
+                <el-table-column label="行成本" prop="lineCost" width="120" align="right">
+                  <template #default="scope">{{ scope.row.lineCost?.toFixed(2) }}</template>
+                </el-table-column>
+              </el-table>
+
+              <!-- 工序成本明细 -->
+              <h4>工序成本明细</h4>
+              <el-table v-if="costRollupData.routingLines && costRollupData.routingLines.length > 0"
+                :data="costRollupData.routingLines" size="small" style="width: 100%;">
+                <el-table-column label="序号" prop="sequenceNum" width="60" align="center" />
+                <el-table-column label="工序" prop="processName" width="120" />
+                <el-table-column label="工位" prop="workstationName" width="120" />
+                <el-table-column label="标准工时(h)" prop="standardHours" width="100" align="right" />
+                <el-table-column label="人数" prop="laborCount" width="60" align="center" />
+                <el-table-column label="人工费率" prop="laborRate" width="100" align="right" />
+                <el-table-column label="机台数" prop="machineCount" width="60" align="center" />
+                <el-table-column label="机器费率" prop="machineRate" width="100" align="right" />
+                <el-table-column label="步骤成本" prop="stepCost" width="120" align="right">
+                  <template #default="scope">{{ scope.row.stepCost?.toFixed(2) ?? '-' }}</template>
+                </el-table-column>
+              </el-table>
+              <el-empty v-else description="未关联工艺路线或无工序步骤" />
+            </template>
+            <el-empty v-else-if="!costLoading" description="暂无成本数据（请先保存BOM后查看）" />
+          </div>
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -529,10 +610,10 @@
 </template>
 
 <script setup lang="ts" name="BomForm">
-import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail, saveBomDetailsBatch, getBomTree, getIndentedBom } from "@/api/erp/bd/bom"
+import { getBom, addBom, updateBom, listBomDetails, addBomDetail, updateBomDetail, delBomDetail, saveBomDetailsBatch, getBomTree, getIndentedBom, costRollup } from "@/api/erp/bd/bom"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory,getAllChildrenIds } from "@/api/erp/bd/category"
-import { listRouting } from "@/api/erp/bd/routing"
+import { listRouting, getRoutingSteps } from "@/api/erp/bd/routing"
 import { listAlternativeByDetail, saveAlternativeBatch } from "@/api/erp/bd/bom/alternative"
 import { useRouter, useRoute } from 'vue-router'
 import { debounce } from 'lodash'
@@ -621,6 +702,11 @@ const currentAltRowIndex = ref(-1)
 // 工艺路线选项
 const routingOptions = ref([])
 const currentRoutingVersion = ref('')
+const routingSteps = ref([])
+
+// 成本卷积相关
+const costRollupData = ref(null)
+const costLoading = ref(false)
 
 // 替代料管理相关
 const alternativeOpen = ref(false)
@@ -679,10 +765,19 @@ function loadRoutingOptions() {
   })
 }
 
-// 工艺路线变更：同步显示版本号
+// 工艺路线变更：同步显示版本号，并加载该路线的工序步骤供BOM行选择
 function handleRoutingChange(routingId) {
   const matched = routingOptions.value.find(r => r.routingId === routingId)
   currentRoutingVersion.value = matched ? matched.routingVersion : ''
+  if (routingId) {
+    getRoutingSteps(routingId).then(res => {
+      routingSteps.value = res.data || []
+    }).catch(() => {
+      routingSteps.value = []
+    })
+  } else {
+    routingSteps.value = []
+  }
 }
 
 // 获取BOM详情
@@ -779,7 +874,22 @@ function handleTabChange(tab) {
     loadBomTree()
   } else if (tab === 'indented' && indentedBomData.value.length === 0) {
     loadIndentedBom()
+  } else if (tab === 'cost' && !costRollupData.value && form.value.bomId) {
+    loadCostRollup()
   }
+}
+
+// 加载成本卷积
+function loadCostRollup() {
+  if (!form.value.bomId) return
+  costLoading.value = true
+  costRollup(form.value.bomId).then(res => {
+    costRollupData.value = res.data
+  }).catch(() => {
+    costRollupData.value = null
+  }).finally(() => {
+    costLoading.value = false
+  })
 }
 
 // 新增方法：通过ID获取物料名称

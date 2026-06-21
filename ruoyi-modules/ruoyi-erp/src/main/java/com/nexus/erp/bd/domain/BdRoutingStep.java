@@ -107,6 +107,18 @@ public class BdRoutingStep extends com.nexus.common.tenant.core.TenantEntity {
     private Integer machineCount;
 
     /**
+     * 人工费率(元/小时) - BOM成本滚算工序成本依赖
+     */
+    @ExcelProperty("人工费率")
+    private BigDecimal laborRate;
+
+    /**
+     * 机器费率(元/小时) - BOM成本滚算工序成本依赖
+     */
+    @ExcelProperty("机器费率")
+    private BigDecimal machineRate;
+
+    /**
      * 是否关键工序
      */
     @ExcelProperty("是否关键工序")

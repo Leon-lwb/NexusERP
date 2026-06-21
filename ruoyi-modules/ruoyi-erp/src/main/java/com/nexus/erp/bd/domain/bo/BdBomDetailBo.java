@@ -42,20 +42,6 @@ public class BdBomDetailBo extends BaseEntity {
     @NotNull(message = "工序步骤不能为空")
     private Integer operationStep;
 
-    private Long workstationId;
-
-    private String workstationName;
-
-    /**
-     * 工序ID(关联bd_process)
-     */
-    private Long processId;
-
-    /**
-     * 工艺路线步骤ID(关联bd_routing_step)
-     */
-    private Long routingStepId;
-
     private Integer leadTime;
 
     private LocalDate effectiveDate;

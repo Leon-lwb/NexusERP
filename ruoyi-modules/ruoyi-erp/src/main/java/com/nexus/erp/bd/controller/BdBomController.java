@@ -13,6 +13,7 @@ import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.bd.domain.bo.BdBomBo;
 import com.nexus.erp.bd.domain.vo.BdBomVo;
 import com.nexus.erp.bd.domain.vo.BomComparisonVo;
+import com.nexus.erp.bd.domain.vo.BomCostRollupVo;
 import com.nexus.erp.bd.domain.vo.BomTreeNodeVo;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.service.IBdBomService;
@@ -236,5 +237,18 @@ public class BdBomController extends BaseController {
     @GetMapping("/compare")
     public R<BomComparisonVo> compareBom(@RequestParam Long bomId1, @RequestParam Long bomId2) {
         return R.ok(bdBomService.compareBom(bomId1, bomId2));
+    }
+
+    /**
+     * BOM成本卷积：汇总物料成本(叶子标准成本×累计用量) + 工序成本(工时×费率)
+     * <p>权限标识：{@code bd:bom:query}</p>
+     *
+     * @param bomId BOM ID
+     * @return 成本卷积结果
+     */
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/costRollup/{bomId}")
+    public R<BomCostRollupVo> costRollup(@PathVariable Long bomId) {
+        return R.ok(bdBomService.costRollup(bomId));
     }
 }

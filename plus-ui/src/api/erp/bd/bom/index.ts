@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { BomQuery, BomVO, BomForm, BomDetailVO, BomDetailForm, BomTreeNodeVo, IndentedBomLineVo, BomComparisonVo } from './types';
+import { BomQuery, BomVO, BomForm, BomDetailVO, BomDetailForm, BomTreeNodeVo, IndentedBomLineVo, BomComparisonVo, BomCostRollupVo } from './types';
 
 export const listBom = (query: BomQuery): AxiosPromise<BomVO[]> => {
   return request({
@@ -156,5 +156,15 @@ export const compareBom = (bomId1: number, bomId2: number): AxiosPromise<BomComp
     url: '/erp/bd/bom/compare',
     method: 'get',
     params: { bomId1, bomId2 }
+  });
+};
+
+/**
+ * BOM成本卷积：物料成本(叶子标准成本×累计用量) + 工序成本(工时×费率)
+ */
+export const costRollup = (bomId: number): AxiosPromise<BomCostRollupVo> => {
+  return request({
+    url: '/erp/bd/bom/costRollup/' + bomId,
+    method: 'get'
   });
 };

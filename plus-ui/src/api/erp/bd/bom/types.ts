@@ -62,12 +62,6 @@ export interface BomDetailVO {
   lossRate: number;
   totalQuantity: number;
   operationStep: number;
-  workstationId: number;
-  workstationName: string;
-  processId?: number;
-  processCode?: string;
-  processName?: string;
-  routingStepId?: number;
   leadTime: number;
   effectiveDate: string;
   expiryDate: string;
@@ -88,10 +82,6 @@ export interface BomDetailForm {
   quantityPerParent: number;
   lossRate?: number;
   operationStep: number;
-  workstationId?: number;
-  workstationName?: string;
-  processId?: number;
-  routingStepId?: number;
   leadTime?: number;
   effectiveDate?: string;
   expiryDate?: string;
@@ -135,6 +125,8 @@ export interface IndentedBomLineVo {
   quantityPerParent: number;
   lossRate: number;
   cumulativeQuantity: number;
+  unitCost?: number;
+  lineCost?: number;
   unitName: string;
   sourceType: string;
   leadTime: number;
@@ -177,4 +169,44 @@ export interface ComparisonLine {
   operationStep2: number;
   changeType: 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
   changeDetail: string;
+}
+
+/** BOM成本卷积结果 */
+export interface BomCostRollupVo {
+  bomId: number;
+  parentMaterialId: number;
+  parentMaterialCode: string;
+  parentMaterialName: string;
+  bomVersion: string;
+  routingId: number;
+  routingCode: string;
+  totalMaterialCost: number;
+  totalRoutingCost: number;
+  totalCostPerUnit: number;
+  routingCostAvailable: boolean;
+  materialLines: MaterialCostLine[];
+  routingLines: RoutingCostLine[];
+}
+
+export interface MaterialCostLine {
+  materialId: number;
+  materialCode: string;
+  materialName: string;
+  materialSpec: string;
+  cumulativeQuantity: number;
+  unitCost: number;
+  lineCost: number;
+}
+
+export interface RoutingCostLine {
+  stepId: number;
+  sequenceNum: number;
+  processName: string;
+  workstationName: string;
+  standardHours: number;
+  laborCount: number;
+  laborRate: number;
+  machineCount: number;
+  machineRate: number;
+  stepCost: number;
 }
