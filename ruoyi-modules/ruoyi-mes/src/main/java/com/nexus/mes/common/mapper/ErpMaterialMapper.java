@@ -21,8 +21,8 @@ public interface ErpMaterialMapper {
     Map<String, Object> selectMaterialById(@Param("materialId") Long materialId);
 
     @Select("SELECT m.material_id, m.material_code, m.material_name, m.material_spec, m.category_id, " +
-        "m.base_uom_id, m.reference_price, m.standard_cost, u.unit_name AS base_uom_name " +
-        "FROM bd_material m LEFT JOIN bd_unit u ON m.base_uom_id = u.unit_id " +
+        "m.base_uom_id, m.reference_price, m.standard_cost, u.uom_name AS base_uom_name " +
+        "FROM bd_material m LEFT JOIN bd_unit_of_measure u ON m.base_uom_id = u.uom_id " +
         "WHERE m.material_id = #{materialId} AND m.del_flag = '0'")
     Map<String, Object> selectMaterialFullById(@Param("materialId") Long materialId);
 

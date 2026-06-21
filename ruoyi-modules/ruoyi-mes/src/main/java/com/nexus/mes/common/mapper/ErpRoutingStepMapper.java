@@ -19,6 +19,6 @@ public interface ErpRoutingStepMapper {
 
     @Select("SELECT step_id, routing_id, process_id, process_code, process_name, " +
         "sequence_num, is_key_process, workstation_id, workstation_code " +
-        "FROM bd_routing_step WHERE routing_id = #{routingId} AND del_flag = '0' ORDER BY sequence_num")
+        "FROM bd_routing_step WHERE routing_id = #{routingId} ORDER BY sequence_num")
     List<Map<String, Object>> selectRoutingStepsByRoutingId(@Param("routingId") Long routingId);
 }

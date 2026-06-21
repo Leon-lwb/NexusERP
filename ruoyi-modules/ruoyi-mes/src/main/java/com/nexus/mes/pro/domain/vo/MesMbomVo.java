@@ -2,6 +2,8 @@ package com.nexus.mes.pro.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import com.nexus.mes.pro.domain.MesMbom;
+import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 
 import java.io.Serial;
@@ -11,6 +13,7 @@ import java.util.List;
 
 @Data
 @ExcelIgnoreUnannotated
+@AutoMapper(target = MesMbom.class)
 public class MesMbomVo implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

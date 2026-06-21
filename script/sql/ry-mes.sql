@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 21/06/2026 11:25:48
+ Date: 22/06/2026 00:13:14
 */
 
 SET NAMES utf8mb4;
@@ -48,6 +48,11 @@ CREATE TABLE `dc_collection_point`  (
 -- ----------------------------
 -- Records of dc_collection_point
 -- ----------------------------
+INSERT INTO `dc_collection_point` VALUES (1, '000000', 'CP-TEMP-001', 'CNC001主轴温度', 'AUTO', 1, 1, 'NUMERIC', '℃', 60, 'ACTIVE', '数控车床#1主轴温度自动采集，每60秒', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (2, '000000', 'CP-VIB-001', 'CNC001振动', 'AUTO', 1, 1, 'NUMERIC', 'mm/s', 30, 'ACTIVE', '数控车床#1振动值自动采集，每30秒', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (3, '000000', 'CP-DIM-001', '装配尺寸检验', 'MANUAL', 4, 3, 'NUMERIC', 'mm', NULL, 'ACTIVE', '装配工序关键尺寸人工采集', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (4, '000000', 'CP-WELD-TEMP', '焊接温度监控', 'AUTO', 3, 2, 'NUMERIC', '℃', 10, 'ACTIVE', '焊接温度自动采集，每10秒', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (5, '000000', 'CP-PKG-CNT', '包装计数', 'AUTO', 5, 5, 'NUMERIC', '件', 60, 'ACTIVE', '包装机产出计数，每60秒', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for dc_data_record
@@ -82,6 +87,18 @@ CREATE TABLE `dc_data_record`  (
 -- ----------------------------
 -- Records of dc_data_record
 -- ----------------------------
+INSERT INTO `dc_data_record` VALUES (1, '000000', 1, 'CP-TEMP-001', 1, 1, 1, 72.5000, NULL, '2026-06-10 08:10:00', NULL, 'IoT', 'CNC主轴温度', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (2, '000000', 1, 'CP-TEMP-001', 1, 1, 1, 74.1000, NULL, '2026-06-10 08:20:00', NULL, 'IoT', 'CNC主轴温度', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (3, '000000', 1, 'CP-TEMP-001', 1, 1, 1, 87.5000, NULL, '2026-06-10 08:30:00', NULL, 'IoT', 'CNC主轴温度-超阈值!', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (4, '000000', 1, 'CP-TEMP-001', 1, 1, 1, 73.2000, NULL, '2026-06-10 08:40:00', NULL, 'IoT', 'CNC主轴温度-恢复正常', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (5, '000000', 1, 'CP-TEMP-001', 1, 1, 1, 75.8000, NULL, '2026-06-10 08:50:00', NULL, 'IoT', 'CNC主轴温度', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (6, '000000', 2, 'CP-VIB-001', 1, 1, 1, 2.8000, NULL, '2026-06-10 08:10:00', NULL, 'IoT', 'CNC振动值', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (7, '000000', 2, 'CP-VIB-001', 1, 1, 1, 3.2000, NULL, '2026-06-10 08:25:00', NULL, 'IoT', 'CNC振动值', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (8, '000000', 2, 'CP-VIB-001', 1, 1, 1, 5.5000, NULL, '2026-06-10 08:30:00', NULL, 'IoT', 'CNC振动值-超阈值!', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (9, '000000', 3, 'CP-DIM-001', 1, 1, 3, 10.0200, NULL, '2026-06-10 15:00:00', 30005, 'MANUAL', '装配关键尺寸检验', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (10, '000000', 4, 'CP-WELD-TEMP', 1, 1, 2, 245.0000, NULL, '2026-06-11 09:10:00', NULL, 'IoT', '焊接温度监控', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (11, '000000', 4, 'CP-WELD-TEMP', 1, 1, 2, 252.0000, NULL, '2026-06-11 09:20:00', NULL, 'IoT', '焊接温度监控', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_data_record` VALUES (12, '000000', 4, 'CP-WELD-TEMP', 1, 1, 2, 258.0000, NULL, '2026-06-11 09:30:00', NULL, 'IoT', '焊接温度监控', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for eq_equipment
@@ -121,6 +138,11 @@ CREATE TABLE `eq_equipment`  (
 -- ----------------------------
 -- Records of eq_equipment
 -- ----------------------------
+INSERT INTO `eq_equipment` VALUES (1, '000000', 'CNC-001', '数控车床#1', 'CNC', 'CK6140', '沈阳机床厂', 'SY20250001', 1, 'GZZ0002', '注塑车间#1-A区', '2025-03-15', '2027-03-15', 'NORMAL', '[{\"name\": \"主轴温度\", \"unit\": \"℃\", \"threshold\": 80}, {\"name\": \"液压油位\", \"unit\": \"\", \"threshold\": \"正常\"}, {\"name\": \"刀具磨损\", \"unit\": \"mm\", \"threshold\": 0.5}]', '{\"主轴温度\": \"72℃\", \"刀具磨损\": \"0.2mm\", \"检查时间\": \"2026-06-20\", \"液压油位\": \"正常\"}', NULL, '主力数控车床', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (2, '000000', 'CNC-002', '数控车床#2', 'CNC', 'CK6150', '大连机床厂', 'DL20250002', 2, 'GZZ0003', '冲压车间#1-B区', '2025-06-01', '2027-06-01', 'NORMAL', '[{\"name\": \"主轴温度\", \"unit\": \"℃\", \"threshold\": 80}, {\"name\": \"冷却液浓度\", \"unit\": \"\", \"threshold\": \"5%\"}]', '{\"主轴温度\": \"68℃\", \"检查时间\": \"2026-06-20\", \"冷却液浓度\": \"6%\"}', NULL, '数控车床备用机', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (3, '000000', 'WELD-001', '自动焊接机#1', 'WELDING', 'YD-350FR', '松下焊接', 'XH20250003', 2, 'GZZ0003', '冲压车间#1-C区', '2025-01-10', '2026-07-10', 'NORMAL', '[{\"name\": \"焊接电流\", \"unit\": \"A\", \"threshold\": 300}, {\"name\": \"气体流量\", \"unit\": \"L/min\", \"threshold\": 20}]', '{\"检查时间\": \"2026-06-20\", \"气体流量\": \"18L/min\", \"焊接电流\": \"250A\"}', NULL, '自动焊接设备', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (4, '000000', 'ASM-001', '装配流水线#1', 'ASSEMBLY', 'APL-2000', '自制设备', 'AS20250004', 1, 'GZZ0002', '注塑车间#1-D区', '2024-09-01', '2026-09-01', 'NORMAL', '[{\"name\": \"传送带速度\", \"unit\": \"m/min\", \"threshold\": 10}, {\"name\": \"气压\", \"unit\": \"MPa\", \"threshold\": 0.6}]', '{\"气压\": \"0.65MPa\", \"检查时间\": \"2026-06-20\", \"传送带速度\": \"8m/min\"}', NULL, '装配主产线', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (5, '000000', 'PKG-001', '包装机#1', 'PACKAGING', 'ZB-100', '浙江包装机械', 'PK20250005', 3, 'GZZ0004', '注塑车间#1-E区', '2025-05-01', '2027-05-01', 'NORMAL', '[{\"name\": \"封口温度\", \"unit\": \"℃\", \"threshold\": 200}, {\"name\": \"包装速度\", \"unit\": \"件/min\", \"threshold\": 30}]', '{\"包装速度\": \"25件/min\", \"封口温度\": \"180℃\", \"检查时间\": \"2026-06-20\"}', NULL, '成品包装设备', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for eq_maintenance_plan
@@ -154,6 +176,11 @@ CREATE TABLE `eq_maintenance_plan`  (
 -- ----------------------------
 -- Records of eq_maintenance_plan
 -- ----------------------------
+INSERT INTO `eq_maintenance_plan` VALUES (1, '000000', 'CNC001日常保养', 1, 'DAILY', 1, '2026-06-22', '1. 检查主轴润滑系统\n2. 清理铁屑\n3. 检查冷却液液位\n4. 检查导轨防护', 1, '张三', 'ACTIVE', '每日开工前执行', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_maintenance_plan` VALUES (2, '000000', 'CNC001月度保养', 1, 'MONTHLY', 30, '2026-07-20', '1. 主轴精度校准\n2. 冷却液更换\n3. 液压油过滤\n4. 电气系统检查\n5. 丝杠间隙补偿', 1, '张三', 'ACTIVE', '每月20日执行', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_maintenance_plan` VALUES (3, '000000', 'WELD001周度保养', 3, 'WEEKLY', 7, '2026-06-28', '1. 焊枪喷嘴清理\n2. 送丝机构检查\n3. 气体管路检查\n4. 接地线检查', 2, '李四', 'ACTIVE', '每周五执行', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_maintenance_plan` VALUES (4, '000000', 'ASM001季度保养', 4, 'QUARTERLY', 90, '2026-09-20', '1. 传动链条张紧度调整\n2. 轴承润滑\n3. 传感器校准\n4. 安全门开关检测', 1, '张三', 'ACTIVE', '每季度执行', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_maintenance_plan` VALUES (5, '000000', 'PKG001年度保养', 5, 'YEARLY', 365, '2027-06-20', '1. 全机大修\n2. 易损件更换\n3. 精度全面校准\n4. 电气系统全面检测', 1, '张三', 'ACTIVE', '年度大保养', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for eq_repair
@@ -191,6 +218,8 @@ CREATE TABLE `eq_repair`  (
 -- ----------------------------
 -- Records of eq_repair
 -- ----------------------------
+INSERT INTO `eq_repair` VALUES (1, '000000', 'RP-001', 1, 'TEMP_OVERHEAT', '数控车床#1主轴温度持续超过85℃，导致自动停机保护，需检查冷却系统', 30003, '王五', 30001, '张三', '2026-06-15 10:30:00', '2026-06-15 14:00:00', 3.50, 800.00, 'COMPLETED', '主轴冷却系统管路堵塞，清理后恢复正常', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `eq_repair` VALUES (2, '000000', 'RP-002', 3, 'CURRENT_ABNORMAL', '自动焊接机#1焊接电流不稳定，波动范围±50A，焊接质量受影响', 30002, '李四', NULL, NULL, NULL, NULL, 0.00, 0.00, 'REPORTED', '焊接电流波动异常，待维修', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for mes_mbom
@@ -219,6 +248,8 @@ CREATE TABLE `mes_mbom`  (
 -- ----------------------------
 -- Records of mes_mbom
 -- ----------------------------
+INSERT INTO `mes_mbom` VALUES (1, '000000', 5, 1, '1.0', 'ACTIVE', '自行车制造BOM，关联ERP BOM#5', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom` VALUES (2, '000000', 1, 2, '1.0', 'ACTIVE', '减速机JZQ-350制造BOM，关联ERP BOM#1', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for mes_mbom_line
@@ -258,6 +289,15 @@ CREATE TABLE `mes_mbom_line`  (
 -- ----------------------------
 -- Records of mes_mbom_line
 -- ----------------------------
+INSERT INTO `mes_mbom_line` VALUES (1, '000000', 1, 5, NULL, 2001, 1.000000, 0.0200, 1, 1, 1, '车架切割前准备', 0, 1, '车架在切割工序投入', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (2, '000000', 1, 5, NULL, 2002, 2.000000, 0.0100, 3, 3, 1, '车轮装配', 1, 2, '车轮在装配工序投入(反冲)', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (3, '000000', 1, 5, NULL, 2003, 1.000000, 0.0100, 3, 3, 1, '车把装配', 1, 3, '车把在装配工序投入(反冲)', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (4, '000000', 1, 5, NULL, 10, 1.000000, 0.0000, 4, 5, 3, '包装前润滑处理', 0, 4, '润滑油在包装工序投入', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (5, '000000', 2, 1, NULL, 6, 1.000000, 0.0200, 5, 1, 1, '箱体毛坯切割', 0, 1, '箱体在切割工序投入', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (6, '000000', 2, 1, NULL, 7, 4.000000, 0.0000, 7, 3, 1, '螺栓装配', 0, 2, '螺栓在总装配工序投入', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (7, '000000', 2, 1, NULL, 5, 1.000000, 0.0100, 7, 3, 1, '齿轮组装配', 1, 3, '齿轮组在总装配工序投入(反冲)', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (8, '000000', 2, 1, NULL, 8, 2.000000, 0.0050, 7, 3, 1, '轴承装配', 0, 4, '轴承在总装配工序投入', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (9, '000000', 2, 1, NULL, 10, 0.500000, 0.0000, 8, 4, 3, '润滑处理', 0, 5, '润滑油在质检前投入', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for pro_andon
@@ -302,6 +342,9 @@ CREATE TABLE `pro_andon`  (
 -- ----------------------------
 -- Records of pro_andon
 -- ----------------------------
+INSERT INTO `pro_andon` VALUES (1, '000000', 'ANDON-001', 1, 'WO-TEST-001', 1, 'FC-001', 2, 'MATERIAL', '焊接工序焊条库存不足，需要紧急补料', 'RESOLVED', 30002, '李四', 30001, '张三', '2026-06-11 09:00:00', '2026-06-11 09:05:00', '2026-06-11 09:20:00', 20, 'MANUAL', '焊条已从仓库调配到位', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `pro_andon` VALUES (2, '000000', 'ANDON-002', 1, 'WO-TEST-001', 1, 'FC-001', 3, 'QUALITY', '装配发现车架焊接质量不达标，需质检介入', 'CALLED', 30003, '王五', NULL, NULL, '2026-06-12 14:00:00', NULL, NULL, NULL, 'MANUAL', '待质检人员响应', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `pro_andon` VALUES (3, '000000', 'ANDON-003', 1, 'WO-TEST-001', 1, 'FC-001', 2, 'EQUIPMENT', '[IoT告警] CNC001温度探头报告主轴温度87.5℃ 超过阈值85℃', 'RESPONDED', NULL, 'IoT系统', 30001, '张三', '2026-06-15 10:15:00', '2026-06-15 10:16:00', NULL, NULL, 'IoT', 'IoT设备告警自动创建安灯', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `pro_andon` VALUES (2067643792365850626, '000000', 'AND-20260619-9718', NULL, NULL, NULL, NULL, NULL, 'QUALITY', '', 'RESOLVED', 1, 'admin', 1, 'admin', '2026-06-19 00:21:10', '2026-06-19 00:21:16', '2026-06-19 00:21:23', 0, 'MANUAL', '测试', 103, 1, '2026-06-19 00:21:10', 1, '2026-06-19 00:21:10', '0');
 
 -- ----------------------------
@@ -354,6 +397,8 @@ CREATE TABLE `pro_dispatch`  (
 -- ----------------------------
 -- Records of pro_dispatch
 -- ----------------------------
+INSERT INTO `pro_dispatch` VALUES (1, '000000', 'DP-001', 1, 'WO-TEST-001', 1, 'FC-001', 1, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 30003, '王五', 50.0000, 50.0000, 49.0000, 1.0000, 0.0000, 'COMPLETED', '2026-06-10 08:00:00', NULL, '2026-06-10 08:05:00', '2026-06-10 16:30:00', '王五切割工序完成', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `pro_dispatch` VALUES (2, '000000', 'DP-002', 1, 'WO-TEST-001', 1, 'FC-001', 2, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 30002, '李四', 50.0000, 0.0000, 0.0000, 0.0000, 0.0000, 'IN_PROGRESS', '2026-06-11 08:00:00', NULL, '2026-06-11 08:10:00', NULL, '李四焊接工序进行中', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for pro_flow_card
@@ -393,6 +438,8 @@ CREATE TABLE `pro_flow_card`  (
 -- ----------------------------
 -- Records of pro_flow_card
 -- ----------------------------
+INSERT INTO `pro_flow_card` VALUES (1, '000000', 'FC-001', 1, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', 50.0000, 0.0000, 0.0000, NULL, 1, 'RELEASED', 'BC-FC-001', '流转卡#1:首批50辆', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_flow_card` VALUES (2, '000000', 'FC-002', 1, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', 50.0000, 0.0000, 0.0000, NULL, 1, 'CREATED', 'BC-FC-002', '流转卡#2:第二批50辆', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
 
 -- ----------------------------
 -- Table structure for pro_flow_card_step
@@ -438,6 +485,10 @@ CREATE TABLE `pro_flow_card_step`  (
 -- ----------------------------
 -- Records of pro_flow_card_step
 -- ----------------------------
+INSERT INTO `pro_flow_card_step` VALUES (1, '000000', 1, 'FC-001', 1, 1, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 0, 'COMPLETED', 30003, '王五', 50.0000, 49.0000, 1.0000, 0.0000, NULL, NULL, '切割完成:49良+1不良', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2, '000000', 1, 'FC-001', 1, 2, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1, 'IN_PROGRESS', 30002, '李四', 50.0000, 0.0000, 0.0000, 0.0000, NULL, NULL, '焊接进行中(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_flow_card_step` VALUES (3, '000000', 1, 'FC-001', 1, 3, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1, 'PENDING', NULL, NULL, 50.0000, 0.0000, 0.0000, 0.0000, NULL, NULL, '待装配(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_flow_card_step` VALUES (4, '000000', 1, 'FC-001', 1, 4, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 0, 'PENDING', NULL, NULL, 50.0000, 0.0000, 0.0000, 0.0000, NULL, NULL, '待包装', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
 
 -- ----------------------------
 -- Table structure for pro_sn
@@ -479,6 +530,9 @@ CREATE TABLE `pro_sn`  (
 -- ----------------------------
 -- Records of pro_sn
 -- ----------------------------
+INSERT INTO `pro_sn` VALUES (1, '000000', 'SN202606200001', 1, 'WO-TEST-001', 1, 'FC-001', 1001, 'IF20251110001', '自行车', 3, 'IN_PRODUCTION', NULL, NULL, 'MANUAL', '2026-06-20', '自行车SN#001-切割焊接已完成', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `pro_sn` VALUES (2, '000000', 'SN202606200002', 1, 'WO-TEST-001', 1, 'FC-001', 1001, 'IF20251110001', '自行车', 3, 'IN_PRODUCTION', NULL, NULL, 'MANUAL', '2026-06-20', '自行车SN#002-切割焊接已完成', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `pro_sn` VALUES (3, '000000', 'SN202606200003', 1, 'WO-TEST-001', 1, 'FC-001', 1001, 'IF20251110001', '自行车', 2, 'COMPLETED', NULL, NULL, 'MANUAL', '2026-06-20', '自行车SN#003-全部工序已完成', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for pro_work_order
@@ -526,6 +580,7 @@ CREATE TABLE `pro_work_order`  (
 -- ----------------------------
 -- Records of pro_work_order
 -- ----------------------------
+INSERT INTO `pro_work_order` VALUES (1, '000000', 10001, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', 100.0000, 0.0000, 0.0000, 26, '件', '2026-06-10 08:00:00', '2026-07-05 17:00:00', NULL, NULL, 1, '注塑车间#1', 5, 1, 'RELEASED', 2, 'MES工单:自行车100辆装配', NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
 
 -- ----------------------------
 -- Table structure for pro_work_order_bom_line
@@ -609,6 +664,10 @@ CREATE TABLE `pro_work_order_step`  (
 -- ----------------------------
 -- Records of pro_work_order_step
 -- ----------------------------
+INSERT INTO `pro_work_order_step` VALUES (1, '000000', 1, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步1:钢板切割', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (2, '000000', 1, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步2:车架焊接(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (3, '000000', 1, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步3:整车装配(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (4, '000000', 1, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步4:成品包装', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
 
 -- ----------------------------
 -- Table structure for qc_ipqc
@@ -654,6 +713,7 @@ CREATE TABLE `qc_ipqc`  (
 -- ----------------------------
 -- Records of qc_ipqc
 -- ----------------------------
+INSERT INTO `qc_ipqc` VALUES (1, '000000', 'IPQC-001', 1, 'WO-TEST-001', 1, 1, 1, 'CUT', '切割', 1001, 'IF20251110001', '自行车', 10.0000, 1.0000, 10.00, 'QUALIFIED', '[{\"code\": \"P001\", \"name\": \"尺寸偏差\", \"count\": 1, \"severity\": \"minor\"}]', 30005, '钱七', '2026-06-10 16:30:00', 'COMPLETED', '切割工序IPQC:10抽1不良(尺寸偏差)，合格', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for qc_iqc
@@ -694,6 +754,7 @@ CREATE TABLE `qc_iqc`  (
 -- ----------------------------
 -- Records of qc_iqc
 -- ----------------------------
+INSERT INTO `qc_iqc` VALUES (1, '000000', 'IQC-001', 10001, 10, 'LUBRICANT', '润滑油', 2062098763051089924, '天津化工材料有限公司', 200.0000, 10.0000, 'QUALIFIED', '[{\"code\": \"Q001\", \"name\": \"粘度\", \"result\": \"合格\"}, {\"code\": \"Q002\", \"name\": \"闪点\", \"result\": \"合格\"}]', 30005, '钱七', '2026-06-10 15:00:00', 'COMPLETED', '润滑油来料检验合格', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for qc_oqc
@@ -732,6 +793,7 @@ CREATE TABLE `qc_oqc`  (
 -- ----------------------------
 -- Records of qc_oqc
 -- ----------------------------
+INSERT INTO `qc_oqc` VALUES (1, '000000', 'OQC-001', 10001, 1001, 'IF20251110001', '自行车', 50.0000, 5.0000, 'PENDING', NULL, 30005, '钱七', NULL, 'PENDING', 'OQC待检:出货前抽查5辆', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for spc_control_chart
@@ -765,6 +827,9 @@ CREATE TABLE `spc_control_chart`  (
 -- ----------------------------
 -- Records of spc_control_chart
 -- ----------------------------
+INSERT INTO `spc_control_chart` VALUES (1, '000000', 'CNC主轴温度控制图', 'X_BAR_R', 1, 1, 1, 85.0000, 75.0000, 65.0000, 5, 'ACTIVE', '数控车床主轴温度SPC监控', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `spc_control_chart` VALUES (2, '000000', '装配关键尺寸控制图', 'X_BAR_R', 3, 1001, 3, 10.0500, 10.0000, 9.9500, 5, 'ACTIVE', '装配工序关键尺寸SPC监控(目标10mm)', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `spc_control_chart` VALUES (3, '000000', '焊接温度控制图', 'X_BAR_R', 4, 1, 2, 280.0000, 250.0000, 220.0000, 5, 'ACTIVE', '焊接温度SPC监控', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for spc_data_point
