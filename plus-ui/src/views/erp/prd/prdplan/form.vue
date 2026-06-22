@@ -433,13 +433,14 @@ import { listBom } from "@/api/erp/bd/bom"
 import { listTreeByPlanNo } from "@/api/erp/prd/requirement"
 import { getAutoCode } from "@/api/system/autocode"
 import { genCode } from "@/api/system/autocode/rule"
+import type { PlanForm } from "@/api/erp/prd/plan/types"
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as any
 const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'so_order_line_status', 'sys_true_or_false', 'sys_core_status'))
 const route = useRoute()
 const router = useRouter()
 
-const form = ref({})
+const form = ref<PlanForm>({})
 const isViewMode = ref(false)
 const isAddMode = ref(false)
 const autoGenFlag = ref(false)

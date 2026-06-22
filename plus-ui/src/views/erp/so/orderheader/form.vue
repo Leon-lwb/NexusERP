@@ -580,8 +580,9 @@ import { genCode } from "@/api/system/autocode/rule"
 import { useRouter, useRoute } from 'vue-router'
 import CustomerOrderSelectDialog from '../components/CustomerOrderSelectDialog.vue'
 import type { CustomerOrderVO } from "@/api/erp/so/customer-order/types"
+import type { OrderheaderForm } from "@/api/erp/so/orderheader/types"
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as any
 const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type', 'so_order_line_status', 'so_order_priority', 'bd_material_type'))
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
@@ -595,7 +596,7 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 
-const form = ref({})
+const form = ref<OrderheaderForm>({})
 const autoGenFlag = ref(false)
 const soSalesOrderLineList = ref([])
 const checkedSoSalesOrderLine = ref([])

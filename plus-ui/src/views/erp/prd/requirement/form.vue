@@ -223,14 +223,15 @@
 <script setup lang="ts" name="PrdRequirementForm">
 import { getRequirement, addRequirement, updateRequirement, importBomDetails } from "@/api/erp/prd/requirement"
 import { genCode } from "@/api/system/autocode/rule"
+import type { RequirementForm } from "@/api/erp/prd/requirement/types"
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as any
 const { sys_core_status, prd_requirement_status, prd_material_source_type } = toRefs<any>(proxy.useDict('sys_core_status', 'prd_requirement_status', 'prd_material_source_type'))
 const route = useRoute()
 const router = useRouter()
 const autoGenFlag = ref(false)
 
-const form = ref({})
+const form = ref<RequirementForm>({})
 const isViewMode = ref(false)
 const title = ref("")
 const detailList = ref([])

@@ -77,4 +77,9 @@ export interface SalesIssueForm {
   remark?: string;
   selectFlowId?: number;
   wmSalesIssueLineList?: any[];
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  [key: string]: any;
 }

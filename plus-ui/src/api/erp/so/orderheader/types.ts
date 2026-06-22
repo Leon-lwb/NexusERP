@@ -94,6 +94,13 @@ export interface OrderheaderForm {
   attr3?: number;
   attr4?: number;
   remark?: string;
+  selectFlowId?: number;
+  soSalesOrderLineList?: any[];
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  [key: string]: any;
 }
 
 export interface OrderLineVO {

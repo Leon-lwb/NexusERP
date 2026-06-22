@@ -32,9 +32,10 @@ export interface BomVO {
 
 export interface BomForm {
   bomId?: number;
-  parentMaterialId: number;
-  bomVersion: string;
-  bomName: string;
+  parentMaterialId?: number;
+  parentMaterialName?: string;
+  bomVersion?: string;
+  bomName?: string;
   effectiveDate?: string;
   expiryDate?: string;
   isCurrent?: number;
@@ -44,6 +45,11 @@ export interface BomForm {
   bomType?: string;
   routingId?: number;
   backflushFlag?: number;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  [key: string]: any;
 }
 
 export interface BomDetailVO {

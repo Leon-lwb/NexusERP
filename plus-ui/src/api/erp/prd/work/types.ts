@@ -57,6 +57,9 @@ export interface WorkVO {
   attr4: number;
   remark: string;
   selectFlowId?: number;
+  workshopList?: any[];
+  workstationList?: any[];
+  teamList?: any[];
   createBy: number;
   createTime: string;
   updateBy: number;
@@ -105,4 +108,12 @@ export interface WorkForm {
   attr4?: number;
   remark?: string;
   selectFlowId?: number;
+  workshopList?: any[];
+  workstationList?: any[];
+  teamList?: any[];
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  [key: string]: any;
 }

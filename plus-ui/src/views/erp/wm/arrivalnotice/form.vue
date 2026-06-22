@@ -334,6 +334,7 @@ import { getMeasure } from "@/api/erp/bd/measure"
 import { debounce } from "lodash-es"
 import { useRoute, useRouter } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
+import type { ArrivalnoticeForm } from "@/api/erp/wm/arrivalnotice/types"
 
 const { proxy } = getCurrentInstance() as any
 const { sys_true_or_false, wm_notice_status, bd_material_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_notice_status', 'bd_material_type'))
@@ -343,7 +344,7 @@ const router = useRouter()
 // 添加物料查询引用
 const materialQueryRef = ref()
 
-const form = ref({})
+const form = ref<ArrivalnoticeForm>({})
 const autoGenFlag = ref(false)
 const isViewMode = ref(false)
 const title = ref("")

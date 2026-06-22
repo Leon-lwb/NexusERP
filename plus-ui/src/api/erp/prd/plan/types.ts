@@ -72,5 +72,11 @@ export interface PlanForm {
   materialRequirementNo?: string;
   orderLineId?: number;
   orderLineNo?: string;
+  soLineId?: number;
   remark?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  [key: string]: any;
 }

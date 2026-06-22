@@ -307,7 +307,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="工单状态" prop="woStatus">
-              <el-tag :type="getStatusType(form.woStatus)">{{ getStatusLabel(form.woStatus) }}</el-tag>
+              <dict-tag :options="prd_wo_status" :value="form.woStatus" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -317,7 +317,7 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="20" v-if="form.woStatus === 'CREATED' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
+        <el-row :gutter="20" v-if="form.woStatus === 'CREATED' && flowOptions.length === 0 && (!form.selectFlowId)">
           <el-col :span="24">
             <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 prdWorkOrderService。" />
           </el-col>
@@ -576,8 +576,9 @@ import { listTeam } from "@/api/erp/sch/team"
 import { listUserByPostId } from "@/api/system/user"
 import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, RESOURCE_TYPE } from "@/api/erp/prd/work-order-resource"
 import { getProcesss } from '@/api/workflow/process'
+import type { WorkForm } from "@/api/erp/prd/work/types"
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as any
 const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status, prd_backflush_flag } = toRefs<any>(proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status', 'prd_backflush_flag'))
 const route = useRoute()
 const router = useRouter()
@@ -590,7 +591,7 @@ const props = defineProps({
   isNew: { type: Boolean, default: false }
 })
 
-const form = ref({})
+const form = ref<WorkForm>({})
 
 const selectedWorkshopOptions = computed(() => {
   if (!form.value.workshopList || !workshopOptions.value) {
@@ -1312,8 +1313,8 @@ async function selectPlan(row) {
 
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('PRD_WORK_ORDER_CODE').then(response => {
-      form.value.woNo = response;
+    genCode('PRD_WORK_ORDER_CODE').then((response: any) => {
+      form.value.woNo = response.data || response;
     });
   } else {
     form.value.woNo = null;
@@ -1365,24 +1366,6 @@ watch(
   { deep: true, immediate: true }
 )
 
-/** 工单状态标签映射 */
-const statusMap: Record<string, { label: string; type: string }> = {
-  CREATED:    { label: '新建',     type: 'info' },
-  APPROVING:  { label: '审批中',   type: 'warning' },
-  APPROVED:   { label: '已批准',   type: 'success' },
-  RELEASED:   { label: '已下达',   type: 'primary' },
-  IN_PROGRESS:{ label: '生产中',   type: 'warning' },
-  COMPLETED:  { label: '已完工',   type: 'success' },
-  CLOSED:     { label: '已关闭',   type: 'danger' },
-}
-
-function getStatusType(status: string): string {
-  return statusMap[status]?.type || 'info'
-}
-
-function getStatusLabel(status: string): string {
-  return statusMap[status]?.label || status || '未知'
-}
 
 /**
  * 提交审批（Flowable）

@@ -56,4 +56,9 @@ export interface RequirementForm {
   materialSpec?: string;
   remark?: string;
   sourceType?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  [key: string]: any;
 }

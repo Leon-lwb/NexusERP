@@ -354,6 +354,7 @@ import { listStoragelocation } from "@/api/erp/wm/storagelocation"
 import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
 import { genCode } from "@/api/system/autocode/rule"
+import type { SalesIssueForm } from "@/api/erp/wm/sales-issue/types"
 
 const { proxy } = getCurrentInstance() as any
 const { wm_sales_status, so_order_status } = toRefs<any>(proxy.useDict('wm_sales_status', 'so_order_status'))
@@ -369,7 +370,7 @@ const props = defineProps({
 })
 
 // 表单数据
-const form = ref({
+const form = ref<SalesIssueForm>({
   issueId: null,
   issueCode: null,
   issueName: null,

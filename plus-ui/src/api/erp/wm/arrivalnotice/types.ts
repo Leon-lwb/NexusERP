@@ -74,4 +74,9 @@ export interface ArrivalnoticeForm {
   attr3?: number;
   attr4?: number;
   wmArrivalNoticeLineList?: any[];
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  [key: string]: any;
 }

@@ -617,15 +617,16 @@ import { listRouting, getRoutingSteps } from "@/api/erp/bd/routing"
 import { listAlternativeByDetail, saveAlternativeBatch } from "@/api/erp/bd/bom/alternative"
 import { useRouter, useRoute } from 'vue-router'
 import { debounce } from 'lodash'
+import type { BomForm } from "@/api/erp/bd/bom/types"
 
 const router = useRouter()
 const route = useRoute()
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as any
 const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, prd_backflush_flag, bd_bom_type, bd_substitution_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type', 'prd_backflush_flag', 'bd_bom_type', 'bd_substitution_type'))
 
 // 表单相关
 const formRef = ref(null)
-const form = ref({
+const form = ref<BomForm>({
   bomId: null,
   parentMaterialId: null,
   parentMaterialName: null,
