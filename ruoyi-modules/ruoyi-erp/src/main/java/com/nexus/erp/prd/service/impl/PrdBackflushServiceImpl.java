@@ -17,6 +17,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ public class PrdBackflushServiceImpl {
     private final WmProductionIssueMapper productionIssueMapper;
     private final WmProductionIssueLineMapper productionIssueLineMapper;
     private final IWmStockOperationService stockOperationService;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * 工单完工倒冲领料（方案A：工单级倒冲）
@@ -162,6 +164,7 @@ public class PrdBackflushServiceImpl {
      */
     private WmProductionIssue createProductionIssueHeader(PrdWorkOrder wo, BigDecimal completionQty) {
         WmProductionIssue issue = new WmProductionIssue();
+        issue.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
         issue.setWoId(wo.getWoId());
         issue.setWoNo(wo.getWoNo());
         issue.setIssueDate(new Date());

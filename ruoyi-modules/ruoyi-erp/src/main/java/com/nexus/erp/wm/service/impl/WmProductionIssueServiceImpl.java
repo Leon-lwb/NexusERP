@@ -17,6 +17,7 @@ import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     private final WmProductionIssueMapper baseMapper;
     private final WmProductionIssueLineMapper lineMapper;
     private final WmStockOperationServiceImpl stockOperationService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmProductionIssueVo> selectPageList(WmProductionIssueBo bo, PageQuery pageQuery) {
@@ -60,6 +62,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmProductionIssueBo bo) {
         WmProductionIssue entity = MapstructUtils.convert(bo, WmProductionIssue.class);
+        entity.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getIssueId(), bo.getWmProductionIssueLineList());
         return rows;

@@ -29,6 +29,7 @@ import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -74,6 +75,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final WmProductionIssueLineMapper productionIssueLineMapper;
     private final IWmStockOperationService stockOperationService;
     private final ReliableMessageProducer messageProducer;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * 分页查询生产工单列表
@@ -265,6 +267,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
 
         // 创建领料单头
         WmProductionIssue issue = new WmProductionIssue();
+        issue.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
         issue.setWoId(wo.getWoId());
         issue.setWoNo(wo.getWoNo());
         issue.setIssueDate(new Date());
