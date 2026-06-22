@@ -62,7 +62,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmProductionIssueBo bo) {
         WmProductionIssue entity = MapstructUtils.convert(bo, WmProductionIssue.class);
-        entity.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
+        if (StringUtils.isBlank(entity.getIssueCode())) {
+            entity.setIssueCode(autoCodeUtil.genSerialCode("WM_PROD_ISSUE_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getIssueId(), bo.getWmProductionIssueLineList());
         return rows;

@@ -13,6 +13,7 @@ import com.nexus.erp.bd.domain.bo.BdWorkstationBo;
 import com.nexus.erp.bd.domain.vo.BdWorkstationVo;
 import com.nexus.erp.bd.mapper.BdWorkstationMapper;
 import com.nexus.erp.bd.service.IBdWorkstationService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.List;
 public class BdWorkstationServiceImpl implements IBdWorkstationService {
 
     private final BdWorkstationMapper baseMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<BdWorkstationVo> selectPageList(BdWorkstationBo bo, PageQuery pageQuery) {
@@ -52,6 +54,9 @@ public class BdWorkstationServiceImpl implements IBdWorkstationService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdWorkstationBo bo) {
         BdWorkstation entity = MapstructUtils.convert(bo, BdWorkstation.class);
+        if (StringUtils.isBlank(entity.getWorkstationCode())) {
+            entity.setWorkstationCode(autoCodeUtil.genSerialCode("WORKSTATION_CODE", null));
+        }
         return baseMapper.insert(entity);
     }
 

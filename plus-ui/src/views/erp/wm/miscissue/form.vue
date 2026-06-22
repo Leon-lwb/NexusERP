@@ -151,7 +151,7 @@ import { getMiscIssue, addMiscIssue, updateMiscIssue } from "@/api/erp/wm/miscis
 import { listMaterial } from "@/api/erp/bd/material"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -210,6 +210,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["miscIssueRef"].validate((valid: boolean) => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.issueCode = undefined;
+        }
       form.value.wmMiscIssueLineList = lineList.value
       if (form.value.issueId != null) {
         updateMiscIssue(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/wm/miscissue') })
@@ -223,7 +227,7 @@ function submitForm() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_MISC_ISSUE_CODE').then((response: any) => {
+    previewCode('WM_MISC_ISSUE_CODE').then((response: any) => {
       form.value.issueCode = response;
     });
   } else {

@@ -80,7 +80,9 @@ public class WmTransferServiceImpl implements IWmTransferService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmTransferBo bo) {
         WmTransfer entity = MapstructUtils.convert(bo, WmTransfer.class);
-        entity.setTransferNo(autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
+        if (StringUtils.isBlank(entity.getTransferNo())) {
+            entity.setTransferNo(autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
+        }
         entity.setStatus(STATUS_DRAFT);
         int rows = baseMapper.insert(entity);
         if (bo.getWmTransferLineList() != null) {

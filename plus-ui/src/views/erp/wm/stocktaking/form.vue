@@ -158,7 +158,7 @@ import { getStockTakingPlan, addStockTakingPlan, updateStockTakingPlan, generate
 import { getProcesss } from "@/api/workflow/process"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { listStoragearea } from "@/api/erp/wm/storagearea"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -229,6 +229,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["stocktakingRef"].validate((valid: boolean) => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.planCode = undefined;
+        }
       form.value.wmStockTakingLineList = lineList.value
       if (form.value.planId != null) {
         updateStockTakingPlan(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/wm/stocktaking') })
@@ -242,7 +246,7 @@ function submitForm() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_STOCKTAKING_CODE').then((response: any) => {
+    previewCode('WM_STOCKTAKING_CODE').then((response: any) => {
       form.value.planCode = response;
     });
   } else {

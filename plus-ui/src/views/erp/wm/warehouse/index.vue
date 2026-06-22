@@ -258,7 +258,7 @@
 
 <script setup lang="ts" name="Warehouse">
 import { listWarehouse, getWarehouse, delWarehouse, addWarehouse, updateWarehouse } from "@/api/erp/wm/warehouse"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { listUser } from "@/api/system/user"
 import { getProvinces, getNextLevel } from "@/api/system/area"
 
@@ -438,6 +438,10 @@ function handleView(row: any) {
 function submitForm() {
   proxy.$refs["warehouseRef"].validate((valid: boolean) => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.warehouseCode = undefined;
+      }
       if (form.value.warehouseId != null) {
         updateWarehouse(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
@@ -473,7 +477,7 @@ function handleExport() {
 
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WAREHOUSE_CODE').then((response: any) => {
+    previewCode('WAREHOUSE_CODE').then((response: any) => {
       form.value.warehouseCode = response;
     });
   } else {

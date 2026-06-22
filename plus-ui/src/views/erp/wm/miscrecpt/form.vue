@@ -181,7 +181,7 @@ import { listMaterial } from "@/api/erp/bd/material"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { listStoragearea } from "@/api/erp/wm/storagearea"
 import { getMeasure } from "@/api/erp/bd/measure"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -246,6 +246,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["miscRecptRef"].validate((valid: boolean) => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.recptCode = undefined;
+        }
       form.value.wmMiscRecptLineList = lineList.value
       if (form.value.recptId != null) {
         updateMiscRecpt(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/wm/miscrecpt') })
@@ -259,7 +263,7 @@ function submitForm() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_MISC_RECPT_CODE').then((response: any) => {
+    previewCode('WM_MISC_RECPT_CODE').then((response: any) => {
       form.value.recptCode = response;
     });
   } else {

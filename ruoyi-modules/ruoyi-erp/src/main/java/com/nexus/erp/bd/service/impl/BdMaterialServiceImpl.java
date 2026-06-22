@@ -15,6 +15,7 @@ import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.bd.service.IBdMaterialService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
 
     private final BdMaterialMapper baseMapper;
     private final BdUnitOfMeasureMapper uomMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * 查询物料产品主分页列表
@@ -91,6 +93,9 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdMaterialBo bo) {
         BdMaterial entity = MapstructUtils.convert(bo, BdMaterial.class);
+        if (StringUtils.isBlank(entity.getMaterialCode())) {
+            entity.setMaterialCode(autoCodeUtil.genSerialCode("MATERIAL_CODE", null));
+        }
         return baseMapper.insert(entity);
     }
 

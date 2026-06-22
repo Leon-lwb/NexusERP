@@ -83,7 +83,9 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmStockTakingPlanBo bo) {
         WmStockTakingPlan entity = MapstructUtils.convert(bo, WmStockTakingPlan.class);
-        entity.setPlanCode(autoCodeUtil.genSerialCode("WM_STOCKTAKING_CODE", null));
+        if (StringUtils.isBlank(entity.getPlanCode())) {
+            entity.setPlanCode(autoCodeUtil.genSerialCode("WM_STOCKTAKING_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         if (bo.getWmStockTakingLineList() != null) {
             for (WmStockTakingLine line : bo.getWmStockTakingLineList()) {

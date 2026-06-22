@@ -13,6 +13,7 @@ import com.nexus.erp.bd.domain.bo.BdWorkshopBo;
 import com.nexus.erp.bd.domain.vo.BdWorkshopVo;
 import com.nexus.erp.bd.mapper.BdWorkshopMapper;
 import com.nexus.erp.bd.service.IBdWorkshopService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.List;
 public class BdWorkshopServiceImpl implements IBdWorkshopService {
 
     private final BdWorkshopMapper baseMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<BdWorkshopVo> selectPageList(BdWorkshopBo bo, PageQuery pageQuery) {
@@ -52,6 +54,9 @@ public class BdWorkshopServiceImpl implements IBdWorkshopService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdWorkshopBo bo) {
         BdWorkshop entity = MapstructUtils.convert(bo, BdWorkshop.class);
+        if (StringUtils.isBlank(entity.getWorkshopCode())) {
+            entity.setWorkshopCode(autoCodeUtil.genSerialCode("WORKSHOP_CODE", null));
+        }
         return baseMapper.insert(entity);
     }
 

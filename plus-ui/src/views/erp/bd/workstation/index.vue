@@ -220,7 +220,7 @@
 <script setup lang="ts" name="Workstation">
 import { listWorkstation, getWorkstation, delWorkstation, addWorkstation, updateWorkstation } from "@/api/erp/bd/workstation"
 import { listWorkshop } from "@/api/erp/bd/workshop"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance()
 const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'))
@@ -382,6 +382,10 @@ function handleView(row) {
 function submitForm() {
   proxy.$refs["workstationRef"].validate(valid => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.workstationCode = undefined;
+      }
       if (form.value.workstationId != null) {
         updateWorkstation(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
@@ -451,7 +455,7 @@ function resetWorkshopQuery() {
 //自动生成编码
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('WORKSTATION_CODE').then(response => {
+    previewCode('WORKSTATION_CODE').then(response => {
       form.value.workstationCode = response;
     });
   } else {

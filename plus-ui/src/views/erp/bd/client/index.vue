@@ -434,7 +434,7 @@
 
 <script setup lang="ts" name="Bd">
 import { listClient, getClient, addClient, updateClient, delClient } from "@/api/erp/bd/client"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import request from '@/utils/request'
 import { getToken } from "@/utils/auth"
 import { getProvinces, getNextLevel } from "@/api/system/area"
@@ -778,6 +778,10 @@ function removeLogo() {
 function submitForm() {
   proxy.$refs["bdRef"].validate(valid => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.clientCode = undefined;
+      }
       if (form.value.clientId != null) {
         updateClient(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
@@ -816,7 +820,7 @@ function handleExport() {
 //自动生成编码
 function handleAutoGenChange(autoGenFlag){
   if(autoGenFlag){
-    genCode('CLIENT_CODE').then(response =>{
+    previewCode('CLIENT_CODE').then(response =>{
       form.value.clientCode = response;
     });
   }else{

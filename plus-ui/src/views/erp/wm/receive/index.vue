@@ -235,7 +235,7 @@
 import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute, confirmShelf, getReceiveProcId } from "@/api/erp/wm/receive"
 import { listArrivalnotice } from "@/api/erp/wm/arrivalnotice"
 import { useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as any
@@ -446,6 +446,10 @@ function handleView(row: any) {
 function submitForm() {
   proxy.$refs["receiveRef"].validate((valid: boolean) => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.receiveCode = undefined;
+      }
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
@@ -604,7 +608,7 @@ function handleViewFlow(row: any) {
 // 自动生成编码
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_MATERIAL_RECEIVE_CODE').then((response: any) => {
+    previewCode('WM_MATERIAL_RECEIVE_CODE').then((response: any) => {
       form.value.receiveCode = response;
     });
   } else {

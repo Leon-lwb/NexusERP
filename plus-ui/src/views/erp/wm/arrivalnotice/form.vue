@@ -333,7 +333,7 @@ import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
 import { getMeasure } from "@/api/erp/bd/measure"
 import { debounce } from "lodash-es"
 import { useRoute, useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import type { ArrivalnoticeForm } from "@/api/erp/wm/arrivalnotice/types"
 
 const { proxy } = getCurrentInstance() as any
@@ -469,6 +469,10 @@ const rules = {
 function submitForm() {
   proxy.$refs["arrivalnoticeRef"].validate((valid: boolean) => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.noticeCode = undefined;
+      }
       form.value.wmArrivalNoticeLineList = wmArrivalNoticeLineList.value
       if (form.value.noticeId != null) {
         updateArrivalnotice(form.value).then(() => {
@@ -489,7 +493,7 @@ function submitForm() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_ARRIVAL_NOTICE_CODE').then((response: any) => {
+    previewCode('WM_ARRIVAL_NOTICE_CODE').then((response: any) => {
       form.value.noticeCode = response;
     });
   } else {

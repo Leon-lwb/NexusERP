@@ -62,7 +62,9 @@ public class WmMiscIssueServiceImpl implements IWmMiscIssueService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMiscIssueBo bo) {
         WmMiscIssue entity = MapstructUtils.convert(bo, WmMiscIssue.class);
-        entity.setIssueCode(autoCodeUtil.genSerialCode("WM_MISC_ISSUE_CODE", null));
+        if (StringUtils.isBlank(entity.getIssueCode())) {
+            entity.setIssueCode(autoCodeUtil.genSerialCode("WM_MISC_ISSUE_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getIssueId(), bo.getWmMiscIssueLineList());
         return rows;

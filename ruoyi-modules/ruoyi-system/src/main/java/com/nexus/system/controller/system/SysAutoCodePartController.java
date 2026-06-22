@@ -13,6 +13,12 @@ import com.nexus.system.service.ISysAutoCodePartService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 编码规则组成控制器
+ * <p>管理编码规则（sys_auto_code_rule）的各组成部分（流水号、日期、固定字符、传入字符）。</p>
+ *
+ * @author wanghuan
+ */
 @Validated
 @RequiredArgsConstructor
 @RestController
@@ -21,18 +27,36 @@ public class SysAutoCodePartController extends BaseController {
 
     private final ISysAutoCodePartService partService;
 
+    /**
+     * 分页列表查询
+     *
+     * @param part 查询条件
+     * @return 编码规则组成分页列表
+     */
     @SaCheckPermission("system:autocode:part:list")
     @GetMapping("/list")
     public TableDataInfo<SysAutoCodePart> list(SysAutoCodePart part) {
         return TableDataInfo.build(partService.listPart(part));
     }
 
+    /**
+     * 根据 ID 查询编码规则组成详情
+     *
+     * @param partId 组成 ID
+     * @return 详情
+     */
     @SaCheckPermission("system:autocode:part:query")
     @GetMapping("/{partId}")
     public R<SysAutoCodePartVo> getInfo(@PathVariable Long partId) {
         return R.ok(partService.findById(partId));
     }
 
+    /**
+     * 新增编码规则组成
+     *
+     * @param part 编码规则组成实体
+     * @return 结果
+     */
     @SaCheckPermission("system:autocode:part:add")
     @Log(title = "编码规则组成", businessType = BusinessType.INSERT)
     @PostMapping
@@ -43,6 +67,12 @@ public class SysAutoCodePartController extends BaseController {
         return toAjax(partService.insertPart(part));
     }
 
+    /**
+     * 修改编码规则组成
+     *
+     * @param part 编码规则组成实体
+     * @return 结果
+     */
     @SaCheckPermission("system:autocode:part:edit")
     @Log(title = "编码规则组成", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -53,6 +83,12 @@ public class SysAutoCodePartController extends BaseController {
         return toAjax(partService.updatePart(part));
     }
 
+    /**
+     * 批量删除编码规则组成
+     *
+     * @param partIds 组成 ID 数组
+     * @return 结果
+     */
     @SaCheckPermission("system:autocode:part:remove")
     @Log(title = "编码规则组成", businessType = BusinessType.DELETE)
     @DeleteMapping("/{partIds}")

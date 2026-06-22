@@ -576,7 +576,7 @@ import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
 import { getProcesss } from '@/api/workflow/process'
 import { debounce } from 'lodash'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { useRouter, useRoute } from 'vue-router'
 import CustomerOrderSelectDialog from '../components/CustomerOrderSelectDialog.vue'
 import type { CustomerOrderVO } from "@/api/erp/so/customer-order/types"
@@ -800,6 +800,10 @@ function reset() {
 function submitForm() {
     proxy.$refs["orderheaderRef"].validate(valid => {
         if (valid) {
+            // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+            if (autoGenFlag.value) {
+              form.value.soNo = undefined;
+            }
             form.value.soSalesOrderLineList = soSalesOrderLineList.value
             if (form.value.soId != null) {
                 updateOrderheader(form.value).then(response => {
@@ -865,7 +869,7 @@ function onViewFlow() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('SO_ORDER_CODE').then(response => {
+    previewCode('SO_ORDER_CODE').then(response => {
       form.value.soNo = response;
     });
   } else {

@@ -226,7 +226,7 @@ import { listMaterial } from "@/api/erp/bd/material"
 import { listClient } from "@/api/erp/bd/client"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { getMeasure } from "@/api/erp/bd/measure"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -352,6 +352,10 @@ function getStatusLabel(status: string): string {
 function submitForm() {
   proxy.$refs["returnRef"].validate((valid: boolean) => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.returnNo = undefined;
+        }
       form.value.soReturnLineList = lineList.value
       if (form.value.returnId != null) {
         updateReturn(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/so/return') })
@@ -400,7 +404,7 @@ function onViewFlow() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('SO_RETURN_CODE').then(response => {
+    previewCode('SO_RETURN_CODE').then(response => {
       form.value.returnNo = response;
     });
   } else {

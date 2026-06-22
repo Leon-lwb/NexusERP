@@ -13,6 +13,7 @@ import com.nexus.erp.bd.domain.bo.BdVendorBo;
 import com.nexus.erp.bd.domain.vo.BdVendorVo;
 import com.nexus.erp.bd.mapper.BdVendorMapper;
 import com.nexus.erp.bd.service.IBdVendorService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.List;
 public class BdVendorServiceImpl implements IBdVendorService {
 
     private final BdVendorMapper baseMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<BdVendorVo> selectPageList(BdVendorBo bo, PageQuery pageQuery) {
@@ -52,6 +54,9 @@ public class BdVendorServiceImpl implements IBdVendorService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdVendorBo bo) {
         BdVendor entity = MapstructUtils.convert(bo, BdVendor.class);
+        if (StringUtils.isBlank(entity.getVendorCode())) {
+            entity.setVendorCode(autoCodeUtil.genSerialCode("VENDOR_CODE", null));
+        }
         return baseMapper.insert(entity);
     }
 

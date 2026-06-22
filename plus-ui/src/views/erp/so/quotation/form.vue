@@ -199,7 +199,7 @@ import { listMaterial } from "@/api/erp/bd/material"
 import { listClient } from "@/api/erp/bd/client"
 import { getMeasure } from "@/api/erp/bd/measure"
 import { listUserByPostId } from "@/api/system/user"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { useRoute, useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance() as any
@@ -260,6 +260,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["quotationRef"].validate((valid: boolean) => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.quotationNo = undefined;
+        }
       form.value.soQuotationLineList = lineList.value
       if (form.value.quotationId != null) {
         updateQuotation(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/so/quotation') })
@@ -273,7 +277,7 @@ function submitForm() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('SO_QUOTATION_CODE').then(response => {
+    previewCode('SO_QUOTATION_CODE').then(response => {
       form.value.quotationNo = response;
     });
   } else {

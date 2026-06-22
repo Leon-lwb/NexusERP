@@ -325,7 +325,7 @@
 <script setup lang="ts" name="CustomerOrder">
 import { listCustomerOrder, getCustomerOrder, delCustomerOrder, addCustomerOrder, updateCustomerOrder } from "@/api/erp/so/customer-order"
 import { listBd } from "@/api/erp/bd/client"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { listUser } from "@/api/system/user"
 
 const { proxy } = getCurrentInstance()
@@ -536,6 +536,10 @@ function handleView(row) {
 function submitForm() {
   proxy.$refs["customerOrderRef"].validate(valid => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.coNo = undefined;
+      }
       if (form.value.coId != null) {
         updateCustomerOrder(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
@@ -571,7 +575,7 @@ function handleExport() {
 
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('SO_CO_NO').then(response => {
+    previewCode('SO_CO_NO').then(response => {
       form.value.coNo = response;
     });
   } else {

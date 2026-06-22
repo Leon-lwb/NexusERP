@@ -142,7 +142,7 @@ import { addPurchaseReturn, getPurchaseReturn, updatePurchaseReturn, submitPurch
 import { getPurchaseOrder } from '@/api/erp/pu/order'
 import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance() as any
 const { pu_purchase_return_status } = toRefs<any>(proxy.useDict('pu_purchase_return_status'))
@@ -304,6 +304,10 @@ function handleSelectOrder() {
 
 function submitForm() {
   form.value.puPurchaseReturnLineList = lineList.value
+  // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+  if (autoGenFlag.value) {
+    form.value.returnNo = undefined;
+  }
   ;(form.value.returnId ? updatePurchaseReturn(form.value) : addPurchaseReturn(form.value)).then(() => {
     proxy.$modal.msgSuccess('保存成功')
     router.push('/erp/pu/return')
@@ -348,7 +352,7 @@ function onViewFlow() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('PU_RETURN_CODE').then(response => {
+    previewCode('PU_RETURN_CODE').then(response => {
       form.value.returnNo = response;
     });
   } else {

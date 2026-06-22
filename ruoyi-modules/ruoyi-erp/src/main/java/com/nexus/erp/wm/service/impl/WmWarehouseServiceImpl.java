@@ -23,6 +23,7 @@ import com.nexus.erp.wm.mapper.WmStorageAreaMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmWarehouseService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,7 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
     private final WmStorageAreaMapper wmStorageAreaMapper;
     private final WmStorageLocationMapper wmStorageLocationMapper;
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmWarehouseVo> selectPageList(WmWarehouseBo bo, PageQuery pageQuery) {
@@ -77,6 +79,9 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
     public int insertByBo(WmWarehouseBo bo) {
         validateWarehouseCodeUnique(bo.getWarehouseCode(), null);
         WmWarehouse entity = MapstructUtils.convert(bo, WmWarehouse.class);
+        if (StringUtils.isBlank(entity.getWarehouseCode())) {
+            entity.setWarehouseCode(autoCodeUtil.genSerialCode("WAREHOUSE_CODE", null));
+        }
         return baseMapper.insert(entity);
     }
 

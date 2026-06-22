@@ -20,6 +20,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -55,6 +56,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmSalesIssueVo> selectPageList(WmSalesIssueBo bo, PageQuery pageQuery) {
@@ -77,6 +79,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmSalesIssueBo bo) {
         WmSalesIssue entity = MapstructUtils.convert(bo, WmSalesIssue.class);
+        if (StringUtils.isBlank(entity.getIssueCode())) {
+            entity.setIssueCode(autoCodeUtil.genSerialCode("WM_SALES_ISSUE_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertLines(entity.getIssueId(), bo.getWmSalesIssueLineList());
         return rows;

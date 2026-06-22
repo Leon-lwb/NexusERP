@@ -62,7 +62,9 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMiscRecptBo bo) {
         WmMiscRecpt entity = MapstructUtils.convert(bo, WmMiscRecpt.class);
-        entity.setRecptCode(autoCodeUtil.genSerialCode("WM_MISC_RECPT_CODE", null));
+        if (StringUtils.isBlank(entity.getRecptCode())) {
+            entity.setRecptCode(autoCodeUtil.genSerialCode("WM_MISC_RECPT_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getRecptId(), bo.getWmMiscRecptLineList());
         return rows;

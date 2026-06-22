@@ -101,7 +101,9 @@ public class SoReturnServiceImpl implements ISoReturnService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoReturnBo bo) {
         SoReturn entity = MapstructUtils.convert(bo, SoReturn.class);
-        entity.setReturnNo(autoCodeUtil.genSerialCode("SO_RETURN_CODE", null));
+        if (StringUtils.isBlank(entity.getReturnNo())) {
+            entity.setReturnNo(autoCodeUtil.genSerialCode("SO_RETURN_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getReturnId(), bo.getSoReturnLineList());
         return rows;

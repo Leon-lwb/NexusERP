@@ -88,7 +88,9 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoQuotationBo bo) {
         SoQuotation entity = MapstructUtils.convert(bo, SoQuotation.class);
-        entity.setQuotationNo(autoCodeUtil.genSerialCode("SO_QUOTATION_CODE", null));
+        if (StringUtils.isBlank(entity.getQuotationNo())) {
+            entity.setQuotationNo(autoCodeUtil.genSerialCode("SO_QUOTATION_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getQuotationId(), bo.getSoQuotationLineList());
         return rows;

@@ -240,7 +240,7 @@
 <script setup lang="ts" name="Arrivalnotice">
 import { listArrivalnotice, getArrivalnotice, delArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivalnotice, getArrivalnoticeProcId } from "@/api/erp/wm/arrivalnotice"
 import { getProcesss } from "@/api/workflow/process"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { listVendor } from "@/api/erp/bd/vendor"
 import { useRouter } from 'vue-router'
 
@@ -429,6 +429,10 @@ function handleView(row: any) {
 function submitForm() {
   proxy.$refs["arrivalnoticeRef"].validate((valid: boolean) => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.noticeCode = undefined;
+      }
       if (form.value.noticeId != null) {
         updateArrivalnotice(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
@@ -515,7 +519,7 @@ function handleExport() {
 // 自动生成编码
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_ARRIVAL_NOTICE_CODE').then((response: any) => {
+    previewCode('WM_ARRIVAL_NOTICE_CODE').then((response: any) => {
       form.value.noticeCode = response;
     });
   } else {

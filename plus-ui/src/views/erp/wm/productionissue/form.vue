@@ -150,7 +150,7 @@ import { getMeasure } from "@/api/erp/bd/measure"
 import { getWork } from "@/api/erp/prd/work"
 import { getCurrentBom, listBomDetails } from "@/api/erp/bd/bom"
 import { useRoute, useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 
 const { proxy } = getCurrentInstance() as any
 const route = useRoute()
@@ -207,6 +207,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["issueRef"].validate((valid: boolean) => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.issueCode = undefined;
+        }
       form.value.wmProductionIssueLineList = lineList.value
       if (form.value.issueId != null) {
         updateProductionIssue(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/wm/productionissue') })
@@ -220,7 +224,7 @@ function submitForm() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_PROD_ISSUE_CODE').then((response: any) => {
+    previewCode('WM_PROD_ISSUE_CODE').then((response: any) => {
       form.value.issueCode = response;
     });
   } else {

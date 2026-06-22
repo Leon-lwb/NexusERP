@@ -321,7 +321,7 @@ import { getProcesss } from '@/api/workflow/process'
 import { listApprovedContract } from '@/api/erp/pu/contract'
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -712,6 +712,10 @@ function handleSelectRequisition() {
  */
 function submitForm() {
   form.value.lineList = lineList.value
+  // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+  if (autoGenFlag.value) {
+    form.value.orderNo = undefined;
+  }
   ;(form.value.orderId ? updatePurchaseOrder(form.value) : addPurchaseOrder(form.value)).then(() => {
     proxy.$modal.msgSuccess('保存成功')
     router.push('/erp/pu/order')
@@ -724,7 +728,7 @@ function submitForm() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('PU_ORDER_CODE').then(response => {
+    previewCode('PU_ORDER_CODE').then(response => {
       form.value.orderNo = response;
     });
   } else {

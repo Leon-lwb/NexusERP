@@ -353,7 +353,7 @@ import { listStock } from "@/api/erp/wm/stock"
 import { listStoragelocation } from "@/api/erp/wm/storagelocation"
 import { getProcesss } from '@/api/workflow/process'
 import { useRoute, useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import type { SalesIssueForm } from "@/api/erp/wm/sales-issue/types"
 
 const { proxy } = getCurrentInstance() as any
@@ -551,6 +551,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["salesIssueRef"].validate((valid: boolean) => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.issueCode = undefined;
+        }
       if (wmSalesIssueLineList.value.length === 0) {
         proxy.$modal.msgError("请至少添加一条出库明细")
         return
@@ -650,7 +654,7 @@ function onViewFlow() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_SALES_ISSUE_CODE').then((response: any) => {
+    previewCode('WM_SALES_ISSUE_CODE').then((response: any) => {
       form.value.issueCode = response;
     });
   } else {

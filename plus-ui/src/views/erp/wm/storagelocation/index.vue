@@ -316,7 +316,7 @@ import { listStoragelocation, getStoragelocation, delStoragelocation, addStorage
 import { getStoragearea } from "@/api/erp/wm/storagearea"
 import { getWareHouseTree } from "@/api/erp/wm/warehouse"
 import { useRoute } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import Wm3dConfigDrawer from '../components/Wm3dConfigDrawer.vue'
 
 const { proxy } = getCurrentInstance() as any
@@ -548,6 +548,10 @@ function handleView(row: any) {
 function submitForm() {
   proxy.$refs["storagelocationRef"].validate((valid: boolean) => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.locationCode = undefined;
+      }
       if (form.value.locationId != null) {
         updateStoragelocation(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
@@ -586,7 +590,7 @@ function handleExport() {
 // 自动生成编码
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_LOCATION_CODE').then((response: any) => {
+    previewCode('WM_LOCATION_CODE').then((response: any) => {
       form.value.locationCode = response;
     });
   } else {

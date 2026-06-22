@@ -13,6 +13,7 @@ import com.nexus.erp.bd.domain.bo.BdClientBo;
 import com.nexus.erp.bd.domain.vo.BdClientVo;
 import com.nexus.erp.bd.mapper.BdClientMapper;
 import com.nexus.erp.bd.service.IBdClientService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.List;
 public class BdClientServiceImpl implements IBdClientService {
 
     private final BdClientMapper baseMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<BdClientVo> selectPageList(BdClientBo bo, PageQuery pageQuery) {
@@ -52,6 +54,9 @@ public class BdClientServiceImpl implements IBdClientService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdClientBo bo) {
         BdClient entity = MapstructUtils.convert(bo, BdClient.class);
+        if (StringUtils.isBlank(entity.getClientCode())) {
+            entity.setClientCode(autoCodeUtil.genSerialCode("CLIENT_CODE", null));
+        }
         return baseMapper.insert(entity);
     }
 

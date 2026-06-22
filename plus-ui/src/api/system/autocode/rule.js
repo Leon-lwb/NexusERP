@@ -7,6 +7,14 @@ export function genCode(ruleCode) {
   })
 }
 
+// 预览编码（不落库，不消耗流水号）
+export function previewCode(ruleCode) {
+  return request({
+    url: '/system/autocode/preview/' + ruleCode,
+    method: 'get'
+  })
+}
+
 export function listRule(query) {
   return request({
     url: '/system/autocode/rule/list',

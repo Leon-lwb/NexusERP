@@ -25,6 +25,7 @@ import com.nexus.erp.wm.domain.vo.WmArrivalNoticeVo;
 import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmArrivalNoticeMapper;
 import com.nexus.erp.wm.service.IWmArrivalNoticeService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -65,6 +66,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmArrivalNoticeVo> selectPageList(WmArrivalNoticeBo bo, PageQuery pageQuery) {
@@ -94,6 +96,9 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmArrivalNoticeBo bo) {
         WmArrivalNotice entity = MapstructUtils.convert(bo, WmArrivalNotice.class);
+        if (StringUtils.isBlank(entity.getNoticeCode())) {
+            entity.setNoticeCode(autoCodeUtil.genSerialCode("WM_ARRIVAL_NOTICE_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getNoticeId(), bo.getWmArrivalNoticeLineList());
         return rows;

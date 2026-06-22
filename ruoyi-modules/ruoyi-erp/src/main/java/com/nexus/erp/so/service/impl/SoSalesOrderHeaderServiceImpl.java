@@ -127,6 +127,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (StringUtils.isBlank(entity.getOrderStatus())) {
             entity.setOrderStatus(STATUS_DRAFT);
         }
+        if (StringUtils.isBlank(entity.getSoNo())) {
+            entity.setSoNo(autoCodeUtil.genSerialCode("SO_ORDER_CODE", null));
+        }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
         return rows;

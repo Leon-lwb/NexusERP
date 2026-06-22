@@ -249,7 +249,7 @@ import { listMaterial } from '@/api/erp/bd/material'
 import { getProcesss } from '@/api/workflow/process'
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -545,6 +545,10 @@ function selectMaterial(row: any) {
  */
 function submitForm() {
   form.value.puPurchaseRequisitionLineList = lineList.value
+  // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+  if (autoGenFlag.value) {
+    form.value.requisitionNo = undefined;
+  }
   const isEdit = route.query.action === 'edit' || form.value.requisitionId != null
   if (isEdit && !form.value.requisitionId) {
     proxy.$modal.msgError('单据ID丢失，请刷新页面后重试')
@@ -572,7 +576,7 @@ function handleConvert() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('PU_REQUISITION_CODE').then(response => {
+    previewCode('PU_REQUISITION_CODE').then(response => {
       form.value.requisitionNo = response;
     });
   } else {

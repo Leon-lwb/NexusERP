@@ -403,7 +403,7 @@ import { createBatch } from "@/api/erp/wm/batch"
 import { getWareHouseTree } from "@/api/erp/wm/warehouse"
 import { getProcesss } from "@/api/workflow/process"
 import { useRoute, useRouter } from 'vue-router'
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -831,6 +831,10 @@ function normalizeReceiveLineDetails() {
 function submitForm() {
   proxy.$refs["receiveRef"].validate((valid: boolean) => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.receiveCode = undefined;
+      }
       form.value.wmMaterialReceiveLineList = normalizeReceiveLineDetails()
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
@@ -1337,7 +1341,7 @@ watch(shelfForm, (newVal: any) => {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag: boolean) {
   if (autoGenFlag) {
-    genCode('WM_MATERIAL_RECEIVE_CODE').then((response: any) => {
+    previewCode('WM_MATERIAL_RECEIVE_CODE').then((response: any) => {
       form.value.receiveCode = response;
     });
   } else {

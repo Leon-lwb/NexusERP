@@ -358,7 +358,7 @@
 
 <script setup lang="ts" name="Vendor">
   import { listVendor, getVendor, delVendor, addVendor, updateVendor } from "@/api/erp/bd/vendor"
-  import { genCode } from "@/api/system/autocode/rule"
+  import { previewCode } from "@/api/system/autocode/rule"
   import { getProvinces, getNextLevel } from "@/api/system/area"
 
   const { proxy } = getCurrentInstance()
@@ -575,6 +575,10 @@
   function submitForm() {
     proxy.$refs["vendorRef"].validate(valid => {
       if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.vendorCode = undefined;
+        }
         if (form.value.vendorId != null) {
           updateVendor(form.value).then(response => {
             proxy.$modal.msgSuccess("修改成功")
@@ -613,7 +617,7 @@
   //自动生成编码
   function handleAutoGenChange(autoGenFlag){
     if(autoGenFlag){
-      genCode('VENDOR_CODE').then(response =>{
+      previewCode('VENDOR_CODE').then(response =>{
         form.value.vendorCode = response;
       });
     }else{

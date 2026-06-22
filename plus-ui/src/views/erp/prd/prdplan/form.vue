@@ -432,7 +432,7 @@ import { listOrderheader, getOrderLine } from "@/api/erp/so/orderheader"
 import { listBom } from "@/api/erp/bd/bom"
 import { listTreeByPlanNo } from "@/api/erp/prd/requirement"
 import { getAutoCode } from "@/api/system/autocode"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import type { PlanForm } from "@/api/erp/prd/plan/types"
 
 const { proxy } = getCurrentInstance() as any
@@ -581,7 +581,7 @@ function handleSelectSalesOrder() {
 
 function handleAutoGenChange(autoGenFlagValue) {
   if (autoGenFlagValue) {
-    genCode('PRD_PLAN_CODE').then(response => {
+    previewCode('PRD_PLAN_CODE').then(response => {
       form.value.planNo = response || response.data || ''
     }).catch(error => {
       console.error('自动生成生产计划编号失败:', error)
@@ -702,6 +702,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["planRef"].validate(valid => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.planNo = undefined;
+        }
       const formData = { ...form.value }
       if (isAddMode.value) {
         formData.version = 0

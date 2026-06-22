@@ -13,6 +13,13 @@ import com.nexus.system.service.ISysAutoCodeRuleService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 编码规则控制器
+ * <p>管理自动编码规则（sys_auto_code_rule）的增删改查，
+ * 规则定义了编码的最大长度、补齐策略等元信息。</p>
+ *
+ * @author wanghuan
+ */
 @Validated
 @RequiredArgsConstructor
 @RestController
@@ -21,18 +28,36 @@ public class SysAutoCodeRuleController extends BaseController {
 
     private final ISysAutoCodeRuleService ruleService;
 
+    /**
+     * 分页列表查询
+     *
+     * @param rule 查询条件
+     * @return 编码规则分页列表
+     */
     @SaCheckPermission("system:autocode:rule:list")
     @GetMapping("/list")
     public TableDataInfo<SysAutoCodeRuleVo> list(SysAutoCodeRule rule) {
         return TableDataInfo.build(ruleService.selectAutoCodeList(rule));
     }
 
+    /**
+     * 根据 ID 查询编码规则详情
+     *
+     * @param ruleId 规则 ID
+     * @return 详情
+     */
     @SaCheckPermission("system:autocode:rule:query")
     @GetMapping("/{ruleId}")
     public R<SysAutoCodeRuleVo> getInfo(@PathVariable Long ruleId) {
         return R.ok(ruleService.findById(ruleId));
     }
 
+    /**
+     * 新增编码规则
+     *
+     * @param rule 编码规则实体
+     * @return 结果
+     */
     @SaCheckPermission("system:autocode:rule:add")
     @Log(title = "编码规则", businessType = BusinessType.INSERT)
     @PostMapping
@@ -50,6 +75,12 @@ public class SysAutoCodeRuleController extends BaseController {
         return toAjax(ruleService.insertInfo(rule));
     }
 
+    /**
+     * 修改编码规则
+     *
+     * @param rule 编码规则实体
+     * @return 结果
+     */
     @SaCheckPermission("system:autocode:rule:edit")
     @Log(title = "编码规则", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -63,6 +94,12 @@ public class SysAutoCodeRuleController extends BaseController {
         return toAjax(ruleService.updateInfo(rule));
     }
 
+    /**
+     * 批量删除编码规则
+     *
+     * @param ruleIds 规则 ID 数组
+     * @return 结果
+     */
     @SaCheckPermission("system:autocode:rule:remove")
     @Log(title = "编码规则", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ruleIds}")

@@ -490,7 +490,7 @@ import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial } f
 import { listCategory, getCategory, addCategory, updateCategory,delCategory,listDeptExcludeChild,getAllChildrenIds } from "@/api/erp/bd/category"
 import { listMeasureAll } from "@/api/erp/bd/measure"
 import { listMaterialVendor } from "@/api/erp/bd/material-vendor"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { debounce } from 'lodash'
 
 const { proxy } = getCurrentInstance()
@@ -788,6 +788,10 @@ function loadVendorList(materialId) {
 function submitForm() {
   proxy.$refs["materialRef"].validate(valid => {
     if (valid) {
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (data.autoGenFlag) {
+        form.value.materialCode = undefined;
+      }
       if (form.value.materialId != null) {
         updateMaterial(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功")
@@ -858,7 +862,7 @@ function handleCategoryFilter(val) {
 //自动生成编码
 function handleAutoGenChange(autoGenFlag){
   if(autoGenFlag){
-    genCode('MATERIAL_CODE').then(response =>{
+    previewCode('MATERIAL_CODE').then(response =>{
       form.value.materialCode = response;
     });
   }else{

@@ -568,7 +568,7 @@
 <script setup lang="ts" name="PrdWorkForm">
 import { getWork, addWork, updateWork, submitWorkFlow, getWorkProcId } from "@/api/erp/prd/work"
 import { listPlan } from "@/api/erp/prd/plan"
-import { genCode } from "@/api/system/autocode/rule"
+import { previewCode } from "@/api/system/autocode/rule"
 import { getOrderLine } from "@/api/erp/so/orderheader"
 import { listWorkshop } from "@/api/erp/bd/workshop"
 import { listWorkstation } from "@/api/erp/bd/workstation"
@@ -856,6 +856,10 @@ function reset() {
 function submitForm() {
   proxy.$refs["workRef"].validate(valid => {
     if (valid) {
+        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+        if (autoGenFlag.value) {
+          form.value.woNo = undefined;
+        }
       const resourceList = buildResourceList()
 
       if (form.value.woId != null) {
@@ -1313,7 +1317,7 @@ async function selectPlan(row) {
 
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    genCode('PRD_WORK_ORDER_CODE').then((response: any) => {
+    previewCode('PRD_WORK_ORDER_CODE').then((response: any) => {
       form.value.woNo = response.data || response;
     });
   } else {
