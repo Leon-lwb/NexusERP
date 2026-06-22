@@ -12,6 +12,6 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface ErpUnitMapper {
 
-    @Select("SELECT unit_name FROM bd_unit WHERE unit_id = #{unitId} AND del_flag = '0'")
+    @Select("SELECT uom_name FROM bd_unit_of_measure WHERE uom_id = #{unitId} AND del_flag = '0'")
     String selectUnitNameById(@Param("unitId") Long unitId);
 }

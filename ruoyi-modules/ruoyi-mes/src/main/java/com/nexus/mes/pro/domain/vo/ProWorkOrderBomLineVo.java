@@ -2,14 +2,20 @@ package com.nexus.mes.pro.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+/**
+ * MES工单BOM快照明细视图对象
+ */
 @Data
 @ExcelIgnoreUnannotated
+@AutoMapper(target = ProWorkOrderBomLine.class)
 public class ProWorkOrderBomLineVo implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

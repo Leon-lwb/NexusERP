@@ -556,7 +556,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
-    path: '/erp/wm/pickingrule/form', 
+    path: '/erp/wm/pickingrule/form',
     component: Layout,
     hidden: true,
     permissions: ['wm:pickingRule:query'],
@@ -636,7 +636,64 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/erp/wm/batch/form.vue'),
         name: 'WmBatchForm',
         meta: { title: '批次表单', activeMenu: '/erp/wm/batch', noCache: true },
-        props: route => ({ batchId: route.query.batchId, isView: route.query.isView })
+        props: (route) => ({ batchId: route.query.batchId, isView: route.query.isView })
+      }
+    ]
+  },
+  // MES 制造执行系统
+  {
+    path: '/mes/pro/workorder/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['mes:pro:work:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/mes/pro/workorder/form.vue'),
+        name: 'MesWorkOrderForm',
+        meta: { title: 'MES工单表单', activeMenu: '/mes/pro/workorder' }
+      }
+    ]
+  },
+  {
+    path: '/mes/pro/workorder/detail/:mesWoId',
+    component: Layout,
+    hidden: true,
+    permissions: ['mes:pro:work:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/mes/pro/workorder/detail.vue'),
+        name: 'MesWorkOrderDetail',
+        meta: { title: 'MES工单详情', activeMenu: '/mes/pro/workorder' }
+      }
+    ]
+  },
+  {
+    path: '/mes/pro/dispatch/detail/:dispatchId',
+    component: Layout,
+    hidden: true,
+    permissions: ['mes:pro:dispatch:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/mes/pro/dispatch/detail.vue'),
+        name: 'MesDispatchDetail',
+        meta: { title: '派工详情', activeMenu: '/mes/pro/dispatch' }
+      }
+    ]
+  },
+  {
+    path: '/mes/pro/flow-card/detail/:cardId',
+    component: Layout,
+    hidden: true,
+    permissions: ['mes:pro:flowcard:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/mes/pro/flow-card/detail.vue'),
+        name: 'MesFlowCardDetail',
+        meta: { title: '流转卡详情', activeMenu: '/mes/pro/flow-card' }
       }
     ]
   },
@@ -747,7 +804,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: 'Token用量', icon: 'chart' }
       }
     ]
-  },
+  }
 ];
 
 /**

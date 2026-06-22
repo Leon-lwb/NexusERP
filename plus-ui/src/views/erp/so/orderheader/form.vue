@@ -27,6 +27,22 @@
                             </el-form-item>
                         </el-col>
                         <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                            <el-form-item label="客户订单" prop="coId">
+                                <el-row :gutter="10">
+                                    <el-col :span="18">
+                                        <el-input v-model="customerOrderDisplay" placeholder="请选择客户订单" readonly :disabled="isViewMode">
+                                            <template #append>
+                                                <el-button icon="Search" @click.stop="openCustomerOrderSelect" :disabled="isViewMode" />
+                                            </template>
+                                        </el-input>
+                                    </el-col>
+                                    <el-col :span="6">
+                                        <el-button v-if="form.coId && !isViewMode" type="danger" icon="Delete" @click.stop="clearCustomerOrder" />
+                                    </el-col>
+                                </el-row>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :xs="24" :sm="12" :md="8" :lg="6">
                             <el-form-item label="来源客户" prop="clientName">
                                 <el-input v-model="form.clientName" placeholder="请输入来源客户" />
                             </el-form-item>
@@ -451,6 +467,9 @@
             </div>
         </el-card>
 
+        <!-- 客户订单选择对话框 -->
+        <CustomerOrderSelectDialog ref="customerOrderSelectRef" @confirm="handleCustomerOrderSelect" />
+
         <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1200px" append-to-body>
             <el-row :gutter="20">
                 <el-col :span="6">
@@ -559,6 +578,8 @@ import { getProcesss } from '@/api/workflow/process'
 import { debounce } from 'lodash'
 import { genCode } from "@/api/system/autocode/rule"
 import { useRouter, useRoute } from 'vue-router'
+import CustomerOrderSelectDialog from '../components/CustomerOrderSelectDialog.vue'
+import type { CustomerOrderVO } from "@/api/erp/so/customer-order/types"
 
 const { proxy } = getCurrentInstance()
 const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type', 'so_order_line_status', 'so_order_priority', 'bd_material_type'))
@@ -594,6 +615,10 @@ const materialLoading = ref(false)
 const materialTotal = ref(0)
 const materialDialogTitle = ref("选择物料")
 const currentMaterialRowIndex = ref(-1)
+
+// 客户订单选择相关
+const customerOrderSelectRef = ref<InstanceType<typeof CustomerOrderSelectDialog> | null>(null)
+const customerOrderDisplay = ref('')
 
 const categoryTree = ref([])
 const categoryTreeProps = {
@@ -714,6 +739,12 @@ function getInfo(id) {
     getOrderheader(id).then(response => {
         form.value = response.data
         soSalesOrderLineList.value = response.data.soSalesOrderLineList || []
+        // 如果有客户订单ID，设置显示文本
+        if (form.value.coId) {
+            customerOrderDisplay.value = form.value.customerRefNo || `客户订单#${form.value.coId}`;
+        } else {
+            customerOrderDisplay.value = '';
+        }
         tryAutoSelect()
     }).catch(error => {
         proxy.$modal.msgError("获取数据失败: " + error.message)
@@ -844,6 +875,36 @@ function handleAutoGenChange(autoGenFlag) {
 function cancel() {
     const obj = { path: '/erp/so/orderheader' }
     proxy.$tab.closeOpenPage(obj)
+}
+
+/** 打开客户订单选择对话框 */
+function openCustomerOrderSelect() {
+    customerOrderSelectRef.value?.open();
+}
+
+/** 处理客户订单选择回调 */
+function handleCustomerOrderSelect(order: CustomerOrderVO) {
+    // 设置关联ID
+    form.value.coId = order.coId;
+    // 设置显示文本
+    customerOrderDisplay.value = order.coNo ? `${order.coNo} - ${order.clientName}` : order.clientName;
+    // 映射字段到销售订单表单
+    form.value.clientId = order.clientId;
+    form.value.clientName = order.clientName;
+    form.value.orderDate = order.orderDate;
+    form.value.requestedDate = order.requestedDate;
+    form.value.currency = order.currency;
+    form.value.totalAmount = order.totalAmount;
+    form.value.salesRepId = order.salesRepId;
+    form.value.salesRepName = order.salesRepName;
+    form.value.customerRefNo = order.customerPoNo;
+    form.value.remark = order.remark;
+}
+
+/** 清除已选择的客户订单 */
+function clearCustomerOrder() {
+    form.value.coId = null;
+    customerOrderDisplay.value = '';
 }
 
 function rowSoSalesOrderLineIndex({ row, rowIndex }) {

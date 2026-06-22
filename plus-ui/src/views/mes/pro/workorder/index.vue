@@ -81,14 +81,12 @@
       <!-- 分页 -->
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
-    <Form ref="formRef" @refresh="getList" />
   </div>
 </template>
 
 <script setup lang="ts" name="MesWorkOrder">
 import { listWorkOrder, delWorkOrder, releaseWorkOrder } from '@/api/mes/pro/workorder';
 import type { ProWorkOrderVO, ProWorkOrderQuery } from '@/api/mes/pro/types';
-import Form from './form.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
@@ -100,8 +98,6 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const formRef = ref<InstanceType<typeof Form>>();
-
 const queryParams = ref<ProWorkOrderQuery>({
   pageNum: 1,
   pageSize: 10,
@@ -141,8 +137,12 @@ const handleDetail = (row: ProWorkOrderVO) => {
   router.push(`/mes/pro/workorder/detail/${row.mesWoId}`);
 };
 
-const handleAdd = () => formRef.value?.open();
-const handleUpdate = (row: ProWorkOrderVO) => formRef.value?.open(row);
+const handleAdd = () => {
+  router.push({ path: '/mes/pro/workorder/form', query: { action: 'add' } });
+};
+const handleUpdate = (row: ProWorkOrderVO) => {
+  router.push({ path: '/mes/pro/workorder/form', query: { id: row.mesWoId, action: 'edit' } });
+};
 
 const handleRelease = async (row: ProWorkOrderVO) => {
   await proxy?.$modal.confirm('确认下达工单"' + row.woNo + '"？');

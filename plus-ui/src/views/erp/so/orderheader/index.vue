@@ -78,7 +78,7 @@
       <el-form-item label="订单状态" prop="orderStatus">
         <el-select v-model="queryParams.orderStatus" placeholder="请选择订单状态" clearable style="width: 120px;">
           <el-option
-              v-for="dict in so_customer_order_status"
+              v-for="dict in so_order_status"
               :key="dict.value"
               :label="dict.label"
               :value="dict.value"
@@ -214,7 +214,7 @@
       <el-table-column label="信用拦截人" align="center" prop="creditBlockedBy" />
       <el-table-column label="订单状态" align="center" prop="orderStatus">
         <template #default="scope">
-          <dict-tag :options="so_customer_order_status" :value="scope.row.orderStatus"/>
+          <dict-tag :options="so_order_status" :value="scope.row.orderStatus"/>
         </template>
       </el-table-column>
       <el-table-column label="项目ID" align="center" prop="projectId" />
@@ -276,7 +276,7 @@ import { useRouter } from 'vue-router'
 
   const router = useRouter();
   const { proxy } = getCurrentInstance()
-  const { so_credit_status, so_customer_order_status, sys_true_or_false, so_currency_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_customer_order_status', 'sys_true_or_false', 'so_currency_type'))
+  const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'sys_true_or_false', 'so_currency_type'))
 
   const orderheaderList = ref([])
   const loading = ref(true)
