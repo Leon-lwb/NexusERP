@@ -177,7 +177,7 @@ function handleExport() {
   proxy.download('erp/bd/routing/export', { ...queryParams.value }, `routing_${new Date().getTime()}.xlsx`)
 }
 
-onMounted(() => {
+onActivated(() => {
   getList()
 })
 </script>

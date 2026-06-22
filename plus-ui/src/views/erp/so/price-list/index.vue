@@ -192,5 +192,7 @@ function handleExport() {
   proxy.download('/erp/so/price-list/export', { ...queryParams.value }, `priceList_${new Date().getTime()}.xlsx`);
 }
 
-getList();
+onActivated(() => {
+  getList();
+})
 </script>

@@ -236,5 +236,7 @@ function getEvalLevelType(level: string): string {
   return typeMap[level] || 'info'
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

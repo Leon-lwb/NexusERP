@@ -270,5 +270,7 @@ function getWarehouseOptions() {
   })
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

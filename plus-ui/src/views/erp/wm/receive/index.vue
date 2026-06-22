@@ -677,5 +677,7 @@ function handleArrivalNoticePagination(pagination: any) {
   getArrivalNoticeList()
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

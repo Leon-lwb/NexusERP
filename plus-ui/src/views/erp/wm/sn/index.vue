@@ -280,7 +280,7 @@ const loadWarehouseOptions = () => {
   });
 };
 
-onMounted(() => {
+onActivated(() => {
   getList();
 });
 </script>

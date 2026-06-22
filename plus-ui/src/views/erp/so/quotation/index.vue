@@ -190,5 +190,7 @@ function handleConvert(row: any) {
   }).catch(() => {})
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

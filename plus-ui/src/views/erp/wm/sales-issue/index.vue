@@ -343,5 +343,7 @@ function formatAmount(amount: any) {
   return parseFloat(amount).toFixed(2)
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

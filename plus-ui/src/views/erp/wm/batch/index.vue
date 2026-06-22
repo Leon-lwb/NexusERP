@@ -208,5 +208,7 @@ function submitChangeStatus() {
   });
 }
 
-getList();
+onActivated(() => {
+  getList();
+})
 </script>

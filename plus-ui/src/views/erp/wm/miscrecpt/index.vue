@@ -159,5 +159,7 @@ function handleExport() {
   proxy.download('/erp/wm/miscrecpt/export', { ...queryParams.value }, `miscrecpt_${new Date().getTime()}.xlsx`)
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

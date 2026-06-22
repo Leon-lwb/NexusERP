@@ -191,5 +191,7 @@ function handleExport() {
   proxy.download('/erp/wm/transfer/export', { ...queryParams.value }, `transfer_${new Date().getTime()}.xlsx`)
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

@@ -338,6 +338,7 @@ function handleGenerateFromLowStock(){
   })
 }
 
-// 页面加载时获取数据
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

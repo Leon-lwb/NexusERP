@@ -182,7 +182,7 @@ const statusTagType = (status: string) => {
   return map[status] || 'info';
 };
 
-onMounted(() => {
+onActivated(() => {
   getList();
 });
 </script>

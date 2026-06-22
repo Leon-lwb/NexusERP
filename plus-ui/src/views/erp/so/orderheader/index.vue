@@ -449,5 +449,7 @@ function handleCancel(row: any) {
   }).catch(() => {})
 }
 
-  getList()
+  onActivated(() => {
+    getList()
+  })
 </script>

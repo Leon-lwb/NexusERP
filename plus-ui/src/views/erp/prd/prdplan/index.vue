@@ -280,8 +280,6 @@ function handleExport() {
   }, `plan_${new Date().getTime()}.xlsx`)
 }
 
-getList()
-
 onActivated(() => {
   getList()
 })

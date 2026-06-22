@@ -370,5 +370,7 @@ function handleClose(row: any) {
   }).catch(() => {})
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

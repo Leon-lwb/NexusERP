@@ -189,5 +189,7 @@ function handleViewFlow(row: any) {
   })
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

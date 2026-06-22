@@ -591,5 +591,7 @@ function handleVendorPagination(pagination: any) {
   getVendorList()
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

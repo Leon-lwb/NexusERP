@@ -112,6 +112,8 @@ function getWarehouseOptions() {
   })
 }
 
-getList()
-getWarehouseOptions()
+onActivated(() => {
+  getList()
+  getWarehouseOptions()
+})
 </script>

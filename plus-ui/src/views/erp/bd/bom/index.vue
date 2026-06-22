@@ -1158,6 +1158,10 @@ import { debounce } from 'lodash'
       debouncedHandleCategoryFilter.cancel()
     }
   })
+
+  onActivated(() => {
+    getList()
+  })
 </script>
 
 <style scoped>

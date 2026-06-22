@@ -244,5 +244,7 @@ function handleGenerateWorkOrders() {
   }).catch(() => {});
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>

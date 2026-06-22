@@ -159,5 +159,7 @@ function handleExport() {
   proxy.download('/erp/wm/stocktaking/export', { ...queryParams.value }, `stocktaking_${new Date().getTime()}.xlsx`)
 }
 
-getList()
+onActivated(() => {
+  getList()
+})
 </script>
