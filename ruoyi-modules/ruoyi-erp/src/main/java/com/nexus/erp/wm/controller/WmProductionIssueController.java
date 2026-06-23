@@ -11,7 +11,9 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
+import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
 import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
+import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -134,5 +136,34 @@ public class WmProductionIssueController extends BaseController {
     public R<Void> execute(@PathVariable Long issueId) {
         wmProductionIssueService.execute(issueId);
         return R.ok();
+    }
+
+    /**
+     * 查询物料可用库存（ATP），按 FEFO 排序
+     * <p>权限标识：{@code wm:productionissue:query}</p>
+     *
+     * @param materialId  物料ID
+     * @param warehouseId 仓库ID（可空）
+     * @return 可用库存明细列表
+     */
+    @SaCheckPermission("wm:productionissue:query")
+    @GetMapping("/availableStock")
+    public R<List<WmMaterialStockVo>> availableStock(@RequestParam Long materialId,
+                                                      @RequestParam(required = false) Long warehouseId) {
+        return R.ok(wmProductionIssueService.selectAvailableStock(materialId, warehouseId));
+    }
+
+    /**
+     * 根据工单 BOM 物料需求构建领料单行（排除倒冲物料）
+     * <p>权限标识：{@code wm:productionissue:query}</p>
+     * <p>前端"选择工单后自动带出应领明细"调用。</p>
+     *
+     * @param woId 工单ID
+     * @return 领料单行列表（未持久化）
+     */
+    @SaCheckPermission("wm:productionissue:query")
+    @GetMapping("/workOrderLines/{woId}")
+    public R<List<WmProductionIssueLine>> workOrderLines(@PathVariable Long woId) {
+        return R.ok(wmProductionIssueService.buildLinesFromWorkOrder(woId));
     }
 }

@@ -272,6 +272,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         issue.setWoNo(wo.getWoNo());
         issue.setIssueDate(new Date());
         issue.setStatus("CREATED");
+        issue.setIssueType("NORMAL");
         issue.setWarehouseId(wo.getWorkshopId());
         issue.setRemark("工单下达自动生成");
         productionIssueMapper.insert(issue);
@@ -296,6 +297,15 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
                 line.setMaterialSpec(detail.getMaterialSpec());
                 line.setBaseUomId(detail.getUnit());
                 line.setQuantity(detail.getRequiredQuantity());
+                // BOM 驱动的应领/已领/本次/欠领语义，支持后续多次部分领料
+                line.setBomQty(detail.getBomQuantity());
+                line.setLossRate(detail.getLossRate());
+                line.setRequiredQty(detail.getRequiredQuantity());
+                line.setIssuedQty(BigDecimal.ZERO);
+                line.setCurrentQty(detail.getRequiredQuantity());
+                line.setShortQty(detail.getRequiredQuantity());
+                line.setRequirementDetailId(detail.getDetailId());
+                line.setLineStatus("PENDING");
                 productionIssueLineMapper.insert(line);
                 hasLines = true;
             }

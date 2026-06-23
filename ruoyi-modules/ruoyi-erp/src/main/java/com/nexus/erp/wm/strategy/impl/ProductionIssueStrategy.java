@@ -77,7 +77,9 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
         lqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
+        // 仅扣减未冻结库存：frozen_flag 0=未冻结/可用，1=已冻结
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
+        lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
         lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
 
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);

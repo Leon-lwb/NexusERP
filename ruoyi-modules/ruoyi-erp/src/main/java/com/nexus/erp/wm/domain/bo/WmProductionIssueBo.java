@@ -11,6 +11,7 @@ import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -32,6 +33,16 @@ public class WmProductionIssueBo extends BaseEntity {
     private String warehouseName;
     private Date issueDate;
     private String status;
+    /** 领料类型(NORMAL普通/BACKFLUSH倒冲) */
+    private String issueType;
+    /** 领料人ID */
+    private Long issuerId;
+    /** 领料人名称 */
+    private String issuerName;
+    /** 总数量 */
+    private BigDecimal totalQty;
+    /** 总金额 */
+    private BigDecimal totalAmount;
     private String remark;
     private String attr1;
     private String attr2;

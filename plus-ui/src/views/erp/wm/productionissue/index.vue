@@ -9,7 +9,7 @@
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in wm_misc_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+          <el-option v-for="dict in wm_production_issue_status" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -49,14 +49,15 @@
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
-          <dict-tag :options="wm_misc_status" :value="scope.row.status" />
+          <dict-tag :options="wm_production_issue_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:productionissue:edit']">修改</el-button>
+          <el-button link type="success" icon="Promotion" @click="handleExecute(scope.row)" v-hasPermi="['wm:productionissue:edit']" v-if="scope.row.status === 'CREATED' || scope.row.status === 'PARTIAL' || scope.row.status === 'DRAFT'">执行领料</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:productionissue:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -67,12 +68,12 @@
 </template>
 
 <script setup lang="ts" name="ProductionIssue">
-import { listProductionIssue, delProductionIssue } from "@/api/erp/wm/productionissue"
+import { listProductionIssue, delProductionIssue, executeProductionIssue } from "@/api/erp/wm/productionissue"
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as any
-const { wm_misc_status } = toRefs<any>(proxy.useDict('wm_misc_status'))
+const { wm_production_issue_status } = toRefs<any>(proxy.useDict('wm_production_issue_status'))
 
 const issueList = ref([])
 const loading = ref(true)
@@ -153,6 +154,11 @@ function handleDelete(row: any) {
     getList()
     proxy.$modal.msgSuccess("删除成功")
   }).catch(() => { })
+}
+
+/** 列表行执行领料（跳转表单页填写本次领料数量后执行） */
+function handleExecute(row: any) {
+  router.push({ path: '/erp/wm/productionissue/form', query: { id: row.issueId, action: 'edit' } })
 }
 
 function handleExport() {

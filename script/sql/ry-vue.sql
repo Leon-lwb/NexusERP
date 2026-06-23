@@ -11925,6 +11925,13 @@ INSERT INTO `sys_menu` VALUES (2712, '生产入库新增', 2710, 2, '', '', NULL
 INSERT INTO `sys_menu` VALUES (2713, '生产入库修改', 2710, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:edit', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2714, '生产入库删除', 2710, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:remove', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2715, '生产入库导出', 2710, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2190, '生产领料', 2100, 12, 'productionissue', 'erp/wm/productionissue/index', NULL, 1, 0, 'C', '0', '0', 'wm:productionissue:list', 'outbound', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '生产领料单管理');
+INSERT INTO `sys_menu` VALUES (2191, '生产领料查询', 2190, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:query', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2192, '生产领料新增', 2190, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:add', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2193, '生产领料修改', 2190, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:edit', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2194, '生产领料删除', 2190, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:remove', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2195, '生产领料导出', 2190, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:export', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2196, '生产领料执行', 2190, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:execute', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2800, '供应商评估报表', 2530, 8, 'report', 'erp/pu/vendor-evaluation/report', NULL, 1, 0, 'C', '0', '0', 'pu:vendorEvaluation:query', 'chart', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '供应商评估报表与趋势分析');
 INSERT INTO `sys_menu` VALUES (2810, '工单资源分配', 2300, 8, 'workOrderResource', 'erp/prd/work-order-resource/index', NULL, 1, 0, 'C', '0', '0', 'prd:workOrderResource:list', 'peoples', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '工单资源分配管理');
 INSERT INTO `sys_menu` VALUES (2811, '工单资源查询', 2810, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:query', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
@@ -12711,6 +12718,13 @@ INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20033);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20034);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20035);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20036);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2190);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2191);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2192);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2193);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2194);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2195);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2196);
 
 -- ----------------------------
 -- Table structure for sys_social

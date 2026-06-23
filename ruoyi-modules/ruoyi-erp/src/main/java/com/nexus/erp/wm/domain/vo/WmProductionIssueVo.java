@@ -8,6 +8,7 @@ import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -41,6 +42,21 @@ public class WmProductionIssueVo implements Serializable {
 
     @ExcelProperty("状态")
     private String status;
+
+    @ExcelProperty("领料类型")
+    private String issueType;
+
+    @ExcelProperty("领料人ID")
+    private Long issuerId;
+
+    @ExcelProperty("领料人")
+    private String issuerName;
+
+    @ExcelProperty("总数量")
+    private BigDecimal totalQty;
+
+    @ExcelProperty("总金额")
+    private BigDecimal totalAmount;
 
     @ExcelProperty("备注")
     private String remark;

@@ -36,6 +36,29 @@ public class WmProductionIssueLineVo implements Serializable {
     @ExcelProperty("数量")
     private BigDecimal quantity;
 
+    @ExcelProperty("BOM用量")
+    private BigDecimal bomQty;
+
+    @ExcelProperty("损耗率")
+    private BigDecimal lossRate;
+
+    @ExcelProperty("应领数量")
+    private BigDecimal requiredQty;
+
+    @ExcelProperty("已领数量")
+    private BigDecimal issuedQty;
+
+    @ExcelProperty("本次领料")
+    private BigDecimal currentQty;
+
+    @ExcelProperty("欠领数量")
+    private BigDecimal shortQty;
+
+    private Long requirementDetailId;
+
+    @ExcelProperty("行状态")
+    private String lineStatus;
+
     @ExcelProperty("单价")
     private BigDecimal unitPrice;
 

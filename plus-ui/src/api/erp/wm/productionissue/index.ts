@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { ProductionIssueQuery, ProductionIssueVO, ProductionIssueForm } from './types';
+import { ProductionIssueQuery, ProductionIssueVO, ProductionIssueForm, ProductionIssueLineForm, AvailableStockVO } from './types';
 
 export const listProductionIssue = (query: ProductionIssueQuery): AxiosPromise<ProductionIssueVO[]> => {
   return request({
@@ -40,9 +40,27 @@ export const delProductionIssue = (issueIds: string | number | (string | number)
   });
 };
 
+/** 执行生产领料过账（扣减库存），支持多次部分领料 */
 export const executeProductionIssue = (issueId: string | number) => {
   return request({
     url: '/erp/wm/productionissue/execute/' + issueId,
     method: 'put'
+  });
+};
+
+/** 查询物料可用库存（ATP），按 FEFO 排序 */
+export const getAvailableStock = (materialId: number, warehouseId?: number): AxiosPromise<AvailableStockVO[]> => {
+  return request({
+    url: '/erp/wm/productionissue/availableStock',
+    method: 'get',
+    params: { materialId, warehouseId }
+  });
+};
+
+/** 根据工单 BOM 物料需求构建领料单行（排除倒冲物料） */
+export const getWorkOrderLines = (woId: string | number): AxiosPromise<ProductionIssueLineForm[]> => {
+  return request({
+    url: '/erp/wm/productionissue/workOrderLines/' + woId,
+    method: 'get'
   });
 };
