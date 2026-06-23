@@ -439,13 +439,6 @@
                 <version>${revision}</version>
             </dependency>
 
-            <!--  积木报表模块  -->
-            <dependency>
-                <groupId>com.nexus</groupId>
-                <artifactId>ruoyi-report</artifactId>
-                <version>${revision}</version>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 

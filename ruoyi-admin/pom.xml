@@ -123,12 +123,6 @@
             <artifactId>ruoyi-pay</artifactId>
         </dependency>
 
-        <!--  积木报表模块  -->
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-report</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-im</artifactId>

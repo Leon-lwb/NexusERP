@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -147,21 +148,21 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     public void execute(Long issueId) {
         WmProductionIssue issue = baseMapper.selectById(issueId);
         if (issue == null) {
-            throw new RuntimeException("生产领料单不存在");
+            throw new ServiceException("生产领料单不存在");
         }
         String status = issue.getStatus();
         if (STATUS_COMPLETED.equals(status) || STATUS_EXECUTED.equals(status)) {
-            throw new RuntimeException("生产领料单已完成，不可再次领料");
+            throw new ServiceException("生产领料单已完成，不可再次领料");
         }
         if (!STATUS_CREATED.equals(status) && !STATUS_PARTIAL.equals(status)) {
-            throw new RuntimeException("当前状态不允许执行领料：" + status);
+            throw new ServiceException("当前状态不允许执行领料：" + status);
         }
 
         List<WmProductionIssueLine> lines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmProductionIssueLine.class)
                 .eq(WmProductionIssueLine::getIssueId, issueId));
         if (lines == null || lines.isEmpty()) {
-            throw new RuntimeException("生产领料单无明细行");
+            throw new ServiceException("生产领料单无明细行");
         }
 
         Date now = new Date();
@@ -191,7 +192,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             // 校验不超过欠领数量（有应领定额的行）
             if (shortQty != null && shortQty.compareTo(BigDecimal.ZERO) > 0
                 && currentQty.compareTo(shortQty) > 0) {
-                throw new RuntimeException("物料【" + line.getMaterialName() + "】本次领料数量(" + currentQty
+                throw new ServiceException("物料【" + line.getMaterialName() + "】本次领料数量(" + currentQty
                     + ")超过欠领数量(" + shortQty + ")");
             }
 
@@ -201,7 +202,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
             BigDecimal available = sumAvailable(line.getMaterialId(), null,
                 line.getBatchId(), line.getLocationId());
             if (available.compareTo(currentQty) < 0) {
-                throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足，可用量：" + available);
+                throw new ServiceException("物料【" + line.getMaterialName() + "】库存不足，可用量：" + available);
             }
 
             // 策略读取 line.getQuantity() 扣减；为不污染 quantity 的应领语义，
@@ -234,7 +235,7 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         }
 
         if (!hasPick) {
-            throw new RuntimeException("没有需要领料的行（本次领料数量均为0），请填写本次领料数量后再执行");
+            throw new ServiceException("没有需要领料的行（本次领料数量均为0），请填写本次领料数量后再执行");
         }
 
         issue.setStatus(allIssued ? STATUS_COMPLETED : STATUS_PARTIAL);
