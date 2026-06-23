@@ -122,9 +122,9 @@
             </template>
           </vxe-column>
           <vxe-column field="shortQty" title="欠领数量" width="90" align="center" />
-          <vxe-column field="batchCode" title="批次/库位" min-width="190">
+          <vxe-column field="displayLocationBatch" title="批次/库位" min-width="190">
             <template #default="{ row, rowIndex }">
-              <el-input v-model="row.batchCode" placeholder="选择库存" readonly>
+              <el-input v-model="row.displayLocationBatch" placeholder="选择库存" readonly>
                 <template #append><el-button icon="Search" @click="openStockSelect(rowIndex)" :disabled="isViewMode || !row.materialId" /></template>
               </el-input>
             </template>
@@ -300,7 +300,8 @@ function getInfo(id: any) {
       ...l,
       issuedQty: l.issuedQty ?? 0,
       shortQty: l.shortQty ?? (l.requiredQty != null ? l.requiredQty - (l.issuedQty ?? 0) : null),
-      lineStatus: l.lineStatus || 'PENDING'
+      lineStatus: l.lineStatus || 'PENDING',
+      displayLocationBatch: (l.locationCode ? l.locationCode + '/' : '') + (l.batchCode || '')
     }))
   })
 }
@@ -384,6 +385,7 @@ function handleAddLine() {
     requiredQty: null, issuedQty: 0, currentQty: null, shortQty: null,
     requirementDetailId: null, lineStatus: 'PENDING',
     batchId: null, batchCode: '', locationId: null, locationCode: '', locationName: '',
+    displayLocationBatch: '',
     unitPrice: null, amount: null, remark: ''
   })
 }
@@ -499,6 +501,8 @@ function selectStock(row: any) {
     line.locationId = row.locationId
     line.locationCode = row.locationCode
     line.locationName = row.locationName
+    // 拼接库位+批次号用于展示，如 L016/B202606050002
+    line.displayLocationBatch = (row.locationCode ? row.locationCode + '/' : '') + (row.batchCode || '')
     if (row.unitCost && line.unitPrice == null) line.unitPrice = row.unitCost
     recalcRow(line)
   }
