@@ -7,7 +7,9 @@ import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
 import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public interface IWmProductionIssueService {
 
@@ -36,6 +38,15 @@ public interface IWmProductionIssueService {
      * @return 可用库存明细列表
      */
     List<WmMaterialStockVo> selectAvailableStock(Long materialId, Long warehouseId);
+
+    /**
+     * 批量查询多个物料的总可用库存（汇总所有仓库/批次/库位），
+     * 供领料明细列表展示每行物料的"可用库存"参考列。
+     *
+     * @param materialIds 物料ID列表
+     * @return key=物料ID，value=该物料总可用量
+     */
+    Map<Long, BigDecimal> sumAvailableStockByMaterials(List<Long> materialIds);
 
     /**
      * 根据工单 BOM 物料需求构建领料单行（排除倒冲物料），

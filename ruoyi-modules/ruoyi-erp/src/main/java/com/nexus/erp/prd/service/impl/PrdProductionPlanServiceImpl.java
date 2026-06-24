@@ -585,7 +585,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             BigDecimal lossFactor = BigDecimal.ONE.add(
                     lossRate.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
             );
-            return baseQuantity.multiply(lossFactor);
+            BigDecimal result = baseQuantity.multiply(lossFactor);
+            // 含损耗时向上取整：避免因损耗小数导致应领数量无法取件（如 10.5 件应取 11 件）
+            return result.setScale(0, RoundingMode.CEILING);
         }
 
         return baseQuantity;

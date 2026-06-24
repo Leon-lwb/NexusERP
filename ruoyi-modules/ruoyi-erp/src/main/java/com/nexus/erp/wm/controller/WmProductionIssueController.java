@@ -18,7 +18,9 @@ import com.nexus.erp.wm.service.IWmProductionIssueService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 生产领料Controller
@@ -151,6 +153,27 @@ public class WmProductionIssueController extends BaseController {
     public R<List<WmMaterialStockVo>> availableStock(@RequestParam Long materialId,
                                                       @RequestParam(required = false) Long warehouseId) {
         return R.ok(wmProductionIssueService.selectAvailableStock(materialId, warehouseId));
+    }
+
+    /**
+     * 批量查询多个物料的总可用库存（汇总所有仓库/批次/库位）
+     * <p>权限标识：{@code wm:productionissue:query}</p>
+     * <p>供领料明细列表展示每行物料的"可用库存"参考列，避免逐行调用产生 N+1 请求。</p>
+     *
+     * @param materialIds 物料ID列表，逗号分隔
+     * @return key=物料ID，value=该物料总可用量
+     */
+    @SaCheckPermission("wm:productionissue:query")
+    @GetMapping("/availableStockBatch")
+    public R<Map<Long, BigDecimal>> availableStockBatch(@RequestParam String materialIds) {
+        List<Long> ids = new java.util.ArrayList<>();
+        for (String s : materialIds.split(",")) {
+            String trimmed = s.trim();
+            if (!trimmed.isEmpty()) {
+                ids.add(Long.parseLong(trimmed));
+            }
+        }
+        return R.ok(wmProductionIssueService.sumAvailableStockByMaterials(ids));
     }
 
     /**

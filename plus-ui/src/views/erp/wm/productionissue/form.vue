@@ -122,6 +122,15 @@
             </template>
           </vxe-column>
           <vxe-column field="shortQty" title="欠领数量" width="90" align="center" />
+          <vxe-column field="availableQty" title="可用库存" width="90" align="center">
+            <template #default="{ row }">
+              <span v-if="row.availableQty != null"
+                    :class="{ 'text-red': row.currentQty != null && row.currentQty > 0 && row.currentQty > row.availableQty }">
+                {{ row.availableQty }}
+              </span>
+              <span v-else>-</span>
+            </template>
+          </vxe-column>
           <vxe-column field="displayLocationBatch" title="批次/库位" min-width="190">
             <template #default="{ row, rowIndex }">
               <el-input v-model="row.displayLocationBatch" placeholder="选择库存" readonly>
@@ -219,7 +228,8 @@
 <script setup lang="ts" name="ProductionIssueForm">
 import {
   getProductionIssue, addProductionIssue, updateProductionIssue,
-  executeProductionIssue, getAvailableStock, getWorkOrderLines
+  executeProductionIssue, getAvailableStock, getWorkOrderLines,
+  getAvailableStockBatch
 } from "@/api/erp/wm/productionissue"
 import { listMaterial } from "@/api/erp/bd/material"
 import { listWarehouse } from "@/api/erp/wm/warehouse"
@@ -303,6 +313,8 @@ function getInfo(id: any) {
       lineStatus: l.lineStatus || 'PENDING',
       displayLocationBatch: (l.locationCode ? l.locationCode + '/' : '') + (l.batchCode || '')
     }))
+    // 加载各行物料的总可用库存供参考
+    loadAvailableStocks()
   })
 }
 
@@ -371,6 +383,8 @@ async function handleAutoFillFromWorkOrder() {
     if (!lines.length) { proxy.$modal.msgWarning('该工单无非倒冲物料需求，无法带出'); return }
     lineList.value = lines
     proxy.$modal.msgSuccess('已根据工单BOM带出领料明细')
+    // 加载各行物料的总可用库存供参考
+    loadAvailableStocks()
   } catch (e) {
     proxy.$modal.msgError('带出BOM失败，请检查工单信息')
   }
@@ -383,6 +397,7 @@ function handleAddLine() {
     materialId: null, materialCode: '', materialName: '', materialSpec: '',
     baseUomId: '', baseUomName: '', bomQty: null, lossRate: null,
     requiredQty: null, issuedQty: 0, currentQty: null, shortQty: null,
+    availableQty: null,
     requirementDetailId: null, lineStatus: 'PENDING',
     batchId: null, batchCode: '', locationId: null, locationCode: '', locationName: '',
     displayLocationBatch: '',
@@ -435,6 +450,31 @@ function selectMaterial(row: any) {
   }
   materialSelectOpen.value = false
   currentRowIndex.value = -1
+  // 选完物料后刷新该行可用库存
+  refreshLineAvailableStock(row.materialId, idx)
+}
+
+/** 批量加载行物料的总可用库存（汇总所有仓库/批次/库位），写入各行 availableQty 字段 */
+function loadAvailableStocks() {
+  const ids = lineList.value.map((l: any) => l.materialId).filter(Boolean)
+  if (!ids.length) return
+  getAvailableStockBatch(ids).then((res: any) => {
+    const map = res.data || {}
+    lineList.value.forEach((l: any) => {
+      l.availableQty = l.materialId && map[l.materialId] != null ? map[l.materialId] : null
+    })
+  }).catch(() => {})
+}
+
+/** 刷新单行可用库存：以传入的 materialId 查询总量，写入指定行的 availableQty */
+function refreshLineAvailableStock(materialId: number | null, rowIndex: number) {
+  if (!materialId) return
+  getAvailableStockBatch([materialId]).then((res: any) => {
+    const map = res.data || {}
+    if (rowIndex >= 0 && lineList.value[rowIndex]) {
+      lineList.value[rowIndex].availableQty = map[materialId] ?? null
+    }
+  }).catch(() => {})
 }
 
 function getWarehouseList() {
@@ -519,6 +559,10 @@ function selectStock(row: any) {
 }
 .mb8 {
   margin-bottom: 8px;
+}
+.text-red {
+  color: #f56c6c;
+  font-weight: 600;
 }
 :deep(.el-divider__text) {
   background-color: #f5f7fa;

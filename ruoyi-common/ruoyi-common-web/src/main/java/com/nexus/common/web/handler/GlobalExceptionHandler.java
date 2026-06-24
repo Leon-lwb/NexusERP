@@ -16,6 +16,7 @@ import com.nexus.common.core.utils.StreamUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.core.annotation.Order;
 import org.springframework.expression.ExpressionException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -37,6 +38,7 @@ import java.io.IOException;
  *
  * @author Lion Li
  */
+@Order(1)
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {

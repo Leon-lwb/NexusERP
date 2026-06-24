@@ -57,6 +57,15 @@ export const getAvailableStock = (materialId: number, warehouseId?: number): Axi
   });
 };
 
+/** 批量查询多个物料的总可用库存（汇总所有仓库/批次/库位） */
+export const getAvailableStockBatch = (materialIds: (string | number)[]): AxiosPromise<Record<string, number>> => {
+  return request({
+    url: '/erp/wm/productionissue/availableStockBatch',
+    method: 'get',
+    params: { materialIds: materialIds.join(',') }
+  });
+};
+
 /** 根据工单 BOM 物料需求构建领料单行（排除倒冲物料） */
 export const getWorkOrderLines = (woId: string | number): AxiosPromise<ProductionIssueLineForm[]> => {
   return request({

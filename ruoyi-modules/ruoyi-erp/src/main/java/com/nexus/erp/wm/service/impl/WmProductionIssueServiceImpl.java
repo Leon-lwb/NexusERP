@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.utils.MapstructUtils;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.rmi.ServerException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -253,6 +255,27 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
         lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
         return stockMapper.selectVoList(lqw);
+    }
+
+    /**
+     * 批量查询多个物料的总可用库存（汇总所有仓库/批次/库位），
+     * 供领料明细列表展示每行物料的"可用库存"参考列。
+     */
+    @Override
+    public Map<Long, BigDecimal> sumAvailableStockByMaterials(List<Long> materialIds) {
+        Map<Long, BigDecimal> result = new HashMap<>();
+        if (materialIds == null || materialIds.isEmpty()) {
+            return result;
+        }
+        LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
+        lqw.in(WmMaterialStock::getMaterialId, materialIds);
+        lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
+        lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
+        List<WmMaterialStock> list = stockMapper.selectList(lqw);
+        for (WmMaterialStock s : list) {
+            result.merge(s.getMaterialId(), zeroIfNull(s.getStockQuantity()), BigDecimal::add);
+        }
+        return result;
     }
 
     @Override
