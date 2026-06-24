@@ -41,4 +41,13 @@ public interface IImChatService {
     int markPrivateRead(Long peerUserId);
 
     int markGroupRead(Long groupId);
+
+    /**
+     * 将用户头像 OSS ID 解析为可直接访问的 URL（与消息历史中的 senderAvatar 保持一致）。
+     * 用于 IM 登录/用户信息接口返回当前用户头像，避免前端拿到裸 OSS ID 拼出不存在的 /resource/oss/{id} 导致头像 404。
+     *
+     * @param avatarId 头像 OSS ID
+     * @return 头像 URL，无则返回空串
+     */
+    String resolveAvatarUrl(Long avatarId);
 }

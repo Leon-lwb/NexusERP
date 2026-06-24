@@ -403,7 +403,8 @@ public class ImChatServiceImpl implements IImChatService {
         return avatars;
     }
 
-    private String resolveAvatarUrl(Long avatarId) {
+    @Override
+    public String resolveAvatarUrl(Long avatarId) {
         if (avatarId == null) {
             return "";
         }

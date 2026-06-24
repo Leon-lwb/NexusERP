@@ -72,7 +72,7 @@ public class AppImController extends BaseController {
         data.put("userId", userId);
         data.put("userName", user != null ? user.getUserName() : "");
         data.put("nickName", user != null ? user.getNickName() : "");
-        data.put("avatar", user != null ? user.getAvatar() : "");
+        data.put("avatar", imChatService.resolveAvatarUrl(user != null ? user.getAvatar() : null));
         return R.ok(data);
     }
 
@@ -97,7 +97,7 @@ public class AppImController extends BaseController {
         data.put("userId", userId);
         data.put("userName", user != null ? user.getUserName() : "");
         data.put("nickName", user != null ? user.getNickName() : "");
-        data.put("avatar", user != null ? user.getAvatar() : "");
+        data.put("avatar", imChatService.resolveAvatarUrl(user != null ? user.getAvatar() : null));
         return R.ok(data);
     }
 
