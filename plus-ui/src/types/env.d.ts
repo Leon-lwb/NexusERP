@@ -18,6 +18,8 @@ interface ImportMetaEnv {
   VITE_APP_RSA_PUBLIC_KEY: string;
   VITE_APP_RSA_PRIVATE_KEY: string;
   VITE_APP_CLIENT_ID: string;
+  VITE_APP_JMUREPORT_DESIGN_URL: string;
+  VITE_APP_JMUREPORT_DASHBOARD_URL: string;
   VITE_APP_WEBSOCKET: string;
   VITE_APP_SSE: string;
 }

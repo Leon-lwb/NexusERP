@@ -128,6 +128,11 @@ security:
     # 支付回调（无需登录验证）
     - /pay/*/notify
     - /pay/*/notify/**
+    # 积木报表（内部自行鉴权）
+    - /jmreport/**
+    - /drag/**
+    - /jmreport-designer/**
+    - /jmubi/**
 
 # 多租户配置
 tenant:
