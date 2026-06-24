@@ -7,9 +7,11 @@ import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -65,6 +67,7 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
      * @param args 操作参数，依次为：工单ID、物料ID、物料编码、物料名称、入库数量、仓库ID、库位ID、操作时间
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         Long woId = (Long) args[0];
         Long materialId = (Long) args[1];
@@ -75,17 +78,26 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
         Long locationId = args[6] != null ? (Long) args[6] : null;
         Date now = (Date) args[7];
 
+        // 幂等检查：同一工单不重复入库
+        if (hasPosted(SOURCE_DOC_TYPE_WORK_ORDER, woId)) {
+            log.warn("工单[{}]已入库，跳过重复处理", woId);
+            return;
+        }
+
         // 1. 查询或创建库存记录
         WmMaterialStock stock = findOrCreateStock(materialId, warehouseId, locationId, materialCode, materialName);
 
-        // 2. 增加库存数量
-        BigDecimal beforeQty = stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO;
-        BigDecimal afterQty = beforeQty.add(quantity);
-        stock.setStockQuantity(afterQty);
-        stockMapper.updateById(stock);
+        // 2. 原子增加库存数量
+        int affected = stockMapper.addStock(stock.getStockId(), quantity, stock.getVersion());
+        if (affected == 0) {
+            throw new ServiceException("库存并发冲突，请重试: 物料【" + materialName + "】");
+        }
+        WmMaterialStock refreshedStock = stockMapper.selectById(stock.getStockId());
+        BigDecimal afterQty = refreshedStock.getStockQuantity();
+        BigDecimal beforeQty = afterQty.subtract(quantity);
 
         // 3. 生成库存流水
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_PRODUCTION_IN, TX_FLAG_IN,
+        WmMaterialStockTx tx = buildBaseTxFromStock(refreshedStock, TX_TYPE_PRODUCTION_IN, TX_FLAG_IN,
             quantity, beforeQty, afterQty, now);
         tx.setSourceDocType(SOURCE_DOC_TYPE_WORK_ORDER);
         tx.setSourceDocId(woId);

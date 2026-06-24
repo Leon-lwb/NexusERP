@@ -223,15 +223,15 @@ public class ProDispatchServiceImpl implements IProDispatchService {
 
         // 2. 累加到工序(增量, 原子操作)
         stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
-            .setSql("good_qty = good_qty + " + goodQty.toPlainString())
-            .setSql("defect_qty = defect_qty + " + defectQty.toPlainString())
-            .setSql("scrap_qty = scrap_qty + " + scrapQty.toPlainString())
+            .setSql("good_qty = good_qty + {0}", goodQty)
+            .setSql("defect_qty = defect_qty + {0}", defectQty)
+            .setSql("scrap_qty = scrap_qty + {0}", scrapQty)
             .eq(ProFlowCardStep::getStepRecordId, stepRecordId));
 
         // 3. 累加到流转卡(增量, 原子操作)
         flowCardMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
-            .setSql("completed_qty = completed_qty + " + goodQty.toPlainString())
-            .setSql("scrap_qty = scrap_qty + " + scrapQty.toPlainString())
+            .setSql("completed_qty = completed_qty + {0}", goodQty)
+            .setSql("scrap_qty = scrap_qty + {0}", scrapQty)
             .eq(ProFlowCard::getCardId, cardId));
 
         // 4. 检查工序下所有派工是否均完成 -> 自动完成工序

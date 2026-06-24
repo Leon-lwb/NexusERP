@@ -204,10 +204,11 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("工序状态已变更或不存在，仅进行中状态可完工");
         }
 
-        // 2. 更新流转卡累计完成数量（toPlainString 避免科学计数法破坏SQL）
+        // 2. 更新流转卡数量: completed_qty 用当前工序goodQty覆写（串行流程，每道工序处理同一批工件）
+        //    scrap_qty 累加（各工序独立报废，需累计）
         baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
-            .setSql("completed_qty = completed_qty + " + goodQty.toPlainString())
-            .setSql("scrap_qty = scrap_qty + " + scrapQty.toPlainString())
+            .setSql("completed_qty = {0}", goodQty)
+            .setSql("scrap_qty = scrap_qty + {0}", scrapQty)
             .eq(ProFlowCard::getCardId, cardId));
 
         // 3. 检查是否所有工序完成
@@ -241,17 +242,40 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (card == null) {
             return;
         }
-        log.info("流转卡完工: cardId={}, completedQty={}", cardId, card.getCompletedQty());
 
-        // 2. 聚合到工单 completed_qty（toPlainString 避免科学计数法）
-        BigDecimal completedQty = card.getCompletedQty() != null ? card.getCompletedQty() : BigDecimal.ZERO;
-        BigDecimal scrapQtyVal = card.getScrapQty() != null ? card.getScrapQty() : BigDecimal.ZERO;
+        // 2. 从工序记录重算流转卡数量（确保派工路径和直接路径都正确）
+        //    completed_qty = 最后工序的 good_qty（串行流程产出）
+        //    scrap_qty = 所有工序 scrap_qty 之和（各工序独立报废）
+        List<ProFlowCardStep> allSteps = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, cardId)
+            .orderByDesc(ProFlowCardStep::getSequenceNum));
+        BigDecimal correctCompletedQty = BigDecimal.ZERO;
+        BigDecimal correctScrapQty = BigDecimal.ZERO;
+        for (int i = 0; i < allSteps.size(); i++) {
+            ProFlowCardStep s = allSteps.get(i);
+            BigDecimal stepGood = s.getGoodQty() != null ? s.getGoodQty() : BigDecimal.ZERO;
+            BigDecimal stepScrap = s.getScrapQty() != null ? s.getScrapQty() : BigDecimal.ZERO;
+            if (i == 0) {
+                // 最后工序（sequenceNum 最大）的 good_qty 就是串行产出
+                correctCompletedQty = stepGood;
+            }
+            correctScrapQty = correctScrapQty.add(stepScrap);
+        }
+        baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
+            .set(ProFlowCard::getCompletedQty, correctCompletedQty)
+            .set(ProFlowCard::getScrapQty, correctScrapQty)
+            .eq(ProFlowCard::getCardId, cardId));
+        card.setCompletedQty(correctCompletedQty);
+        card.setScrapQty(correctScrapQty);
+        log.info("流转卡完工: cardId={}, completedQty={}, scrapQty={}", cardId, correctCompletedQty, correctScrapQty);
+
+        // 3. 聚合到工单 completed_qty（card 的 completedQty 已在步骤2中重算为正确值）
         workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
-            .setSql("completed_qty = completed_qty + " + completedQty.toPlainString())
-            .setSql("scrap_qty = scrap_qty + " + scrapQtyVal.toPlainString())
+            .setSql("completed_qty = completed_qty + {0}", correctCompletedQty)
+            .setSql("scrap_qty = scrap_qty + {0}", correctScrapQty)
             .eq(ProWorkOrder::getMesWoId, card.getMesWoId()));
 
-        // 3. 检查工单下是否还有非COMPLETED/CLOSED流转卡
+        // 4. 检查工单下是否还有非COMPLETED/CLOSED流转卡
         Long activeCardCount = baseMapper.selectCount(Wrappers.<ProFlowCard>lambdaQuery()
             .eq(ProFlowCard::getMesWoId, card.getMesWoId())
             .notIn(ProFlowCard::getCardStatus, STATUS_COMPLETED, STATUS_CLOSED));

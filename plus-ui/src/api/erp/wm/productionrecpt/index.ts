@@ -39,3 +39,10 @@ export const delProductionRecpt = (recptIds: string | number | (string | number)
     method: 'delete'
   });
 };
+
+export const executeProductionRecpt = (recptId: string | number) => {
+  return request({
+    url: '/erp/wm/productionrecpt/execute/' + recptId,
+    method: 'put'
+  });
+};

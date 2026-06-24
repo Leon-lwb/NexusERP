@@ -9,8 +9,10 @@ import com.nexus.erp.wm.domain.WmTransferLine;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -69,6 +71,7 @@ public class TransferStrategy extends BaseStockOperationStrategy {
      * @param args 操作参数，args[0]为调拨单行对象（WmTransferLine）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         WmTransferLine line = (WmTransferLine) args[0];
         if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
@@ -99,8 +102,10 @@ public class TransferStrategy extends BaseStockOperationStrategy {
             BigDecimal deductQty = stockQty.min(remaining);
             BigDecimal beforeQty = stockQty;
             BigDecimal afterQty = stockQty.subtract(deductQty);
-            fromStock.setStockQuantity(afterQty);
-            stockMapper.updateById(fromStock);
+            int affected = stockMapper.deductStock(fromStock.getStockId(), deductQty, fromStock.getVersion());
+            if (affected == 0) {
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+            }
             stockTxMapper.insert(buildTransferOutTx(line, fromStock, deductQty, beforeQty, afterQty, now));
             remaining = remaining.subtract(deductQty);
         }
@@ -143,8 +148,10 @@ public class TransferStrategy extends BaseStockOperationStrategy {
             stockMapper.insert(toStock);
         } else {
             toStock = toStocks.get(0);
-            toStock.setStockQuantity(toStock.getStockQuantity().add(line.getQuantity()));
-            stockMapper.updateById(toStock);
+            int affected = stockMapper.addStock(toStock.getStockId(), line.getQuantity(), toStock.getVersion());
+            if (affected == 0) {
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+            }
         }
 
         stockTxMapper.insert(buildTransferInTx(line, toStock, line.getQuantity(), now));

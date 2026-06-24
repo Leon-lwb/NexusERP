@@ -10,8 +10,10 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -65,6 +67,7 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
      * @param args 操作参数，args[0]为入库单行对象（WmMiscRecptLine），args[1]为入库单对象（WmMiscRecpt），args[2]为操作时间（Date）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         WmMiscRecptLine line = (WmMiscRecptLine) args[0];
         WmMiscRecpt recpt = (WmMiscRecpt) args[1];
@@ -110,9 +113,11 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
             stock.setFrozenFlag(0L);
             stockMapper.insert(stock);
         } else {
-            stock.setStockQuantity(afterQuantity);
             stock.setRecptDate(now);
-            stockMapper.updateById(stock);
+            int affected = stockMapper.addStock(stock.getStockId(), line.getQuantity(), stock.getVersion());
+            if (affected == 0) {
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+            }
         }
 
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_MISC_IN, TX_FLAG_IN, line.getQuantity(),

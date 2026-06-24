@@ -106,9 +106,14 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
                 stock = buildStockFromReceiveDetail(detail, receive, afterQuantity, now);
                 stockMapper.insert(stock);
             } else {
-                stock.setStockQuantity(afterQuantity);
-                stock.setRecptDate(now);
-                stockMapper.updateById(stock);
+                int affected = stockMapper.addStock(stock.getStockId(), detail.getQuantity(), stock.getVersion());
+                if (affected == 0) {
+                    throw new com.nexus.common.core.exception.ServiceException("库存并发冲突，请重试");
+                }
+                stockMapper.update(null, Wrappers.<WmMaterialStock>lambdaUpdate()
+                    .set(WmMaterialStock::getRecptDate, now)
+                    .eq(WmMaterialStock::getStockId, stock.getStockId()));
+                stock = stockMapper.selectById(stock.getStockId());
             }
 
             stockTxMapper.insert(buildReceiveStockTx(receive, detail, stock, beforeQuantity, afterQuantity, now));

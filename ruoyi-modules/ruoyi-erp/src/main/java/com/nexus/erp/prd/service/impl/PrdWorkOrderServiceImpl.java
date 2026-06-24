@@ -3,6 +3,7 @@ package com.nexus.erp.prd.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import lombok.RequiredArgsConstructor;
@@ -389,6 +390,11 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         completeMsg.setMaterialName(wo.getMaterialName());
         completeMsg.setWorkshopId(wo.getWorkshopId());
         completeMsg.setSourceModule("prd");
+        // 携带租户ID，供MQ消费者恢复租户上下文
+        String tid = TenantHelper.getTenantId();
+        if (tid != null) {
+            completeMsg.setTenantId(Long.parseLong(tid));
+        }
         messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
             RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH, completeMsg);
     }

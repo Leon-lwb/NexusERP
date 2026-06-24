@@ -6,6 +6,7 @@ import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.PurchaseReceiveWritebackMessage;
 import com.nexus.erp.mq.message.StockInMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
@@ -72,6 +73,17 @@ public class StockInConsumer extends BaseMessageConsumer<StockInMessage> {
      */
     @RabbitListener(queues = QueueConstants.STOCK_IN_QUEUE)
     public void onMessage(StockInMessage message, Channel channel, Message amqpMessage) throws Exception {
-        processMessage(message, channel, amqpMessage);
+        // MQ消费者线程无登录态，需从消息恢复租户上下文
+        String tenantId = "000000";
+        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
+            tenantId = String.format("%06d", message.getTenantId());
+        }
+        TenantHelper.dynamic(tenantId, () -> {
+            try {
+                processMessage(message, channel, amqpMessage);
+            } catch (Exception e) {
+                log.error("处理入库消息异常: receiveId={}", message.getReceiveId(), e);
+            }
+        });
     }
 }

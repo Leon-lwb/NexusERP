@@ -65,8 +65,25 @@
             <el-tag :type="stepStatusTagType(scope.row.stepStatus)">{{ stepStatusLabel(scope.row.stepStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" align="center">
+        <el-table-column label="已派工" width="120" align="center">
           <template #default="scope">
+            <span v-if="getStepDispatchedQty(scope.row.stepRecordId) > 0">
+              {{ getStepDispatchedQty(scope.row.stepRecordId) }} / {{ scope.row.plannedQty }}
+            </span>
+            <span v-else class="text-gray-400">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" align="center">
+          <template #default="scope">
+            <el-button
+              link
+              type="warning"
+              icon="User"
+              @click="handleOpenDispatch(scope.row)"
+              v-if="scope.row.stepStatus === 'PENDING' && flowCard.cardStatus === 'RELEASED'"
+              v-hasPermi="['mes:pro:dispatch:add']"
+              >派工</el-button
+            >
             <el-button
               link
               type="primary"
@@ -89,12 +106,49 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- 派工对话框 -->
+    <el-dialog v-model="dispatchDialogVisible" title="派工" width="480px" destroy-on-close>
+      <el-form ref="dispatchFormRef" :model="dispatchForm" :rules="dispatchRules" label-width="90px">
+        <el-form-item label="工序">
+          <el-input :model-value="currentStep?.processName" disabled />
+        </el-form-item>
+        <el-form-item label="操作员" prop="operatorId">
+          <el-select v-model="dispatchForm.operatorId" placeholder="请选择操作员" filterable style="width: 100%" @change="handleOperatorChange">
+            <el-option
+              v-for="w in workerOptions"
+              :key="w.workerId"
+              :label="w.userName + (w.employeeId ? ' / ' + w.employeeId : '')"
+              :value="w.workerId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="派工数量" prop="quantity">
+          <el-input-number
+            v-model="dispatchForm.quantity"
+            :min="1"
+            :max="maxDispatchQty"
+            style="width: 100%"
+          />
+          <div class="text-gray-400 text-xs mt-1">工序计划数量: {{ currentStep?.plannedQty }}，剩余可派: {{ maxDispatchQty }}</div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dispatchDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="dispatchSubmitting" @click="handleSubmitDispatch">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="MesFlowCardDetail">
 import { getFlowCard, startStep, completeStep, completeFlowCard, closeFlowCard } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO, ProFlowCardStepVO } from '@/api/mes/pro/flowcard';
+import { addDispatch, listDispatchByStep } from '@/api/mes/pro/dispatch';
+import type { ProDispatchVO } from '@/api/mes/pro/dispatch';
+import { listWorker } from '@/api/erp/sch/worker/index';
+import type { WorkerVO } from '@/api/erp/sch/worker/types';
+import type { FormInstance, FormRules } from 'element-plus';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
@@ -102,10 +156,39 @@ const router = useRouter();
 
 const flowCard = ref<ProFlowCardVO>({} as ProFlowCardVO);
 
+// 派工相关
+const workerOptions = ref<WorkerVO[]>([]);
+const dispatchDialogVisible = ref(false);
+const dispatchSubmitting = ref(false);
+const dispatchFormRef = ref<FormInstance>();
+const currentStep = ref<ProFlowCardStepVO | null>(null);
+const stepDispatches = ref<Map<number, ProDispatchVO[]>>(new Map());
+
+const dispatchForm = ref({
+  operatorId: undefined as number | undefined,
+  operatorName: '',
+  quantity: 1
+});
+
+const dispatchRules: FormRules = {
+  operatorId: [{ required: true, message: '请选择操作员', trigger: 'change' }],
+  quantity: [{ required: true, message: '请输入派工数量', trigger: 'blur' }]
+};
+
+const maxDispatchQty = computed(() => {
+  if (!currentStep.value) return 9999;
+  const stepId = currentStep.value.stepRecordId;
+  const existing = stepDispatches.value.get(stepId) || [];
+  const dispatched = existing.reduce((sum, d) => sum + (d.plannedQty || 0), 0);
+  return Math.max(0, Number(currentStep.value.plannedQty) - dispatched);
+});
+
 const loadDetail = async () => {
   const cardId = route.params.cardId as string;
   const res = await getFlowCard(cardId);
   flowCard.value = res.data;
+  // 加载每个工序的派工记录
+  await loadStepDispatches();
 };
 
 const handleStartStep = async (row: ProFlowCardStepVO) => {
@@ -142,6 +225,66 @@ const handleCloseFlowCard = async () => {
 
 const goBack = () => {
   router.push('/mes/pro/flow-card');
+};
+
+// ---- 派工相关方法 ----
+
+const getStepDispatchedQty = (stepRecordId: number) => {
+  const list = stepDispatches.value.get(stepRecordId) || [];
+  return list.reduce((sum, d) => sum + (d.plannedQty || 0), 0);
+};
+
+const loadStepDispatches = async () => {
+  if (!flowCard.value.steps?.length) return;
+  const map = new Map<number, ProDispatchVO[]>();
+  for (const step of flowCard.value.steps) {
+    try {
+      const res = await listDispatchByStep(step.stepRecordId);
+      map.set(step.stepRecordId, res.data || []);
+    } catch {
+      map.set(step.stepRecordId, []);
+    }
+  }
+  stepDispatches.value = map;
+};
+
+const handleOpenDispatch = (row: ProFlowCardStepVO) => {
+  currentStep.value = row;
+  dispatchForm.value = {
+    operatorId: undefined,
+    operatorName: '',
+    quantity: maxDispatchQty.value > 0 ? maxDispatchQty.value : Number(row.plannedQty)
+  };
+  dispatchDialogVisible.value = true;
+};
+
+const handleOperatorChange = (workerId: number) => {
+  const worker = workerOptions.value.find((w) => w.workerId === workerId);
+  if (worker) {
+    dispatchForm.value.operatorName = worker.userName;
+  }
+};
+
+const handleSubmitDispatch = async () => {
+  if (!dispatchFormRef.value) return;
+  await dispatchFormRef.value.validate();
+  if (!currentStep.value) return;
+
+  dispatchSubmitting.value = true;
+  try {
+    await addDispatch(
+      currentStep.value.cardId,
+      currentStep.value.stepRecordId,
+      dispatchForm.value.operatorId!,
+      dispatchForm.value.operatorName,
+      dispatchForm.value.quantity
+    );
+    proxy?.$modal.msgSuccess('派工成功');
+    dispatchDialogVisible.value = false;
+    loadDetail();
+  } finally {
+    dispatchSubmitting.value = false;
+  }
 };
 
 const statusLabel = (status: string) => {
@@ -183,7 +326,14 @@ const stepStatusTagType = (status: string) => {
   return map[status] || 'info';
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // 加载操作员列表
+  try {
+    const res = await listWorker({ pageNum: 1, pageSize: 1000 });
+    workerOptions.value = res.rows;
+  } catch {
+    workerOptions.value = [];
+  }
   loadDetail();
 });
 </script>

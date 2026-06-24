@@ -9,8 +9,10 @@ import com.nexus.erp.wm.domain.WmStockTakingLine;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -66,6 +68,7 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
      * @param args 操作参数，依次为：盘点单行对象（WmStockTakingLine）、实际数量、账面数量、差异数量、操作时间（Date）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         WmStockTakingLine line = (WmStockTakingLine) args[0];
         BigDecimal actualQuantity = (BigDecimal) args[1];
@@ -95,8 +98,15 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
         BigDecimal beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
         BigDecimal afterQty = bookQuantity.add(diffQuantity);
 
-        stock.setStockQuantity(afterQty);
-        stockMapper.updateById(stock);
+        int affected;
+        if (diffQuantity.compareTo(BigDecimal.ZERO) > 0) {
+            affected = stockMapper.addStock(stock.getStockId(), absDiff, stock.getVersion());
+        } else {
+            affected = stockMapper.deductStock(stock.getStockId(), absDiff, stock.getVersion());
+        }
+        if (affected == 0) {
+            throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+        }
 
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_COUNT_ADJUST, txFlag, absDiff,
             beforeQty, afterQty, now);

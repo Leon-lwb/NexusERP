@@ -12,8 +12,10 @@ import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -76,6 +78,7 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
      * @param args 操作参数，args[0]为销售出库单ID（Long）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         Long issueId = (Long) args[0];
         WmSalesIssue salesIssue = salesIssueMapper.selectById(issueId);
@@ -110,8 +113,10 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                 BigDecimal deductQty = stockQty.min(remaining);
                 BigDecimal beforeQuantity = stockQty;
                 BigDecimal afterQuantity = stockQty.subtract(deductQty);
-                stock.setStockQuantity(afterQuantity);
-                stockMapper.updateById(stock);
+                int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+                if (affected == 0) {
+                    throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+                }
                 stockTxMapper.insert(buildSalesOutStockTx(salesIssue, line, stock, beforeQuantity, afterQuantity, now));
                 remaining = remaining.subtract(deductQty);
             }

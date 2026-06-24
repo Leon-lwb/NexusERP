@@ -4,19 +4,23 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmSalesIssue;
 import com.nexus.erp.wm.domain.WmSalesIssueLine;
 import com.nexus.erp.wm.domain.bo.WmSalesIssueBo;
 import com.nexus.erp.wm.domain.bo.WmSalesIssueLineBo;
 import com.nexus.erp.wm.domain.vo.WmSalesIssueVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
@@ -34,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +49,7 @@ import java.util.Map;
  * @author nexus
  * @date 2026-04-03
  */
+@Slf4j
 @RequiredArgsConstructor
 @DS("erp")
 @Service("wmSalesIssueService")
@@ -52,6 +58,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     private final WmSalesIssueMapper baseMapper;
     private final WmSalesIssueLineMapper lineMapper;
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    private final WmMaterialStockTxMapper stockTxMapper;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
@@ -124,18 +131,29 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     public int completeSalesIssue(Long issueId) {
         WmSalesIssue salesIssue = baseMapper.selectById(issueId);
         if (salesIssue == null) {
-            throw new RuntimeException("销售出库单不存在");
+            throw new ServiceException("销售出库单不存在");
         }
         if (!STATUS_CONFIRMED.equals(salesIssue.getStatus())) {
-            throw new RuntimeException("只有已确认的出库单才能完成");
+            throw new ServiceException("只有已确认的出库单才能完成");
+        }
+
+        // 幂等检查：已生成过出库事务记录则跳过
+        Long txCount = stockTxMapper.selectCount(Wrappers.<WmMaterialStockTx>lambdaQuery()
+            .eq(WmMaterialStockTx::getSourceDocType, "WM_SALES_ISSUE")
+            .eq(WmMaterialStockTx::getSourceDocId, issueId));
+        if (txCount != null && txCount > 0) {
+            log.warn("销售出库单[{}]已执行过，跳过重复处理", issueId);
+            return 1;
         }
 
         List<WmSalesIssueLine> lineList = lineMapper.selectList(
             new LambdaQueryWrapper<WmSalesIssueLine>()
                 .eq(WmSalesIssueLine::getIssueId, issueId));
         if (lineList == null || lineList.isEmpty()) {
-            throw new RuntimeException("出库单明细为空");
+            throw new ServiceException("出库单明细为空");
         }
+
+        Date now = new Date();
 
         // 扣减库存：按批次效期、收货时间、库存ID排序，跨库存记录 FIFO 扣减
         for (WmSalesIssueLine line : lineList) {
@@ -149,6 +167,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             stockLqw.eq(WmMaterialStock::getWarehouseId, salesIssue.getWarehouseId());
             stockLqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
             stockLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
+            stockLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
             stockLqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
             stockLqw.orderByAsc(WmMaterialStock::getExpireDate);
             stockLqw.orderByAsc(WmMaterialStock::getRecptDate);
@@ -156,7 +175,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 
             List<WmMaterialStock> stockList = wmMaterialStockMapper.selectList(stockLqw);
             if (stockList == null || stockList.isEmpty()) {
-                throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不存在");
+                throw new ServiceException("物料【" + line.getMaterialName() + "】库存不存在");
             }
 
             BigDecimal remaining = issueQty;
@@ -165,7 +184,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 totalAvailable = totalAvailable.add(stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO);
             }
             if (totalAvailable.compareTo(issueQty) < 0) {
-                throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足，当前库存："
+                throw new ServiceException("物料【" + line.getMaterialName() + "】库存不足，当前库存："
                     + totalAvailable + "，出库数量：" + issueQty);
             }
 
@@ -179,8 +198,45 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 }
 
                 BigDecimal consumeQty = currentQty.min(remaining);
-                stock.setStockQuantity(currentQty.subtract(consumeQty));
-                wmMaterialStockMapper.updateById(stock);
+                // 原子扣减库存（乐观锁 + 不允许负库存）
+                int affected = wmMaterialStockMapper.deductStock(stock.getStockId(), consumeQty, stock.getVersion());
+                if (affected == 0) {
+                    throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+                }
+
+                // 生成库存事务记录
+                WmMaterialStockTx tx = new WmMaterialStockTx();
+                tx.setTxType("SALES_OUT");
+                tx.setMaterialId(stock.getMaterialId());
+                tx.setMaterialCode(stock.getMaterialCode());
+                tx.setMaterialName(stock.getMaterialName());
+                tx.setMaterialSpec(stock.getMaterialSpec());
+                tx.setBaseUomId(stock.getBaseUomId());
+                tx.setBaseUomName(stock.getBaseUomName());
+                tx.setBatchId(stock.getBatchId());
+                tx.setBatchCode(stock.getBatchCode());
+                tx.setWarehouseId(stock.getWarehouseId());
+                tx.setWarehouseCode(stock.getWarehouseCode());
+                tx.setWarehouseName(stock.getWarehouseName());
+                tx.setAreaId(stock.getAreaId());
+                tx.setAreaCode(stock.getAreaCode());
+                tx.setAreaName(stock.getAreaName());
+                tx.setLocationId(stock.getLocationId());
+                tx.setLocationCode(stock.getLocationCode());
+                tx.setLocationName(stock.getLocationName());
+                tx.setMaterialStockId(stock.getStockId());
+                tx.setTxFlag(-1);
+                tx.setTxQuantity(consumeQty);
+                tx.setBeforeQuantity(currentQty);
+                tx.setAfterQuantity(currentQty.subtract(consumeQty));
+                tx.setTxDate(now);
+                tx.setSourceDocType("WM_SALES_ISSUE");
+                tx.setSourceDocId(issueId);
+                tx.setSourceDocCode(salesIssue.getIssueCode());
+                tx.setSourceDocLineId(line.getLineId());
+                tx.setRemark("销售出库扣减库存，单号：" + salesIssue.getIssueCode());
+                stockTxMapper.insert(tx);
+
                 remaining = remaining.subtract(consumeQty);
             }
         }

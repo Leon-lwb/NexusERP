@@ -9,7 +9,7 @@
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
+          <el-option v-for="dict in wm_production_recpt_status" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -46,17 +46,20 @@
       <el-table-column label="库位" align="center" prop="locationName" width="120" />
       <el-table-column label="状态" align="center" prop="status" width="100">
         <template #default="scope">
-          <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
+          <dict-tag :options="wm_production_recpt_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="180" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250">
         <template #default="scope">
+          <el-tooltip content="执行入库" placement="top">
+            <el-button link type="success" icon="CircleCheck" @click="handleExecute(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['wm:productionrecpt:edit']" />
+          </el-tooltip>
           <el-tooltip content="修改" placement="top">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:productionrecpt:edit']" />
+            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['wm:productionrecpt:edit']" />
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:productionrecpt:remove']" />
+            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['wm:productionrecpt:remove']" />
           </el-tooltip>
         </template>
       </el-table-column>
@@ -188,7 +191,7 @@
 </template>
 
 <script setup name="ProductionRecpt" lang="ts">
-import { listProductionRecpt, getProductionRecpt, addProductionRecpt, updateProductionRecpt, delProductionRecpt } from '@/api/erp/wm/productionrecpt';
+import { listProductionRecpt, getProductionRecpt, addProductionRecpt, updateProductionRecpt, delProductionRecpt, executeProductionRecpt } from '@/api/erp/wm/productionrecpt';
 import { ProductionRecptVO, ProductionRecptQuery, ProductionRecptForm } from '@/api/erp/wm/productionrecpt/types';
 import { listWork } from '@/api/erp/prd/work';
 import { listMaterial } from '@/api/erp/bd/material';
@@ -196,7 +199,7 @@ import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listStoragelocation } from '@/api/erp/wm/storagelocation';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_normal_disable'));
+const { wm_production_recpt_status } = toRefs<any>(proxy?.useDict('wm_production_recpt_status'));
 
 const recptList = ref<ProductionRecptVO[]>([]);
 const loading = ref(true);
@@ -300,6 +303,13 @@ const handleDelete = async (row?: ProductionRecptVO) => {
   await proxy?.$modal.confirm('是否确认删除编号为"' + recptIds + '"的数据项？');
   await delProductionRecpt(recptIds);
   proxy?.$modal.msgSuccess('删除成功');
+  getList();
+};
+
+const handleExecute = async (row: ProductionRecptVO) => {
+  await proxy?.$modal.confirm('确认执行入库单"' + row.recptCode + '"？执行后将增加成品库存，不可撤销。');
+  await executeProductionRecpt(row.recptId);
+  proxy?.$modal.msgSuccess('入库执行成功');
   getList();
 };
 

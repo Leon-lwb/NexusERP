@@ -39,4 +39,19 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
     int deductStock(@Param("stockId") Long stockId,
                     @Param("deductQty") BigDecimal deductQty,
                     @Param("version") Integer version);
+
+    /**
+     * 原子增加库存
+     *
+     * @param stockId  库存ID
+     * @param addQty   增加数量
+     * @param version  乐观锁版本号
+     * @return 影响行数
+     */
+    @Update("UPDATE wm_material_stock SET stock_quantity = stock_quantity + #{addQty}, " +
+            "version = version + 1, update_time = NOW() " +
+            "WHERE stock_id = #{stockId} AND version = #{version}")
+    int addStock(@Param("stockId") Long stockId,
+                 @Param("addQty") BigDecimal addQty,
+                 @Param("version") Integer version);
 }

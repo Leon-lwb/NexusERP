@@ -111,13 +111,15 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
         BigDecimal beforeQty = BigDecimal.ZERO;
         if (stock != null) {
             beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-            BigDecimal afterQty = beforeQty.add(quantity);
-            stock.setStockQuantity(afterQty);
-            stock.setRecptDate(now);
-            int affected = stockMapper.updateById(stock);
+            int affected = stockMapper.addStock(stock.getStockId(), quantity, stock.getVersion());
             if (affected == 0) {
                 throw new ServiceException("库存并发冲突，请重试: 物料【" + materialName + "】");
             }
+            stock.setRecptDate(now);
+            stockMapper.update(null, Wrappers.<WmMaterialStock>lambdaUpdate()
+                .set(WmMaterialStock::getRecptDate, now)
+                .eq(WmMaterialStock::getStockId, stock.getStockId()));
+            stock = stockMapper.selectById(stock.getStockId());
         } else {
             stock = new WmMaterialStock();
             stock.setMaterialId(materialId);

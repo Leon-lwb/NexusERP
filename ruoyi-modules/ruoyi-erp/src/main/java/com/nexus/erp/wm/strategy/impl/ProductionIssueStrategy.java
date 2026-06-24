@@ -9,8 +9,10 @@ import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -65,6 +67,7 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
      * @param args 操作参数，args[0]为领料单行对象（WmProductionIssueLine），args[1]为操作时间（Date）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         WmProductionIssueLine line = (WmProductionIssueLine) args[0];
         Date now = (Date) args[1];
@@ -96,8 +99,10 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
             BigDecimal deductQty = stockQty.min(remaining);
             BigDecimal beforeQuantity = stockQty;
             BigDecimal afterQuantity = stockQty.subtract(deductQty);
-            stock.setStockQuantity(afterQuantity);
-            stockMapper.updateById(stock);
+            int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+            if (affected == 0) {
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+            }
 
             WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_PRODUCTION_ISSUE, TX_FLAG_OUT, deductQty,
                 beforeQuantity, afterQuantity, now);

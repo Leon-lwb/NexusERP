@@ -109,6 +109,11 @@ public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOr
         pcm.setMaterialCode(wo.getMaterialCode());
         pcm.setMaterialName(wo.getMaterialName());
         pcm.setWorkshopId(wo.getWorkshopId());
+        // 携带租户ID，供下游消费者恢复租户上下文
+        String tid = TenantHelper.getTenantId();
+        if (tid != null) {
+            pcm.setTenantId(Long.parseLong(tid));
+        }
         messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH, pcm);
         log.info("触发完工倒冲入库链路: woNo={}", wo.getWoNo());
     }

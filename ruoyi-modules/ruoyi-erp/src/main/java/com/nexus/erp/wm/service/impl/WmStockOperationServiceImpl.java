@@ -74,6 +74,7 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
      * @param now           操作时间
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void postCountAdjust(WmStockTakingLine line, BigDecimal actualQuantity,
                                 BigDecimal bookQuantity, BigDecimal diffQuantity, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.COUNT_ADJUST)
@@ -87,6 +88,7 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
      * @param now  操作时间
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void postMiscIssue(WmMiscIssueLine line, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.MISC_ISSUE).execute(line, now);
     }
@@ -99,6 +101,7 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
      * @param now   操作时间
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void postMiscRecpt(WmMiscRecptLine line, WmMiscRecpt recpt, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.MISC_RECPT).execute(line, recpt, now);
     }
@@ -110,6 +113,7 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
      * @param now  操作时间
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void postProductionIssue(WmProductionIssueLine line, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.PRODUCTION_ISSUE).execute(line, now);
     }
