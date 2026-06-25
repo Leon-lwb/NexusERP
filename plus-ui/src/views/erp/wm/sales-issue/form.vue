@@ -663,7 +663,7 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/wm/sales-issue' })
+  proxy.$tab.closeOpenPage({ path: '/erp/wm/salesIssue' })
 }
 
 /** 明细行相关方法 */
@@ -826,7 +826,12 @@ function openMaterialSelect(index: number) {
 }
 
 function getMaterialList() {
-  listMaterial(materialQuery).then((response: any) => {
+  // 注入表单已填仓库上下文，仅查询该仓库下有库存记录的物料
+  const params = {
+    ...materialQuery,
+    warehouseId: form.value.warehouseId ?? null
+  }
+  listMaterial(params).then((response: any) => {
     materialList.value = response.rows
   })
 }

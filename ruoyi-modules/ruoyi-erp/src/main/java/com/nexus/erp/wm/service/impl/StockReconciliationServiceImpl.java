@@ -9,6 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdUnitOfMeasure;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmStockReconciliation;
@@ -45,6 +49,8 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
     private final WmStockReconciliationMapper baseMapper;
     private final WmMaterialStockMapper stockMapper;
     private final WmMaterialStockTxMapper stockTxMapper;
+    private final BdMaterialMapper materialMapper;
+    private final BdUnitOfMeasureMapper uomMapper;
 
     @Override
     public TableDataInfo<WmStockReconciliationVo> selectPageList(WmStockReconciliationBo bo, PageQuery pageQuery) {
@@ -108,6 +114,11 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
             }
         }
 
+        List<Long> materialIds = bookQtyList.stream()
+            .map(row -> ((Number) row.get("material_id")).longValue())
+            .collect(Collectors.toList());
+        Map<Long, BdMaterial> materialMap = batchLoadMaterials(materialIds);
+
         List<WmStockReconciliation> results = new ArrayList<>();
         for (Map<String, Object> row : bookQtyList) {
             Long materialId = ((Number) row.get("material_id")).longValue();
@@ -120,6 +131,7 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
             if (diffQty.abs().compareTo(new BigDecimal("0.001")) > 0) {
                 WmStockReconciliation recon = new WmStockReconciliation();
                 recon.setMaterialId(materialId);
+                fillMaterialInfo(recon, materialMap.get(materialId));
                 recon.setBookQty(bookQty);
                 recon.setTxBalance(txBalance);
                 recon.setDiffQty(diffQty);
@@ -189,12 +201,38 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
 
         WmStockReconciliation recon = new WmStockReconciliation();
         recon.setMaterialId(materialId);
+        fillMaterialInfo(recon, materialMapper.selectById(materialId));
         recon.setBookQty(bookQty);
         recon.setTxBalance(txBalance);
         recon.setDiffQty(diffQty);
         recon.setStatus(diffQty.abs().compareTo(new BigDecimal("0.001")) <= 0 ? STATUS_MATCH : STATUS_DIFF);
         recon.setReconTime(now);
         baseMapper.insert(recon);
+    }
+
+    private Map<Long, BdMaterial> batchLoadMaterials(List<Long> materialIds) {
+        if (materialIds == null || materialIds.isEmpty()) {
+            return java.util.Map.of();
+        }
+        List<BdMaterial> materials = materialMapper.selectBatchIds(materialIds);
+        Map<Long, BdMaterial> materialMap = materials.stream()
+            .collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (v1, v2) -> v1));
+        return materialMap;
+    }
+
+    private void fillMaterialInfo(WmStockReconciliation recon, BdMaterial material) {
+        if (material == null) {
+            return;
+        }
+        recon.setMaterialCode(material.getMaterialCode());
+        recon.setMaterialName(material.getMaterialName());
+        recon.setMaterialSpec(material.getMaterialSpec());
+        if (material.getBaseUomId() != null) {
+            BdUnitOfMeasure uom = uomMapper.selectById(material.getBaseUomId());
+            if (uom != null) {
+                recon.setBaseUomName(uom.getUomName());
+            }
+        }
     }
 
     private LambdaQueryWrapper<WmStockReconciliation> buildQueryWrapper(WmStockReconciliationBo bo) {

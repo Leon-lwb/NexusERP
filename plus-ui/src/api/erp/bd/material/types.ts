@@ -4,6 +4,12 @@ export interface MaterialQuery extends PageQuery {
   categoryId?: number;
   materialType?: number;
   status?: number;
+  /** 仓库ID：仅查询在该仓库有库存记录的物料 */
+  warehouseId?: number;
+  /** 库区ID：仅查询在该库区有库存记录的物料 */
+  areaId?: number;
+  /** 库位ID：仅查询在该库位有库存记录的物料 */
+  locationId?: number;
 }
 
 export interface MaterialVO {

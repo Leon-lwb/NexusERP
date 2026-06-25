@@ -452,7 +452,12 @@ function openMaterialSelect(rowIndex: number) {
 
 function getMaterialList() {
   materialLoading.value = true
-  listMaterial(materialQueryParams.value).then((response: any) => {
+  // 注入表单已填调出仓库上下文，仅查询该仓库下有库存记录的物料可调拨
+  const params = {
+    ...materialQueryParams.value,
+    warehouseId: form.value.fromWarehouseId ?? null
+  }
+  listMaterial(params).then((response: any) => {
     materialList.value = response.rows
     materialTotal.value = response.total
     materialLoading.value = false

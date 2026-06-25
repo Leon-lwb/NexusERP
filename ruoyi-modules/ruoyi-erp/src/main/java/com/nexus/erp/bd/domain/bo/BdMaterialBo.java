@@ -130,6 +130,21 @@ public class BdMaterialBo extends BaseEntity {
     private String qualityStatus;
 
     /**
+     * 仓库ID（仅用于查询过滤：仅返回在该仓库存在库存记录的物料）
+     */
+    private Long warehouseId;
+
+    /**
+     * 库区ID（仅用于查询过滤：仅返回在该库区存在库存记录的物料）
+     */
+    private Long areaId;
+
+    /**
+     * 库位ID（仅用于查询过滤：仅返回在该库位存在库存记录的物料）
+     */
+    private Long locationId;
+
+    /**
      * 保质期(天)
      */
     private Long shelfLife;

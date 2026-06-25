@@ -290,7 +290,13 @@ function openMaterialSelect(rowIndex: number) { currentMaterialRowIndex.value = 
 
 function getMaterialList() {
   materialLoading.value = true
-  listMaterial(materialQueryParams.value).then((response: any) => { materialList.value = response.rows; materialTotal.value = response.total; materialLoading.value = false })
+  // 注入表单已填仓库/库区上下文，仅查询该仓库/库区下有库存记录的物料
+  const params = {
+    ...materialQueryParams.value,
+    warehouseId: form.value.warehouseId ?? null,
+    areaId: form.value.areaId ?? null
+  }
+  listMaterial(params).then((response: any) => { materialList.value = response.rows; materialTotal.value = response.total; materialLoading.value = false })
 }
 
 function handleMaterialQuery() { materialQueryParams.value.pageNum = 1; getMaterialList() }

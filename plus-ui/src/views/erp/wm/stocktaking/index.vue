@@ -56,7 +56,8 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stocktaking:edit']">修改</el-button>
+          <el-button v-if="scope.row.status !== 'COMPLETED'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stocktaking:edit']">修改</el-button>
+          <el-button v-else link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stocktaking:edit']">盘点</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:stocktaking:remove']">删除</el-button>
         </template>
       </el-table-column>

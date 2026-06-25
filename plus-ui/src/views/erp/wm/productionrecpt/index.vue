@@ -344,7 +344,13 @@ const selectWorkOrder = (row: any) => {
 
 const getMaterialList = async () => {
   materialLoading.value = true;
-  const res = await listMaterial(materialQueryParams.value);
+  // 注入表单已填仓库/库位上下文，仅查询该仓库/库位下有库存记录的物料
+  const params = {
+    ...materialQueryParams.value,
+    warehouseId: form.value.warehouseId ?? null,
+    locationId: form.value.locationId ?? null
+  };
+  const res = await listMaterial(params);
   materialList.value = res.rows;
   materialTotal.value = res.total;
   materialLoading.value = false;

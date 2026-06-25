@@ -156,6 +156,22 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
             .eq(bo.getCategoryId() != null, BdMaterial::getCategoryId, bo.getCategoryId())
             .eq(bo.getStatus() != null, BdMaterial::getStatus, bo.getStatus())
             .eq(StringUtils.isNotBlank(bo.getQualityStatus()), BdMaterial::getQualityStatus, bo.getQualityStatus());
+        // 按仓库/库区/库位过滤：仅返回在 wm_material_stock 中存在库存记录的物料
+        // (warehouseId/areaId/locationId 均为 Long 类型，拼接安全；wm_material_stock 同处 erp 数据源)
+        if (bo.getWarehouseId() != null || bo.getAreaId() != null || bo.getLocationId() != null) {
+            StringBuilder sub = new StringBuilder(
+                "SELECT material_id FROM wm_material_stock WHERE del_flag = '0'");
+            if (bo.getWarehouseId() != null) {
+                sub.append(" AND warehouse_id = ").append(bo.getWarehouseId());
+            }
+            if (bo.getAreaId() != null) {
+                sub.append(" AND area_id = ").append(bo.getAreaId());
+            }
+            if (bo.getLocationId() != null) {
+                sub.append(" AND location_id = ").append(bo.getLocationId());
+            }
+            lqw.inSql(BdMaterial::getMaterialId, sub.toString());
+        }
         return lqw;
     }
 
