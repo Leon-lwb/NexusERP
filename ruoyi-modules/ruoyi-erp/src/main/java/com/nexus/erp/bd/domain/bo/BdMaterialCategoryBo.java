@@ -48,21 +48,6 @@ public class BdMaterialCategoryBo extends BaseEntity {
     private String categoryDesc;
 
     /**
-     * 层级深度
-     */
-    private Long levelNum;
-
-    /**
-     * 路径ID串
-     */
-    private String pathIds;
-
-    /**
-     * 路径名称
-     */
-    private String pathNames;
-
-    /**
      * 显示排序
      */
     private Long sortOrder;

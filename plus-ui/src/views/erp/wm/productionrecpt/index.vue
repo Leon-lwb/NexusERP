@@ -26,7 +26,9 @@
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:productionrecpt:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:productionrecpt:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:productionrecpt:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:productionrecpt:export']">导出</el-button>
@@ -53,13 +55,34 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250">
         <template #default="scope">
           <el-tooltip content="执行入库" placement="top">
-            <el-button link type="success" icon="CircleCheck" @click="handleExecute(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['wm:productionrecpt:edit']" />
+            <el-button
+              link
+              type="success"
+              icon="CircleCheck"
+              @click="handleExecute(scope.row)"
+              v-if="scope.row.status === 'DRAFT'"
+              v-hasPermi="['wm:productionrecpt:edit']"
+            />
           </el-tooltip>
           <el-tooltip content="修改" placement="top">
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['wm:productionrecpt:edit']" />
+            <el-button
+              link
+              type="primary"
+              icon="Edit"
+              @click="handleUpdate(scope.row)"
+              v-if="scope.row.status === 'DRAFT'"
+              v-hasPermi="['wm:productionrecpt:edit']"
+            />
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['wm:productionrecpt:remove']" />
+            <el-button
+              link
+              type="danger"
+              icon="Delete"
+              @click="handleDelete(scope.row)"
+              v-if="scope.row.status === 'DRAFT'"
+              v-hasPermi="['wm:productionrecpt:remove']"
+            />
           </el-tooltip>
         </template>
       </el-table-column>
@@ -90,7 +113,7 @@
             <el-form-item label="物料编码" prop="materialCode">
               <el-input v-model="form.materialCode" placeholder="请选择物料" readonly>
                 <template #append>
-                  <el-button icon="Search" @click="materialSelectOpen = true; getMaterialList()" />
+                  <el-button icon="Search" @click="materialSelectDialogRef?.open()" />
                 </template>
               </el-input>
             </el-form-item>
@@ -118,7 +141,13 @@
             <el-form-item label="仓库" prop="warehouseId">
               <el-input v-model="warehouseDisplay" placeholder="请选择仓库" readonly>
                 <template #append>
-                  <el-button icon="Search" @click="warehouseSelectOpen = true; getWarehouseList()" />
+                  <el-button
+                    icon="Search"
+                    @click="
+                      warehouseSelectOpen = true;
+                      getWarehouseList();
+                    "
+                  />
                 </template>
               </el-input>
             </el-form-item>
@@ -143,8 +172,13 @@
 
     <el-dialog title="选择工单" v-model="workOrderSelectOpen" width="900px" append-to-body>
       <el-form :model="workOrderQueryParams" :inline="true">
-        <el-form-item label="工单号"><el-input v-model="workOrderQueryParams.woNo" placeholder="请输入工单号" clearable @keyup.enter="getWorkOrderList" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="getWorkOrderList">搜索</el-button><el-button icon="Refresh" @click="resetWorkOrderQuery">重置</el-button></el-form-item>
+        <el-form-item label="工单号"
+          ><el-input v-model="workOrderQueryParams.woNo" placeholder="请输入工单号" clearable @keyup.enter="getWorkOrderList"
+        /></el-form-item>
+        <el-form-item
+          ><el-button type="primary" icon="Search" @click="getWorkOrderList">搜索</el-button
+          ><el-button icon="Refresh" @click="resetWorkOrderQuery">重置</el-button></el-form-item
+        >
       </el-form>
       <el-table v-loading="workOrderLoading" :data="workOrderList" highlight-current-row height="400">
         <el-table-column label="工单号" align="center" prop="woNo" />
@@ -152,49 +186,72 @@
         <el-table-column label="物料名称" align="center" prop="materialName" />
         <el-table-column label="计划数量" align="center" prop="plannedQty" />
         <el-table-column label="工单状态" align="center" prop="woStatus" />
-        <el-table-column label="操作" align="center" width="100"><template #default="scope"><el-button link type="primary" @click="selectWorkOrder(scope.row)">选择</el-button></template></el-table-column>
+        <el-table-column label="操作" align="center" width="100"
+          ><template #default="scope"><el-button link type="primary" @click="selectWorkOrder(scope.row)">选择</el-button></template></el-table-column
+        >
       </el-table>
-      <pagination v-show="workOrderTotal > 0" :total="workOrderTotal" v-model:page="workOrderQueryParams.pageNum" v-model:limit="workOrderQueryParams.pageSize" @pagination="getWorkOrderList" />
+      <pagination
+        v-show="workOrderTotal > 0"
+        :total="workOrderTotal"
+        v-model:page="workOrderQueryParams.pageNum"
+        v-model:limit="workOrderQueryParams.pageSize"
+        @pagination="getWorkOrderList"
+      />
     </el-dialog>
 
-    <el-dialog title="选择物料" v-model="materialSelectOpen" width="1000px" append-to-body>
-      <el-form :model="materialQueryParams" :inline="true" label-width="68px">
-        <el-form-item label="物料编码" prop="materialCode"><el-input v-model="materialQueryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleMaterialQuery" /></el-form-item>
-        <el-form-item label="物料名称" prop="materialName"><el-input v-model="materialQueryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleMaterialQuery" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button><el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button></el-form-item>
-      </el-form>
-      <el-table v-loading="materialLoading" :data="materialList" @row-dblclick="selectMaterial" highlight-current-row height="400">
-        <el-table-column label="物料编码" align="center" prop="materialCode" />
-        <el-table-column label="物料名称" align="center" prop="materialName" />
-        <el-table-column label="规格型号" align="center" prop="materialSpec" />
-        <el-table-column label="单位" align="center" prop="baseUomName" />
-        <el-table-column label="操作" align="center" width="100"><template #default="scope"><el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button></template></el-table-column>
-      </el-table>
-      <pagination v-show="materialTotal > 0" :total="materialTotal" v-model:page="materialQueryParams.pageNum" v-model:limit="materialQueryParams.pageSize" @pagination="getMaterialList" />
-      <template #footer><div class="dialog-footer"><el-button @click="materialSelectOpen = false">取 消</el-button></div></template>
-    </el-dialog>
+    <MaterialSelectDialog
+      ref="materialSelectDialogRef"
+      title="选择物料"
+      :warehouse-id="form.warehouseId"
+      :location-id="form.locationId"
+      @select="handleMaterialSelected"
+    />
 
     <el-dialog title="选择仓库" v-model="warehouseSelectOpen" width="800px" append-to-body>
       <el-form :model="warehouseQueryParams" :inline="true">
-        <el-form-item label="仓库编码"><el-input v-model="warehouseQueryParams.warehouseCode" placeholder="请输入仓库编码" clearable @keyup.enter="getWarehouseList" /></el-form-item>
-        <el-form-item label="仓库名称"><el-input v-model="warehouseQueryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="getWarehouseList" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="getWarehouseList">搜索</el-button><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item>
+        <el-form-item label="仓库编码"
+          ><el-input v-model="warehouseQueryParams.warehouseCode" placeholder="请输入仓库编码" clearable @keyup.enter="getWarehouseList"
+        /></el-form-item>
+        <el-form-item label="仓库名称"
+          ><el-input v-model="warehouseQueryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="getWarehouseList"
+        /></el-form-item>
+        <el-form-item
+          ><el-button type="primary" icon="Search" @click="getWarehouseList">搜索</el-button
+          ><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item
+        >
       </el-form>
       <el-table v-loading="warehouseLoading" :data="warehouseList" highlight-current-row @current-change="handleWarehouseSelect">
         <el-table-column label="仓库编码" align="center" prop="warehouseCode" />
         <el-table-column label="仓库名称" align="center" prop="warehouseName" />
-        <el-table-column label="操作" align="center"><template #default="scope"><el-button link type="primary" @click="handleWarehouseSelect(scope.row)">选择</el-button></template></el-table-column>
+        <el-table-column label="操作" align="center"
+          ><template #default="scope"
+            ><el-button link type="primary" @click="handleWarehouseSelect(scope.row)">选择</el-button></template
+          ></el-table-column
+        >
       </el-table>
-      <pagination v-show="warehouseTotal > 0" :total="warehouseTotal" v-model:page="warehouseQueryParams.pageNum" v-model:limit="warehouseQueryParams.pageSize" @pagination="getWarehouseList" />
+      <pagination
+        v-show="warehouseTotal > 0"
+        :total="warehouseTotal"
+        v-model:page="warehouseQueryParams.pageNum"
+        v-model:limit="warehouseQueryParams.pageSize"
+        @pagination="getWarehouseList"
+      />
     </el-dialog>
   </div>
 </template>
 
 <script setup name="ProductionRecpt" lang="ts">
-import { listProductionRecpt, getProductionRecpt, addProductionRecpt, updateProductionRecpt, delProductionRecpt, executeProductionRecpt } from '@/api/erp/wm/productionrecpt';
+import {
+  listProductionRecpt,
+  getProductionRecpt,
+  addProductionRecpt,
+  updateProductionRecpt,
+  delProductionRecpt,
+  executeProductionRecpt
+} from '@/api/erp/wm/productionrecpt';
 import { ProductionRecptVO, ProductionRecptQuery, ProductionRecptForm } from '@/api/erp/wm/productionrecpt/types';
 import { listWork } from '@/api/erp/prd/work';
-import { listMaterial } from '@/api/erp/bd/material';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listStoragelocation } from '@/api/erp/wm/storagelocation';
 
@@ -223,11 +280,7 @@ const workOrderLoading = ref(false);
 const workOrderTotal = ref(0);
 const workOrderQueryParams = ref({ pageNum: 1, pageSize: 10, woNo: null as string | null });
 
-const materialSelectOpen = ref(false);
-const materialList = ref<any[]>([]);
-const materialLoading = ref(false);
-const materialTotal = ref(0);
-const materialQueryParams = ref({ pageNum: 1, pageSize: 10, materialCode: null as string | null, materialName: null as string | null });
+const materialSelectDialogRef = ref<any>(null);
 
 const warehouseSelectOpen = ref(false);
 const warehouseList = ref<any[]>([]);
@@ -239,7 +292,7 @@ const locationOptions = ref<any[]>([]);
 
 const rules = {
   recptCode: [{ required: true, message: '入库单号不能为空', trigger: 'blur' }],
-  quantity: [{ required: true, message: '入库数量不能为空', trigger: 'blur' }],
+  quantity: [{ required: true, message: '入库数量不能为空', trigger: 'blur' }]
 };
 
 const getList = async () => {
@@ -250,10 +303,16 @@ const getList = async () => {
   loading.value = false;
 };
 
-const handleQuery = () => { queryParams.value.pageNum = 1; getList(); };
-const resetQuery = () => { queryRef.value?.resetFields(); handleQuery(); };
+const handleQuery = () => {
+  queryParams.value.pageNum = 1;
+  getList();
+};
+const resetQuery = () => {
+  queryRef.value?.resetFields();
+  handleQuery();
+};
 const handleSelectionChange = (selection: ProductionRecptVO[]) => {
-  ids.value = selection.map(item => item.recptId);
+  ids.value = selection.map((item) => item.recptId);
   single.value = selection.length !== 1;
   multiple.value = !selection.length;
 };
@@ -265,7 +324,11 @@ const reset = () => {
   recptRef.value?.resetFields();
 };
 
-const handleAdd = () => { reset(); open.value = true; title.value = '新增生产完工入库'; };
+const handleAdd = () => {
+  reset();
+  open.value = true;
+  title.value = '新增生产完工入库';
+};
 
 const handleUpdate = async (row?: ProductionRecptVO) => {
   reset();
@@ -313,9 +376,14 @@ const handleExecute = async (row: ProductionRecptVO) => {
   getList();
 };
 
-const cancel = () => { open.value = false; reset(); };
+const cancel = () => {
+  open.value = false;
+  reset();
+};
 
-const handleExport = () => { proxy?.download('erp/wm/productionrecpt/export', { ...queryParams.value }, `生产完工入库_${new Date().getTime()}.xlsx`); };
+const handleExport = () => {
+  proxy?.download('erp/wm/productionrecpt/export', { ...queryParams.value }, `生产完工入库_${new Date().getTime()}.xlsx`);
+};
 
 const getWorkOrderList = async () => {
   workOrderLoading.value = true;
@@ -342,33 +410,11 @@ const selectWorkOrder = (row: any) => {
   workOrderSelectOpen.value = false;
 };
 
-const getMaterialList = async () => {
-  materialLoading.value = true;
-  // 注入表单已填仓库/库位上下文，仅查询该仓库/库位下有库存记录的物料
-  const params = {
-    ...materialQueryParams.value,
-    warehouseId: form.value.warehouseId ?? null,
-    locationId: form.value.locationId ?? null
-  };
-  const res = await listMaterial(params);
-  materialList.value = res.rows;
-  materialTotal.value = res.total;
-  materialLoading.value = false;
-};
-
-const handleMaterialQuery = () => { materialQueryParams.value.pageNum = 1; getMaterialList(); };
-
-const resetMaterialQuery = () => {
-  materialQueryParams.value = { pageNum: 1, pageSize: 10, materialCode: null, materialName: null };
-  handleMaterialQuery();
-};
-
-const selectMaterial = (row: any) => {
+const handleMaterialSelected = (row: any) => {
   form.value.materialId = row.materialId;
   form.value.materialCode = row.materialCode;
   form.value.materialName = row.materialName;
   form.value.materialSpec = row.materialSpec;
-  materialSelectOpen.value = false;
 };
 
 const getWarehouseList = async () => {
@@ -403,7 +449,9 @@ const loadLocations = async (warehouseId: number) => {
   }
 };
 
-onMounted(() => { getList(); });
+onMounted(() => {
+  getList();
+});
 </script>
 
 <style scoped>

@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -138,6 +139,18 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         List<BdMaterialVo> list = baseMapper.selectByCategoryIds(categoryIds);
         fillBaseUomName(list);
         return list;
+    }
+
+    /**
+     * 判断指定分类下是否存在物料
+     */
+    @Override
+    public boolean hasMaterialByCategoryIds(Collection<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return false;
+        }
+        return baseMapper.exists(new LambdaQueryWrapper<BdMaterial>()
+            .in(BdMaterial::getCategoryId, categoryIds));
     }
 
     /**

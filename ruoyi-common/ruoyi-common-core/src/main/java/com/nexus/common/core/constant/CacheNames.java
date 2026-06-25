@@ -77,6 +77,11 @@ public interface CacheNames {
     String SYS_DEPT_AND_CHILD = "sys_dept_and_child#30d";
 
     /**
+     * 物料产品分类树（租户自动隔离）
+     */
+    String BD_CATEGORY_TREE = "bd_category_tree#30d";
+
+    /**
      * OSS配置
      */
     String SYS_OSS_CONFIG = GlobalConstants.GLOBAL_REDIS_KEY + "sys_oss_config";

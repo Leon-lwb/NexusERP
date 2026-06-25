@@ -2,7 +2,7 @@ import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { CategoryQuery, CategoryVO, CategoryForm, CategoryWithMaterialsVO } from './types';
 
-export const listCategory = (query: CategoryQuery): AxiosPromise<CategoryVO[]> => {
+export const listCategory = (query?: CategoryQuery): AxiosPromise<CategoryVO[]> => {
   return request({
     url: '/erp/bd/category/list',
     method: 'get',
@@ -10,9 +10,11 @@ export const listCategory = (query: CategoryQuery): AxiosPromise<CategoryVO[]> =
   });
 };
 
-export const listDeptExcludeChild = (deptId: string | number): AxiosPromise<CategoryVO[]> => {
+/** 查询分类列表，排除指定分类及其所有子孙（用于父级下拉防循环） */
+export const listCategoryExcludeChild = (categoryId: string | number | (string | number)[]): AxiosPromise<CategoryVO[]> => {
+  const id = Array.isArray(categoryId) ? categoryId.join(',') : categoryId;
   return request({
-    url: '/erp/bd/category/list/exclude/' + deptId,
+    url: '/erp/bd/category/list/exclude/' + id,
     method: 'get'
   });
 };
@@ -47,9 +49,10 @@ export const delCategory = (categoryId: string | number | (string | number)[]) =
   });
 };
 
-export const getAllChildrenIds = (categoryIds: (string | number)[]): AxiosPromise<CategoryWithMaterialsVO> => {
+export const getAllChildrenIds = (categoryIds: string | number | (string | number)[]): AxiosPromise<CategoryWithMaterialsVO> => {
+  const id = Array.isArray(categoryIds) ? categoryIds.join(',') : categoryIds;
   return request({
-    url: '/erp/bd/category/allChildrenIds/' + categoryIds,
+    url: '/erp/bd/category/allChildrenIds/' + id,
     method: 'get'
   });
 };

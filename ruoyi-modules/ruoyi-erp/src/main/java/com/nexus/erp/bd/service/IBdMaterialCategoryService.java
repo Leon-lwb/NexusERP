@@ -1,8 +1,8 @@
 package com.nexus.erp.bd.service;
 
+import cn.hutool.core.lang.tree.Tree;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.bd.domain.BdMaterialCategory;
 import com.nexus.erp.bd.domain.bo.BdMaterialCategoryBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialCategoryVo;
 
@@ -31,6 +31,29 @@ public interface IBdMaterialCategoryService {
      * @return 物料产品分类列表
      */
     List<BdMaterialCategoryVo> selectList(BdMaterialCategoryBo bo);
+
+    /**
+     * 查询分类下拉树结构
+     *
+     * @return 分类树结构列表
+     */
+    List<Tree<Long>> selectCategoryTreeList();
+
+    /**
+     * 构建前端下拉树结构
+     *
+     * @param categories 分类列表
+     * @return 下拉树结构列表
+     */
+    List<Tree<Long>> buildCategoryTreeSelect(List<BdMaterialCategoryVo> categories);
+
+    /**
+     * 查询分类列表，排除指定分类及其所有子孙（用于父级下拉防循环）
+     *
+     * @param excludeIds 需排除的分类ID数组
+     * @return 排除后的分类列表
+     */
+    List<BdMaterialCategoryVo> selectListExcludeChild(Long[] excludeIds);
 
     /**
      * 根据ID查询物料产品分类
@@ -70,5 +93,21 @@ public interface IBdMaterialCategoryService {
      * @param categoryIds 分类ID数组
      * @return 包含子分类的分类列表
      */
-    List<BdMaterialCategory> selectAllChildrenIds(Long[] categoryIds);
+    List<BdMaterialCategoryVo> selectAllChildrenIds(Long[] categoryIds);
+
+    /**
+     * 校验分类编码是否唯一
+     *
+     * @param bo 分类信息
+     * @return 结果 true 唯一 false 不唯一
+     */
+    boolean checkCategoryCodeUnique(BdMaterialCategoryBo bo);
+
+    /**
+     * 是否存在子分类
+     *
+     * @param categoryIds 分类ID数组
+     * @return 结果 true 存在 false 不存在
+     */
+    boolean hasChildByCategoryIds(Long[] categoryIds);
 }

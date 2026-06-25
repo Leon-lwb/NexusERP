@@ -16,8 +16,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="入库单编号" prop="recptCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.recptCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.recptCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -32,7 +32,14 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="入库日期" prop="recptDate">
-              <el-date-picker clearable v-model="form.recptDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择入库日期" style="width: 100%" />
+              <el-date-picker
+                clearable
+                v-model="form.recptDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择入库日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -95,7 +102,9 @@
             </template>
           </el-table-column>
           <el-table-column label="规格型号" prop="materialSpec" width="120">
-            <template #default="scope"><span>{{ scope.row.materialSpec }}</span></template>
+            <template #default="scope"
+              ><span>{{ scope.row.materialSpec }}</span></template
+            >
           </el-table-column>
           <el-table-column label="数量" prop="quantity" width="100">
             <template #default="scope">
@@ -110,7 +119,9 @@
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amount" width="100">
-            <template #default="scope"><span>{{ scope.row.amount }}</span></template>
+            <template #default="scope"
+              ><span>{{ scope.row.amount }}</span></template
+            >
           </el-table-column>
           <el-table-column label="库位" prop="locationCode" width="100">
             <template #default="scope">
@@ -130,134 +141,179 @@
 
     <el-dialog title="选择仓库" v-model="warehouseSelectOpen" width="800px" append-to-body>
       <el-form :model="warehouseQueryParams" :inline="true">
-        <el-form-item label="仓库编码"><el-input v-model="warehouseQueryParams.warehouseCode" placeholder="请输入仓库编码" clearable @keyup.enter="getWarehouseList" /></el-form-item>
-        <el-form-item label="仓库名称"><el-input v-model="warehouseQueryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="getWarehouseList" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="getWarehouseList">搜索</el-button><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item>
+        <el-form-item label="仓库编码"
+          ><el-input v-model="warehouseQueryParams.warehouseCode" placeholder="请输入仓库编码" clearable @keyup.enter="getWarehouseList"
+        /></el-form-item>
+        <el-form-item label="仓库名称"
+          ><el-input v-model="warehouseQueryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="getWarehouseList"
+        /></el-form-item>
+        <el-form-item
+          ><el-button type="primary" icon="Search" @click="getWarehouseList">搜索</el-button
+          ><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item
+        >
       </el-form>
       <el-table v-loading="warehouseLoading" :data="warehouseList" highlight-current-row @current-change="handleWarehouseSelect">
         <el-table-column label="仓库编码" align="center" prop="warehouseCode" />
         <el-table-column label="仓库名称" align="center" prop="warehouseName" />
-        <el-table-column label="操作" align="center"><template #default="scope"><el-button link type="primary" @click="handleWarehouseSelect(scope.row)">选择</el-button></template></el-table-column>
+        <el-table-column label="操作" align="center"
+          ><template #default="scope"
+            ><el-button link type="primary" @click="handleWarehouseSelect(scope.row)">选择</el-button></template
+          ></el-table-column
+        >
       </el-table>
-      <pagination v-show="warehouseTotal > 0" :total="warehouseTotal" v-model:page="warehouseQueryParams.pageNum" v-model:limit="warehouseQueryParams.pageSize" @pagination="getWarehouseList" />
+      <pagination
+        v-show="warehouseTotal > 0"
+        :total="warehouseTotal"
+        v-model:page="warehouseQueryParams.pageNum"
+        v-model:limit="warehouseQueryParams.pageSize"
+        @pagination="getWarehouseList"
+      />
     </el-dialog>
 
     <el-dialog title="选择库区" v-model="areaSelectOpen" width="800px" append-to-body>
       <el-form :model="areaQueryParams" :inline="true">
-        <el-form-item label="库区编码"><el-input v-model="areaQueryParams.areaCode" placeholder="请输入库区编码" clearable @keyup.enter="getAreaList" /></el-form-item>
-        <el-form-item label="库区名称"><el-input v-model="areaQueryParams.areaName" placeholder="请输入库区名称" clearable @keyup.enter="getAreaList" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="getAreaList">搜索</el-button><el-button icon="Refresh" @click="resetAreaQuery">重置</el-button></el-form-item>
+        <el-form-item label="库区编码"
+          ><el-input v-model="areaQueryParams.areaCode" placeholder="请输入库区编码" clearable @keyup.enter="getAreaList"
+        /></el-form-item>
+        <el-form-item label="库区名称"
+          ><el-input v-model="areaQueryParams.areaName" placeholder="请输入库区名称" clearable @keyup.enter="getAreaList"
+        /></el-form-item>
+        <el-form-item
+          ><el-button type="primary" icon="Search" @click="getAreaList">搜索</el-button
+          ><el-button icon="Refresh" @click="resetAreaQuery">重置</el-button></el-form-item
+        >
       </el-form>
       <el-table v-loading="areaLoading" :data="areaList" highlight-current-row @current-change="handleAreaSelect">
         <el-table-column label="库区编码" align="center" prop="areaCode" />
         <el-table-column label="库区名称" align="center" prop="areaName" />
-        <el-table-column label="操作" align="center"><template #default="scope"><el-button link type="primary" @click="handleAreaSelect(scope.row)">选择</el-button></template></el-table-column>
+        <el-table-column label="操作" align="center"
+          ><template #default="scope"><el-button link type="primary" @click="handleAreaSelect(scope.row)">选择</el-button></template></el-table-column
+        >
       </el-table>
-      <pagination v-show="areaTotal > 0" :total="areaTotal" v-model:page="areaQueryParams.pageNum" v-model:limit="areaQueryParams.pageSize" @pagination="getAreaList" />
+      <pagination
+        v-show="areaTotal > 0"
+        :total="areaTotal"
+        v-model:page="areaQueryParams.pageNum"
+        v-model:limit="areaQueryParams.pageSize"
+        @pagination="getAreaList"
+      />
     </el-dialog>
 
-    <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1000px" append-to-body>
-      <el-form :model="materialQueryParams" :inline="true" label-width="68px">
-        <el-form-item label="物料编码" prop="materialCode"><el-input v-model="materialQueryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleMaterialQuery" /></el-form-item>
-        <el-form-item label="物料名称" prop="materialName"><el-input v-model="materialQueryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleMaterialQuery" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button><el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button></el-form-item>
-      </el-form>
-      <el-table v-loading="materialLoading" :data="materialList" @row-dblclick="selectMaterial" highlight-current-row height="400">
-        <el-table-column label="物料编码" align="center" prop="materialCode" />
-        <el-table-column label="物料名称" align="center" prop="materialName" />
-        <el-table-column label="规格型号" align="center" prop="materialSpec" />
-        <el-table-column label="单位" align="center" prop="baseUomName" />
-        <el-table-column label="操作" align="center" width="100"><template #default="scope"><el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button></template></el-table-column>
-      </el-table>
-      <pagination v-show="materialTotal > 0" :total="materialTotal" v-model:page="materialQueryParams.pageNum" v-model:limit="materialQueryParams.pageSize" @pagination="getMaterialList" />
-      <template #footer><div class="dialog-footer"><el-button @click="materialSelectOpen = false">取 消</el-button></div></template>
-    </el-dialog>
+    <MaterialSelectDialog
+      ref="materialSelectDialogRef"
+      :title="materialDialogTitle"
+      :warehouse-id="form.warehouseId"
+      :area-id="form.areaId"
+      @select="handleMaterialSelected"
+    />
   </div>
 </template>
 
 <script setup lang="ts" name="MiscRecptForm">
-import { getMiscRecpt, addMiscRecpt, updateMiscRecpt } from "@/api/erp/wm/miscrecpt"
-import { listMaterial } from "@/api/erp/bd/material"
-import { listWarehouse } from "@/api/erp/wm/warehouse"
-import { listStoragearea } from "@/api/erp/wm/storagearea"
-import { getMeasure } from "@/api/erp/bd/measure"
-import { previewCode } from "@/api/system/autocode/rule"
-import { useRoute, useRouter } from 'vue-router'
+import { getMiscRecpt, addMiscRecpt, updateMiscRecpt } from '@/api/erp/wm/miscrecpt';
+import { listWarehouse } from '@/api/erp/wm/warehouse';
+import { listStoragearea } from '@/api/erp/wm/storagearea';
+import { getMeasure } from '@/api/erp/bd/measure';
+import { previewCode } from '@/api/system/autocode/rule';
+import { useRoute, useRouter } from 'vue-router';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
-const { proxy } = getCurrentInstance() as any
-const { wm_misc_recpt_type, wm_misc_status } = toRefs<any>(proxy.useDict('wm_misc_recpt_type', 'wm_misc_status'))
-const route = useRoute()
-const router = useRouter()
+const { proxy } = getCurrentInstance() as any;
+const { wm_misc_recpt_type, wm_misc_status } = toRefs<any>(proxy.useDict('wm_misc_recpt_type', 'wm_misc_status'));
+const route = useRoute();
+const router = useRouter();
 
-const form = ref<any>({})
-const autoGenFlag = ref(false)
-const isViewMode = ref(false)
-const title = ref("")
-const lineList = ref<any[]>([])
-const checkedLines = ref<any[]>([])
+const form = ref<any>({});
+const autoGenFlag = ref(false);
+const isViewMode = ref(false);
+const title = ref('');
+const lineList = ref<any[]>([]);
+const checkedLines = ref<any[]>([]);
 
-const materialSelectOpen = ref(false)
-const materialList = ref([])
-const materialLoading = ref(false)
-const materialTotal = ref(0)
-const materialDialogTitle = ref("选择物料")
-const currentMaterialRowIndex = ref(-1)
-const materialQueryParams = ref({ pageNum: 1, pageSize: 10, materialCode: null, materialName: null })
+const materialSelectDialogRef = ref<any>(null);
+const materialDialogTitle = ref('选择物料');
+const currentMaterialRowIndex = ref(-1);
 
-const warehouseSelectOpen = ref(false)
-const warehouseList = ref([])
-const warehouseLoading = ref(false)
-const warehouseTotal = ref(0)
-const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null })
+const warehouseSelectOpen = ref(false);
+const warehouseList = ref([]);
+const warehouseLoading = ref(false);
+const warehouseTotal = ref(0);
+const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null });
 
-const areaSelectOpen = ref(false)
-const areaList = ref([])
-const areaLoading = ref(false)
-const areaTotal = ref(0)
-const areaQueryParams = ref({ pageNum: 1, pageSize: 10, areaCode: null, areaName: null })
+const areaSelectOpen = ref(false);
+const areaList = ref([]);
+const areaLoading = ref(false);
+const areaTotal = ref(0);
+const areaQueryParams = ref({ pageNum: 1, pageSize: 10, areaCode: null, areaName: null });
 
 const rules = {
-  recptCode: [{ required: true, message: "入库单编号不能为空", trigger: "blur" }]
-}
+  recptCode: [{ required: true, message: '入库单编号不能为空', trigger: 'blur' }]
+};
 
 onMounted(() => {
-  const id = route.query.id
-  const action = route.query.action as string
-  isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增杂项入库"; reset() }
-  else if (action === 'edit') { title.value = "修改杂项入库"; if (id) getInfo(id) }
-  else if (action === 'view') { title.value = "查看杂项入库"; if (id) getInfo(id) }
-})
+  const id = route.query.id;
+  const action = route.query.action as string;
+  isViewMode.value = action === 'view';
+  if (action === 'add') {
+    title.value = '新增杂项入库';
+    reset();
+  } else if (action === 'edit') {
+    title.value = '修改杂项入库';
+    if (id) getInfo(id);
+  } else if (action === 'view') {
+    title.value = '查看杂项入库';
+    if (id) getInfo(id);
+  }
+});
 
 function getInfo(id: any) {
   getMiscRecpt(id).then((response: any) => {
-    form.value = response.data
-    lineList.value = response.data.wmMiscRecptLineList || []
-  })
+    form.value = response.data;
+    lineList.value = response.data.wmMiscRecptLineList || [];
+  });
 }
 
 function reset() {
-  autoGenFlag.value = false
-  form.value = { recptId: null, recptCode: null, recptType: null, warehouseId: null, warehouseCode: null, warehouseName: null, areaId: null, areaCode: null, areaName: null, recptDate: null, status: null, remark: null }
-  lineList.value = []
-  proxy.resetForm("miscRecptRef")
+  autoGenFlag.value = false;
+  form.value = {
+    recptId: null,
+    recptCode: null,
+    recptType: null,
+    warehouseId: null,
+    warehouseCode: null,
+    warehouseName: null,
+    areaId: null,
+    areaCode: null,
+    areaName: null,
+    recptDate: null,
+    status: null,
+    remark: null
+  };
+  lineList.value = [];
+  proxy.resetForm('miscRecptRef');
 }
 
 function submitForm() {
-  proxy.$refs["miscRecptRef"].validate((valid: boolean) => {
+  proxy.$refs['miscRecptRef'].validate((valid: boolean) => {
     if (valid) {
-        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-        if (autoGenFlag.value) {
-          form.value.recptCode = undefined;
-        }
-      form.value.wmMiscRecptLineList = lineList.value
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.recptCode = undefined;
+      }
+      form.value.wmMiscRecptLineList = lineList.value;
       if (form.value.recptId != null) {
-        updateMiscRecpt(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/wm/miscrecpt') })
+        updateMiscRecpt(form.value).then(() => {
+          proxy.$modal.msgSuccess('修改成功');
+          router.push('/erp/wm/miscrecpt');
+        });
       } else {
-        addMiscRecpt(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); router.push('/erp/wm/miscrecpt') })
+        addMiscRecpt(form.value).then(() => {
+          proxy.$modal.msgSuccess('新增成功');
+          router.push('/erp/wm/miscrecpt');
+        });
       }
     }
-  })
+  });
 }
 
 //自动生成编号
@@ -271,89 +327,104 @@ function handleAutoGenChange(autoGenFlag: boolean) {
   }
 }
 
-function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/miscrecpt' }) }
+function cancel() {
+  proxy.$tab.closeOpenPage({ path: '/erp/wm/miscrecpt' });
+}
 
-function rowLineIndex({ row, rowIndex }: any) { row.index = rowIndex + 1 }
+function rowLineIndex({ row, rowIndex }: any) {
+  row.index = rowIndex + 1;
+}
 
 function handleAddLine() {
-  lineList.value.push({ materialId: null, materialCode: '', materialName: '', materialSpec: '', baseUomId: '', baseUomName: '', quantity: null, unitPrice: null, amount: null, locationCode: '', remark: '' })
+  lineList.value.push({
+    materialId: null,
+    materialCode: '',
+    materialName: '',
+    materialSpec: '',
+    baseUomId: '',
+    baseUomName: '',
+    quantity: null,
+    unitPrice: null,
+    amount: null,
+    locationCode: '',
+    remark: ''
+  });
 }
 
 function handleDeleteLine() {
-  if (checkedLines.value.length == 0) { proxy.$modal.msgError("请先选择要删除的行"); return }
-  lineList.value = lineList.value.filter((item: any) => checkedLines.value.indexOf(item.index) == -1)
-}
-
-function handleLineSelectionChange(selection: any[]) { checkedLines.value = selection.map((item: any) => item.index) }
-
-function openMaterialSelect(rowIndex: number) { currentMaterialRowIndex.value = rowIndex; materialSelectOpen.value = true; getMaterialList() }
-
-function getMaterialList() {
-  materialLoading.value = true
-  // 注入表单已填仓库/库区上下文，仅查询该仓库/库区下有库存记录的物料
-  const params = {
-    ...materialQueryParams.value,
-    warehouseId: form.value.warehouseId ?? null,
-    areaId: form.value.areaId ?? null
+  if (checkedLines.value.length == 0) {
+    proxy.$modal.msgError('请先选择要删除的行');
+    return;
   }
-  listMaterial(params).then((response: any) => { materialList.value = response.rows; materialTotal.value = response.total; materialLoading.value = false })
+  lineList.value = lineList.value.filter((item: any) => checkedLines.value.indexOf(item.index) == -1);
 }
 
-function handleMaterialQuery() { materialQueryParams.value.pageNum = 1; getMaterialList() }
-
-function resetMaterialQuery() {
-  materialQueryParams.value = { pageNum: 1, pageSize: 10, materialCode: null, materialName: null }
-  handleMaterialQuery()
+function handleLineSelectionChange(selection: any[]) {
+  checkedLines.value = selection.map((item: any) => item.index);
 }
 
-function selectMaterial(row: any) {
-  if (currentMaterialRowIndex.value >= 0 && lineList.value[currentMaterialRowIndex.value]) {
-    const idx = currentMaterialRowIndex.value
-    lineList.value[idx].materialId = row.materialId
-    lineList.value[idx].materialCode = row.materialCode
-    lineList.value[idx].materialName = row.materialName
-    lineList.value[idx].materialSpec = row.materialSpec
+function openMaterialSelect(rowIndex: number) {
+  currentMaterialRowIndex.value = rowIndex;
+  materialSelectDialogRef.value?.open();
+}
+
+function handleMaterialSelected(row: any) {
+  const idx = currentMaterialRowIndex.value;
+  if (idx >= 0 && lineList.value[idx]) {
+    lineList.value[idx].materialId = row.materialId;
+    lineList.value[idx].materialCode = row.materialCode;
+    lineList.value[idx].materialName = row.materialName;
+    lineList.value[idx].materialSpec = row.materialSpec;
     if (row.baseUomId) {
-      lineList.value[idx].baseUomId = row.baseUomId
-      getMeasure(row.baseUomId).then((r: any) => { if (idx < lineList.value.length) lineList.value[idx].baseUomName = r.data.uomName })
+      lineList.value[idx].baseUomId = row.baseUomId;
+      getMeasure(row.baseUomId).then((r: any) => {
+        if (idx < lineList.value.length) lineList.value[idx].baseUomName = r.data.uomName;
+      });
     }
   }
-  materialSelectOpen.value = false
-  currentMaterialRowIndex.value = -1
+  currentMaterialRowIndex.value = -1;
 }
 
 function getWarehouseList() {
-  warehouseLoading.value = true
-  listWarehouse(warehouseQueryParams.value).then((response: any) => { warehouseList.value = response.rows; warehouseTotal.value = response.total; warehouseLoading.value = false })
+  warehouseLoading.value = true;
+  listWarehouse(warehouseQueryParams.value).then((response: any) => {
+    warehouseList.value = response.rows;
+    warehouseTotal.value = response.total;
+    warehouseLoading.value = false;
+  });
 }
 
 function resetWarehouseQuery() {
-  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null }
-  getWarehouseList()
+  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null };
+  getWarehouseList();
 }
 
 function handleWarehouseSelect(row: any) {
-  form.value.warehouseId = row.warehouseId
-  form.value.warehouseCode = row.warehouseCode
-  form.value.warehouseName = row.warehouseName
-  warehouseSelectOpen.value = false
+  form.value.warehouseId = row.warehouseId;
+  form.value.warehouseCode = row.warehouseCode;
+  form.value.warehouseName = row.warehouseName;
+  warehouseSelectOpen.value = false;
 }
 
 function getAreaList() {
-  areaLoading.value = true
-  listStoragearea(areaQueryParams.value).then((response: any) => { areaList.value = response.rows; areaTotal.value = response.total; areaLoading.value = false })
+  areaLoading.value = true;
+  listStoragearea(areaQueryParams.value).then((response: any) => {
+    areaList.value = response.rows;
+    areaTotal.value = response.total;
+    areaLoading.value = false;
+  });
 }
 
 function resetAreaQuery() {
-  areaQueryParams.value = { pageNum: 1, pageSize: 10, areaCode: null, areaName: null }
-  getAreaList()
+  areaQueryParams.value = { pageNum: 1, pageSize: 10, areaCode: null, areaName: null };
+  getAreaList();
 }
 
 function handleAreaSelect(row: any) {
-  form.value.areaId = row.areaId
-  form.value.areaCode = row.areaCode
-  form.value.areaName = row.areaName
-  areaSelectOpen.value = false
+  form.value.areaId = row.areaId;
+  form.value.areaCode = row.areaCode;
+  form.value.areaName = row.areaName;
+  areaSelectOpen.value = false;
 }
 </script>
 

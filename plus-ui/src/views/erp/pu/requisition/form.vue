@@ -26,8 +26,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="申请单号" prop="requisitionNo">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.requisitionNo" placeholder="请输入申请单号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.requisitionNo" placeholder="请输入申请单号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -40,13 +40,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="申请日期" prop="requisitionDate">
-              <el-date-picker
-                v-model="form.requisitionDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择申请日期"
-                style="width:100%"
-              />
+              <el-date-picker v-model="form.requisitionDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择申请日期" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -57,36 +51,20 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="需求日期" prop="requiredDate">
-              <el-date-picker
-                v-model="form.requiredDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择需求日期"
-                style="width:100%"
-              />
+              <el-date-picker v-model="form.requiredDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择需求日期" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="来源类型" prop="sourceType">
               <el-select v-model="form.sourceType" placeholder="请选择来源类型">
-                <el-option
-                  v-for="dict in pu_source_type"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
+                <el-option v-for="dict in pu_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" placeholder="请选择状态">
-                <el-option
-                  v-for="dict in pu_purchase_requisition_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
+                <el-option v-for="dict in pu_purchase_requisition_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -107,12 +85,7 @@
                 placeholder="请选择审批流程"
                 style="width: 100%"
               >
-                <el-option
-                  v-for="f in flowOptions"
-                  :key="f.id"
-                  :label="f.flowName || f.businessName || ('流程#' + f.id)"
-                  :value="f.id"
-                />
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -130,7 +103,7 @@
           show-icon
           :closable="false"
           title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 puPurchaseRequisitionService。"
-          style="margin-bottom: 12px;"
+          style="margin-bottom: 12px"
         />
 
         <!-- 申请明细分隔符 -->
@@ -185,13 +158,7 @@
           </el-table-column>
           <el-table-column label="需求日期" width="160">
             <template #default="scope">
-              <el-date-picker
-                v-model="scope.row.requiredDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="需求日期"
-                style="width:100%"
-              />
+              <el-date-picker v-model="scope.row.requiredDate" type="date" value-format="YYYY-MM-DD" placeholder="需求日期" style="width: 100%" />
             </template>
           </el-table-column>
           <el-table-column label="备注" width="160">
@@ -204,52 +171,27 @@
     </el-card>
 
     <!-- 物料选择对话框 -->
-    <el-dialog v-model="materialDialog.visible" title="选择物料" width="900px" append-to-body>
-      <el-form :model="materialDialog.query" :inline="true">
-        <el-form-item label="物料编码">
-          <el-input v-model="materialDialog.query.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="queryMaterials" />
-        </el-form-item>
-        <el-form-item label="物料名称">
-          <el-input v-model="materialDialog.query.materialName" placeholder="请输入物料名称" clearable @keyup.enter="queryMaterials" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryMaterials">搜索</el-button>
-          <el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button>
-        </el-form-item>
-      </el-form>
-      <el-table v-loading="materialDialog.loading" :data="materialDialog.list" height="400" @row-dblclick="selectMaterial">
-        <el-table-column label="物料编码" prop="materialCode" />
-        <el-table-column label="物料名称" prop="materialName" />
-        <el-table-column label="规格型号" prop="materialSpec" />
-        <el-table-column label="单位" prop="baseUomName" />
-        <el-table-column label="操作" width="100">
-          <template #default="scope">
-            <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <!-- 分页组件 -->
-      <pagination
-        v-show="materialDialog.total > 0"
-        :total="materialDialog.total"
-        v-model:page="materialDialog.query.pageNum"
-        v-model:limit="materialDialog.query.pageSize"
-        @pagination="queryMaterials"
-      />
-    </el-dialog>
+    <MaterialSelectDialog ref="materialSelectDialogRef" title="选择物料" @select="handleMaterialSelected" />
   </div>
 </template>
 
 <script setup lang="ts" name="PurchaseRequisitionForm">
 // 导入请购单相关的API方法
-import { addPurchaseRequisition, getPurchaseRequisition, updatePurchaseRequisition, convertPurchaseRequisition, submitRequisitionFlow, getRequisitionProcId } from '@/api/erp/pu/requisition'
+import {
+  addPurchaseRequisition,
+  getPurchaseRequisition,
+  updatePurchaseRequisition,
+  convertPurchaseRequisition,
+  submitRequisitionFlow,
+  getRequisitionProcId
+} from '@/api/erp/pu/requisition';
 // 导入物料管理API
-import { listMaterial } from '@/api/erp/bd/material'
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 // 导入审批流API
-import { getProcesss } from '@/api/workflow/process'
+import { getProcesss } from '@/api/workflow/process';
 // 导入路由相关功能
-import { useRoute, useRouter } from 'vue-router'
-import { previewCode } from "@/api/system/autocode/rule"
+import { useRoute, useRouter } from 'vue-router';
+import { previewCode } from '@/api/system/autocode/rule';
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -257,19 +199,19 @@ const props = defineProps({
   model: { type: Object, default: () => ({}) },
   customFormData: { type: Object, default: () => ({}) },
   isNew: { type: Boolean, default: false }
-})
+});
 
 // 获取当前实例的代理对象和字典数据
-const { proxy } = getCurrentInstance() as any
-const { pu_purchase_requisition_status, pu_source_type } = toRefs<any>(proxy.useDict('pu_purchase_requisition_status', 'pu_source_type'))
+const { proxy } = getCurrentInstance() as any;
+const { pu_purchase_requisition_status, pu_source_type } = toRefs<any>(proxy.useDict('pu_purchase_requisition_status', 'pu_source_type'));
 // 路由和导航
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 // 页面状态变量
-const title = ref('')                    // 页面标题
-const isViewMode = ref(false)            // 是否为查看模式
-const autoGenFlag = ref(false)           // 自动生成编号开关
+const title = ref(''); // 页面标题
+const isViewMode = ref(false); // 是否为查看模式
+const autoGenFlag = ref(false); // 自动生成编号开关
 // 初始化表单数据，包含 requisitionId 字段
 const form = ref<any>({
   requisitionId: null,
@@ -282,81 +224,66 @@ const form = ref<any>({
   selectFlowId: null,
   remark: null,
   puPurchaseRequisitionLineList: []
-})                     // 表单数据
-const lineList = ref<any[]>([])          // 请购明细列表
-const checkedLines = ref<any[]>([])      // 已选中的明细行
-const currentMaterialIndex = ref(-1)     // 当前选择的物料索引
+}); // 表单数据
+const lineList = ref<any[]>([]); // 请购明细列表
+const checkedLines = ref<any[]>([]); // 已选中的明细行
+const currentMaterialIndex = ref(-1); // 当前选择的物料索引
 
 // 流程相关状态
-const loadingFlow = ref(false)
-const flowOptions = ref([])
+const loadingFlow = ref(false);
+const flowOptions = ref([]);
 
 // 表单禁用状态（考虑 workflow 嵌入和查看模式）
-const formDisabled = computed(() => isViewMode.value || props.disabled)
+const formDisabled = computed(() => isViewMode.value || props.disabled);
 
-// 物料选择对话框数据
-const materialDialog = reactive({
-  visible: false,                        // 对话框是否可见
-  loading: false,                        // 加载状态
-  total: 0,                             // 总记录数
-  list: [] as any[],                     // 物料列表
-  query: {                               // 查询条件
-    pageNum: 1,
-    pageSize: 10,
-    materialCode: null,
-    materialName: null
-  }
-})
+// 物料选择对话框
+const materialSelectDialogRef = ref<any>(null);
 
 // 表单验证规则
 const rules = {
-  requisitionNo: [
-    { required: true, message: '申请单号不能为空', trigger: 'blur' }
-  ]
-}
+  requisitionNo: [{ required: true, message: '申请单号不能为空', trigger: 'blur' }]
+};
 
 /** 将流程下发的业务数据写入本地状态 */
 function applyWorkflowFormPayload(payload: Record<string, any>) {
-  if (!payload || typeof payload !== 'object') return
-  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>
-  form.value = merged
-  lineList.value = Array.isArray(merged.puPurchaseRequisitionLineList)
-    ? merged.puPurchaseRequisitionLineList
-    : []
+  if (!payload || typeof payload !== 'object') return;
+  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>;
+  form.value = merged;
+  lineList.value = Array.isArray(merged.puPurchaseRequisitionLineList) ? merged.puPurchaseRequisitionLineList : [];
 }
 
 watch(
   () => props.customFormData,
   (val) => {
     if (val && typeof val === 'object' && (val as any).requisitionId != null) {
-      applyWorkflowFormPayload(val as Record<string, any>)
-      isViewMode.value = props.disabled
-      title.value = props.disabled ? '采购申请（流程）' : '采购申请'
-      loadFlows()
+      applyWorkflowFormPayload(val as Record<string, any>);
+      isViewMode.value = props.disabled;
+      title.value = props.disabled ? '采购申请（流程）' : '采购申请';
+      loadFlows();
     }
   },
   { deep: true, immediate: true }
-)
+);
 
 // 组件挂载后的初始化逻辑
 onMounted(() => {
   // 获取路由参数
-  const id = route.query.id as any
-  const action = route.query.action as string
+  const id = route.query.id as any;
+  const action = route.query.action as string;
 
   // 设置页面模式和标题
-  isViewMode.value = action === 'view'
-  title.value = action === 'add' ? '新增采购申请' : action === 'edit' ? '修改采购申请' : '查看采购申请'
+  isViewMode.value = action === 'view';
+  title.value = action === 'add' ? '新增采购申请' : action === 'edit' ? '修改采购申请' : '查看采购申请';
 
   // 根据操作类型初始化页面
   if (action === 'add') {
-    reset() // 新增操作：重置表单
-    loadFlows()
+    reset(); // 新增操作：重置表单
+    loadFlows();
   } else if (id) {
-    getInfo(id) // 编辑/查看操作：获取详情数据
-    loadFlows()
+    getInfo(id); // 编辑/查看操作：获取详情数据
+    loadFlows();
   }
-})
+});
 
 /**
  * 根据ID获取采购请购单详情
@@ -364,17 +291,17 @@ onMounted(() => {
  */
 function getInfo(id: any) {
   getPurchaseRequisition(id).then((res: any) => {
-    form.value = res.data
-    lineList.value = res.data.puPurchaseRequisitionLineList || []
-    tryAutoSelect()
-  })
+    form.value = res.data;
+    lineList.value = res.data.puPurchaseRequisitionLineList || [];
+    tryAutoSelect();
+  });
 }
 
 /**
  * 重置表单数据
  */
 function reset() {
-  autoGenFlag.value = false
+  autoGenFlag.value = false;
   form.value = {
     requisitionId: null,
     requisitionNo: null,
@@ -385,22 +312,24 @@ function reset() {
     status: 'DRAFT',
     selectFlowId: null,
     remark: null
-  }
-  lineList.value = []
+  };
+  lineList.value = [];
 }
 
 /**
  * 加载审批流列表
  */
 function loadFlows() {
-  loadingFlow.value = true
-  getProcesss({ serviceName: 'puPurchaseRequisitionService' }).then((response: any) => {
-    flowOptions.value = response?.data || []
-    tryAutoSelect()
-    loadingFlow.value = false
-  }).catch(() => {
-    loadingFlow.value = false
-  })
+  loadingFlow.value = true;
+  getProcesss({ serviceName: 'puPurchaseRequisitionService' })
+    .then((response: any) => {
+      flowOptions.value = response?.data || [];
+      tryAutoSelect();
+      loadingFlow.value = false;
+    })
+    .catch(() => {
+      loadingFlow.value = false;
+    });
 }
 
 /**
@@ -408,7 +337,7 @@ function loadFlows() {
  */
 function tryAutoSelect() {
   if (!form.value.selectFlowId && flowOptions.value.length === 1) {
-    form.value.selectFlowId = flowOptions.value[0].id
+    form.value.selectFlowId = flowOptions.value[0].id;
   }
 }
 
@@ -416,48 +345,52 @@ function tryAutoSelect() {
  * 提交审批
  */
 function handleSubmitFlow() {
-  proxy.$refs["formRef"].validate((valid: boolean) => {
+  proxy.$refs['formRef'].validate((valid: boolean) => {
     if (valid) {
       if (!form.value.selectFlowId) {
-        proxy.$modal.msgWarning("请先选择审批流程")
-        return
+        proxy.$modal.msgWarning('请先选择审批流程');
+        return;
       }
-      form.value.puPurchaseRequisitionLineList = lineList.value
+      form.value.puPurchaseRequisitionLineList = lineList.value;
       if (form.value.requisitionId != null) {
         // 先保存数据
         updatePurchaseRequisition(form.value).then(() => {
           // 再提交审批流
-          submitRequisitionFlow(String(form.value.requisitionId), String(form.value.selectFlowId)).then((res: any) => {
-            if (res.code === 200) {
-              proxy.$modal.msgSuccess("提交审批成功")
-              router.push('/erp/pu/requisition')
-            } else {
-              proxy.$modal.msgError(res.msg || '提交审批失败')
-            }
-          }).catch((error: any) => {
-            proxy.$modal.msgError('提交审批失败：' + error)
-          })
-        })
+          submitRequisitionFlow(String(form.value.requisitionId), String(form.value.selectFlowId))
+            .then((res: any) => {
+              if (res.code === 200) {
+                proxy.$modal.msgSuccess('提交审批成功');
+                router.push('/erp/pu/requisition');
+              } else {
+                proxy.$modal.msgError(res.msg || '提交审批失败');
+              }
+            })
+            .catch((error: any) => {
+              proxy.$modal.msgError('提交审批失败：' + error);
+            });
+        });
       } else {
-        proxy.$modal.msgWarning("请先保存单据后再提交审批")
+        proxy.$modal.msgWarning('请先保存单据后再提交审批');
       }
     }
-  })
+  });
 }
 
 /**
  * 查看流程
  */
 function onViewFlow() {
-  getRequisitionProcId(String(form.value.requisitionId)).then((res: any) => {
-    if (res.code === 200 && res.data) {
-      router.push('/workflow/process/detail/' + res.data)
-    } else {
-      proxy.$modal.msgWarning('暂无流程信息')
-    }
-  }).catch(() => {
-    proxy.$modal.msgWarning('获取流程信息失败')
-  })
+  getRequisitionProcId(String(form.value.requisitionId))
+    .then((res: any) => {
+      if (res.code === 200 && res.data) {
+        router.push('/workflow/process/detail/' + res.data);
+      } else {
+        proxy.$modal.msgWarning('暂无流程信息');
+      }
+    })
+    .catch(() => {
+      proxy.$modal.msgWarning('获取流程信息失败');
+    });
 }
 
 /**
@@ -472,14 +405,14 @@ function handleAddLine() {
     applyQuantity: null,
     requiredDate: null,
     remark: null
-  })
+  });
 }
 
 /**
  * 删除请购明细行
  */
 function handleDeleteLine() {
-  lineList.value = lineList.value.filter((_, i) => !checkedLines.value.includes(i))
+  lineList.value = lineList.value.filter((_, i) => !checkedLines.value.includes(i));
 }
 
 /**
@@ -487,7 +420,7 @@ function handleDeleteLine() {
  * @param rows 选中的行数据
  */
 function handleLineSelectionChange(rows: any[]) {
-  checkedLines.value = rows.map((r: any) => lineList.value.indexOf(r))
+  checkedLines.value = rows.map((r: any) => lineList.value.indexOf(r));
 }
 
 /**
@@ -495,69 +428,42 @@ function handleLineSelectionChange(rows: any[]) {
  * @param index 当前行索引
  */
 function openMaterial(index: number) {
-  currentMaterialIndex.value = index
-  materialDialog.visible = true
-  queryMaterials()
+  currentMaterialIndex.value = index;
+  materialSelectDialogRef.value?.open();
 }
 
 /**
- * 查询物料列表
- */
-function queryMaterials() {
-  materialDialog.loading = true
-  listMaterial(materialDialog.query as any).then((res: any) => {
-    materialDialog.list = res.rows || res.data || []
-    materialDialog.total = res.total || 0
-    materialDialog.loading = false
-  })
-}
-
-/**
- * 重置物料查询条件
- */
-function resetMaterialQuery() {
-  materialDialog.query = {
-    pageNum: 1,
-    pageSize: 10,
-    materialCode: null,
-    materialName: null
-  }
-  queryMaterials()
-}
-
-/**
- * 选择物料
+ * 物料选择回调
  * @param row 选中的物料数据
  */
-function selectMaterial(row: any) {
-  if (currentMaterialIndex.value < 0) return
-  const target = lineList.value[currentMaterialIndex.value]
-  target.materialId = row.materialId
-  target.materialCode = row.materialCode
-  target.materialName = row.materialName
-  target.materialSpec = row.materialSpec
-  target.unit = row.baseUomName || row.unitName || row.unit
-  materialDialog.visible = false
+function handleMaterialSelected(row: any) {
+  if (currentMaterialIndex.value < 0) return;
+  const target = lineList.value[currentMaterialIndex.value];
+  target.materialId = row.materialId;
+  target.materialCode = row.materialCode;
+  target.materialName = row.materialName;
+  target.materialSpec = row.materialSpec;
+  target.unit = row.baseUomName || row.unitName || row.unit;
 }
 
 /**
  * 提交表单
  */
 function submitForm() {
-  form.value.puPurchaseRequisitionLineList = lineList.value
+  form.value.puPurchaseRequisitionLineList = lineList.value;
   // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
   if (autoGenFlag.value) {
     form.value.requisitionNo = undefined;
   }
-  const isEdit = route.query.action === 'edit' || form.value.requisitionId != null
+  const isEdit = route.query.action === 'edit' || form.value.requisitionId != null;
   if (isEdit && !form.value.requisitionId) {
-    proxy.$modal.msgError('单据ID丢失，请刷新页面后重试')
-    return
+    proxy.$modal.msgError('单据ID丢失，请刷新页面后重试');
+    return;
   }
-  ;(isEdit ? updatePurchaseRequisition(form.value) : addPurchaseRequisition(form.value)).then(() => {
-    proxy.$modal.msgSuccess('保存成功')
-    router.push('/erp/pu/requisition')
-  })
+  (isEdit ? updatePurchaseRequisition(form.value) : addPurchaseRequisition(form.value)).then(() => {
+    proxy.$modal.msgSuccess('保存成功');
+    router.push('/erp/pu/requisition');
+  });
 }
 
 /**
@@ -565,9 +471,9 @@ function submitForm() {
  */
 function handleConvert() {
   convertPurchaseRequisition(form.value.requisitionId).then(() => {
-    proxy.$modal.msgSuccess('转单成功')
-    router.push('/erp/pu/order')
-  })
+    proxy.$modal.msgSuccess('转单成功');
+    router.push('/erp/pu/order');
+  });
 }
 
 /**
@@ -576,7 +482,7 @@ function handleConvert() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('PU_REQUISITION_CODE').then(response => {
+    previewCode('PU_REQUISITION_CODE').then((response) => {
       form.value.requisitionNo = response;
     });
   } else {
@@ -585,7 +491,7 @@ function handleAutoGenChange(autoGenFlag) {
 }
 
 function cancel() {
-  router.push('/erp/pu/requisition')
+  router.push('/erp/pu/requisition');
 }
 </script>
 

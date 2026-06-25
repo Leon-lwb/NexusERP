@@ -19,8 +19,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="调拨单编号" prop="transferNo">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.transferNo" placeholder="请输入调拨单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.transferNo" placeholder="请输入调拨单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -35,7 +35,14 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="调拨日期" prop="transferDate">
-              <el-date-picker clearable v-model="form.transferDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择调拨日期" style="width: 100%" />
+              <el-date-picker
+                clearable
+                v-model="form.transferDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择调拨日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -69,9 +76,16 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
-              <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
-                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              <el-select
+                v-model="form.selectFlowId"
+                clearable
+                filterable
+                :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'"
+                placeholder="请选择审批流程"
+                style="width: 100%"
+              >
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -84,7 +98,12 @@
         <!-- 审批流程提示 -->
         <el-row :gutter="20" v-if="form.status === 'DRAFT' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
           <el-col :span="24">
-            <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmTransferService。" />
+            <el-alert
+              type="warning"
+              show-icon
+              :closable="false"
+              title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmTransferService。"
+            />
           </el-col>
         </el-row>
 
@@ -171,52 +190,37 @@
           </template>
         </el-table-column>
       </el-table>
-      <pagination v-show="warehouseTotal > 0" :total="warehouseTotal" v-model:page="warehouseQueryParams.pageNum" v-model:limit="warehouseQueryParams.pageSize" @pagination="getWarehouseList" />
+      <pagination
+        v-show="warehouseTotal > 0"
+        :total="warehouseTotal"
+        v-model:page="warehouseQueryParams.pageNum"
+        v-model:limit="warehouseQueryParams.pageSize"
+        @pagination="getWarehouseList"
+      />
     </el-dialog>
 
-    <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1000px" append-to-body>
-      <el-form :model="materialQueryParams" :inline="true" label-width="68px">
-        <el-form-item label="物料编码" prop="materialCode">
-          <el-input v-model="materialQueryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleMaterialQuery" />
-        </el-form-item>
-        <el-form-item label="物料名称" prop="materialName">
-          <el-input v-model="materialQueryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleMaterialQuery" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button>
-        </el-form-item>
-      </el-form>
-      <el-table v-loading="materialLoading" :data="materialList" @row-dblclick="selectMaterial" highlight-current-row height="400">
-        <el-table-column label="物料编码" align="center" prop="materialCode" />
-        <el-table-column label="物料名称" align="center" prop="materialName" />
-        <el-table-column label="规格型号" align="center" prop="materialSpec" />
-        <el-table-column label="单位" align="center" prop="baseUomName" />
-        <el-table-column label="操作" align="center" width="100">
-          <template #default="scope">
-            <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <pagination v-show="materialTotal > 0" :total="materialTotal" v-model:page="materialQueryParams.pageNum" v-model:limit="materialQueryParams.pageSize" @pagination="getMaterialList" />
-      <template #footer><div class="dialog-footer"><el-button @click="materialSelectOpen = false">取 消</el-button></div></template>
-    </el-dialog>
+    <MaterialSelectDialog
+      ref="materialSelectDialogRef"
+      :title="materialDialogTitle"
+      :warehouse-id="form.fromWarehouseId"
+      @select="handleMaterialSelected"
+    />
   </div>
 </template>
 
 <script setup lang="ts" name="TransferForm">
-import { getTransfer, addTransfer, updateTransfer, submitTransferFlow, getTransferProcId, executeTransfer } from "@/api/erp/wm/transfer"
-import { listMaterial } from "@/api/erp/bd/material"
-import { listWarehouse } from "@/api/erp/wm/warehouse"
-import { getMeasure } from "@/api/erp/bd/measure"
-import { previewCode } from "@/api/system/autocode/rule"
-import { getProcesss } from '@/api/workflow/process'
-import { useRoute, useRouter } from 'vue-router'
+import { getTransfer, addTransfer, updateTransfer, submitTransferFlow, getTransferProcId, executeTransfer } from '@/api/erp/wm/transfer';
+import { listWarehouse } from '@/api/erp/wm/warehouse';
+import { getMeasure } from '@/api/erp/bd/measure';
+import { previewCode } from '@/api/system/autocode/rule';
+import { getProcesss } from '@/api/workflow/process';
+import { useRoute, useRouter } from 'vue-router';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
-const { proxy } = getCurrentInstance() as any
-const { wm_transfer_type } = toRefs<any>(proxy.useDict('wm_transfer_type'))
-const route = useRoute()
-const router = useRouter()
+const { proxy } = getCurrentInstance() as any;
+const { wm_transfer_type } = toRefs<any>(proxy.useDict('wm_transfer_type'));
+const route = useRoute();
+const router = useRouter();
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -224,41 +228,43 @@ const props = defineProps({
   model: { type: Object, default: () => ({}) },
   customFormData: { type: Object, default: () => ({}) },
   isNew: { type: Boolean, default: false }
-})
+});
 
-const form = ref<any>({})
-const autoGenFlag = ref(false)
-const isViewMode = ref(false)
-const title = ref("")
-const lineList = ref<any[]>([])
-const loadingFlow = ref(false)
-const flowOptions = ref([])
+const form = ref<any>({});
+const autoGenFlag = ref(false);
+const isViewMode = ref(false);
+const title = ref('');
+const lineList = ref<any[]>([]);
+const loadingFlow = ref(false);
+const flowOptions = ref([]);
 
 // 表单禁用状态（考虑 workflow 嵌入和查看模式）
-const formDisabled = computed(() => isViewMode.value || props.disabled)
+const formDisabled = computed(() => isViewMode.value || props.disabled);
 
 /**
  * 将流程下发的业务数据写入本地状态
  */
 function applyWorkflowFormPayload(payload: Record<string, any>) {
-  if (!payload || typeof payload !== 'object') return
-  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>
-  form.value = merged
-  lineList.value = Array.isArray(merged.wmTransferLineList) ? merged.wmTransferLineList : []
+  if (!payload || typeof payload !== 'object') return;
+  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>;
+  form.value = merged;
+  lineList.value = Array.isArray(merged.wmTransferLineList) ? merged.wmTransferLineList : [];
 }
 
 /**
  * 加载审批流列表
  */
 function loadFlows() {
-  loadingFlow.value = true
-  getProcesss({ serviceName: 'wmTransferService' }).then((response: any) => {
-    flowOptions.value = response?.data || []
-    tryAutoSelect()
-    loadingFlow.value = false
-  }).catch(() => {
-    loadingFlow.value = false
-  })
+  loadingFlow.value = true;
+  getProcesss({ serviceName: 'wmTransferService' })
+    .then((response: any) => {
+      flowOptions.value = response?.data || [];
+      tryAutoSelect();
+      loadingFlow.value = false;
+    })
+    .catch(() => {
+      loadingFlow.value = false;
+    });
 }
 
 /**
@@ -266,7 +272,7 @@ function loadFlows() {
  */
 function tryAutoSelect() {
   if (!form.value.selectFlowId && flowOptions.value.length === 1) {
-    form.value.selectFlowId = flowOptions.value[0].id
+    form.value.selectFlowId = flowOptions.value[0].id;
   }
 }
 
@@ -274,74 +280,99 @@ watch(
   () => props.customFormData,
   (val) => {
     if (val && typeof val === 'object' && (val as any).transferId != null) {
-      applyWorkflowFormPayload(val as Record<string, any>)
-      isViewMode.value = props.disabled
-      title.value = props.disabled ? '库存调拨（流程）' : '库存调拨'
-      loadFlows()
+      applyWorkflowFormPayload(val as Record<string, any>);
+      isViewMode.value = props.disabled;
+      title.value = props.disabled ? '库存调拨（流程）' : '库存调拨';
+      loadFlows();
     }
   },
   { deep: true, immediate: true }
-)
-const checkedLines = ref<any[]>([])
+);
+const checkedLines = ref<any[]>([]);
 
-const materialSelectOpen = ref(false)
-const materialList = ref([])
-const materialLoading = ref(false)
-const materialTotal = ref(0)
-const materialDialogTitle = ref("选择物料")
-const currentMaterialRowIndex = ref(-1)
-const materialQueryParams = ref({ pageNum: 1, pageSize: 10, materialCode: null, materialName: null })
+const materialSelectDialogRef = ref<any>(null);
+const materialDialogTitle = ref('选择物料');
+const currentMaterialRowIndex = ref(-1);
 
-const warehouseSelectOpen = ref(false)
-const warehouseList = ref([])
-const warehouseLoading = ref(false)
-const warehouseTotal = ref(0)
-const warehouseSelectTarget = ref('')
-const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null })
+const warehouseSelectOpen = ref(false);
+const warehouseList = ref([]);
+const warehouseLoading = ref(false);
+const warehouseTotal = ref(0);
+const warehouseSelectTarget = ref('');
+const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null });
 
 const rules = {
-  transferNo: [{ required: true, message: "调拨单编号不能为空", trigger: "blur" }]
-}
+  transferNo: [{ required: true, message: '调拨单编号不能为空', trigger: 'blur' }]
+};
 
 onMounted(() => {
-  const id = route.query.id
-  const action = route.query.action as string
-  isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增调拨单"; reset(); loadFlows() }
-  else if (action === 'edit') { title.value = "修改调拨单"; if (id) getInfo(id); loadFlows() }
-  else if (action === 'view') { title.value = "查看调拨单"; if (id) getInfo(id) }
-})
+  const id = route.query.id;
+  const action = route.query.action as string;
+  isViewMode.value = action === 'view';
+  if (action === 'add') {
+    title.value = '新增调拨单';
+    reset();
+    loadFlows();
+  } else if (action === 'edit') {
+    title.value = '修改调拨单';
+    if (id) getInfo(id);
+    loadFlows();
+  } else if (action === 'view') {
+    title.value = '查看调拨单';
+    if (id) getInfo(id);
+  }
+});
 
 function getInfo(id: any) {
   getTransfer(id).then((response: any) => {
-    form.value = response.data
-    lineList.value = response.data.wmTransferLineList || []
-    tryAutoSelect()
-  })
+    form.value = response.data;
+    lineList.value = response.data.wmTransferLineList || [];
+    tryAutoSelect();
+  });
 }
 
 function reset() {
-  autoGenFlag.value = false
-  form.value = { transferId: null, transferNo: null, transferType: null, fromWarehouseId: null, fromWarehouseCode: null, fromWarehouseName: null, toWarehouseId: null, toWarehouseCode: null, toWarehouseName: null, transferDate: null, status: 'DRAFT', remark: null, selectFlowId: null }
-  lineList.value = []
-  proxy.resetForm("transferRef")
+  autoGenFlag.value = false;
+  form.value = {
+    transferId: null,
+    transferNo: null,
+    transferType: null,
+    fromWarehouseId: null,
+    fromWarehouseCode: null,
+    fromWarehouseName: null,
+    toWarehouseId: null,
+    toWarehouseCode: null,
+    toWarehouseName: null,
+    transferDate: null,
+    status: 'DRAFT',
+    remark: null,
+    selectFlowId: null
+  };
+  lineList.value = [];
+  proxy.resetForm('transferRef');
 }
 
 function submitForm() {
-  proxy.$refs["transferRef"].validate((valid: boolean) => {
+  proxy.$refs['transferRef'].validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
         form.value.transferNo = undefined;
       }
-      form.value.wmTransferLineList = lineList.value
+      form.value.wmTransferLineList = lineList.value;
       if (form.value.transferId != null) {
-        updateTransfer(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/wm/transfer') })
+        updateTransfer(form.value).then(() => {
+          proxy.$modal.msgSuccess('修改成功');
+          router.push('/erp/wm/transfer');
+        });
       } else {
-        addTransfer(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); router.push('/erp/wm/transfer') })
+        addTransfer(form.value).then(() => {
+          proxy.$modal.msgSuccess('新增成功');
+          router.push('/erp/wm/transfer');
+        });
       }
     }
-  })
+  });
 }
 
 /**
@@ -349,25 +380,27 @@ function submitForm() {
  */
 function handleSubmitFlow() {
   if (!form.value.selectFlowId) {
-    proxy.$modal.msgWarning("请先选择审批流程")
-    return
+    proxy.$modal.msgWarning('请先选择审批流程');
+    return;
   }
-  form.value.wmTransferLineList = lineList.value
+  form.value.wmTransferLineList = lineList.value;
   if (form.value.transferId != null) {
     updateTransfer(form.value).then(() => {
-      submitTransferFlow(String(form.value.transferId), String(form.value.selectFlowId)).then((res: any) => {
-        if (res.code === 200) {
-          proxy.$modal.msgSuccess("提交审批成功")
-          router.push('/erp/wm/transfer')
-        } else {
-          proxy.$modal.msgError(res.msg || '提交审批失败')
-        }
-      }).catch((error: any) => {
-        proxy.$modal.msgError('提交审批失败：' + error)
-      })
-    })
+      submitTransferFlow(String(form.value.transferId), String(form.value.selectFlowId))
+        .then((res: any) => {
+          if (res.code === 200) {
+            proxy.$modal.msgSuccess('提交审批成功');
+            router.push('/erp/wm/transfer');
+          } else {
+            proxy.$modal.msgError(res.msg || '提交审批失败');
+          }
+        })
+        .catch((error: any) => {
+          proxy.$modal.msgError('提交审批失败：' + error);
+        });
+    });
   } else {
-    proxy.$modal.msgWarning("请先保存单据后再提交审批")
+    proxy.$modal.msgWarning('请先保存单据后再提交审批');
   }
 }
 
@@ -375,25 +408,31 @@ function handleSubmitFlow() {
  * 查看流程
  */
 function onViewFlow() {
-  getTransferProcId(String(form.value.transferId)).then((res: any) => {
-    if (res.code === 200 && res.data) {
-      router.push('/workflow/process/detail/' + res.data)
-    } else {
-      proxy.$modal.msgWarning('暂无流程信息')
-    }
-  }).catch(() => {
-    proxy.$modal.msgWarning('获取流程信息失败')
-  })
+  getTransferProcId(String(form.value.transferId))
+    .then((res: any) => {
+      if (res.code === 200 && res.data) {
+        router.push('/workflow/process/detail/' + res.data);
+      } else {
+        proxy.$modal.msgWarning('暂无流程信息');
+      }
+    })
+    .catch(() => {
+      proxy.$modal.msgWarning('获取流程信息失败');
+    });
 }
 
 /** 执行调拨 */
 function handleExecute() {
-  proxy.$modal.confirm('确认执行调拨单【' + form.value.transferNo + '】吗？执行后库存将过账。').then(() => {
-    return executeTransfer(form.value.transferId)
-  }).then(() => {
-    proxy.$modal.msgSuccess("调拨执行成功")
-    getInfo(form.value.transferId)
-  }).catch(() => {})
+  proxy.$modal
+    .confirm('确认执行调拨单【' + form.value.transferNo + '】吗？执行后库存将过账。')
+    .then(() => {
+      return executeTransfer(form.value.transferId);
+    })
+    .then(() => {
+      proxy.$modal.msgSuccess('调拨执行成功');
+      getInfo(form.value.transferId);
+    })
+    .catch(() => {});
 }
 
 function getStatusType(status: string) {
@@ -403,8 +442,8 @@ function getStatusType(status: string) {
     'APPROVED': 'success',
     'EXECUTED': 'success',
     'CANCELLED': 'danger'
-  }
-  return typeMap[status] || 'info'
+  };
+  return typeMap[status] || 'info';
 }
 
 function getStatusLabel(status: string) {
@@ -414,8 +453,8 @@ function getStatusLabel(status: string) {
     'APPROVED': '已批准',
     'EXECUTED': '已执行',
     'CANCELLED': '已取消'
-  }
-  return labelMap[status] || status
+  };
+  return labelMap[status] || status;
 }
 
 //自动生成编号
@@ -429,96 +468,94 @@ function handleAutoGenChange(autoGenFlag) {
   }
 }
 
-function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/transfer' }) }
+function cancel() {
+  proxy.$tab.closeOpenPage({ path: '/erp/wm/transfer' });
+}
 
-function rowLineIndex({ row, rowIndex }: any) { row.index = rowIndex + 1 }
+function rowLineIndex({ row, rowIndex }: any) {
+  row.index = rowIndex + 1;
+}
 
 function handleAddLine() {
-  lineList.value.push({ materialId: null, materialCode: '', materialName: '', materialSpec: '', baseUomId: '', baseUomName: '', quantity: null, fromLocationCode: '', toLocationCode: '', remark: '' })
+  lineList.value.push({
+    materialId: null,
+    materialCode: '',
+    materialName: '',
+    materialSpec: '',
+    baseUomId: '',
+    baseUomName: '',
+    quantity: null,
+    fromLocationCode: '',
+    toLocationCode: '',
+    remark: ''
+  });
 }
 
 function handleDeleteLine() {
-  if (checkedLines.value.length == 0) { proxy.$modal.msgError("请先选择要删除的行"); return }
-  lineList.value = lineList.value.filter((item: any) => checkedLines.value.indexOf(item.index) == -1)
+  if (checkedLines.value.length == 0) {
+    proxy.$modal.msgError('请先选择要删除的行');
+    return;
+  }
+  lineList.value = lineList.value.filter((item: any) => checkedLines.value.indexOf(item.index) == -1);
 }
 
-function handleLineSelectionChange(selection: any[]) { checkedLines.value = selection.map((item: any) => item.index) }
+function handleLineSelectionChange(selection: any[]) {
+  checkedLines.value = selection.map((item: any) => item.index);
+}
 
 function openMaterialSelect(rowIndex: number) {
-  currentMaterialRowIndex.value = rowIndex
-  materialSelectOpen.value = true
-  getMaterialList()
+  currentMaterialRowIndex.value = rowIndex;
+  materialSelectDialogRef.value?.open();
 }
 
-function getMaterialList() {
-  materialLoading.value = true
-  // 注入表单已填调出仓库上下文，仅查询该仓库下有库存记录的物料可调拨
-  const params = {
-    ...materialQueryParams.value,
-    warehouseId: form.value.fromWarehouseId ?? null
-  }
-  listMaterial(params).then((response: any) => {
-    materialList.value = response.rows
-    materialTotal.value = response.total
-    materialLoading.value = false
-  })
-}
-
-function handleMaterialQuery() { materialQueryParams.value.pageNum = 1; getMaterialList() }
-
-function resetMaterialQuery() {
-  proxy.resetForm("materialQueryForm")
-  materialQueryParams.value = { pageNum: 1, pageSize: 10, materialCode: null, materialName: null }
-  handleMaterialQuery()
-}
-
-function selectMaterial(row: any) {
-  if (currentMaterialRowIndex.value >= 0 && lineList.value[currentMaterialRowIndex.value]) {
-    const idx = currentMaterialRowIndex.value
-    lineList.value[idx].materialId = row.materialId
-    lineList.value[idx].materialCode = row.materialCode
-    lineList.value[idx].materialName = row.materialName
-    lineList.value[idx].materialSpec = row.materialSpec
+function handleMaterialSelected(row: any) {
+  const idx = currentMaterialRowIndex.value;
+  if (idx >= 0 && lineList.value[idx]) {
+    lineList.value[idx].materialId = row.materialId;
+    lineList.value[idx].materialCode = row.materialCode;
+    lineList.value[idx].materialName = row.materialName;
+    lineList.value[idx].materialSpec = row.materialSpec;
     if (row.baseUomId) {
-      lineList.value[idx].baseUomId = row.baseUomId
-      getMeasure(row.baseUomId).then((r: any) => { if (idx < lineList.value.length) lineList.value[idx].baseUomName = r.data.uomName })
+      lineList.value[idx].baseUomId = row.baseUomId;
+      getMeasure(row.baseUomId).then((r: any) => {
+        if (idx < lineList.value.length) lineList.value[idx].baseUomName = r.data.uomName;
+      });
     }
   }
-  materialSelectOpen.value = false
-  currentMaterialRowIndex.value = -1
+  currentMaterialRowIndex.value = -1;
 }
 
 function openWarehouseSelect(target: string) {
-  warehouseSelectTarget.value = target
-  warehouseSelectOpen.value = true
-  getWarehouseList()
+  warehouseSelectTarget.value = target;
+  warehouseSelectOpen.value = true;
+  getWarehouseList();
 }
 
 function getWarehouseList() {
-  warehouseLoading.value = true
+  warehouseLoading.value = true;
   listWarehouse(warehouseQueryParams.value).then((response: any) => {
-    warehouseList.value = response.rows
-    warehouseTotal.value = response.total
-    warehouseLoading.value = false
-  })
+    warehouseList.value = response.rows;
+    warehouseTotal.value = response.total;
+    warehouseLoading.value = false;
+  });
 }
 
 function resetWarehouseQuery() {
-  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null }
-  getWarehouseList()
+  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null };
+  getWarehouseList();
 }
 
 function handleWarehouseSelect(row: any) {
   if (warehouseSelectTarget.value === 'from') {
-    form.value.fromWarehouseId = row.warehouseId
-    form.value.fromWarehouseCode = row.warehouseCode
-    form.value.fromWarehouseName = row.warehouseName
+    form.value.fromWarehouseId = row.warehouseId;
+    form.value.fromWarehouseCode = row.warehouseCode;
+    form.value.fromWarehouseName = row.warehouseName;
   } else {
-    form.value.toWarehouseId = row.warehouseId
-    form.value.toWarehouseCode = row.warehouseCode
-    form.value.toWarehouseName = row.warehouseName
+    form.value.toWarehouseId = row.warehouseId;
+    form.value.toWarehouseCode = row.warehouseCode;
+    form.value.toWarehouseName = row.warehouseName;
   }
-  warehouseSelectOpen.value = false
+  warehouseSelectOpen.value = false;
 }
 </script>
 

@@ -1,3 +1,5 @@
+import type { MaterialVO } from '../material/types';
+
 export interface CategoryQuery extends PageQuery {
   categoryCode?: string;
   categoryName?: string;
@@ -7,6 +9,7 @@ export interface CategoryQuery extends PageQuery {
 export interface CategoryVO {
   categoryId: number;
   parentId: number;
+  parentName?: string;
   categoryCode: string;
   categoryName: string;
   categoryDesc: string;
@@ -20,6 +23,9 @@ export interface CategoryVO {
   createTime: string;
   updateBy: number;
   updateTime: string;
+  /** 树形结构子节点（前端 handleTree 组装） */
+  children?: CategoryVO[];
+  hasChildren?: boolean;
 }
 
 export interface CategoryForm {
@@ -28,9 +34,6 @@ export interface CategoryForm {
   categoryCode: string;
   categoryName: string;
   categoryDesc?: string;
-  levelNum?: number;
-  pathIds?: string;
-  pathNames?: string;
   sortOrder?: number;
   status?: number;
   remark?: string;
@@ -38,5 +41,5 @@ export interface CategoryForm {
 
 export interface CategoryWithMaterialsVO {
   categories: CategoryVO[];
-  materials: any[];
+  materials: MaterialVO[];
 }

@@ -18,8 +18,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="退货单编号" prop="returnNo">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.returnNo" placeholder="请输入退货单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.returnNo" placeholder="请输入退货单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -32,7 +32,14 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="退货日期" prop="returnDate">
-              <el-date-picker clearable v-model="form.returnDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择退货日期" style="width: 100%" />
+              <el-date-picker
+                clearable
+                v-model="form.returnDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择退货日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -88,9 +95,16 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
-              <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
-                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              <el-select
+                v-model="form.selectFlowId"
+                clearable
+                filterable
+                :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'"
+                placeholder="请选择审批流程"
+                style="width: 100%"
+              >
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -103,7 +117,12 @@
 
         <el-row :gutter="20" v-if="form.status === 'DRAFT' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
           <el-col :span="24">
-            <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 soReturnService。" />
+            <el-alert
+              type="warning"
+              show-icon
+              :closable="false"
+              title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 soReturnService。"
+            />
           </el-col>
         </el-row>
 
@@ -134,7 +153,9 @@
             </template>
           </el-table-column>
           <el-table-column label="规格型号" prop="materialSpec" width="120">
-            <template #default="scope"><span>{{ scope.row.materialSpec }}</span></template>
+            <template #default="scope"
+              ><span>{{ scope.row.materialSpec }}</span></template
+            >
           </el-table-column>
           <el-table-column label="退货数量" prop="returnQuantity" width="100">
             <template #default="scope">
@@ -149,7 +170,9 @@
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amount" width="100">
-            <template #default="scope"><span>{{ scope.row.amount }}</span></template>
+            <template #default="scope"
+              ><span>{{ scope.row.amount }}</span></template
+            >
           </el-table-column>
           <el-table-column label="税率(%)" prop="taxRate" width="80">
             <template #default="scope">
@@ -175,65 +198,84 @@
 
     <el-dialog title="选择客户" v-model="clientSelectOpen" width="800px" append-to-body>
       <el-form :model="clientQueryParams" :inline="true">
-        <el-form-item label="客户编码"><el-input v-model="clientQueryParams.clientCode" placeholder="请输入客户编码" clearable @keyup.enter="getClientList" /></el-form-item>
-        <el-form-item label="客户名称"><el-input v-model="clientQueryParams.clientName" placeholder="请输入客户名称" clearable @keyup.enter="getClientList" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="getClientList">搜索</el-button><el-button icon="Refresh" @click="resetClientQuery">重置</el-button></el-form-item>
+        <el-form-item label="客户编码"
+          ><el-input v-model="clientQueryParams.clientCode" placeholder="请输入客户编码" clearable @keyup.enter="getClientList"
+        /></el-form-item>
+        <el-form-item label="客户名称"
+          ><el-input v-model="clientQueryParams.clientName" placeholder="请输入客户名称" clearable @keyup.enter="getClientList"
+        /></el-form-item>
+        <el-form-item
+          ><el-button type="primary" icon="Search" @click="getClientList">搜索</el-button
+          ><el-button icon="Refresh" @click="resetClientQuery">重置</el-button></el-form-item
+        >
       </el-form>
       <el-table v-loading="clientLoading" :data="clientList" highlight-current-row @current-change="handleClientSelect">
         <el-table-column label="客户编码" align="center" prop="clientCode" />
         <el-table-column label="客户名称" align="center" prop="clientName" />
-        <el-table-column label="操作" align="center"><template #default="scope"><el-button link type="primary" @click="handleClientSelect(scope.row)">选择</el-button></template></el-table-column>
+        <el-table-column label="操作" align="center"
+          ><template #default="scope"
+            ><el-button link type="primary" @click="handleClientSelect(scope.row)">选择</el-button></template
+          ></el-table-column
+        >
       </el-table>
-      <pagination v-show="clientTotal > 0" :total="clientTotal" v-model:page="clientQueryParams.pageNum" v-model:limit="clientQueryParams.pageSize" @pagination="getClientList" />
+      <pagination
+        v-show="clientTotal > 0"
+        :total="clientTotal"
+        v-model:page="clientQueryParams.pageNum"
+        v-model:limit="clientQueryParams.pageSize"
+        @pagination="getClientList"
+      />
     </el-dialog>
 
     <el-dialog title="选择仓库" v-model="warehouseSelectOpen" width="800px" append-to-body>
       <el-form :model="warehouseQueryParams" :inline="true">
-        <el-form-item label="仓库编码"><el-input v-model="warehouseQueryParams.warehouseCode" placeholder="请输入仓库编码" clearable @keyup.enter="getWarehouseList" /></el-form-item>
-        <el-form-item label="仓库名称"><el-input v-model="warehouseQueryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="getWarehouseList" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="getWarehouseList">搜索</el-button><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item>
+        <el-form-item label="仓库编码"
+          ><el-input v-model="warehouseQueryParams.warehouseCode" placeholder="请输入仓库编码" clearable @keyup.enter="getWarehouseList"
+        /></el-form-item>
+        <el-form-item label="仓库名称"
+          ><el-input v-model="warehouseQueryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="getWarehouseList"
+        /></el-form-item>
+        <el-form-item
+          ><el-button type="primary" icon="Search" @click="getWarehouseList">搜索</el-button
+          ><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item
+        >
       </el-form>
       <el-table v-loading="warehouseLoading" :data="warehouseList" highlight-current-row @current-change="handleWarehouseSelect">
         <el-table-column label="仓库编码" align="center" prop="warehouseCode" />
         <el-table-column label="仓库名称" align="center" prop="warehouseName" />
-        <el-table-column label="操作" align="center"><template #default="scope"><el-button link type="primary" @click="handleWarehouseSelect(scope.row)">选择</el-button></template></el-table-column>
+        <el-table-column label="操作" align="center"
+          ><template #default="scope"
+            ><el-button link type="primary" @click="handleWarehouseSelect(scope.row)">选择</el-button></template
+          ></el-table-column
+        >
       </el-table>
-      <pagination v-show="warehouseTotal > 0" :total="warehouseTotal" v-model:page="warehouseQueryParams.pageNum" v-model:limit="warehouseQueryParams.pageSize" @pagination="getWarehouseList" />
+      <pagination
+        v-show="warehouseTotal > 0"
+        :total="warehouseTotal"
+        v-model:page="warehouseQueryParams.pageNum"
+        v-model:limit="warehouseQueryParams.pageSize"
+        @pagination="getWarehouseList"
+      />
     </el-dialog>
 
-    <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1000px" append-to-body>
-      <el-form :model="materialQueryParams" :inline="true" label-width="68px">
-        <el-form-item label="物料编码" prop="materialCode"><el-input v-model="materialQueryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleMaterialQuery" /></el-form-item>
-        <el-form-item label="物料名称" prop="materialName"><el-input v-model="materialQueryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleMaterialQuery" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button><el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button></el-form-item>
-      </el-form>
-      <el-table v-loading="materialLoading" :data="materialList" @row-dblclick="selectMaterial" highlight-current-row height="400">
-        <el-table-column label="物料编码" align="center" prop="materialCode" />
-        <el-table-column label="物料名称" align="center" prop="materialName" />
-        <el-table-column label="规格型号" align="center" prop="materialSpec" />
-        <el-table-column label="单位" align="center" prop="baseUomName" />
-        <el-table-column label="操作" align="center" width="100"><template #default="scope"><el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button></template></el-table-column>
-      </el-table>
-      <pagination v-show="materialTotal > 0" :total="materialTotal" v-model:page="materialQueryParams.pageNum" v-model:limit="materialQueryParams.pageSize" @pagination="getMaterialList" />
-      <template #footer><div class="dialog-footer"><el-button @click="materialSelectOpen = false">取 消</el-button></div></template>
-    </el-dialog>
+    <MaterialSelectDialog ref="materialSelectDialogRef" :title="materialDialogTitle" @select="handleMaterialSelected" />
   </div>
 </template>
 
 <script setup lang="ts" name="ReturnForm">
-import { getReturn, addReturn, updateReturn, submitReturnFlow, getReturnProcId } from "@/api/erp/so/return"
-import { listMaterial } from "@/api/erp/bd/material"
-import { listClient } from "@/api/erp/bd/client"
-import { listWarehouse } from "@/api/erp/wm/warehouse"
-import { getMeasure } from "@/api/erp/bd/measure"
-import { previewCode } from "@/api/system/autocode/rule"
-import { getProcesss } from '@/api/workflow/process'
-import { useRoute, useRouter } from 'vue-router'
+import { getReturn, addReturn, updateReturn, submitReturnFlow, getReturnProcId } from '@/api/erp/so/return';
+import { listClient } from '@/api/erp/bd/client';
+import { listWarehouse } from '@/api/erp/wm/warehouse';
+import { getMeasure } from '@/api/erp/bd/measure';
+import { previewCode } from '@/api/system/autocode/rule';
+import { getProcesss } from '@/api/workflow/process';
+import { useRoute, useRouter } from 'vue-router';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
-const { proxy } = getCurrentInstance() as any
-const { so_return_type } = toRefs<any>(proxy.useDict('so_return_type'))
-const route = useRoute()
-const router = useRouter()
+const { proxy } = getCurrentInstance() as any;
+const { so_return_type } = toRefs<any>(proxy.useDict('so_return_type'));
+const route = useRoute();
+const router = useRouter();
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -241,81 +283,106 @@ const props = defineProps({
   model: { type: Object, default: () => ({}) },
   customFormData: { type: Object, default: () => ({}) },
   isNew: { type: Boolean, default: false }
-})
+});
 
-const form = ref<any>({})
-const autoGenFlag = ref(false)
-const isViewMode = ref(false)
-const title = ref("")
-const lineList = ref<any[]>([])
-const checkedLines = ref<any[]>([])
-const loadingFlow = ref(false)
-const flowOptions = ref([])
+const form = ref<any>({});
+const autoGenFlag = ref(false);
+const isViewMode = ref(false);
+const title = ref('');
+const lineList = ref<any[]>([]);
+const checkedLines = ref<any[]>([]);
+const loadingFlow = ref(false);
+const flowOptions = ref([]);
 
-const formDisabled = computed(() => isViewMode.value || props.disabled)
+const formDisabled = computed(() => isViewMode.value || props.disabled);
 
-const materialSelectOpen = ref(false)
-const materialList = ref([])
-const materialLoading = ref(false)
-const materialTotal = ref(0)
-const materialDialogTitle = ref("选择物料")
-const currentMaterialRowIndex = ref(-1)
-const materialQueryParams = ref({ pageNum: 1, pageSize: 10, materialCode: null, materialName: null })
+const materialSelectDialogRef = ref<any>(null);
+const materialDialogTitle = ref('选择物料');
+const currentMaterialRowIndex = ref(-1);
 
-const clientSelectOpen = ref(false)
-const clientList = ref([])
-const clientLoading = ref(false)
-const clientTotal = ref(0)
-const clientQueryParams = ref({ pageNum: 1, pageSize: 10, clientCode: null, clientName: null })
+const clientSelectOpen = ref(false);
+const clientList = ref([]);
+const clientLoading = ref(false);
+const clientTotal = ref(0);
+const clientQueryParams = ref({ pageNum: 1, pageSize: 10, clientCode: null, clientName: null });
 
-const warehouseSelectOpen = ref(false)
-const warehouseList = ref([])
-const warehouseLoading = ref(false)
-const warehouseTotal = ref(0)
-const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null })
+const warehouseSelectOpen = ref(false);
+const warehouseList = ref([]);
+const warehouseLoading = ref(false);
+const warehouseTotal = ref(0);
+const warehouseQueryParams = ref({ pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null });
 
 const rules = {
-  returnNo: [{ required: true, message: "退货单编号不能为空", trigger: "blur" }]
-}
+  returnNo: [{ required: true, message: '退货单编号不能为空', trigger: 'blur' }]
+};
 
 onMounted(() => {
-  const id = route.query.id
-  const action = route.query.action as string
-  isViewMode.value = action === 'view'
-  if (action === 'add') { title.value = "新增退货单"; reset(); loadFlows() }
-  else if (action === 'edit') { title.value = "修改退货单"; if (id) getInfo(id); loadFlows() }
-  else if (action === 'view') { title.value = "查看退货单"; if (id) getInfo(id) }
-})
+  const id = route.query.id;
+  const action = route.query.action as string;
+  isViewMode.value = action === 'view';
+  if (action === 'add') {
+    title.value = '新增退货单';
+    reset();
+    loadFlows();
+  } else if (action === 'edit') {
+    title.value = '修改退货单';
+    if (id) getInfo(id);
+    loadFlows();
+  } else if (action === 'view') {
+    title.value = '查看退货单';
+    if (id) getInfo(id);
+  }
+});
 
 function getInfo(id: any) {
   getReturn(id).then((response: any) => {
-    form.value = response.data
-    lineList.value = response.data.soReturnLineList || []
-    tryAutoSelect()
-  })
+    form.value = response.data;
+    lineList.value = response.data.soReturnLineList || [];
+    tryAutoSelect();
+  });
 }
 
 function reset() {
-  autoGenFlag.value = false
-  form.value = { returnId: null, returnNo: null, soNo: null, clientId: null, clientName: null, returnDate: null, returnReason: null, returnType: null, totalAmount: null, taxAmount: null, refundAmount: null, warehouseId: null, warehouseCode: null, warehouseName: null, status: null, remark: null, selectFlowId: null }
-  lineList.value = []
-  proxy.resetForm("returnRef")
+  autoGenFlag.value = false;
+  form.value = {
+    returnId: null,
+    returnNo: null,
+    soNo: null,
+    clientId: null,
+    clientName: null,
+    returnDate: null,
+    returnReason: null,
+    returnType: null,
+    totalAmount: null,
+    taxAmount: null,
+    refundAmount: null,
+    warehouseId: null,
+    warehouseCode: null,
+    warehouseName: null,
+    status: null,
+    remark: null,
+    selectFlowId: null
+  };
+  lineList.value = [];
+  proxy.resetForm('returnRef');
 }
 
 function loadFlows() {
-  loadingFlow.value = true
-  getProcesss({ serviceName: 'soReturnService' }).then((response: any) => {
-    flowOptions.value = response?.data || []
-    tryAutoSelect()
-    loadingFlow.value = false
-  }).catch(() => {
-    loadingFlow.value = false
-  })
+  loadingFlow.value = true;
+  getProcesss({ serviceName: 'soReturnService' })
+    .then((response: any) => {
+      flowOptions.value = response?.data || [];
+      tryAutoSelect();
+      loadingFlow.value = false;
+    })
+    .catch(() => {
+      loadingFlow.value = false;
+    });
 }
 
 function tryAutoSelect() {
   if (!form.value.selectFlowId && flowOptions.value.length === 1) {
-    form.value.selectFlowId = flowOptions.value[0].id
+    form.value.selectFlowId = flowOptions.value[0].id;
   }
 }
 
@@ -323,88 +390,98 @@ watch(
   () => props.customFormData,
   (val) => {
     if (val && typeof val === 'object' && (val as any).returnId != null) {
-      const merged = JSON.parse(JSON.stringify(val)) as Record<string, any>
-      form.value = merged
-      isViewMode.value = props.disabled
-      title.value = props.disabled ? '销售退货（流程）' : '销售退货'
-      loadFlows()
+      const merged = JSON.parse(JSON.stringify(val)) as Record<string, any>;
+      form.value = merged;
+      isViewMode.value = props.disabled;
+      title.value = props.disabled ? '销售退货（流程）' : '销售退货';
+      loadFlows();
     }
   },
   { deep: true, immediate: true }
-)
+);
 
 const statusMap: Record<string, { label: string; type: string }> = {
-  DRAFT:     { label: '草稿',   type: 'info' },
+  DRAFT: { label: '草稿', type: 'info' },
   APPROVING: { label: '审批中', type: 'warning' },
   CONFIRMED: { label: '已确认', type: 'success' },
-  RECEIVED:  { label: '已收货', type: 'primary' },
-  CLOSED:    { label: '已关闭', type: 'danger' },
-}
+  RECEIVED: { label: '已收货', type: 'primary' },
+  CLOSED: { label: '已关闭', type: 'danger' }
+};
 
 function getStatusType(status: string): string {
-  return statusMap[status]?.type || 'info'
+  return statusMap[status]?.type || 'info';
 }
 
 function getStatusLabel(status: string): string {
-  return statusMap[status]?.label || status || '未知'
+  return statusMap[status]?.label || status || '未知';
 }
 
 function submitForm() {
-  proxy.$refs["returnRef"].validate((valid: boolean) => {
+  proxy.$refs['returnRef'].validate((valid: boolean) => {
     if (valid) {
-        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-        if (autoGenFlag.value) {
-          form.value.returnNo = undefined;
-        }
-      form.value.soReturnLineList = lineList.value
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.returnNo = undefined;
+      }
+      form.value.soReturnLineList = lineList.value;
       if (form.value.returnId != null) {
-        updateReturn(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/so/return') })
+        updateReturn(form.value).then(() => {
+          proxy.$modal.msgSuccess('修改成功');
+          router.push('/erp/so/return');
+        });
       } else {
-        addReturn(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); router.push('/erp/so/return') })
+        addReturn(form.value).then(() => {
+          proxy.$modal.msgSuccess('新增成功');
+          router.push('/erp/so/return');
+        });
       }
     }
-  })
+  });
 }
 
 function handleSubmitFlow() {
   if (!form.value.selectFlowId) {
-    proxy.$modal.msgWarning("请先选择审批流程")
-    return
+    proxy.$modal.msgWarning('请先选择审批流程');
+    return;
   }
   if (form.value.returnId != null) {
     updateReturn(form.value).then(() => {
-      submitReturnFlow(String(form.value.returnId), String(form.value.selectFlowId)).then((res: any) => {
-        if (res.code === 200) {
-          proxy.$modal.msgSuccess("提交审批成功")
-          router.push('/erp/so/return')
-        } else {
-          proxy.$modal.msgError(res.msg || '提交审批失败')
-        }
-      }).catch((error: any) => {
-        proxy.$modal.msgError('提交审批失败：' + error)
-      })
-    })
+      submitReturnFlow(String(form.value.returnId), String(form.value.selectFlowId))
+        .then((res: any) => {
+          if (res.code === 200) {
+            proxy.$modal.msgSuccess('提交审批成功');
+            router.push('/erp/so/return');
+          } else {
+            proxy.$modal.msgError(res.msg || '提交审批失败');
+          }
+        })
+        .catch((error: any) => {
+          proxy.$modal.msgError('提交审批失败：' + error);
+        });
+    });
   } else {
-    proxy.$modal.msgWarning("请先保存单据后再提交审批")
+    proxy.$modal.msgWarning('请先保存单据后再提交审批');
   }
 }
 
 function onViewFlow() {
-  getReturnProcId(String(form.value.returnId)).then((res: any) => {
-    if (res.code === 200 && res.data) {
-      router.push('/workflow/process/detail/' + res.data)
-    } else {
-      proxy.$modal.msgWarning('暂无流程信息')
-    }
-  }).catch(() => {
-    proxy.$modal.msgWarning('获取流程信息失败')
-  })
+  getReturnProcId(String(form.value.returnId))
+    .then((res: any) => {
+      if (res.code === 200 && res.data) {
+        router.push('/workflow/process/detail/' + res.data);
+      } else {
+        proxy.$modal.msgWarning('暂无流程信息');
+      }
+    })
+    .catch(() => {
+      proxy.$modal.msgWarning('获取流程信息失败');
+    });
 }
 
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('SO_RETURN_CODE').then(response => {
+    previewCode('SO_RETURN_CODE').then((response) => {
       form.value.returnNo = response;
     });
   } else {
@@ -412,82 +489,104 @@ function handleAutoGenChange(autoGenFlag) {
   }
 }
 
-function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/so/return' }) }
+function cancel() {
+  proxy.$tab.closeOpenPage({ path: '/erp/so/return' });
+}
 
-function rowLineIndex({ row, rowIndex }: any) { row.index = rowIndex + 1 }
+function rowLineIndex({ row, rowIndex }: any) {
+  row.index = rowIndex + 1;
+}
 
 function handleAddLine() {
-  lineList.value.push({ materialId: null, materialCode: '', materialName: '', materialSpec: '', baseUomId: '', baseUomName: '', returnQuantity: null, unitPrice: null, amount: null, taxRate: null, returnReason: '', remark: '' })
+  lineList.value.push({
+    materialId: null,
+    materialCode: '',
+    materialName: '',
+    materialSpec: '',
+    baseUomId: '',
+    baseUomName: '',
+    returnQuantity: null,
+    unitPrice: null,
+    amount: null,
+    taxRate: null,
+    returnReason: '',
+    remark: ''
+  });
 }
 
 function handleDeleteLine() {
-  if (checkedLines.value.length == 0) { proxy.$modal.msgError("请先选择要删除的行"); return }
-  lineList.value = lineList.value.filter((item: any) => checkedLines.value.indexOf(item.index) == -1)
+  if (checkedLines.value.length == 0) {
+    proxy.$modal.msgError('请先选择要删除的行');
+    return;
+  }
+  lineList.value = lineList.value.filter((item: any) => checkedLines.value.indexOf(item.index) == -1);
 }
 
-function handleLineSelectionChange(selection: any[]) { checkedLines.value = selection.map((item: any) => item.index) }
-
-function openMaterialSelect(rowIndex: number) { currentMaterialRowIndex.value = rowIndex; materialSelectOpen.value = true; getMaterialList() }
-
-function getMaterialList() {
-  materialLoading.value = true
-  listMaterial(materialQueryParams.value).then((response: any) => { materialList.value = response.rows; materialTotal.value = response.total; materialLoading.value = false })
+function handleLineSelectionChange(selection: any[]) {
+  checkedLines.value = selection.map((item: any) => item.index);
 }
 
-function handleMaterialQuery() { materialQueryParams.value.pageNum = 1; getMaterialList() }
-
-function resetMaterialQuery() {
-  materialQueryParams.value = { pageNum: 1, pageSize: 10, materialCode: null, materialName: null }
-  handleMaterialQuery()
+function openMaterialSelect(rowIndex: number) {
+  currentMaterialRowIndex.value = rowIndex;
+  materialSelectDialogRef.value?.open();
 }
 
-function selectMaterial(row: any) {
-  if (currentMaterialRowIndex.value >= 0 && lineList.value[currentMaterialRowIndex.value]) {
-    const idx = currentMaterialRowIndex.value
-    lineList.value[idx].materialId = row.materialId
-    lineList.value[idx].materialCode = row.materialCode
-    lineList.value[idx].materialName = row.materialName
-    lineList.value[idx].materialSpec = row.materialSpec
+function handleMaterialSelected(row: any) {
+  const idx = currentMaterialRowIndex.value;
+  if (idx >= 0 && lineList.value[idx]) {
+    lineList.value[idx].materialId = row.materialId;
+    lineList.value[idx].materialCode = row.materialCode;
+    lineList.value[idx].materialName = row.materialName;
+    lineList.value[idx].materialSpec = row.materialSpec;
     if (row.baseUomId) {
-      lineList.value[idx].baseUomId = row.baseUomId
-      getMeasure(row.baseUomId).then((r: any) => { if (idx < lineList.value.length) lineList.value[idx].baseUomName = r.data.uomName })
+      lineList.value[idx].baseUomId = row.baseUomId;
+      getMeasure(row.baseUomId).then((r: any) => {
+        if (idx < lineList.value.length) lineList.value[idx].baseUomName = r.data.uomName;
+      });
     }
   }
-  materialSelectOpen.value = false
-  currentMaterialRowIndex.value = -1
+  currentMaterialRowIndex.value = -1;
 }
 
 function getClientList() {
-  clientLoading.value = true
-  listClient(clientQueryParams.value).then((response: any) => { clientList.value = response.rows; clientTotal.value = response.total; clientLoading.value = false })
+  clientLoading.value = true;
+  listClient(clientQueryParams.value).then((response: any) => {
+    clientList.value = response.rows;
+    clientTotal.value = response.total;
+    clientLoading.value = false;
+  });
 }
 
 function resetClientQuery() {
-  clientQueryParams.value = { pageNum: 1, pageSize: 10, clientCode: null, clientName: null }
-  getClientList()
+  clientQueryParams.value = { pageNum: 1, pageSize: 10, clientCode: null, clientName: null };
+  getClientList();
 }
 
 function handleClientSelect(row: any) {
-  form.value.clientId = row.clientId
-  form.value.clientName = row.clientName
-  clientSelectOpen.value = false
+  form.value.clientId = row.clientId;
+  form.value.clientName = row.clientName;
+  clientSelectOpen.value = false;
 }
 
 function getWarehouseList() {
-  warehouseLoading.value = true
-  listWarehouse(warehouseQueryParams.value).then((response: any) => { warehouseList.value = response.rows; warehouseTotal.value = response.total; warehouseLoading.value = false })
+  warehouseLoading.value = true;
+  listWarehouse(warehouseQueryParams.value).then((response: any) => {
+    warehouseList.value = response.rows;
+    warehouseTotal.value = response.total;
+    warehouseLoading.value = false;
+  });
 }
 
 function resetWarehouseQuery() {
-  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null }
-  getWarehouseList()
+  warehouseQueryParams.value = { pageNum: 1, pageSize: 10, warehouseCode: null, warehouseName: null };
+  getWarehouseList();
 }
 
 function handleWarehouseSelect(row: any) {
-  form.value.warehouseId = row.warehouseId
-  form.value.warehouseCode = row.warehouseCode
-  form.value.warehouseName = row.warehouseName
-  warehouseSelectOpen.value = false
+  form.value.warehouseId = row.warehouseId;
+  form.value.warehouseCode = row.warehouseCode;
+  form.value.warehouseName = row.warehouseName;
+  warehouseSelectOpen.value = false;
 }
 </script>
 

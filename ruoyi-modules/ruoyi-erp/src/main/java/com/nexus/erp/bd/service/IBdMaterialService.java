@@ -5,6 +5,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.bo.BdMaterialBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -70,4 +71,12 @@ public interface IBdMaterialService {
      * @return 物料产品主列表
      */
     List<BdMaterialVo> selectByCategoryIds(List<Long> categoryIds);
+
+    /**
+     * 判断指定分类下是否存在物料
+     *
+     * @param categoryIds 分类ID集合
+     * @return 结果 true 存在 false 不存在
+     */
+    boolean hasMaterialByCategoryIds(Collection<Long> categoryIds);
 }

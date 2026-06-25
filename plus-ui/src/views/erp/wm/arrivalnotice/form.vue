@@ -18,8 +18,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="通知单编号" prop="noticeCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -67,8 +67,7 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="到货日期" prop="arrivalDate">
-              <el-date-picker clearable v-model="form.arrivalDate" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择到货日期">
+              <el-date-picker clearable v-model="form.arrivalDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择到货日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -95,20 +94,14 @@
                 placeholder="请选择审批流程"
                 style="width: 100%"
               >
-                <el-option
-                  v-for="f in flowOptions"
-                  :key="f.id"
-                  :label="f.flowName || f.businessName || ('流程#' + f.id)"
-                  :value="f.id"
-                />
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="单据状态" prop="status">
               <el-radio-group v-model="form.status">
-                <el-radio v-for="dict in wm_notice_status" :key="dict.value"
-                  :label="dict.value">{{ dict.label }}</el-radio>
+                <el-radio v-for="dict in wm_notice_status" :key="dict.value" :label="dict.value">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -126,32 +119,30 @@
           show-icon
           :closable="false"
           title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmArrivalNoticeService。"
-          style="margin-bottom: 12px;"
+          style="margin-bottom: 12px"
         />
 
         <!-- 子表部分开始 -->
         <el-divider content-position="center">到货通知单行信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddWmArrivalNoticeLine"
-              v-if="!isViewMode">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddWmArrivalNoticeLine" v-if="!isViewMode">添加</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteWmArrivalNoticeLine"
-              v-if="!isViewMode">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteWmArrivalNoticeLine" v-if="!isViewMode">删除</el-button>
           </el-col>
         </el-row>
-        <el-table :data="wmArrivalNoticeLineList" :row-class-name="rowWmArrivalNoticeLineIndex"
-          @selection-change="handleWmArrivalNoticeLineSelectionChange" ref="wmArrivalNoticeLine">
+        <el-table
+          :data="wmArrivalNoticeLineList"
+          :row-class-name="rowWmArrivalNoticeLineIndex"
+          @selection-change="handleWmArrivalNoticeLineSelectionChange"
+          ref="wmArrivalNoticeLine"
+        >
           <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
           <el-table-column label="序号" align="center" prop="index" width="50" />
           <el-table-column label="产品物料编码" prop="materialCode" width="150">
             <template #default="scope">
-              <el-input
-                v-model="scope.row.materialCode"
-                placeholder="请输入产品物料编码"
-                v-if="!isViewMode"
-                readonly>
+              <el-input v-model="scope.row.materialCode" placeholder="请输入产品物料编码" v-if="!isViewMode" readonly>
                 <template #append>
                   <el-button icon="Search" @click="openMaterialSelect(scope.$index)" />
                 </template>
@@ -167,7 +158,14 @@
           </el-table-column>
           <el-table-column label="单位" prop="baseUomName" width="150">
             <template #default="scope">
-              <el-select v-model="scope.row.baseUomId" placeholder="请选择单位" v-if="!isViewMode" filterable style="width: 100%" @change="(val) => onUomChange(val, scope.row)">
+              <el-select
+                v-model="scope.row.baseUomId"
+                placeholder="请选择单位"
+                v-if="!isViewMode"
+                filterable
+                style="width: 100%"
+                @change="(val) => onUomChange(val, scope.row)"
+              >
                 <el-option v-for="u in uomOptions" :key="u.uomId" :label="u.uomName" :value="String(u.uomId)" />
               </el-select>
               <span v-else>{{ scope.row.baseUomName }}</span>
@@ -188,16 +186,15 @@
           <el-table-column label="是否来料检验" prop="iqcCheck" width="150">
             <template #default="scope">
               <el-select v-model="scope.row.iqcCheck" placeholder="请选择是否来料检验" v-if="!isViewMode">
-                <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label"
-                  :value="dict.value"></el-option>
+                <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
               <span v-else>{{ getDictLabel(sys_true_or_false, scope.row.iqcCheck) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="来料检验单编号" prop="iqcCode" width="180">
             <template #default="scope">
-              <div style="display: flex; align-items: center; gap: 8px;" v-if="!isViewMode">
-                <el-input v-model="scope.row.iqcCode" placeholder="请选择来料检验单" readonly style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 8px" v-if="!isViewMode">
+                <el-input v-model="scope.row.iqcCode" placeholder="请选择来料检验单" readonly style="flex: 1" />
                 <el-button type="primary" icon="Search" @click="openIqcSelect(scope.$index)" />
               </div>
               <span v-else>{{ scope.row.iqcCode }}</span>
@@ -208,113 +205,14 @@
       </el-form>
     </el-card>
 
-        <!-- 物料选择对话框 -->
-    <el-dialog :title="materialDialogTitle" v-model="materialSelectOpen" width="1200px" append-to-body>
-      <el-row :gutter="20">
-        <!-- 左侧物料分类树 -->
-        <el-col :span="6">
-          <div class="category-tree-container">
-            <!-- 增加分类树搜索框 -->
-            <el-input
-              v-model="categoryFilterText"
-              placeholder="请输入分类名称"
-              clearable
-              prefix-icon="Search"
-              class="category-search-input"
-              aria-label="分类搜索"
-              @input="debouncedHandleCategoryFilter"
-            />
-            <el-tree
-              ref="categoryTreeRef"
-              class="category-tree"
-              :data="categoryTree"
-              :props="categoryTreeProps"
-              :expand-on-click-node="false"
-              :highlight-current="true"
-              node-key="id"
-              default-expand-all
-              :filter-node-method="filterCategoryNode"
-              @node-click="handleCategoryNodeClick"
-            />
-          </div>
-        </el-col>
-
-        <!-- 右侧物料列表 -->
-        <el-col :span="18">
-          <el-form :model="materialQueryParams" ref="materialQueryRef" :inline="true" label-width="68px">
-            <el-form-item label="物料编码" prop="materialCode">
-              <el-input
-                v-model="materialQueryParams.materialCode"
-                placeholder="请输入物料编码"
-                clearable
-                @keyup.enter="handleMaterialQuery"
-              />
-            </el-form-item>
-            <el-form-item label="物料名称" prop="materialName">
-              <el-input
-                v-model="materialQueryParams.materialName"
-                placeholder="请输入物料名称"
-                clearable
-                @keyup.enter="handleMaterialQuery"
-              />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleMaterialQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetMaterialQuery">重置</el-button>
-            </el-form-item>
-          </el-form>
-
-          <el-table
-            v-loading="materialLoading"
-            :data="materialList"
-            @row-dblclick="selectMaterial"
-            highlight-current-row
-            style="width: 100%"
-            height="400"
-          >
-            <el-table-column type="index" width="50" align="center" />
-            <el-table-column label="物料编码" align="center" prop="materialCode" />
-            <el-table-column label="物料名称" align="center" prop="materialName" />
-            <el-table-column label="规格型号" align="center" prop="materialSpec" />
-            <el-table-column label="物料类型" align="center" prop="materialType">
-              <template #default="scope">
-                <dict-tag :options="bd_material_type" :value="scope.row.materialType"/>
-              </template>
-            </el-table-column>
-            <el-table-column label="状态" align="center" prop="status">
-              <template #default="scope">
-                <dict-tag :options="sys_true_or_false" :value="scope.row.status"/>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" align="center" width="100">
-              <template #default="scope">
-                <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <pagination
-            v-show="materialTotal > 0"
-            :total="materialTotal"
-            v-model:page="materialQueryParams.pageNum"
-            v-model:limit="materialQueryParams.pageSize"
-            @pagination="getMaterialList"
-          />
-        </el-col>
-      </el-row>
-
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="materialSelectOpen = false">取 消</el-button>
-        </div>
-      </template>
-    </el-dialog>
+    <!-- 物料选择对话框 -->
+    <MaterialSelectDialog ref="materialSelectDialogRef" :title="materialDialogTitle" @select="handleMaterialSelected" />
 
     <!-- IQC选择对话框 -->
     <el-dialog :title="'选择来料检验单'" v-model="iqcSelectOpen" width="1000px" append-to-body>
       <el-form :model="iqcQueryParams" ref="iqcQueryRef" :inline="true" label-width="100px">
         <el-form-item label="物料名称" prop="materialId">
-          <span style="color: #606266;">{{ iqcCurrentMaterialName || '-' }}</span>
+          <span style="color: #606266">{{ iqcCurrentMaterialName || '-' }}</span>
         </el-form-item>
         <el-form-item label="IQC编号">
           <el-input v-model="iqcQueryParams.iqcNo" placeholder="请输入IQC编号" clearable @keyup.enter="handleIqcQuery" />
@@ -323,9 +221,7 @@
           <el-button type="primary" icon="Search" @click="handleIqcQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetIqcQuery">重置</el-button>
         </el-form-item>
-        <el-alert type="info" :closable="false" show-icon style="margin-top: 8px;">
-          仅显示状态为已完成且检验结果为合格的IQC记录
-        </el-alert>
+        <el-alert type="info" :closable="false" show-icon style="margin-top: 8px"> 仅显示状态为已完成且检验结果为合格的IQC记录 </el-alert>
       </el-form>
 
       <el-table v-loading="iqcLoading" :data="iqcList" @row-dblclick="selectIqc" highlight-current-row style="width: 100%" height="400">
@@ -360,7 +256,13 @@
         </el-table-column>
       </el-table>
 
-      <pagination v-show="iqcTotal > 0" :total="iqcTotal" v-model:page="iqcQueryParams.pageNum" v-model:limit="iqcQueryParams.pageSize" @pagination="getIqcList" />
+      <pagination
+        v-show="iqcTotal > 0"
+        :total="iqcTotal"
+        v-model:page="iqcQueryParams.pageNum"
+        v-model:limit="iqcQueryParams.pageSize"
+        @pagination="getIqcList"
+      />
 
       <template #footer>
         <div class="dialog-footer">
@@ -372,155 +274,137 @@
 </template>
 
 <script setup lang="ts" name="ArrivalnoticeForm">
-import { getArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivalnotice, getArrivalnoticeProcId } from "@/api/erp/wm/arrivalnotice"
-import { getProcesss } from "@/api/workflow/process"
-import { listMaterial, getMaterial } from "@/api/erp/bd/material"
-import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
-import { getMeasure, listMeasureAll } from "@/api/erp/bd/measure"
-import { listIqc } from "@/api/mes/qc/iqc"
-import { debounce } from "lodash-es"
-import { useRoute, useRouter } from 'vue-router'
-import { previewCode } from "@/api/system/autocode/rule"
-import type { ArrivalnoticeForm } from "@/api/erp/wm/arrivalnotice/types"
+import { getArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivalnotice, getArrivalnoticeProcId } from '@/api/erp/wm/arrivalnotice';
+import { getProcesss } from '@/api/workflow/process';
+import { getMaterial } from '@/api/erp/bd/material';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import { getMeasure, listMeasureAll } from '@/api/erp/bd/measure';
+import { listIqc } from '@/api/mes/qc/iqc';
 
-const { proxy } = getCurrentInstance() as any
-const { sys_true_or_false, wm_notice_status, bd_material_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_notice_status', 'bd_material_type'))
-const route = useRoute()
-const router = useRouter()
+import { useRoute, useRouter } from 'vue-router';
+import { previewCode } from '@/api/system/autocode/rule';
+import type { ArrivalnoticeForm } from '@/api/erp/wm/arrivalnotice/types';
+
+const { proxy } = getCurrentInstance() as any;
+const { sys_true_or_false, wm_notice_status, bd_material_type } = toRefs<any>(
+  proxy.useDict('sys_true_or_false', 'wm_notice_status', 'bd_material_type')
+);
+const route = useRoute();
+const router = useRouter();
 
 // 添加物料查询引用
-const materialQueryRef = ref()
+const materialQueryRef = ref();
 
-const form = ref<ArrivalnoticeForm>({})
-const autoGenFlag = ref(false)
-const isViewMode = ref(false)
-const title = ref("")
+const form = ref<ArrivalnoticeForm>({});
+const autoGenFlag = ref(false);
+const isViewMode = ref(false);
+const title = ref('');
 
 // 添加缺失的响应式变量定义
-const wmArrivalNoticeLineList = ref([])
-const checkedWmArrivalNoticeLine = ref([])
+const wmArrivalNoticeLineList = ref([]);
+const checkedWmArrivalNoticeLine = ref([]);
 
-// 物料选择相关变量
-const materialSelectOpen = ref(false)
-const materialList = ref([])
-const materialLoading = ref(false)
-const materialTotal = ref(0)
-const currentMaterialRowIndex = ref(-1)
-const materialQueryParams = ref({
-  pageNum: 1,
-  pageSize: 10,
-  materialCode: null,
-  materialName: null,
-  categoryId: null
-})
+// 物料选择对话框
+const materialSelectDialogRef = ref<any>(null);
+const materialDialogTitle = ref('选择物料');
+const currentMaterialRowIndex = ref(-1);
 
 // IQC选择对话框相关
-const iqcSelectOpen = ref(false)
-const iqcList = ref([])
-const iqcLoading = ref(false)
-const iqcTotal = ref(0)
-const currentIqcRowIndex = ref(-1)
-const iqcCurrentMaterialName = ref('')
+const iqcSelectOpen = ref(false);
+const iqcList = ref([]);
+const iqcLoading = ref(false);
+const iqcTotal = ref(0);
+const currentIqcRowIndex = ref(-1);
+const iqcCurrentMaterialName = ref('');
 const iqcQueryParams = ref({
   pageNum: 1,
   pageSize: 10,
   materialId: undefined,
   status: 'COMPLETED',
   inspectResult: 'QUALIFIED'
-})
-
-// 物料分类相关
-const categoryTree = ref([])
-const categoryTreeProps = {
-  children: 'children',
-  label: 'categoryName',
-  value: 'categoryId'
-}
-const categoryFilterText = ref('')
-const categoryTreeRef = ref(null)
+});
 
 // 流程相关状态
-const loadingFlow = ref(false)
-const flowOptions = ref([])
+const loadingFlow = ref(false);
+const flowOptions = ref([]);
 
 // 计量单位下拉选项
-const uomOptions = ref([])
+const uomOptions = ref([]);
 
 onMounted(() => {
-  const id = route.query.id
-  const action = route.query.action
+  const id = route.query.id;
+  const action = route.query.action;
   // 设置查看模式
-  isViewMode.value = action === 'view'
-
-  // 获取物料分类树
-  getCategoryTree()
+  isViewMode.value = action === 'view';
 
   // 加载计量单位列表
-  loadUomList()
+  loadUomList();
 
   if (id) {
-    initPage(id)
+    initPage(id);
   }
-})
+});
 
 /** 加载计量单位列表 */
 function loadUomList() {
-  listMeasureAll().then((response: any) => {
-    uomOptions.value = response.data || response.rows || []
-  }).catch((error: any) => {
-    console.error('获取计量单位列表失败:', error)
-    uomOptions.value = []
-  })
+  listMeasureAll()
+    .then((response: any) => {
+      uomOptions.value = response.data || response.rows || [];
+    })
+    .catch((error: any) => {
+      console.error('获取计量单位列表失败:', error);
+      uomOptions.value = [];
+    });
 }
 
 /** 单位下拉选择变化时同步单位名称 */
 function onUomChange(uomId: string, row: any) {
-  const found = uomOptions.value.find((u: any) => '' + u.uomId === uomId)
+  const found = uomOptions.value.find((u: any) => '' + u.uomId === uomId);
   if (found) {
-    row.baseUomName = found.uomName || ''
+    row.baseUomName = found.uomName || '';
   } else {
-    row.baseUomName = ''
+    row.baseUomName = '';
   }
 }
 
 function initPage(id: any) {
-  const action = route.query.action
+  const action = route.query.action;
 
   if (action === 'view') {
     // 查看模式
-    isViewMode.value = true
-    title.value = "查看到货通知"
+    isViewMode.value = true;
+    title.value = '查看到货通知';
     if (id) {
-      getInfo(id)
+      getInfo(id);
     }
   } else if (action === 'edit') {
     // 编辑模式
-    isViewMode.value = false
-    title.value = "修改到货通知"
+    isViewMode.value = false;
+    title.value = '修改到货通知';
     if (id) {
-      getInfo(id)
+      getInfo(id);
     }
   } else if (action === 'add') {
     // 新增模式
-    isViewMode.value = false
-    title.value = "新增到货通知"
-    reset()
-    loadFlows()
+    isViewMode.value = false;
+    title.value = '新增到货通知';
+    reset();
+    loadFlows();
   }
 }
 
 // 获取详细信息
 function getInfo(id: any) {
   getArrivalnotice(id).then((response: any) => {
-    form.value = response.data
-    wmArrivalNoticeLineList.value = response.data.wmArrivalNoticeLineList
-    loadFlows()
-  })
+    form.value = response.data;
+    wmArrivalNoticeLineList.value = response.data.wmArrivalNoticeLineList;
+    loadFlows();
+  });
 }
 
 // 表单重置
 function reset() {
-  autoGenFlag.value = false
+  autoGenFlag.value = false;
   form.value = {
     noticeId: null,
     noticeCode: null,
@@ -544,37 +428,36 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  }
-  wmArrivalNoticeLineList.value = []
-  proxy.resetForm("arrivalnoticeRef")
+  };
+  wmArrivalNoticeLineList.value = [];
+  proxy.resetForm('arrivalnoticeRef');
 }
 
 // 表单校验规则
-const rules = {
-}
+const rules = {};
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["arrivalnoticeRef"].validate((valid: boolean) => {
+  proxy.$refs['arrivalnoticeRef'].validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
         form.value.noticeCode = undefined;
       }
-      form.value.wmArrivalNoticeLineList = wmArrivalNoticeLineList.value
+      form.value.wmArrivalNoticeLineList = wmArrivalNoticeLineList.value;
       if (form.value.noticeId != null) {
         updateArrivalnotice(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          router.push('/erp/wm/arrivalnotice')
-        })
+          proxy.$modal.msgSuccess('修改成功');
+          router.push('/erp/wm/arrivalnotice');
+        });
       } else {
         addArrivalnotice(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          router.push('/erp/wm/arrivalnotice')
-        })
+          proxy.$modal.msgSuccess('新增成功');
+          router.push('/erp/wm/arrivalnotice');
+        });
       }
     }
-  })
+  });
 }
 
 // 取消按钮
@@ -590,332 +473,216 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() {
-  const obj = { path: '/erp/wm/arrivalnotice' }
-  proxy.$tab.closeOpenPage(obj)
+  const obj = { path: '/erp/wm/arrivalnotice' };
+  proxy.$tab.closeOpenPage(obj);
 }
 
 // ========== 流程相关方法 ==========
 
 /** 加载可用审批流程列表 */
 function loadFlows() {
-  loadingFlow.value = true
-  getProcesss({ serviceName: 'wmArrivalNoticeService' }).then((res: any) => {
-    flowOptions.value = res?.data || []
-    tryAutoSelect()
-  }).catch(() => {
-    flowOptions.value = []
-  }).finally(() => {
-    loadingFlow.value = false
-  })
+  loadingFlow.value = true;
+  getProcesss({ serviceName: 'wmArrivalNoticeService' })
+    .then((res: any) => {
+      flowOptions.value = res?.data || [];
+      tryAutoSelect();
+    })
+    .catch(() => {
+      flowOptions.value = [];
+    })
+    .finally(() => {
+      loadingFlow.value = false;
+    });
 }
 
 /** 如果只有一个可用流程，自动选中 */
 function tryAutoSelect() {
   if (flowOptions.value.length === 1 && !form.value.selectFlowId) {
-    form.value.selectFlowId = flowOptions.value[0].id
+    form.value.selectFlowId = flowOptions.value[0].id;
   }
 }
 
 /** 提交审批 */
 function handleSubmitFlow() {
   if (!form.value.noticeId) {
-    proxy.$modal.msgWarning("请先保存单据")
-    return
+    proxy.$modal.msgWarning('请先保存单据');
+    return;
   }
   if (!form.value.selectFlowId) {
-    proxy.$modal.msgWarning("请先选择审批流程并保存")
-    return
+    proxy.$modal.msgWarning('请先选择审批流程并保存');
+    return;
   }
   proxy.$modal.confirm('确认提交到货通知审批？').then(() => {
     submitArrivalnotice(String(form.value.noticeId), String(form.value.selectFlowId)).then(() => {
-      proxy.$modal.msgSuccess("提交审批成功")
-      getInfo(form.value.noticeId)
-    })
-  })
+      proxy.$modal.msgSuccess('提交审批成功');
+      getInfo(form.value.noticeId);
+    });
+  });
 }
 
 /** 查看流程 */
 function onViewFlow() {
-  if (!form.value.noticeId) return
+  if (!form.value.noticeId) return;
   getArrivalnoticeProcId(String(form.value.noticeId)).then((res: any) => {
-    const procInsId = res.data
+    const procInsId = res.data;
     if (!procInsId) {
-      proxy.$modal.msgWarning("暂无流程信息")
-      return
+      proxy.$modal.msgWarning('暂无流程信息');
+      return;
     }
     router.push({
       path: '/workflow/process/detail/' + procInsId,
       query: { processed: 'false' }
-    })
-  })
+    });
+  });
 }
 
 // 物料选择相关方法
 /** 打开物料选择对话框 */
 function openMaterialSelect(rowIndex: number) {
-  currentMaterialRowIndex.value = rowIndex
-  materialSelectOpen.value = true
-  getMaterialList()
+  currentMaterialRowIndex.value = rowIndex;
+  materialSelectDialogRef.value?.open();
 }
 
-/** 查询物料列表 */
-function getMaterialList() {
-  materialLoading.value = true
-  listMaterial(materialQueryParams.value).then((response: any) => {
-    materialList.value = response.rows
-    materialTotal.value = response.total
-    materialLoading.value = false
-  })
-}
-
-/** 搜索物料 */
-function handleMaterialQuery() {
-  materialQueryParams.value.pageNum = 1
-  getMaterialList()
-}
-
-/** 重置物料查询 */
-function resetMaterialQuery() {
-  proxy.resetForm("materialQueryRef")
-  materialQueryParams.value.materialCode = null
-  materialQueryParams.value.materialName = null
-  materialQueryParams.value.categoryId = null
-  handleMaterialQuery()
-}
-
-/** 选择物料 */
-function selectMaterial(row: any) {
-  if (currentMaterialRowIndex.value >= 0 && wmArrivalNoticeLineList.value[currentMaterialRowIndex.value]) {
-    wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].materialId = row.materialId
-    wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].materialCode = row.materialCode
-    wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].materialName = row.materialName
-    wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].materialSpec = row.materialSpec
-
-    // 获取计量单位名称
+/** 物料选择回调 */
+function handleMaterialSelected(row: any) {
+  const idx = currentMaterialRowIndex.value;
+  if (idx >= 0 && wmArrivalNoticeLineList.value[idx]) {
+    wmArrivalNoticeLineList.value[idx].materialId = row.materialId;
+    wmArrivalNoticeLineList.value[idx].materialCode = row.materialCode;
+    wmArrivalNoticeLineList.value[idx].materialName = row.materialName;
+    wmArrivalNoticeLineList.value[idx].materialSpec = row.materialSpec;
     if (row.baseUomId) {
-      wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].baseUomId = row.baseUomId
-
-      // 保存当前行索引的引用，防止异步回调时索引已变化
-      const rowIndex = currentMaterialRowIndex.value;
-
-      getMeasure(row.baseUomId).then((response: any) => {
-        // 使用保存的索引引用而不是 currentMaterialRowIndex.value
-        if (rowIndex >= 0 && wmArrivalNoticeLineList.value[rowIndex]) {
-          // 根据您提供的响应数据，字段访问是正确的
-          wmArrivalNoticeLineList.value[rowIndex].baseUomName = response.data.uomName
-        }
-      }).catch((error: any) => {
-        console.error('获取计量单位信息失败:', error);
-        // 同样使用保存的索引引用
-        if (rowIndex >= 0 && wmArrivalNoticeLineList.value[rowIndex]) {
-          wmArrivalNoticeLineList.value[rowIndex].baseUomName = ''
-        }
-      })
+      wmArrivalNoticeLineList.value[idx].baseUomId = row.baseUomId;
+      getMeasure(row.baseUomId)
+        .then((response: any) => {
+          if (idx >= 0 && wmArrivalNoticeLineList.value[idx]) {
+            wmArrivalNoticeLineList.value[idx].baseUomName = response.data.uomName;
+          }
+        })
+        .catch(() => {
+          if (idx >= 0 && wmArrivalNoticeLineList.value[idx]) {
+            wmArrivalNoticeLineList.value[idx].baseUomName = '';
+          }
+        });
     } else {
-      wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].baseUomId = ''
-      wmArrivalNoticeLineList.value[currentMaterialRowIndex.value].baseUomName = ''
+      wmArrivalNoticeLineList.value[idx].baseUomId = '';
+      wmArrivalNoticeLineList.value[idx].baseUomName = '';
     }
-
-    // 可以根据需要添加更多字段赋值
   }
-  materialSelectOpen.value = false
-  currentMaterialRowIndex.value = -1
+  currentMaterialRowIndex.value = -1;
 }
 
 // ========== IQC选择相关方法 ==========
 
 /** 打开IQC选择对话框 */
 function openIqcSelect(rowIndex: number) {
-  currentIqcRowIndex.value = rowIndex
+  currentIqcRowIndex.value = rowIndex;
   if (!wmArrivalNoticeLineList.value || !wmArrivalNoticeLineList.value[rowIndex]) {
-    proxy.$modal.msgWarning('当前行数据不存在，请重试')
-    return
+    proxy.$modal.msgWarning('当前行数据不存在，请重试');
+    return;
   }
-  const row = wmArrivalNoticeLineList.value[rowIndex]
-  iqcCurrentMaterialName.value = row.materialName || ''
+  const row = wmArrivalNoticeLineList.value[rowIndex];
+  iqcCurrentMaterialName.value = row.materialName || '';
   // 根据当前行的物料编码预填查询条件
-  iqcQueryParams.value.materialId = row.materialId || undefined
-  iqcQueryParams.value.status = 'COMPLETED'
-  iqcQueryParams.value.inspectResult = 'QUALIFIED'
-  iqcQueryParams.value.pageNum = 1
-  iqcSelectOpen.value = true
-  getIqcList()
+  iqcQueryParams.value.materialId = row.materialId || undefined;
+  iqcQueryParams.value.status = 'COMPLETED';
+  iqcQueryParams.value.inspectResult = 'QUALIFIED';
+  iqcQueryParams.value.pageNum = 1;
+  iqcSelectOpen.value = true;
+  getIqcList();
 }
 
 /** 查询IQC列表 */
 function getIqcList() {
-  iqcLoading.value = true
-  listIqc(iqcQueryParams.value).then((response: any) => {
-    iqcList.value = response.rows || []
-    iqcTotal.value = response.total || 0
-  }).catch((error: any) => {
-    console.error('查询IQC列表失败:', error)
-    iqcList.value = []
-    iqcTotal.value = 0
-  }).finally(() => {
-    iqcLoading.value = false
-  })
+  iqcLoading.value = true;
+  listIqc(iqcQueryParams.value)
+    .then((response: any) => {
+      iqcList.value = response.rows || [];
+      iqcTotal.value = response.total || 0;
+    })
+    .catch((error: any) => {
+      console.error('查询IQC列表失败:', error);
+      iqcList.value = [];
+      iqcTotal.value = 0;
+    })
+    .finally(() => {
+      iqcLoading.value = false;
+    });
 }
 
 /** 搜索IQC */
 function handleIqcQuery() {
-  iqcQueryParams.value.pageNum = 1
-  getIqcList()
+  iqcQueryParams.value.pageNum = 1;
+  getIqcList();
 }
 
 /** 重置IQC查询 */
 function resetIqcQuery() {
-  proxy.resetForm("iqcQueryRef")
-  iqcQueryParams.value.materialId = undefined
-  iqcQueryParams.value.pageNum = 1
-  iqcQueryParams.value.status = 'COMPLETED'
-  iqcQueryParams.value.inspectResult = 'QUALIFIED'
-  getIqcList()
+  proxy.resetForm('iqcQueryRef');
+  iqcQueryParams.value.materialId = undefined;
+  iqcQueryParams.value.pageNum = 1;
+  iqcQueryParams.value.status = 'COMPLETED';
+  iqcQueryParams.value.inspectResult = 'QUALIFIED';
+  getIqcList();
 }
 
 /** 选择IQC */
 function selectIqc(row: any) {
   if (currentIqcRowIndex.value >= 0 && wmArrivalNoticeLineList.value[currentIqcRowIndex.value]) {
-    const line = wmArrivalNoticeLineList.value[currentIqcRowIndex.value]
-    line.iqcId = row.iqcId || ''
-    line.iqcCode = row.iqcNo || ''
+    const line = wmArrivalNoticeLineList.value[currentIqcRowIndex.value];
+    line.iqcId = row.iqcId || '';
+    line.iqcCode = row.iqcNo || '';
   }
-  iqcSelectOpen.value = false
-  currentIqcRowIndex.value = -1
+  iqcSelectOpen.value = false;
+  currentIqcRowIndex.value = -1;
 }
 
 /** 到货通知单行序号 */
 function rowWmArrivalNoticeLineIndex({ row, rowIndex }: any) {
-  row.index = rowIndex + 1
+  row.index = rowIndex + 1;
 }
 
 /** 到货通知单行添加按钮操作 */
 function handleAddWmArrivalNoticeLine() {
-  let obj: any = {}
-  obj.materialId = ""
-  obj.materialCode = ""
-  obj.materialName = ""
-  obj.materialSpec = ""
-  obj.baseUomId = ""
-  obj.baseUomName = ""
-  obj.quantityArrival = ""
-  obj.quantityQuanlified = ""
-  obj.iqcCheck = ""
-  obj.iqcId = ""
-  obj.iqcCode = ""
-  obj.remark = ""
-  wmArrivalNoticeLineList.value.push(obj)
+  const obj: any = {};
+  obj.materialId = '';
+  obj.materialCode = '';
+  obj.materialName = '';
+  obj.materialSpec = '';
+  obj.baseUomId = '';
+  obj.baseUomName = '';
+  obj.quantityArrival = '';
+  obj.quantityQuanlified = '';
+  obj.iqcCheck = '';
+  obj.iqcId = '';
+  obj.iqcCode = '';
+  obj.remark = '';
+  wmArrivalNoticeLineList.value.push(obj);
 }
 
 /** 到货通知单行删除按钮操作 */
 function handleDeleteWmArrivalNoticeLine() {
   if (checkedWmArrivalNoticeLine.value.length == 0) {
-    proxy.$modal.msgError("请先选择要删除的到货通知单行数据")
+    proxy.$modal.msgError('请先选择要删除的到货通知单行数据');
   } else {
-    const wmArrivalNoticeLines = wmArrivalNoticeLineList.value
-    const checkedWmArrivalNoticeLines = checkedWmArrivalNoticeLine.value
+    const wmArrivalNoticeLines = wmArrivalNoticeLineList.value;
+    const checkedWmArrivalNoticeLines = checkedWmArrivalNoticeLine.value;
     wmArrivalNoticeLineList.value = wmArrivalNoticeLines.filter(function (item: any) {
-      return checkedWmArrivalNoticeLines.indexOf(item.index) == -1
-    })
+      return checkedWmArrivalNoticeLines.indexOf(item.index) == -1;
+    });
   }
 }
 
 /** 复选框选中数据 */
 function handleWmArrivalNoticeLineSelectionChange(selection: any[]) {
-  checkedWmArrivalNoticeLine.value = selection.map((item: any) => item.index)
+  checkedWmArrivalNoticeLine.value = selection.map((item: any) => item.index);
 }
 
 /** 获取字典标签 */
 function getDictLabel(dictOptions: any, value: any) {
-  const dict = dictOptions.find((item: any) => item.value === value)
-  return dict ? dict.label : value
+  const dict = dictOptions.find((item: any) => item.value === value);
+  return dict ? dict.label : value;
 }
-
-// 获取物料分类树
-function getCategoryTree() {
-  // 确保分类树也只获取启用状态的分类
-  listCategory({ status: 1 }).then((response: any) => {
-    // 处理分类树数据，确保数据结构符合 el-tree 要求
-    const data = response.data || response.rows || []
-    const filteredData = Array.isArray(data) ? data.filter((item: any) => item !== null && item !== undefined) : []
-    const treeData = proxy.handleTree(filteredData, "categoryId", "parentId");
-    categoryTree.value = treeData;
-  }).catch((error: any) => {
-    console.error('获取物料分类失败:', error)
-    proxy.$modal.msgError("获取物料分类失败")
-  })
-}
-
-// 处理物料分类节点点击 - 使用getAllChildrenIds接口返回的物料数据
-function handleCategoryNodeClick(data: any) {
-  const categoryId = Number(data.id || data.categoryId)
-
-  if (isNaN(categoryId) || categoryId <= 0) {
-    console.error('无效的分类ID:', categoryId)
-    proxy.$modal.msgError("无效的分类ID")
-    return
-  }
-
-  materialLoading.value = true
-  getAllChildrenIds(categoryId).then((response: any) => {
-    if (response.code === 200) {
-      let allMaterials: any[] = [];
-
-      // 处理不同可能的数据结构
-      if (response.data && Array.isArray(response.data)) {
-        // 直接是物料数组
-        allMaterials = response.data;
-      } else if (response.data && response.data.materials && Array.isArray(response.data.materials)) {
-        // 包含在materials字段中
-        allMaterials = response.data.materials;
-      }
-
-      // 过滤启用状态的物料（更宽松的比较）
-      const enabledMaterials = allMaterials.filter((material: any) => {
-        return String(material.status) === '1' || material.status === 1;
-      });
-
-      materialList.value = enabledMaterials
-      materialTotal.value = enabledMaterials.length
-      materialLoading.value = false
-    } else {
-      proxy.$modal.msgError("获取分类信息失败: " + response.msg)
-      materialLoading.value = false
-    }
-  }).catch((error: any) => {
-    console.error('获取分类信息异常:', error)
-    proxy.$modal.msgError("请求出现异常: " + error.message)
-    materialLoading.value = false
-  })
-}
-
-
-// 添加分类树过滤方法
-function filterCategoryNode(value: string, data: any) {
-  if (!value) return true
-  return data.categoryName && data.categoryName.includes(value)
-}
-
-// 添加处理分类过滤输入
-function handleCategoryFilter(val: string) {
-  if (categoryTreeRef.value) {
-    categoryTreeRef.value.filter(val)
-  }
-}
-
-// 添加防抖处理分类过滤
-const debouncedHandleCategoryFilter = debounce((val: string) => {
-  handleCategoryFilter(val)
-}, 300)
-
-// 添加组件销毁时的清理逻辑
-onUnmounted(() => {
-  // 取消防抖函数的执行
-  if (debouncedHandleCategoryFilter && typeof debouncedHandleCategoryFilter.cancel === 'function') {
-    debouncedHandleCategoryFilter.cancel()
-  }
-})
-
 </script>
 
 <style scoped>

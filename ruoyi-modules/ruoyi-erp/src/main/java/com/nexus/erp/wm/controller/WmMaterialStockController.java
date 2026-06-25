@@ -10,7 +10,7 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
-import com.nexus.erp.bd.domain.BdMaterialCategory;
+import com.nexus.erp.bd.domain.vo.BdMaterialCategoryVo;
 import com.nexus.erp.bd.service.IBdMaterialCategoryService;
 import com.nexus.erp.wm.domain.bo.WmMaterialStockBo;
 import com.nexus.erp.wm.domain.vo.CategoryWithStockVo;
@@ -147,11 +147,11 @@ public class WmMaterialStockController extends BaseController {
         }
 
         // 获取分类及其子分类
-        List<BdMaterialCategory> categories = bdMaterialCategoryService.selectAllChildrenIds(categoryIds);
+        List<BdMaterialCategoryVo> categories = bdMaterialCategoryService.selectAllChildrenIds(categoryIds);
 
         // 查询这些分类下的库存数据
         List<Long> categoryIdsList = categories.stream()
-                .map(BdMaterialCategory::getCategoryId)
+                .map(BdMaterialCategoryVo::getCategoryId)
                 .collect(Collectors.toList());
         List<WmMaterialStockVo> stocks = wmMaterialStockService.selectByCategoryIds(categoryIdsList);
 
