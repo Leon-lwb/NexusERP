@@ -145,12 +145,6 @@
           @selection-change="handleWmArrivalNoticeLineSelectionChange" ref="wmArrivalNoticeLine">
           <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
           <el-table-column label="序号" align="center" prop="index" width="50" />
-          <el-table-column label="产品物料ID" prop="materialId" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.materialId" placeholder="请输入产品物料ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.materialId }}</span>
-            </template>
-          </el-table-column>
           <el-table-column label="产品物料编码" prop="materialCode" width="150">
             <template #default="scope">
               <el-input
@@ -171,15 +165,11 @@
               <span v-else>{{ scope.row.materialName }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="单位" prop="baseUomId" width="150">
+          <el-table-column label="单位" prop="baseUomName" width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.baseUomId" placeholder="请输入单位" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.baseUomId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单位名称" prop="baseUomName" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.baseUomName" placeholder="请输入单位名称" v-if="!isViewMode" />
+              <el-select v-model="scope.row.baseUomId" placeholder="请选择单位" v-if="!isViewMode" filterable style="width: 100%" @change="(val) => onUomChange(val, scope.row)">
+                <el-option v-for="u in uomOptions" :key="u.uomId" :label="u.uomName" :value="String(u.uomId)" />
+              </el-select>
               <span v-else>{{ scope.row.baseUomName }}</span>
             </template>
           </el-table-column>
@@ -204,15 +194,12 @@
               <span v-else>{{ getDictLabel(sys_true_or_false, scope.row.iqcCheck) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="来料检验单ID" prop="iqcId" width="150">
+          <el-table-column label="来料检验单编号" prop="iqcCode" width="180">
             <template #default="scope">
-              <el-input v-model="scope.row.iqcId" placeholder="请输入来料检验单ID" v-if="!isViewMode" />
-              <span v-else>{{ scope.row.iqcId }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="来料检验单编号" prop="iqcCode" width="150">
-            <template #default="scope">
-              <el-input v-model="scope.row.iqcCode" placeholder="请输入来料检验单编号" v-if="!isViewMode" />
+              <div style="display: flex; align-items: center; gap: 8px;" v-if="!isViewMode">
+                <el-input v-model="scope.row.iqcCode" placeholder="请选择来料检验单" readonly style="flex: 1;" />
+                <el-button type="primary" icon="Search" @click="openIqcSelect(scope.$index)" />
+              </div>
               <span v-else>{{ scope.row.iqcCode }}</span>
             </template>
           </el-table-column>
@@ -322,6 +309,65 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- IQC选择对话框 -->
+    <el-dialog :title="'选择来料检验单'" v-model="iqcSelectOpen" width="1000px" append-to-body>
+      <el-form :model="iqcQueryParams" ref="iqcQueryRef" :inline="true" label-width="100px">
+        <el-form-item label="物料名称" prop="materialId">
+          <span style="color: #606266;">{{ iqcCurrentMaterialName || '-' }}</span>
+        </el-form-item>
+        <el-form-item label="IQC编号">
+          <el-input v-model="iqcQueryParams.iqcNo" placeholder="请输入IQC编号" clearable @keyup.enter="handleIqcQuery" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="handleIqcQuery">搜索</el-button>
+          <el-button icon="Refresh" @click="resetIqcQuery">重置</el-button>
+        </el-form-item>
+        <el-alert type="info" :closable="false" show-icon style="margin-top: 8px;">
+          仅显示状态为已完成且检验结果为合格的IQC记录
+        </el-alert>
+      </el-form>
+
+      <el-table v-loading="iqcLoading" :data="iqcList" @row-dblclick="selectIqc" highlight-current-row style="width: 100%" height="400">
+        <el-table-column label="IQC编号" prop="iqcNo" width="180" />
+        <el-table-column label="物料编码" prop="materialCode" width="140">
+          <template #default="scope">{{ scope.row.materialCode || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="物料名称" prop="materialName" width="150">
+          <template #default="scope">{{ scope.row.materialName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="供应商" prop="vendorName" width="150">
+          <template #default="scope">{{ scope.row.vendorName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="检验数量" prop="quantity" width="100" align="right" />
+        <el-table-column label="检验结果" prop="inspectResult" width="100" align="center">
+          <template #default="scope">
+            <el-tag type="success" v-if="scope.row.inspectResult === 'QUALIFIED'">合格</el-tag>
+            <el-tag type="danger" v-else-if="scope.row.inspectResult === 'UNQUALIFIED'">不合格</el-tag>
+            <el-tag v-else>待定</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="检验员" prop="inspectorName" width="100">
+          <template #default="scope">{{ scope.row.inspectorName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="检验时间" prop="inspectTime" width="160">
+          <template #default="scope">{{ scope.row.inspectTime || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectIqc(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <pagination v-show="iqcTotal > 0" :total="iqcTotal" v-model:page="iqcQueryParams.pageNum" v-model:limit="iqcQueryParams.pageSize" @pagination="getIqcList" />
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="iqcSelectOpen = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -330,7 +376,8 @@ import { getArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivaln
 import { getProcesss } from "@/api/workflow/process"
 import { listMaterial, getMaterial } from "@/api/erp/bd/material"
 import { listCategory, getAllChildrenIds } from "@/api/erp/bd/category"
-import { getMeasure } from "@/api/erp/bd/measure"
+import { getMeasure, listMeasureAll } from "@/api/erp/bd/measure"
+import { listIqc } from "@/api/mes/qc/iqc"
 import { debounce } from "lodash-es"
 import { useRoute, useRouter } from 'vue-router'
 import { previewCode } from "@/api/system/autocode/rule"
@@ -367,6 +414,21 @@ const materialQueryParams = ref({
   categoryId: null
 })
 
+// IQC选择对话框相关
+const iqcSelectOpen = ref(false)
+const iqcList = ref([])
+const iqcLoading = ref(false)
+const iqcTotal = ref(0)
+const currentIqcRowIndex = ref(-1)
+const iqcCurrentMaterialName = ref('')
+const iqcQueryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  materialId: undefined,
+  status: 'COMPLETED',
+  inspectResult: 'QUALIFIED'
+})
+
 // 物料分类相关
 const categoryTree = ref([])
 const categoryTreeProps = {
@@ -381,6 +443,9 @@ const categoryTreeRef = ref(null)
 const loadingFlow = ref(false)
 const flowOptions = ref([])
 
+// 计量单位下拉选项
+const uomOptions = ref([])
+
 onMounted(() => {
   const id = route.query.id
   const action = route.query.action
@@ -390,10 +455,33 @@ onMounted(() => {
   // 获取物料分类树
   getCategoryTree()
 
+  // 加载计量单位列表
+  loadUomList()
+
   if (id) {
     initPage(id)
   }
 })
+
+/** 加载计量单位列表 */
+function loadUomList() {
+  listMeasureAll().then((response: any) => {
+    uomOptions.value = response.data || response.rows || []
+  }).catch((error: any) => {
+    console.error('获取计量单位列表失败:', error)
+    uomOptions.value = []
+  })
+}
+
+/** 单位下拉选择变化时同步单位名称 */
+function onUomChange(uomId: string, row: any) {
+  const found = uomOptions.value.find((u: any) => '' + u.uomId === uomId)
+  if (found) {
+    row.baseUomName = found.uomName || ''
+  } else {
+    row.baseUomName = ''
+  }
+}
 
 function initPage(id: any) {
   const action = route.query.action
@@ -632,6 +720,68 @@ function selectMaterial(row: any) {
   }
   materialSelectOpen.value = false
   currentMaterialRowIndex.value = -1
+}
+
+// ========== IQC选择相关方法 ==========
+
+/** 打开IQC选择对话框 */
+function openIqcSelect(rowIndex: number) {
+  currentIqcRowIndex.value = rowIndex
+  if (!wmArrivalNoticeLineList.value || !wmArrivalNoticeLineList.value[rowIndex]) {
+    proxy.$modal.msgWarning('当前行数据不存在，请重试')
+    return
+  }
+  const row = wmArrivalNoticeLineList.value[rowIndex]
+  iqcCurrentMaterialName.value = row.materialName || ''
+  // 根据当前行的物料编码预填查询条件
+  iqcQueryParams.value.materialId = row.materialId || undefined
+  iqcQueryParams.value.status = 'COMPLETED'
+  iqcQueryParams.value.inspectResult = 'QUALIFIED'
+  iqcQueryParams.value.pageNum = 1
+  iqcSelectOpen.value = true
+  getIqcList()
+}
+
+/** 查询IQC列表 */
+function getIqcList() {
+  iqcLoading.value = true
+  listIqc(iqcQueryParams.value).then((response: any) => {
+    iqcList.value = response.rows || []
+    iqcTotal.value = response.total || 0
+  }).catch((error: any) => {
+    console.error('查询IQC列表失败:', error)
+    iqcList.value = []
+    iqcTotal.value = 0
+  }).finally(() => {
+    iqcLoading.value = false
+  })
+}
+
+/** 搜索IQC */
+function handleIqcQuery() {
+  iqcQueryParams.value.pageNum = 1
+  getIqcList()
+}
+
+/** 重置IQC查询 */
+function resetIqcQuery() {
+  proxy.resetForm("iqcQueryRef")
+  iqcQueryParams.value.materialId = undefined
+  iqcQueryParams.value.pageNum = 1
+  iqcQueryParams.value.status = 'COMPLETED'
+  iqcQueryParams.value.inspectResult = 'QUALIFIED'
+  getIqcList()
+}
+
+/** 选择IQC */
+function selectIqc(row: any) {
+  if (currentIqcRowIndex.value >= 0 && wmArrivalNoticeLineList.value[currentIqcRowIndex.value]) {
+    const line = wmArrivalNoticeLineList.value[currentIqcRowIndex.value]
+    line.iqcId = row.iqcId || ''
+    line.iqcCode = row.iqcNo || ''
+  }
+  iqcSelectOpen.value = false
+  currentIqcRowIndex.value = -1
 }
 
 /** 到货通知单行序号 */
