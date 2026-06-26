@@ -1,6 +1,7 @@
 package com.nexus.mes.eq.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
@@ -13,6 +14,8 @@ import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * MES设备台账 Controller
@@ -73,5 +76,39 @@ public class EqEquipmentController extends BaseController {
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(eqEquipmentService.deleteByIds(ids));
+    }
+
+    /**
+     * 查询设备关联的 IoT 在线状态
+     */
+    @SaCheckPermission("mes:eq:equipment:query")
+    @GetMapping("/{equipmentId}/iotStatus")
+    public R<String> getIotStatus(@PathVariable Long equipmentId) {
+        return R.ok(eqEquipmentService.getIotStatus(equipmentId));
+    }
+
+    /**
+     * 查询设备关联的 IoT 最新数据
+     */
+    @SaCheckPermission("mes:eq:equipment:query")
+    @GetMapping("/{equipmentId}/iotLatest")
+    public R<Map<String, String>> getIotLatest(@PathVariable Long equipmentId) {
+        return R.ok(eqEquipmentService.getIotLatest(equipmentId));
+    }
+
+    /**
+     * 更新设备关联的 IoT 设备
+     */
+    @SaCheckPermission("mes:eq:equipment:edit")
+    @Log(title = "设备关联IoT", businessType = BusinessType.UPDATE)
+    @PutMapping("/{equipmentId}/iotLink")
+    public R<Void> updateIotLink(@PathVariable Long equipmentId,
+                                 @RequestBody IotLinkDto dto) {
+        return toAjax(eqEquipmentService.updateIotDeviceLink(equipmentId, dto.getIotDeviceId()));
+    }
+
+    @Data
+    public static class IotLinkDto {
+        private Long iotDeviceId;
     }
 }

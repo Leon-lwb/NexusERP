@@ -66,6 +66,15 @@
         </template>
       </el-table-column>
       <el-table-column label="最后在线" align="center" prop="lastOnlineTime" width="160" />
+      <el-table-column label="MES 设备" align="center" width="140">
+        <template #default="scope">
+          <el-button v-if="scope.row.mesEquipmentId" link type="primary"
+                     @click="goToMesEquipment(scope.row.mesEquipmentId)">
+            查看 MES 设备
+          </el-button>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="iot_device_status" :value="scope.row.status" />
@@ -76,6 +85,7 @@
           <el-button link type="primary" icon="DataLine" @click="handleRealtime(scope.row)" v-hasPermi="['iot:device:query']">实时</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['iot:device:edit']">修改</el-button>
+          <el-button link type="primary" icon="Link" @click="handleBindMes(scope.row)" v-hasPermi="['iot:device:edit']">关联MES</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['iot:device:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -145,13 +155,35 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 关联 MES 设备对话框 -->
+    <el-dialog v-model="mesBindDialog.visible" title="关联 MES 设备" width="500px" append-to-body>
+      <el-form label-width="120px">
+        <el-form-item label="IoT 设备">
+          <span>{{ mesBindDialog.deviceCode }} - {{ mesBindDialog.deviceName }}</span>
+        </el-form-item>
+        <el-form-item label="MES 设备">
+          <el-select v-model="mesBindDialog.mesEquipmentId" placeholder="请选择 MES 设备" clearable filterable>
+            <el-option v-for="e in mesBindDialog.mesEquipmentList" :key="e.equipmentId"
+                       :label="e.equipmentCode + ' - ' + e.equipmentName" :value="e.equipmentId" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="mesBindDialog.visible = false">取消</el-button>
+        <el-button type="primary" @click="submitMesBind">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="IotDevice">
 import { listDevice, getDevice, delDevice, addDevice, updateDevice } from '@/api/iot/device';
 import { listProduct } from '@/api/iot/product';
+import { listMesEquipmentForBind, updateMesEquipmentLink } from '@/api/mes/eq/equipment';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const { proxy } = getCurrentInstance();
 const { iot_protocol_type, iot_connection_status, iot_device_status } = toRefs<any>(
   proxy.useDict('iot_protocol_type', 'iot_connection_status', 'iot_device_status')
@@ -331,6 +363,56 @@ function handleExport() {
     },
     `iot_device_${new Date().getTime()}.xlsx`
   );
+}
+
+/** 跳转到 MES 设备台账（带 equipmentId 查询参数） */
+function goToMesEquipment(mesEquipmentId: number) {
+  router.push({ path: '/mes/eq/equipment', query: { equipmentId: String(mesEquipmentId) } });
+}
+
+/** 关联 MES 设备对话框 */
+const mesBindDialog = reactive<{
+  visible: boolean;
+  deviceId: number | null;
+  deviceCode: string;
+  deviceName: string;
+  mesEquipmentId: number | null | undefined;
+  mesEquipmentList: any[];
+}>({
+  visible: false,
+  deviceId: null,
+  deviceCode: '',
+  deviceName: '',
+  mesEquipmentId: null,
+  mesEquipmentList: []
+});
+
+/** 打开关联 MES 设备对话框 */
+async function handleBindMes(row: any) {
+  mesBindDialog.deviceId = row.deviceId;
+  mesBindDialog.deviceCode = row.deviceCode;
+  mesBindDialog.deviceName = row.deviceName;
+  mesBindDialog.mesEquipmentId = row.mesEquipmentId ?? null;
+  try {
+    const res = await listMesEquipmentForBind({ pageNum: 1, pageSize: 1000 });
+    mesBindDialog.mesEquipmentList = res.rows || [];
+  } catch {
+    mesBindDialog.mesEquipmentList = [];
+  }
+  mesBindDialog.visible = true;
+}
+
+/** 提交关联 MES 设备 */
+async function submitMesBind() {
+  if (!mesBindDialog.deviceId) return;
+  try {
+    await updateMesEquipmentLink(mesBindDialog.deviceId, mesBindDialog.mesEquipmentId ?? null);
+    proxy.$modal.msgSuccess('关联成功');
+    mesBindDialog.visible = false;
+    getList();
+  } catch {
+    proxy.$modal.msgError('关联失败');
+  }
 }
 
 loadProductOptions();

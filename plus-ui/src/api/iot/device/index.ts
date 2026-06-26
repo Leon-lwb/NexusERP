@@ -39,3 +39,12 @@ export const delDevice = (deviceId: string | number | (string | number)[]) => {
     method: 'delete'
   });
 };
+
+/** 供 MES 设备关联选择用的 IoT 设备列表（复用 list 接口，精简字段） */
+export const listIotDeviceForBind = (query?: any): AxiosPromise<DeviceVO[]> => {
+  return request({
+    url: '/iot/device/list',
+    method: 'get',
+    params: query
+  });
+};

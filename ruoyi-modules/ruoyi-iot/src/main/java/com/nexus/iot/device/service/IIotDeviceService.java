@@ -66,4 +66,13 @@ public interface IIotDeviceService {
      * @return 超时在线设备实体集合
      */
     List<IotDevice> selectStaleOnlineDevices(Date deadline);
+
+    /**
+     * 仅更新设备关联的 MES 设备 ID（不影响其他字段）
+     *
+     * @param deviceId      IoT 设备 ID
+     * @param mesEquipmentId MES 设备 ID（可空，表示解除关联）
+     * @return 是否更新成功
+     */
+    Boolean updateMesEquipmentLink(Long deviceId, Long mesEquipmentId);
 }

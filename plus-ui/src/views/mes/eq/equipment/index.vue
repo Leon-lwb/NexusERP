@@ -52,9 +52,19 @@
         <el-table-column label="IoT设备ID" prop="iotDeviceId" width="100" align="right">
           <template #default="scope">{{ scope.row.iotDeviceId || '-' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed="right">
+        <el-table-column label="IoT 在线" align="center" width="100">
+          <template #default="scope">
+            <el-tag v-if="scope.row.iotStatus === 'ONLINE'" type="success" size="small">在线</el-tag>
+            <el-tag v-else-if="scope.row.iotStatus === 'OFFLINE'" type="info" size="small">离线</el-tag>
+            <el-tag v-else-if="scope.row.iotStatus === 'UNBOUND'" type="warning" size="small">未关联</el-tag>
+            <el-tag v-else type="danger" size="small">未知</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="260" align="center" fixed="right">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleOpenEdit(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">编辑</el-button>
+            <el-button v-if="scope.row.iotDeviceId" link type="primary" icon="View" @click="handleViewIotLatest(scope.row)">IoT数据</el-button>
+            <el-button link type="primary" icon="Link" @click="handleBindIot(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">关联IoT</el-button>
             <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:eq:equipment:remove']">删除</el-button>
           </template>
         </el-table-column>
@@ -164,11 +174,50 @@
         <el-button type="primary" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
+
+    <!-- IoT 最新数据对话框 -->
+    <el-dialog v-model="iotLatestDialog.visible" title="IoT 设备最新数据" width="600px" append-to-body>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item v-for="(val, key) in iotLatestDialog.data" :key="key" :label="String(key)">
+          {{ val }}
+        </el-descriptions-item>
+      </el-descriptions>
+      <el-empty v-if="Object.keys(iotLatestDialog.data).length === 0" description="暂无数据" />
+    </el-dialog>
+
+    <!-- 关联 IoT 设备对话框 -->
+    <el-dialog v-model="iotBindDialog.visible" title="关联 IoT 设备" width="500px" append-to-body>
+      <el-form label-width="120px">
+        <el-form-item label="MES 设备">
+          <span>{{ iotBindDialog.equipmentCode }} - {{ iotBindDialog.equipmentName }}</span>
+        </el-form-item>
+        <el-form-item label="IoT 设备">
+          <el-select v-model="iotBindDialog.iotDeviceId" placeholder="请选择 IoT 设备" clearable filterable>
+            <el-option v-for="d in iotBindDialog.iotDeviceList" :key="d.deviceId"
+                       :label="d.deviceCode + ' - ' + d.deviceName" :value="d.deviceId" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="iotBindDialog.visible = false">取消</el-button>
+        <el-button type="primary" @click="submitIotBind">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="MesEqEquipment">
-import { listEquipment, getEquipment, addEquipment, updateEquipment, delEquipment } from '@/api/mes/eq/equipment';
+import {
+  listEquipment,
+  getEquipment,
+  addEquipment,
+  updateEquipment,
+  delEquipment,
+  getIotStatus,
+  getIotLatest,
+  updateIotDeviceLink
+} from '@/api/mes/eq/equipment';
+import { listIotDeviceForBind } from '@/api/iot/device';
 import type { EqEquipmentVO, EqEquipmentQuery, EqEquipmentForm } from '@/api/mes/eq/equipment';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -195,10 +244,91 @@ const getList = async () => {
     const res = await listEquipment(queryParams.value);
     dataList.value = res.rows;
     total.value = res.total;
+    // 列表加载后批量查 IoT 在线状态（仅当前页）
+    await loadIotStatus(dataList.value);
   } finally {
     loading.value = false;
   }
 };
+
+/** 批量查询当前页设备的 IoT 在线状态 */
+async function loadIotStatus(rows: EqEquipmentVO[]) {
+  for (const row of rows) {
+    if (row.iotDeviceId) {
+      try {
+        const res = await getIotStatus(row.equipmentId);
+        row.iotStatus = res.data;
+      } catch {
+        row.iotStatus = 'UNKNOWN';
+      }
+    } else {
+      row.iotStatus = 'UNBOUND';
+    }
+  }
+}
+
+/** IoT 最新数据对话框 */
+const iotLatestDialog = reactive<{ visible: boolean; data: Record<string, string> }>({
+  visible: false,
+  data: {}
+});
+
+/** 查看 IoT 最新数据 */
+async function handleViewIotLatest(row: EqEquipmentVO) {
+  try {
+    const res = await getIotLatest(row.equipmentId);
+    iotLatestDialog.data = res.data || {};
+    iotLatestDialog.visible = true;
+  } catch {
+    proxy?.$modal.msgError('查询 IoT 数据失败');
+  }
+}
+
+/** 关联 IoT 设备对话框 */
+const iotBindDialog = reactive<{
+  visible: boolean;
+  equipmentId: number | null;
+  equipmentCode: string;
+  equipmentName: string;
+  iotDeviceId: number | null | undefined;
+  iotDeviceList: any[];
+}>({
+  visible: false,
+  equipmentId: null,
+  equipmentCode: '',
+  equipmentName: '',
+  iotDeviceId: null,
+  iotDeviceList: []
+});
+
+/** 打开关联 IoT 设备对话框 */
+async function handleBindIot(row: EqEquipmentVO) {
+  iotBindDialog.equipmentId = row.equipmentId;
+  iotBindDialog.equipmentCode = row.equipmentCode;
+  iotBindDialog.equipmentName = row.equipmentName;
+  iotBindDialog.iotDeviceId = row.iotDeviceId ?? null;
+  try {
+    const res = await listIotDeviceForBind({ pageNum: 1, pageSize: 1000 });
+    iotBindDialog.iotDeviceList = res.rows || [];
+  } catch {
+    proxy?.$modal.msgError('加载 IoT 设备列表失败');
+    iotBindDialog.iotDeviceList = [];
+  }
+  iotBindDialog.visible = true;
+}
+
+/** 提交关联 IoT 设备 */
+async function submitIotBind() {
+  if (!iotBindDialog.equipmentId) return;
+  try {
+    await updateIotDeviceLink(iotBindDialog.equipmentId, iotBindDialog.iotDeviceId ?? null);
+    proxy?.$modal.msgSuccess('关联成功');
+    iotBindDialog.visible = false;
+    await getList();
+  } catch {
+    proxy?.$modal.msgError('关联失败');
+  }
+}
 
 const handleQuery = () => {
   queryParams.value.pageNum = 1;

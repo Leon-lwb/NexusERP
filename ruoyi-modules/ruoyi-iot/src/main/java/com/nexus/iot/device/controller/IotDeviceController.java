@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.IdUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
@@ -181,5 +182,21 @@ public class IotDeviceController extends BaseController {
         response.setHeader("X-Accel-Buffering", "no");
         String sessionKey = LoginHelper.getUserId() + ":" + IdUtil.fastSimpleUUID();
         return realtimeSseManager.connect(deviceId, sessionKey);
+    }
+
+    /**
+     * 更新设备关联的 MES 设备
+     */
+    @SaCheckPermission("iot:device:edit")
+    @Log(title = "IoT设备关联MES", businessType = BusinessType.UPDATE)
+    @PutMapping("/{deviceId}/mesLink")
+    public R<Void> updateMesLink(@PathVariable Long deviceId,
+                                 @RequestBody MesLinkDto dto) {
+        return toAjax(iotDeviceService.updateMesEquipmentLink(deviceId, dto.getMesEquipmentId()));
+    }
+
+    @Data
+    public static class MesLinkDto {
+        private Long mesEquipmentId;
     }
 }

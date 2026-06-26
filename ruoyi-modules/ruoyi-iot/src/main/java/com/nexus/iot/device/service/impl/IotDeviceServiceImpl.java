@@ -2,6 +2,7 @@ package com.nexus.iot.device.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -138,6 +139,19 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
             .eq(IotDevice::getConnectionStatus, "ONLINE")
             .lt(IotDevice::getLastOnlineTime, deadline);
         return baseMapper.selectList(lqw);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateMesEquipmentLink(Long deviceId, Long mesEquipmentId) {
+        if (deviceId == null) {
+            return false;
+        }
+        LambdaUpdateWrapper<IotDevice> wrapper = Wrappers.<IotDevice>lambdaUpdate()
+            .set(IotDevice::getMesEquipmentId, mesEquipmentId)
+            .eq(IotDevice::getDeviceId, deviceId);
+        int rows = baseMapper.update(null, wrapper);
+        return rows > 0;
     }
 
     private LambdaQueryWrapper<IotDevice> buildQueryWrapper(IotDeviceBo bo) {

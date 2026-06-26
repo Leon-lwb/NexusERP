@@ -2,9 +2,11 @@ package com.nexus.mes.eq.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.iot.service.IotDeviceDataQueryService;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.EqEquipment;
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * MES设备台账 Service 业务层实现
@@ -34,6 +38,7 @@ import java.util.Arrays;
 public class EqEquipmentServiceImpl implements IEqEquipmentService {
 
     private final EqEquipmentMapper baseMapper;
+    private final IotDeviceDataQueryService iotDeviceDataQueryService;
 
     @Override
     public TableDataInfo<EqEquipmentVo> selectPageList(EqEquipmentBo bo, PageQuery pageQuery) {
@@ -166,5 +171,57 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             .eq(bo.getWorkcenterId() != null, EqEquipment::getWorkcenterId, bo.getWorkcenterId())
             .eq(bo.getIotDeviceId() != null, EqEquipment::getIotDeviceId, bo.getIotDeviceId())
             .orderByDesc(EqEquipment::getCreateTime);
+    }
+
+    // ==================== IoT 状态查询辅助方法 ====================
+
+    private static final String IOT_STATUS_UNBOUND = "UNBOUND";
+    private static final String IOT_STATUS_UNKNOWN = "UNKNOWN";
+
+    @Override
+    public String getIotStatus(Long equipmentId) {
+        EqEquipment eq = baseMapper.selectById(equipmentId);
+        if (eq == null || eq.getIotDeviceId() == null) {
+            return IOT_STATUS_UNBOUND;
+        }
+        try {
+            String status = iotDeviceDataQueryService.getOnlineStatus(eq.getIotDeviceId());
+            return status == null ? IOT_STATUS_UNKNOWN : status;
+        } catch (Exception e) {
+            log.warn("查询 IoT 设备在线状态失败: equipmentId={}, iotDeviceId={}",
+                equipmentId, eq.getIotDeviceId(), e);
+            return IOT_STATUS_UNKNOWN;
+        }
+    }
+
+    @Override
+    public Map<String, String> getIotLatest(Long equipmentId) {
+        EqEquipment eq = baseMapper.selectById(equipmentId);
+        if (eq == null || eq.getIotDeviceId() == null) {
+            return Collections.emptyMap();
+        }
+        try {
+            Map<String, String> data = iotDeviceDataQueryService.getLatestData(eq.getIotDeviceId());
+            return data == null ? Collections.emptyMap() : data;
+        } catch (Exception e) {
+            log.warn("查询 IoT 设备最新数据失败: equipmentId={}, iotDeviceId={}",
+                equipmentId, eq.getIotDeviceId(), e);
+            return Collections.emptyMap();
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateIotDeviceLink(Long equipmentId, Long iotDeviceId) {
+        if (equipmentId == null) {
+            return false;
+        }
+        LambdaUpdateWrapper<EqEquipment> wrapper = Wrappers.<EqEquipment>lambdaUpdate()
+            .set(EqEquipment::getIotDeviceId, iotDeviceId)
+            .eq(EqEquipment::getEquipmentId, equipmentId);
+        int rows = baseMapper.update(null, wrapper);
+        log.info("更新设备 IoT 关联: equipmentId={}, iotDeviceId={}, rows={}",
+            equipmentId, iotDeviceId, rows);
+        return rows > 0;
     }
 }
