@@ -55,4 +55,10 @@ public interface IEqMaintenancePlanService {
      * 批量删除保养计划
      */
     Boolean deleteByIds(Long[] ids);
+
+    /**
+     * 完成保养计划: 推进 nextDate = today + cycleDays
+     * @param planId 计划ID
+     */
+    void completePlan(Long planId);
 }

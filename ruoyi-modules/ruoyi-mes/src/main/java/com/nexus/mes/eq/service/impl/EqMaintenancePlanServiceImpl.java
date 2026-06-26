@@ -2,6 +2,7 @@ package com.nexus.mes.eq.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.StringUtils;
@@ -117,6 +118,30 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
             return false;
         }
         return baseMapper.deleteByIds(Arrays.asList(ids)) > 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void completePlan(Long planId) {
+        EqMaintenancePlan plan = baseMapper.selectById(planId);
+        if (plan == null) {
+            throw new RuntimeException("保养计划不存在: " + planId);
+        }
+        // 推进 nextDate = today + cycleDays
+        Integer cycleDays = plan.getCycleDays();
+        if (cycleDays == null || cycleDays <= 0) {
+            cycleDays = defaultCycleDays(plan.getMaintenanceType());
+        }
+        if (cycleDays == null || cycleDays <= 0) {
+            // 未知类型兜底 30 天
+            cycleDays = 30;
+        }
+        java.util.Date newNextDate = java.sql.Date.valueOf(LocalDate.now().plusDays(cycleDays));
+        LambdaUpdateWrapper<EqMaintenancePlan> wrapper = Wrappers.<EqMaintenancePlan>lambdaUpdate()
+            .set(EqMaintenancePlan::getNextDate, newNextDate)
+            .eq(EqMaintenancePlan::getPlanId, planId);
+        baseMapper.update(null, wrapper);
+        log.info("保养计划 {} 已完成, 推进 nextDate={}", planId, newNextDate);
     }
 
     // ==================== 私有辅助方法 ====================
