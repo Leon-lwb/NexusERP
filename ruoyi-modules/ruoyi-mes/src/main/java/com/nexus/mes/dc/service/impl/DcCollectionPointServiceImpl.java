@@ -57,6 +57,8 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
         point.setPointName(bo.getPointName());
         point.setPointType(bo.getPointType());
         point.setEquipmentId(bo.getEquipmentId());
+        point.setIotDeviceId(bo.getIotDeviceId());
+        point.setIotPropertyCode(bo.getIotPropertyCode());
         point.setProcessId(bo.getProcessId());
         point.setDataType(bo.getDataType());
         point.setUnit(bo.getUnit());
@@ -91,6 +93,8 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
         point.setPointName(bo.getPointName());
         point.setPointType(bo.getPointType());
         point.setEquipmentId(bo.getEquipmentId());
+        point.setIotDeviceId(bo.getIotDeviceId());
+        point.setIotPropertyCode(bo.getIotPropertyCode());
         point.setProcessId(bo.getProcessId());
         point.setDataType(bo.getDataType());
         point.setUnit(bo.getUnit());
@@ -123,6 +127,7 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
             .eq(StringUtils.isNotBlank(bo.getDataType()), DcCollectionPoint::getDataType, bo.getDataType())
             .eq(StringUtils.isNotBlank(bo.getStatus()), DcCollectionPoint::getStatus, bo.getStatus())
             .eq(bo.getEquipmentId() != null, DcCollectionPoint::getEquipmentId, bo.getEquipmentId())
+            .eq(bo.getIotDeviceId() != null, DcCollectionPoint::getIotDeviceId, bo.getIotDeviceId())
             .eq(bo.getProcessId() != null, DcCollectionPoint::getProcessId, bo.getProcessId())
             .orderByDesc(DcCollectionPoint::getCreateTime);
     }

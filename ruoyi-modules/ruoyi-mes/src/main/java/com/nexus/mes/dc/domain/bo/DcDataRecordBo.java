@@ -28,6 +28,9 @@ public class DcDataRecordBo extends BaseEntity {
     @NotNull(message = "采集点ID不能为空")
     private Long pointId;
 
+    /** IoT属性编码（source=IoT时填充，用于查询过滤） */
+    private String propertyCode;
+
     /** 关联MES工单ID */
     private Long mesWoId;
 

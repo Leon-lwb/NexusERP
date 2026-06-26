@@ -94,6 +94,7 @@ public class DcDataRecordServiceImpl implements IDcDataRecordService {
     private LambdaQueryWrapper<DcDataRecord> buildQueryWrapper(DcDataRecordBo bo) {
         return Wrappers.<DcDataRecord>lambdaQuery()
             .eq(bo.getPointId() != null, DcDataRecord::getPointId, bo.getPointId())
+            .eq(StringUtils.isNotBlank(bo.getPropertyCode()), DcDataRecord::getPropertyCode, bo.getPropertyCode())
             .eq(bo.getMesWoId() != null, DcDataRecord::getMesWoId, bo.getMesWoId())
             .eq(bo.getCardId() != null, DcDataRecord::getCardId, bo.getCardId())
             .eq(StringUtils.isNotBlank(bo.getSource()), DcDataRecord::getSource, bo.getSource())

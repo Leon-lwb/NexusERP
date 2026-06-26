@@ -35,6 +35,10 @@ public class DcDataRecordVo implements Serializable {
     @ExcelProperty("采集点编码")
     private String pointCode;
 
+    /** IoT属性编码（source=IoT时填充） */
+    @ExcelProperty("IoT属性编码")
+    private String propertyCode;
+
     /** 关联MES工单ID */
     private Long mesWoId;
 
