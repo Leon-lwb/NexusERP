@@ -34,6 +34,15 @@ public interface ISpcControlChartService {
     /** 状态: 停用 */
     String STATUS_INACTIVE = "INACTIVE";
 
+    /** OOC 规则：1 点超出控制限（最严重） */
+    String OOC_RULE_1 = "RULE1";
+    /** OOC 规则：连续 9 点在 CL 同侧 */
+    String OOC_RULE_2 = "RULE2";
+    /** OOC 规则：连续 6 点严格递增或递减 */
+    String OOC_RULE_3 = "RULE3";
+    /** OOC 规则：连续 14 点交替上下 */
+    String OOC_RULE_4 = "RULE4";
+
     /**
      * 分页查询控制图列表
      */

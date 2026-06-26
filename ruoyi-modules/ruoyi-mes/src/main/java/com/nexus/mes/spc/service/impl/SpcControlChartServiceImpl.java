@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.mes.dc.domain.vo.DcDataRecordVo;
 import com.nexus.mes.dc.service.IDcDataRecordService;
+import com.nexus.mes.pro.service.IProAndonService;
 import com.nexus.mes.spc.domain.SpcControlChart;
 import com.nexus.mes.spc.domain.SpcDataPoint;
 import com.nexus.mes.spc.domain.bo.SpcControlChartBo;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,6 +64,7 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
     private final SpcControlChartMapper baseMapper;
     private final SpcDataPointMapper dataPointMapper;
     private final IDcDataRecordService dcDataRecordService;
+    private final IProAndonService proAndonService;
 
     @Override
     public TableDataInfo<SpcControlChartVo> selectPageList(SpcControlChartBo bo, PageQuery pageQuery) {
@@ -196,6 +200,10 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
                 pv.setIsOoc("1");
                 pv.setOocRule(rules);
                 oocCount++;
+                // OOC 命中 RULE1 → 触发 QUALITY 安灯(10 分钟限频)
+                if (rules.contains(OOC_RULE_1)) {
+                    triggerAndonForOoc(chart, pv, rules);
+                }
             }
             pointVos.add(pv);
         }
@@ -383,7 +391,7 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         List<String> rules = new ArrayList<>();
         // RULE1: 超限
         if (value.compareTo(limit.ucl) > 0 || value.compareTo(limit.lcl) < 0) {
-            rules.add("RULE1");
+            rules.add(OOC_RULE_1);
         }
         // 找当前点在序列中的索引
         int idx = -1;
@@ -396,15 +404,15 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         if (idx >= 0) {
             // RULE2: 连续9点(含当前)在CL同侧
             if (idx >= 8 && checkSameSide(allPoints, idx, 9, limit.cl)) {
-                rules.add("RULE2");
+                rules.add(OOC_RULE_2);
             }
             // RULE3: 连续6点(含当前)严格递增或递减
             if (idx >= 5 && checkTrend(allPoints, idx, 6)) {
-                rules.add("RULE3");
+                rules.add(OOC_RULE_3);
             }
             // RULE4: 连续14点(含当前)交替上下
             if (idx >= 13 && checkAlternating(allPoints, idx, 14)) {
-                rules.add("RULE4");
+                rules.add(OOC_RULE_4);
             }
         }
         return rules.isEmpty() ? null : String.join(",", rules);
@@ -494,5 +502,39 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
             .eq(bo.getPointId() != null, SpcControlChart::getPointId, bo.getPointId())
             .eq(bo.getMaterialId() != null, SpcControlChart::getMaterialId, bo.getMaterialId())
             .orderByDesc(SpcControlChart::getCreateTime);
+    }
+
+    // ==================== OOC 安灯联动 ====================
+
+    private static final String SPC_ANDON_THROTTLE_PREFIX = "spc:andon:throttle:";
+    private static final Duration SPC_ANDON_THROTTLE_TTL = Duration.ofMinutes(10);
+
+    /**
+     * OOC 命中 RULE1 时触发 QUALITY 安灯，10 分钟限频防风暴。
+     * 安灯失败仅告警日志，不影响 SPC 分析主流程。
+     */
+    private void triggerAndonForOoc(SpcControlChart chart, SpcDataPointVo dataPoint, String oocRules) {
+        try {
+            String throttleKey = SPC_ANDON_THROTTLE_PREFIX + chart.getChartId();
+            if (!RedisUtils.setObjectIfAbsent(throttleKey, "1", SPC_ANDON_THROTTLE_TTL)) {
+                log.info("[SPC] 控制图 {} OOC 安灯限频中，跳过", chart.getChartId());
+                return;
+            }
+
+            String reason = String.format("SPC OOC 告警: 控制图[%s] 规则[%s] 数值[%s] CL[%s] UCL[%s] LCL[%s]",
+                chart.getChartName(),
+                oocRules,
+                dataPoint.getValue(),
+                chart.getCl() == null ? "N/A" : chart.getCl(),
+                chart.getUcl() == null ? "N/A" : chart.getUcl(),
+                chart.getLcl() == null ? "N/A" : chart.getLcl());
+
+            // SPC 触发的安灯无具体工单/流转卡上下文，mesWoId/cardId/stepRecordId 传 null
+            proAndonService.callAndon(null, null, null, IProAndonService.TYPE_QUALITY, reason);
+            log.info("[SPC] 控制图 {} OOC 已触发 QUALITY 安灯", chart.getChartId());
+        } catch (Exception e) {
+            log.warn("[SPC] 控制图 {} OOC 触发安灯失败: {}", chart.getChartId(), e.getMessage(), e);
+            // 安灯失败不影响 SPC 分析主流程
+        }
     }
 }
