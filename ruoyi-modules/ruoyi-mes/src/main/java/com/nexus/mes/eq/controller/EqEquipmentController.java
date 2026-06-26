@@ -10,6 +10,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
+import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import org.springframework.validation.annotation.Validated;
@@ -105,6 +106,17 @@ public class EqEquipmentController extends BaseController {
     public R<Void> updateIotLink(@PathVariable Long equipmentId,
                                  @RequestBody IotLinkDto dto) {
         return toAjax(eqEquipmentService.updateIotDeviceLink(equipmentId, dto.getIotDeviceId()));
+    }
+
+    /**
+     * 提交设备点检结果
+     */
+    @SaCheckPermission("mes:eq:equipment:inspect")
+    @Log(title = "设备点检", businessType = BusinessType.UPDATE)
+    @PostMapping("/{equipmentId}/inspect")
+    public R<Void> submitInspection(@PathVariable Long equipmentId,
+                                    @Validated @RequestBody InspectionResultBo bo) {
+        return toAjax(eqEquipmentService.submitInspection(equipmentId, bo));
     }
 
     @Data

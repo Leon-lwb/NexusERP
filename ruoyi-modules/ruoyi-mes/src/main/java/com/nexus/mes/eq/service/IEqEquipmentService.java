@@ -3,6 +3,7 @@ package com.nexus.mes.eq.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
+import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 
 import java.util.Map;
@@ -84,4 +85,16 @@ public interface IEqEquipmentService {
      * @return 是否更新成功
      */
     Boolean updateIotDeviceLink(Long equipmentId, Long iotDeviceId);
+
+    /**
+     * 提交设备点检结果
+     * <p>
+     * 将点检结果写入 last_inspection JSON 字段; 若 overallPass=false 则
+     * 将设备状态置为 FAULT 并触发 EQUIPMENT 类型安灯.
+     *
+     * @param equipmentId 设备ID
+     * @param bo          点检结果
+     * @return 是否成功
+     */
+    Boolean submitInspection(Long equipmentId, InspectionResultBo bo);
 }
