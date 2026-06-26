@@ -107,85 +107,85 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 
 | 登录页 | 首页 |
 |--------|------|
-| ![登录页](script/image/登录页.png) | ![首页](script/image/首页.png) |
+| ![登录页](doc/system/screenshots/登录页.png) | ![首页](doc/system/screenshots/首页.png) |
 
 ### 系统管理
 
 | 用户管理 | 代码生成 |
 |----------|----------|
-| ![用户管理](script/image/用户管理.png) | ![代码生成](script/image/代码生成.png) |
+| ![用户管理](doc/system/screenshots/用户管理.png) | ![代码生成](doc/system/screenshots/代码生成.png) |
 
 ### 基础数据
 
 | 物料管理 |
 |----------|
-| ![物料管理](script/image/物料管理.png) |
+| ![物料管理](doc/system/screenshots/物料管理.png) |
 
 ### 生产管理
 
 | 生产计划 |
 |----------|
-| ![生产计划](script/image/生产计划.png) |
+| ![生产计划](doc/system/screenshots/生产计划.png) |
 
 ### 销售管理
 
 | 销售订单 |
 |----------|
-| ![销售订单](script/image/销售订单.png) |
+| ![销售订单](doc/system/screenshots/销售订单.png) |
 
 ### 采购管理
 
 | 采购订单 |
 |----------|
-| ![采购订单](script/image/采购订单.png) |
+| ![采购订单](doc/system/screenshots/采购订单.png) |
 
 ### 排产调度
 
 | 排班计划 | 考勤记录 |
 |----------|----------|
-| ![排班计划](script/image/排班计划.png) | ![考勤记录](script/image/考勤记录.png) |
+| ![排班计划](doc/system/screenshots/排班计划.png) | ![考勤记录](doc/system/screenshots/考勤记录.png) |
 
 ### 仓储管理
 
 | 物料入库 | 库存清单 | 库存预警 |
 |----------|----------|----------|
-| ![物料入库](script/image/物料入库.png) | ![库存清单](script/image/库存清单.png) | ![库存预警](script/image/库存预警.png) |
+| ![物料入库](doc/system/screenshots/物料入库.png) | ![库存清单](doc/system/screenshots/库存清单.png) | ![库存预警](doc/system/screenshots/库存预警.png) |
 
 ### 工作流引擎
 
 | 工作流设计 | 工作流审批 |
 |------------|------------|
-| ![工作流设计](script/image/工作流设计.png) | ![工作流审批](script/image/工作流审批.png) |
+| ![工作流设计](doc/system/screenshots/工作流设计.png) | ![工作流审批](doc/system/screenshots/工作流审批.png) |
 
 ### 积木报表
 
 | 报表填写 |
 |----------|
-| ![报表填写](script/image/报表填写.png) |
+| ![报表填写](doc/system/screenshots/报表填写.png) |
 
 ### 支付管理
 
 | 支付管理 |
 |----------|
-| ![支付管理](script/image/支付管理.png) |
+| ![支付管理](doc/system/screenshots/支付管理.png) |
 
 ### AI 智能助手
 
 | 智能对话 |
 |----------|
-| ![智能对话](script/image/智能对话.png) |
+| ![智能对话](doc/system/screenshots/智能对话.png) |
 
 ### 设备与 IoT 管理
 
 | 设备管理 | IoT 监控 |
 |----------|----------|
-| ![设备管理](script/image/设备管理.png) | ![IoT监控](script/image/IoT监控.png) |
+| ![设备管理](doc/system/screenshots/设备管理.png) | ![IoT监控](doc/system/screenshots/IoT监控.png) |
 
 ### 即时通讯
 
 | 即时通讯 |
 |----------|
-| ![即时通讯](script/image/即时通讯.png) |
+| ![即时通讯](doc/system/screenshots/即时通讯.png) |
 
 ---
 
