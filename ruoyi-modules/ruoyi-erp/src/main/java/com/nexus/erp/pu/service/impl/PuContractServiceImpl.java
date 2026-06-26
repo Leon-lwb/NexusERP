@@ -2,6 +2,7 @@ package com.nexus.erp.pu.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +16,16 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.pu.domain.PuContract;
 import com.nexus.erp.pu.domain.PuContractLine;
+import com.nexus.erp.pu.domain.PuPurchaseOrder;
+import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.domain.bo.PuContractBo;
 import com.nexus.erp.pu.domain.vo.PuContractVo;
 import com.nexus.erp.pu.mapper.PuContractLineMapper;
 import com.nexus.erp.pu.mapper.PuContractMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.service.IPuContractService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -31,6 +37,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +57,9 @@ public class PuContractServiceImpl implements IPuContractService {
 
     private final PuContractMapper baseMapper;
     private final PuContractLineMapper lineMapper;
+    private final PuPurchaseOrderMapper purchaseOrderMapper;
+    private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
+    private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
@@ -215,6 +226,71 @@ public class PuContractServiceImpl implements IPuContractService {
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createPurchaseOrderFromContract(Long contractId) {
+        // 1. 校验合同存在且状态为 APPROVED 或 EXECUTING
+        PuContract contract = baseMapper.selectById(contractId);
+        if (contract == null) {
+            throw new ServiceException("合同不存在: " + contractId);
+        }
+        if (!STATUS_APPROVED.equals(contract.getStatus())
+            && !STATUS_EXECUTING.equals(contract.getStatus())) {
+            throw new ServiceException("合同状态不允许生成采购订单, 仅 APPROVED/EXECUTING 可生成");
+        }
+
+        // 2. 查合同明细
+        List<PuContractLine> lines = lineMapper.selectList(
+            Wrappers.<PuContractLine>lambdaQuery().eq(PuContractLine::getContractId, contractId));
+        if (lines == null || lines.isEmpty()) {
+            throw new ServiceException("合同明细为空, 无法生成采购订单");
+        }
+
+        // 3. 创建采购订单主表
+        PuPurchaseOrder order = new PuPurchaseOrder();
+        order.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
+        order.setVendorId(contract.getVendorId());
+        order.setVendorCode(contract.getVendorCode());
+        order.setVendorName(contract.getVendorName());
+        order.setOrderDate(new Date());
+        order.setStatus("DRAFT");
+        order.setContractId(contract.getContractId());
+        order.setContractNo(contract.getContractNo());
+        purchaseOrderMapper.insert(order);
+
+        // 4. 逐行创建采购订单明细
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (PuContractLine line : lines) {
+            PuPurchaseOrderLine orderLine = new PuPurchaseOrderLine();
+            orderLine.setOrderId(order.getOrderId());
+            orderLine.setMaterialId(line.getMaterialId());
+            orderLine.setMaterialCode(line.getMaterialCode());
+            orderLine.setMaterialName(line.getMaterialName());
+            orderLine.setMaterialSpec(line.getMaterialSpec());
+            orderLine.setUnit(line.getUnit());
+            orderLine.setUnitPrice(line.getUnitPrice());
+            orderLine.setOrderQuantity(line.getQuantity());
+            orderLine.setReceivedQuantity(BigDecimal.ZERO);
+            orderLine.setLineAmount(line.getLineAmount());
+            orderLine.setSortOrder(line.getSortOrder());
+            purchaseOrderLineMapper.insert(orderLine);
+            if (line.getLineAmount() != null) {
+                totalAmount = totalAmount.add(line.getLineAmount());
+            }
+        }
+        order.setTotalAmount(totalAmount);
+        purchaseOrderMapper.updateById(order);
+
+        // 5. 更新合同状态为 EXECUTING (LambdaUpdateWrapper 单列更新)
+        LambdaUpdateWrapper<PuContract> wrapper = Wrappers.<PuContract>lambdaUpdate()
+            .set(PuContract::getStatus, STATUS_EXECUTING)
+            .eq(PuContract::getContractId, contractId);
+        baseMapper.update(null, wrapper);
+
+        log.info("合同 {} 生成采购订单 {}: 金额 {}", contractId, order.getOrderNo(), totalAmount);
+        return order.getOrderId();
     }
 
     private LambdaQueryWrapper<PuContract> buildQueryWrapper(PuContractBo bo) {

@@ -109,4 +109,14 @@ public class PuContractController extends BaseController {
     public R<String> getProcInsId(@PathVariable String contractIdStr) {
         return R.ok(puContractService.getProcInsId(contractIdStr));
     }
+
+    /**
+     * 从合同生成采购订单
+     */
+    @SaCheckPermission("pu:contract:edit")
+    @Log(title = "合同生成采购订单", businessType = BusinessType.INSERT)
+    @PostMapping("/createOrder/{contractId}")
+    public R<Long> createOrder(@PathVariable Long contractId) {
+        return R.ok(puContractService.createPurchaseOrderFromContract(contractId));
+    }
 }

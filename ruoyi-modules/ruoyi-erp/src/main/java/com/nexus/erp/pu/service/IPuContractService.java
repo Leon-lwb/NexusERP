@@ -70,4 +70,11 @@ public interface IPuContractService extends WfCallBackServiceI {
      * 获取流程实例ID
      */
     String getProcInsId(String contractIdStr);
+
+    /**
+     * 从合同生成采购订单
+     * @param contractId 合同ID
+     * @return 创建的采购订单ID
+     */
+    Long createPurchaseOrderFromContract(Long contractId);
 }
