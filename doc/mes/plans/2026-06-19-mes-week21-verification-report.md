@@ -59,7 +59,7 @@
 
 ### 3.1 Task 5: Flowable BPMN 审批流部署 ⏳ 待执行
 
-**性质**: 运行时 UI 操作，非代码交付。Week 20 的 `ry-vue-mes-flow-week20.sql` 已在 `wf_custom_form` 注册 `proWorkOrderService`（id=4050，route `mes/pro/workorder/detail`）。需在运行系统中完成 BPMN 部署，使审批流下拉可选。
+**性质**: 运行时 UI 操作，非代码交付。Week 20 的 `mes-week20-13-flow-deploy.sql` 已在 `wf_custom_form` 注册 `proWorkOrderService`（id=4050，route `mes/pro/workorder/detail`）。需在运行系统中完成 BPMN 部署，使审批流下拉可选。
 
 **操作步骤**:
 1. 启动系统（`ry-vue`/`ry-erp`/`ry-mes`/`ry-iot` 四库 + RabbitMQ 就绪）

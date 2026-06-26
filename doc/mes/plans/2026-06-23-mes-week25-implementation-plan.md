@@ -41,7 +41,7 @@ Phase 2（流转卡+派工+安灯+SN）已于 Week 24 全部闭合（见 `memory
 
 | 事实 | 依据 |
 |------|------|
-| qc_iqc/qc_ipqc/qc_oqc DDL 规范在主文档 §2.2（未执行），原 `tenant_id BIGINT` 需改为 Week22/23 约定 `VARCHAR(20) DEFAULT '000000'` + `del_flag CHAR(1)` | 主文档 §2.2 + `ry-mes-week22/23.sql` |
+| qc_iqc/qc_ipqc/qc_oqc DDL 规范在主文档 §2.2（未执行），原 `tenant_id BIGINT` 需改为 Week22/23 约定 `VARCHAR(20) DEFAULT '000000'` + `del_flag CHAR(1)` | 主文档 §2.2 + `mes-week22-03-dispatch.sql / mes-week23-04-andon.sql` |
 | `IqcCompletedMessage` DTO 已存在于 `com.nexus.mes.common.mq.message`（字段 iqcId/receiveId/inspectResult/quantity），无发送方 | `IqcCompletedMessage.java` |
 | `MesWorkOrderCompletedMessage` DTO + `MesMqSendService.sendWorkOrderCompleted()` 已存在，已接入 `ProWorkOrderServiceImpl.completeWo()` afterCommit | `MesMqSendService.java`、`ProWorkOrderServiceImpl.java:393-427` |
 | **Wiring bug**：`sendWorkOrderCompleted` 发 `DIRECT_EXCHANGE`，而 `RabbitMqInitializer` 将 `ERP_WORKORDER_COMPLETED_QUEUE` 绑定到 `TOPIC_EXCHANGE`（pattern `erp.workorder.completed.#`），消息无法路由 | `MesMqSendService.java:63` + `RabbitMqInitializer.java:56-58` |
@@ -53,7 +53,7 @@ Phase 2（流转卡+派工+安灯+SN）已于 Week 24 全部闭合（见 `memory
 | ERP 侧消费者模式：`@Slf4j @RequiredArgsConstructor @Component @DS("erp")` extends `BaseMessageConsumer<T>`，`@RabbitListener(queues=...)`，doProcess 内 `TenantHelper.dynamic(tenantId, ...)` | `ProductionBackflushConsumer.java`、`PurchaseReceiveWritebackConsumer.java` |
 | MES 模块包布局：`com/nexus/mes/{pro, common}`，pro/ 下 {domain, domain/bo, domain/vo, mapper, service, service/impl, controller}；**qc/ 包尚不存在** | `ruoyi-modules/ruoyi-mes/.../com/nexus/mes/` |
 | MES Entity 约定：`@Data @EqualsAndHashCode(callSuper=true) @TableName` + extends `TenantEntity` + `@TableId` + `@TableLogic delFlag`；Impl `@DS("mes") @Service("xxService")` | `ProSn.java`、`ProSnServiceImpl.java` |
-| 菜单结构：4000=MES系统(root)，4001=生产执行，**4002=质量管理(已存在)**，4003=设备管理，4004=数据采集，4005=SPC分析；Week24 用到 4086，**Week25 取 4090-4101** | `ry-vue-mes-menu-week17.sql` + week22/23/24.sql |
+| 菜单结构：4000=MES系统(root)，4001=生产执行，**4002=质量管理(已存在)**，4003=设备管理，4004=数据采集，4005=SPC分析；Week24 用到 4086，**Week25 取 4090-4101** | `mes-week17-10-menu.sql` + week22/23/24.sql |
 | `ErpIqcCompletedConsumer`/`ErpWorkOrderCompletedConsumer` 全仓库不存在（仅文档引用） | grep 无命中 |
 
 ---
@@ -63,7 +63,7 @@ Phase 2（流转卡+派工+安灯+SN）已于 Week 24 全部闭合（见 `memory
 | # | 任务 | 优先级 | 交付物 | 验收标准 |
 |---|------|--------|--------|----------|
 | 1 | DTO 迁移至 common-mq | 高 | 移动 2 个 DTO + 改 MES 引用 | ERP 可引用，MES 编译通过 |
-| 2 | qc DDL | 高 | `ry-mes-week25.sql` | 三表对齐 Week22/23 约定 |
+| 2 | qc DDL | 高 | `mes-week25-06-quality.sql` | 三表对齐 Week22/23 约定 |
 | 3 | QcIqc/QcIpqc/QcOqc Entity/BO/VO/Mapper | 高 | 12 个 Java 文件 | 字段对齐 DDL |
 | 4 | 三个 Service + 实现（CRUD + 检验状态机 + IQC MQ 触发） | 高 | 3 接口 + 3 实现 | inspect 状态流转 + IQC 完成发 MQ |
 | 5 | MesMqSendService.sendIqcCompleted + 修复 exchange bug | 高 | 改 MesMqSendService | TOPIC_EXCHANGE + 新 sendIqcCompleted |
@@ -71,7 +71,7 @@ Phase 2（流转卡+派工+安灯+SN）已于 Week 24 全部闭合（见 `memory
 | 7 | ErpIqcCompletedConsumer | 高 | ERP 消费者 | 更新收货单状态（QUALIFIED/UNQUALIFIED） |
 | 8 | ErpWorkOrderCompletedConsumer | 高 | ERP 消费者 | 更新工单 + 触发完工入库链路 |
 | 9 | 前端 3 API + 3 列表页 | 高 | 6 文件 | 列表+搜索+检验弹窗 |
-| 10 | 菜单权限 SQL | 中 | `ry-vue-mes-menu-week25.sql` | 4090-4101，父菜单 4002 |
+| 10 | 菜单权限 SQL | 中 | `mes-week25-19-menu.sql` | 4090-4101，父菜单 4002 |
 | 11 | 编译 + lint 验证 | 高 | - | mvn compile + eslint 通过 |
 
 ---
@@ -442,7 +442,7 @@ IPQC/OQC: 纯 MES 内检验, 不发 MQ, 状态机 PENDING→INSPECTING→COMPLET
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
 | `IqcCompletedMessage`/`MesWorkOrderCompletedMessage` 迁移 | 改 | `ruoyi-common-mq/.../message/` |
-| `ry-mes-week25.sql` | SQL | `doc/mes/sql/mes-week25-06-quality.sql` |
+| `mes-week25-06-quality.sql` | SQL | `doc/mes/sql/mes-week25-06-quality.sql` |
 | QcIqc/QcIpqc/QcOqc Entity/BO/VO/Mapper | Java×12 | `ruoyi-mes/.../qc/{domain,domain/bo,domain/vo,mapper}/` |
 | IQcXxxService + 实现 | Java×6 | `ruoyi-mes/.../qc/{service,service/impl}/` |
 | `MesMqSendService.java`（+sendIqcCompleted, 修 exchange） | 改 | `ruoyi-mes/.../common/mq/MesMqSendService.java` |
@@ -451,7 +451,7 @@ IPQC/OQC: 纯 MES 内检验, 不发 MQ, 状态机 PENDING→INSPECTING→COMPLET
 | `ErpWorkOrderCompletedConsumer.java` | Java | `ruoyi-erp/.../mq/consumer/` |
 | `iqc.ts`/`ipqc.ts`/`oqc.ts` | TS×3 | `plus-ui/src/api/mes/qc/` |
 | `iqc/index.vue`/`ipqc/index.vue`/`oqc/index.vue` | Vue×3 | `plus-ui/src/views/mes/qc/` |
-| `ry-vue-mes-menu-week25.sql` | SQL | `doc/mes/sql/mes-week25-19-menu.sql` |
+| `mes-week25-19-menu.sql` | SQL | `doc/mes/sql/mes-week25-19-menu.sql` |
 
 ---
 
@@ -459,7 +459,7 @@ IPQC/OQC: 纯 MES 内检验, 不发 MQ, 状态机 PENDING→INSPECTING→COMPLET
 
 > 运行时验证依赖：`ry-vue`/`ry-erp`/`ry-mes`/`ry-iot` 四库 + Redis + RabbitMQ 就绪，并已执行 Week17/20/22/23/24 DDL 与菜单 SQL。
 
-1. **DDL 执行**：`ry-mes-week25.sql` 建三表；`ry-vue-mes-menu-week25.sql` 注入菜单并为角色勾选 4090-4101。
+1. **DDL 执行**：`mes-week25-06-quality.sql` 建三表；`mes-week25-19-menu.sql` 注入菜单并为角色勾选 4090-4101。
 2. **IQC 检验 + 回传**：MES 新建 IQC（关联一 ERP 收货单 receiveId）→ 检验 QUALIFIED → 列表 status=COMPLETED → RabbitMQ Management Console 见 `erp.iqc.completed.queue` 消息 → ERP 收货单 `iqcId/iqcCode` 回写 + status=APPROVED。再建一 IQC 检验 UNQUALIFIED → 收货单 status=REJECTED + 备注。
 3. **MES 工单完工回传**：MES 流转卡全完工触发 `completeWo` → `erp.workorder.completed.queue` 收到消息（验证 bug 修复后消息真正路由）→ ERP 工单 woStatus=COMPLETED + completedQty 累加 + 触发 ProductionCompleteMessage → 倒冲领料 + 成品入库（验证幂等无重复入库）。
 4. **IPQC/OQC**：新建 + 检验，状态 PENDING→COMPLETED，defect_rate（IPQC）自动计算；不发 MQ。

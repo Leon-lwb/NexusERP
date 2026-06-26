@@ -42,14 +42,14 @@
 
 | # | 任务 | 优先级 | 交付物 | 验收标准 |
 |---|------|--------|--------|----------|
-| 1 | pro_andon DDL | 高 | `ry-mes-week23.sql` | 表结构对齐 Week22 约定 |
+| 1 | pro_andon DDL | 高 | `mes-week23-04-andon.sql` | 表结构对齐 Week22 约定 |
 | 2 | ProAndon Entity/BO/VO/Mapper | 高 | 4 个 Java 文件 | 字段对齐 DDL |
 | 3 | IProAndonService + 实现（状态机 + SSE 推送） | 高 | 接口 + 实现类 | call/respond/resolve/cancel + SSE 同租户广播 |
 | 4 | MesAndonServiceImpl（实现 IMesAndonService，IoT 联动） | 高 | Java + pom 改动 | `createAndonFromAlert` + `@Primary` 覆盖 Noop |
 | 5 | ProAndonController | 高 | REST 控制器 | list/get/stats/call/respond/resolve/cancel |
 | 6 | 打通 IoT TODO | 中 | 改 `IotAlertNotifier` | 限频通过后联动安灯（try-catch 隔离） |
 | 7 | 前端 andon API + 看板页 + sse.ts | 高 | 3 个文件 | SSE 实时刷新 + 颜色编码 + 新呼叫通知 |
-| 8 | 菜单权限 SQL | 中 | `ry-vue-mes-menu-week23.sql` | 安灯菜单 4070-4075 |
+| 8 | 菜单权限 SQL | 中 | `mes-week23-17-menu.sql` | 安灯菜单 4070-4075 |
 | 9 | 编译 + lint 验证 | 高 | - | `mvn compile` + `eslint` 通过 |
 
 ---
@@ -58,7 +58,7 @@
 
 | 交付物 | 类型 | 文件路径 |
 |--------|------|----------|
-| `ry-mes-week23.sql` | SQL | `doc/mes/sql/mes-week23-04-andon.sql` |
+| `mes-week23-04-andon.sql` | SQL | `doc/mes/sql/mes-week23-04-andon.sql` |
 | `ProAndon.java` | Java | `ruoyi-modules/ruoyi-mes/.../pro/domain/ProAndon.java` |
 | `ProAndonBo.java` | Java | `ruoyi-modules/ruoyi-mes/.../pro/domain/bo/ProAndonBo.java` |
 | `ProAndonVo.java` | Java | `ruoyi-modules/ruoyi-mes/.../pro/domain/vo/ProAndonVo.java` |
@@ -72,7 +72,7 @@
 | `andon.ts` | TS | `plus-ui/src/api/mes/pro/andon.ts` |
 | `andon/index.vue` | Vue | `plus-ui/src/views/mes/pro/andon/index.vue` |
 | `utils/sse.ts`（+ANDON 分支） | 改 | `plus-ui/src/utils/sse.ts` |
-| `ry-vue-mes-menu-week23.sql` | SQL | `doc/mes/sql/mes-week23-17-menu.sql` |
+| `mes-week23-17-menu.sql` | SQL | `doc/mes/sql/mes-week23-17-menu.sql` |
 
 ---
 

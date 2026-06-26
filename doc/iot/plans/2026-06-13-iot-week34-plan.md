@@ -1,8 +1,8 @@
 # NexusERP — IoT 阶段一 · 第二周（Week 34）开发计划
 
 > 关联文档：`doc/iot/NexusERP_IoT文档.md`（第十八节 18.1 Week 34）
-> 上周计划：`script/superpowers/plans/2026-06-17-iot-week33-plan.md`
-> 计划制定：2026-06-17（执行周：Week 34）
+> 上周计划：`./2026-06-12-iot-week33-plan.md`
+> 计划制定：2026-06-13（执行周：Week 34）
 > 工作量基准：3 人天（与文档 Week 34 一致）
 > 范围边界：**仅后端**。前端实时仪表盘属 Week 35-36，不在本周。SSE 实时数据端点（`/iot/device/{id}/realtime`）按文档归 Week 35-36，本周不做。
 

@@ -10,19 +10,19 @@
 
 | 任务 | 状态 | 交付物 |
 |------|------|--------|
-| 创建 `ruoyi-mes` Maven 模块 | ✅ | [ruoyi-mes/pom.xml](file:///e:/Nexus/nexus-erp/ruoyi-modules/ruoyi-mes/pom.xml) |
-| 注册模块到父 POM | ✅ | [ruoyi-modules/pom.xml](file:///e:/Nexus/nexus-erp/ruoyi-modules/pom.xml) + [pom.xml](file:///e:/Nexus/nexus-erp/pom.xml) |
-| 引入模块到启动入口 | ✅ | [ruoyi-admin/pom.xml](file:///e:/Nexus/nexus-erp/ruoyi-admin/pom.xml) |
-| 配置 `mes` 数据源 | ✅ | [application-dev.yml](file:///e:/Nexus/nexus-erp/ruoyi-admin/src/main/resources/application-dev.yml) |
-| 创建 ERP 桥接服务 | ✅ | [IMesErpBridgeService](file:///e:/Nexus/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/common/bridge/IMesErpBridgeService.java) |
-| 创建 ERP 只读 Mapper | ✅ | [ErpMaterialMapper](file:///e:/Nexus/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/common/mapper/ErpMaterialMapper.java) 等 |
-| 迁移消息 DTO 到共享模块 | ✅ | [WorkOrderReleaseMessage](file:///e:/Nexus/nexus-erp/ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/message/WorkOrderReleaseMessage.java) |
-| 补充 MQ 队列/路由键常量 | ✅ | [QueueConstants](file:///e:/Nexus/nexus-erp/ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/constant/QueueConstants.java) + [RoutingKeyConstants](file:///e:/Nexus/nexus-erp/ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/constant/RoutingKeyConstants.java) |
-| 注册 MES 队列绑定 | ✅ | [RabbitMqInitializer](file:///e:/Nexus/nexus-erp/ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/config/RabbitMqInitializer.java) |
-| 修正 MQ 消息发送时序 | ✅ | [PrdWorkOrderServiceImpl](file:///e:/Nexus/nexus-erp/ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/impl/PrdWorkOrderServiceImpl.java) |
-| 禁用 ERP 占位消费者 | ✅ | [WorkOrderReleaseConsumer](file:///e:/Nexus/nexus-erp/ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/mq/consumer/WorkOrderReleaseConsumer.java) |
-| 生成 DDL SQL | ✅ | [ry-mes-week17.sql](file:///e:/Nexus/nexus-erp/doc/mes/sql/mes-week17-01-init.sql) |
-| 生成菜单权限 SQL | ✅ | [ry-vue-mes-menu-week17.sql](file:///e:/Nexus/nexus-erp/doc/mes/sql/mes-week17-10-menu.sql) |
+| 创建 `ruoyi-mes` Maven 模块 | ✅ | [ruoyi-mes/pom.xml](../../../ruoyi-modules/ruoyi-mes/pom.xml) |
+| 注册模块到父 POM | ✅ | [ruoyi-modules/pom.xml](../../../ruoyi-modules/pom.xml) + [pom.xml](../../../pom.xml) |
+| 引入模块到启动入口 | ✅ | [ruoyi-admin/pom.xml](../../../ruoyi-admin/pom.xml) |
+| 配置 `mes` 数据源 | ✅ | [application-dev.yml](../../../ruoyi-admin/src/main/resources/application-dev.yml) |
+| 创建 ERP 桥接服务 | ✅ | [IMesErpBridgeService](../../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/common/bridge/IMesErpBridgeService.java) |
+| 创建 ERP 只读 Mapper | ✅ | [ErpMaterialMapper](../../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/common/mapper/ErpMaterialMapper.java) 等 |
+| 迁移消息 DTO 到共享模块 | ✅ | [WorkOrderReleaseMessage](../../../ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/message/WorkOrderReleaseMessage.java) |
+| 补充 MQ 队列/路由键常量 | ✅ | [QueueConstants](../../../ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/constant/QueueConstants.java) + [RoutingKeyConstants](../../../ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/constant/RoutingKeyConstants.java) |
+| 注册 MES 队列绑定 | ✅ | [RabbitMqInitializer](../../../ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/config/RabbitMqInitializer.java) |
+| 修正 MQ 消息发送时序 | ✅ | [PrdWorkOrderServiceImpl](../../../ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/impl/PrdWorkOrderServiceImpl.java) |
+| 禁用 ERP 占位消费者 | ✅ | [WorkOrderReleaseConsumer](../../../ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/mq/consumer/WorkOrderReleaseConsumer.java) |
+| 生成 DDL SQL | ✅ | [mes-week17-01-init.sql](../sql/mes-week17-01-init.sql) |
+| 生成菜单权限 SQL | ✅ | [mes-week17-10-menu.sql](../sql/mes-week17-10-menu.sql) |
 | 编译验证 | ✅ | `mvn compile -pl ruoyi-modules/ruoyi-mes -am` 通过 |
 
 ---
@@ -102,7 +102,7 @@ spring.datasource.dynamic.datasource:
 
 ### 3.1 DDL SQL
 
-**文件**: [ry-mes-week17.sql](file:///e:/Nexus/nexus-erp/doc/mes/sql/mes-week17-01-init.sql)
+**文件**: [mes-week17-01-init.sql](../sql/mes-week17-01-init.sql)
 
 **内容**:
 - 创建 `ry-mes` 数据库
@@ -110,12 +110,12 @@ spring.datasource.dynamic.datasource:
 - 创建 `pro_work_order_step` 表（MES 工单工序步骤表）
 
 **执行顺序**:
-1. 先执行 `ry-mes-week17.sql` 创建数据库和表结构
-2. 后执行 `ry-vue-mes-menu-week17.sql` 创建菜单权限
+1. 先执行 `mes-week17-01-init.sql` 创建数据库和表结构
+2. 后执行 `mes-week17-10-menu.sql` 创建菜单权限
 
 ### 3.2 菜单权限 SQL
 
-**文件**: [ry-vue-mes-menu-week17.sql](file:///e:/Nexus/nexus-erp/doc/mes/sql/mes-week17-10-menu.sql)
+**文件**: [mes-week17-10-menu.sql](../sql/mes-week17-10-menu.sql)
 
 **菜单 ID 分配**:
 | ID | 名称 | 类型 | 父级 |

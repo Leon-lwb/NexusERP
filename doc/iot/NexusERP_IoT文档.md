@@ -7,7 +7,7 @@
 > **MES↔IoT 未打通**: IoT→MES REST 查询（契约就绪，MES 侧未调用）、设备双向软关联查询、IoT 自动采集归档到 dc_data_record。详见 §二十一。
 > 后续升级方案：[NexusERP 三模块共同升级方案](NexusERP_三模块共同升级方案.md)
 >
-> 参考实施计划：[IoT 阶段一 Week 33 开发计划](../superpowers/plans/2026-06-17-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](../superpowers/plans/2026-06-23-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](../superpowers/plans/2026-06-18-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](../superpowers/plans/2026-06-18-iot-week36-plan.md)
+> 参考实施计划：[IoT 阶段一 Week 33 开发计划](./plans/2026-06-12-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](./plans/2026-06-13-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](./plans/2026-06-14-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](./plans/2026-06-15-iot-week36-plan.md)
 >
 > **数据采集归属**: IoT负责自动设备采集（MQTT/传感器数据），MES负责手工/业务采集（质检、工序录入）。
 > IoT采集的数据写入 `iot_device_data`，MES的 `dc_collection_point` 通过 `point_type=AUTO` 关联IoT设备。
@@ -78,53 +78,63 @@ ruoyi-iot/
 
 ### 2.1 产品与设备
 
+> ⚠️ 本节 DDL 已与 `sql/iot-week33-01-init.sql` 对齐，后续变更以 SQL 脚本为准。
+
 ```sql
 -- IoT产品(设备模板)
-CREATE TABLE iot_product (
-    product_id       BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    product_code     VARCHAR(64) NOT NULL,
-    product_name     VARCHAR(128) NOT NULL,
-    product_type     VARCHAR(32) DEFAULT 'DEVICE' COMMENT 'DEVICE/GATEWAY',
-    protocol_type    VARCHAR(32) NOT NULL DEFAULT 'MQTT' COMMENT 'MQTT/OPC_UA/MODBUS/HTTP',
-    description      VARCHAR(500),
-    status           VARCHAR(16) DEFAULT 'ACTIVE',
-    create_by        BIGINT,
-    create_dept      BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (product_id),
-    UNIQUE KEY uk_code (product_code, tenant_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT产品';
+CREATE TABLE `iot_product` (
+    `product_id`       bigint(20)     NOT NULL COMMENT '产品ID(主键)',
+    `tenant_id`        varchar(20)    NOT NULL DEFAULT '000000' COMMENT '租户ID',
+    `product_code`     varchar(64)    NOT NULL DEFAULT '' COMMENT '产品编码',
+    `product_name`     varchar(128)   NOT NULL DEFAULT '' COMMENT '产品名称',
+    `product_type`     varchar(32)    NULL DEFAULT 'DEVICE' COMMENT '产品类型: DEVICE/GATEWAY',
+    `protocol_type`    varchar(32)    NOT NULL DEFAULT 'MQTT' COMMENT '协议类型: MQTT/OPC_UA/MODBUS/HTTP',
+    `description`      varchar(500)   NULL DEFAULT NULL COMMENT '描述',
+    `status`           varchar(16)    NULL DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE/INACTIVE',
+    `remark`           varchar(500)   NULL DEFAULT NULL COMMENT '备注',
+    `create_dept`      bigint(20)     NULL DEFAULT NULL COMMENT '创建部门',
+    `create_by`        bigint(20)     NULL DEFAULT NULL COMMENT '创建人',
+    `create_time`      datetime       NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by`        bigint(20)     NULL DEFAULT NULL COMMENT '更新人',
+    `update_time`      datetime       NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `del_flag`         char(1)        NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
+    PRIMARY KEY (`product_id`) USING BTREE,
+    UNIQUE INDEX `uk_code` (`product_code`, `tenant_id`) USING BTREE,
+    INDEX `idx_tenant_id` (`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci
+  COMMENT = 'IoT产品(设备模板)' ROW_FORMAT = DYNAMIC;
 
 -- IoT设备实例
-CREATE TABLE iot_device (
-    device_id        BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    device_code      VARCHAR(64) NOT NULL,
-    device_name      VARCHAR(128) NOT NULL,
-    product_id       BIGINT NOT NULL,
-    product_name     VARCHAR(128),
-    protocol_type    VARCHAR(32) NOT NULL DEFAULT 'MQTT',
-    connection_status VARCHAR(16) DEFAULT 'OFFLINE' COMMENT 'ONLINE/OFFLINE',
-    last_online_time DATETIME,
-    device_secret    VARCHAR(128) COMMENT '设备密钥',
-    ip_address       VARCHAR(64),
-    firmware_version VARCHAR(64),
-    location         VARCHAR(256),
-    mes_equipment_id BIGINT COMMENT '关联MES设备ID(接口查询,无外键)',
-    status           VARCHAR(16) DEFAULT 'ACTIVE',
-    create_by        BIGINT,
-    create_dept      BIGINT,
-    create_time      DATETIME,
-    update_by        BIGINT,
-    update_time      DATETIME,
-    PRIMARY KEY (device_id),
-    UNIQUE KEY uk_code (device_code, tenant_id),
-    INDEX idx_product (product_id),
-    INDEX idx_status (connection_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备实例';
+CREATE TABLE `iot_device` (
+    `device_id`          bigint(20)     NOT NULL COMMENT '设备ID(主键)',
+    `tenant_id`          varchar(20)    NOT NULL DEFAULT '000000' COMMENT '租户ID',
+    `device_code`        varchar(64)    NOT NULL DEFAULT '' COMMENT '设备编码(MQTT ClientID)',
+    `device_name`        varchar(128)   NOT NULL DEFAULT '' COMMENT '设备名称',
+    `product_id`         bigint(20)     NOT NULL COMMENT '产品ID',
+    `product_name`       varchar(128)   NULL DEFAULT NULL COMMENT '产品名称(冗余)',
+    `protocol_type`      varchar(32)    NOT NULL DEFAULT 'MQTT' COMMENT '协议类型: MQTT/OPC_UA/MODBUS/HTTP',
+    `connection_status`  varchar(16)    NULL DEFAULT 'OFFLINE' COMMENT '连接状态: ONLINE/OFFLINE',
+    `last_online_time`   datetime       NULL DEFAULT NULL COMMENT '最后在线时间',
+    `device_secret`      varchar(128)   NULL DEFAULT NULL COMMENT '设备密钥(MQTT认证)',
+    `ip_address`         varchar(64)    NULL DEFAULT NULL COMMENT 'IP地址',
+    `firmware_version`   varchar(64)    NULL DEFAULT NULL COMMENT '固件版本',
+    `location`           varchar(256)   NULL DEFAULT NULL COMMENT '位置',
+    `mes_equipment_id`   bigint(20)     NULL DEFAULT NULL COMMENT '关联MES设备ID(接口查询,无外键)',
+    `status`             varchar(16)    NULL DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE/INACTIVE',
+    `remark`             varchar(500)   NULL DEFAULT NULL COMMENT '备注',
+    `create_dept`        bigint(20)     NULL DEFAULT NULL COMMENT '创建部门',
+    `create_by`          bigint(20)     NULL DEFAULT NULL COMMENT '创建人',
+    `create_time`        datetime       NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by`          bigint(20)     NULL DEFAULT NULL COMMENT '更新人',
+    `update_time`        datetime       NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `del_flag`           char(1)        NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
+    PRIMARY KEY (`device_id`) USING BTREE,
+    UNIQUE INDEX `uk_code` (`device_code`, `tenant_id`) USING BTREE,
+    INDEX `idx_product` (`product_id`) USING BTREE,
+    INDEX `idx_status` (`connection_status`) USING BTREE,
+    INDEX `idx_tenant_id` (`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci
+  COMMENT = 'IoT设备实例' ROW_FORMAT = DYNAMIC;
 ```
 
 ### 2.2 设备数据
@@ -132,26 +142,29 @@ CREATE TABLE iot_device (
 ```sql
 -- IoT设备数据(原始数据,先存MySQL)
 -- 触发迁移条件: 表行数超过1000万 → 引入TDengine
-CREATE TABLE iot_device_data (
-    data_id          BIGINT NOT NULL,
-    tenant_id        BIGINT NOT NULL DEFAULT 0,
-    device_id        BIGINT NOT NULL,
-    device_code      VARCHAR(64),
-    property_code    VARCHAR(64) NOT NULL,
-    property_name    VARCHAR(128),
-    data_type        VARCHAR(16),
-    numeric_value    DECIMAL(14,4),
-    text_value       VARCHAR(500),
-    bool_value       TINYINT(1),
-    collect_time     DATETIME NOT NULL,
-    receive_time     DATETIME NOT NULL,
-    quality          VARCHAR(16) DEFAULT 'GOOD' COMMENT 'GOOD/BAD/UNCERTAIN',
-    source           VARCHAR(32) DEFAULT 'MQTT' COMMENT 'MQTT/OPC_UA/MODBUS/HTTP',
-    create_time      DATETIME,
-    PRIMARY KEY (data_id),
-    INDEX idx_device_time (device_id, collect_time),
-    INDEX idx_property (device_id, property_code, collect_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IoT设备数据';
+-- 高频时序数据: 不补 del_flag/审计列, 仅 tenant_id + create_time
+CREATE TABLE `iot_device_data` (
+    `data_id`          bigint(20)     NOT NULL COMMENT '数据ID(主键)',
+    `tenant_id`        varchar(20)    NOT NULL DEFAULT '000000' COMMENT '租户ID',
+    `device_id`        bigint(20)     NOT NULL COMMENT '设备ID',
+    `device_code`      varchar(64)    NULL DEFAULT NULL COMMENT '设备编码(冗余)',
+    `property_code`    varchar(64)    NOT NULL DEFAULT '' COMMENT '属性编码',
+    `property_name`    varchar(128)   NULL DEFAULT NULL COMMENT '属性名称',
+    `data_type`        varchar(16)    NULL DEFAULT NULL COMMENT '数据类型: NUMERIC/TEXT/BOOL',
+    `numeric_value`    decimal(14,4)  NULL DEFAULT NULL COMMENT '数值型值',
+    `text_value`       varchar(500)   NULL DEFAULT NULL COMMENT '文本型值',
+    `bool_value`       tinyint(1)     NULL DEFAULT NULL COMMENT '布尔型值(0/1)',
+    `collect_time`     datetime       NOT NULL COMMENT '采集时间(设备侧)',
+    `receive_time`     datetime       NOT NULL COMMENT '接收时间(服务端)',
+    `quality`          varchar(16)    NULL DEFAULT 'GOOD' COMMENT '数据质量: GOOD/BAD/UNCERTAIN',
+    `source`           varchar(32)    NULL DEFAULT 'MQTT' COMMENT '数据来源: MQTT/OPC_UA/MODBUS/HTTP',
+    `create_time`      datetime       NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`data_id`) USING BTREE,
+    INDEX `idx_device_time` (`device_id`, `collect_time`) USING BTREE,
+    INDEX `idx_property` (`device_id`, `property_code`, `collect_time`) USING BTREE,
+    INDEX `idx_tenant_id` (`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci
+  COMMENT = 'IoT设备数据(原始)' ROW_FORMAT = DYNAMIC;
 ```
 
 ---

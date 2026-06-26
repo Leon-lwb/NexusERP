@@ -5,7 +5,7 @@
 > **变更日期**: 2026-06-17
 > **影响模块**: ruoyi-erp (bd 包)、plus-ui (erp/bd)、sys_menu / sys_dict
 > **变更负责人**: 王欢
-> **关联文档**: `C:\Users\MyPC\.claude\plans\erp-bom-routing-enhancement.md`（详细设计稿）
+> **关联文档**: `./sql/erp-bom-routing-enhancement.sql`（BOM 增强建表脚本）
 
 ---
 
@@ -339,10 +339,10 @@ plus-ui/src/
 
 ### 数据库脚本
 ```
-script/sql/
+sql/
 ├── erp-bom-routing-enhancement.sql       （建表 + 加字段）
 ├── dict-bom-routing-process.sql          （字典）
-└── erp-bd-process-routing-menu.sql       （菜单权限）
+└── erp-process-routing-menu.sql          （菜单权限）
 ```
 
 ---

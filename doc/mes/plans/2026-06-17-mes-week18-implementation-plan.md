@@ -26,7 +26,7 @@
 | 改造 WorkOrderReleaseConsumer | ⬜ | `WorkOrderReleaseConsumer.doProcess()` | 消费消息后能创建 MES 工单及工序，幂等可重试 |
 | MES MQ 发送服务骨架 | ⬜ | `MesMqSendService` | 参照 `WmMqSendService`，`@Async` + `push("master")`，为完工消息发送预留 |
 | MES 工单前端基础版 | ⬜ | `plus-ui/src/views/mes/pro/workorder/index.vue`、`detail.vue` | 列表分页查询、详情查看、工序 Tab、手动下达按钮 |
-| 菜单权限补充 SQL | ⬜ | `ry-vue-mes-menu-week18.sql` | 补充 MES 工单按钮权限（release 等） |
+| 菜单权限补充 SQL | ⬜ | `mes-week18-11-menu.sql` | 补充 MES 工单按钮权限（release 等） |
 | 编译验证 | ⬜ | `mvn compile -pl ruoyi-modules/ruoyi-mes -am` | 编译通过 |
 
 ---

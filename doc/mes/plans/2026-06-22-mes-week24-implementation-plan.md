@@ -42,15 +42,15 @@ MES `pro_sn` 是**生产追溯**序列号表（status=IN_PRODUCTION/COMPLETED/SC
 | 事实 | 依据 |
 |------|------|
 | MES Entity/BO/VO/Mapper/Service/Controller 模式（TenantEntity、@DS("mes")、@Lock4j+CAS、@SaCheckPermission、BaseMapperPlus） | Week22 `ProDispatch` 一族 + Week23 `ProAndon` 一族（已实现） |
-| DDL 约定：`tenant_id VARCHAR(20) DEFAULT '000000'`、`del_flag CHAR(1)`、状态列 `VARCHAR(32)`、`mes_wo_id` 命名 | `doc/mes/sql/mes-week22-03-dispatch.sql` / `ry-mes-week23.sql` |
+| DDL 约定：`tenant_id VARCHAR(20) DEFAULT '000000'`、`del_flag CHAR(1)`、状态列 `VARCHAR(32)`、`mes_wo_id` 命名 | `doc/mes/sql/mes-week22-03-dispatch.sql` / `mes-week23-04-andon.sql` |
 | 流转卡完工聚合链路 completeStep→completeCard→completeWo（SN 生成挂载点的上下文） | `ProFlowCardServiceImpl.completeCard()` |
 | 主文档 `pro_sn` DDL 字段：sn_id/sn_code/wo_id/card_id/material_id/material_code/material_name/current_step_seq/status/parent_sn_id | 主文档 §2.1 |
 | SN 状态：IN_PRODUCTION/COMPLETED/SCRAPPED/SHIPPED | 主文档 §7.2 |
 | 追溯方向：前向 SN→工序→物料→设备→操作员；后向 物料→SN→工序→产品 | 主文档 §7.1 |
 | 前端列表页模式（el-table + 搜索 + v-hasPermi + $modal.prompt `{ value }` 解构 + onMounted getList） | `views/mes/pro/dispatch/index.vue`、`andon/index.vue` |
 | 前端详情/树页可用 el-tree + el-descriptions | Element Plus 通用 |
-| MES 页面菜单驱动（sys_menu），无需改 router；菜单 ID 段 Week22=4060-4067、Week23=4070-4075，**Week24 取 4080-4089** | `ry-vue-mes-menu-week22/23.sql` |
-| `pro_sn` 表尚未在任何 ry-mes-weekNN.sql 中创建 | grep 无命中 |
+| MES 页面菜单驱动（sys_menu），无需改 router；菜单 ID 段 Week22=4060-4067、Week23=4070-4075，**Week24 取 4080-4089** | `mes-week22-16-menu.sql / mes-week23-17-menu.sql` |
+| `pro_sn` 表尚未在任何 mes-weekNN-*.sql 中创建 | grep 无命中 |
 | ERP `bd_serial_number_rule` / `wm_sn` 存在但属 ERP 库，本周不复用/不同步 | `script/sql/ry-erp.sql:587,4117` |
 
 ---
@@ -59,14 +59,14 @@ MES `pro_sn` 是**生产追溯**序列号表（status=IN_PRODUCTION/COMPLETED/SC
 
 | # | 任务 | 优先级 | 交付物 | 验收标准 |
 |---|------|--------|--------|----------|
-| 1 | pro_sn DDL | 高 | `ry-mes-week24.sql` | 表结构对齐 Week22/23 约定 |
+| 1 | pro_sn DDL | 高 | `mes-week24-05-sntrace.sql` | 表结构对齐 Week22/23 约定 |
 | 2 | ProSn Entity/BO/VO/Mapper | 高 | 4 个 Java 文件 | 字段对齐 DDL |
 | 3 | IProSnService + 实现（CRUD + 生成 + 状态机 + 追溯） | 高 | 接口 + 实现类 | generateSnForCard/createSn/complete/scrap/ship + 前向/后向追溯 |
 | 4 | ProSnController | 高 | REST 控制器 | list/get/generate/add/trace/complete/scrap/ship |
 | 5 | 前端：sn API + 类型 | 高 | `sn.ts` | 前端可调用全部接口 |
 | 6 | 前端：SN 列表页 | 高 | `sn/index.vue` | 列表+搜索+生成/手动建/状态操作 |
 | 7 | 前端：追溯树页 | 高 | `sn/trace.vue` | el-tree 前向/后向追溯可视化 |
-| 8 | 菜单权限 SQL | 中 | `ry-vue-mes-menu-week24.sql` | SN 菜单 4080 + 按钮权限 4081-4087 |
+| 8 | 菜单权限 SQL | 中 | `mes-week24-18-menu.sql` | SN 菜单 4080 + 按钮权限 4081-4087 |
 | 9 | 编译 + lint 验证 | 高 | - | `mvn compile` + `eslint` 通过 |
 
 ---
@@ -374,14 +374,14 @@ SN 状态流转:
 
 | 交付物 | 类型 |
 |--------|------|
-| `ry-mes-week24.sql` | SQL（pro_sn DDL） |
+| `mes-week24-05-sntrace.sql` | SQL（pro_sn DDL） |
 | `ProSn.java`/BO/VO/Mapper | Java（4 文件） |
 | `IProSnService` + `ProSnServiceImpl` | Java（CRUD + 生成 + 状态机 + 追溯） |
 | `ProSnController.java` | Java（REST） |
 | `sn.ts` | TS（前端 API） |
 | `sn/index.vue` | Vue（列表+生成+状态操作） |
 | `sn/trace.vue` | Vue（追溯树） |
-| `ry-vue-mes-menu-week24.sql` | SQL（菜单 4080-4086） |
+| `mes-week24-18-menu.sql` | SQL（菜单 4080-4086） |
 
 ---
 
@@ -389,7 +389,7 @@ SN 状态流转:
 
 > 运行时验证依赖：`ry-vue`/`ry-erp`/`ry-mes`/`ry-iot` 四库 + Redis 就绪，并已执行 Week17/20/22/23 DDL 与菜单 SQL。
 
-1. **DDL 执行**：`ry-mes-week24.sql` 建 `pro_sn`；`ry-vue-mes-menu-week24.sql` 注入菜单并为角色勾选 4080-4086。
+1. **DDL 执行**：`mes-week24-05-sntrace.sql` 建 `pro_sn`；`mes-week24-18-menu.sql` 注入菜单并为角色勾选 4080-4086。
 2. **批量生成**：选一个已下达/生产中的流转卡 → "批量生成SN"(数量=3) → 列表出现 3 条 `SN-{cardNo}-0001~0003`，status=IN_PRODUCTION，关联工单/物料正确。
 3. **手动建SN + 组装**：手动建一个成品 SN（无 parent）→ 再建一个组件 SN，parentSnId 指向成品 SN → 组件 SN 的 parent_sn_code 正确冗余。
 4. **状态流转**：SN 完工 → COMPLETED → 发货 → SHIPPED；另一 SN 报废（prompt remark）→ SCRAPPED。对 SHIPPED 再调完工 → 报错"状态已变更"。

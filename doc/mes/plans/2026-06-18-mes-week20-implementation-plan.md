@@ -14,15 +14,15 @@
 
 | # | 任务 | 优先级 | 交付物 | 验收标准 |
 |---|------|--------|--------|----------|
-| 1 | 流转卡 DDL（对齐 Week17 schema 约定） | 高 | `ry-mes-week20.sql` | 表结构与 pro_work_order 约定一致 |
+| 1 | 流转卡 DDL（对齐 Week17 schema 约定） | 高 | `mes-week20-02-flowcard.sql` | 表结构与 pro_work_order 约定一致 |
 | 2 | 流转卡 Entity/BO/VO | 高 | `ProFlowCard`、`ProFlowCardStep` + BO/VO | 字段与 DDL 完全对应 |
 | 3 | 流转卡 Mapper | 高 | `ProFlowCardMapper`、`ProFlowCardStepMapper` | 继承 BaseMapperPlus |
 | 4 | 流转卡 Service（状态机 + 工序自动生成 + 完工聚合） | 高 | `IProFlowCardService` + 实现 | 状态流转正确，完工聚合到工单 |
 | 5 | 流转卡 Controller | 高 | `ProFlowCardController` | list/get/create/release/startStep/completeStep/completeCard |
 | 6 | MES 工单完工 → MQ 通知 ERP | 高 | `ProWorkOrderServiceImpl.completeWo()` + `MesMqSendService` 调用 | 工单完工后发送 MQ 消息 |
 | 7 | 流转卡前端骨架 | 中 | `flow-card/index.vue` + `flow-card/detail.vue` + API | 列表 + 详情 + 创建/下达/开工/完工按钮 |
-| 8 | Flowable 审批流配置 SQL | 高 | `ry-vue-mes-flow-week20.sql` | wf_custom_form 插入 MES 工单审批流记录 |
-| 9 | 菜单权限补充 SQL | 低 | `ry-vue-mes-menu-week20.sql` | 流转卡菜单 + 按钮权限 |
+| 8 | Flowable 审批流配置 SQL | 高 | `mes-week20-13-flow-deploy.sql` | wf_custom_form 插入 MES 工单审批流记录 |
+| 9 | 菜单权限补充 SQL | 低 | `mes-week20-14-menu.sql` | 流转卡菜单 + 按钮权限 |
 | 10 | 编译验证 | 高 | `mvn compile` 通过 | 无编译错误 |
 
 ---
@@ -326,7 +326,7 @@ INSERT INTO sys_menu VALUES (4046, '流转卡完工', 4040, 5, '', '', ..., 'mes
 
 | 交付物 | 类型 | 说明 |
 |--------|------|------|
-| `ry-mes-week20.sql` | SQL | 流转卡2张表DDL |
+| `mes-week20-02-flowcard.sql` | SQL | 流转卡2张表DDL |
 | `ProFlowCard.java` + `ProFlowCardStep.java` | Java | 实体类 |
 | `ProFlowCardBo/Vo` + `ProFlowCardStepVo` | Java | BO/VO |
 | `ProFlowCardMapper` + `ProFlowCardStepMapper` | Java | Mapper |
@@ -335,8 +335,8 @@ INSERT INTO sys_menu VALUES (4046, '流转卡完工', 4040, 5, '', '', ..., 'mes
 | `ProWorkOrderServiceImpl` 扩展 | Java | completeWo + MQ |
 | `flowcard.ts` + `types.ts` | TS | 前端API |
 | `flow-card/index.vue` + `detail.vue` | Vue | 前端页面 |
-| `ry-vue-mes-flow-week20.sql` | SQL | Flowable配置 |
-| `ry-vue-mes-menu-week20.sql` | SQL | 菜单权限 |
+| `mes-week20-13-flow-deploy.sql` | SQL | Flowable配置 |
+| `mes-week20-14-menu.sql` | SQL | 菜单权限 |
 
 ---
 

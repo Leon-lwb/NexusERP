@@ -67,9 +67,9 @@
 
 | 文件 | 内容 | Week |
 |------|------|------|
-| `ry-iot.sql` | 3 张核心表 DDL(iot_product/iot_device/iot_device_data) | 33 |
-| `ry-iot-week33-menu.sql` | 菜单权限(6000-6025) | 33 |
-| `ry-iot-week35.sql` | 4 个 IoT 字典(产品类型/协议/连接状态/设备状态) | 35 |
+| `iot-week33-01-init.sql` | 3 张核心表 DDL(iot_product/iot_device/iot_device_data) | 33 |
+| `iot-week33-02-menu.sql` | 菜单权限(6000-6025) | 33 |
+| `iot-week35-03-dict.sql` | 4 个 IoT 字典(产品类型/协议/连接状态/设备状态) | 35 |
 
 ---
 

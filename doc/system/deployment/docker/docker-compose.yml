@@ -1,3 +1,21 @@
+# ===================================================================
+# ⚠️ 本文件为历史单机全量配置，仅作参考保留，请勿直接用于部署。
+#
+# 按照双机部署方案，已拆分为两个文件（与《docker部署文档.md》保持一致）：
+#   - docker-compose-main.yml   主服务器（81.68.78.136）：
+#       MySQL、Redis、RabbitMQ、MinIO、Nginx、NexusServer
+#   - docker-compose-assist.yml 辅助服务器（117.72.190.225）：
+#       MonitorAdmin、SnailJobServer
+#
+# 与原配置的主要差异（已在拆分文件中修正）：
+#   - 容器命名 nexus-*（原 ruoyi-*/裸名）
+#   - 镜像命名 nexus/*（原 ruoyi/*）
+#   - MySQL root 密码 MIS@5mis@5（原 root）
+#   - MinIO 凭证 nexus/nexus123456（原 ruoyi/ruoyi123）
+#   - 新增 RabbitMQ（5672/15672，账号 nexus/nexus）
+#   - 主服务 NexusServer JVM 384M
+#   - 双服务实例合并为单个 nexus-server
+# ===================================================================
 services:
   mysql:
     image: mysql:8.0.42

@@ -23,7 +23,7 @@
 | 1 | 流转卡前端功能补全（创建入口 + 关闭/完工按钮） | 高 | `workorder/detail.vue`、`flow-card/detail.vue` 修改 | 可从工单详情创建流转卡；流转卡详情可完工/关闭 |
 | 2 | 工单详情 Tab 化重构（基本信息/工序步骤/审批流程） | 高 | `workorder/detail.vue` 重构 | 三个 Tab 切换正常，工序步骤为独立 Tab |
 | 3 | 工单编辑弹窗 + 列表新增/修改按钮 | 中 | `workorder/form.vue` 新建 + `workorder/index.vue` 修改 | 可新增/编辑工单（手动创建场景） |
-| 4 | 菜单权限清理 SQL | 高 | `ry-vue-mes-menu-week21.sql` | 4010 权限对齐 Controller；4011-4017 冗余按钮删除 |
+| 4 | 菜单权限清理 SQL | 高 | `mes-week21-15-menu.sql` | 4010 权限对齐 Controller；4011-4017 冗余按钮删除 |
 | 5 | Flowable BPMN 审批流部署（运行时操作） | 高 | 部署 `mesWorkOrderApproval` 流程 | 工单详情审批流下拉可选中并提交 |
 | 6 | Phase 1 端到端集成测试 + 报告 | 高 | `2026-06-19-mes-week21-verification-report.md` | 完整链路演示通过 |
 | 7 | 编译验证 | 高 | `mvn compile` + `npm run dev` 通过 | 无编译/启动错误 |
@@ -268,9 +268,9 @@ WHERE `menu_id` IN (4011, 4012, 4013, 4014, 4015, 4016, 4017);
 
 ### 任务 5：Flowable BPMN 审批流部署（运行时操作）
 
-**性质：** 运行时 UI 操作，非代码交付。Week 20 的 `ry-vue-mes-flow-week20.sql` 已在 `wf_custom_form` 注册 `proWorkOrderService`（id=4050，route `mes/pro/workorder/detail`）。本周在运行系统中完成 BPMN 部署，使审批流下拉可选。
+**性质：** 运行时 UI 操作，非代码交付。Week 20 的 `mes-week20-13-flow-deploy.sql` 已在 `wf_custom_form` 注册 `proWorkOrderService`（id=4050，route `mes/pro/workorder/detail`）。本周在运行系统中完成 BPMN 部署，使审批流下拉可选。
 
-**操作步骤（参照 `ry-vue-mes-flow-week20.sql` 注释）：**
+**操作步骤（参照 `mes-week20-13-flow-deploy.sql` 注释）：**
 1. 访问 `/workflow/model` 新建流程模型
 2. 流程 key: `mesWorkOrderApproval`，分类: 自定义业务（ZDYYW）
 3. StartEvent `formKey` 设为 `key_4050`（关联 `wf_custom_form` 记录）
@@ -337,7 +337,7 @@ WHERE `menu_id` IN (4011, 4012, 4013, 4014, 4015, 4016, 4017);
 | `flow-card/detail.vue` | Vue(修改) | 完工/关闭流转卡按钮 |
 | `workorder/form.vue` | Vue(新建) | 新增/编辑弹窗 |
 | `workorder/index.vue` | Vue(修改) | 新增/修改按钮 |
-| `ry-vue-mes-menu-week21.sql` | SQL | 菜单权限清理 |
+| `mes-week21-15-menu.sql` | SQL | 菜单权限清理 |
 | `2026-06-19-mes-week21-verification-report.md` | 文档 | Phase 1 端到端验证报告 |
 
 ---

@@ -1,8 +1,8 @@
 # NexusERP — IoT 阶段一 · 第三周（Week 35）开发计划
 
 > 关联文档：`doc/iot/NexusERP_IoT文档.md`（第十八节 18.1 Week 35-36）
-> 上周计划：`script/superpowers/plans/2026-06-23-iot-week34-plan.md`
-> 计划制定：2026-06-18（执行周：Week 35）
+> 上周计划：`./2026-06-13-iot-week34-plan.md`
+> 计划制定：2026-06-14（执行周：Week 35）
 > 工作量基准：3 人天
 > 范围边界：**后端实时数据暴露 + SSE 实时端点 + 前端产品/设备 CRUD 页**。ECharts 实时仪表盘、SnailJob 定时任务、真实设备端到端联调属 Week 36。
 
@@ -33,7 +33,7 @@ Week 35 目标：**让产品/设备管理在浏览器可用 + 后端实时数据
 | D | **EventSource 鉴权** | 端点 `@SaIgnore` + 手动 `StpUtil.isLogin()`/`StpUtil.checkPermission("iot:device:query")`，token 走 query 参数 | 浏览器 EventSource 不能设请求头，与 `SseController.connect()`（`ruoyi-common-sse`）同模式；Sa-Token 默认从 query 读 `Authorization` |
 | E | **数据端点归属** | 加到现有 `IotDeviceController`（`/iot/device`），不新建 Controller | latest/status/data 是设备子资源，REST 惯例；权限复用 `iot:device:query` |
 | F | **字典方案** | 新建 4 个 IoT 专用字典类型，`INSERT IGNORE` 幂等 | 后端 status 用 `ACTIVE/INACTIVE` 字符串，与 `sys_normal_disable`(0/1) 不兼容；新建字典零后端改动 |
-| G | **菜单** | 不产出新菜单 SQL | Week 33 `ry-iot-week33-menu.sql` 已建 6000-6025（含 `iot:product:*`/`iot:device:*` 按钮权限 + 组件路径），本周前端直接对接 |
+| G | **菜单** | 不产出新菜单 SQL | Week 33 `iot-week33-02-menu.sql` 已建 6000-6025（含 `iot:product:*`/`iot:device:*` 按钮权限 + 组件路径），本周前端直接对接 |
 | H | **iot_device_data 租户隔离** | 每个数据端点先 `iotDeviceService.selectById(deviceId)` 校验设备归属 | `IotDeviceData` 不继承 `TenantEntity`，MyBatis-Plus 租户插件不过滤其查询；`IotDevice` 继承 `TenantEntity`，selectById 带租户过滤，返回 null 即跨租户/不存在 |
 
 ---
@@ -106,7 +106,7 @@ Week 35 目标：**让产品/设备管理在浏览器可用 + 后端实时数据
       name: 'IotDevice', meta: { title: '设备管理', activeMenu: '/iot/device' } }] },
   ```
 - 联调顺序（依赖 ry-iot 库 + Week 33 DDL/菜单 + Week 35 字典已执行）：
-  1. 执行 `ry-iot-week35.sql`（字典）。
+  1. 执行 `iot-week35-03-dict.sql`（字典）。
   2. 启动后端 → Swagger 见 latest/status/data/realtime 4 端点；`iot-sched-*` 线程启动。
   3. `npm run dev` → 产品/设备 CRUD 全流程；dict-tag 中文显示；设备在线状态灰/绿。
   4. `mosquitto_pub` 发属性 → `GET /latest` 有值 → `curl` 订阅 realtime 每 3s 收到变化帧。
@@ -160,5 +160,5 @@ Week 35 目标：**让产品/设备管理在浏览器可用 + 后端实时数据
 4. **SSE 实时**：`curl -N` 订阅 `/realtime` 每 3s 收到 `event:realtime` 帧；发新值后下一帧 properties 变化。
 5. **前端产品管理**：菜单点亮，增删改查全流程，dict-tag 显示中文（产品类型/协议/状态）。
 6. **前端设备管理**：列表含在线状态指示灯（绿/灰），新增设备可选产品，CRUD 正常。
-7. **字典**：`ry-iot-week35.sql` 执行后 4 个 IoT 字典在前端 `useDict` 可用。
+7. **字典**：`iot-week35-03-dict.sql` 执行后 4 个 IoT 字典在前端 `useDict` 可用。
 8. 文档检查清单本周项更新为 ✅；SnailJob/仪表盘/联调保持 ❌（Week 36）。

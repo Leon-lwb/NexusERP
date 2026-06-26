@@ -23,7 +23,7 @@
 | 前端审批组件集成 | 中 | 工单详情页增加审批区 | 审批流选择器 + 提交按钮 + 查看流程按钮 |
 | 工单编辑弹窗 | 中 | `workorder/form.vue` 弹窗版 | 支持新增/编辑工单（手动创建场景） |
 | 前端 API 补充 | 中 | `workorder.ts` 补充 submit/proc 接口 | 前端可调用审批接口 |
-| 菜单权限补充 SQL | 低 | `ry-vue-mes-menu-week19.sql` | 补充主数据只读菜单 + submit/proc 按钮 |
+| 菜单权限补充 SQL | 低 | `mes-week19-12-menu.sql` | 补充主数据只读菜单 + submit/proc 按钮 |
 | 编译验证 | 高 | `mvn compile` 通过 | 无编译错误 |
 
 ---
@@ -202,7 +202,7 @@ export const getWorkOrderProcId = (mesWoId: string | number) =>
 | `IProWorkOrderService` | Java(修改) | 扩展 WfCallBackServiceI |
 | `ProWorkOrderServiceImpl` | Java(修改) | 实现 Flowable 回调 |
 | `ProWorkOrderController` | Java(修改) | 新增 submit/proc 接口 |
-| `ry-vue-mes-menu-week19.sql` | SQL | 菜单权限补充 |
+| `mes-week19-12-menu.sql` | SQL | 菜单权限补充 |
 
 ---
 

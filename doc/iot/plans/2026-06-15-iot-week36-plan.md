@@ -1,8 +1,8 @@
 # NexusERP — IoT 阶段一 · 第四周（Week 36）开发计划
 
 > 关联文档：`doc/iot/NexusERP_IoT文档.md`（第十八节 18.1 Week 35-36；第十五节阶段一最小链路）
-> 上周计划：`script/superpowers/plans/2026-06-18-iot-week35-plan.md`
-> 计划制定：2026-06-18（执行周：Week 36）
+> 上周计划：`./2026-06-14-iot-week35-plan.md`
+> 计划制定：2026-06-15（执行周：Week 36）
 > 工作量基准：3 人天
 > 范围边界：**ECharts 实时仪表盘 + SnailJob 三任务 + 真实设备端到端联调**，收尾 IoT 阶段一最小链路。
 
@@ -108,7 +108,7 @@ Week 36 目标：**让一台设备的数据实时出现在 ECharts 仪表盘上 
 | 路由 | `plus-ui/src/router/index.ts`（+1 realtime 隐藏路由） |
 | 设备列表改造 | `plus-ui/src/views/iot/device/index.vue`（操作列加「实时」按钮） |
 | 文档 | `NexusERP_IoT文档.md`（进度+检查清单+任务表）、`doc/iot/NexusERP_IoT阶段一验收报告.md`（新建） |
-| 计划存档 | `script/superpowers/plans/2026-06-18-iot-week36-plan.md` |
+| 计划存档 | `./2026-06-15-iot-week36-plan.md` |
 
 > 无新菜单 SQL（复用 Week 33 设备菜单）；无新字典；无新表/DDL。
 

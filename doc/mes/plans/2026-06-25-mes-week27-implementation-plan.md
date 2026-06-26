@@ -43,13 +43,13 @@ Phase 3 质量管理（Week 25）与设备管理（Week 26）已完成。按主�
 
 | 事实 | 依据 |
 |------|------|
-| dc/spc 四表 DDL 规范在主文档 §2.4（未执行），原 `tenant_id BIGINT` 需改为 Week25/26 约定 `VARCHAR(20) DEFAULT '000000'` + `del_flag CHAR(1)` | 主文档 §2.4 + `ry-mes-week26.sql` |
+| dc/spc 四表 DDL 规范在主文档 §2.4（未执行），原 `tenant_id BIGINT` 需改为 Week25/26 约定 `VARCHAR(20) DEFAULT '000000'` + `del_flag CHAR(1)` | 主文档 §2.4 + `mes-week26-07-equipment.sql` |
 | dc/ 与 spc/ 包完全空白：无 Java、无 DDL、无前端、无子菜单 | `ruoyi-mes/.../com/nexus/mes/` 仅 common/pro/qc/eq 四包 |
 | 控制图类型 5 种：X_BAR_R/X_BAR_S/P/C/U；OOC 规则 4 条硬编码；sample_size 默认 5 | 主文档 §8.4 + DDL §2.4 |
 | dc_data_record 双值：numeric_value(DECIMAL) + text_value(VARCHAR)；source MANUAL/IoT；关联 wo_id/card_id/step_record_id | 主文档 §2.4 |
 | 采集点 point_type MANUAL/AUTO；data_type NUMERIC/TEXT/ENUM；status ACTIVE | 主文档 §2.4 |
 | SPC 消费 dc_data_record，不直接消费 IoT/pro_flow_card_step；MES 手动采集，IoT 自动采集（本周不做联动） | 主文档 §8.4 + IoT 文档分工说明 |
-| 菜单结构：4004 数据采集（Week17 已建父菜单，**零子菜单**）、4005 SPC分析（**零子菜单**）；Week26 用到 4124，**Week27 取 4130-4145**（留 4125-4129 空隙对齐接续习惯） | `ry-vue-mes-menu-week17.sql:4004/4005` + `ry-vue-mes-menu-week26.sql` |
+| 菜单结构：4004 数据采集（Week17 已建父菜单，**零子菜单**）、4005 SPC分析（**零子菜单**）；Week26 用到 4124，**Week27 取 4130-4145**（留 4125-4129 空隙对齐接续习惯） | `mes-week17-10-menu.sql:4004/4005` + `mes-week26-20-menu.sql` |
 | §14.4 接口：/mes/dc/collection-point(list/get/add/edit)、/mes/dc/data-record(list/get/add)、/mes/spc/control-chart(list/get/add/edit/analyze) | 主文档 §14.4 |
 | §11.1 前端目录：mes/dc/collection-point/index.vue、mes/dc/data-record/index.vue、mes/spc/control-chart/index.vue（ECharts，§11 注） | 主文档 §11.1 |
 | §16.3 验收：控制图可创建，OOC 点自动标注；MES 全链路 | 主文档 §16.3 |
@@ -64,13 +64,13 @@ Phase 3 质量管理（Week 25）与设备管理（Week 26）已完成。按主�
 
 | # | 任务 | 优先级 | 交付物 | 验收标准 |
 |---|------|--------|--------|----------|
-| 1 | dc/spc DDL | 高 | `ry-mes-week27.sql` | 四表对齐 Week26 约定 |
+| 1 | dc/spc DDL | 高 | `mes-week27-08-collection-spc.sql` | 四表对齐 Week26 约定 |
 | 2 | Dc/Dc/Spc/Spc Entity/BO/VO/Mapper | 高 | 16 个 Java 文件 | 字段对齐 DDL |
 | 3 | DC Service + 实现（采集点 CRUD + 数据记录录入） | 高 | 2 接口 + 2 实现 | 采集点 CRUD + 数据记录录入 |
 | 4 | SPC Service + 实现（控制图 CRUD + analyze 计算控制限 + OOC 判定） | 高 | 2 接口 + 2 实现 | 5 种图控制限计算 + 4 条 OOC 规则 |
 | 5 | 4 个 Controller（DC 2 + SPC 2） | 高 | 4 REST 控制器 | list/get/add/edit + analyze |
 | 6 | 前端 3 API + 3 页面（含 ECharts 控制图） | 高 | 6 文件 | 采集点/数据记录列表 + 控制图 ECharts 可视化 |
-| 7 | 菜单权限 SQL | 中 | `ry-vue-mes-menu-week27.sql` | 4130-4145，父菜单 4004/4005 |
+| 7 | 菜单权限 SQL | 中 | `mes-week27-21-menu.sql` | 4130-4145，父菜单 4004/4005 |
 | 8 | 编译 + lint 验证 | 高 | - | mvn compile + eslint 通过 |
 
 ---
@@ -369,14 +369,14 @@ SPC 分析:
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `ry-mes-week27.sql` | SQL | `doc/mes/sql/mes-week27-08-collection-spc.sql` |
+| `mes-week27-08-collection-spc.sql` | SQL | `doc/mes/sql/mes-week27-08-collection-spc.sql` |
 | Dc/Spc Entity/BO/VO/Mapper | Java×16 | `ruoyi-mes/.../{dc,spc}/{domain,domain/bo,domain/vo,mapper}/` |
 | IDcCollectionPointService + IDcDataRecordService + 实现 | Java×4 | `ruoyi-mes/.../dc/{service,service/impl}/` |
 | ISpcControlChartService + ISpcDataPointService + 实现 | Java×4 | `ruoyi-mes/.../spc/{service,service/impl}/` |
 | 4 Controller | Java×4 | `ruoyi-mes/.../{dc,spc}/controller/` |
 | `collection-point.ts`/`data-record.ts`/`control-chart.ts`/`data-point.ts` | TS×4 | `plus-ui/src/api/mes/{dc,spc}/` |
 | `collection-point/index.vue`/`data-record/index.vue`/`control-chart/index.vue`/`data-point/index.vue` | Vue×4 | `plus-ui/src/views/mes/{dc,spc}/` |
-| `ry-vue-mes-menu-week27.sql` | SQL | `doc/mes/sql/mes-week27-21-menu.sql` |
+| `mes-week27-21-menu.sql` | SQL | `doc/mes/sql/mes-week27-21-menu.sql` |
 
 > 注：前端 4 API + 4 页面（含 SPC 数据点列表页），共 8 前端文件。
 
@@ -386,7 +386,7 @@ SPC 分析:
 
 > 运行时验证依赖：`ry-vue`/`ry-mes` 两库 + Redis 就绪，并已执行 Week17/25/26 DDL 与菜单 SQL。
 
-1. **DDL 执行**：`ry-mes-week27.sql` 建四表；`ry-vue-mes-menu-week27.sql` 注入菜单并为角色勾选 4130-4145。
+1. **DDL 执行**：`mes-week27-08-collection-spc.sql` 建四表；`mes-week27-21-menu.sql` 注入菜单并为角色勾选 4130-4145。
 2. **采集点 + 数据录入**：新增采集点（编码 TEMP-01/类型 MANUAL/数据类型 NUMERIC/单位 ℃）→ 录入 25 条采集数据（模拟正态分布 + 1 个异常值）。
 3. **X_BAR_R 分析**：创建控制图（类型 X_BAR_R/采集点 TEMP-01/样本大小 5）→ "分析" → UCL/CL/LCL 计算回写 → 5 个数据点（25 条/5）→ ECharts 显示三参考线 + 折线；异常值点若超 UCL 标红 + RULE1 标注。
 4. **P 图分析**：创建 P 图（采集点录入不良数/检验数）→ analyze → 不良率控制限 → OOC 判定。

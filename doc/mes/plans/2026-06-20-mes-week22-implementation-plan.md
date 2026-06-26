@@ -26,7 +26,7 @@
 
 | # | 任务 | 优先级 | 交付物 | 验收标准 |
 |---|------|--------|--------|----------|
-| 1 | pro_dispatch DDL + barcode 增强 | 高 | `ry-mes-week22.sql` | 表结构对齐 Week17/20 约定 + barcode 唯一索引 |
+| 1 | pro_dispatch DDL + barcode 增强 | 高 | `mes-week22-03-dispatch.sql` | 表结构对齐 Week17/20 约定 + barcode 唯一索引 |
 | 2 | ProDispatch Entity/BO/VO/Mapper | 高 | `ProDispatch` + BO/VO + Mapper | 字段与 DDL 完全对应 |
 | 3 | IProFlowCardService 扩展（barcode + checkAndCompleteStep + Lock4j） | 高 | 接口 + 实现扩展 | barcode 生成/查询、工序自动完成、锁保护 |
 | 4 | IProDispatchService + 实现（状态机 + 聚合） | 高 | 接口 + 实现类 | 创建/开工/完工/取消状态流转 + 完工聚合到工序 |
@@ -35,7 +35,7 @@
 | 7 | 前端：派工 API + 类型 | 高 | `dispatch.ts` | 前端可调用派工 + 扫码接口 |
 | 8 | 前端：派工列表 + 详情页 | 高 | `dispatch/index.vue` + `detail.vue` | 列表 + 搜索 + 开工/完工/取消操作 |
 | 9 | 前端：扫码执行对话框 | 中 | `components/ScanExecute.vue` | 扫码 → 查找流转卡 → 显示当前工序 → 开工/完工 |
-| 10 | 菜单权限 SQL | 中 | `ry-vue-mes-menu-week22.sql` | 派工菜单 + 扫码按钮权限 |
+| 10 | 菜单权限 SQL | 中 | `mes-week22-16-menu.sql` | 派工菜单 + 扫码按钮权限 |
 | 11 | 编译验证 | 高 | `mvn compile` + `npm run lint` 通过 | 无编译错误 |
 
 ---
@@ -577,7 +577,7 @@ INSERT INTO sys_menu VALUES
 
 | 交付物 | 类型 | 说明 |
 |--------|------|------|
-| `ry-mes-week22.sql` | SQL | pro_dispatch DDL + barcode 唯一索引 |
+| `mes-week22-03-dispatch.sql` | SQL | pro_dispatch DDL + barcode 唯一索引 |
 | `ProDispatch.java` + BO/VO | Java | 实体类 |
 | `ProDispatchMapper.java` | Java | Mapper |
 | `IProDispatchService` + `ProDispatchServiceImpl` | Java | 状态机 + 聚合 |
@@ -587,7 +587,7 @@ INSERT INTO sys_menu VALUES
 | `dispatch.ts` | TS | 前端 API + 类型 |
 | `dispatch/index.vue` + `detail.vue` | Vue | 前端页面 |
 | `ScanExecute.vue` | Vue | 扫码执行对话框 |
-| `ry-vue-mes-menu-week22.sql` | SQL | 菜单权限 |
+| `mes-week22-16-menu.sql` | SQL | 菜单权限 |
 
 ---
 

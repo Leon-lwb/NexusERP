@@ -42,14 +42,14 @@ Phase 3 质量管理（Week 25）已完成。按主计划《NexusERP_MES文档.m
 
 | 事实 | 依据 |
 |------|------|
-| eq_equipment/eq_maintenance_plan/eq_repair DDL 规范在主文档 §2.3（未执行），原 `tenant_id BIGINT` 需改为 Week22/25 约定 `VARCHAR(20) DEFAULT '000000'` + `del_flag CHAR(1)` | 主文档 §2.3 + `ry-mes-week25.sql` |
+| eq_equipment/eq_maintenance_plan/eq_repair DDL 规范在主文档 §2.3（未执行），原 `tenant_id BIGINT` 需改为 Week22/25 约定 `VARCHAR(20) DEFAULT '000000'` + `del_flag CHAR(1)` | 主文档 §2.3 + `mes-week25-06-quality.sql` |
 | eq 包完全空白：无 Java、无 DDL、无前端、无子菜单、无计划文档 | `ruoyi-mes/.../com/nexus/mes/` 仅 common/pro/qc 三包；grep `EqEquipment` 仅命中文档 |
 | 设备状态 NORMAL/MAINTENANCE/FAULT/SCRAPPED；保养计划 status ACTIVE；维修 status REPORTED/REPAIRING/COMPLETED | 主文档 §2.3 DDL + §9 |
 | 保养类型 DAILY/WEEKLY/MONTHLY/QUARTERLY/YEARLY + cycle_days + 下次保养日期自动计算 | 主文档 §9.2 + DDL |
 | 点检合入台账 JSON：`inspection_items`（点检项目及标准）+ `last_inspection`（最近点检结果），无独立点检表 | 主文档 §2.3 注 + §9.1 |
 | `eq_equipment.iot_device_id` 预留关联 IoT 设备，无外键；IoT `iot_device.mes_equipment_id` 双向软引用 | 主文档 §12.4 + IoT DDL `ry-iot-week33.sql:77` |
 | 工作中心 = ERP `bd_workstation`：MES workcenterId/Code 源自 `bd_routing_step.workstation_id/workstation_code`，可经 `MesErpBridgeService.getWorkstation()` 读 | `ErpRoutingStepMapper.java` + `ProWorkOrderServiceImpl:253-254` + `IMesErpBridgeService.getWorkstation` |
-| 菜单结构：4003 设备管理（Week17 已建父菜单，**零子菜单**）；Week25 用到 4101，**Week26 取 4110-4121**（留 4102-4109 空隙对齐 Week25 接续习惯，取整段） | `ry-vue-mes-menu-week17.sql:4003` + `ry-vue-mes-menu-week25.sql` |
+| 菜单结构：4003 设备管理（Week17 已建父菜单，**零子菜单**）；Week25 用到 4101，**Week26 取 4110-4121**（留 4102-4109 空隙对齐 Week25 接续习惯，取整段） | `mes-week17-10-menu.sql:4003` + `mes-week25-19-menu.sql` |
 | MES Entity/Service/Controller 模式：TenantEntity + @TableLogic delFlag + @DS("mes") @Service + @SaCheckPermission + BaseMapperPlus | Week25 `QcIqc` 一族 + `ProSn` 一族（已实现） |
 | 维修编号/保养编号生成：Week25 已有 `前缀-yyyyMMdd-3位序号` 模式（uk 唯一索引兜底，不加 Lock4j） | `QcIqcServiceImpl.generateNo` |
 | 既有 IoT→MES 安灯联动：`IMesAndonService.createAndonFromAlert` 创建 EQUIPMENT 类型安灯，但未关联具体 eq_equipment（本周不改动） | `MesAndonServiceImpl` + `IotAlertNotifier` |
@@ -61,12 +61,12 @@ Phase 3 质量管理（Week 25）已完成。按主计划《NexusERP_MES文档.m
 
 | # | 任务 | 优先级 | 交付物 | 验收标准 |
 |---|------|--------|--------|----------|
-| 1 | eq DDL | 高 | `ry-mes-week26.sql` | 三表对齐 Week25 约定 |
+| 1 | eq DDL | 高 | `mes-week26-07-equipment.sql` | 三表对齐 Week25 约定 |
 | 2 | EqEquipment/EqMaintenancePlan/EqRepair Entity/BO/VO/Mapper | 高 | 12 个 Java 文件 | 字段对齐 DDL |
 | 3 | 三个 Service + 实现（CRUD + 状态机 + 设备状态联动 + 下次保养日期计算） | 高 | 3 接口 + 3 实现 | 维修联动设备状态 + 保养日期自动算 |
 | 4 | 三个 Controller | 高 | 3 REST 控制器 | list/get/add/edit/del + repair start/complete |
 | 5 | 前端 3 API + 3 列表页 | 高 | 6 文件 | 列表+搜索+新增/编辑弹窗+维修状态操作 |
-| 6 | 菜单权限 SQL | 中 | `ry-vue-mes-menu-week26.sql` | 4110-4121，父菜单 4003 |
+| 6 | 菜单权限 SQL | 中 | `mes-week26-20-menu.sql` | 4110-4121，父菜单 4003 |
 | 7 | 编译 + lint 验证 | 高 | - | mvn compile + eslint 通过 |
 
 ---
@@ -309,13 +309,13 @@ INSERT INTO sys_menu VALUES
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `ry-mes-week26.sql` | SQL | `doc/mes/sql/mes-week26-07-equipment.sql` |
+| `mes-week26-07-equipment.sql` | SQL | `doc/mes/sql/mes-week26-07-equipment.sql` |
 | EqEquipment/EqMaintenancePlan/EqRepair Entity/BO/VO/Mapper | Java×12 | `ruoyi-mes/.../eq/{domain,domain/bo,domain/vo,mapper}/` |
 | IEqXxxService + 实现 | Java×6 | `ruoyi-mes/.../eq/{service,service/impl}/` |
 | EqEquipmentController/EqMaintenancePlanController/EqRepairController | Java×3 | `ruoyi-mes/.../eq/controller/` |
 | `equipment.ts`/`maintenance.ts`/`repair.ts` | TS×3 | `plus-ui/src/api/mes/eq/` |
 | `equipment/index.vue`/`maintenance/index.vue`/`repair/index.vue` | Vue×3 | `plus-ui/src/views/mes/eq/` |
-| `ry-vue-mes-menu-week26.sql` | SQL | `doc/mes/sql/mes-week26-20-menu.sql` |
+| `mes-week26-20-menu.sql` | SQL | `doc/mes/sql/mes-week26-20-menu.sql` |
 
 ---
 
@@ -323,7 +323,7 @@ INSERT INTO sys_menu VALUES
 
 > 运行时验证依赖：`ry-vue`/`ry-mes`/`ry-erp`/`ry-iot` 四库 + Redis 就绪，并已执行 Week17/25 DDL 与菜单 SQL。
 
-1. **DDL 执行**：`ry-mes-week26.sql` 建三表；`ry-vue-mes-menu-week26.sql` 注入菜单并为角色勾选 4110-4123。
+1. **DDL 执行**：`mes-week26-07-equipment.sql` 建三表；`mes-week26-20-menu.sql` 注入菜单并为角色勾选 4110-4123。
 2. **设备台账**：新增设备（编码/名称/点检项目JSON）→ status=NORMAL；手动置 MAINTENANCE/SCRAPPED 流转。
 3. **保养计划**：创建计划（设备+MONTHLY+cycleDays=30）→ nextDate 自动 = today+30；编辑 cycleDays=7 → nextDate 重算。
 4. **维修联动**：设备 A 报修 → 设备 A status=FAULT + eq_repair REPORTED；开工 → REPAIRING；完成（停机2h/成本500）→ COMPLETED + 设备 A status=NORMAL（无其他活跃报修）。

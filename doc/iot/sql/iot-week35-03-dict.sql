@@ -2,11 +2,11 @@
 -- NexusERP - IoT模块 Week 35 字典数据初始化SQL
 -- 目标库: ry-vue (sys_dict_type / sys_dict_data)
 -- 字典类型ID段: 600200~600203 (避开 Week 33 菜单 6000~6025 段 / ERP字典 6001xx 段)
--- 字典数据ID段: 600200~600211
+-- 字典数据ID段: 600200~600209
 -- 创建时间: 2026-06-18
 -- 说明: IoT字段使用 ACTIVE/INACTIVE、ONLINE/OFFLINE 等字符串，与系统字典 sys_normal_disable(0/1) 不兼容，
 --       故新建 IoT 专用字典，供前端 dict-tag 渲染。INSERT IGNORE 幂等。
--- 菜单: Week 33 ry-iot-week33-menu.sql 已建 (6000~6025)，本周不产出菜单 SQL。
+-- 菜单: Week 33 iot-week33-02-menu.sql 已建 (6000~6025)，本周不产出菜单 SQL。
 -- =============================================
 
 USE `ry-vue`;
@@ -49,5 +49,5 @@ INSERT IGNORE INTO `sys_dict_data` VALUES (600209, '000000', 2, '停用', 'INACT
 -- 验证(执行后人工核对):
 -- SELECT dict_id, dict_name, dict_type FROM sys_dict_type WHERE dict_id BETWEEN 600200 AND 600203 ORDER BY dict_id;
 -- SELECT dict_code, dict_label, dict_value, dict_type FROM sys_dict_data WHERE dict_code BETWEEN 600200 AND 600209 ORDER BY dict_type, dict_sort;
--- 预期: 4 个字典类型 + 12 条字典数据
+-- 预期: 4 个字典类型 + 10 条字典数据
 -- ============================================================
