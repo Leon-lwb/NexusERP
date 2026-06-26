@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -64,6 +65,22 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdMaterialVendorBo bo) {
+        // 1. 查重: 同一物料+供应商只能有一条关系
+        Long existCount = baseMapper.selectCount(Wrappers.<BdMaterialVendor>lambdaQuery()
+            .eq(BdMaterialVendor::getMaterialId, bo.getMaterialId())
+            .eq(BdMaterialVendor::getVendorId, bo.getVendorId()));
+        if (existCount != null && existCount > 0) {
+            throw new ServiceException("该物料与供应商的关系已存在");
+        }
+        // 2. isDefault 唯一性: 同一物料只能有一个默认供应商
+        if (Long.valueOf(1L).equals(bo.getIsDefault())) {
+            Long defaultCount = baseMapper.selectCount(Wrappers.<BdMaterialVendor>lambdaQuery()
+                .eq(BdMaterialVendor::getMaterialId, bo.getMaterialId())
+                .eq(BdMaterialVendor::getIsDefault, 1L));
+            if (defaultCount != null && defaultCount > 0) {
+                throw new ServiceException("该物料已存在默认供应商, 请先取消原默认");
+            }
+        }
         BdMaterialVendor entity = MapstructUtils.convert(bo, BdMaterialVendor.class);
         return baseMapper.insert(entity);
     }
@@ -74,6 +91,15 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdMaterialVendorBo bo) {
+        // isDefault 唯一性: 切换为默认时, 将该物料的其他默认供应商置为非默认(排除自身)
+        if (Long.valueOf(1L).equals(bo.getIsDefault())
+            && bo.getRelationId() != null
+            && bo.getMaterialId() != null) {
+            baseMapper.update(null, Wrappers.<BdMaterialVendor>lambdaUpdate()
+                .set(BdMaterialVendor::getIsDefault, 0L)
+                .eq(BdMaterialVendor::getMaterialId, bo.getMaterialId())
+                .ne(BdMaterialVendor::getRelationId, bo.getRelationId()));
+        }
         BdMaterialVendor entity = MapstructUtils.convert(bo, BdMaterialVendor.class);
         return baseMapper.updateById(entity);
     }
