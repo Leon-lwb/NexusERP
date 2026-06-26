@@ -30,6 +30,9 @@ public class DcDataRecord extends TenantEntity {
     /** 采集点编码(冗余) */
     private String pointCode;
 
+    /** IoT属性编码（source=IoT时填充） */
+    private String propertyCode;
+
     /** 关联MES工单ID */
     private Long mesWoId;
 

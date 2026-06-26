@@ -33,6 +33,12 @@ public class DcCollectionPoint extends TenantEntity {
     /** 关联设备ID */
     private Long equipmentId;
 
+    /** 关联IoT设备ID（AUTO类型必填） */
+    private Long iotDeviceId;
+
+    /** IoT属性编码（对应 iot_device_data.property_code） */
+    private String iotPropertyCode;
+
     /** 关联工序ID */
     private Long processId;
 
