@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
@@ -58,6 +59,7 @@ import java.util.Map;
  */
 @RequiredArgsConstructor
 @DS("erp")
+@Slf4j
 @Service("wmMaterialReceiveCrudService")
 public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudService {
 
@@ -381,6 +383,8 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             // 避免审批通过时库位尚未分配导致MQ异步过账失败或重复入库
             receive.setStatus(STATUS_APPROVED);
             baseMapper.updateById(receive);
+            // 审批通过后，事务提交后再发送 ReceiveApprovedMessage 给 MES 自动创建 IQC（确保 ERP 状态已持久化）
+            registerReceiveApprovedMessage(receive);
             return;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             // 审批驳回：已驳回状态，可修改后重新提交
@@ -553,5 +557,72 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             .eq(bo.getReceiveDate() != null, WmMaterialReceive::getReceiveDate, bo.getReceiveDate())
             .eq(StringUtils.isNotBlank(bo.getStatus()), WmMaterialReceive::getStatus, bo.getStatus());
         return lqw;
+    }
+
+    /**
+     * 注册 afterCommit 回调，事务提交后发 ReceiveApprovedMessage 给 MES 自动创建 IQC。
+     * <p>
+     * 参考模式：PrdWorkOrderServiceImpl.afterFlowHandle 第 508-514 行。
+     * <p>
+     * 字段填充：receiveId/receiveCode/vendorId/vendorName 取自收货单主表；
+     * materialId/materialCode/materialName/quantity 取自收货明细表（wm_material_receive_detail）首条。
+     * 若明细为空则跳过 MQ 投递（避免 IQC 创建因 materialId NotNull 校验失败）。
+     * 显式设置 tenantId 修复 sendWorkOrderReleaseMessage 同类缺陷（消费端退化为 000000）。
+     */
+    private void registerReceiveApprovedMessage(WmMaterialReceive receive) {
+        try {
+            // 收货明细表查询首条（按 detail_id 升序）填充物料/数量信息
+            WmMaterialReceiveDetail firstDetail = receiveDetailMapper.selectOne(
+                new LambdaQueryWrapper<WmMaterialReceiveDetail>()
+                    .eq(WmMaterialReceiveDetail::getReceiveId, receive.getReceiveId())
+                    .orderByAsc(WmMaterialReceiveDetail::getDetailId)
+                    .last("LIMIT 1"));
+            if (firstDetail == null) {
+                log.warn("收货单 {} 无明细记录，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
+                return;
+            }
+
+            com.nexus.common.mq.message.ReceiveApprovedMessage message = new com.nexus.common.mq.message.ReceiveApprovedMessage();
+            message.setReceiveId(receive.getReceiveId());
+            message.setReceiveCode(receive.getReceiveCode());
+            message.setReceiveDetailId(firstDetail.getDetailId());
+            message.setMaterialId(firstDetail.getMaterialId());
+            message.setMaterialCode(firstDetail.getMaterialCode());
+            message.setMaterialName(firstDetail.getMaterialName());
+            message.setVendorId(receive.getVendorId());
+            message.setVendorName(receive.getVendorName());
+            message.setQuantity(firstDetail.getQuantity());
+            message.setSourceModule("ERP");
+            // 显式设置 tenantId，避免消费端退化为 000000
+            String tenantId = com.nexus.common.tenant.helper.TenantHelper.getTenantId();
+            if (tenantId != null) {
+                try {
+                    message.setTenantId(Long.parseLong(tenantId));
+                } catch (NumberFormatException ignore) {
+                    message.setTenantId(0L);
+                }
+            } else {
+                message.setTenantId(0L);
+            }
+
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            messageProducer.send(
+                                ExchangeConstants.TOPIC_EXCHANGE,
+                                com.nexus.common.mq.constant.RoutingKeyConstants.MES_IQC_CREATE,
+                                message);
+                            log.info("收货单审批通过 MQ 已发送: receiveId={}", receive.getReceiveId());
+                        } catch (Exception e) {
+                            log.error("收货单审批通过 MQ 发送失败: receiveId={}", receive.getReceiveId(), e);
+                            // 失败由 MQ 补偿任务兜底
+                        }
+                    }
+                });
+        } catch (Exception e) {
+            log.error("注册收货审批 MQ 失败: receiveId={}", receive.getReceiveId(), e);
+        }
     }
 }

@@ -57,6 +57,9 @@ public class RabbitMqInitializer {
         declareQueueWithDLX(QueueConstants.ERP_WORKORDER_COMPLETED_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "erp.workorder.completed.#");
         declareQueueWithDLX(QueueConstants.ERP_IQC_COMPLETED_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "erp.iqc.completed.#");
 
+        // ERP -> MES 队列：ERP 收货审批通过触发 MES 自动创建 IQC
+        declareQueueWithDLX(QueueConstants.MES_IQC_CREATE_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "mes.iqc.#");
+
         declareQueueWithDLX(QueueConstants.STOCK_ALERT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.alert.#");
 
         declareDelayQueue();
