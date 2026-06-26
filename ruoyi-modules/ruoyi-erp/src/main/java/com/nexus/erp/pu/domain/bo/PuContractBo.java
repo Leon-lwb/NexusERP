@@ -1,7 +1,9 @@
 package com.nexus.erp.pu.domain.bo;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.nexus.erp.pu.domain.PuContract;
 import com.nexus.erp.pu.domain.PuContractLine;
 
 import java.math.BigDecimal;
@@ -65,6 +67,18 @@ public class PuContractBo {
 
     /** 备注 */
     private String remark;
+
+    /** 扩展字段1 */
+    private String attr1;
+
+    /** 扩展字段2 */
+    private String attr2;
+
+    /** 扩展字段3 */
+    private Long attr3;
+
+    /** 扩展字段4 */
+    private Long attr4;
 
     /** 合同明细行列表 */
     private List<PuContractLine> puContractLineList;

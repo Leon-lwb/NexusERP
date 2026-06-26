@@ -1,5 +1,6 @@
 package com.nexus.erp.pu.domain.vo;
 
+import cn.idev.excel.annotation.ExcelProperty;
 import lombok.Data;
 import com.nexus.erp.pu.domain.PuContractLine;
 
@@ -69,8 +70,24 @@ public class PuContractVo implements Serializable {
     /** 备注 */
     private String remark;
 
+    /** 扩展字段1 */
+    private String attr1;
+
+    /** 扩展字段2 */
+    private String attr2;
+
+    /** 扩展字段3 */
+    private Long attr3;
+
+    /** 扩展字段4 */
+    private Long attr4;
+
     /** 创建时间 */
     private Date createTime;
+
+    /** 更新时间 */
+    @ExcelProperty("更新时间")
+    private Date updateTime;
 
     /** 合同明细行列表 */
     private List<PuContractLine> puContractLineList;

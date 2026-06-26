@@ -1,7 +1,6 @@
 package com.nexus.erp.pu.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
@@ -28,7 +27,6 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@DS("erp")
 @RequestMapping("/erp/pu/contract")
 public class PuContractController extends BaseController {
 
