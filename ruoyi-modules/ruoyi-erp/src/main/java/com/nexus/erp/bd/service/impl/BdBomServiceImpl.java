@@ -141,6 +141,74 @@ public class BdBomServiceImpl implements IBdBomService {
         }
     }
 
+    /**
+     * BOM 展开上下文 (预加载所有需要的物料/BOM/明细, 消除 N+1)
+     */
+    private static class BomExpandContext {
+        Map<Long, BdMaterial> materialMap;
+        Map<Long, BdBom> currentBomMap;
+        Map<Long, List<BdBomDetail>> detailMap;
+    }
+
+    /**
+     * 预加载 BOM 展开所需的全部数据 (BFS 层层展开, 消除递归中的 N+1 查询)
+     *
+     * @param rootBomId 根 BOM ID
+     * @param maxDepth   最大深度
+     */
+    private BomExpandContext preloadBomExpandData(Long rootBomId, int maxDepth) {
+        BomExpandContext ctx = new BomExpandContext();
+        ctx.materialMap = new HashMap<>();
+        ctx.currentBomMap = new HashMap<>();
+        ctx.detailMap = new HashMap<>();
+
+        Set<Long> visitedBomIds = new HashSet<>();
+        Set<Long> visitedMaterialIds = new HashSet<>();
+        List<Long> currentBomIds = new ArrayList<>();
+        currentBomIds.add(rootBomId);
+        visitedBomIds.add(rootBomId);
+
+        for (int depth = 0; depth <= maxDepth && !currentBomIds.isEmpty(); depth++) {
+            // 1. 批量查这层 BOM 的明细
+            List<BdBomDetail> details = bomDetailMapper.selectBatchByBomIds(currentBomIds);
+            Map<Long, List<BdBomDetail>> levelDetailMap = details.stream()
+                .collect(Collectors.groupingBy(BdBomDetail::getBomId));
+            ctx.detailMap.putAll(levelDetailMap);
+
+            // 2. 收集这层明细中的子物料ID (去重 + 排除已加载)
+            List<Long> childMaterialIds = details.stream()
+                .map(BdBomDetail::getChildMaterialId)
+                .filter(Objects::nonNull)
+                .filter(id -> !visitedMaterialIds.contains(id))
+                .distinct()
+                .collect(Collectors.toList());
+            visitedMaterialIds.addAll(childMaterialIds);
+
+            // 3. 批量查子物料
+            if (!childMaterialIds.isEmpty()) {
+                List<BdMaterial> materials = materialMapper.selectBatchIds(childMaterialIds);
+                ctx.materialMap.putAll(materials.stream()
+                    .collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (a, b) -> a)));
+            }
+
+            // 4. 批量查子物料的当前 BOM (下一层)
+            if (!childMaterialIds.isEmpty()) {
+                List<BdBom> childBoms = baseMapper.findCurrentBomsByMaterialIds(childMaterialIds);
+                ctx.currentBomMap.putAll(childBoms.stream()
+                    .collect(Collectors.toMap(BdBom::getParentMaterialId, b -> b, (a, b) -> a)));
+                List<Long> nextBomIds = childBoms.stream()
+                    .map(BdBom::getBomId)
+                    .filter(id -> !visitedBomIds.contains(id))
+                    .collect(Collectors.toList());
+                visitedBomIds.addAll(nextBomIds);
+                currentBomIds = nextBomIds;
+            } else {
+                currentBomIds.clear();
+            }
+        }
+        return ctx;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdBomBo bo) {
@@ -255,16 +323,16 @@ public class BdBomServiceImpl implements IBdBomService {
         if (bom == null) {
             return "BOM不存在";
         }
-        // 检查是否有子项
-        List<BdBomDetail> details = bomDetailMapper.selectList(
-            Wrappers.lambdaQuery(BdBomDetail.class)
-                .eq(BdBomDetail::getBomId, bomId));
-        if (details == null || details.isEmpty()) {
+        // 预加载 BOM 展开数据 (批量, 消除 N+1), 同时用于循环引用检测
+        BomExpandContext ctx = preloadBomExpandData(bomId, MAX_BOM_DEPTH);
+        // 检查是否有子项 (从预加载上下文取)
+        List<BdBomDetail> details = ctx.detailMap.getOrDefault(bomId, Collections.emptyList());
+        if (details.isEmpty()) {
             return "BOM明细为空，请添加子项物料";
         }
-        // 检查循环引用
+        // 检查循环引用 (从预加载上下文取, 无 N+1)
         Set<Long> visited = new HashSet<>();
-        if (checkCircularRef(bom.getParentMaterialId(), details, visited)) {
+        if (checkCircularRefWithContext(bom.getParentMaterialId(), details, visited, ctx)) {
             return "BOM存在循环引用";
         }
         // 检查无效子项物料
@@ -313,6 +381,35 @@ public class BdBomServiceImpl implements IBdBomService {
     }
 
     /**
+     * 递归检查BOM是否存在循环引用 (从预加载上下文取数据, 消除 N+1)
+     */
+    private boolean checkCircularRefWithContext(Long parentMaterialId, List<BdBomDetail> currentDetails,
+                                                Set<Long> visited, BomExpandContext ctx) {
+        if (parentMaterialId == null) {
+            return false;
+        }
+        visited.add(parentMaterialId);
+        for (BdBomDetail detail : currentDetails) {
+            Long childId = detail.getChildMaterialId();
+            if (visited.contains(childId)) {
+                return true;
+            }
+            // 从上下文取子物料的当前 BOM
+            BdBom childBom = ctx.currentBomMap.get(childId);
+            if (childBom != null) {
+                List<BdBomDetail> childDetails = ctx.detailMap.get(childBom.getBomId());
+                if (childDetails != null && !childDetails.isEmpty()) {
+                    Set<Long> childVisited = new HashSet<>(visited);
+                    if (checkCircularRefWithContext(childId, childDetails, childVisited, ctx)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * 获取BOM树形结构
      *
      * @param bomId BOM主键
@@ -324,6 +421,8 @@ public class BdBomServiceImpl implements IBdBomService {
         if (bom == null) {
             return null;
         }
+        // 预加载 BOM 展开数据 (批量, 消除递归中的 N+1 查询)
+        BomExpandContext ctx = preloadBomExpandData(bomId, MAX_BOM_DEPTH);
         // 获取父项物料信息
         BdMaterial parentMaterial = materialMapper.selectById(bom.getParentMaterialId());
         BomTreeNodeVo rootNode = new BomTreeNodeVo();
@@ -345,12 +444,11 @@ public class BdBomServiceImpl implements IBdBomService {
         // 初始化循环引用检测集合
         Set<Long> visited = new HashSet<>();
         visited.add(bom.getParentMaterialId());
-        // 递归构建子树
-        List<BdBomDetail> details = bomDetailMapper.selectList(
-            Wrappers.lambdaQuery(BdBomDetail.class).eq(BdBomDetail::getBomId, bomId));
+        // 递归构建子树 (从预加载上下文取明细, 无 N+1)
+        List<BdBomDetail> details = ctx.detailMap.getOrDefault(bomId, Collections.emptyList());
         List<BomTreeNodeVo> children = new ArrayList<>();
         for (BdBomDetail detail : details) {
-            children.add(buildTreeNode(detail, bomId, 1, visited));
+            children.add(buildTreeNodeWithContext(detail, bomId, 1, visited, ctx));
         }
         rootNode.setChildren(children);
         rootNode.setLeaf(children.isEmpty());
@@ -426,6 +524,76 @@ public class BdBomServiceImpl implements IBdBomService {
     }
 
     /**
+     * 递归构建BOM树节点 (从预加载上下文取数据, 消除 N+1)
+     * 含循环引用检测和深度保护
+     *
+     * @param detail       BOM明细行
+     * @param parentBomId  父BOM ID
+     * @param level        当前层级
+     * @param visited      已访问的物料ID集合（用于循环引用检测）
+     * @param ctx          预加载上下文
+     * @return 树节点
+     * @throws ServiceException 当检测到循环引用或超过最大深度时抛出
+     */
+    private BomTreeNodeVo buildTreeNodeWithContext(BdBomDetail detail, Long parentBomId, int level,
+                                                    Set<Long> visited, BomExpandContext ctx) {
+        // 深度保护：超过最大递归深度时终止
+        if (level > MAX_BOM_DEPTH) {
+            throw new ServiceException("BOM层级超过最大深度限制(" + MAX_BOM_DEPTH + ")，物料ID: " + detail.getChildMaterialId() + "，请检查是否存在异常数据");
+        }
+        // 循环引用检测：子物料已在访问路径中出现过
+        if (visited.contains(detail.getChildMaterialId())) {
+            throw new ServiceException("BOM存在循环引用，物料ID: " + detail.getChildMaterialId() + " 已在上级路径中出现");
+        }
+
+        BomTreeNodeVo node = new BomTreeNodeVo();
+        node.setDetailId(detail.getDetailId());
+        node.setMaterialId(detail.getChildMaterialId());
+        node.setParentBomId(parentBomId);
+        node.setQuantityPerParent(detail.getQuantityPerParent());
+        node.setLossRate(detail.getLossRate() != null ? detail.getLossRate() : BigDecimal.ZERO);
+        node.setLevel(level);
+        node.setSourceType(detail.getSourceType());
+        node.setLeadTime(detail.getLeadTime());
+        // 计算含损耗总用量
+        BigDecimal qty = detail.getQuantityPerParent() != null ? detail.getQuantityPerParent() : BigDecimal.ZERO;
+        BigDecimal loss = detail.getLossRate() != null ? detail.getLossRate() : BigDecimal.ZERO;
+        node.setTotalQuantity(qty.multiply(BigDecimal.ONE.add(loss.divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP))));
+        // 从上下文获取物料信息
+        BdMaterial material = ctx.materialMap.get(detail.getChildMaterialId());
+        if (material != null) {
+            node.setMaterialCode(material.getMaterialCode());
+            node.setMaterialName(material.getMaterialName());
+            node.setMaterialSpec(material.getMaterialSpec());
+            node.setMaterialType(String.valueOf(material.getMaterialType()));
+        }
+        // 从上下文检查子项物料是否有自己的BOM
+        BdBom childBom = ctx.currentBomMap.get(detail.getChildMaterialId());
+        if (childBom != null) {
+            node.setNodeType("ASSEMBLY");
+            node.setBomId(childBom.getBomId());
+            node.setHasChildren(true);
+            node.setLeaf(false);
+            // 将当前子物料加入已访问集合（传递副本，兄弟节点间不共享）
+            Set<Long> childVisited = new HashSet<>(visited);
+            childVisited.add(detail.getChildMaterialId());
+            // 从上下文取子明细并递归展开
+            List<BdBomDetail> childDetails = ctx.detailMap.getOrDefault(childBom.getBomId(), Collections.emptyList());
+            List<BomTreeNodeVo> grandchildren = new ArrayList<>();
+            for (BdBomDetail childDetail : childDetails) {
+                grandchildren.add(buildTreeNodeWithContext(childDetail, childBom.getBomId(), level + 1, childVisited, ctx));
+            }
+            node.setChildren(grandchildren);
+        } else {
+            node.setNodeType("PART");
+            node.setHasChildren(false);
+            node.setLeaf(true);
+            node.setChildren(Collections.emptyList());
+        }
+        return node;
+    }
+
+    /**
      * 获取BOM缩进式扁平列表
      *
      * @param bomId BOM主键
@@ -437,6 +605,8 @@ public class BdBomServiceImpl implements IBdBomService {
         if (bom == null) {
             return Collections.emptyList();
         }
+        // 预加载 BOM 展开数据 (批量, 消除递归中的 N+1 查询)
+        BomExpandContext ctx = preloadBomExpandData(bomId, MAX_BOM_DEPTH);
         List<IndentedBomLineVo> result = new ArrayList<>();
         // 添加顶层节点
         BdMaterial parentMaterial = materialMapper.selectById(bom.getParentMaterialId());
@@ -463,8 +633,8 @@ public class BdBomServiceImpl implements IBdBomService {
         // 初始化循环引用检测集合
         Set<Long> visited = new HashSet<>();
         visited.add(bom.getParentMaterialId());
-        // 递归添加子节点
-        buildIndentedLines(bomId, 1, BigDecimal.ONE, result, visited);
+        // 递归添加子节点 (从预加载上下文取数据, 无 N+1)
+        buildIndentedLinesWithContext(bomId, 1, BigDecimal.ONE, result, visited, ctx);
         return result;
     }
 
@@ -538,6 +708,78 @@ public class BdBomServiceImpl implements IBdBomService {
         }
     }
 
+    /**
+     * 递归构建BOM缩进式行列表 (从预加载上下文取数据, 消除 N+1)
+     * 含循环引用检测和深度保护
+     *
+     * @param bomId               当前BOM ID
+     * @param level               当前层级
+     * @param parentCumulativeQty 父级累计用量
+     * @param result              结果列表
+     * @param visited             已访问的物料ID集合（用于循环引用检测）
+     * @param ctx                 预加载上下文
+     * @throws ServiceException 当检测到循环引用或超过最大深度时抛出
+     */
+    private void buildIndentedLinesWithContext(Long bomId, int level, BigDecimal parentCumulativeQty,
+                                                List<IndentedBomLineVo> result, Set<Long> visited, BomExpandContext ctx) {
+        // 深度保护
+        if (level > MAX_BOM_DEPTH) {
+            throw new ServiceException("BOM层级超过最大深度限制(" + MAX_BOM_DEPTH + ")，BOM ID: " + bomId + "，请检查是否存在异常数据");
+        }
+
+        // 从上下文取明细
+        List<BdBomDetail> details = ctx.detailMap.getOrDefault(bomId, Collections.emptyList());
+        for (BdBomDetail detail : details) {
+            // 循环引用检测
+            if (visited.contains(detail.getChildMaterialId())) {
+                throw new ServiceException("BOM存在循环引用，物料ID: " + detail.getChildMaterialId() + " 已在上级路径中出现");
+            }
+
+            IndentedBomLineVo line = new IndentedBomLineVo();
+            line.setLevel(level);
+            line.setIndent("  ".repeat(level));
+            line.setDetailId(detail.getDetailId());
+            line.setParentBomId(bomId);
+            line.setMaterialId(detail.getChildMaterialId());
+            line.setQuantityPerParent(detail.getQuantityPerParent());
+            line.setLossRate(detail.getLossRate() != null ? detail.getLossRate() : BigDecimal.ZERO);
+            line.setSourceType(detail.getSourceType());
+            line.setLeadTime(detail.getLeadTime());
+            // 计算累计用量
+            BigDecimal qty = detail.getQuantityPerParent() != null ? detail.getQuantityPerParent() : BigDecimal.ZERO;
+            BigDecimal loss = detail.getLossRate() != null ? detail.getLossRate() : BigDecimal.ZERO;
+            BigDecimal totalQty = qty.multiply(BigDecimal.ONE.add(loss.divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP)));
+            line.setCumulativeQuantity(parentCumulativeQty.multiply(totalQty));
+            // 从上下文获取物料信息
+            BdMaterial material = ctx.materialMap.get(detail.getChildMaterialId());
+            if (material != null) {
+                line.setMaterialCode(material.getMaterialCode());
+                line.setMaterialName(material.getMaterialName());
+                line.setMaterialSpec(material.getMaterialSpec());
+                line.setMaterialType(String.valueOf(material.getMaterialType()));
+            }
+            line.setUnitCost(materialCost(material));
+            line.setLineCost(line.getUnitCost().multiply(line.getCumulativeQuantity()));
+            // 从上下文检查是否有子BOM
+            BdBom childBom = ctx.currentBomMap.get(detail.getChildMaterialId());
+            if (childBom != null) {
+                line.setNodeType("ASSEMBLY");
+                line.setBomId(childBom.getBomId());
+                line.setExpandable(true);
+                result.add(line);
+                // 将当前子物料加入已访问集合（传递副本，兄弟节点间不共享）
+                Set<Long> childVisited = new HashSet<>(visited);
+                childVisited.add(detail.getChildMaterialId());
+                // 递归添加子节点
+                buildIndentedLinesWithContext(childBom.getBomId(), level + 1, line.getCumulativeQuantity(), result, childVisited, ctx);
+            } else {
+                line.setNodeType("PART");
+                line.setExpandable(false);
+                result.add(line);
+            }
+        }
+    }
+
     @Override
     public List<IndentedBomLineVo> explodeBom(Long bomId) {
         List<IndentedBomLineVo> allLines = getIndentedBom(bomId);
@@ -600,12 +842,19 @@ public class BdBomServiceImpl implements IBdBomService {
         if (boms == null || boms.isEmpty()) {
             return Collections.emptyList();
         }
-        // 转换为VO并补充父项物料信息
+        // 转换为VO并补充父项物料信息 (批量加载父项物料, 消除 N+1)
+        Set<Long> parentMaterialIds = boms.stream()
+            .map(BdBom::getParentMaterialId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<Long, BdMaterial> parentMaterialMap = parentMaterialIds.isEmpty() ? Collections.emptyMap() :
+            materialMapper.selectBatchIds(parentMaterialIds).stream()
+                .collect(Collectors.toMap(BdMaterial::getMaterialId, m -> m, (a, b) -> a));
         List<BdBomVo> result = new ArrayList<>();
         for (BdBom bom : boms) {
             BdBomVo vo = MapstructUtils.convert(bom, BdBomVo.class);
             if (bom.getParentMaterialId() != null) {
-                BdMaterial parentMaterial = materialMapper.selectById(bom.getParentMaterialId());
+                BdMaterial parentMaterial = parentMaterialMap.get(bom.getParentMaterialId());
                 if (parentMaterial != null) {
                     vo.setParentMaterialCode(parentMaterial.getMaterialCode());
                     vo.setParentMaterialName(parentMaterial.getMaterialName());
