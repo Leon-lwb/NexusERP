@@ -153,13 +153,16 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                 throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足");
             }
 
-            // 更新 SO 行剩余预留数量
+            // 原子更新 SO 行剩余预留数量(避免并发出库覆盖)
             if (totalConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && soLine != null) {
-                BigDecimal remainingReserved = reservedQty.subtract(totalConsumeReserved);
                 LambdaUpdateWrapper<SoSalesOrderLine> wrapper = Wrappers.<SoSalesOrderLine>lambdaUpdate()
                     .eq(SoSalesOrderLine::getLineId, soLine.getLineId())
-                    .set(SoSalesOrderLine::getReservedQty, remainingReserved);
-                salesOrderLineMapper.update(null, wrapper);
+                    .ge(SoSalesOrderLine::getReservedQty, totalConsumeReserved)
+                    .setSql("reserved_qty = reserved_qty - " + totalConsumeReserved.toPlainString());
+                int updateRows = salesOrderLineMapper.update(null, wrapper);
+                if (updateRows == 0) {
+                    throw new ServiceException("SO行预留数量更新失败(并发冲突或预留不足), soLineId=" + soLine.getLineId());
+                }
             }
         }
     }

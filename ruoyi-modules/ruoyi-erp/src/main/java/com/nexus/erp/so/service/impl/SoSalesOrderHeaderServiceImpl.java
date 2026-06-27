@@ -247,6 +247,8 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         header.setClosedTime(new Date());
         baseMapper.updateById(header);
         creditCheckService.release(soId);
+        // 释放库存预留, 避免预留库存泄漏(与 cancel 保持一致)
+        stockReservationService.unreserve("SALES_ORDER", soId, null);
     }
 
     /**
@@ -267,6 +269,8 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         header.setCancelledReason(reason);
         baseMapper.updateById(header);
         creditCheckService.release(soId);
+        // 释放库存预留, 避免预留库存泄漏
+        stockReservationService.unreserve("SALES_ORDER", soId, null);
     }
 
     // ==================== Flowable 工作流集成 ====================

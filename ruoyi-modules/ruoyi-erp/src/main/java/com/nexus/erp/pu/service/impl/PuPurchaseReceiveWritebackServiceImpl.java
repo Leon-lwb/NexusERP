@@ -85,13 +85,14 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
                 log.warn("收货行 {} 未匹配到采购订单行, 跳过", receiveLine.getLineId());
                 continue;
             }
-            BigDecimal currentReceivedQty = poLine.getReceivedQuantity() != null ? poLine.getReceivedQuantity() : BigDecimal.ZERO;
             BigDecimal lineReceivedQty = receiveLine.getQuantityReceived() != null ? receiveLine.getQuantityReceived() : BigDecimal.ZERO;
+            BigDecimal currentReceivedQty = poLine.getReceivedQuantity() != null ? poLine.getReceivedQuantity() : BigDecimal.ZERO;
             BigDecimal newReceivedQty = currentReceivedQty.add(lineReceivedQty);
             PurchaseOrderLineReceiveStatus lineStatus = calcLineReceiveStatus(poLine.getOrderQuantity(), newReceivedQty);
+            // 原子累加已收数量(避免并发覆盖), 状态基于预期值计算
             LambdaUpdateWrapper<PuPurchaseOrderLine> updateWrapper = Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
                 .eq(PuPurchaseOrderLine::getLineId, poLine.getLineId())
-                .set(PuPurchaseOrderLine::getReceivedQuantity, newReceivedQty)
+                .setSql("received_quantity = received_quantity + " + lineReceivedQty.toPlainString())
                 .set(PuPurchaseOrderLine::getReceiveStatus, lineStatus.getCode());
             int rows = purchaseOrderLineMapper.update(null, updateWrapper);
             log.info("更新采购订单行: lineId={}, receiveStatus={}, 影响行数={}", poLine.getLineId(), lineStatus.getCode(), rows);

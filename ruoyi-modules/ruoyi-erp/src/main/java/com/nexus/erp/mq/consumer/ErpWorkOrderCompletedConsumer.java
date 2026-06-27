@@ -80,6 +80,10 @@ public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOr
         }
         // 幂等: 已完工/已关闭跳过
         WoStatusEnum currentStatus = WoStatusEnum.fromCode(wo.getWoStatus());
+        if (currentStatus == null) {
+            log.warn("工单状态为空, 跳过回写: woNo={}", wo.getWoNo());
+            return;
+        }
         if (currentStatus == WoStatusEnum.COMPLETED || currentStatus.isTerminal()) {
             log.info("工单已完工/已关闭, 跳过回写: woNo={}, status={}", wo.getWoNo(), wo.getWoStatus());
             return;

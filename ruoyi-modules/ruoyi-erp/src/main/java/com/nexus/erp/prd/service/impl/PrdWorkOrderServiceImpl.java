@@ -421,6 +421,9 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             throw new RuntimeException("工单不存在: " + woId);
         }
         WoStatusEnum currentStatus = WoStatusEnum.fromCode(wo.getWoStatus());
+        if (currentStatus == null) {
+            throw new RuntimeException("工单状态为空, 无法完工: " + woId);
+        }
         if (currentStatus == WoStatusEnum.COMPLETED || currentStatus == WoStatusEnum.CLOSED) {
             throw new RuntimeException("工单已完工或已关闭, 不可重复完工");
         }
@@ -428,12 +431,17 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             throw new RuntimeException("工单状态[" + currentStatus.getLabel() + "]不可完工");
         }
         // 原子更新: 状态 + 累加完工数量 + 累加报废数量 + 完工时间
+        // 使用 toPlainString() 避免 BigDecimal 科学计数法导致 SQL 语法错误
+        String completeSetSql = completeQty != null && completeQty.compareTo(BigDecimal.ZERO) != 0
+            ? "completed_qty = completed_qty + " + completeQty.toPlainString() : null;
+        String scrapSetSql = scrapQty != null && scrapQty.compareTo(BigDecimal.ZERO) != 0
+            ? "scrap_qty = scrap_qty + " + scrapQty.toPlainString() : null;
         LambdaUpdateWrapper<PrdWorkOrder> wrapper = Wrappers.<PrdWorkOrder>lambdaUpdate()
             .eq(PrdWorkOrder::getWoId, woId)
             .set(PrdWorkOrder::getWoStatus, WoStatusEnum.COMPLETED.getCode())
             .set(PrdWorkOrder::getActualEndDate, new Date())
-            .setSql(completeQty != null, "completed_qty = completed_qty + " + completeQty)
-            .setSql(scrapQty != null, "scrap_qty = scrap_qty + " + scrapQty);
+            .setSql(completeSetSql != null, completeSetSql)
+            .setSql(scrapSetSql != null, scrapSetSql);
         int rows = baseMapper.update(null, wrapper);
         if (rows == 0) {
             throw new RuntimeException("工单完工更新失败, 可能已被其他操作修改");

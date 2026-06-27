@@ -24,7 +24,7 @@ public interface BdBomDetailMapper extends BaseMapperPlus<BdBomDetail, BdBomDeta
             "<foreach item='id' collection='bomIds' open='(' separator=',' close=')'>" +
             "#{id}" +
             "</foreach>" +
-            " AND status = 1 ORDER BY sort_order" +
+            " AND status = 1 AND del_flag = '0' ORDER BY sort_order" +
             "</script>")
     List<BdBomDetail> selectBatchByBomIds(@Param("bomIds") Collection<Long> bomIds);
 }

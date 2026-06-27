@@ -24,7 +24,7 @@ public interface BdBomMapper extends BaseMapperPlus<BdBom, BdBomVo> {
             "<foreach item='id' collection='materialIds' open='(' separator=',' close=')'>" +
             "#{id}" +
             "</foreach>" +
-            " AND is_current = 1 AND status = 1" +
+            " AND is_current = 1 AND status = 1 AND del_flag = '0'" +
             "</script>")
     List<BdBom> findCurrentBomsByMaterialIds(@Param("materialIds") Collection<Long> materialIds);
 }

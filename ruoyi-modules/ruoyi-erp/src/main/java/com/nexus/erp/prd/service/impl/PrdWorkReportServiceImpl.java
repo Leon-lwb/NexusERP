@@ -138,10 +138,13 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
             return;
         }
         // 原子更新: 累加完工数量 + 累加报废数量, 避免并发覆盖
+        // 使用 toPlainString() 避免 BigDecimal 科学计数法导致 SQL 语法错误
+        String scrapSetSql = report.getScrapQty() != null
+            ? "scrap_qty = scrap_qty + " + report.getScrapQty().toPlainString() : null;
         LambdaUpdateWrapper<PrdWorkOrder> wrapper = Wrappers.<PrdWorkOrder>lambdaUpdate()
             .eq(PrdWorkOrder::getWoId, report.getWoId())
-            .setSql("completed_qty = completed_qty + " + report.getReportedQty())
-            .setSql(report.getScrapQty() != null, "scrap_qty = scrap_qty + " + report.getScrapQty());
+            .setSql("completed_qty = completed_qty + " + report.getReportedQty().toPlainString())
+            .setSql(scrapSetSql != null, scrapSetSql);
         int rows = workOrderMapper.update(null, wrapper);
         if (rows == 0) {
             log.warn("报工回写工单数量失败, 工单可能已被修改: woId={}", report.getWoId());
