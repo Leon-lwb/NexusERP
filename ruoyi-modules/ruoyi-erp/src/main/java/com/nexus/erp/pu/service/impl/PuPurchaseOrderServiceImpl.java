@@ -2,6 +2,7 @@ package com.nexus.erp.pu.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
+import com.nexus.erp.pu.domain.enums.PurchaseOrderStatusEnum;
 import com.nexus.erp.pu.domain.PuPurchaseRequisition;
 import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
 import com.nexus.erp.bd.domain.BdVendor;
@@ -325,31 +327,52 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     }
 
     /**
-     * 关闭采购订单：已关闭或已作废状态不允许重复关闭
+     * 关闭采购订单：仅 RECEIVED / PARTIALLY_RECEIVED 状态可关闭
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void close(Long orderId) {
-        PuPurchaseOrder order = ensureOrder(orderId);
-        if (STATUS_CLOSED.equals(order.getStatus()) || STATUS_CANCELLED.equals(order.getStatus())) {
-            return;
+        PuPurchaseOrder order = baseMapper.selectById(orderId);
+        if (order == null) {
+            throw new ServiceException("采购订单不存在");
         }
-        order.setStatus(STATUS_CLOSED);
-        baseMapper.updateById(order);
+        PurchaseOrderStatusEnum current = PurchaseOrderStatusEnum.fromCode(order.getStatus());
+        // 关闭仅允许 RECEIVED / PARTIALLY_RECEIVED 状态(已收货的订单才可关闭)
+        if (!current.canTransitionTo(PurchaseOrderStatusEnum.CLOSED)) {
+            throw new ServiceException("采购订单状态[" + current.getLabel() + "]不可关闭, 仅已收货订单可关闭");
+        }
+        LambdaUpdateWrapper<PuPurchaseOrder> wrapper = Wrappers.<PuPurchaseOrder>lambdaUpdate()
+            .eq(PuPurchaseOrder::getOrderId, orderId)
+            .set(PuPurchaseOrder::getStatus, PurchaseOrderStatusEnum.CLOSED.getCode());
+        int rows = baseMapper.update(null, wrapper);
+        if (rows == 0) {
+            throw new ServiceException("关闭失败, 订单可能已被修改");
+        }
     }
 
     /**
-     * 作废采购订单：已全部到货的订单不允许作废
+     * 作废采购订单：已收货(PARTIALLY_RECEIVED / RECEIVED)订单不可作废
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long orderId) {
-        PuPurchaseOrder order = ensureOrder(orderId);
-        if (STATUS_RECEIVED.equals(order.getStatus())) {
-            throw new ServiceException("已全部到货的采购订单不能作废");
+        PuPurchaseOrder order = baseMapper.selectById(orderId);
+        if (order == null) {
+            throw new ServiceException("采购订单不存在");
         }
-        order.setStatus(STATUS_CANCELLED);
-        baseMapper.updateById(order);
+        PurchaseOrderStatusEnum current = PurchaseOrderStatusEnum.fromCode(order.getStatus());
+        // 作废仅允许 DRAFT / SUBMITTED / APPROVING / REJECTED / APPROVED 状态
+        // 已收货(PARTIALLY_RECEIVED / RECEIVED)不可作废
+        if (!current.canTransitionTo(PurchaseOrderStatusEnum.CANCELLED)) {
+            throw new ServiceException("采购订单状态[" + current.getLabel() + "]不可作废, 已收货订单不可作废");
+        }
+        LambdaUpdateWrapper<PuPurchaseOrder> wrapper = Wrappers.<PuPurchaseOrder>lambdaUpdate()
+            .eq(PuPurchaseOrder::getOrderId, orderId)
+            .set(PuPurchaseOrder::getStatus, PurchaseOrderStatusEnum.CANCELLED.getCode());
+        int rows = baseMapper.update(null, wrapper);
+        if (rows == 0) {
+            throw new ServiceException("作废失败, 订单可能已被修改");
+        }
     }
 
     /**
