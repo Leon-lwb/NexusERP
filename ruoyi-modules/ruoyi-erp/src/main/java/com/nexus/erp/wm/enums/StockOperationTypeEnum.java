@@ -32,7 +32,11 @@ public enum StockOperationTypeEnum {
     /** 返工出库 */
     REWORK_ISSUE("REWORK_ISSUE", "返工出库"),
     /** 返工入库 */
-    REWORK_RECEIVE("REWORK_RECEIVE", "返工入库");
+    REWORK_RECEIVE("REWORK_RECEIVE", "返工入库"),
+    /** 库存预留 */
+    RESERVE("RESERVE", "库存预留"),
+    /** 释放预留 */
+    UNRESERVE("UNRESERVE", "释放预留");
 
     /** 操作类型编码 */
     private final String code;
