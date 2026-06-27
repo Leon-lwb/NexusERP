@@ -54,4 +54,46 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
     int addStock(@Param("stockId") Long stockId,
                  @Param("addQty") BigDecimal addQty,
                  @Param("version") Integer version);
+
+    /**
+     * 原子预留库存 (乐观锁 + 可用数量校验)
+     * @return 影响行数, 0 表示预留失败(库存不足或版本冲突)
+     */
+    @Update("UPDATE wm_material_stock SET reserved_quantity = reserved_quantity + #{reserveQty}, " +
+            "version = version + 1, update_time = NOW() " +
+            "WHERE stock_id = #{stockId} " +
+            "AND (stock_quantity - reserved_quantity) >= #{reserveQty} " +
+            "AND version = #{version}")
+    int reserveStock(@Param("stockId") Long stockId,
+                     @Param("reserveQty") BigDecimal reserveQty,
+                     @Param("version") Integer version);
+
+    /**
+     * 原子释放预留 (乐观锁, 不超过已预留数量)
+     * @return 影响行数, 0 表示释放失败(版本冲突)
+     */
+    @Update("UPDATE wm_material_stock SET reserved_quantity = reserved_quantity - #{releaseQty}, " +
+            "version = version + 1, update_time = NOW() " +
+            "WHERE stock_id = #{stockId} " +
+            "AND reserved_quantity >= #{releaseQty} " +
+            "AND version = #{version}")
+    int releaseReserved(@Param("stockId") Long stockId,
+                        @Param("releaseQty") BigDecimal releaseQty,
+                        @Param("version") Integer version);
+
+    /**
+     * 原子出库并扣减预留 (出库时同步释放对应预留)
+     * @return 影响行数, 0 表示失败
+     */
+    @Update("UPDATE wm_material_stock SET stock_quantity = stock_quantity - #{outQty}, " +
+            "reserved_quantity = reserved_quantity - #{consumeReservedQty}, " +
+            "version = version + 1, update_time = NOW() " +
+            "WHERE stock_id = #{stockId} " +
+            "AND stock_quantity >= #{outQty} " +
+            "AND reserved_quantity >= #{consumeReservedQty} " +
+            "AND version = #{version}")
+    int deductStockWithReserved(@Param("stockId") Long stockId,
+                                @Param("outQty") BigDecimal outQty,
+                                @Param("consumeReservedQty") BigDecimal consumeReservedQty,
+                                @Param("version") Integer version);
 }

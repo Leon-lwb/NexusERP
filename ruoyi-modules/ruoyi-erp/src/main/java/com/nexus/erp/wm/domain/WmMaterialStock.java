@@ -177,6 +177,21 @@ public class WmMaterialStock extends TenantEntity {
     private BigDecimal stockQuantity;
 
     /**
+     * 已预留数量(销售订单/工单锁定)
+     */
+    @ExcelProperty("已预留数量")
+    private BigDecimal reservedQuantity;
+
+    /**
+     * 可用数量 = 在库数量 - 已预留数量 (计算属性, 非数据库列)
+     */
+    public BigDecimal getAvailableQuantity() {
+        BigDecimal stock = stockQuantity != null ? stockQuantity : BigDecimal.ZERO;
+        BigDecimal reserved = reservedQuantity != null ? reservedQuantity : BigDecimal.ZERO;
+        return stock.subtract(reserved);
+    }
+
+    /**
      * 单位成本
      */
     @ExcelProperty("单位成本")
