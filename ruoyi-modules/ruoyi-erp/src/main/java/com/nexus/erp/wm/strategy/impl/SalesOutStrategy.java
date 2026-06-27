@@ -1,8 +1,11 @@
 package com.nexus.erp.wm.strategy.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmSalesIssue;
 import com.nexus.erp.wm.domain.WmSalesIssueLine;
@@ -43,6 +46,7 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
     private final WmSalesIssueMapper salesIssueMapper;
     private final WmSalesIssueLineMapper salesIssueLineMapper;
     private final WmMaterialStockMapper stockMapper;
+    private final SoSalesOrderLineMapper salesOrderLineMapper;
 
     /**
      * 构造销售出库策略实例
@@ -51,15 +55,18 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
      * @param salesIssueMapper     销售出库单Mapper
      * @param salesIssueLineMapper 销售出库单行Mapper
      * @param stockMapper          库存Mapper
+     * @param salesOrderLineMapper 销售订单行Mapper
      */
     public SalesOutStrategy(WmMaterialStockTxMapper stockTxMapper,
                             WmSalesIssueMapper salesIssueMapper,
                             WmSalesIssueLineMapper salesIssueLineMapper,
-                            WmMaterialStockMapper stockMapper) {
+                            WmMaterialStockMapper stockMapper,
+                            SoSalesOrderLineMapper salesOrderLineMapper) {
         super(stockTxMapper);
         this.salesIssueMapper = salesIssueMapper;
         this.salesIssueLineMapper = salesIssueLineMapper;
         this.stockMapper = stockMapper;
+        this.salesOrderLineMapper = salesOrderLineMapper;
     }
 
     /**
@@ -102,6 +109,14 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                 throw new RuntimeException("物料【" + line.getMaterialName() + "】出库数量必须大于0");
             }
 
+            // 查询 SO 行的预留数量
+            SoSalesOrderLine soLine = line.getSourceDocLineId() != null
+                ? salesOrderLineMapper.selectById(line.getSourceDocLineId()) : null;
+            BigDecimal reservedQty = soLine != null && soLine.getReservedQty() != null
+                ? soLine.getReservedQty() : BigDecimal.ZERO;
+            BigDecimal totalConsumeReserved = line.getQuantityIssue().min(reservedQty);
+            BigDecimal remainingConsumeReserved = totalConsumeReserved;
+
             List<WmMaterialStock> stockList = resolveSalesIssueStocks(salesIssue, line);
             BigDecimal remaining = line.getQuantityIssue();
 
@@ -113,15 +128,38 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                 BigDecimal deductQty = stockQty.min(remaining);
                 BigDecimal beforeQuantity = stockQty;
                 BigDecimal afterQuantity = stockQty.subtract(deductQty);
-                int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+
+                // 本次扣减消费的预留量: 取 min(本次扣减, 该批次已预留, 剩余待消费预留)
+                BigDecimal stockReserved = stock.getReservedQuantity() == null
+                    ? BigDecimal.ZERO : stock.getReservedQuantity();
+                BigDecimal batchConsumeReserved = deductQty
+                    .min(stockReserved).min(remainingConsumeReserved);
+
+                int affected;
+                if (batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0) {
+                    affected = stockMapper.deductStockWithReserved(
+                        stock.getStockId(), deductQty, batchConsumeReserved, stock.getVersion());
+                } else {
+                    affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+                }
                 if (affected == 0) {
                     throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
                 }
+                remainingConsumeReserved = remainingConsumeReserved.subtract(batchConsumeReserved);
                 stockTxMapper.insert(buildSalesOutStockTx(salesIssue, line, stock, beforeQuantity, afterQuantity, now));
                 remaining = remaining.subtract(deductQty);
             }
             if (remaining.compareTo(BigDecimal.ZERO) > 0) {
                 throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足");
+            }
+
+            // 更新 SO 行剩余预留数量
+            if (totalConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && soLine != null) {
+                BigDecimal remainingReserved = reservedQty.subtract(totalConsumeReserved);
+                LambdaUpdateWrapper<SoSalesOrderLine> wrapper = Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getLineId, soLine.getLineId())
+                    .set(SoSalesOrderLine::getReservedQty, remainingReserved);
+                salesOrderLineMapper.update(null, wrapper);
             }
         }
     }

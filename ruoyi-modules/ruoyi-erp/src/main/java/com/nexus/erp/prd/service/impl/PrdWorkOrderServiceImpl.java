@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
+import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.erp.wm.service.IWmStockReservationService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -79,6 +82,8 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final IWmStockOperationService stockOperationService;
     private final ReliableMessageProducer messageProducer;
     private final AutoCodeUtil autoCodeUtil;
+    private final IBdBomService bomService;
+    private final IWmStockReservationService stockReservationService;
 
     /**
      * 分页查询生产工单列表
@@ -250,8 +255,32 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         wo.setWoStatus(STATUS_RELEASED);
         baseMapper.updateById(wo);
 
+        // 检查工单所需物料的库存可用性 (BOM 展开 + 库存检查, 仅告警不阻断)
+        checkMaterialAvailabilityOnRelease(wo);
+
         // ★ 新增：工单下达时自动生成生产领料单（排除倒冲物料）
         createProductionIssueOnRelease(wo);
+    }
+
+    /**
+     * 工单下达时检查 BOM 所需物料的库存可用性 (仅告警不阻断)
+     */
+    private void checkMaterialAvailabilityOnRelease(PrdWorkOrder wo) {
+        if (wo.getBomId() == null || wo.getPlannedQty() == null) {
+            return;
+        }
+        List<IndentedBomLineVo> bomLines = bomService.explodeBom(wo.getBomId());
+        for (IndentedBomLineVo bomLine : bomLines) {
+            if (bomLine.getMaterialId() == null || bomLine.getCumulativeQuantity() == null) {
+                continue;
+            }
+            BigDecimal requiredQty = bomLine.getCumulativeQuantity().multiply(wo.getPlannedQty());
+            BigDecimal available = stockReservationService.checkAvailable(bomLine.getMaterialId(), null);
+            if (available.compareTo(requiredQty) < 0) {
+                log.warn("工单 {} 物料 {} 库存不足: 需求={}, 可用={}",
+                    wo.getWoId(), bomLine.getMaterialId(), requiredQty, available);
+            }
+        }
     }
 
     /**

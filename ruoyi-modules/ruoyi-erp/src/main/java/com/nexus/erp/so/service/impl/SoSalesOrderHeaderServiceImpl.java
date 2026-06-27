@@ -1,6 +1,7 @@
 package com.nexus.erp.so.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ICreditCheckService;
 import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
+import com.nexus.erp.wm.service.IWmStockReservationService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -69,6 +71,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
     private final ICreditCheckService creditCheckService;
+    private final IWmStockReservationService stockReservationService;
 
     /**
      * 分页查询销售订单列表
@@ -201,6 +204,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         header.setConfirmedTime(new Date());
         baseMapper.updateById(header);
         log.info("销售订单确认成功, soId={}, soNo={}, creditStatus=PASSED", soId, header.getSoNo());
+
+        // 库存预留: 对库存物料(非自制)触发预留
+        reserveStockForSalesOrder(soId);
 
         // 自动创建生产计划（针对自制物料）
         createProductionPlansFromSalesOrder(soId, header.getSoNo());
@@ -385,6 +391,36 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 line.setSoId(soId);
             }
             soSalesOrderLineMapper.insertBatch(lineList);
+        }
+    }
+
+    /**
+     * 销售订单确认后，对库存物料(非自制)触发库存预留
+     */
+    private void reserveStockForSalesOrder(Long soId) {
+        List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
+            new LambdaQueryWrapper<SoSalesOrderLine>()
+                .eq(SoSalesOrderLine::getSoId, soId));
+        for (SoSalesOrderLine line : lines) {
+            if (line.getMaterialId() == null || line.getOrderedQty() == null) {
+                continue;
+            }
+            BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
+            if (material != null && Long.valueOf(1L).equals(material.getSourceType())) {
+                continue; // 自制物料走生产计划，不库存预留
+            }
+            BigDecimal reserved = stockReservationService.reserve(
+                line.getMaterialId(), line.getWarehouseId(), line.getOrderedQty(),
+                "SALES_ORDER", soId, line.getLineId());
+            if (reserved.compareTo(BigDecimal.ZERO) > 0) {
+                LambdaUpdateWrapper<SoSalesOrderLine> wrapper = Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getLineId, line.getLineId())
+                    .set(SoSalesOrderLine::getReservedQty, reserved);
+                soSalesOrderLineMapper.update(null, wrapper);
+            }
+            if (reserved.compareTo(line.getOrderedQty()) < 0) {
+                log.warn("销售订单行 {} 库存预留不足: 需求={}, 预留={}", line.getLineId(), line.getOrderedQty(), reserved);
+            }
         }
     }
 
