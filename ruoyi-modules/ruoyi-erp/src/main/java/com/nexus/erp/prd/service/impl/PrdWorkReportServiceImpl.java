@@ -1,9 +1,11 @@
 package com.nexus.erp.prd.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -29,6 +31,7 @@ import java.util.List;
  *
  * @author nexus
  */
+@Slf4j
 @RequiredArgsConstructor
 @DS("erp")
 @Service
@@ -134,22 +137,16 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
         if (report.getWoId() == null || report.getReportedQty() == null) {
             return;
         }
-        PrdWorkOrder wo = workOrderMapper.selectById(report.getWoId());
-        if (wo == null) {
-            return;
+        // 原子更新: 累加完工数量 + 累加报废数量, 避免并发覆盖
+        LambdaUpdateWrapper<PrdWorkOrder> wrapper = Wrappers.<PrdWorkOrder>lambdaUpdate()
+            .eq(PrdWorkOrder::getWoId, report.getWoId())
+            .setSql("completed_qty = completed_qty + " + report.getReportedQty())
+            .setSql(report.getScrapQty() != null, "scrap_qty = scrap_qty + " + report.getScrapQty());
+        int rows = workOrderMapper.update(null, wrapper);
+        if (rows == 0) {
+            log.warn("报工回写工单数量失败, 工单可能已被修改: woId={}", report.getWoId());
+            throw new RuntimeException("工单数量更新失败, 请重试");
         }
-
-        // 累计完工数量
-        BigDecimal completedQty = wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
-        wo.setCompletedQty(completedQty.add(report.getReportedQty()));
-
-        // 累计报废数量
-        if (report.getScrapQty() != null) {
-            BigDecimal scrapQty = wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
-            wo.setScrapQty(scrapQty.add(report.getScrapQty()));
-        }
-
-        workOrderMapper.updateById(wo);
     }
 
     /**

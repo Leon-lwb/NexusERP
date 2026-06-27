@@ -1,16 +1,13 @@
 package com.nexus.erp.mq.consumer;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.QueueConstants;
-import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.MesWorkOrderCompletedMessage;
-import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
-import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
+import com.nexus.erp.prd.domain.enums.WoStatusEnum;
+import com.nexus.erp.prd.service.IPrdWorkOrderService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +16,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.Date;
 
 /**
  * MES工单完工消费者（ERP侧）
@@ -39,13 +35,7 @@ import java.util.Date;
 @DS("erp")
 public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOrderCompletedMessage> {
 
-    /** ERP工单状态: 已完工 */
-    private static final String WO_STATUS_COMPLETED = "COMPLETED";
-    /** ERP工单状态: 已关闭 */
-    private static final String WO_STATUS_CLOSED = "CLOSED";
-
-    private final PrdWorkOrderMapper prdWorkOrderMapper;
-    private final ReliableMessageProducer messageProducer;
+    private final IPrdWorkOrderService workOrderService;
 
     /**
      * 获取消息类型
@@ -78,44 +68,29 @@ public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOr
      * @param message MES工单完工消息
      */
     private void doComplete(MesWorkOrderCompletedMessage message) {
-        PrdWorkOrder wo = prdWorkOrderMapper.selectById(message.getErpWoId());
+        Long erpWoId = message.getErpWoId();
+        if (erpWoId == null) {
+            log.warn("MES完工消息缺少erpWoId, 跳过");
+            return;
+        }
+        PrdWorkOrder wo = workOrderService.selectPrdWorkOrderByWoId(erpWoId);
         if (wo == null) {
-            log.warn("ERP工单不存在: erpWoId={}", message.getErpWoId());
+            log.warn("ERP工单不存在: erpWoId={}", erpWoId);
             return;
         }
         // 幂等: 已完工/已关闭跳过
-        if (WO_STATUS_COMPLETED.equals(wo.getWoStatus()) || WO_STATUS_CLOSED.equals(wo.getWoStatus())) {
+        WoStatusEnum currentStatus = WoStatusEnum.fromCode(wo.getWoStatus());
+        if (currentStatus == WoStatusEnum.COMPLETED || currentStatus.isTerminal()) {
             log.info("工单已完工/已关闭, 跳过回写: woNo={}, status={}", wo.getWoNo(), wo.getWoStatus());
             return;
         }
 
-        // 更新工单状态 + 数量累加
-        BigDecimal done = message.getCompletedQty() != null ? message.getCompletedQty() : BigDecimal.ZERO;
-        wo.setWoStatus(WO_STATUS_COMPLETED);
-        wo.setActualEndDate(new Date());
-        wo.setCompletedQty(wo.getCompletedQty() != null ? wo.getCompletedQty().add(done) : done);
-        if (message.getScrappedQty() != null) {
-            wo.setScrapQty(wo.getScrapQty() != null ? wo.getScrapQty().add(message.getScrappedQty()) : message.getScrappedQty());
-        }
-        prdWorkOrderMapper.updateById(wo);
+        // 使用消息中的实际完工数量, 调用service原子更新(内部触发完工倒冲入库链路)
+        BigDecimal completedQty = message.getCompletedQty() != null ? message.getCompletedQty() : BigDecimal.ZERO;
+        BigDecimal scrappedQty = message.getScrappedQty() != null ? message.getScrappedQty() : BigDecimal.ZERO;
+        workOrderService.complete(erpWoId, completedQty, scrappedQty);
         log.info("MES完工回写ERP工单完成: woNo={}, completedQty={}, scrapQty={}",
-            wo.getWoNo(), wo.getCompletedQty(), wo.getScrapQty());
-
-        // 复用既有完工入库链路: 发 ProductionCompleteMessage -> ProductionBackflushConsumer(倒冲领料+成品入库)
-        ProductionCompleteMessage pcm = new ProductionCompleteMessage();
-        pcm.setWoId(wo.getWoId());
-        pcm.setCompletionQty(done);
-        pcm.setMaterialId(wo.getMaterialId());
-        pcm.setMaterialCode(wo.getMaterialCode());
-        pcm.setMaterialName(wo.getMaterialName());
-        pcm.setWorkshopId(wo.getWorkshopId());
-        // 携带租户ID，供下游消费者恢复租户上下文
-        String tid = TenantHelper.getTenantId();
-        if (tid != null) {
-            pcm.setTenantId(Long.parseLong(tid));
-        }
-        messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.PRODUCTION_COMPLETE_BACKFLUSH, pcm);
-        log.info("触发完工倒冲入库链路: woNo={}", wo.getWoNo());
+            wo.getWoNo(), completedQty, scrappedQty);
     }
 
     /**

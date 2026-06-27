@@ -163,6 +163,17 @@ public interface IPrdWorkOrderService extends WfCallBackServiceI {
     void complete(Long woId);
 
     /**
+     * 工单完工(指定完工数量)
+     * <p>
+     * 使用 MQ 消息或报工中的实际完工数量进行原子累加, 避免并发覆盖。
+     *
+     * @param woId       工单 ID
+     * @param completeQty 本次完工数量
+     * @param scrapQty   本次报废数量
+     */
+    void complete(Long woId, java.math.BigDecimal completeQty, java.math.BigDecimal scrapQty);
+
+    /**
      * 关闭工单
      * <p>
      * 将工单状态更新为 CLOSED（已关闭）。

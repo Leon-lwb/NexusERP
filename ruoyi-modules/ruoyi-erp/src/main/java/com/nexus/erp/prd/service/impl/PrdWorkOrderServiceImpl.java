@@ -1,6 +1,7 @@
 package com.nexus.erp.prd.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -15,6 +16,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdWorkOrderBo;
+import com.nexus.erp.prd.domain.enums.WoStatusEnum;
 import com.nexus.erp.prd.domain.vo.PrdWorkOrderVo;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.IPrdWorkOrderService;
@@ -365,26 +367,53 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     public void complete(Long woId) {
         PrdWorkOrder wo = baseMapper.selectById(woId);
         if (wo == null) {
-            throw new RuntimeException("工单不存在");
+            throw new RuntimeException("工单不存在: " + woId);
         }
-        if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus())) {
-            throw new RuntimeException("仅生产中状态工单可完工,当前状态:" + wo.getWoStatus());
+        // 保留原行为: 默认取计划数量作为完工数量
+        BigDecimal planned = wo.getPlannedQty() != null ? wo.getPlannedQty() : BigDecimal.ZERO;
+        complete(woId, planned, BigDecimal.ZERO);
+    }
+
+    /**
+     * 工单完工(指定完工数量)
+     * <p>
+     * 使用原子更新避免并发覆盖: 状态置 COMPLETED + 累加完工/报废数量 + 完工时间,
+     * 并发送 ProductionCompleteMessage 触发倒冲领料 + 成品入库。
+     *
+     * @param woId        工单 ID
+     * @param completeQty 本次完工数量
+     * @param scrapQty    本次报废数量
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void complete(Long woId, BigDecimal completeQty, BigDecimal scrapQty) {
+        PrdWorkOrder wo = baseMapper.selectById(woId);
+        if (wo == null) {
+            throw new RuntimeException("工单不存在: " + woId);
         }
-
-        // 完工数量：取计划数量（方案A：工单级倒冲）
-        BigDecimal completionQty = wo.getPlannedQty() != null ? wo.getPlannedQty() : BigDecimal.ZERO;
-
-        wo.setWoStatus(STATUS_COMPLETED);
-        wo.setActualEndDate(new Date());
-        wo.setCompletedQty(
-            wo.getCompletedQty() != null
-                ? wo.getCompletedQty().add(completionQty)
-                : completionQty);
-        baseMapper.updateById(wo);
-
+        WoStatusEnum currentStatus = WoStatusEnum.fromCode(wo.getWoStatus());
+        if (currentStatus == WoStatusEnum.COMPLETED || currentStatus == WoStatusEnum.CLOSED) {
+            throw new RuntimeException("工单已完工或已关闭, 不可重复完工");
+        }
+        if (!currentStatus.canTransitionTo(WoStatusEnum.COMPLETED)) {
+            throw new RuntimeException("工单状态[" + currentStatus.getLabel() + "]不可完工");
+        }
+        // 原子更新: 状态 + 累加完工数量 + 累加报废数量 + 完工时间
+        LambdaUpdateWrapper<PrdWorkOrder> wrapper = Wrappers.<PrdWorkOrder>lambdaUpdate()
+            .eq(PrdWorkOrder::getWoId, woId)
+            .set(PrdWorkOrder::getWoStatus, WoStatusEnum.COMPLETED.getCode())
+            .set(PrdWorkOrder::getActualEndDate, new Date())
+            .setSql(completeQty != null, "completed_qty = completed_qty + " + completeQty)
+            .setSql(scrapQty != null, "scrap_qty = scrap_qty + " + scrapQty);
+        int rows = baseMapper.update(null, wrapper);
+        if (rows == 0) {
+            throw new RuntimeException("工单完工更新失败, 可能已被其他操作修改");
+        }
+        // 触发完工倒冲入库链路(保留原 complete 副作用)
+        BigDecimal done = completeQty != null ? completeQty : BigDecimal.ZERO;
         ProductionCompleteMessage completeMsg = new ProductionCompleteMessage();
         completeMsg.setWoId(woId);
-        completeMsg.setCompletionQty(completionQty);
+        completeMsg.setCompletionQty(done);
         completeMsg.setMaterialId(wo.getMaterialId());
         completeMsg.setMaterialCode(wo.getMaterialCode());
         completeMsg.setMaterialName(wo.getMaterialName());
