@@ -2,8 +2,11 @@ package com.nexus.erp.pu.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
+import com.nexus.erp.pu.domain.enums.PurchaseOrderLineReceiveStatus;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.service.IPuPurchaseReceiveWritebackService;
@@ -15,9 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 采购收货回写Service实现类，负责将收货数量回写到采购订单行并更新采购单状态
@@ -67,59 +68,62 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
             return;
         }
 
-        // 按物料ID建立采购订单行映射
-        Map<Long, List<PuPurchaseOrderLine>> materialLineMap = new LinkedHashMap<>();
-        // 按物料编码建立兜底映射（当materialId不一致时，通过materialCode匹配）
-        Map<String, List<PuPurchaseOrderLine>> materialCodeLineMap = new LinkedHashMap<>();
-        for (PuPurchaseOrderLine orderLine : orderLines) {
-            materialLineMap.computeIfAbsent(orderLine.getMaterialId(), k -> new java.util.ArrayList<>()).add(orderLine);
-            if (orderLine.getMaterialCode() != null) {
-                materialCodeLineMap.computeIfAbsent(orderLine.getMaterialCode(), k -> new java.util.ArrayList<>()).add(orderLine);
-            }
-        }
-
         for (WmMaterialReceiveLine receiveLine : receiveLines) {
-            // 优先按物料ID匹配
-            List<PuPurchaseOrderLine> candidates = materialLineMap.get(receiveLine.getMaterialId());
-            // 物料ID未匹配时，按物料编码兜底匹配
-            if ((candidates == null || candidates.isEmpty()) && receiveLine.getMaterialCode() != null) {
-                candidates = materialCodeLineMap.get(receiveLine.getMaterialCode());
-                if (candidates != null && !candidates.isEmpty()) {
-                    log.info("物料ID未匹配，通过物料编码兜底匹配: materialId={}, materialCode={}",
-                        receiveLine.getMaterialId(), receiveLine.getMaterialCode());
-                }
-            }
-            PuPurchaseOrderLine orderLine = null;
-            if (candidates != null && !candidates.isEmpty()) {
-                orderLine = candidates.remove(0);
-            }
-            if (orderLine != null) {
-                BigDecimal receivedQty = orderLine.getReceivedQuantity() != null ? orderLine.getReceivedQuantity() : BigDecimal.ZERO;
-                BigDecimal lineReceivedQty = receiveLine.getQuantityReceived() != null ? receiveLine.getQuantityReceived() : BigDecimal.ZERO;
-                BigDecimal newReceivedQty = receivedQty.add(lineReceivedQty);
-                orderLine.setReceivedQuantity(newReceivedQty);
-                log.info("匹配成功: materialId={}, 收货行数量={}, 原已收数量={}, 新已收数量={}",
-                    receiveLine.getMaterialId(), lineReceivedQty, receivedQty, newReceivedQty);
-
-                BigDecimal orderQty = orderLine.getOrderQuantity() != null ? orderLine.getOrderQuantity() : BigDecimal.ZERO;
-                int cmp = newReceivedQty.compareTo(orderQty);
-                if (cmp == 0) {
-                    orderLine.setReceiveStatus("FULL_RECEIVED");
-                } else if (cmp > 0) {
-                    orderLine.setReceiveStatus("OVER_RECEIVED");
-                } else {
-                    orderLine.setReceiveStatus("PARTIAL_RECEIVED");
-                }
-
-                int rows = purchaseOrderLineMapper.updateById(orderLine);
-                log.info("更新采购订单行: lineId={}, receiveStatus={}, 影响行数={}", orderLine.getLineId(), orderLine.getReceiveStatus(), rows);
+            // 优先按 purchaseLineId 直接匹配
+            LambdaQueryWrapper<PuPurchaseOrderLine> lineWrapper;
+            if (receiveLine.getPurchaseLineId() != null) {
+                lineWrapper = Wrappers.<PuPurchaseOrderLine>lambdaQuery()
+                    .eq(PuPurchaseOrderLine::getLineId, receiveLine.getPurchaseLineId());
             } else {
-                log.warn("未匹配到采购订单行: materialId={}, materialCode={}",
-                    receiveLine.getMaterialId(), receiveLine.getMaterialCode());
+                // 兜底: 按 orderId + materialId 匹配(兼容旧数据)
+                lineWrapper = Wrappers.<PuPurchaseOrderLine>lambdaQuery()
+                    .eq(PuPurchaseOrderLine::getOrderId, purId)
+                    .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId());
             }
+            PuPurchaseOrderLine poLine = purchaseOrderLineMapper.selectOne(lineWrapper);
+            if (poLine == null) {
+                log.warn("收货行 {} 未匹配到采购订单行, 跳过", receiveLine.getLineId());
+                continue;
+            }
+            BigDecimal currentReceivedQty = poLine.getReceivedQuantity() != null ? poLine.getReceivedQuantity() : BigDecimal.ZERO;
+            BigDecimal lineReceivedQty = receiveLine.getQuantityReceived() != null ? receiveLine.getQuantityReceived() : BigDecimal.ZERO;
+            BigDecimal newReceivedQty = currentReceivedQty.add(lineReceivedQty);
+            PurchaseOrderLineReceiveStatus lineStatus = calcLineReceiveStatus(poLine.getOrderQuantity(), newReceivedQty);
+            LambdaUpdateWrapper<PuPurchaseOrderLine> updateWrapper = Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
+                .eq(PuPurchaseOrderLine::getLineId, poLine.getLineId())
+                .set(PuPurchaseOrderLine::getReceivedQuantity, newReceivedQty)
+                .set(PuPurchaseOrderLine::getReceiveStatus, lineStatus.getCode());
+            int rows = purchaseOrderLineMapper.update(null, updateWrapper);
+            log.info("更新采购订单行: lineId={}, receiveStatus={}, 影响行数={}", poLine.getLineId(), lineStatus.getCode(), rows);
         }
 
-        updatePurchaseOrderStatus(purId, orderLines);
+        // 重新查询订单行以反映最新已收数量,用于订单头状态汇总
+        List<PuPurchaseOrderLine> latestOrderLines = purchaseOrderLineMapper.selectList(
+            new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, purId));
+        updatePurchaseOrderStatus(purId, latestOrderLines);
+    }
+
+    /**
+     * 根据订购数量与已收数量计算行级收货状态
+     *
+     * @param orderQty    订购数量
+     * @param receivedQty 已收数量
+     * @return 行级收货状态
+     */
+    private PurchaseOrderLineReceiveStatus calcLineReceiveStatus(BigDecimal orderQty, BigDecimal receivedQty) {
+        BigDecimal safeOrderQty = orderQty != null ? orderQty : BigDecimal.ZERO;
+        BigDecimal safeReceivedQty = receivedQty != null ? receivedQty : BigDecimal.ZERO;
+        int cmp = safeReceivedQty.compareTo(safeOrderQty);
+        if (cmp == 0) {
+            return PurchaseOrderLineReceiveStatus.FULL_RECEIVED;
+        }
+        if (cmp > 0) {
+            return PurchaseOrderLineReceiveStatus.OVER_RECEIVED;
+        }
+        if (safeReceivedQty.compareTo(BigDecimal.ZERO) > 0) {
+            return PurchaseOrderLineReceiveStatus.PARTIAL_RECEIVED;
+        }
+        return PurchaseOrderLineReceiveStatus.PENDING;
     }
 
     /**

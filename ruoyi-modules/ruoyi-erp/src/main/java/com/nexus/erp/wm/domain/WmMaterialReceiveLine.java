@@ -31,6 +31,8 @@ public class WmMaterialReceiveLine extends TenantEntity {
     private Long receiveId;
     /** 来源单据行ID */
     private Long sourceDocLineId;
+    /** 关联采购订单行ID (pu_purchase_order_line.line_id) */
+    private Long purchaseLineId;
     /** 物料ID */
     private Long materialId;
     /** 物料编码 */
