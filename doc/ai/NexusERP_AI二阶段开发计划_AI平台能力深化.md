@@ -572,14 +572,14 @@ public List<RetrievalChunk> rerank(String query, List<RetrievalChunk> candidates
 
 | # | 交付物 | 状态 |
 |---|--------|------|
-| 1 | `AiChatRequest.enableThinking` + 前端深度思考开关 | ⬜ |
-| 2 | `returnThinking` + `onPartialThinking` + `AI_THINKING_TOKEN` 事件 | ⬜ |
-| 3 | `ChatServiceProvider` 策略接口 + `ChatServiceProviderFactory` | ⬜ |
-| 4 | 8 个厂商实现（DeepSeek/CustomApi/Minimax/MiMo 新增 + DashScope/ZhiPu 原生 SDK） | ⬜ |
-| 5 | `ChatModelFactory` 重构（缓存含 thinking 维度） | ⬜ |
-| 6 | `RerankProvider` + 3 个专用 Rerank 实现 | ⬜ |
-| 7 | `RerankService` 改造（API 优先 + LLM 兜底） | ⬜ |
-| 8 | 前端思考过程折叠展示 | ⬜ |
+| 1 | `AiChatRequest.enableThinking` + `enableWebSearch` 前端深度思考开关 | ✅ |
+| 2 | `returnThinking` + `onPartialThinking` + `AI_THINKING_TOKEN` 事件 | ✅ 已验证（Chat/RAG 模式推理 token 流正常） |
+| 3 | `ChatServiceProvider` 策略接口 + `ChatServiceProviderFactory` | ✅ |
+| 4 | 8 个厂商实现（DeepSeek/CustomApi/Minimax/MiMo 新增 + DashScope/ZhiPu 原生 SDK） | ✅ 含 `AbstractOpenAiCompatibleProvider` 基类 |
+| 5 | `ChatModelFactory` 重构（缓存含 thinking 维度） | ✅ key=`modelId:T/F`；`AiModelChangeListener` 已接 evictCache |
+| 6 | `RerankProvider` + 3 个专用 Rerank 实现 | ✅ Bailian/ZhiPu(手写JWT)/SiliconFlow |
+| 7 | `RerankService` 改造（API 优先 + LLM 兜底） | ✅ `RetrieverService` 无需改 |
+| 8 | 前端思考过程折叠展示 | ✅ `<details>` + `reasoning` 字段 + history 加载映射 |
 
 ---
 
@@ -781,16 +781,16 @@ public class TongYiWanxImageService implements IImageGenerationService {
 
 | # | 交付物 | 状态 |
 |---|--------|------|
-| 1 | `WebSearchTool`（Tavily/Bing Java 实现）+ `crawlWebpage` | ⬜ |
-| 2 | `WebSearchAgent` + Supervisor 联网路由 | ⬜ |
-| 3 | 前端联网开关 + 来源链接卡片 | ⬜ |
-| 4 | `ai_mcp_market` + `ai_mcp_market_tool` 表 | ⬜ |
-| 5 | `McpMarketService` + `McpMarketController`（移植参照，改写 ai_tool） | ⬜ |
-| 6 | 前端 MCP 市场页 | ⬜ |
-| 7 | `IImageGenerationService` + 通义万相实现 | ⬜ |
-| 8 | `ModelTypeEnum.IMAGE` + 模型管理支持 | ⬜ |
-| 9 | `AI_IMAGE` SSE 事件 + 聊天内文生图 | ⬜ |
-| 10 | 前端图片渲染 | ⬜ |
+| 1 | `WebSearchTool`（Tavily/Bing Java 实现）+ `crawlWebpage` | ✅ 含 Jsoup 超时防护 |
+| 2 | `WebSearchAgent` + 联网路由（独立 invokeWithWebSearch） | ✅ auto 模式路由 |
+| 3 | 前端联网开关 + 来源链接卡片 | ✅ `WebSearchToggle.vue` + `AI_WEB_SEARCH` 来源卡 |
+| 4 | `ai_mcp_market` + `ai_mcp_market_tool` 表 | ✅ `doc/ai/sql/ai-stage2-c.sql` |
+| 5 | `McpMarketService` + `McpMarketController`（移植参照，改写 ai_tool，默认 DISABLED） | ✅ |
+| 6 | 前端 MCP 市场页 | ✅ `api/ai/market.ts` + `views/ai/mcp/market.vue` + 菜单 |
+| 7 | `IImageGenerationService` + 通义万相实现（含 OSS 持久化） | ✅ `TongYiWanxImageService` |
+| 8 | `AiModelTypeEnum.IMAGE` + `selectDefaultImageModel()` + 模型管理 | ✅ 前端 IMAGE option 已加 |
+| 9 | `AI_IMAGE` SSE 事件 + 聊天内文生图（facade invokeWithImageGeneration） | ✅ 前端 `AI_IMAGE` 接线完成 |
+| 10 | 前端图片渲染 | ✅ `components/ai/ImageRenderer.vue` + markdown 图片渲染 |
 
 ---
 
@@ -798,30 +798,33 @@ public class TongYiWanxImageService implements IImageGenerationService {
 
 | 表名 | 用途 | 子阶段 | 状态 |
 |------|------|--------|------|
-| `ai_knowledge_graph` | 知识图谱实例 | S2-A | ⬜ |
-| `ai_kg_entity` | 图谱实体 | S2-A | ⬜ |
-| `ai_kg_relation` | 图谱关系 | S2-A | ⬜ |
-| `ai_knowledge_chunk`（ALTER） | 增抽取跟踪列 | S2-A | ⬜ |
-| `ai_mcp_market` | MCP 市场源 | S2-C | ⬜ |
-| `ai_mcp_market_tool` | 市场工具 | S2-C | ⬜ |
-| `ai_message`（ALTER） | 增 `thinking_content` 列（存思考过程） | S2-B | ⬜ |
+| `ai_knowledge_graph` | 知识图谱实例 | S2-A | ⬜（暂搁） |
+| `ai_kg_entity` | 图谱实体 | S2-A | ⬜（暂搁） |
+| `ai_kg_relation` | 图谱关系 | S2-A | ⬜（暂搁） |
+| `ai_knowledge_chunk`（ALTER） | 增抽取跟踪列 | S2-A | ⬜（暂搁） |
+| `ai_mcp_market` | MCP 市场源 | S2-C | ✅ `doc/ai/sql/ai-stage2-c.sql` |
+| `ai_mcp_market_tool` | 市场工具 | S2-C | ✅ `doc/ai/sql/ai-stage2-c.sql` |
+| `ai_message`（ALTER） | 增 `thinking_content` 列（存思考过程） | S2-B | ✅ `doc/ai/sql/ai-stage2-b.sql` |
 
-> 脚本位置：`doc/erp/sql/erp-stage2-*.sql`（沿用现有 `doc/erp/sql/erp-*.sql` 命名风格）。
+> 脚本位置：`doc/ai/sql/ai-stage2-b.sql`（S2-B）、`doc/ai/sql/ai-stage2-c.sql`（S2-C）。
 
 ---
 
 ## 九、前端变更总览（二阶段）
 
-| 文件 | 说明 | 子阶段 |
-|------|------|--------|
-| `api/ai/knowledgeGraph.ts` | 图谱接口 | S2-A |
-| `views/ai/knowledge/graph.vue` | 图谱可视化 | S2-A |
-| `components/ai/DeepThinking.vue` | 深度思考开关 + 折叠展示 | S2-B |
-| `api/ai/market.ts` | MCP 市场接口 | S2-C |
-| `views/ai/mcp/market.vue` | MCP 市场页 | S2-C |
-| `components/ai/ImageRenderer.vue` | 图片结果渲染 | S2-C |
-| `views/ai/model/index.vue`（改） | 支持 IMAGE 类型 + Rerank 厂商 | S2-B/C |
-| `views/ai/assistant/index.vue`（改） | 联网开关、思考折叠、图片渲染 | S2-B/C |
+| 文件 | 说明 | 子阶段 | 状态 |
+|------|------|--------|------|
+| `api/ai/knowledgeGraph.ts` | 图谱接口 | S2-A | ⬜（暂搁） |
+| `views/ai/knowledge/graph.vue` | 图谱可视化 | S2-A | ⬜（暂搁） |
+| `components/ai/DeepThinking.vue` | 深度思考开关 + 折叠展示 | S2-B | ✅ |
+| `api/ai/chat.ts`（改） | `sendAiMessage` 加 `enableThinking`/`enableWebSearch` | S2-B | ✅ |
+| `views/ai/assistant/index.vue`（改） | 思考折叠展示 + `AI_THINKING_TOKEN` | S2-B | ✅ |
+| `components/ai/AiChatDrawer.vue`（改） | 思考折叠展示 + `AI_THINKING_TOKEN` | S2-B | ✅ |
+| `api/ai/market.ts` | MCP 市场接口 | S2-C | ⬜ 待实现 |
+| `views/ai/mcp/market.vue` | MCP 市场页 | S2-C | ⬜ 待实现 |
+| `components/ai/ImageRenderer.vue` | 图片结果渲染 | S2-C | ⬜ 待实现 |
+| `views/ai/model/index.vue`（改） | 支持 IMAGE 类型 | S2-C | ⬜ 待实现 |
+| `views/ai/assistant/index.vue`（改） | 联网开关 + `AI_IMAGE`/`AI_WEB_SEARCH` 接线 | S2-C | ⬜ 待实现 |
 
 ---
 
@@ -829,12 +832,12 @@ public class TongYiWanxImageService implements IImageGenerationService {
 
 | 子阶段 | 周期 | 核心交付 | 人天估算 | 状态 |
 |--------|------|----------|----------|------|
-| **S2-A** 知识图谱 | 第 12-14 周 | 图谱构建 + 抽取管线 + 图谱增强检索 + 前端可视化 | 18 人天 | ⬜ |
-| **S2-B** 推理 + 厂商增强 | 第 15-17 周 | Thinking 流 + 策略模式厂商 + 专用 Rerank | 16 人天 | ⬜ |
-| **S2-C** 联网 + 市场 + 多模态 | 第 18-22 周 | WebSearchAgent + MCP 市场 + 文生图 | 24 人天 | ⬜ |
-| **合计** | 11 周 | | **58 人天** | |
+| **S2-A** 知识图谱 | 第 12-14 周 | 图谱构建 + 抽取管线 + 图谱增强检索 + 前端可视化 | 18 人天 | ⬜ 暂搁 |
+| **S2-B** 推理 + 厂商增强 | 第 15-17 周 | Thinking 流 + 策略模式厂商 + 专用 Rerank | 16 人天 | ✅ 后端+前端完成 |
+| **S2-C** 联网 + 市场 + 多模态 | 第 18-22 周 | WebSearchAgent + MCP 市场 + 文生图 | 24 人天 | ✅ 后端+前端完成 |
+| **合计** | 11 周 | | **58 人天** | S2-B 16✅ / S2-C 24✅ / S2-A 18暂搁 |
 
-> 加上一阶段已完成 138 人天，截至二阶段末累计约 **196 人天**。
+> 加上一阶段已完成 138 人天，截至目前累计完成约 **178 人天**（S2-A 暂搁 18 人天）。
 
 ---
 

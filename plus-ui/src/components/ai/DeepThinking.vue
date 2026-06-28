@@ -1,8 +1,5 @@
 <template>
-  <el-tooltip
-    :content="modelValue ? '深度思考已开启：输出推理过程' : '开启深度思考（输出推理过程，适用于 DeepSeek-R1 等推理模型）'"
-    placement="top"
-  >
+  <el-tooltip :content="modelValue ? '深度思考已开启：输出推理过程' : '开启深度思考（输出推理过程，适用于 DeepSeek-R1 等推理模型）'" placement="top">
     <span class="deep-thinking" :class="{ active: modelValue }" @click="$emit('update:modelValue', !modelValue)">
       <el-icon :size="14"><MagicStick /></el-icon>
       <span>深度思考</span>
@@ -11,10 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import { MagicStick } from '@element-plus/icons-vue'
+import { MagicStick } from '@element-plus/icons-vue';
 
-defineProps<{ modelValue: boolean }>()
-defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
+defineProps<{ modelValue: boolean }>();
+defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 </script>
 
 <style scoped>

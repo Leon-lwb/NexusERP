@@ -541,11 +541,8 @@ scp nginx.conf root@81.68.78.136:/nexus/nexus-ui/
 **主服务器执行：**
 
 ```bash
-# 重新构建镜像
-docker build -t nexus/nexus-ui:5.6.0 /nexus/nexus-ui/
-
-# 重启 nginx
-docker restart nexus-nginx
+# 重新加载 nginx 配置
+docker exec nexus-nginx nginx -s reload
 ```
 
 ### 12.3 更新辅助服务器

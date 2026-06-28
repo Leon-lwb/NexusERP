@@ -8,7 +8,7 @@
 | 文档 | 主题 | 状态 |
 |------|------|------|
 | [NexusERP_AI开发计划.md](./NexusERP_AI开发计划.md) | 项目总开发计划 v6.1（Phase 0-6） | 🚧 Phase 0/1/2 完成 |
-| [NexusERP_AI二阶段开发计划_AI平台能力深化.md](./NexusERP_AI二阶段开发计划_AI平台能力深化.md) | 二阶段：S2-A 知识图谱 / S2-B 推理增强 / S2-C 联网+MCP+多模态 | ⬜ 待开始 |
+| [NexusERP_AI二阶段开发计划_AI平台能力深化.md](./NexusERP_AI二阶段开发计划_AI平台能力深化.md) | 二阶段：S2-A 知识图谱 / S2-B 推理增强 / S2-C 联网+MCP+多模态 | ✅ S2-B/S2-C 完成 / S2-A 搁置 |
 
 ### 周计划 / 审查
 | 文档 | 周次 | 主题 | 状态 |
@@ -40,3 +40,24 @@
 4. **内容重复**：QuickStart 与主计划 Phase 0 内容大量重叠，构成双重维护
 5. **跨周问题不闭环**：Week 5 二次审查遗留 6 个 Critical 未在 Week 6 交代；Week 7/8 前端欠债仅由 Week 9 揭示
 6. **Phase 2 收尾缺失**：Week 11 为 Phase 2 最后一周，无整体收尾/总结文档，与二阶段（Week 12 起）无过渡说明
+
+## 二阶段（S2-B/S2-C）实施记录
+
+> 更新日期：2026-06-28
+
+### S2-B 推理模式 + 厂商增强 + 专用 Rerank ✅ 完成
+
+- 后端 + 前端全部完成，深度思考已在 Chat/RAG 模式验证可用
+- 实施计划详见 `doc/ai/NexusERP_AI二阶段实施计划_S2B_S2C.md`
+- 关键文件：`ChatServiceProvider` 策略层（8 厂商）、`RerankProvider`（3 API）、`DeepThinking.vue`
+- 注意：Agent 模式暂不支持 thinking token 流（设计限制，使用同步 ChatModel）
+
+### S2-C 联网搜索 + MCP 市场 + 文生图 ✅ 完成
+
+- 后端：WebSearchTool/Agent、McpMarketService/Controller、TongYiWanxImageService 全部编译通过
+- 前端：MCP 市场页（`views/ai/mcp/market.vue`）、文生图渲染（`ImageRenderer.vue` + `AI_IMAGE` 接线）、联网开关+来源卡（`WebSearchToggle.vue`）全部完成
+- 代码审查发现并修复 2 个 Bug（MCP 加载状态值、crawlWebpage 超时）
+
+### S2-A 知识图谱 — 暂搁
+
+- 用户决定暂搁（工作量最大、需自研），后续单独排期

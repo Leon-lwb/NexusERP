@@ -55,6 +55,14 @@
                 <summary>思考过程</summary>
                 <div class="reasoning-content">{{ msg.reasoning }}</div>
               </details>
+              <!-- 联网搜索来源卡片 -->
+              <div v-if="msg.webSources && msg.webSources.length > 0 && msg.role === 'assistant'" class="web-sources">
+                <div class="web-sources-title">信息来源</div>
+                <div v-for="(src, srcIdx) in msg.webSources" :key="srcIdx" class="web-source-item">
+                  <el-icon><Link /></el-icon>
+                  <a :href="src.url" target="_blank" rel="noopener noreferrer">{{ src.title || src.url }}</a>
+                </div>
+              </div>
               <!-- Agent 思考过程 -->
               <div v-if="msg.thinking && msg.role === 'assistant'" class="agent-thinking">
                 <el-icon class="is-loading"><Loading /></el-icon>
@@ -126,6 +134,7 @@
             <div class="toolbar-right">
               <span v-if="tokenUsage > 0" class="token-usage">{{ tokenUsage.toLocaleString() }} tokens</span>
               <DeepThinking v-model="enableThinking" />
+              <WebSearchToggle v-model="enableWebSearch" />
               <el-tooltip content="MCP 工具选择" placement="top">
                 <el-button size="small" :icon="SetUp" @click="openToolDrawer" plain round>
                   {{ selectedToolIds.length > 0 ? selectedToolIds.length + ' 个工具' : '工具' }}
@@ -200,7 +209,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck, Download, SetUp, DataAnalysis, Collection, MagicStick } from '@element-plus/icons-vue'
+import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck, Download, SetUp, DataAnalysis, Collection, MagicStick, Link } from '@element-plus/icons-vue'
 import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, messageFeedback, exportSession, getTokenUsage, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
 import { getAvailableMcpTools } from '@/api/ai/mcpTool'
 import { marked } from 'marked'
@@ -208,6 +217,7 @@ import * as echarts from 'echarts'
 import { ElMessageBox } from 'element-plus'
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers'
 import DeepThinking from '@/components/ai/DeepThinking.vue'
+import WebSearchToggle from '@/components/ai/WebSearchToggle.vue'
 import 'github-markdown-css'
 
 /** 工具调用状态 */
@@ -228,6 +238,8 @@ interface ChatMessage {
   thinking?: string
   /** 推理过程内容（DeepSeek-R1 等推理模型的思考链） */
   reasoning?: string
+  /** 联网搜索来源卡片 */
+  webSources?: Array<{ title: string; url: string }>
   feedback?: string  // LIKE / DISLIKE
 }
 
@@ -241,6 +253,7 @@ const sessions = ref<AiSession[]>([])
 const currentSessionId = ref<number | string | null>(null)
 const chatMode = ref('auto')
 const enableThinking = ref(false)
+const enableWebSearch = ref(false)
 
 /** 对话模式选项 */
 const modeOptions = [
@@ -329,6 +342,36 @@ function onAiSseMessage(event: Event) {
       break
     case 'AI_CHART':
       break
+    case 'AI_IMAGE': {
+      // 文生图结果：解析 {url, prompt}，追加 markdown 图片到当前 assistant 消息
+      thinking.value = false
+      let imgInfo: { url?: string; prompt?: string } = {}
+      try { imgInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      const imgMd = `\n\n![${imgInfo.prompt || 'image'}](${imgInfo.url})\n`
+      const imgMsg = messages.value[messages.value.length - 1]
+      if (imgMsg && imgMsg.role === 'assistant') {
+        imgMsg.content += imgMd
+      } else {
+        messages.value.push({ role: 'assistant', content: imgMd.trim() })
+      }
+      loading.value = false
+      nextTick(() => scrollToBottom())
+      break
+    }
+    case 'AI_WEB_SEARCH': {
+      // 联网搜索来源卡片：解析 {sources:[{title,url}]}，挂到当前 assistant 消息
+      let srcInfo: { sources?: Array<{ title?: string; url?: string }> } = {}
+      try { srcInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      const sources = (srcInfo.sources || []).map(s => ({ title: s.title || s.url || '', url: s.url || '' }))
+      const srcMsg = messages.value[messages.value.length - 1]
+      if (srcMsg && srcMsg.role === 'assistant') {
+        srcMsg.webSources = sources
+      } else {
+        messages.value.push({ role: 'assistant', content: '', webSources: sources })
+      }
+      nextTick(() => scrollToBottom())
+      break
+    }
     case 'AI_THINKING_TOKEN': {
       // 推理 token 流（DeepSeek-R1 等），追加到当前 assistant 消息的 reasoning 字段
       const reasonMsg = messages.value[messages.value.length - 1]
@@ -500,6 +543,7 @@ async function sendMessage() {
       sessionId: currentSessionId.value ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
       enableThinking: enableThinking.value || undefined,
+      enableWebSearch: enableWebSearch.value || undefined,
       enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined
     })
     console.log('[AI] 发送消息响应:', res)
@@ -914,6 +958,43 @@ onUnmounted(() => {
     align-items: center;
     gap: 8px;
     color: #909399;
+  }
+}
+
+/* 联网搜索来源卡片 */
+.web-sources {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 8px;
+
+  .web-sources-title {
+    font-size: 12px;
+    color: #67c23a;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .web-source-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 2px 0;
+
+    a {
+      color: #409eff;
+      text-decoration: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 }
 

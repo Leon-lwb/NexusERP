@@ -14,6 +14,13 @@
               <summary>思考过程</summary>
               <div class="reasoning-content">{{ msg.reasoning }}</div>
             </details>
+            <!-- 联网搜索来源卡片 -->
+            <div v-if="msg.webSources && msg.webSources.length > 0 && msg.role === 'assistant'" class="web-sources">
+              <div class="web-sources-title">信息来源</div>
+              <div v-for="(src, srcIdx) in msg.webSources" :key="srcIdx" class="web-source-item">
+                <a :href="src.url" target="_blank" rel="noopener noreferrer">{{ src.title || src.url }}</a>
+              </div>
+            </div>
             <div v-if="msg.role === 'assistant'" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
             <div v-else>{{ msg.content }}</div>
           </div>
@@ -46,6 +53,7 @@
         />
         <div class="input-actions">
           <DeepThinking v-model="enableThinking" />
+          <WebSearchToggle v-model="enableWebSearch" />
           <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" style="flex: 1">
             发送
           </el-button>
@@ -63,6 +71,7 @@ import { sendAiMessage } from '@/api/ai/chat'
 import { marked } from 'marked'
 import { createAiRenderer } from '@/utils/aiRenderers'
 import DeepThinking from '@/components/ai/DeepThinking.vue'
+import WebSearchToggle from '@/components/ai/WebSearchToggle.vue'
 import * as echarts from 'echarts'
 import 'github-markdown-css'
 
@@ -71,6 +80,8 @@ interface ChatMessage {
   content: string
   /** 推理过程内容（DeepSeek-R1 等推理模型的思考链） */
   reasoning?: string
+  /** 联网搜索来源卡片 */
+  webSources?: Array<{ title: string; url: string }>
 }
 
 const visible = ref(false)
@@ -82,6 +93,7 @@ const messageListRef = ref<HTMLElement>()
 const sessionId = ref<number | null>(null)
 const chatMode = ref('auto')
 const enableThinking = ref(false)
+const enableWebSearch = ref(false)
 
 /** 根据当前模式显示不同的输入提示 */
 const modePlaceholder = computed(() => {
@@ -136,6 +148,36 @@ function onAiSseMessage(event: Event) {
       break
     case 'AI_CHART':
       break
+    case 'AI_IMAGE': {
+      // 文生图结果：解析 {url, prompt}，追加 markdown 图片到当前 assistant 消息
+      thinking.value = false
+      let imgInfo: { url?: string; prompt?: string } = {}
+      try { imgInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      const imgMd = `\n\n![${imgInfo.prompt || 'image'}](${imgInfo.url})\n`
+      const imgMsg = messages.value[messages.value.length - 1]
+      if (imgMsg && imgMsg.role === 'assistant') {
+        imgMsg.content += imgMd
+      } else {
+        messages.value.push({ role: 'assistant', content: imgMd.trim() })
+      }
+      loading.value = false
+      nextTick(() => scrollToBottom())
+      break
+    }
+    case 'AI_WEB_SEARCH': {
+      // 联网搜索来源卡片
+      let srcInfo: { sources?: Array<{ title?: string; url?: string }> } = {}
+      try { srcInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      const sources = (srcInfo.sources || []).map(s => ({ title: s.title || s.url || '', url: s.url || '' }))
+      const srcMsg = messages.value[messages.value.length - 1]
+      if (srcMsg && srcMsg.role === 'assistant') {
+        srcMsg.webSources = sources
+      } else {
+        messages.value.push({ role: 'assistant', content: '', webSources: sources })
+      }
+      nextTick(() => scrollToBottom())
+      break
+    }
     case 'AI_THINKING_TOKEN': {
       // 推理 token 流（DeepSeek-R1 等），追加到当前 assistant 消息的 reasoning 字段
       const reasonMsg = messages.value[messages.value.length - 1]
@@ -197,7 +239,8 @@ async function sendMessage() {
       content: text,
       sessionId: sessionId.value ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
-      enableThinking: enableThinking.value || undefined
+      enableThinking: enableThinking.value || undefined,
+      enableWebSearch: enableWebSearch.value || undefined
     })
     const sid = res?.data ?? res
     if (sid && typeof sid === 'number') {
@@ -354,6 +397,41 @@ onUnmounted(() => {
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+}
+
+/* 联网搜索来源卡片 */
+.web-sources {
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 6px;
+
+  .web-sources-title {
+    font-size: 11px;
+    color: #67c23a;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .web-source-item {
+    font-size: 12px;
+    padding: 1px 0;
+
+    a {
+      color: #409eff;
+      text-decoration: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      max-width: 100%;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 }
 

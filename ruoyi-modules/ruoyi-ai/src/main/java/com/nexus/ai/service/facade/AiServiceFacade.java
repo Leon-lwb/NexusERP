@@ -170,7 +170,15 @@ public class AiServiceFacade {
         final Long finalSessionId = sessionId;
         final String finalUserName = userName;
 
-        // 5. 智能路由：前端显式指定模式 或 后端根据关键词自动判断
+        // 5. 智能路由：显式行为开关优先，其次前端显式指定模式，最后关键词自动判断
+
+        // 5a. 显式开关优先（独立于 mode，用户主动开启时覆盖路由）
+        if (Boolean.TRUE.equals(request.getEnableWebSearch())) {
+            invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+            return sessionId;
+        }
+
+        // 5b. 模式路由
         boolean needAgent;
         boolean needRag;
 
@@ -185,12 +193,12 @@ public class AiServiceFacade {
             needAgent = false;
             needRag = false;
         } else {
-            // auto 模式（默认）：优先检查图片生成、联网搜索，其次数据查询/知识检索
+            // auto 模式（默认）：关键词自动检测图片生成、联网搜索
             if (containsImageKeywords(request.getContent())) {
                 invokeWithImageGeneration(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
                 return sessionId;
             }
-            if (Boolean.TRUE.equals(request.getEnableWebSearch()) || containsWebSearchKeywords(request.getContent())) {
+            if (containsWebSearchKeywords(request.getContent())) {
                 invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
                 return sessionId;
             }

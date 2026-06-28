@@ -51,11 +51,12 @@ CREATE TABLE IF NOT EXISTS `ai_mcp_market_tool` (
     INDEX `idx_tool_name`(`tool_name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场工具' ROW_FORMAT = DYNAMIC;
 
--- 3. 菜单：AI MCP 市场（插入到 AI 管理菜单下，需根据实际 menu_id 调整 parent_id）
--- INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, menu_type, ...)
--- VALUES ('MCP市场', <parent_id>, 6, 'market', 'ai/mcp/market', 'C', ...);
--- 说明：parent_id 应为 AI 管理菜单的 menu_id（参考现有 MCP工具管理菜单的 parent_id）。
--- 具体值需在运行环境查询，此处仅列出预期菜单路径和组件。
+-- 3. 菜单：AI MCP 市场（父菜单为 AI 管理目录 menu_id=1700，order_num=10）
+INSERT INTO `sys_menu` VALUES (1800, 'MCP市场', 1700, 10, 'mcpMarket', 'ai/mcp/market', NULL, 1, 0, 'C', '0', '0', 'ai:mcp:market:list', 'shopping', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, 'MCP 市场管理菜单');
+INSERT INTO `sys_menu` VALUES (1801, '市场查询', 1800, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:query', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1802, '市场新增', 1800, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:add', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1803, '市场修改', 1800, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:edit', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1804, '市场删除', 1800, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:remove', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
 
 -- ============================================================
 -- 说明（无需 DDL，仅文档）：

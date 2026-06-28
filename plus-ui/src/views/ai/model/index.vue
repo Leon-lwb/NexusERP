@@ -67,9 +67,10 @@
         </el-form-item>
         <el-form-item label="模型类型" prop="modelType">
           <el-select v-model="form.modelType" placeholder="请选择模型类型" style="width: 100%">
-            <el-option label="CHAT" value="CHAT" />
-            <el-option label="EMBEDDING" value="EMBEDDING" />
-            <el-option label="RERANK" value="RERANK" />
+            <el-option label="CHAT（对话）" value="CHAT" />
+            <el-option label="EMBEDDING（向量）" value="EMBEDDING" />
+            <el-option label="RERANK（重排）" value="RERANK" />
+            <el-option label="IMAGE（文生图）" value="IMAGE" />
           </el-select>
         </el-form-item>
         <el-form-item label="最大Token" prop="maxTokens">
