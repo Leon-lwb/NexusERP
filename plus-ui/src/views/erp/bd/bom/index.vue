@@ -74,7 +74,16 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="bomList" @selection-change="handleSelectionChange">
+    <el-table
+      v-loading="loading"
+      :data="bomList"
+      row-key="bomId"
+      :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+      lazy
+      :load="loadBomChildren"
+      :key="tableKey"
+      @selection-change="handleSelectionChange"
+    >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="50" align="center" prop="bomId" />
       <el-table-column label="BOM版本号" align="center" prop="bomVersion" sortable />
@@ -317,6 +326,7 @@ import {
   activateBomVersion,
   verifyBom,
   getBomTree,
+  getBomChildren,
   copyBom,
   compareBom,
   whereUsedBom
@@ -338,6 +348,8 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const compareDisabled = ref(true); // BOM比较按钮是否禁用（需选中2条）
+// 树形表格懒加载缓存刷新 key：每次 getList 时递增，强制 el-table 重新渲染清除懒加载缓存
+const tableKey = ref(0);
 
 // BOM比较相关
 const compareOpen = ref(false);
@@ -389,7 +401,20 @@ function getList() {
     bomList.value = response.rows;
     total.value = response.total;
     loading.value = false;
+    // 递增 tableKey 强制 el-table 重新渲染，清除懒加载已缓存的子节点
+    tableKey.value++;
   });
+}
+
+/** 树形表格懒加载：展开某行时加载其直接子 BOM */
+function loadBomChildren(row, treeNode, resolve) {
+  getBomChildren(row.bomId)
+    .then((response) => {
+      resolve(response.data || []);
+    })
+    .catch(() => {
+      resolve([]);
+    });
 }
 
 /** Where-Used反查：先选择目标物料 */

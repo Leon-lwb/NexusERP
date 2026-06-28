@@ -130,4 +130,9 @@ public class BdBomVo implements Serializable {
     @ExcelProperty(value = "工艺路线名称")
     private String routingName;
 
+    /**
+     * 是否有子BOM（用于前端树形表格懒加载展开箭头显示）
+     */
+    private Boolean hasChildren;
+
 }

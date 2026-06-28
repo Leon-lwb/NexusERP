@@ -134,4 +134,12 @@ public interface IBdBomService {
      * @return 成本卷积结果
      */
     BomCostRollupVo costRollup(Long bomId);
+
+    /**
+     * 获取某 BOM 的直接子 BOM 列表（仅当前版本，用于前端树形表格懒加载展开）
+     *
+     * @param bomId 父BOM主键
+     * @return 直接子BOM列表（已富集物料/工艺路线/hasChildren信息）
+     */
+    List<BdBomVo> getDirectChildren(Long bomId);
 }

@@ -113,6 +113,16 @@ export const getBomTree = (bomId: number): AxiosPromise<BomTreeNodeVo> => {
   });
 };
 
+/**
+ * 获取某 BOM 的直接子 BOM 列表（仅当前版本，用于列表树形表格懒加载展开）
+ */
+export const getBomChildren = (bomId: number): AxiosPromise<BomVO[]> => {
+  return request({
+    url: '/erp/bd/bom/children/' + bomId,
+    method: 'get'
+  });
+};
+
 export const getIndentedBom = (bomId: number): AxiosPromise<IndentedBomLineVo[]> => {
   return request({
     url: '/erp/bd/bom/indented/' + bomId,

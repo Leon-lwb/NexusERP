@@ -171,6 +171,19 @@ public class BdBomController extends BaseController {
     }
 
     /**
+     * 获取某 BOM 的直接子 BOM 列表（仅当前版本，用于列表树形表格懒加载展开）
+     * <p>权限标识：{@code bd:bom:query}</p>
+     *
+     * @param bomId 父BOM ID
+     * @return 直接子BOM列表
+     */
+    @SaCheckPermission("bd:bom:query")
+    @GetMapping("/children/{bomId}")
+    public R<List<BdBomVo>> getDirectChildren(@PathVariable Long bomId) {
+        return R.ok(bdBomService.getDirectChildren(bomId));
+    }
+
+    /**
      * 获取缩进式BOM（扁平列表+层级标记）
      * <p>权限标识：{@code bd:bom:query}</p>
      *

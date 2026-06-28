@@ -97,7 +97,7 @@ public class BdBomServiceImpl implements IBdBomService {
     }
 
     /**
-     * 富集BOM VO: 填充父项物料编码/名称、工艺路线编码/名称
+     * 富集BOM VO: 填充父项物料编码/名称、工艺路线编码/名称、是否有子BOM
      * (这些字段在实体上不存在,需跨表查询,用于列表/详情展示及 MES 只读视图)
      */
     private void enrichBomVo(List<BdBomVo> list) {
@@ -124,6 +124,15 @@ public class BdBomServiceImpl implements IBdBomService {
                     .in(BdRouting::getRoutingId, routingIds))
                 .stream()
                 .collect(Collectors.toMap(BdRoutingVo::getRoutingId, r -> r, (a, b) -> a));
+        // 批量查询哪些 BOM 存在子 BOM（用于前端树形表格展开箭头）
+        Set<Long> bomIdsWithChildren = list.stream()
+            .map(BdBomVo::getBomId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.collectingAndThen(
+                Collectors.toSet(),
+                ids -> ids.isEmpty() ? Collections.emptySet()
+                    : new HashSet<>(baseMapper.findBomIdsWithChildren(ids))
+            ));
         for (BdBomVo vo : list) {
             if (vo == null) {
                 continue;
@@ -138,7 +147,42 @@ public class BdBomServiceImpl implements IBdBomService {
                 vo.setRoutingCode(routing.getRoutingCode());
                 vo.setRoutingName(routing.getRoutingName());
             }
+            vo.setHasChildren(bomIdsWithChildren.contains(vo.getBomId()));
         }
+    }
+
+    /**
+     * 获取某 BOM 的直接子 BOM 列表（仅当前版本，用于前端树形表格懒加载展开）
+     * 子BOM定义：该 BOM 明细中的 child_material_id 在 bd_bom 表中作为 parent_material_id 存在当前版本记录
+     *
+     * @param bomId 父BOM主键
+     * @return 直接子BOM列表（已富集物料/工艺路线/hasChildren信息）
+     */
+    @Override
+    public List<BdBomVo> getDirectChildren(Long bomId) {
+        // 1. 查询该 BOM 的所有明细，拿到子项物料ID集合
+        List<BdBomDetail> details = bomDetailMapper.selectList(
+            Wrappers.<BdBomDetail>lambdaQuery().eq(BdBomDetail::getBomId, bomId)
+        );
+        if (details.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Set<Long> childMaterialIds = details.stream()
+            .map(BdBomDetail::getChildMaterialId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        if (childMaterialIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 2. 查询这些子项物料对应的当前版本 BOM（一个物料可能有多个版本，只取当前版本避免树形爆炸）
+        List<BdBom> childBoms = baseMapper.findCurrentBomsByMaterialIds(childMaterialIds);
+        if (childBoms.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 3. 转换为 VO 并富集
+        List<BdBomVo> childVos = MapstructUtils.convert(childBoms, BdBomVo.class);
+        enrichBomVo(childVos);
+        return childVos;
     }
 
     /**
