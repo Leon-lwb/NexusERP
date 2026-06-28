@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
@@ -84,6 +86,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final AutoCodeUtil autoCodeUtil;
     private final IBdBomService bomService;
     private final IWmStockReservationService stockReservationService;
+    private final BdMaterialMapper bdMaterialMapper;
 
     /**
      * 分页查询生产工单列表
@@ -160,6 +163,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
      * 新增生产工单（通过 BO）
      * <p>
      * 初始状态设为 CREATED，自动生成工单编号。
+     * 虚拟件物料不生成工单（虚拟件跳层，不入库不生产）。
      *
      * @param bo 生产工单业务对象
      * @return 影响的行数
@@ -167,6 +171,13 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdWorkOrderBo bo) {
+        // 虚拟件校验：虚拟件不生成工单
+        if (bo.getMaterialId() != null) {
+            BdMaterial material = bdMaterialMapper.selectById(bo.getMaterialId());
+            if (material != null && Integer.valueOf(1).equals(material.getIsPhantom())) {
+                throw new RuntimeException("物料[" + material.getMaterialCode() + "]为虚拟件，不生成工单");
+            }
+        }
         PrdWorkOrder entity = MapstructUtils.convert(bo, PrdWorkOrder.class);
         entity.setWoStatus(STATUS_CREATED);
         return baseMapper.insert(entity);

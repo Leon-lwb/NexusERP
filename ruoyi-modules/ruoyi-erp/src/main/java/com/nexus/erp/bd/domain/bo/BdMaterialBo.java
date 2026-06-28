@@ -80,9 +80,14 @@ public class BdMaterialBo extends BaseEntity {
     private Long materialType;
 
     /**
-     * 来源类型
+     * 来源类型: PROCESS-加工 PROCUREMENT-采购 SUBCONTRACT-委外 PHANTOM-虚拟件 CFM-客户供料 TRANSFER-调拨
      */
-    private Long sourceType;
+    private String sourceType;
+
+    /**
+     * 是否虚拟件: 0-否 1-是
+     */
+    private Integer isPhantom;
 
     /**
      * 是否批次管理

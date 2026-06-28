@@ -410,7 +410,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 continue;
             }
             BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
-            if (material != null && Long.valueOf(1L).equals(material.getSourceType())) {
+            if (material != null && "PROCESS".equals(material.getSourceType())) {
                 continue; // 自制物料走生产计划，不库存预留
             }
             BigDecimal reserved = stockReservationService.reserve(
@@ -440,7 +440,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 continue;
             }
             BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
-            if (material != null && Long.valueOf(1L).equals(material.getSourceType())) {
+            if (material != null && "PROCESS".equals(material.getSourceType())) {
                 createProductionPlan(line, soNo, material);
             }
         }

@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +31,12 @@ import java.util.List;
 @DS("erp")
 @Service
 public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMapper, WmMaterialStock> implements IWmMaterialStockService {
+
+    private final BdMaterialMapper bdMaterialMapper;
+
+    public WmMaterialStockServiceImpl(BdMaterialMapper bdMaterialMapper) {
+        this.bdMaterialMapper = bdMaterialMapper;
+    }
 
     /**
      * 分页查询库存清单列表
@@ -68,6 +76,8 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
 
     /**
      * 新增库存清单
+     * <p>
+     * 虚拟件物料不入库（虚拟件跳层，不产生实际库存）。
      *
      * @param bo 库存清单业务对象
      * @return 影响行数
@@ -75,6 +85,13 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialStockBo bo) {
+        // 虚拟件校验：虚拟件不入库
+        if (bo.getMaterialId() != null) {
+            BdMaterial material = bdMaterialMapper.selectById(bo.getMaterialId());
+            if (material != null && Integer.valueOf(1).equals(material.getIsPhantom())) {
+                throw new RuntimeException("物料[" + material.getMaterialCode() + "]为虚拟件，不入库");
+            }
+        }
         WmMaterialStock entity = MapstructUtils.convert(bo, WmMaterialStock.class);
         return baseMapper.insert(entity);
     }

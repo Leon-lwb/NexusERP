@@ -348,6 +348,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
      * 递归处理单个BOM节点：
      * - 当前节点（有BOM）生成一条主表，仅包含其BOM树下的底层物料作为子表
      * - 对每个具备BOM的子节点，递归生成独立的主表与其底层物料子表
+     * - 虚拟件节点跳层：虚拟件本身不生成主表（不入库不产生需求），
+     *   其子BOM递归产生的主表直接挂到祖父节点（parentRequirementId 沿用）
+     * - 子项需求 sourceType 优先取子项物料本身（统一编码后），未配置时回退父BOM
      */
     private List<PrdMaterialRequirement> processBomNode(Long materialId, Long specifiedBomId,
                                                          BigDecimal parentQuantity, PrdProductionPlan plan,
@@ -369,6 +372,11 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             return result;
         }
 
+        // 判断当前节点物料是否虚拟件：虚拟件跳层，本身不产生主表
+        BdMaterial currentMaterial = getMaterialInfo(materialId);
+        boolean isCurrentPhantom = currentMaterial != null
+            && Integer.valueOf(1).equals(currentMaterial.getIsPhantom());
+
         // 获取BOM的来源类型：PROCUREMENT-采购（不递归），PROCESS-加工（递归展开子BOM）
         String sourceType = currentBom.getSourceType();
         boolean isProcurement = "PROCUREMENT".equals(sourceType);
@@ -386,19 +394,28 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                     detail.getLossRate()
             );
 
+            // 提前获取子项物料信息：用于虚拟件判断与 sourceType 分流
+            BdMaterial childMaterial = getMaterialInfo(detail.getChildMaterialId());
+            boolean isChildPhantom = childMaterial != null
+                && Integer.valueOf(1).equals(childMaterial.getIsPhantom());
+            // 子项物料的 sourceType（优先），未配置时回退父BOM
+            String childSourceType = (childMaterial != null && childMaterial.getSourceType() != null)
+                ? childMaterial.getSourceType() : sourceType;
+
             // 采购类型BOM：所有明细均作为底层物料，不递归展开子BOM
             // 加工类型BOM：判断子项是否有子BOM来决定是否递归
+            // 虚拟件子项：本身不计入 leafRequirements（跳层），但其子BOM仍需递归展开
             BdBom childBom = isProcurement ? null : getCurrentBom(detail.getChildMaterialId(), null);
             if (childBom != null) {
-                // 作为子节点，递归生成其主表与底层物料子表
+                // 子项有子BOM：作为子节点递归（含虚拟件，虚拟件主表会在其入口处被跳过）
                 BomCalculationNode childNode = new BomCalculationNode();
                 childNode.setMaterialId(detail.getChildMaterialId());
                 childNode.setQuantity(childRequiredQuantity);
                 childNode.setBomId(childBom.getBomId());
                 childNode.setParentDetail(detail);
                 childAssemblyNodes.add(childNode);
-            } else {
-                // 底层物料，归属于当前节点的主表子表
+            } else if (!isChildPhantom) {
+                // 非虚拟件底层物料：进入当前主表的子表
                 MaterialRequirementCalcDTO dto = new MaterialRequirementCalcDTO();
                 dto.setMaterialId(detail.getChildMaterialId());
                 dto.setTotalRequiredQuantity(childRequiredQuantity);
@@ -407,14 +424,14 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 dto.setOperationStep(detail.getOperationStep() != null ?
                         Long.valueOf(detail.getOperationStep()) : null);
                 dto.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
-                dto.setSourceType(sourceType);
-                // 尝试补充物料基础信息
-                BdMaterial material = getMaterialInfo(detail.getChildMaterialId());
-                if (material != null) {
-                    dto.setMaterialCode(material.getMaterialCode());
-                    dto.setMaterialName(material.getMaterialName());
-                    dto.setMaterialSpec(material.getMaterialSpec());
-                    BdMaterialCategory category = getMaterialCategory(material.getCategoryId());
+                // sourceType 优先取子项物料的，物料未配置时回退父BOM
+                dto.setSourceType(childSourceType);
+                // 补充物料基础信息
+                if (childMaterial != null) {
+                    dto.setMaterialCode(childMaterial.getMaterialCode());
+                    dto.setMaterialName(childMaterial.getMaterialName());
+                    dto.setMaterialSpec(childMaterial.getMaterialSpec());
+                    BdMaterialCategory category = getMaterialCategory(childMaterial.getCategoryId());
                     if (category != null) {
                         dto.setCategoryName(category.getCategoryName());
                         dto.setCategoryPath(category.getPathNames());
@@ -426,14 +443,16 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 }
                 leafRequirements.add(dto);
             }
+            // 虚拟件且无子BOM：跳过（虚拟件不应进入需求，正常情况下虚拟件必有子BOM）
         }
 
         // 合并相同底层物料用量，仅对当前节点的底层物料合并
         List<MaterialRequirementCalcDTO> mergedLeaves = mergeMaterialRequirements(leafRequirements);
 
-        // 当前节点主表与子表生成（若存在底层物料）
+        // 当前节点主表与子表生成（若存在底层物料，且当前节点非虚拟件）
+        // 虚拟件本身不生成主表（跳层），其下层需求通过递归子BOM生成并挂到祖父
         PrdMaterialRequirement mainRequirement = null;
-        if (!mergedLeaves.isEmpty()) {
+        if (!isCurrentPhantom && !mergedLeaves.isEmpty()) {
             mainRequirement = createMaterialRequirement(plan, currentBom.getBomId(), mergedLeaves, parentRequirementId);
             prdMaterialRequirementService.insertPrdMaterialRequirement(mainRequirement);
 
@@ -457,13 +476,16 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         }
 
         // 递归处理具备BOM的子节点：每个子节点生成独立的主表与其底层物料子表
+        // 虚拟件节点：mainRequirement 为 null，子节点 parentRequirementId 沿用传入值（跳层挂到祖父）
+        Long nextParentRequirementId = mainRequirement != null
+            ? mainRequirement.getRequirementId() : parentRequirementId;
         for (BomCalculationNode childNode : childAssemblyNodes) {
             result.addAll(processBomNode(
                     childNode.getMaterialId(),
                     childNode.getBomId(),
                     childNode.getQuantity(),
                     plan,
-                    mainRequirement != null ? mainRequirement.getRequirementId() : null,
+                    nextParentRequirementId,
                     parentRequiredDate
             ));
         }

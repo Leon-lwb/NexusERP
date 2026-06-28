@@ -276,9 +276,13 @@
               :expand-on-click-node="false"
             >
               <template #default="{ data }">
-                <div class="bom-tree-node">
-                  <el-tag :type="data.nodeType === 'ASSEMBLY' ? 'warning' : 'success'" size="small">
-                    {{ data.nodeType === 'ASSEMBLY' ? '组件' : '零件' }}
+                <div class="bom-tree-node" :class="{ 'phantom-node': data.isPhantom }">
+                  <el-tag
+                    :type="data.nodeType === 'ASSEMBLY' ? 'warning' : data.nodeType === 'PHANTOM' ? 'info' : 'success'"
+                    size="small"
+                    :effect="data.nodeType === 'PHANTOM' ? 'plain' : 'light'"
+                  >
+                    {{ data.nodeType === 'ASSEMBLY' ? '组件' : data.nodeType === 'PHANTOM' ? '虚拟件' : '零件' }}
                   </el-tag>
                   <span class="node-label">
                     {{ data.materialCode }} - {{ data.materialName }}
@@ -314,8 +318,12 @@
             <el-table-column label="规格型号" prop="materialSpec" width="120" />
             <el-table-column label="类型" prop="nodeType" width="80" align="center">
               <template #default="scope">
-                <el-tag :type="scope.row.nodeType === 'ASSEMBLY' ? 'warning' : 'success'" size="small">
-                  {{ scope.row.nodeType === 'ASSEMBLY' ? '组件' : '零件' }}
+                <el-tag
+                  :type="scope.row.nodeType === 'ASSEMBLY' ? 'warning' : scope.row.nodeType === 'PHANTOM' ? 'info' : 'success'"
+                  size="small"
+                  :effect="scope.row.nodeType === 'PHANTOM' ? 'plain' : 'light'"
+                >
+                  {{ scope.row.nodeType === 'ASSEMBLY' ? '组件' : scope.row.nodeType === 'PHANTOM' ? '虚拟件' : '零件' }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -1130,6 +1138,13 @@ function handleClose() {
   gap: 8px;
   padding: 4px 0;
   flex: 1;
+}
+
+/* 虚拟件节点：灰色虚线样式，提示该层会被跳过 */
+.bom-tree-node.phantom-node .node-label {
+  color: #909399;
+  font-style: italic;
+  text-decoration: line-through dashed;
 }
 
 .node-label {

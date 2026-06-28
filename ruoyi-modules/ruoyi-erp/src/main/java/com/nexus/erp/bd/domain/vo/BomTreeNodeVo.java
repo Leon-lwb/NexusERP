@@ -55,7 +55,7 @@ public class BomTreeNodeVo implements Serializable {
     private Integer level;
 
     /**
-     * 节点类型: ASSEMBLY=组件(有下级BOM), PART=零件(叶子)
+     * 节点类型: ASSEMBLY=组件(有下级BOM), PART=零件(叶子), PHANTOM=虚拟件(展开时跳层，下层用量相乘挂到父项)
      */
     private String nodeType;
 
@@ -88,6 +88,11 @@ public class BomTreeNodeVo implements Serializable {
      * 来源类型
      */
     private String sourceType;
+
+    /**
+     * 是否虚拟件节点（来自物料的 is_phantom 标识）
+     */
+    private Boolean isPhantom;
 
     /**
      * 提前期(小时)

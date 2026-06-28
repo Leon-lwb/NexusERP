@@ -155,9 +155,13 @@
           :expand-on-click-node="false"
         >
           <template #default="{ data }">
-            <div class="bom-tree-node">
-              <el-tag :type="data.nodeType === 'ASSEMBLY' ? 'warning' : 'success'" size="small">
-                {{ data.nodeType === 'ASSEMBLY' ? '组件' : '零件' }}
+            <div class="bom-tree-node" :class="{ 'phantom-node': data.isPhantom }">
+              <el-tag
+                :type="data.nodeType === 'ASSEMBLY' ? 'warning' : data.nodeType === 'PHANTOM' ? 'info' : 'success'"
+                size="small"
+                :effect="data.nodeType === 'PHANTOM' ? 'plain' : 'light'"
+              >
+                {{ data.nodeType === 'ASSEMBLY' ? '组件' : data.nodeType === 'PHANTOM' ? '虚拟件' : '零件' }}
               </el-tag>
               <span class="node-label">
                 {{ data.materialCode }} - {{ data.materialName }}
@@ -672,6 +676,13 @@ onActivated(() => {
   gap: 8px;
   padding: 4px 0;
   flex: 1;
+}
+
+/* 虚拟件节点：灰色虚线样式，提示该层会被跳过 */
+.bom-tree-node.phantom-node .node-label {
+  color: #909399;
+  font-style: italic;
+  text-decoration: line-through dashed;
 }
 
 .node-label {

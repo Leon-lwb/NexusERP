@@ -45,7 +45,7 @@
           </el-form-item>
           <el-form-item label="来源类型" prop="sourceType">
             <el-select v-model="queryParams.sourceType" placeholder="请选择" clearable style="width: 120px">
-              <el-option v-for="dict in bd_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+              <el-option v-for="dict in prd_material_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="批次管理" prop="isBatchManage">
@@ -107,7 +107,7 @@
           </el-table-column>
           <el-table-column label="来源类型" align="center" prop="sourceType">
             <template #default="scope">
-              <dict-tag :options="bd_source_type" :value="scope.row.sourceType" />
+              <dict-tag :options="prd_material_source_type" :value="scope.row.sourceType" />
             </template>
           </el-table-column>
           <el-table-column label="是否批次管理" align="center" prop="isBatchManage">
@@ -250,10 +250,21 @@
               <el-col :span="12">
                 <el-form-item label="来源类型" prop="sourceType">
                   <el-select v-model="form.sourceType" placeholder="请选择来源类型">
-                    <el-option v-for="dict in bd_source_type" :key="dict.value" :label="dict.label" :value="parseInt(dict.value)"></el-option>
+                    <el-option v-for="dict in prd_material_source_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
+              <el-col :span="12">
+                <el-form-item label="虚拟件" prop="isPhantom">
+                  <el-radio-group v-model="form.isPhantom">
+                    <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
+                  </el-radio-group>
+                  <span style="margin-left: 8px; color: #909399; font-size: 12px">虚拟件展开时跳层，不入库不生成工单</span>
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item label="批次管理" prop="isBatchManage">
                   <el-radio-group v-model="form.isBatchManage">
@@ -442,8 +453,8 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 
 const { proxy } = getCurrentInstance();
-const { sys_true_or_false, bd_source_type, bd_material_type, bd_quality_status } = toRefs<any>(
-  proxy.useDict('sys_true_or_false', 'bd_source_type', 'bd_material_type', 'bd_quality_status')
+const { sys_true_or_false, prd_material_source_type, bd_material_type, bd_quality_status } = toRefs<any>(
+  proxy.useDict('sys_true_or_false', 'prd_material_source_type', 'bd_material_type', 'bd_quality_status')
 );
 
 const materialList = ref([]);
@@ -543,6 +554,7 @@ function reset() {
     saleUomId: null,
     materialType: null,
     sourceType: null,
+    isPhantom: 0,
     isBatchManage: 0,
     isSerialManage: 0,
     safetyStock: 0,

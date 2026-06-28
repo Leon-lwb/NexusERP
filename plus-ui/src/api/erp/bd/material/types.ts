@@ -26,7 +26,8 @@ export interface MaterialVO {
   inventoryUomId: number;
   saleUomId: number;
   materialType: number;
-  sourceType: number;
+  sourceType: string;
+  isPhantom: number;
   isBatchManage: number;
   isSerialManage: number;
   safetyStock: number;
@@ -58,7 +59,8 @@ export interface MaterialForm {
   inventoryUomId?: number;
   saleUomId?: number;
   materialType: number;
-  sourceType?: number;
+  sourceType?: string;
+  isPhantom?: number;
   isBatchManage?: number;
   isSerialManage?: number;
   safetyStock?: number;

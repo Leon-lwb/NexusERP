@@ -611,10 +611,14 @@ public class BdBomServiceImpl implements IBdBomService {
             node.setMaterialSpec(material.getMaterialSpec());
             node.setMaterialType(String.valueOf(material.getMaterialType()));
         }
+        // 判断是否虚拟件（来自物料的 is_phantom 标识）
+        boolean isPhantom = material != null && Integer.valueOf(1).equals(material.getIsPhantom());
+        node.setIsPhantom(isPhantom);
         // 从上下文检查子项物料是否有自己的BOM
         BdBom childBom = ctx.currentBomMap.get(detail.getChildMaterialId());
         if (childBom != null) {
-            node.setNodeType("ASSEMBLY");
+            // 虚拟件标记为 PHANTOM，普通组件标记为 ASSEMBLY；二者都递归展开下层
+            node.setNodeType(isPhantom ? "PHANTOM" : "ASSEMBLY");
             node.setBomId(childBom.getBomId());
             node.setHasChildren(true);
             node.setLeaf(false);
@@ -625,7 +629,13 @@ public class BdBomServiceImpl implements IBdBomService {
             List<BdBomDetail> childDetails = ctx.detailMap.getOrDefault(childBom.getBomId(), Collections.emptyList());
             List<BomTreeNodeVo> grandchildren = new ArrayList<>();
             for (BdBomDetail childDetail : childDetails) {
-                grandchildren.add(buildTreeNodeWithContext(childDetail, childBom.getBomId(), level + 1, childVisited, ctx));
+                BomTreeNodeVo grandchild = buildTreeNodeWithContext(childDetail, childBom.getBomId(), level + 1, childVisited, ctx);
+                // 虚拟件跳层：下层用量乘以虚拟件用量，使下层物料相对于虚拟件的父项
+                if (isPhantom) {
+                    grandchild.setQuantityPerParent(grandchild.getQuantityPerParent().multiply(qty));
+                    grandchild.setTotalQuantity(grandchild.getTotalQuantity().multiply(node.getTotalQuantity()));
+                }
+                grandchildren.add(grandchild);
             }
             node.setChildren(grandchildren);
         } else {
@@ -802,19 +812,28 @@ public class BdBomServiceImpl implements IBdBomService {
                 line.setMaterialSpec(material.getMaterialSpec());
                 line.setMaterialType(String.valueOf(material.getMaterialType()));
             }
+            // 判断是否虚拟件
+            boolean isPhantom = material != null && Integer.valueOf(1).equals(material.getIsPhantom());
+            line.setIsPhantom(isPhantom);
             line.setUnitCost(materialCost(material));
             line.setLineCost(line.getUnitCost().multiply(line.getCumulativeQuantity()));
             // 从上下文检查是否有子BOM
             BdBom childBom = ctx.currentBomMap.get(detail.getChildMaterialId());
             if (childBom != null) {
-                line.setNodeType("ASSEMBLY");
+                // 虚拟件标记为 PHANTOM，普通组件标记为 ASSEMBLY
+                line.setNodeType(isPhantom ? "PHANTOM" : "ASSEMBLY");
                 line.setBomId(childBom.getBomId());
                 line.setExpandable(true);
+                // 虚拟件本身不计独立成本（其成本通过下层卷积体现）
+                if (isPhantom) {
+                    line.setUnitCost(BigDecimal.ZERO);
+                    line.setLineCost(BigDecimal.ZERO);
+                }
                 result.add(line);
                 // 将当前子物料加入已访问集合（传递副本，兄弟节点间不共享）
                 Set<Long> childVisited = new HashSet<>(visited);
                 childVisited.add(detail.getChildMaterialId());
-                // 递归添加子节点
+                // 递归添加子节点（累计用量通过 parentCumulativeQty 自动相乘传递）
                 buildIndentedLinesWithContext(childBom.getBomId(), level + 1, line.getCumulativeQuantity(), result, childVisited, ctx);
             } else {
                 line.setNodeType("PART");

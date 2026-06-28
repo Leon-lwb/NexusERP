@@ -291,9 +291,17 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         }
 
         // 4. Map to PrdMaterialRequirementDetail with quantity calculation
+        //    sourceType 从子项物料本身取（而非父BOM），便于后续按来源分流：
+        //    PROCESS→工单 / PROCUREMENT→采购申请 / SUBCONTRACT→委外订单 / PHANTOM→跳过（虚拟件不入库不产生需求）
         final Map<Long, BdMaterialVo> finalMaterialMap = materialMap;
         final String finalSourceType = sourceType;
-        return bomDetails.stream().map(detail -> {
+        return bomDetails.stream()
+            .filter(detail -> {
+                // 虚拟件不产生需求（虚拟件展开时跳层，其下层物料已通过 BOM 展开独立计算需求）
+                BdMaterialVo mat = finalMaterialMap.get(detail.getChildMaterialId());
+                return mat == null || !Integer.valueOf(1).equals(mat.getIsPhantom());
+            })
+            .map(detail -> {
             PrdMaterialRequirementDetail reqDetail = new PrdMaterialRequirementDetail();
             BdMaterialVo mat = finalMaterialMap.get(detail.getChildMaterialId());
 
@@ -314,7 +322,8 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             reqDetail.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
             reqDetail.setRequiredDate(resolveRequiredDate(detail.getLeadTime()));
             reqDetail.setStatus(1L);
-            reqDetail.setSourceType(finalSourceType);
+            // sourceType 优先取子项物料的（统一编码后），物料未配置时回退父BOM
+            reqDetail.setSourceType(mat != null && mat.getSourceType() != null ? mat.getSourceType() : finalSourceType);
             calculateNetRequirements(reqDetail);
             return reqDetail;
         }).collect(Collectors.toList());
