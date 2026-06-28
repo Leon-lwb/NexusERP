@@ -1,24 +1,28 @@
 package com.nexus.ai.service.chat;
 
+import com.nexus.ai.service.chat.provider.ChatServiceProviderFactory;
 import com.nexus.common.ai.domain.entity.AiModel;
+import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.service.IAiModelService;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.chat.listener.ChatModelListener;
-import dev.langchain4j.model.openai.OpenAiChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
-import dev.langchain4j.model.ollama.OllamaChatModel;
-import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * AI 模型工厂（带缓存 + 多厂商路由）
- * <p>根据数据库配置动态构建 ChatModel 和 StreamingChatModel，按 providerType 路由到不同厂商实现</p>
+ * AI 模型工厂（带缓存 + 厂商策略路由）
+ * <p>根据数据库配置动态构建 ChatModel 和 StreamingChatModel，构建逻辑委托给
+ * {@link ChatServiceProviderFactory}（按 providerType 路由到对应厂商策略实现）</p>
+ * <p>缓存职责：
+ * <ul>
+ *   <li>同步模型按 modelId 缓存</li>
+ *   <li>流式模型按 {@code modelId + ":" + (enableThinking?"T":"F")} 缓存，避免推理/非推理实例串用</li>
+ *   <li>Agent 专用同步模型按 modelId 缓存（低 temperature）</li>
+ * </ul>
+ * 模型配置变更时由 {@code AiModelChangeListener} 监听 {@code AiModelChangeEvent} 调用 {@link #evictCache(Long)} 清除</p>
  *
  * @author NexusERP
  */
@@ -28,13 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatModelFactory {
 
     private final IAiModelService aiModelService;
-    private final List<ChatModelListener> chatModelListeners;
+    private final ChatServiceProviderFactory providerFactory;
 
     /** 同步模型缓存（key = modelId） */
     private final ConcurrentHashMap<Long, ChatModel> chatModelCache = new ConcurrentHashMap<>();
 
-    /** 流式模型缓存（key = modelId） */
-    private final ConcurrentHashMap<Long, StreamingChatModel> streamingModelCache = new ConcurrentHashMap<>();
+    /** 流式模型缓存（key = modelId + ":" + (enableThinking?"T":"F")） */
+    private final ConcurrentHashMap<String, StreamingChatModel> streamingModelCache = new ConcurrentHashMap<>();
 
     /** Agent 专用同步模型缓存（key = modelId，使用低 temperature） */
     private final ConcurrentHashMap<Long, ChatModel> agentModelCache = new ConcurrentHashMap<>();
@@ -54,24 +58,38 @@ public class ChatModelFactory {
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
             }
-            return buildChatModel(config);
+            return providerFactory.get(config.getProviderType()).buildChatModel(config, defaultTemperature(config));
         });
     }
 
     /**
-     * 获取流式模型（带缓存）
+     * 获取流式模型（带缓存，含推理维度）
+     * <p>缓存 key 含 enableThinking，避免推理模型实例（returnThinking=true）与非推理实例串用</p>
+     *
+     * @param modelId 模型ID
+     * @param request 聊天请求（含 enableThinking 开关）
+     * @return StreamingChatModel 实例
+     */
+    public StreamingChatModel getStreamingChatModel(Long modelId, AiChatRequest request) {
+        boolean thinking = request != null && Boolean.TRUE.equals(request.getEnableThinking());
+        String key = modelId + ":" + (thinking ? "T" : "F");
+        return streamingModelCache.computeIfAbsent(key, k -> {
+            AiModel config = aiModelService.selectModelById(modelId);
+            if (config == null) {
+                throw new IllegalArgumentException("未找到模型配置，modelId=" + modelId);
+            }
+            return providerFactory.get(config.getProviderType()).buildStreamingChatModel(config, request);
+        });
+    }
+
+    /**
+     * 获取流式模型（兼容旧调用，等价于 enableThinking=false）
      *
      * @param modelId 模型ID
      * @return StreamingChatModel 实例
      */
     public StreamingChatModel getStreamingChatModel(Long modelId) {
-        return streamingModelCache.computeIfAbsent(modelId, id -> {
-            AiModel config = aiModelService.selectModelById(id);
-            if (config == null) {
-                throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
-            }
-            return buildStreamingChatModel(config);
-        });
+        return getStreamingChatModel(modelId, new AiChatRequest());
     }
 
     /**
@@ -86,7 +104,7 @@ public class ChatModelFactory {
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
             }
-            return buildChatModel(config, AGENT_TEMPERATURE);
+            return providerFactory.get(config.getProviderType()).buildChatModel(config, AGENT_TEMPERATURE);
         });
     }
 
@@ -105,13 +123,15 @@ public class ChatModelFactory {
     }
 
     /**
-     * 清除指定模型缓存（模型配置变更时调用）
+     * 清除指定模型缓存（模型配置变更时由 AiModelChangeListener 调用）
+     * <p>streamingModelCache 需清除 modelId 对应的 T/F 两个键</p>
      *
      * @param modelId 模型ID
      */
     public void evictCache(Long modelId) {
+        String prefix = modelId + ":";
+        streamingModelCache.keySet().removeIf(k -> k.startsWith(prefix));
         chatModelCache.remove(modelId);
-        streamingModelCache.remove(modelId);
         agentModelCache.remove(modelId);
     }
 
@@ -119,109 +139,15 @@ public class ChatModelFactory {
      * 清除全部模型缓存
      */
     public void evictAllCache() {
-        chatModelCache.clear();
         streamingModelCache.clear();
+        chatModelCache.clear();
         agentModelCache.clear();
     }
 
     /**
-     * 构建同步模型（按 providerType 路由）
-     *
-     * @param config 模型配置
-     * @return ChatModel 实例
+     * 取模型配置的默认温度（null 时回退 0.7）
      */
-    private ChatModel buildChatModel(AiModel config) {
-        double temperature = config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7;
-        return buildChatModel(config, temperature);
-    }
-
-    /**
-     * 构建同步模型（指定 temperature）
-     *
-     * @param config      模型配置
-     * @param temperature 温度参数
-     * @return ChatModel 实例
-     */
-    private ChatModel buildChatModel(AiModel config, double temperature) {
-        String providerType = config.getProviderType();
-        log.debug("[ChatModelFactory] 构建 ChatModel: providerType={}, modelName={}, temperature={}",
-            providerType, config.getModelName(), temperature);
-
-        if (providerType == null) {
-            providerType = "OPENAI";
-        }
-
-        return switch (providerType.toUpperCase()) {
-            case "OLLAMA" -> OllamaChatModel.builder()
-                .baseUrl(config.getApiHost())
-                .modelName(config.getModelName())
-                .temperature(temperature)
-                .listeners(chatModelListeners)
-                .build();
-            // DASHSCOPE/ZHIPU 暂走 OpenAI 兼容接口
-            case "OPENAI", "DASHSCOPE", "ZHIPU" -> OpenAiChatModel.builder()
-                .baseUrl(config.getApiHost())
-                .apiKey(config.getApiKey())
-                .modelName(config.getModelName())
-                .temperature(temperature)
-                .maxTokens(config.getMaxTokens())
-                .listeners(chatModelListeners)
-                .build();
-            default -> {
-                log.warn("[ChatModelFactory] 未知的 providerType: {}，回退到 OpenAI 兼容接口", providerType);
-                yield OpenAiChatModel.builder()
-                    .baseUrl(config.getApiHost())
-                    .apiKey(config.getApiKey())
-                    .modelName(config.getModelName())
-                    .temperature(temperature)
-                    .maxTokens(config.getMaxTokens())
-                    .listeners(chatModelListeners)
-                    .build();
-            }
-        };
-    }
-
-    /**
-     * 构建流式模型（按 providerType 路由）
-     *
-     * @param config 模型配置
-     * @return StreamingChatModel 实例
-     */
-    private StreamingChatModel buildStreamingChatModel(AiModel config) {
-        String providerType = config.getProviderType();
-        log.debug("[ChatModelFactory] 构建 StreamingChatModel: providerType={}, modelName={}", providerType, config.getModelName());
-
-        if (providerType == null) {
-            providerType = "OPENAI";
-        }
-
-        return switch (providerType.toUpperCase()) {
-            case "OLLAMA" -> OllamaStreamingChatModel.builder()
-                .baseUrl(config.getApiHost())
-                .modelName(config.getModelName())
-                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
-                .listeners(chatModelListeners)
-                .build();
-            // DASHSCOPE/ZHIPU 暂走 OpenAI 兼容接口
-            case "OPENAI", "DASHSCOPE", "ZHIPU" -> OpenAiStreamingChatModel.builder()
-                .baseUrl(config.getApiHost())
-                .apiKey(config.getApiKey())
-                .modelName(config.getModelName())
-                .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
-                .maxTokens(config.getMaxTokens())
-                .listeners(chatModelListeners)
-                .build();
-            default -> {
-                log.warn("[ChatModelFactory] 未知的 providerType: {}，回退到 OpenAI 兼容接口", providerType);
-                yield OpenAiStreamingChatModel.builder()
-                    .baseUrl(config.getApiHost())
-                    .apiKey(config.getApiKey())
-                    .modelName(config.getModelName())
-                    .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
-                    .maxTokens(config.getMaxTokens())
-                    .listeners(chatModelListeners)
-                    .build();
-            }
-        };
+    private double defaultTemperature(AiModel config) {
+        return config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7;
     }
 }

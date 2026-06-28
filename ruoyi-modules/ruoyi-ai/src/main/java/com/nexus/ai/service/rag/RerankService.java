@@ -1,6 +1,9 @@
 package com.nexus.ai.service.rag;
 
 import com.nexus.ai.service.chat.ChatModelFactory;
+import com.nexus.ai.service.rag.rerank.RerankProvider;
+import com.nexus.ai.service.rag.rerank.RerankProviderFactory;
+import com.nexus.ai.service.rag.rerank.RerankResult;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.service.IAiModelService;
 import dev.langchain4j.model.chat.ChatModel;
@@ -32,6 +35,8 @@ public class RerankService {
     @Qualifier("aiExecutor")
     private final Executor aiExecutor;
 
+    private final RerankProviderFactory rerankProviderFactory;
+
     /** 单个 chunk 打分超时时间（秒） */
     private static final int SCORE_TIMEOUT_SECONDS = 5;
 
@@ -43,12 +48,13 @@ public class RerankService {
 
     /**
      * 重排序文档片段
-     * <p>使用 LLM 对每个 chunk 与 query 的相关性打分（0-10），按分数降序排列</p>
+     * <p>优先使用专用 Rerank API（Cross-Encoder，modelType=RERANK 且有对应 provider 实现），
+     * 失败或无对应实现时回退到 LLM 打分方案</p>
      *
      * @param query   查询文本
      * @param chunks  候选片段
      * @param topN    返回 Top N
-     * @param modelId Rerank 模型ID（可为 null，使用默认 CHAT 模型）
+     * @param modelId Rerank 模型ID（可为 null，使用默认 CHAT 模型走 LLM 兜底）
      * @return 重排序后的片段列表（按相关性降序）
      */
     public List<String> rerank(String query, List<String> chunks, int topN, Long modelId) {
@@ -60,6 +66,43 @@ public class RerankService {
         List<String> candidates = chunks.size() > MAX_CANDIDATES
             ? chunks.subList(0, MAX_CANDIDATES) : chunks;
 
+        // 专用 Rerank API 优先（modelType=RERANK 且有对应 provider 实现）
+        if (modelId != null) {
+            try {
+                AiModel rerankModel = aiModelService.selectModelById(modelId);
+                if (rerankModel != null && "RERANK".equals(rerankModel.getModelType())) {
+                    RerankProvider provider = rerankProviderFactory.get(rerankModel.getProviderType());
+                    if (provider != null) {
+                        return rerankWithApi(provider, query, candidates, topN, rerankModel);
+                    }
+                    log.warn("[Rerank] 未找到 providerType={} 的专用 Rerank 实现，回退 LLM", rerankModel.getProviderType());
+                }
+            } catch (Exception e) {
+                log.warn("[Rerank] 专用 Rerank API 调用失败，回退 LLM: {}", e.getMessage());
+            }
+        }
+
+        // 兜底：LLM 打分重排
+        return rerankWithLLM(query, candidates, topN, modelId);
+    }
+
+    /**
+     * 专用 Rerank API 重排（Cross-Encoder，比 LLM 打分更快更准）
+     */
+    private List<String> rerankWithApi(RerankProvider provider, String query, List<String> candidates, int topN, AiModel config) {
+        int limit = topN > 0 ? topN : candidates.size();
+        List<RerankResult> results = provider.rerank(query, candidates, limit, config);
+        return results.stream()
+            .limit(limit)
+            .map(RerankResult::document)
+            .toList();
+    }
+
+    /**
+     * LLM 打分重排（兜底方案，无专用 Rerank API 时使用）
+     * <p>使用 ChatModel 对每个 chunk 与 query 的相关性打分（0-10），按分数降序排列</p>
+     */
+    private List<String> rerankWithLLM(String query, List<String> candidates, int topN, Long modelId) {
         // 获取 ChatModel（复用 ChatModelFactory 缓存）
         ChatModel chatModel = getRerankChatModel(modelId);
 

@@ -42,6 +42,12 @@ public class AiSseMessageHelper {
     public static final String TYPE_TOOL_END = "AI_TOOL_END";
     /** Agent 思考过程 */
     public static final String TYPE_AGENT_THINKING = "AI_AGENT_THINKING";
+    /** 推理 token 增量（推理模型的思考过程，区别于 AI_THINKING 状态指示） */
+    public static final String TYPE_THINKING_TOKEN = "AI_THINKING_TOKEN";
+    /** 文生图结果 */
+    public static final String TYPE_IMAGE = "AI_IMAGE";
+    /** 联网搜索来源卡片 */
+    public static final String TYPE_WEB_SEARCH = "AI_WEB_SEARCH";
 
     /**
      * 发送 AI 回复内容（完整替换模式，用于 Agent 一次性结果）
@@ -155,6 +161,59 @@ public class AiSseMessageHelper {
         } catch (Exception e) {
             log.error("发送思考过程事件失败", e);
         }
+    }
+
+    /**
+     * 发送推理 token 增量（推理模型思考过程）
+     *
+     * @param userId 目标用户ID
+     * @param token  推理 token 片段
+     */
+    public static void sendThinkingToken(Long userId, String token) {
+        send(userId, TYPE_THINKING_TOKEN, token);
+    }
+
+    /**
+     * 发送文生图结果
+     *
+     * @param userId  目标用户ID
+     * @param imageUrl 图片URL
+     * @param prompt  生成提示词
+     */
+    public static void sendImage(Long userId, String imageUrl, String prompt) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("url", imageUrl);
+            payload.put("prompt", prompt);
+            send(userId, TYPE_IMAGE, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送文生图事件失败", e);
+        }
+    }
+
+    /**
+     * 发送联网搜索来源卡片
+     *
+     * @param userId   目标用户ID
+     * @param sources  来源列表
+     */
+    public static void sendWebSearchSources(Long userId, List<SourceCard> sources) {
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("sources", sources);
+            send(userId, TYPE_WEB_SEARCH, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送联网搜索来源事件失败", e);
+        }
+    }
+
+    /**
+     * 联网搜索来源卡片
+     *
+     * @param title 标题
+     * @param url   链接
+     */
+    public record SourceCard(String title, String url) {
     }
 
     /**

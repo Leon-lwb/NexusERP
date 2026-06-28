@@ -73,6 +73,20 @@ public class AiModelServiceImpl implements IAiModelService {
     }
 
     @Override
+    public AiModel selectDefaultImageModel() {
+        AiModel model = baseMapper.selectOne(
+            new LambdaQueryWrapper<AiModel>()
+                .eq(AiModel::getModelType, "IMAGE")
+                .eq(AiModel::getIsDefault, "1")
+                .eq(AiModel::getStatus, "1")
+        );
+        if (model != null) {
+            fillProviderInfo(model);
+        }
+        return model;
+    }
+
+    @Override
     public TableDataInfo<AiModelVo> selectPageList(AiModelBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<AiModel> lqw = buildQueryWrapper(bo);
         Page<AiModelVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);

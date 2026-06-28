@@ -48,4 +48,17 @@ public class AiChatRequest implements Serializable {
      * <p>null 表示使用会话默认工具集，非空时覆盖会话设置</p>
      */
     private List<Long> enabledToolIds;
+
+    /**
+     * 是否开启推理（Thinking）模式
+     * <p>开启后输出推理 token 流（DeepSeek-R1 等推理模型），前端折叠展示思考过程</p>
+     * <p>仅对支持 returnThinking 的厂商（OpenAI 兼容类）生效</p>
+     */
+    private Boolean enableThinking = false;
+
+    /**
+     * 是否开启联网搜索模式（S2-C）
+     * <p>开启后路由到 WebSearchAgent，回答需标注信息来源链接</p>
+     */
+    private Boolean enableWebSearch = false;
 }

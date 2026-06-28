@@ -9,6 +9,11 @@
         </div>
         <div v-for="(msg, index) in messages" :key="index" :class="['message-item', msg.role === 'user' ? 'user-message' : 'ai-message']">
           <div class="message-content">
+            <!-- 推理过程（DeepSeek-R1 等，折叠展示） -->
+            <details v-if="msg.reasoning && msg.role === 'assistant'" class="reasoning-details">
+              <summary>思考过程</summary>
+              <div class="reasoning-content">{{ msg.reasoning }}</div>
+            </details>
             <div v-if="msg.role === 'assistant'" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
             <div v-else>{{ msg.content }}</div>
           </div>
@@ -40,6 +45,7 @@
           :disabled="loading"
         />
         <div class="input-actions">
+          <DeepThinking v-model="enableThinking" />
           <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" style="flex: 1">
             发送
           </el-button>
@@ -56,12 +62,15 @@ import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/ic
 import { sendAiMessage } from '@/api/ai/chat'
 import { marked } from 'marked'
 import { createAiRenderer } from '@/utils/aiRenderers'
+import DeepThinking from '@/components/ai/DeepThinking.vue'
 import * as echarts from 'echarts'
 import 'github-markdown-css'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  /** 推理过程内容（DeepSeek-R1 等推理模型的思考链） */
+  reasoning?: string
 }
 
 const visible = ref(false)
@@ -72,6 +81,7 @@ const loading = ref(false)
 const messageListRef = ref<HTMLElement>()
 const sessionId = ref<number | null>(null)
 const chatMode = ref('auto')
+const enableThinking = ref(false)
 
 /** 根据当前模式显示不同的输入提示 */
 const modePlaceholder = computed(() => {
@@ -126,6 +136,17 @@ function onAiSseMessage(event: Event) {
       break
     case 'AI_CHART':
       break
+    case 'AI_THINKING_TOKEN': {
+      // 推理 token 流（DeepSeek-R1 等），追加到当前 assistant 消息的 reasoning 字段
+      const reasonMsg = messages.value[messages.value.length - 1]
+      if (reasonMsg && reasonMsg.role === 'assistant') {
+        reasonMsg.reasoning = (reasonMsg.reasoning || '') + detail.content
+      } else {
+        messages.value.push({ role: 'assistant', content: '', reasoning: detail.content })
+      }
+      nextTick(() => scrollToBottom())
+      break
+    }
   }
 }
 
@@ -175,7 +196,8 @@ async function sendMessage() {
     const res = await sendAiMessage({
       content: text,
       sessionId: sessionId.value ?? undefined,
-      mode: chatMode.value === 'auto' ? undefined : chatMode.value
+      mode: chatMode.value === 'auto' ? undefined : chatMode.value,
+      enableThinking: enableThinking.value || undefined
     })
     const sid = res?.data ?? res
     if (sid && typeof sid === 'number') {
@@ -300,6 +322,38 @@ onUnmounted(() => {
         background-color: #f5f7fa;
       }
     }
+  }
+}
+
+/* 推理过程（DeepSeek-R1 等） */
+.reasoning-details {
+  margin-bottom: 6px;
+  border: 1px solid #e0e6ed;
+  border-radius: 6px;
+  overflow: hidden;
+
+  summary {
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #909399;
+    cursor: pointer;
+    background: #fafafa;
+    user-select: none;
+
+    &:hover {
+      background: #f0f0f0;
+    }
+  }
+
+  .reasoning-content {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #606266;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 }
 

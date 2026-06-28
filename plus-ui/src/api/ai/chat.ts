@@ -15,6 +15,8 @@ export interface AiMessage {
   sessionId: number | string
   role: 'USER' | 'ASSISTANT' | 'SYSTEM'
   content: string
+  /** 推理过程内容（enableThinking 时存） */
+  thinkingContent?: string
   createTime: string
 }
 
@@ -23,7 +25,18 @@ export interface AiMessage {
  * @param data 聊天请求数据
  * @returns 会话ID
  */
-export function sendAiMessage(data: { sessionId?: number; content: string; model?: string; mode?: string }) {
+export function sendAiMessage(data: {
+  sessionId?: number
+  content: string
+  model?: string
+  mode?: string
+  /** 是否开启推理（Thinking）模式 */
+  enableThinking?: boolean
+  /** 是否开启联网搜索 */
+  enableWebSearch?: boolean
+  /** 本次对话启用的 MCP 工具 ID 列表 */
+  enabledToolIds?: number[]
+}) {
   return request({
     url: '/ai/chat/send',
     method: 'post',

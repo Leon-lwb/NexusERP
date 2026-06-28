@@ -2,6 +2,8 @@ package com.nexus.ai.service.facade;
 
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
+import com.nexus.ai.agent.WebSearchAgent;
+import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.mcp.service.ToolProviderFactory;
 import com.nexus.ai.observability.AiAgentListener;
@@ -13,14 +15,18 @@ import com.nexus.ai.service.chat.PersistentChatMemoryStore;
 import com.nexus.ai.service.prompt.PromptTemplateService;
 import com.nexus.ai.service.rag.RetrieverService;
 import com.nexus.ai.service.sse.AiSseMessageHelper;
+import com.nexus.ai.tool.WebSearchTool;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.mapper.AiSessionMapper;
+import com.nexus.common.ai.domain.dto.image.ImageContext;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.ai.service.IAiTokenUsageService;
+import com.nexus.common.ai.service.image.IImageGenerationService;
+import com.nexus.common.ai.service.image.ImageServiceFactory;
 import com.nexus.common.satoken.utils.LoginHelper;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
@@ -73,6 +79,10 @@ public class AiServiceFacade {
     @Qualifier("aiExecutor")
     private final Executor aiExecutor;
 
+    private final WebSearchTool webSearchTool;
+    private final ImageServiceFactory imageServiceFactory;
+    private final AiProperties aiProperties;
+
     /** 数据查询关键词（包含这些词时走 Agent 模式） */
     private static final Set<String> DATA_QUERY_KEYWORDS = Set.of(
         "查询", "统计", "分析", "报表", "图表", "数据", "金额", "数量",
@@ -86,6 +96,16 @@ public class AiServiceFacade {
         "如何", "怎么", "操作", "流程", "步骤", "手册", "指南", "规则",
         "制度", "规范", "说明", "文档", "教程", "方法", "什么是", "定义",
         "区别", "比较", "配置", "设置", "使用", "创建", "审批"
+    );
+
+    /** 图片生成关键词（包含这些词时走文生图模式，仅 auto 模式生效） */
+    private static final Set<String> IMAGE_KEYWORDS = Set.of(
+        "画一个", "画一张", "生成图片", "文生图", "draw", "generate image", "生成一张图"
+    );
+
+    /** 联网搜索关键词（包含这些词时走联网搜索模式，仅 auto 模式生效） */
+    private static final Set<String> WEB_SEARCH_KEYWORDS = Set.of(
+        "最新", "今天", "新闻", "股价", "天气", "汇率", "近期", "最近", "实时"
     );
 
     /**
@@ -165,7 +185,15 @@ public class AiServiceFacade {
             needAgent = false;
             needRag = false;
         } else {
-            // auto 模式（默认）：根据关键词自动路由
+            // auto 模式（默认）：优先检查图片生成、联网搜索，其次数据查询/知识检索
+            if (containsImageKeywords(request.getContent())) {
+                invokeWithImageGeneration(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+                return sessionId;
+            }
+            if (Boolean.TRUE.equals(request.getEnableWebSearch()) || containsWebSearchKeywords(request.getContent())) {
+                invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+                return sessionId;
+            }
             needAgent = containsDataQueryKeywords(request.getContent());
             needRag = request.getKnowledgeId() != null || (!needAgent && containsRagKeywords(request.getContent()));
         }
@@ -186,7 +214,7 @@ public class AiServiceFacade {
      */
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
                                      Long userId, Long sessionId, Long tenantId, String userName) {
-        StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId());
+        StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
 
         // 使用 MessageWindowChatMemory 加载历史消息，限制最近 20 条（约 10 轮对话），避免超出 token 限制
         MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
@@ -200,6 +228,8 @@ public class AiServiceFacade {
 
         // 用于拼接完整 AI 回复（StringBuffer 线程安全，流式回调可能由不同线程执行）
         StringBuffer fullContent = new StringBuffer();
+        // 用于拼接推理过程（enableThinking 时填充，StringBuffer 线程安全）
+        StringBuffer fullThinking = new StringBuffer();
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -217,12 +247,21 @@ public class AiServiceFacade {
                         }
 
                         @Override
+                        public void onPartialThinking(dev.langchain4j.model.chat.response.PartialThinking thinking) {
+                            if (thinking != null && thinking.text() != null) {
+                                fullThinking.append(thinking.text());
+                                AiSseMessageHelper.sendThinkingToken(userId, thinking.text());
+                            }
+                        }
+
+                        @Override
                         public void onCompleteResponse(ChatResponse response) {
-                            // 保存完整 AI 回复到数据库（含 token 明细）
+                            // 保存完整 AI 回复到数据库（含 token 明细 + 推理过程）
                             // 注意：回调运行在 OkHttp I/O 线程，AiRequestContext 不可用，
                             // 因此直接使用闭包捕获的局部变量传递上下文
+                            String thinkingContent = fullThinking.length() > 0 ? fullThinking.toString() : null;
                             saveAiMessageWithTokens(sessionId, fullContent.toString(),
-                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName());
+                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent);
                             AiSseMessageHelper.sendDone(userId);
                         }
 
@@ -247,7 +286,7 @@ public class AiServiceFacade {
      */
     private void invokeWithRag(AiModel modelConfig, AiChatRequest request,
                                Long userId, Long sessionId, Long tenantId, String userName) {
-        StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId());
+        StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
 
         // 加载历史消息
         MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
@@ -282,6 +321,8 @@ public class AiServiceFacade {
         AiSseMessageHelper.sendThinking(userId);
 
         StringBuffer fullContent = new StringBuffer();
+        // 用于拼接推理过程（enableThinking 时填充，StringBuffer 线程安全）
+        StringBuffer fullThinking = new StringBuffer();
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -299,9 +340,18 @@ public class AiServiceFacade {
                         }
 
                         @Override
+                        public void onPartialThinking(dev.langchain4j.model.chat.response.PartialThinking thinking) {
+                            if (thinking != null && thinking.text() != null) {
+                                fullThinking.append(thinking.text());
+                                AiSseMessageHelper.sendThinkingToken(userId, thinking.text());
+                            }
+                        }
+
+                        @Override
                         public void onCompleteResponse(ChatResponse response) {
+                            String thinkingContent = fullThinking.length() > 0 ? fullThinking.toString() : null;
                             saveAiMessageWithTokens(sessionId, fullContent.toString(),
-                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName());
+                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent);
                             AiSseMessageHelper.sendDone(userId);
                         }
 
@@ -637,14 +687,16 @@ public class AiServiceFacade {
      * @param userId     用户ID
      * @param userName   用户名称
      * @param modelName  模型名称
+     * @param thinkingContent 推理过程内容（可为 null）
      */
     private void saveAiMessageWithTokens(Long sessionId, String content, Long modelId,
                                           ChatResponse response, Long tenantId, Long userId,
-                                          String userName, String modelName) {
+                                          String userName, String modelName, String thinkingContent) {
         AiMessage aiMsg = new AiMessage();
         aiMsg.setSessionId(sessionId);
         aiMsg.setRole("ASSISTANT");
         aiMsg.setContent(content);
+        aiMsg.setThinkingContent(thinkingContent);
         aiMsg.setModelId(modelId);
 
         // 提取 Token 用量（仅写入消息记录，日统计由 AiChatModelListener.onResponse() 统一处理，避免双重计数）
@@ -771,5 +823,102 @@ public class AiServiceFacade {
             }
         }
         return false;
+    }
+
+    /**
+     * 判断是否包含图片生成关键词
+     */
+    private boolean containsImageKeywords(String input) {
+        return containsKeywords(input, IMAGE_KEYWORDS);
+    }
+
+    /**
+     * 判断是否包含联网搜索关键词
+     */
+    private boolean containsWebSearchKeywords(String input) {
+        return containsKeywords(input, WEB_SEARCH_KEYWORDS);
+    }
+
+    /**
+     * 文生图模式：调用 IImageGenerationService 生成图片 → SSE 推送图片 URL
+     */
+    private void invokeWithImageGeneration(AiModel modelConfig, AiChatRequest request,
+                                            Long userId, Long sessionId, Long tenantId, String userName) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                AiRequestContext.set(tenantId, userId, userName, sessionId,
+                    modelConfig.getId(), modelConfig.getModelName());
+                AiSseMessageHelper.sendThinking(userId);
+
+                AiModel imageModel = aiModelService.selectDefaultImageModel();
+                if (imageModel == null) {
+                    AiSseMessageHelper.sendError(userId,
+                        "未配置默认图像生成模型（modelType=IMAGE），请先在模型管理中配置");
+                    return;
+                }
+
+                IImageGenerationService imageService =
+                    imageServiceFactory.get(aiProperties.getImage().getDefaultProvider());
+                if (imageService == null) {
+                    AiSseMessageHelper.sendError(userId,
+                        "未找到文生图厂商: " + aiProperties.getImage().getDefaultProvider());
+                    return;
+                }
+
+                ImageContext ctx = ImageContext.builder()
+                    .modelConfig(imageModel)
+                    .prompt(request.getContent())
+                    .build();
+
+                String imageUrl = imageService.generateImage(ctx);
+                AiSseMessageHelper.sendImage(userId, imageUrl, request.getContent());
+
+                // 保存图片消息到数据库（Markdown 格式）
+                AiMessage aiMsg = new AiMessage();
+                aiMsg.setSessionId(sessionId);
+                aiMsg.setRole("ASSISTANT");
+                aiMsg.setContent("![image](" + imageUrl + ")");
+                aiMsg.setModelId(imageModel.getId());
+                aiMessageMapper.insert(aiMsg);
+
+                AiSseMessageHelper.sendDone(userId);
+            } catch (Exception e) {
+                log.error("AI 文生图失败", e);
+                AiSseMessageHelper.sendError(userId, "图片生成失败: " + e.getMessage());
+            } finally {
+                AiRequestContext.clear();
+            }
+        }, aiExecutor);
+    }
+
+    /**
+     * 联网搜索模式：WebSearchAgent + WebSearchTool → SSE 推送结果
+     */
+    private void invokeWithWebSearch(AiModel modelConfig, AiChatRequest request,
+                                      Long userId, Long sessionId, Long tenantId, String userName) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                AiRequestContext.set(tenantId, userId, userName, sessionId,
+                    modelConfig.getId(), modelConfig.getModelName());
+                AiSseMessageHelper.sendThinking(userId);
+
+                ChatModel agentModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
+                WebSearchAgent agent = AgenticServices.agentBuilder(WebSearchAgent.class)
+                    .chatModel(agentModel)
+                    .tools(webSearchTool)
+                    .build();
+
+                String result = agent.search(request.getContent());
+
+                saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName());
+                AiSseMessageHelper.sendContent(userId, result);
+                AiSseMessageHelper.sendDone(userId);
+            } catch (Exception e) {
+                log.error("AI 联网搜索失败", e);
+                AiSseMessageHelper.sendError(userId, "联网搜索失败: " + e.getMessage());
+            } finally {
+                AiRequestContext.clear();
+            }
+        }, aiExecutor);
     }
 }

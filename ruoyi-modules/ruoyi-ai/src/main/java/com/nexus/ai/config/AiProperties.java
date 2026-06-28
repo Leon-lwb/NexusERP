@@ -37,6 +37,15 @@ public class AiProperties {
     /** 向量存储配置 */
     private VectorStoreConfig vectorStore = new VectorStoreConfig();
 
+    /** 推理模式配置 */
+    private ThinkingConfig thinking = new ThinkingConfig();
+
+    /** 联网搜索配置 */
+    private WebSearchConfig webSearch = new WebSearchConfig();
+
+    /** 文生图配置 */
+    private ImageConfig image = new ImageConfig();
+
     @Data
     public static class VectorStoreConfig {
         /** 向量存储类型：milvus / inmemory */
@@ -65,5 +74,35 @@ public class AiProperties {
     public static class InMemoryConfig {
         /** 是否启用 InMemory 模式（开发/测试用） */
         private boolean enabled = true;
+    }
+
+    @Data
+    public static class ThinkingConfig {
+        /** 是否开启推理模式 */
+        private boolean enabled = true;
+        /** 默认是否开启（用户主动选择时覆盖） */
+        private boolean defaultOn = false;
+    }
+
+    @Data
+    public static class WebSearchConfig {
+        /** 是否开启联网搜索 */
+        private boolean enabled = true;
+        /** 搜索厂商：tavily | bing */
+        private String provider = "tavily";
+        /** 搜索 API Key */
+        private String apiKey = "";
+        /** 返回结果数 */
+        private int topN = 5;
+        /** 请求超时（毫秒） */
+        private int timeoutMs = 15000;
+    }
+
+    @Data
+    public static class ImageConfig {
+        /** 是否开启文生图 */
+        private boolean enabled = true;
+        /** 默认厂商（对应 IImageGenerationService.getProviderName()） */
+        private String defaultProvider = "Tongyiwanx";
     }
 }

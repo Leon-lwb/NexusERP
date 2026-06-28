@@ -32,6 +32,9 @@ public class AiMessage extends BaseEntity {
     /** 消息内容 */
     private String content;
 
+    /** 推理过程内容（enableThinking 时存） */
+    private String thinkingContent;
+
     /** Token 消耗（总量 = inputTokens + outputTokens） */
     private Long tokenUsage;
 

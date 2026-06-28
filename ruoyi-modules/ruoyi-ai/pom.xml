@@ -125,6 +125,13 @@
             <version>${langchain4j.community.version}</version>
         </dependency>
 
+        <!-- Jsoup（联网搜索 crawlWebpage 网页正文抽取） -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.3</version>
+        </dependency>
+
         <!-- OSS 文件存储（知识库文档上传） -->
         <dependency>
             <groupId>com.nexus</groupId>

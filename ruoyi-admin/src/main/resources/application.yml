@@ -346,3 +346,18 @@ nexus:
         collection-name: AiKnowledge
       inmemory:
         enabled: true
+    # 推理模式（Thinking）
+    thinking:
+      enabled: true
+      default-on: false
+    # 联网搜索
+    web-search:
+      enabled: true
+      provider: tavily
+      api-key: ${WEB_SEARCH_API_KEY:}
+      top-n: 5
+      timeout-ms: 15000
+    # 文生图
+    image:
+      enabled: true
+      default-provider: Tongyiwanx

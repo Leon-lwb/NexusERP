@@ -50,6 +50,11 @@
             </div>
             <div class="message-body">
               <div class="message-role">{{ msg.role === 'user' ? '我' : 'NexusERP AI' }}</div>
+              <!-- 推理过程（DeepSeek-R1 等推理模型，折叠展示） -->
+              <details v-if="msg.reasoning && msg.role === 'assistant'" class="reasoning-details">
+                <summary>思考过程</summary>
+                <div class="reasoning-content">{{ msg.reasoning }}</div>
+              </details>
               <!-- Agent 思考过程 -->
               <div v-if="msg.thinking && msg.role === 'assistant'" class="agent-thinking">
                 <el-icon class="is-loading"><Loading /></el-icon>
@@ -120,6 +125,7 @@
             </div>
             <div class="toolbar-right">
               <span v-if="tokenUsage > 0" class="token-usage">{{ tokenUsage.toLocaleString() }} tokens</span>
+              <DeepThinking v-model="enableThinking" />
               <el-tooltip content="MCP 工具选择" placement="top">
                 <el-button size="small" :icon="SetUp" @click="openToolDrawer" plain round>
                   {{ selectedToolIds.length > 0 ? selectedToolIds.length + ' 个工具' : '工具' }}
@@ -201,6 +207,7 @@ import { marked } from 'marked'
 import * as echarts from 'echarts'
 import { ElMessageBox } from 'element-plus'
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers'
+import DeepThinking from '@/components/ai/DeepThinking.vue'
 import 'github-markdown-css'
 
 /** 工具调用状态 */
@@ -219,6 +226,8 @@ interface ChatMessage {
   content: string
   toolCalls?: ToolCallInfo[]
   thinking?: string
+  /** 推理过程内容（DeepSeek-R1 等推理模型的思考链） */
+  reasoning?: string
   feedback?: string  // LIKE / DISLIKE
 }
 
@@ -231,6 +240,7 @@ const messageListRef = ref<HTMLElement>()
 const sessions = ref<AiSession[]>([])
 const currentSessionId = ref<number | string | null>(null)
 const chatMode = ref('auto')
+const enableThinking = ref(false)
 
 /** 对话模式选项 */
 const modeOptions = [
@@ -319,6 +329,17 @@ function onAiSseMessage(event: Event) {
       break
     case 'AI_CHART':
       break
+    case 'AI_THINKING_TOKEN': {
+      // 推理 token 流（DeepSeek-R1 等），追加到当前 assistant 消息的 reasoning 字段
+      const reasonMsg = messages.value[messages.value.length - 1]
+      if (reasonMsg && reasonMsg.role === 'assistant') {
+        reasonMsg.reasoning = (reasonMsg.reasoning || '') + detail.content
+      } else {
+        messages.value.push({ role: 'assistant', content: '', reasoning: detail.content })
+      }
+      nextTick(() => scrollToBottom())
+      break
+    }
     case 'AI_TOOL_START': {
       // 工具调用开始
       thinking.value = false
@@ -441,6 +462,7 @@ async function switchSession(sessionId: number | string) {
       id: m.id,
       role: m.role === 'USER' ? 'user' as const : 'assistant' as const,
       content: m.content,
+      reasoning: (m as any).thinkingContent,
       feedback: (m as any).feedback
     }))
     nextTick(() => scrollToBottom())
@@ -477,6 +499,7 @@ async function sendMessage() {
       content: text,
       sessionId: currentSessionId.value ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
+      enableThinking: enableThinking.value || undefined,
       enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined
     })
     console.log('[AI] 发送消息响应:', res)
@@ -891,6 +914,38 @@ onUnmounted(() => {
     align-items: center;
     gap: 8px;
     color: #909399;
+  }
+}
+
+/* 推理过程（DeepSeek-R1 等） */
+.reasoning-details {
+  margin-bottom: 8px;
+  border: 1px solid #e0e6ed;
+  border-radius: 8px;
+  overflow: hidden;
+
+  summary {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #909399;
+    cursor: pointer;
+    background: #fafafa;
+    user-select: none;
+
+    &:hover {
+      background: #f0f0f0;
+    }
+  }
+
+  .reasoning-content {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #606266;
+    line-height: 1.6;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 }
 
