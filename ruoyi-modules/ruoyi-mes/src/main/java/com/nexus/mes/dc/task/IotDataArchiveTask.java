@@ -4,6 +4,7 @@ import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
 import com.aizuda.snailjob.client.job.core.dto.JobArgs;
 import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
@@ -36,6 +37,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@DS("mes")
 @JobExecutor(name = "iotDataArchiveTask")
 public class IotDataArchiveTask {
 

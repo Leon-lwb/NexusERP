@@ -35,33 +35,33 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:bom:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['bd:bom:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['bd:bom:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['bd:bom:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['bd:bom:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['bd:bom:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['bd:bom:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['bd:bom:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['bd:bom:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Check" :disabled="single" @click="handleActivateVersion" v-hasPermi="['bd:bom:edit']"
+        <el-button type="success" plain icon="Check" :disabled="single" @click="handleActivateVersion()" v-hasPermi="['bd:bom:edit']"
           >激活版本</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="Search" :disabled="single" @click="handleVerify" v-hasPermi="['bd:bom:query']">验证BOM</el-button>
+        <el-button type="info" plain icon="Search" :disabled="single" @click="handleVerify()" v-hasPermi="['bd:bom:query']">验证BOM</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Share" :disabled="single" @click="handleViewBomTree" v-hasPermi="['bd:bom:query']">BOM树</el-button>
+        <el-button type="primary" plain icon="Share" :disabled="single" @click="handleViewBomTree()" v-hasPermi="['bd:bom:query']">BOM树</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="DocumentCopy" :disabled="single" @click="handleCopyBom" v-hasPermi="['bd:bom:add']">复制BOM</el-button>
+        <el-button type="success" plain icon="DocumentCopy" :disabled="single" @click="handleCopyBom()" v-hasPermi="['bd:bom:add']">复制BOM</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="DataAnalysis" :disabled="compareDisabled" @click="handleCompareBom" v-hasPermi="['bd:bom:query']"
@@ -77,39 +77,39 @@
     <el-table v-loading="loading" :data="bomList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="50" align="center" prop="bomId" />
-      <el-table-column label="BOM版本号" align="center" prop="bomVersion" />
-      <el-table-column label="BOM名称" align="center" prop="bomName" />
+      <el-table-column label="BOM版本号" align="center" prop="bomVersion" sortable />
+      <el-table-column label="BOM名称" align="center" prop="bomName" show-overflow-tooltip />
       <el-table-column label="BOM类型" align="center" prop="bomType" width="100">
         <template #default="scope">
           <dict-tag :options="bd_bom_type" :value="scope.row.bomType" />
         </template>
       </el-table-column>
-      <el-table-column label="生效日期" align="center" prop="effectiveDate" width="180">
+      <el-table-column label="生效日期" align="center" prop="effectiveDate" width="120" sortable>
         <template #default="scope">
           <span>{{ parseTime(scope.row.effectiveDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="失效日期" align="center" prop="expiryDate" width="180">
+      <el-table-column label="失效日期" align="center" prop="expiryDate" width="120" sortable>
         <template #default="scope">
           <span>{{ parseTime(scope.row.expiryDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="是否当前版本" align="center" prop="isCurrent">
+      <el-table-column label="是否当前版本" align="center" prop="isCurrent" width="110">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isCurrent" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" width="90">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="来源类型" align="center" prop="sourceType">
+      <el-table-column label="来源类型" align="center" prop="sourceType" width="100">
         <template #default="scope">
           <dict-tag :options="prd_material_source_type" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="280" fixed="right" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:bom:edit']">修改</el-button>
@@ -119,7 +119,7 @@
             type="success"
             icon="Check"
             @click="handleActivateVersion(scope.row)"
-            v-if="scope.row.isCurrent != 1"
+            v-if="scope.row.isCurrent !== 1"
             v-hasPermi="['bd:bom:edit']"
             >激活</el-button
           >
@@ -130,136 +130,6 @@
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-
-    <!-- 添加或修改产品BOM对话框 -->
-    <el-dialog :title="title" v-model="open" width="960px" append-to-body>
-      <el-form ref="bomRef" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode">
-        <el-row :gutter="20">
-          <el-col :span="24">
-            <el-form-item label="父项物料信息" prop="parentMaterialId">
-              <el-row :gutter="10">
-                <el-col :span="18">
-                  <el-input v-model="form.parentMaterialName" placeholder="请选择父项物料信息" readonly>
-                    <template #append>
-                      <el-button v-if="!isViewMode" icon="Search" @click="openMaterialSelect" />
-                    </template>
-                  </el-input>
-                </el-col>
-                <el-col :span="6">
-                  <el-button v-if="form.parentMaterialId && !isViewMode" type="danger" icon="Delete" @click="clearMaterial" />
-                </el-col>
-              </el-row>
-              <el-input v-model="form.parentMaterialId" style="display: none" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="BOM版本号" prop="bomVersion">
-              <el-input v-model="form.bomVersion" placeholder="请输入BOM版本号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="BOM名称信息" prop="bomName">
-              <el-input v-model="form.bomName" placeholder="请输入BOM名称信息" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="生效日期" prop="effectiveDate">
-              <el-date-picker
-                clearable
-                v-model="form.effectiveDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择生效日期"
-                style="width: 100%"
-              >
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="失效日期" prop="expiryDate">
-              <el-date-picker
-                clearable
-                v-model="form.expiryDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择失效日期"
-                style="width: 100%"
-              >
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="是否当前版本" prop="isCurrent">
-              <el-radio-group v-model="form.isCurrent">
-                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态信息" prop="status">
-              <el-radio-group v-model="form.status">
-                <el-radio v-for="dict in sys_core_status" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="来源类型" prop="sourceType">
-              <el-select v-model="form.sourceType" placeholder="请选择来源类型" clearable>
-                <el-option v-for="dict in prd_material_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="BOM类型" prop="bomType">
-              <el-select v-model="form.bomType" placeholder="请选择BOM类型" clearable>
-                <el-option v-for="dict in bd_bom_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="工艺路线" prop="routingId">
-              <el-select v-model="form.routingId" placeholder="请选择工艺路线" clearable filterable>
-                <el-option
-                  v-for="item in routingOptions"
-                  :key="item.routingId"
-                  :label="item.routingCode + ' - ' + item.routingName + (item.isCurrent === 1 ? '(当前)' : '')"
-                  :value="item.routingId"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="24">
-            <el-form-item label="备注信息" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入备注信息" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
-          <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
-        </div>
-      </template>
-    </el-dialog>
 
     <!-- 物料选择对话框（共享组件） -->
     <MaterialSelectDialog ref="materialSelectDialogRef" :title="materialDialogTitle" @select="handleMaterialSelected" />
@@ -314,7 +184,9 @@
                 <el-descriptions :column="2" size="small">
                   <el-descriptions-item label="物料编码">{{ compareData.bom1.materialCode }}</el-descriptions-item>
                   <el-descriptions-item label="物料名称">{{ compareData.bom1.materialName }}</el-descriptions-item>
-                  <el-descriptions-item label="BOM类型">{{ compareData.bom1.bomType }}</el-descriptions-item>
+                  <el-descriptions-item label="BOM类型">
+                    <dict-tag :options="bd_bom_type" :value="compareData.bom1.bomType" />
+                  </el-descriptions-item>
                   <el-descriptions-item label="子项数">{{ compareData.bom1.totalItems }}</el-descriptions-item>
                 </el-descriptions>
               </el-card>
@@ -327,7 +199,9 @@
                 <el-descriptions :column="2" size="small">
                   <el-descriptions-item label="物料编码">{{ compareData.bom2.materialCode }}</el-descriptions-item>
                   <el-descriptions-item label="物料名称">{{ compareData.bom2.materialName }}</el-descriptions-item>
-                  <el-descriptions-item label="BOM类型">{{ compareData.bom2.bomType }}</el-descriptions-item>
+                  <el-descriptions-item label="BOM类型">
+                    <dict-tag :options="bd_bom_type" :value="compareData.bom2.bomType" />
+                  </el-descriptions-item>
                   <el-descriptions-item label="子项数">{{ compareData.bom2.totalItems }}</el-descriptions-item>
                 </el-descriptions>
               </el-card>
@@ -439,10 +313,7 @@
 <script setup lang="ts" name="Bom">
 import {
   listBom,
-  getBom,
   delBom,
-  addBom,
-  updateBom,
   activateBomVersion,
   verifyBom,
   getBomTree,
@@ -450,26 +321,22 @@ import {
   compareBom,
   whereUsedBom
 } from '@/api/erp/bd/bom';
-import { listRouting } from '@/api/erp/bd/routing';
 import { useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance();
-const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, bd_bom_type } = toRefs<any>(
-  proxy.useDict('sys_true_or_false', 'sys_core_status', 'bd_material_type', 'prd_material_source_type', 'bd_bom_type')
+const { sys_true_or_false, sys_core_status, prd_material_source_type, bd_bom_type } = toRefs<any>(
+  proxy.useDict('sys_true_or_false', 'sys_core_status', 'prd_material_source_type', 'bd_bom_type')
 );
 
 const bomList = ref([]);
-const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false); // 新增：标识是否为查看模式
 const compareDisabled = ref(true); // BOM比较按钮是否禁用（需选中2条）
 
 // BOM比较相关
@@ -483,10 +350,8 @@ const whereUsedOpen = ref(false);
 const whereUsedData = ref([]);
 const whereUsedLoading = ref(false);
 const whereUsedMaterialName = ref('');
-// 物料选择模式：detail=选择父项物料，whereused=选择反查目标物料
-const materialSelectMode = ref('detail');
-// 工艺路线选项（内嵌对话框使用）
-const routingOptions = ref([]);
+// 物料选择模式：whereused=选择反查目标物料
+const materialSelectMode = ref('whereused');
 
 // BOM树形视图相关
 const bomTreeOpen = ref(false);
@@ -503,24 +368,19 @@ const materialSelectDialogRef = ref<any>(null);
 const materialDialogTitle = ref('选择物料');
 
 const data = reactive({
-  form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     bomName: null,
+    bomType: null,
     effectiveDate: null,
     expiryDate: null,
     isCurrent: null,
     status: null
-  },
-  rules: {
-    parentMaterialId: [{ required: true, message: '父项物料不能为空', trigger: 'change' }],
-    bomVersion: [{ required: true, message: 'BOM版本号不能为空', trigger: 'blur' }],
-    bomName: [{ required: true, message: 'BOM名称不能为空', trigger: 'blur' }]
   }
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const { queryParams } = toRefs(data);
 
 /** 查询产品BOM列表 */
 function getList() {
@@ -530,13 +390,6 @@ function getList() {
     total.value = response.total;
     loading.value = false;
   });
-}
-
-/** 打开物料选择对话框 */
-function openMaterialSelect() {
-  materialSelectMode.value = 'detail';
-  materialDialogTitle.value = '选择父项物料';
-  materialSelectDialogRef.value?.open();
 }
 
 /** Where-Used反查：先选择目标物料 */
@@ -566,50 +419,7 @@ function doWhereUsed(materialId, materialName) {
 function handleMaterialSelected(row) {
   if (materialSelectMode.value === 'whereused') {
     doWhereUsed(row.materialId, row.materialName);
-    return;
   }
-  form.value.parentMaterialId = row.materialId;
-  form.value.parentMaterialName = row.materialName;
-}
-
-/** 清除已选择的物料 */
-function clearMaterial() {
-  form.value.parentMaterialId = null;
-  form.value.parentMaterialName = null;
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  form.value = {
-    bomId: null,
-    parentMaterialId: null,
-    parentMaterialName: null,
-    bomVersion: '1.0',
-    bomName: null,
-    effectiveDate: null,
-    expiryDate: null,
-    isCurrent: null,
-    status: null,
-    remark: null,
-    sourceType: null,
-    bomType: null,
-    routingId: null,
-    attr1: null,
-    attr2: null,
-    attr3: null,
-    attr4: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null
-  };
-  proxy.resetForm('bomRef');
 }
 
 /** 搜索按钮操作 */
@@ -634,35 +444,30 @@ function handleSelectionChange(selection) {
 
 /** 新增按钮操作 */
 function handleAdd() {
-  reset();
-  isViewMode.value = false; // 设置为编辑模式
-  open.value = true;
-  title.value = '添加产品BOM';
+  router.push({
+    path: '/erp/bd/bom/form',
+    query: { action: 'add' }
+  });
+}
+
+/** 从选中数据中获取唯一 bomId，取不到则返回 null 并提示 */
+function getSelectedBomId(actionLabel) {
+  if (ids.value.length !== 1) {
+    proxy.$modal.msgWarning(`请选择一条数据进行${actionLabel}`);
+    return null;
+  }
+  const selectedRow = bomList.value.find((item) => item.bomId === ids.value[0]);
+  if (!selectedRow) {
+    proxy.$modal.msgWarning('未找到选中的数据');
+    return null;
+  }
+  return selectedRow.bomId;
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
-  if (row && row.type && row instanceof Event) {
-    // 这是一个事件对象，表示没有传入数据参数
-    row = null;
-  }
-
-  // 如果没有传入row参数，则从选中的数据中获取
-  if (!row) {
-    if (ids.value.length !== 1) {
-      proxy.$modal.msgWarning('请选择一条数据进行修改');
-      return;
-    }
-    // 从列表中找到选中的记录
-    const selectedRow = bomList.value.find((item) => item.bomId == ids.value[0]);
-    if (!selectedRow) {
-      proxy.$modal.msgWarning('未找到选中的数据');
-      return;
-    }
-    row = selectedRow;
-  }
-
-  const bomId = row.bomId;
+function handleUpdate(row?) {
+  const bomId = row?.bomId ?? getSelectedBomId('修改');
+  if (!bomId) return;
   router.push({
     path: '/erp/bd/bom/form',
     query: { id: bomId, action: 'edit' }
@@ -670,58 +475,22 @@ function handleUpdate(row) {
 }
 
 /** 查看按钮操作 */
-function handleView(row) {
-  if (row && row.type && row instanceof Event) {
-    // 这是一个事件对象，表示没有传入数据参数
-    row = null;
-  }
-
-  // 如果没有传入row参数，则从选中的数据中获取
-  if (!row) {
-    if (ids.value.length !== 1) {
-      proxy.$modal.msgWarning('请选择一条数据进行查看');
-      return;
-    }
-    // 从列表中找到选中的记录
-    const selectedRow = bomList.value.find((item) => item.bomId == ids.value[0]);
-    if (!selectedRow) {
-      proxy.$modal.msgWarning('未找到选中的数据');
-      return;
-    }
-    row = selectedRow;
-  }
-
-  const bomId = row.bomId;
+function handleView(row?) {
+  const bomId = row?.bomId ?? getSelectedBomId('查看');
+  if (!bomId) return;
   router.push({
     path: '/erp/bd/bom/form',
     query: { id: bomId, action: 'view' }
   });
 }
 
-/** 提交按钮 */
-function submitForm() {
-  proxy.$refs['bomRef'].validate((valid) => {
-    if (valid) {
-      if (form.value.bomId != null) {
-        updateBom(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addBom(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
 /** 删除按钮操作 */
-function handleDelete(row) {
-  const _bomIds = row.bomId || ids.value;
+function handleDelete(row?) {
+  const _bomIds = row?.bomId || ids.value;
+  if (!_bomIds || (Array.isArray(_bomIds) && _bomIds.length === 0)) {
+    proxy.$modal.msgWarning('请选择要删除的数据');
+    return;
+  }
   proxy.$modal
     .confirm('是否确认删除产品BOM编号为"' + _bomIds + '"的数据项？')
     .then(function () {
@@ -746,8 +515,8 @@ function handleExport() {
 }
 
 /** 激活BOM版本 */
-function handleActivateVersion(row: any) {
-  const bomId = row.bomId || ids.value[0];
+function handleActivateVersion(row?: any) {
+  const bomId = row?.bomId ?? ids.value[0];
   if (!bomId) {
     proxy.$modal.msgWarning('请选择一个BOM版本');
     return;
@@ -764,8 +533,8 @@ function handleActivateVersion(row: any) {
 }
 
 /** 验证BOM */
-function handleVerify(row: any) {
-  const bomId = row.bomId || ids.value[0];
+function handleVerify(row?: any) {
+  const bomId = row?.bomId ?? ids.value[0];
   if (!bomId) {
     proxy.$modal.msgWarning('请选择一个BOM');
     return;
@@ -781,15 +550,16 @@ function handleVerify(row: any) {
 }
 
 /** 查看BOM树形结构 */
-function handleViewBomTree(row: any) {
-  const bomId = row.bomId || ids.value[0];
+function handleViewBomTree(row?: any) {
+  const bomId = row?.bomId ?? ids.value[0];
   if (!bomId) {
     proxy.$modal.msgWarning('请选择一个BOM');
     return;
   }
-  bomTreeTitle.value = 'BOM树形结构 - ' + (row.bomName || '');
+  bomTreeTitle.value = 'BOM树形结构 - ' + (row?.bomName || '');
   bomTreeOpen.value = true;
   bomTreeLoading.value = true;
+  bomTreeData.value = [];
   getBomTree(bomId)
     .then((response) => {
       bomTreeData.value = response.data ? [response.data] : [];
@@ -802,12 +572,12 @@ function handleViewBomTree(row: any) {
 
 /** 复制BOM */
 function handleCopyBom(row?: any) {
-  const bomId = row?.bomId || ids.value[0];
+  const bomId = row?.bomId ?? ids.value[0];
   if (!bomId) {
     proxy.$modal.msgWarning('请选择一个BOM');
     return;
   }
-  const bomRow = bomList.value.find((item) => item.bomId == bomId);
+  const bomRow = bomList.value.find((item) => item.bomId === bomId);
   const bomName = bomRow?.bomName || '';
   const currentVersion = bomRow?.bomVersion || '1.0';
   proxy
@@ -838,6 +608,14 @@ function handleCompareBom() {
   compareBom(ids.value[0], ids.value[1])
     .then((response) => {
       compareData.value = response.data;
+      // 动态选择第一个非空分类作为默认标签，避免默认标签指向被 v-if 隐藏的 pane
+      const data = response.data || {};
+      compareActiveTab.value =
+        (data.changed && data.changed.length > 0 && 'changed') ||
+        (data.onlyInBom2 && data.onlyInBom2.length > 0 && 'added') ||
+        (data.onlyInBom1 && data.onlyInBom1.length > 0 && 'removed') ||
+        (data.unchanged && data.unchanged.length > 0 && 'unchanged') ||
+        'changed';
       compareLoading.value = false;
     })
     .catch(() => {
@@ -848,14 +626,9 @@ function handleCompareBom() {
 
 onMounted(() => {
   getList();
-  // 加载工艺路线选项（内嵌对话框使用）
-  listRouting({ status: 1, pageNum: 1, pageSize: 1000 })
-    .then((response) => {
-      routingOptions.value = response.rows || [];
-    })
-    .catch(() => {});
 });
 
+// keep-alive 重新激活时刷新列表（form.vue 关闭页签后会回到本页）
 onActivated(() => {
   getList();
 });

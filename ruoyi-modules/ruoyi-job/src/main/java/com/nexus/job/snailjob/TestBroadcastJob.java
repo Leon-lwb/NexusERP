@@ -7,6 +7,7 @@ import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @JobExecutor(name = "testBroadcastJob")
+@ConditionalOnProperty(prefix = "snail-job", name = "enabled", havingValue = "true")
 public class TestBroadcastJob {
 
     @Value("${snail-job.port}")

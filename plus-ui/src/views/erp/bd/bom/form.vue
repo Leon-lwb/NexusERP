@@ -593,6 +593,10 @@ const materialItems = ref([
   }
 ]);
 
+// 被删除的已有明细ID列表（编辑模式下用户点击"删除"移除的、已持久化的明细）
+// 保存时统一调用后端删除接口，避免 saveBomDetailsBatch 仅 upsert 导致删除不生效
+const removedDetailIds = ref<(string | number)[]>([]);
+
 // BOM树形视图相关
 const activeTab = ref('details');
 const bomTreeData = ref([]);
@@ -692,6 +696,8 @@ function getBomDetails(id) {
 
 // 获取BOM子表数据
 function getBomDetailsList(bomId) {
+  // 重新加载明细时清空删除记录，避免残留已不存在的 detailId
+  removedDetailIds.value = [];
   listBomDetails(bomId)
     .then((response) => {
       if (response.rows && response.rows.length > 0) {
@@ -949,6 +955,11 @@ function removeMaterialRow(index) {
     proxy.$modal.msgWarning('至少保留一行数据');
     return;
   }
+  // 记录被删除的已有明细ID，保存时统一调用后端删除接口
+  const removed = materialItems.value[index];
+  if (removed && removed.detailId) {
+    removedDetailIds.value.push(removed.detailId);
+  }
   materialItems.value.splice(index, 1);
 }
 
@@ -1017,6 +1028,7 @@ function updateBomAndDetails() {
 }
 
 // 保存BOM明细数据的通用方法
+// 流程：1) 删除用户在编辑过程中移除的已有明细 2) 批量保存（upsert）有效行
 function saveBomDetails(bomId) {
   // 过滤掉空行数据并添加 bomId
   const validMaterialItems = materialItems.value
@@ -1027,12 +1039,16 @@ function saveBomDetails(bomId) {
       sourceType: item.sourceType || form.value.sourceType
     }));
 
-  // 如果有有效的明细数据，则使用批量保存接口
-  if (validMaterialItems.length > 0) {
-    return saveBomDetailsBatch(validMaterialItems);
-  }
+  // 1. 先删除被移除的已有明细（即使没有有效行也要执行删除）
+  const deleteRemoved = removedDetailIds.value.length > 0 ? delBomDetail(removedDetailIds.value) : Promise.resolve();
 
-  return Promise.resolve();
+  // 2. 再批量保存有效行
+  const saveValid = validMaterialItems.length > 0 ? saveBomDetailsBatch(validMaterialItems) : Promise.resolve();
+
+  return Promise.all([deleteRemoved, saveValid]).then(() => {
+    // 保存成功后清空删除记录，避免重复提交
+    removedDetailIds.value = [];
+  });
 }
 
 // 关闭按钮

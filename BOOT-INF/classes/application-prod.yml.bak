@@ -1,0 +1,348 @@
+﻿--- # 楠岃瘉鐮侀厤缃?
+# PC鐧诲綍闇€瑕佸浘褰㈤獙璇佺爜锛孉PP鐭俊鐧诲綍鏃犻渶锛孉PP瀵嗙爜鐧诲綍鍦ㄦ彁浜ゆ椂寮瑰嚭楠岃瘉鐮?
+captcha:
+  enable: true
+
+--- # 鐩戞帶涓績閰嶇疆
+spring.boot.admin.client:
+  # 澧炲姞瀹㈡埛绔紑鍏?
+  enabled: true
+  url: http://117.72.190.225:9090/admin
+  instance:
+    service-host-type: IP
+    metadata:
+      username: ${spring.boot.admin.client.username}
+      userpassword: ${spring.boot.admin.client.password}
+  username: ruoyi
+  password: 123456
+
+--- # snail-job 閰嶇疆
+snail-job:
+  enabled: true
+  # 闇€瑕佸湪 SnailJob 鍚庡彴缁勭鐞嗗垱寤哄搴斿悕绉扮殑缁?鐒跺悗鍒涘缓浠诲姟鐨勬椂鍊欓€夋嫨瀵瑰簲鐨勭粍,鎵嶈兘姝ｇ‘鍒嗘淳浠诲姟
+  group: "ruoyi_group"
+  # SnailJob 鎺ュ叆楠岃瘉浠ょ墝 璇﹁ script/sql/ry_job.sql `sj_group_config` 琛?
+  token: "SJ_cKqBTPzCsWA3VyuCfFoccmuIEGXjr5KT"
+  server:
+    host: 117.72.190.225
+    port: 17888
+  # 鍛藉悕绌洪棿UUID 璇﹁ script/sql/ry_job.sql `sj_namespace`琛╜unique_id`瀛楁
+  namespace: ${spring.profiles.active}
+  # 闅忎富搴旂敤绔彛婕傜Щ
+  port: 2${server.port}
+  # 客户端端口
+  client-port: 28080
+    # 客户端端口
+  # 瀹㈡埛绔痠p鎸囧畾
+  host:
+
+--- # 鏁版嵁婧愰厤缃?
+spring:
+  config:
+    import: classpath:application-secret.yml
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    # 鍔ㄦ€佹暟鎹簮鏂囨。 https://www.kancloud.cn/tracy5546/dynamic-datasource/content
+    dynamic:
+      # 鎬ц兘鍒嗘瀽鎻掍欢(鏈夋€ц兘鎹熻€?涓嶅缓璁敓浜х幆澧冧娇鐢?
+      p6spy: true
+      # 璁剧疆榛樿鐨勬暟鎹簮鎴栬€呮暟鎹簮缁?榛樿鍊煎嵆涓?master
+      primary: master
+      # 涓ユ牸妯″紡 鍖归厤涓嶅埌鏁版嵁婧愬垯鎶ラ敊
+      strict: true
+      datasource:
+        # 涓诲簱鏁版嵁婧?
+        master:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          # rewriteBatchedStatements=true 鎵瑰鐞嗕紭鍖?澶у箙鎻愬崌鎵归噺鎻掑叆鏇存柊鍒犻櫎鎬ц兘(瀵规暟鎹簱鏈夋€ц兘鎹熻€?浣跨敤鎵归噺鎿嶄綔搴旇€冭檻鎬ц兘闂)
+          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: root
+          password: MIS@5mis@5
+        # ERP涓氬姟搴?
+        erp:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          # rewriteBatchedStatements=true 鎵瑰鐞嗕紭鍖?澶у箙鎻愬崌鎵归噺鎻掑叆鏇存柊鍒犻櫎鎬ц兘(瀵规暟鎹簱鏈夋€ц兘鎹熻€?浣跨敤鎵归噺鎿嶄綔搴旇€冭檻鎬ц兘闂)
+          url: jdbc:mysql://localhost:3306/ry-erp?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: root
+          password: MIS@5mis@5
+        # MES鍒堕€犳墽琛屽簱
+        mes:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/ry-mes?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: root
+          password: MIS@5mis@5
+        # IoT鐗╄仈缃戝簱
+        iot:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/ry-iot?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: root
+          password: MIS@5mis@5
+#        # 浠庡簱鏁版嵁婧?
+#        slave:
+#          lazy: true
+#          type: ${spring.datasource.type}
+#          driverClassName: com.mysql.cj.jdbc.Driver
+#          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+#          username:
+#          password:
+#        oracle:
+#          type: ${spring.datasource.type}
+#          driverClassName: oracle.jdbc.OracleDriver
+#          url: jdbc:oracle:thin:@//localhost:1521/XE
+#          username: ROOT
+#          password: root
+#        postgres:
+#          type: ${spring.datasource.type}
+#          driverClassName: org.postgresql.Driver
+#          url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
+#          username: root
+#          password: root
+#        sqlserver:
+#          type: ${spring.datasource.type}
+#          driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#          url: jdbc:sqlserver://localhost:1433;DatabaseName=tempdb;SelectMethod=cursor;encrypt=false;rewriteBatchedStatements=true
+#          username: SA
+#          password: root
+      hikari:
+        # 鏈€澶ц繛鎺ユ睜鏁伴噺
+        maxPoolSize: 10
+        # 鏈€灏忕┖闂茬嚎绋嬫暟閲?
+        minIdle: 5
+        # 閰嶇疆鑾峰彇杩炴帴绛夊緟瓒呮椂鐨勬椂闂?
+        connectionTimeout: 30000
+        # 鏍￠獙瓒呮椂鏃堕棿
+        validationTimeout: 5000
+        # 绌洪棽杩炴帴瀛樻椿鏈€澶ф椂闂达紝榛樿10鍒嗛挓
+        idleTimeout: 600000
+        # 姝ゅ睘鎬ф帶鍒舵睜涓繛鎺ョ殑鏈€闀跨敓鍛藉懆鏈燂紝鍊?琛ㄧず鏃犻檺鐢熷懡鍛ㄦ湡锛岄粯璁?0鍒嗛挓
+        maxLifetime: 1800000
+        # 澶氫箙妫€鏌ヤ竴娆¤繛鎺ョ殑娲绘€?
+        keepaliveTime: 30000
+
+--- # redis 鍗曟満閰嶇疆(鍗曟満涓庨泦缇ゅ彧鑳藉紑鍚竴涓彟涓€涓渶瑕佹敞閲婃帀)
+spring.data:
+  redis:
+    # 鍦板潃
+    host: localhost
+    # 绔彛锛岄粯璁や负6379
+    port: 6379
+    # 鏁版嵁搴撶储寮?
+    database: 0
+    # redis 瀵嗙爜蹇呴』閰嶇疆
+    password: nexuspw
+    # 杩炴帴瓒呮椂鏃堕棿
+    timeout: 10s
+    # 鏄惁寮€鍚痵sl
+    ssl.enabled: false
+
+# redisson 閰嶇疆
+redisson:
+  # redis key鍓嶇紑
+  keyPrefix:
+  # 绾跨▼姹犳暟閲?
+  threads: 4
+  # Netty绾跨▼姹犳暟閲?
+  nettyThreads: 8
+  # 鍗曡妭鐐归厤缃?
+  singleServerConfig:
+    # 瀹㈡埛绔悕绉?涓嶈兘鐢ㄤ腑鏂?
+    clientName: RuoYi-Vue-Plus
+    # 鏈€灏忕┖闂茶繛鎺ユ暟
+    connectionMinimumIdleSize: 8
+    # 杩炴帴姹犲ぇ灏?
+    connectionPoolSize: 16
+    # 杩炴帴绌洪棽瓒呮椂锛屽崟浣嶏細姣
+    idleConnectionTimeout: 10000
+    # 鍛戒护绛夊緟瓒呮椂锛屽崟浣嶏細姣
+    timeout: 3000
+    # 鍙戝竷鍜岃闃呰繛鎺ユ睜澶у皬
+    subscriptionConnectionPoolSize: 10
+
+--- # mail 閭欢鍙戦€?
+mail:
+  enabled: false
+  host: smtp.163.com
+  port: 465
+  # 鏄惁闇€瑕佺敤鎴峰悕瀵嗙爜楠岃瘉
+  auth: true
+  # 鍙戦€佹柟锛岄伒寰猂FC-822鏍囧噯
+  from: ${secret.mail.from}
+  # 鐢ㄦ埛鍚嶏紙娉ㄦ剰锛氬鏋滀娇鐢╢oxmail閭锛屾澶剈ser涓簈q鍙凤級
+  user: ${secret.mail.user}
+  # 瀵嗙爜锛堟敞鎰忥紝鏌愪簺閭闇€瑕佷负SMTP鏈嶅姟鍗曠嫭璁剧疆瀵嗙爜锛岃鎯呮煡鐪嬬浉鍏冲府鍔╋級
+  pass: ${secret.mail.pass}
+  # 浣跨敤 STARTTLS瀹夊叏杩炴帴锛孲TARTTLS鏄绾枃鏈€氫俊鍗忚鐨勬墿灞曘€?
+  starttlsEnable: true
+  # 浣跨敤SSL瀹夊叏杩炴帴
+  sslEnable: true
+  # SMTP瓒呮椂鏃堕暱锛屽崟浣嶆绉掞紝缂虹渷鍊间笉瓒呮椂
+  timeout: 0
+  # Socket杩炴帴瓒呮椂鍊硷紝鍗曚綅姣锛岀己鐪佸€间笉瓒呮椂
+  connectionTimeout: 0
+
+--- # sms 鐭俊 鏀寔 闃块噷浜?鑵捐浜?浜戠墖 绛夌瓑鍚勫紡鍚勬牱鐨勭煭淇℃湇鍔″晢
+# https://sms4j.com/doc3/ 宸紓閰嶇疆鏂囨。鍦板潃 鏀寔鍗曞巶鍟嗗閰嶇疆锛屽彲浠ラ厤缃涓悓鏃朵娇鐢?
+sms:
+  # 閰嶇疆婧愮被鍨嬬敤浜庢爣瀹氶厤缃潵婧?interface,yaml)
+  config-type: yaml
+  # 鐢ㄤ簬鏍囧畾yml涓殑閰嶇疆鏄惁寮€鍚煭淇℃嫤鎴紝鎺ュ彛閰嶇疆涓嶅彈姝ら檺鍒?
+  restricted: true
+  # 鐭俊鎷︽埅闄愬埗鍗曟墜鏈哄彿姣忓垎閽熸渶澶у彂閫侊紝鍙寮€鍚簡鎷︽埅鐨勯厤缃湁鏁?
+  minute-max: 1
+  # 鐭俊鎷︽埅闄愬埗鍗曟墜鏈哄彿姣忔棩鏈€澶у彂閫侀噺锛屽彧瀵瑰紑鍚簡鎷︽埅鐨勯厤缃湁鏁?
+  account-max: 30
+  # 浠ヤ笅閰嶇疆鏉ヨ嚜浜?org.dromara.sms4j.provider.config.BaseConfig绫讳腑
+  blends:
+    # 鍞竴ID 鐢ㄤ簬鍙戦€佺煭淇″鎵惧叿浣撻厤缃?闅忎究瀹氫箟鍒敤涓枃鍗冲彲
+    # 鍙互鍚屾椂瀛樺湪涓や釜鐩稿悓鍘傚晢 渚嬪: ali1 ali2 涓や釜涓嶅悓鐨勯樋閲岀煭淇¤处鍙?涔熷彲鐢ㄤ簬鍖哄垎绉熸埛
+    config1:
+      # 妗嗘灦瀹氫箟鐨勫巶鍟嗗悕绉版爣璇嗭紝鏍囧畾姝ら厤缃槸鍝釜鍘傚晢锛岃缁嗚鐪嬪巶鍟嗘爣璇嗕粙缁嶉儴鍒?
+      supplier: alibaba
+      # 鏈変簺绉颁负accessKey鏈変簺绉颁箣涓篴piKey锛屼篃鏈夌О涓簊dkKey鎴栬€卆ppId銆?
+      access-key-id: ${secret.sms.config1.access-key-id}
+      # 绉颁负accessSecret鏈変簺绉颁箣涓篴piSecret
+      access-key-secret: ${secret.sms.config1.access-key-secret}
+      signature: ${secret.sms.config1.signature}
+      sdk-app-id: ${secret.sms.config1.sdk-app-id}
+    config2:
+      # 鍘傚晢鏍囪瘑锛屾爣瀹氭閰嶇疆鏄摢涓巶鍟嗭紝璇︾粏璇风湅鍘傚晢鏍囪瘑浠嬬粛閮ㄥ垎
+      supplier: tencent
+      access-key-id: ${secret.sms.config2.access-key-id}
+      access-key-secret: ${secret.sms.config2.access-key-secret}
+      signature: ${secret.sms.config2.signature}
+      sdk-app-id: ${secret.sms.config2.sdk-app-id}
+
+
+--- # 涓夋柟鎺堟潈
+justauth:
+  # 鍓嶇澶栫綉璁块棶鍦板潃
+  address: http://localhost:80
+  type:
+    maxkey:
+      # maxkey 鏈嶅姟鍣ㄥ湴鍧€
+      # 娉ㄦ剰 濡備笅鍧囬厤缃潎涓嶉渶瑕佷慨鏀?maxkey 宸茬粡鍐呯疆濂戒簡鏁版嵁
+      server-url: http://sso.maxkey.top
+      client-id: ${secret.justauth.maxkey.client-id}
+      client-secret: ${secret.justauth.maxkey.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=maxkey
+    topiam:
+      # topiam 鏈嶅姟鍣ㄥ湴鍧€
+      server-url: http://127.0.0.1:1898/api/v1/authorize/y0q************spq***********8ol
+      client-id: ${secret.justauth.topiam.client-id}
+      client-secret: ${secret.justauth.topiam.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=topiam
+      scopes: [openid, email, phone, profile]
+    qq:
+      client-id: ${secret.justauth.qq.client-id}
+      client-secret: ${secret.justauth.qq.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=qq
+      union-id: false
+    weibo:
+      client-id: ${secret.justauth.weibo.client-id}
+      client-secret: ${secret.justauth.weibo.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=weibo
+    gitee:
+      client-id: ${secret.justauth.gitee.client-id}
+      client-secret: ${secret.justauth.gitee.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=gitee
+    dingtalk:
+      client-id: ${secret.justauth.dingtalk.client-id}
+      client-secret: ${secret.justauth.dingtalk.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=dingtalk
+    baidu:
+      client-id: ${secret.justauth.baidu.client-id}
+      client-secret: ${secret.justauth.baidu.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=baidu
+    csdn:
+      client-id: ${secret.justauth.csdn.client-id}
+      client-secret: ${secret.justauth.csdn.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=csdn
+    coding:
+      client-id: ${secret.justauth.coding.client-id}
+      client-secret: ${secret.justauth.coding.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=coding
+      coding-group-name: xx
+    oschina:
+      client-id: ${secret.justauth.oschina.client-id}
+      client-secret: ${secret.justauth.oschina.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=oschina
+    alipay_wallet:
+      client-id: ${secret.justauth.alipay-wallet.client-id}
+      client-secret: ${secret.justauth.alipay-wallet.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=alipay_wallet
+      alipay-public-key: ${secret.justauth.alipay-wallet.alipay-public-key}
+    wechat_open:
+      client-id: ${secret.justauth.wechat-open.client-id}
+      client-secret: ${secret.justauth.wechat-open.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_open
+    wechat_mp:
+      client-id: ${secret.justauth.wechat-mp.client-id}
+      client-secret: ${secret.justauth.wechat-mp.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_mp
+    wechat_enterprise:
+      client-id: ${secret.justauth.wechat-enterprise.client-id}
+      client-secret: ${secret.justauth.wechat-enterprise.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=wechat_enterprise
+      agent-id: 1000002
+    gitlab:
+      client-id: ${secret.justauth.gitlab.client-id}
+      client-secret: ${secret.justauth.gitlab.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=gitlab
+    gitea:
+      # 鍓嶇鏀瑰姩 https://gitee.com/JavaLionLi/plus-ui/pulls/204
+      # gitea 鏈嶅姟鍣ㄥ湴鍧€
+      server-url: https://demo.gitea.com
+      client-id: ${secret.justauth.gitea.client-id}
+      client-secret: ${secret.justauth.gitea.client-secret}
+      redirect-uri: ${justauth.address}/social-callback?source=gitea
+
+--- # 鏀粯閰嶇疆
+pay:
+  alipay:
+    enabled: true
+    appId: ${secret.pay.alipay.app-id}
+    appPrivateKey: ${secret.pay.alipay.app-private-key}
+    alipayPublicKey: ${secret.pay.alipay.alipay-public-key}
+    notifyUrl: http://59e5381d.r23.cpolar.top/pay/alipay/notify
+    signType: RSA2
+    gatewayHost: openapi-sandbox.dl.alipaydev.com
+    protocol: https
+  wechat:
+    enabled: false
+    merchantId: ${secret.pay.wechat.merchant-id}
+    merchantSerialNumber: ${secret.pay.wechat.merchant-serial-number}
+    apiV3Key: ${secret.pay.wechat.api-v3-key}
+    privateKeyPath: classpath:cert/wechat/apiclient_key.pem
+    appId: ${secret.pay.wechat.app-id}
+    notifyUrl: http://your-domain/pay/wechat/notify
+  sqb:
+    enabled: false
+    apiDomain: https://api.shouqianba.com
+    terminalSn: ${secret.pay.sqb.terminal-sn}
+    terminalKey: ${secret.pay.sqb.terminal-key}
+    appId: ${secret.pay.sqb.app-id}
+    vendorSn: ${secret.pay.sqb.vendor-sn}
+    vendorKey: ${secret.pay.sqb.vendor-key}
+    notifyUrl: http://your-domain/pay/sqb/notify
+    publicKey: classpath:cert/sqb/public_key.pem
+
+--- # rabbitmq 娑堟伅闃熷垪閰嶇疆
+spring.rabbitmq:
+  host: localhost
+  port: 5672
+  username: nexus
+  password: nexuspw
+  virtual-host: /erp
+  publisher-confirm-type: correlated
+  publisher-returns: true
+  listener:
+    simple:
+      acknowledge-mode: manual
+      prefetch: 10
+
+
+

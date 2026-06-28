@@ -280,10 +280,10 @@ spring:
       datasource:
         master:
           username: root
-          password: MIS@5mis@5  # 明文密码
+          password: xxx  # 明文密码
         erp:
           username: root
-          password: MIS@5mis@5  # 明文密码
+          password: xxx  # 明文密码
 ```
 
 **方式 B：Jasypt 加密（安全，适合生产环境）**
