@@ -22,11 +22,8 @@ import com.nexus.common.ai.domain.entity.AiSession;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.mapper.AiSessionMapper;
-import com.nexus.common.ai.domain.dto.image.ImageContext;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.ai.service.IAiTokenUsageService;
-import com.nexus.common.ai.service.image.IImageGenerationService;
-import com.nexus.common.ai.service.image.ImageServiceFactory;
 import com.nexus.common.satoken.utils.LoginHelper;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
@@ -80,7 +77,6 @@ public class AiServiceFacade {
     private final Executor aiExecutor;
 
     private final WebSearchTool webSearchTool;
-    private final ImageServiceFactory imageServiceFactory;
     private final AiProperties aiProperties;
 
     /** 数据查询关键词（包含这些词时走 Agent 模式） */
@@ -96,11 +92,6 @@ public class AiServiceFacade {
         "如何", "怎么", "操作", "流程", "步骤", "手册", "指南", "规则",
         "制度", "规范", "说明", "文档", "教程", "方法", "什么是", "定义",
         "区别", "比较", "配置", "设置", "使用", "创建", "审批"
-    );
-
-    /** 图片生成关键词（包含这些词时走文生图模式，仅 auto 模式生效） */
-    private static final Set<String> IMAGE_KEYWORDS = Set.of(
-        "画一个", "画一张", "生成图片", "文生图", "draw", "generate image", "生成一张图"
     );
 
     /** 联网搜索关键词（包含这些词时走联网搜索模式，仅 auto 模式生效） */
@@ -193,11 +184,7 @@ public class AiServiceFacade {
             needAgent = false;
             needRag = false;
         } else {
-            // auto 模式（默认）：关键词自动检测图片生成、联网搜索
-            if (containsImageKeywords(request.getContent())) {
-                invokeWithImageGeneration(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
-                return sessionId;
-            }
+            // auto 模式（默认）：关键词自动检测联网搜索
             if (containsWebSearchKeywords(request.getContent())) {
                 invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
                 return sessionId;
@@ -834,69 +821,10 @@ public class AiServiceFacade {
     }
 
     /**
-     * 判断是否包含图片生成关键词
-     */
-    private boolean containsImageKeywords(String input) {
-        return containsKeywords(input, IMAGE_KEYWORDS);
-    }
-
-    /**
      * 判断是否包含联网搜索关键词
      */
     private boolean containsWebSearchKeywords(String input) {
         return containsKeywords(input, WEB_SEARCH_KEYWORDS);
-    }
-
-    /**
-     * 文生图模式：调用 IImageGenerationService 生成图片 → SSE 推送图片 URL
-     */
-    private void invokeWithImageGeneration(AiModel modelConfig, AiChatRequest request,
-                                            Long userId, Long sessionId, Long tenantId, String userName) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                AiRequestContext.set(tenantId, userId, userName, sessionId,
-                    modelConfig.getId(), modelConfig.getModelName());
-                AiSseMessageHelper.sendThinking(userId);
-
-                AiModel imageModel = aiModelService.selectDefaultImageModel();
-                if (imageModel == null) {
-                    AiSseMessageHelper.sendError(userId,
-                        "未配置默认图像生成模型（modelType=IMAGE），请先在模型管理中配置");
-                    return;
-                }
-
-                IImageGenerationService imageService =
-                    imageServiceFactory.get(aiProperties.getImage().getDefaultProvider());
-                if (imageService == null) {
-                    AiSseMessageHelper.sendError(userId,
-                        "未找到文生图厂商: " + aiProperties.getImage().getDefaultProvider());
-                    return;
-                }
-
-                ImageContext ctx = ImageContext.builder()
-                    .modelConfig(imageModel)
-                    .prompt(request.getContent())
-                    .build();
-
-                String imageUrl = imageService.generateImage(ctx);
-                AiSseMessageHelper.sendImage(userId, imageUrl, request.getContent());
-
-                // 保存图片消息到数据库（Markdown 格式）
-                AiMessage aiMsg = new AiMessage();
-                aiMsg.setSessionId(sessionId);
-                aiMsg.setRole("ASSISTANT");
-                aiMsg.setContent("![image](" + imageUrl + ")");
-                aiMsg.setModelId(imageModel.getId());
-                aiMessageMapper.insert(aiMsg);
-
-                AiSseMessageHelper.sendDone(userId);
-            } catch (Exception e) {
-                log.error("AI 文生图失败", e);
-                AiSseMessageHelper.sendError(userId, "图片生成失败: " + e.getMessage());
-            } finally {
-                AiRequestContext.clear();
-            }
-        }, aiExecutor);
     }
 
     /**
