@@ -1,4 +1,4 @@
-FROM amazoncorretto:17-alpine
+FROM eclipse-temurin:17-jre-alpine
 LABEL maintainer="NexusERP"
 RUN apk add --no-cache fontconfig ttf-dejavu && \
     mkdir -p /ruoyi/server/logs /ruoyi/server/temp

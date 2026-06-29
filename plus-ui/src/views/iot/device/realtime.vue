@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- Device info header -->
+    <!-- 设备信息头部 -->
     <el-card shadow="hover" class="mb-2">
       <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
         <div>
@@ -16,7 +16,7 @@
       </div>
     </el-card>
 
-    <!-- Latest value cards -->
+    <!-- 最新数值卡片 -->
     <el-row :gutter="10" class="mb-2">
       <el-col v-for="(val, key) in latestProps" :key="key" :xs="12" :sm="8" :md="6" :lg="4" class="mb-1">
         <el-card shadow="hover" body-style="padding: 12px 16px;">
@@ -29,7 +29,7 @@
       </el-col>
     </el-row>
 
-    <!-- Charts row -->
+    <!-- 图表区域 -->
     <el-row :gutter="10">
       <el-col :xs="24" :lg="12" class="mb-2">
         <el-card shadow="hover">
@@ -69,7 +69,7 @@ const deviceInfo = reactive<any>({});
 const connectionStatus = ref('OFFLINE');
 const latestProps = ref<Record<string, string>>({});
 
-// Realtime chart state
+// 实时图表状态
 const realtimeChartRef = ref();
 const historyChartRef = ref();
 const updateInterval = 3000;
@@ -79,28 +79,28 @@ let historyChart: echarts.ECharts | null = null;
 let eventSource: EventSource | null = null;
 let resizeHandler: (() => void) | null = null;
 
-// Rolling window for realtime chart: propertyCode -> { times: [], values: [] }
+// 实时图表滚动窗口：propertyCode -> { times: [], values: [] }
 const realtimeData = reactive<Record<string, { times: string[]; values: number[] }>>({});
 
-/** Load device info */
+/** 加载设备信息 */
 async function loadDeviceInfo() {
   const res = await getDevice(deviceId);
   Object.assign(deviceInfo, res.data);
 }
 
-/** Load initial latest values */
+/** 加载初始最新值 */
 async function loadLatest() {
   const res = await getLatest(deviceId);
   latestProps.value = res.data || {};
 }
 
-/** Load initial status */
+/** 加载初始状态 */
 async function loadStatus() {
   const res = await getStatus(deviceId);
   connectionStatus.value = res.data?.connectionStatus || 'OFFLINE';
 }
 
-/** Init realtime ECharts */
+/** 初始化实时 ECharts */
 function initRealtimeChart() {
   if (!realtimeChartRef.value) return;
   realtimeChart = echarts.init(realtimeChartRef.value);
@@ -119,12 +119,26 @@ function initRealtimeChart() {
   window.addEventListener('resize', resizeHandler);
 }
 
-/** Update realtime chart from rolling window data */
+/** 初始化历史 ECharts（提前初始化，确保卡片在数据加载前也不会为空白） */
+function initHistoryChart() {
+  if (!historyChartRef.value) return;
+  historyChart = echarts.init(historyChartRef.value);
+  historyChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { type: 'scroll', bottom: 0 },
+    grid: { left: 50, right: 20, top: 20, bottom: 50 },
+    xAxis: { type: 'category', data: [] },
+    yAxis: { type: 'value' },
+    series: []
+  });
+}
+
+/** 根据滚动窗口数据更新实时图表 */
 function updateRealtimeChartOption() {
   if (!realtimeChart) return;
   const propertyCodes = Object.keys(realtimeData);
   if (propertyCodes.length === 0) return;
-  // Use the first property's times as xAxis (all properties share same timestamps)
+  // 使用第一个属性的时间作为 X 轴（所有属性共享相同的时间戳）
   const xTimes = realtimeData[propertyCodes[0]]?.times || [];
   realtimeChart.setOption({
     xAxis: { data: xTimes },
@@ -138,7 +152,7 @@ function updateRealtimeChartOption() {
   });
 }
 
-/** Load historical data and render history chart */
+/** 加载历史数据并渲染历史图表 */
 async function loadHistory() {
   const now = new Date();
   const oneHourAgo = new Date(now.getTime() - 3600 * 1000);
@@ -154,33 +168,47 @@ async function loadHistory() {
     String(d.getMinutes()).padStart(2, '0') +
     ':' +
     String(d.getSeconds()).padStart(2, '0');
+  const params = { start: fmt(oneHourAgo), end: fmt(now), limit: 500 };
   try {
-    const res = await getHistory(deviceId, { start: fmt(oneHourAgo), end: fmt(now), limit: 500 });
+    const res = await getHistory(deviceId, params);
     const rows: DeviceDataVO[] = res.rows || [];
     renderHistoryChart(rows);
-  } catch {
-    // ignore - device may have no data yet
+  } catch (e) {
+    console.error('[loadHistory] 历史数据加载失败', { params, deviceId, error: e });
+    if (historyChart) {
+      historyChart.clear();
+      historyChart.setOption({
+        title: { text: '历史数据加载失败', left: 'center', top: 'center', textStyle: { color: '#F56C6C', fontSize: 14 } }
+      });
+    }
   }
 }
 
-/** Render history chart from data rows */
+/** 根据数据行渲染历史图表 */
 function renderHistoryChart(rows: DeviceDataVO[]) {
   if (!historyChartRef.value) return;
   if (!historyChart) {
     historyChart = echarts.init(historyChartRef.value);
   }
+  // 清除之前的标题/错误状态，防止过期信息残留
+  historyChart.clear();
   if (rows.length === 0) {
-    historyChart.setOption({ title: { text: 'No data', left: 'center', top: 'center', textStyle: { color: '#909399' } } });
+    historyChart.setOption({
+      title: { text: '暂无历史数据', left: 'center', top: 'center', textStyle: { color: '#909399', fontSize: 14 } }
+    });
     return;
   }
-  // Group by propertyCode
+  // 按 propertyCode 分组（后端按 collect_time 降序返回，需反转为升序以便图表展示）
   const grouped: Record<string, { times: string[]; values: number[] }> = {};
-  rows.forEach((r) => {
-    if (!grouped[r.propertyCode]) grouped[r.propertyCode] = { times: [], values: [] };
-    grouped[r.propertyCode].times.push(r.collectTime);
-    const val = r.numericValue != null ? Number(r.numericValue) : NaN;
-    grouped[r.propertyCode].values.push(val);
-  });
+  rows
+    .slice()
+    .reverse()
+    .forEach((r) => {
+      if (!grouped[r.propertyCode]) grouped[r.propertyCode] = { times: [], values: [] };
+      grouped[r.propertyCode].times.push(r.collectTime);
+      const val = r.numericValue != null ? Number(r.numericValue) : NaN;
+      grouped[r.propertyCode].values.push(val);
+    });
   const propertyCodes = Object.keys(grouped);
   const xTimes = grouped[propertyCodes[0]]?.times || [];
   historyChart.setOption({
@@ -199,7 +227,7 @@ function renderHistoryChart(rows: DeviceDataVO[]) {
   });
 }
 
-/** Subscribe to SSE realtime stream */
+/** 订阅 SSE 实时数据流 */
 function subscribeSSE() {
   const base = import.meta.env.VITE_APP_BASE_API;
   const url = base + '/iot/device/' + deviceId + '/realtime?Authorization=Bearer ' + getToken();
@@ -207,22 +235,22 @@ function subscribeSSE() {
   eventSource.addEventListener('realtime', (e: MessageEvent) => {
     try {
       const frame: RealtimeFrame = JSON.parse(e.data);
-      // Update connection status
+      // 更新连接状态
       connectionStatus.value = frame.connectionStatus || 'OFFLINE';
-      // Update latest value cards
+      // 更新最新数值卡片
       latestProps.value = frame.properties || {};
-      // Append to rolling window
+      // 追加到滚动窗口
       const time = new Date(frame.timestamp).toLocaleTimeString();
       const props = frame.properties || {};
       Object.entries(props).forEach(([code, val]) => {
         const numVal = Number(val);
-        if (isNaN(numVal)) return; // only chart numeric values
+        if (isNaN(numVal)) return; // 仅绘制数值类型的数据
         if (!realtimeData[code]) {
           realtimeData[code] = { times: [], values: [] };
         }
         realtimeData[code].times.push(time);
         realtimeData[code].values.push(numVal);
-        // Keep only last N points
+        // 仅保留最近 N 个数据点
         if (realtimeData[code].times.length > realtimePoints) {
           realtimeData[code].times.shift();
           realtimeData[code].values.shift();
@@ -230,7 +258,7 @@ function subscribeSSE() {
       });
       updateRealtimeChartOption();
     } catch {
-      // ignore parse errors
+      // 忽略解析错误
     }
   });
   let reconnectAttempts = 0;
@@ -256,11 +284,13 @@ function subscribeSSE() {
 }
 
 onMounted(async () => {
-  await loadDeviceInfo();
-  await loadLatest();
-  await loadStatus();
+  // 每个加载器相互独立，任一失败不应阻塞其他加载器
+  // （之前 loadLatest/loadStatus 抛出异常会导致 loadHistory 被完全跳过，
+  // 使历史卡片一片空白且无任何诊断输出）
+  await Promise.allSettled([loadDeviceInfo(), loadLatest(), loadStatus()]);
   await nextTick();
   initRealtimeChart();
+  initHistoryChart();
   subscribeSSE();
   loadHistory();
 });
