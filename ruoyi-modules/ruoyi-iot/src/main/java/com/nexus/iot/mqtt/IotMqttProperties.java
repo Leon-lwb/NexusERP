@@ -35,6 +35,11 @@ public class IotMqttProperties {
     private boolean allowAnonymous = false;
 
     /**
+     * WebSocket 端口（供浏览器 MQTT.js 等接入），<=0 表示不启动
+     */
+    private int websocketPort = 8083;
+
+    /**
      * 设备在线状态缓存 TTL（秒）
      */
     private long statusTtlSeconds = 3600;

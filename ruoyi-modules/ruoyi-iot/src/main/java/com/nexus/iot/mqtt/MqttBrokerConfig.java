@@ -45,6 +45,10 @@ public class MqttBrokerConfig {
         config.setProperty(IConfig.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(properties.isAllowAnonymous()));
         // 开发阶段关闭持久化（内存模式），避免本地遗留数据文件
         config.setProperty(IConfig.PERSISTENCE_ENABLED_PROPERTY_NAME, "false");
+        // WebSocket 端口（供浏览器 MQTT.js 接入），<=0 不启动
+        if (properties.getWebsocketPort() > 0) {
+            config.setProperty(IConfig.WEB_SOCKET_PORT_PROPERTY_NAME, String.valueOf(properties.getWebsocketPort()));
+        }
 
         Server server = new Server();
         List<InterceptHandler> handlers = List.of(interceptHandler);

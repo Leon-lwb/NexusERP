@@ -320,6 +320,8 @@ nexus:
       host: 0.0.0.0
       port: 1883
       allow-anonymous: false
+      # WebSocket 端口（供浏览器 MQTT.js 模拟器接入），<=0 不启动
+      websocket-port: 8083
       status-ttl-seconds: 3600
     # 数据管道（MQTT → Redis Streams → MySQL + Redis 缓存，Week 34）
     pipeline:

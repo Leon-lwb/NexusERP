@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT 设备模拟器 - NexusERP</title>
+    <!-- MQTT.js over WebSocket：连接内嵌 Moquette Broker -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f4f6f9; color: #2c3e50; padding: 16px;
+        }
+        h1 { font-size: 18px; margin-bottom: 12px; color: #1f2d3d; }
+        h1 small { font-size: 12px; color: #909399; font-weight: normal; }
+        .layout { display: grid; grid-template-columns: 420px 1fr; gap: 16px; max-width: 1400px; }
+        .card {
+            background: #fff; border-radius: 6px; padding: 14px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 14px;
+        }
+        .card h2 { font-size: 14px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #ebeef5; }
+        .field { margin-bottom: 10px; }
+        .field label { display: block; font-size: 12px; color: #606266; margin-bottom: 4px; }
+        .field input, .field select {
+            width: 100%; padding: 6px 8px; border: 1px solid #dcdfe6;
+            border-radius: 4px; font-size: 13px; font-family: inherit;
+        }
+        .field input:focus, .field select:focus { outline: none; border-color: #409eff; }
+        .row { display: flex; gap: 10px; }
+        .row .field { flex: 1; }
+        button {
+            padding: 7px 16px; border: none; border-radius: 4px; cursor: pointer;
+            font-size: 13px; font-family: inherit; transition: opacity .2s;
+        }
+        button:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-primary { background: #409eff; color: #fff; }
+        .btn-danger { background: #f56c6c; color: #fff; }
+        .btn-success { background: #67c23a; color: #fff; }
+        .btn-warning { background: #e6a23c; color: #fff; }
+        .btn-group { display: flex; gap: 8px; margin-top: 4px; }
+        .status {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;
+        }
+        .status .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status.online { background: #f0f9eb; color: #67c23a; }
+        .status.online .dot { background: #67c23a; }
+        .status.offline { background: #fef0f0; color: #f56c6c; }
+        .status.offline .dot { background: #f56c6c; }
+        .status.connecting { background: #fdf6ec; color: #e6a23c; }
+        .status.connecting .dot { background: #e6a23c; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: .3; } }
+        .topic-box {
+            background: #f5f7fa; padding: 6px 8px; border-radius: 4px;
+            font-family: Consolas, monospace; font-size: 12px; color: #606266;
+            word-break: break-all; margin-top: 4px;
+        }
+        #log {
+            background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 4px;
+            font-family: Consolas, monospace; font-size: 12px; height: 280px;
+            overflow-y: auto; line-height: 1.6;
+        }
+        .log-line { margin-bottom: 2px; }
+        .log-info { color: #d4d4d4; }
+        .log-ok { color: #6db33f; }
+        .log-warn { color: #e6a23c; }
+        .log-err { color: #f56c6c; }
+        .log-ts { color: #6a8759; }
+        #chart { width: 100%; height: 200px; background: #fafafa; border-radius: 4px; }
+        .hint { font-size: 11px; color: #909399; margin-top: 6px; line-height: 1.5; }
+        .badge { display:inline-block; background:#409eff; color:#fff; font-size:10px; padding:1px 6px; border-radius:8px; margin-left:6px; }
+    </style>
+</head>
+<body>
+    <h1>IoT 设备模拟器 <small>通过 WebSocket 连接内嵌 Moquette Broker，模拟设备认证与属性上报</small></h1>
+    <div class="layout">
+        <div>
+            <div class="card">
+                <h2>1. 连接配置</h2>
+                <div class="field">
+                    <label>Broker WebSocket 地址</label>
+                    <input id="brokerUrl" value="ws://localhost:8083/mqtt">
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>租户 ID (tenantId)</label>
+                        <input id="tenantId" value="000000">
+                    </div>
+                    <div class="field">
+                        <label>设备编码 (deviceCode = ClientID)</label>
+                        <input id="deviceCode" placeholder="如 device001">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>设备密钥 (deviceSecret)</label>
+                    <input id="deviceSecret" placeholder="新增设备时自动生成的 UUID" type="text">
+                </div>
+                <div class="field">
+                    <label>状态</label>
+                    <span class="status offline" id="status"><span class="dot"></span>未连接</span>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-primary" id="btnConnect">连接</button>
+                    <button class="btn-danger" id="btnDisconnect" disabled>断开</button>
+                </div>
+                <div class="hint">
+                    认证规则：ClientID = username = deviceCode，password = deviceSecret，设备须 ACTIVE。
+                    Topic 规约：<code>iot/{tenantId}/{deviceCode}/property/post</code>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>2. 单次属性上报</h2>
+                <div class="row">
+                    <div class="field">
+                        <label>属性编码 (property)</label>
+                        <input id="property" value="temperature">
+                    </div>
+                    <div class="field">
+                        <label>数据类型</label>
+                        <select id="dataType">
+                            <option value="NUMERIC">NUMERIC</option>
+                            <option value="TEXT">TEXT</option>
+                            <option value="BOOL">BOOL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>值 (value)</label>
+                        <input id="value" value="25.5">
+                    </div>
+                    <div class="field">
+                        <label>单位 (unit)</label>
+                        <input id="unit" value="°C">
+                    </div>
+                    <div class="field">
+                        <label>质量</label>
+                        <select id="quality">
+                            <option value="GOOD">GOOD</option>
+                            <option value="BAD">BAD</option>
+                            <option value="UNCERTAIN">UNCERTAIN</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-success" id="btnPublish" disabled>发送上报</button>
+                </div>
+                <div class="topic-box" id="topicPreview">iot/000000/device001/property/post</div>
+            </div>
+
+            <div class="card">
+                <h2>3. 定时自动上报 <span class="badge">模拟连续采集</span></h2>
+                <div class="row">
+                    <div class="field">
+                        <label>间隔 (毫秒)</label>
+                        <input id="interval" type="number" value="2000">
+                    </div>
+                    <div class="field">
+                        <label>基准值</label>
+                        <input id="baseValue" type="number" value="25">
+                    </div>
+                    <div class="field">
+                        <label>波动幅度 (±)</label>
+                        <input id="range" type="number" value="5">
+                    </div>
+                </div>
+                <div class="hint">按基准值 ± 波动幅度 随机生成 NUMERIC 值，使用上方属性编码/单位。</div>
+                <div class="btn-group">
+                    <button class="btn-warning" id="btnAutoStart" disabled>开始自动上报</button>
+                    <button class="btn-danger" id="btnAutoStop" disabled>停止</button>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <h2>实时上报曲线</h2>
+                <canvas id="chart"></canvas>
+                <div class="hint">最近 60 个上报值，自动缩放 Y 轴。</div>
+            </div>
+            <div class="card">
+                <h2>事件日志</h2>
+                <div id="log"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const $ = id => document.getElementById(id);
+let client = null;
+let autoTimer = null;
+const points = []; // {t, v}
+
+function log(msg, type = 'info') {
+    const el = $('log');
+    const ts = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    const line = document.createElement('div');
+    line.className = 'log-line log-' + type;
+    line.innerHTML = '<span class="log-ts">[' + ts + ']</span> ' + msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(s, text) {
+    const el = $('status');
+    el.className = 'status ' + s;
+    el.innerHTML = '<span class="dot"></span>' + text;
+}
+
+function setConnected(connected) {
+    $('btnConnect').disabled = connected;
+    $('btnDisconnect').disabled = !connected;
+    $('btnPublish').disabled = !connected;
+    $('btnAutoStart').disabled = !connected;
+}
+
+function buildTopic() {
+    return 'iot/' + $('tenantId').value + '/' + $('deviceCode').value + '/property/post';
+}
+
+function buildPayload(value) {
+    const dataType = $('dataType').value;
+    let v = value;
+    if (dataType === 'NUMERIC') v = Number(value);
+    else if (dataType === 'BOOL') v = ('true' === String(value).toLowerCase() || '1' === String(value));
+    return JSON.stringify({
+        property: $('property').value,
+        value: v,
+        dataType: dataType,
+        unit: $('unit').value,
+        timestamp: Date.now(),
+        quality: $('quality').value
+    });
+}
+
+function publish(value) {
+    if (!client || !client.connected) { log('未连接，无法上报', 'err'); return; }
+    const topic = buildTopic();
+    const payload = buildPayload(value);
+    client.publish(topic, payload, { qos: 0 }, err => {
+        if (err) { log('发布失败: ' + err.message, 'err'); return; }
+        log('上报 → ' + topic + ' : ' + payload, 'ok');
+        const v = Number(value);
+        if (!isNaN(v)) { points.push({ t: Date.now(), v: v }); if (points.length > 60) points.shift(); drawChart(); }
+    });
+}
+
+function drawChart() {
+    const cv = $('chart');
+    const ctx = cv.getContext('2d');
+    const W = cv.width = cv.offsetWidth, H = cv.height = cv.offsetHeight;
+    ctx.clearRect(0, 0, W, H);
+    if (points.length < 2) {
+        ctx.fillStyle = '#c0c4cc'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('暂无数据（发送上报后将显示曲线）', W / 2, H / 2);
+        return;
+    }
+    const vs = points.map(p => p.v);
+    let min = Math.min(...vs), max = Math.max(...vs);
+    if (max - min < 0.001) { min -= 1; max += 1; }
+    const pad = 24;
+    const sx = i => pad + (W - 2 * pad) * (i / (points.length - 1));
+    const sy = v => H - pad - (H - 2 * pad) * ((v - min) / (max - min));
+    // 网格
+    ctx.strokeStyle = '#ebeef5'; ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = pad + (H - 2 * pad) * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+    }
+    // 轴标签
+    ctx.fillStyle = '#909399'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(max.toFixed(1), 2, pad + 4); ctx.fillText(min.toFixed(1), 2, H - pad + 4);
+    // 折线
+    ctx.strokeStyle = '#409eff'; ctx.lineWidth = 2; ctx.beginPath();
+    points.forEach((p, i) => { const x = sx(i), y = sy(p.v); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+    ctx.stroke();
+    // 点
+    ctx.fillStyle = '#409eff';
+    points.forEach((p, i) => { ctx.beginPath(); ctx.arc(sx(i), sy(p.v), 2, 0, 2 * Math.PI); ctx.fill(); });
+}
+
+// 预览 topic
+['tenantId', 'deviceCode'].forEach(id => $(id).addEventListener('input', () => $('topicPreview').textContent = buildTopic()));
+
+$('btnConnect').onclick = () => {
+    const deviceCode = $('deviceCode').value.trim();
+    const deviceSecret = $('deviceSecret').value.trim();
+    if (!deviceCode || !deviceSecret) { log('请填写 deviceCode 与 deviceSecret', 'warn'); return; }
+    if (typeof mqtt === 'undefined') { log('MQTT.js 未加载，检查网络/CDN', 'err'); return; }
+    setStatus('connecting', '连接中...');
+    log('正在连接 ' + $('brokerUrl').value + ' (clientId=' + deviceCode + ')', 'info');
+    client = mqtt.connect($('brokerUrl').value, {
+        clientId: deviceCode,
+        username: deviceCode,
+        password: deviceSecret,
+        keepalive: 30,
+        reconnectPeriod: 0,
+        connectTimeout: 5000
+    });
+    client.on('connect', () => {
+        setStatus('online', '已连接');
+        setConnected(true);
+        log('MQTT 连接成功，设备状态将置为 ONLINE', 'ok');
+    });
+    client.on('close', () => {
+        setStatus('offline', '未连接');
+        setConnected(false);
+        if (autoTimer) { stopAuto(); }
+        log('连接已关闭', 'warn');
+    });
+    client.on('error', err => log('连接错误: ' + err.message, 'err'));
+    client.on('offline', () => log('客户端离线', 'warn'));
+};
+
+$('btnDisconnect').onclick = () => {
+    if (autoTimer) stopAuto();
+    if (client) { client.end(true); log('主动断开连接', 'info'); }
+};
+
+$('btnPublish').onclick = () => publish($('value').value);
+
+function startAuto() {
+    const interval = parseInt($('interval').value) || 2000;
+    autoTimer = setInterval(() => {
+        const base = parseFloat($('baseValue').value) || 0;
+        const range = parseFloat($('range').value) || 0;
+        const v = (base + (Math.random() - 0.5) * 2 * range).toFixed(2);
+        publish(v);
+    }, interval);
+    $('btnAutoStart').disabled = true;
+    $('btnAutoStop').disabled = false;
+    log('开始自动上报，间隔 ' + interval + 'ms', 'info');
+}
+function stopAuto() {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    $('btnAutoStart').disabled = !client || !client.connected;
+    $('btnAutoStop').disabled = true;
+    log('已停止自动上报', 'info');
+}
+$('btnAutoStart').onclick = startAuto;
+$('btnAutoStop').onclick = stopAuto;
+
+drawChart();
+log('IoT 设备模拟器已就绪。填写设备信息后点击「连接」。', 'info');
+log('提示：deviceCode/deviceSecret 可用 SQL 查询：SELECT device_code, device_secret, tenant_id FROM iot_device WHERE status=\'ACTIVE\'', 'info');
+</script>
+</body>
+</html>
