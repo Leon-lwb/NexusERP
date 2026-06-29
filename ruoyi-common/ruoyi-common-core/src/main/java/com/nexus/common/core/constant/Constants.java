@@ -88,6 +88,11 @@ public interface Constants {
     String MSG_CATEGORY_1 = "1";
 
     /**
+     * 消息分类2 - 系统消息
+     */
+    String MSG_CATEGORY_2 = "2";
+
+    /**
      * 消息分类3 - 流程抄送
      */
     String MSG_CATEGORY_3 = "3";

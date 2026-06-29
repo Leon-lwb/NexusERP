@@ -2,6 +2,7 @@ package com.nexus.system.service.impl;
 
 import java.util.List;
 
+import cn.hutool.core.collection.CollUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.constant.Constants;
@@ -10,9 +11,12 @@ import com.nexus.common.core.event.UserNotificationEvent;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.system.domain.vo.SysDeptVo;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.CommonMapper;
+import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.CommonService;
+import com.nexus.system.service.ISysDeptService;
 import com.nexus.system.service.ISysUserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,6 +36,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> implements CommonService {
 
     private final ISysUserService userService;
+    private final ISysDeptService deptService;
+    private final SysUserMapper userMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${flowable.message-base-url:/workflow/process/detail/}")
@@ -39,8 +45,12 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
 
     @Override
     public void sendSysNotice(String message) {
-        // TODO: 实现系统消息发送
-        log.info("发送系统消息: {}", message);
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        if (loginUser == null || StringUtils.isBlank(loginUser.getUsername())) {
+            log.info("发送系统消息(无登录用户): {}", message);
+            return;
+        }
+        sendSysNotice("system", loginUser.getUsername(), message, message, Constants.MSG_CATEGORY_2, null);
     }
 
     @Override
@@ -89,8 +99,21 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
 
     @Override
     public List<SysUserVo> getUserListByRoleId(String roleId) {
-        // TODO: 根据角色获取用户列表
-        return List.of();
+        if (StringUtils.isBlank(roleId)) {
+            return List.of();
+        }
+        Long rid;
+        try {
+            rid = Long.parseLong(roleId);
+        } catch (NumberFormatException e) {
+            log.warn("根据角色获取用户列表失败, 角色ID格式错误: {}", roleId);
+            return List.of();
+        }
+        List<Long> userIds = baseMapper.selectUserIdByRoleId(rid);
+        if (CollUtil.isEmpty(userIds)) {
+            return List.of();
+        }
+        return userService.selectUserByIds(userIds, null);
     }
 
     @Override
@@ -105,19 +128,29 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
 
     @Override
     public String getDepLeaderByUserName(String userName) {
-        // TODO: 根据用户名获取部门领导
-        return "";
+        if (StringUtils.isBlank(userName)) {
+            return "";
+        }
+        SysUserVo user = userService.selectUserByUserName(userName);
+        if (user == null || user.getDeptId() == null) {
+            return "";
+        }
+        SysDeptVo dept = deptService.selectDeptById(user.getDeptId());
+        if (dept == null || dept.getLeader() == null) {
+            return "";
+        }
+        SysUserVo leader = userService.selectUserById(dept.getLeader());
+        return leader == null ? "" : leader.getUserName();
     }
 
     @Override
     public Long selectMaxId() {
-        // TODO: 获取菜单的最大id
-        return 0L;
+        Long maxId = baseMapper.selectMaxMenuId();
+        return maxId == null ? 0L : maxId;
     }
 
     @Override
     public List<SysUserVo> getAllUser() {
-        // TODO: 获取所有用户列表
-        return List.of();
+        return userMapper.selectVoList();
     }
 }

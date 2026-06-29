@@ -1544,8 +1544,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 		try {
 			templist = (List<String>) flowexp.invokeMethod(flowexp, methodname,argsPara);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("执行多实例流程表达式失败, method={}, args={}", methodname, argsPara, e);
 		}
 		for(String sysuser : templist) {
       		SysUserVo sysUserTemp = sysUserService.selectUserByUserName(sysuser);
