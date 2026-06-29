@@ -217,11 +217,11 @@ const submitForm = async () => {
     await addWorkOrder(form.value);
     proxy?.$modal.msgSuccess('新增成功');
   }
-  router.push('/mes/pro/workorder');
+  router.push('/mes/wo/workorder');
 };
 
 const cancel = () => {
-  const obj = { path: '/mes/pro/workorder' };
+  const obj = { path: '/mes/wo/workorder' };
   proxy?.$tab.closeOpenPage(obj);
 };
 </script>

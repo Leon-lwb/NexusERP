@@ -304,12 +304,12 @@ function submitForm() {
       if (form.value.recptId != null) {
         updateMiscRecpt(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功');
-          router.push('/erp/wm/miscrecpt');
+          router.push('/erp/inbound/miscrecpt');
         });
       } else {
         addMiscRecpt(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
-          router.push('/erp/wm/miscrecpt');
+          router.push('/erp/inbound/miscrecpt');
         });
       }
     }
@@ -328,7 +328,7 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/wm/miscrecpt' });
+  proxy.$tab.closeOpenPage({ path: '/erp/inbound/miscrecpt' });
 }
 
 function rowLineIndex({ row, rowIndex }: any) {

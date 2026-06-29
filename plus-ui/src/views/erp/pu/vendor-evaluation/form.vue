@@ -210,12 +210,12 @@ function submitForm() {
   const isEdit = route.query.action === 'edit' || form.value.evaluationId != null
   ;(isEdit ? updateVendorEvaluation(form.value) : addVendorEvaluation(form.value)).then(() => {
     proxy.$modal.msgSuccess('保存成功')
-    router.push('/erp/pu/vendor-evaluation')
+    router.push('/erp/puBiz/vendorEvaluation')
   })
 }
 
 function cancel() {
-  router.push('/erp/pu/vendor-evaluation')
+  router.push('/erp/puBiz/vendorEvaluation')
 }
 </script>
 

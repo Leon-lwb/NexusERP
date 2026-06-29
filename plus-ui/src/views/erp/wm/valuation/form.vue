@@ -120,7 +120,7 @@ function loadDetail(materialId: any, warehouseId: any) {
 }
 
 function cancel() {
-  router.push('/erp/wm/valuation')
+  router.push('/erp/wmRule/valuation')
 }
 </script>
 

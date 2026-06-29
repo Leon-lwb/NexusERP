@@ -329,7 +329,7 @@ function handleSave() {
 
 /** 关闭 */
 function handleClose() {
-  const obj = { path: '/erp/bd/routing' };
+  const obj = { path: '/erp/tech/routing' };
   proxy.$tab.closeOpenPage(obj);
 }
 

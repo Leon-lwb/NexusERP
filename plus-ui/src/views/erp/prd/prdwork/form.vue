@@ -866,7 +866,7 @@ function submitForm() {
         updateWork(form.value).then(response => {
           saveWorkOrderResourceBatch(form.value.woId, resourceList).then(() => {
             proxy.$modal.msgSuccess("修改成功")
-            router.push('/erp/prd/work')
+            router.push('/erp/prdExec/work')
           })
         })
       } else {
@@ -878,11 +878,11 @@ function submitForm() {
           }
           saveWorkOrderResourceBatch(woId, resourceList).then(() => {
             proxy.$modal.msgSuccess("新增成功")
-            router.push('/erp/prd/work')
+            router.push('/erp/prdExec/work')
           }).catch(error => {
             console.error('保存资源分配失败:', error)
             proxy.$modal.msgWarning("工单已保存，但资源分配保存失败，请编辑后重新保存")
-            router.push('/erp/prd/work')
+            router.push('/erp/prdExec/work')
           })
         }).catch(error => {
           console.error('保存工单失败:', error)
@@ -943,7 +943,7 @@ function buildResourceList() {
 }
 
 function cancel() {
-  const obj = { path: '/erp/prd/work' }
+  const obj = { path: '/erp/prdExec/work' }
   proxy.$tab.closeOpenPage(obj)
 }
 
@@ -1384,7 +1384,7 @@ function handleSubmitFlow() {
       submitWorkFlow(String(form.value.woId), String(form.value.selectFlowId)).then((res: any) => {
         if (res.code === 200) {
           proxy.$modal.msgSuccess("提交审批成功")
-          router.push('/erp/prd/work')
+          router.push('/erp/prdExec/work')
         } else {
           proxy.$modal.msgError(res.msg || '提交审批失败')
         }

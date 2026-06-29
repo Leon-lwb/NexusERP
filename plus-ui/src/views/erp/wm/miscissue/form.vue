@@ -249,12 +249,12 @@ function submitForm() {
       if (form.value.issueId != null) {
         updateMiscIssue(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功');
-          router.push('/erp/wm/miscissue');
+          router.push('/erp/outbound/miscissue');
         });
       } else {
         addMiscIssue(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
-          router.push('/erp/wm/miscissue');
+          router.push('/erp/outbound/miscissue');
         });
       }
     }
@@ -273,7 +273,7 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/wm/miscissue' });
+  proxy.$tab.closeOpenPage({ path: '/erp/outbound/miscissue' });
 }
 
 function rowLineIndex({ row, rowIndex }: any) {

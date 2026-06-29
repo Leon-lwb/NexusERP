@@ -185,11 +185,11 @@ const handleCreateFlowCard = async () => {
   }
   await addFlowCard(workOrder.value.mesWoId, Number(qty));
   proxy?.$modal.msgSuccess('流转卡创建成功');
-  router.push(`/mes/pro/flow-card?mesWoId=${workOrder.value.mesWoId}`);
+  router.push(`/mes/wo/flow-card?mesWoId=${workOrder.value.mesWoId}`);
 };
 
 const goBack = () => {
-  router.push('/mes/pro/workorder');
+  router.push('/mes/wo/workorder');
 };
 
 const statusLabel = (status: string) => {

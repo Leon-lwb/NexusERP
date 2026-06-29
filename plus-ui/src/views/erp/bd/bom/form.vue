@@ -1061,8 +1061,8 @@ function saveBomDetails(bomId) {
 
 // 关闭按钮
 function handleClose() {
-  //router.push('/erp/bd/bom')
-  const obj = { path: '/erp/bd/bom' };
+  //router.push('/erp/tech/bom')
+  const obj = { path: '/erp/tech/bom' };
   proxy.$tab.closeOpenPage(obj);
 }
 </script>

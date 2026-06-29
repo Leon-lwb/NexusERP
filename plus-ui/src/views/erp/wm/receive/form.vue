@@ -755,7 +755,7 @@ function handleSubmitFlow() {
           submitReceive(String(form.value.receiveId), String(form.value.selectFlowId)).then((res: any) => {
             if (res.code === 200) {
               proxy.$modal.msgSuccess("提交审批成功")
-              router.push('/erp/wm/receive')
+              router.push('/erp/inbound/receive')
             } else {
               proxy.$modal.msgError(res.msg || '提交审批失败')
             }
@@ -839,12 +839,12 @@ function submitForm() {
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
-          router.push('/erp/wm/receive')
+          router.push('/erp/inbound/receive')
         })
       } else {
         addReceive(form.value).then(() => {
           proxy.$modal.msgSuccess("新增成功")
-          router.push('/erp/wm/receive')
+          router.push('/erp/inbound/receive')
         })
       }
     }
@@ -861,12 +861,12 @@ function submitApprovingForm() {
       if (form.value.receiveId != null) {
         updateReceive(form.value).then(() => {
           proxy.$modal.msgSuccess("审核提交成功")
-          router.push('/erp/wm/receive')
+          router.push('/erp/inbound/receive')
         })
       } else {
         addReceive(form.value).then(() => {
           proxy.$modal.msgSuccess("审核提交成功")
-          router.push('/erp/wm/receive')
+          router.push('/erp/inbound/receive')
         })
       }
     }
@@ -875,7 +875,7 @@ function submitApprovingForm() {
 
 // 取消按钮
 function cancel() {
-  const obj = { path: '/erp/wm/receive' }
+  const obj = { path: '/erp/inbound/receive' }
   proxy.$tab.closeOpenPage(obj)
 }
 

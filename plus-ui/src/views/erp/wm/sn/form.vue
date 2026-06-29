@@ -224,14 +224,14 @@ function submitForm() {
       const isEdit = route.query.action === 'edit' || form.value.snId != null;
       (isEdit ? updateSn(form.value) : addSn(form.value)).then(() => {
         proxy.$modal.msgSuccess('保存成功');
-        router.push('/erp/wm/sn');
+        router.push('/erp/barcode/sn');
       });
     }
   });
 }
 
 function cancel() {
-  router.push('/erp/wm/sn');
+  router.push('/erp/barcode/sn');
 }
 </script>
 

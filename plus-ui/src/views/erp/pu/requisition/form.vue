@@ -472,7 +472,7 @@ function submitForm() {
 function handleConvert() {
   convertPurchaseRequisition(form.value.requisitionId).then(() => {
     proxy.$modal.msgSuccess('转单成功');
-    router.push('/erp/pu/order');
+    router.push('/erp/puExec/order');
   });
 }
 

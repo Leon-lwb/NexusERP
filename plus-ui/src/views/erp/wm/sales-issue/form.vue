@@ -577,12 +577,12 @@ function submitForm() {
       if (form.value.issueId != null) {
         updateSalesIssue(form.value).then(() => {
           proxy.$modal.msgSuccess("修改成功")
-          router.push('/erp/wm/sales-issue')
+          router.push('/erp/outbound/salesIssue')
         })
       } else {
         addSalesIssue(form.value).then(() => {
           proxy.$modal.msgSuccess("新增成功")
-          router.push('/erp/wm/sales-issue')
+          router.push('/erp/outbound/salesIssue')
         })
       }
     }
@@ -623,7 +623,7 @@ function handleSubmitFlow() {
       submitSalesIssueFlow(String(form.value.issueId), String(form.value.selectFlowId)).then((res: any) => {
         if (res.code === 200) {
           proxy.$modal.msgSuccess("提交审批成功")
-          router.push('/erp/wm/sales-issue')
+          router.push('/erp/outbound/salesIssue')
         } else {
           proxy.$modal.msgError(res.msg || '提交审批失败')
         }
@@ -663,7 +663,7 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/wm/salesIssue' })
+  proxy.$tab.closeOpenPage({ path: '/erp/outbound/salesIssue' })
 }
 
 /** 明细行相关方法 */

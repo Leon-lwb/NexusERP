@@ -235,9 +235,9 @@ function submitForm() {
         }
       form.value.wmStockTakingLineList = lineList.value
       if (form.value.planId != null) {
-        updateStockTakingPlan(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/wm/stocktaking') })
+        updateStockTakingPlan(form.value).then(() => { proxy.$modal.msgSuccess("修改成功"); router.push('/erp/inventory/stocktaking') })
       } else {
-        addStockTakingPlan(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); router.push('/erp/wm/stocktaking') })
+        addStockTakingPlan(form.value).then(() => { proxy.$modal.msgSuccess("新增成功"); router.push('/erp/inventory/stocktaking') })
       }
     }
   })
@@ -254,7 +254,7 @@ function handleAutoGenChange(autoGenFlag: boolean) {
   }
 }
 
-function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/wm/stocktaking' }) }
+function cancel() { proxy.$tab.closeOpenPage({ path: '/erp/inventory/stocktaking' }) }
 
 // ==================== Flowable 工作流 ====================
 
@@ -289,7 +289,7 @@ function handleSubmitFlow() {
           submitStockTakingFlow(String(form.value.planId), String(form.value.selectFlowId)).then((res: any) => {
             if (res.code === 200) {
               proxy.$modal.msgSuccess("提交审批成功")
-              router.push('/erp/wm/stocktaking')
+              router.push('/erp/inventory/stocktaking')
             } else {
               proxy.$modal.msgError(res.msg || '提交审批失败')
             }

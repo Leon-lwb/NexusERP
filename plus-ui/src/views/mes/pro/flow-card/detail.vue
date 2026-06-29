@@ -224,7 +224,7 @@ const handleCloseFlowCard = async () => {
 };
 
 const goBack = () => {
-  router.push('/mes/pro/flow-card');
+  router.push('/mes/wo/flow-card');
 };
 
 // ---- 派工相关方法 ----

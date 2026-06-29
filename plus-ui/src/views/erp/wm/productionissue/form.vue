@@ -403,12 +403,12 @@ function submitForm() {
     if (form.value.issueId != null) {
       updateProductionIssue(form.value).then(() => {
         proxy.$modal.msgSuccess('保存成功');
-        router.push('/erp/wm/productionissue');
+        router.push('/erp/outbound/productionissue');
       });
     } else {
       addProductionIssue(form.value).then(() => {
         proxy.$modal.msgSuccess('新增成功');
-        router.push('/erp/wm/productionissue');
+        router.push('/erp/outbound/productionissue');
       });
     }
   });
@@ -483,7 +483,7 @@ async function handleAutoFillFromWorkOrder() {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/wm/productionissue' });
+  proxy.$tab.closeOpenPage({ path: '/erp/outbound/productionissue' });
 }
 
 function handleAddLine() {

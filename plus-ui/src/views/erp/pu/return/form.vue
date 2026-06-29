@@ -310,7 +310,7 @@ function submitForm() {
   }
   ;(form.value.returnId ? updatePurchaseReturn(form.value) : addPurchaseReturn(form.value)).then(() => {
     proxy.$modal.msgSuccess('保存成功')
-    router.push('/erp/pu/return')
+    router.push('/erp/puExec/return')
   })
 }
 
@@ -324,7 +324,7 @@ function handleSubmitFlow() {
       submitPurchaseReturnFlow(String(form.value.returnId), String(form.value.selectFlowId)).then((res: any) => {
         if (res.code === 200) {
           proxy.$modal.msgSuccess("提交审批成功")
-          router.push('/erp/pu/return')
+          router.push('/erp/puExec/return')
         } else {
           proxy.$modal.msgError(res.msg || '提交审批失败')
         }
@@ -361,7 +361,7 @@ function handleAutoGenChange(autoGenFlag) {
 }
 
 function cancel() {
-  router.push('/erp/pu/return')
+  router.push('/erp/puExec/return')
 }
 </script>
 

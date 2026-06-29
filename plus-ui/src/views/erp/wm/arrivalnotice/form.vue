@@ -448,12 +448,12 @@ function submitForm() {
       if (form.value.noticeId != null) {
         updateArrivalnotice(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功');
-          router.push('/erp/wm/arrivalnotice');
+          router.push('/erp/inbound/arrivalnotice');
         });
       } else {
         addArrivalnotice(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
-          router.push('/erp/wm/arrivalnotice');
+          router.push('/erp/inbound/arrivalnotice');
         });
       }
     }
@@ -473,7 +473,7 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() {
-  const obj = { path: '/erp/wm/arrivalnotice' };
+  const obj = { path: '/erp/inbound/arrivalnotice' };
   proxy.$tab.closeOpenPage(obj);
 }
 

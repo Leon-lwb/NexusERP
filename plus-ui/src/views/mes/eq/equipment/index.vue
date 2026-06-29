@@ -221,6 +221,7 @@ import { listIotDeviceForBind } from '@/api/iot/device';
 import type { EqEquipmentVO, EqEquipmentQuery, EqEquipmentForm } from '@/api/mes/eq/equipment';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const route = useRoute();
 
 const dataList = ref<EqEquipmentVO[]>([]);
 const loading = ref(true);
@@ -401,5 +402,10 @@ const statusTagType = (s: string) => ({ NORMAL: 'success', MAINTENANCE: 'warning
 
 onMounted(() => {
   getList();
+  // IoT「查看MES设备」带 equipmentId 跳转时, 自动弹出该设备编辑框
+  const eqId = route.query.equipmentId;
+  if (eqId) {
+    handleOpenEdit({ equipmentId: Number(eqId) } as EqEquipmentVO);
+  }
 });
 </script>

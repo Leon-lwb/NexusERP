@@ -159,14 +159,14 @@ function submitForm() {
       const isEdit = route.query.action === 'edit' || form.value.ruleId != null
       ;(isEdit ? updatePutawayRule(form.value) : addPutawayRule(form.value)).then(() => {
         proxy.$modal.msgSuccess('保存成功')
-        router.push('/erp/wm/putawayrule')
+        router.push('/erp/wmRule/putawayRule')
       })
     }
   })
 }
 
 function cancel() {
-  router.push('/erp/wm/putawayrule')
+  router.push('/erp/wmRule/putawayRule')
 }
 </script>
 

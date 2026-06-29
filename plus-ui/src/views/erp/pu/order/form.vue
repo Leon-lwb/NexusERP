@@ -497,7 +497,7 @@ function handleSubmitFlow() {
             .then((res: any) => {
               if (res.code === 200) {
                 proxy.$modal.msgSuccess('提交审批成功');
-                router.push('/erp/pu/order');
+                router.push('/erp/puExec/order');
               } else {
                 proxy.$modal.msgError(res.msg || '提交审批失败');
               }
@@ -681,7 +681,7 @@ function submitForm() {
   }
   (form.value.orderId ? updatePurchaseOrder(form.value) : addPurchaseOrder(form.value)).then(() => {
     proxy.$modal.msgSuccess('保存成功');
-    router.push('/erp/pu/order');
+    router.push('/erp/puExec/order');
   });
 }
 
@@ -700,7 +700,7 @@ function handleAutoGenChange(autoGenFlag) {
 }
 
 function cancel() {
-  router.push('/erp/pu/order');
+  router.push('/erp/puExec/order');
 }
 
 /**

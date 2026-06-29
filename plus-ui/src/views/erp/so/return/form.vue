@@ -427,12 +427,12 @@ function submitForm() {
       if (form.value.returnId != null) {
         updateReturn(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功');
-          router.push('/erp/so/return');
+          router.push('/erp/soBiz/return');
         });
       } else {
         addReturn(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
-          router.push('/erp/so/return');
+          router.push('/erp/soBiz/return');
         });
       }
     }
@@ -450,7 +450,7 @@ function handleSubmitFlow() {
         .then((res: any) => {
           if (res.code === 200) {
             proxy.$modal.msgSuccess('提交审批成功');
-            router.push('/erp/so/return');
+            router.push('/erp/soBiz/return');
           } else {
             proxy.$modal.msgError(res.msg || '提交审批失败');
           }
@@ -490,7 +490,7 @@ function handleAutoGenChange(autoGenFlag) {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/so/return' });
+  proxy.$tab.closeOpenPage({ path: '/erp/soBiz/return' });
 }
 
 function rowLineIndex({ row, rowIndex }: any) {

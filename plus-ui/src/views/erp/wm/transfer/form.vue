@@ -363,12 +363,12 @@ function submitForm() {
       if (form.value.transferId != null) {
         updateTransfer(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功');
-          router.push('/erp/wm/transfer');
+          router.push('/erp/inventory/transfer');
         });
       } else {
         addTransfer(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
-          router.push('/erp/wm/transfer');
+          router.push('/erp/inventory/transfer');
         });
       }
     }
@@ -390,7 +390,7 @@ function handleSubmitFlow() {
         .then((res: any) => {
           if (res.code === 200) {
             proxy.$modal.msgSuccess('提交审批成功');
-            router.push('/erp/wm/transfer');
+            router.push('/erp/inventory/transfer');
           } else {
             proxy.$modal.msgError(res.msg || '提交审批失败');
           }
@@ -469,7 +469,7 @@ function handleAutoGenChange(autoGenFlag) {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/wm/transfer' });
+  proxy.$tab.closeOpenPage({ path: '/erp/inventory/transfer' });
 }
 
 function rowLineIndex({ row, rowIndex }: any) {

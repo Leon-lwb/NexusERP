@@ -241,12 +241,12 @@ function submitForm() {
       if (form.value.batchId != null) {
         updateBatch(form.value).then(() => {
           proxy.$modal.msgSuccess('修改成功');
-          router.push('/erp/wm/batch');
+          router.push('/erp/barcode/batch');
         });
       } else {
         addBatch(form.value).then(() => {
           proxy.$modal.msgSuccess('新增成功');
-          router.push('/erp/wm/batch');
+          router.push('/erp/barcode/batch');
         });
       }
     }
@@ -254,7 +254,7 @@ function submitForm() {
 }
 
 function cancel() {
-  router.push('/erp/wm/batch');
+  router.push('/erp/barcode/batch');
 }
 </script>
 

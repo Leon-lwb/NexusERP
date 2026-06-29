@@ -215,7 +215,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/arrivalnotice/form.vue'),
         name: 'ArrivalNoticeForm',
-        meta: { title: '到货通知单表单', activeMenu: '/erp/wm/arrivalnotice' }
+        meta: { title: '到货通知单表单', activeMenu: '/erp/inbound/arrivalnotice' }
       }
     ]
   },
@@ -229,7 +229,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/receive/form.vue'),
         name: 'ReceiveForm',
-        meta: { title: '物料入库单表单', activeMenu: '/erp/wm/receive' }
+        meta: { title: '物料入库单表单', activeMenu: '/erp/inbound/receive' }
       }
     ]
   },
@@ -243,7 +243,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/sales-issue/form.vue'),
         name: 'SalesIssueForm',
-        meta: { title: '销售出库单表单', activeMenu: '/erp/wm/sales-issue' }
+        meta: { title: '销售出库单表单', activeMenu: '/erp/outbound/salesIssue' }
       }
     ]
   },
@@ -257,7 +257,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/bd/bom/form.vue'),
         name: 'BomForm',
-        meta: { title: 'BOM表单', activeMenu: '/erp/bd/bom' }
+        meta: { title: 'BOM表单', activeMenu: '/erp/tech/bom' }
       }
     ]
   },
@@ -271,7 +271,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/bd/routing/form.vue'),
         name: 'RoutingForm',
-        meta: { title: '工艺路线表单', activeMenu: '/erp/bd/routing' }
+        meta: { title: '工艺路线表单', activeMenu: '/erp/tech/routing' }
       }
     ]
   },
@@ -313,7 +313,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/prd/prdwork/form.vue'),
         name: 'PrdWorkForm',
-        meta: { title: '生产工单表单', activeMenu: '/erp/prd/work' }
+        meta: { title: '生产工单表单', activeMenu: '/erp/prdExec/work' }
       }
     ]
   },
@@ -355,7 +355,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/transfer/form.vue'),
         name: 'TransferForm',
-        meta: { title: '调拨单表单', activeMenu: '/erp/wm/transfer' }
+        meta: { title: '调拨单表单', activeMenu: '/erp/inventory/transfer' }
       }
     ]
   },
@@ -369,7 +369,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/stocktaking/form.vue'),
         name: 'StockTakingForm',
-        meta: { title: '盘点计划表单', activeMenu: '/erp/wm/stocktaking' }
+        meta: { title: '盘点计划表单', activeMenu: '/erp/inventory/stocktaking' }
       }
     ]
   },
@@ -383,7 +383,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: 'index',
         component: () => import('@/views/erp/wm/barcode/index.vue'),
         name: 'Barcode',
-        meta: { title: '条码管理', activeMenu: '/erp/wm/barcode' }
+        meta: { title: '条码管理', activeMenu: '/erp/barcode/index' }
       }
     ]
   },
@@ -397,7 +397,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: 'index',
         component: () => import('@/views/erp/wm/barcode/config/index.vue'),
         name: 'BarcodeConfig',
-        meta: { title: '条码配置', activeMenu: '/erp/wm/barcode/config' }
+        meta: { title: '条码配置', activeMenu: '/erp/barcode/config' }
       }
     ]
   },
@@ -411,7 +411,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/miscissue/form.vue'),
         name: 'MiscIssueForm',
-        meta: { title: '杂项出库表单', activeMenu: '/erp/wm/miscissue' }
+        meta: { title: '杂项出库表单', activeMenu: '/erp/outbound/miscissue' }
       }
     ]
   },
@@ -425,7 +425,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/productionissue/form.vue'),
         name: 'ProductionIssueForm',
-        meta: { title: '生产领料表单', activeMenu: '/erp/wm/productionissue' }
+        meta: { title: '生产领料表单', activeMenu: '/erp/outbound/productionissue' }
       }
     ]
   },
@@ -439,7 +439,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/miscrecpt/form.vue'),
         name: 'MiscRecptForm',
-        meta: { title: '杂项入库表单', activeMenu: '/erp/wm/miscrecpt' }
+        meta: { title: '杂项入库表单', activeMenu: '/erp/inbound/miscrecpt' }
       }
     ]
   },
@@ -467,7 +467,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/so/return/form.vue'),
         name: 'ReturnForm',
-        meta: { title: '退货单表单', activeMenu: '/erp/so/return' }
+        meta: { title: '退货单表单', activeMenu: '/erp/soBiz/return' }
       }
     ]
   },
@@ -509,7 +509,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/pu/order/form.vue'),
         name: 'PurchaseOrderForm',
-        meta: { title: '采购订单表单', activeMenu: '/erp/pu/order' }
+        meta: { title: '采购订单表单', activeMenu: '/erp/puExec/order' }
       }
     ]
   },
@@ -523,7 +523,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/pu/return/form.vue'),
         name: 'PurchaseReturnForm',
-        meta: { title: '采购退货表单', activeMenu: '/erp/pu/return' }
+        meta: { title: '采购退货表单', activeMenu: '/erp/puExec/return' }
       }
     ]
   },
@@ -537,7 +537,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/pu/vendor-evaluation/form.vue'),
         name: 'VendorEvaluationForm',
-        meta: { title: '供应商评估表单', activeMenu: '/erp/pu/vendor-evaluation' }
+        meta: { title: '供应商评估表单', activeMenu: '/erp/puBiz/vendorEvaluation' }
       }
     ]
   },
@@ -551,7 +551,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/putawayrule/form.vue'),
         name: 'PutawayRuleForm',
-        meta: { title: '上架规则表单', activeMenu: '/erp/wm/putawayrule' }
+        meta: { title: '上架规则表单', activeMenu: '/erp/wmRule/putawayRule' }
       }
     ]
   },
@@ -565,7 +565,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/pickingrule/form.vue'),
         name: 'PickingRuleForm',
-        meta: { title: '拣货规则表单', activeMenu: '/erp/wm/pickingrule' }
+        meta: { title: '拣货规则表单', activeMenu: '/erp/wmRule/pickingRule' }
       }
     ]
   },
@@ -579,7 +579,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/valuation/form.vue'),
         name: 'ValuationForm',
-        meta: { title: '库存估值详情', activeMenu: '/erp/wm/valuation' }
+        meta: { title: '库存估值详情', activeMenu: '/erp/wmRule/valuation' }
       }
     ]
   },
@@ -593,7 +593,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/sn/form.vue'),
         name: 'WmSnForm',
-        meta: { title: '序列号表单', activeMenu: '/erp/wm/sn', noCache: true }
+        meta: { title: '序列号表单', activeMenu: '/erp/barcode/sn', noCache: true }
       }
     ]
   },
@@ -607,7 +607,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/pu/vendor-evaluation/report.vue'),
         name: 'VendorEvaluationReport',
-        meta: { title: '供应商评估报表', activeMenu: '/erp/pu/vendor-evaluation' }
+        meta: { title: '供应商评估报表', activeMenu: '/erp/puBiz/vendorEvaluation' }
       }
     ]
   },
@@ -621,7 +621,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: 'index',
         component: () => import('@/views/erp/prd/work-order-resource/index.vue'),
         name: 'WorkOrderResource',
-        meta: { title: '工单资源分配', activeMenu: '/erp/prd/work-order-resource' }
+        meta: { title: '工单资源分配', activeMenu: '/erp/prdExec/workOrderResource' }
       }
     ]
   },
@@ -635,7 +635,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/erp/wm/batch/form.vue'),
         name: 'WmBatchForm',
-        meta: { title: '批次表单', activeMenu: '/erp/wm/batch', noCache: true },
+        meta: { title: '批次表单', activeMenu: '/erp/barcode/batch', noCache: true },
         props: (route) => ({ batchId: route.query.batchId, isView: route.query.isView })
       }
     ]
@@ -651,7 +651,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/mes/pro/workorder/form.vue'),
         name: 'MesWorkOrderForm',
-        meta: { title: 'MES工单表单', activeMenu: '/mes/pro/workorder' }
+        meta: { title: 'MES工单表单', activeMenu: '/mes/wo/workorder' }
       }
     ]
   },
@@ -665,7 +665,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/mes/pro/workorder/detail.vue'),
         name: 'MesWorkOrderDetail',
-        meta: { title: 'MES工单详情', activeMenu: '/mes/pro/workorder' }
+        meta: { title: 'MES工单详情', activeMenu: '/mes/wo/workorder' }
       }
     ]
   },
@@ -693,7 +693,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/mes/pro/flow-card/detail.vue'),
         name: 'MesFlowCardDetail',
-        meta: { title: '流转卡详情', activeMenu: '/mes/pro/flow-card' }
+        meta: { title: '流转卡详情', activeMenu: '/mes/wo/flow-card' }
       }
     ]
   },
@@ -740,7 +740,8 @@ export const dynamicRoutes: RouteRecordRaw[] = [
       }
     ]
   },
-  // AI 智能助手
+  // AI 智能助手 — 注意: AI 路由实际由 sys_menu(menu_id 1700+)动态生成;
+  // 此静态块无 permissions/roles, 被 filterDynamicRoutes 过滤不生效(历史遗留, 保留待清理)
   {
     path: '/ai',
     component: Layout,
