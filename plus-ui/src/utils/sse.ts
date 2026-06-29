@@ -2,6 +2,9 @@ import { getToken } from '@/utils/auth';
 import { ElNotification } from 'element-plus';
 import { useNoticeStore } from '@/store/modules/notice';
 
+/** 去除 HTML 标签，用于弹出框显示纯文本 */
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
+
 // 初始化
 export const initSSE = (url: any) => {
   if (import.meta.env.VITE_APP_SSE === 'false') {
@@ -36,11 +39,12 @@ export const initSSE = (url: any) => {
             useNoticeStore().addNotice({
               message: p.title || '通知',
               read: false,
-              time: new Date().toLocaleString()
+              time: new Date().toLocaleString(),
+              contentUrl: p.contentUrl || undefined
             });
             ElNotification({
               title: p.title || '站内通知',
-              message: p.contentPreview || '',
+              message: stripHtml(p.contentPreview || ''),
               type: 'info',
               duration: 4500
             });

@@ -9,6 +9,9 @@
         <div v-for="(v, k) in newsList" :key="k" class="content-box-item" @click="onNewsClick(k)">
           <div class="item-conten">
             <div>{{ v.message }}</div>
+            <div v-if="v.contentUrl" class="content-box-link">
+              <a href="#" @click.prevent="router.push(v.contentUrl)">查看流程详情</a>
+            </div>
             <div class="content-box-msg"></div>
             <div class="content-box-time">{{ v.time }}</div>
           </div>
@@ -25,9 +28,11 @@
 
 <script setup lang="ts" name="layoutBreadcrumbUserNews">
 import { useNoticeStore } from '@/store/modules/notice';
+import { useRouter } from 'vue-router';
 
 const noticeStore = useNoticeStore();
 const { readAll } = useNoticeStore();
+const router = useRouter();
 
 // 定义变量内容
 const state = reactive({
@@ -98,6 +103,17 @@ onMounted(() => {
         color: var(--el-text-color-secondary);
         margin-top: 5px;
         margin-bottom: 5px;
+      }
+      .content-box-link {
+        margin-top: 4px;
+        a {
+          color: var(--el-color-primary);
+          font-size: 12px;
+          text-decoration: none;
+          &:hover {
+            text-decoration: underline;
+          }
+        }
       }
       .content-box-time {
         color: var(--el-text-color-secondary);

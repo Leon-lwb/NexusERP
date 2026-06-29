@@ -19,8 +19,6 @@ import com.nexus.common.core.constant.Constants;
 import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.system.service.CommonService;
 
-import jakarta.annotation.Resource;
-
 
 /**
  * 全局监听-工作流待办消息提醒
@@ -33,60 +31,45 @@ import jakarta.annotation.Resource;
 public class TaskCreateListener implements FlowableEventListener {
 
     private final TaskService taskService;
-
-    @Resource
-    private CommonService commonService;
-
-    @Resource
-	protected RepositoryService repositoryService;
-
-	@Resource
-    protected HistoryService historyService;
+    private final CommonService commonService;
+    private final RepositoryService repositoryService;
+    private final HistoryService historyService;
 
 
     @Override
     public void onEvent(FlowableEvent flowableEvent) {
-    	FlowableEventType type = flowableEvent.getType();
-    	if (type == FlowableEngineEventType.TASK_ASSIGNED) {
-    		if(flowableEvent instanceof org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl ) {
-    			TaskEntity taskEntity = (TaskEntity) ((org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl) flowableEvent).getEntity();
-    			String taskId = taskEntity.getId();
-    	        String procInsId = taskEntity.getProcessInstanceId();
-    	        HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-    	                .processInstanceId(procInsId)
-    	                .singleResult();
-    			String businessKey =  historicProcessInstance.getBusinessKey();
-    			String deployId = historicProcessInstance.getDeploymentId();
-    			String startUserId = historicProcessInstance.getStartUserId();
-    	        //获取任务接收人
-    			String receiver = taskEntity.getAssignee();
-    	        if (StringUtils.isNotEmpty(receiver)) {
-    	            //发送提醒消息
-    	        	String category = "";
-    	        	if(taskService.getVariables(taskId).get("category") != null) {
-    	        		category = taskService.getVariables(taskId).get("category").toString();
-    	        	}
+        FlowableEventType type = flowableEvent.getType();
+        if (type == FlowableEngineEventType.TASK_ASSIGNED) {
+            if (flowableEvent instanceof org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl) {
+                TaskEntity taskEntity = (TaskEntity) ((org.flowable.engine.delegate.event.impl.FlowableEntityEventImpl) flowableEvent).getEntity();
+                String taskId = taskEntity.getId();
+                String procInsId = taskEntity.getProcessInstanceId();
+                HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
+                        .processInstanceId(procInsId)
+                        .singleResult();
+                String businessKey = historicProcessInstance.getBusinessKey();
+                String startUserId = historicProcessInstance.getStartUserId();
+                //获取任务接收人
+                String receiver = taskEntity.getAssignee();
+                if (StringUtils.isNotEmpty(receiver)) {
+                    //发送提醒消息
+                    String category = "";
+                    if (taskService.getVariables(taskId).get("category") != null) {
+                        category = taskService.getVariables(taskId).get("category").toString();
+                    }
 
-    	        	LoginUser loginUser = commonService.getLoginUser();
-    	        	String taskMessageUrl;
-    	        	if(StringUtils.isNotBlank(businessKey)) {
-    	    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId + "?taskId="
-    	    					          + taskId + "&businessKey=" + businessKey + "&category="
-    	    					          + category + "&processed=true"  + ">点击这个进行处理</a>" ;
-    	    		}
-    	    		else {
-    	    			taskMessageUrl = "<a href=" + commonService.getBaseUrl() + procInsId + "?taskId="
-    	    					         + taskId + "&businessKey" + "&category="
-    	    					         + category + "&processed=true" + ">点击这个进行处理</a>" ;
-    	    		}
-    	        	String msgContent ="流程待办通知" + taskMessageUrl;
-    	      		if(!StringUtils.equals(loginUser.getUsername(),receiver)) {//发起人或登录人自己不发送
-    	      			log.info("流程待办通知给:" + receiver);
-    	      			commonService.sendSysNotice(loginUser.getUserId().toString(), receiver, "流程待办通知", msgContent, Constants.MSG_CATEGORY_3);//setMsgCategory=3是待办
-    	        	}
-    	        }
-    		}
-    	}
+                    LoginUser loginUser = commonService.getLoginUser();
+                    String bizKeyParam = StringUtils.isNotBlank(businessKey) ? "&businessKey=" + businessKey : "";
+                    String contentUrl = commonService.getBaseUrl() + procInsId + "?taskId=" + taskId
+                            + bizKeyParam + "&category=" + category + "&processed=true";
+                    String msgContent = "流程待办通知，请处理";
+                    if (!StringUtils.equals(loginUser.getUsername(), receiver)) {//发起人或登录人自己不发送
+                        log.info("流程待办通知给:{}", receiver);
+                        commonService.sendSysNotice(loginUser.getUserId().toString(), receiver, "流程待办通知", msgContent, Constants.MSG_CATEGORY_3, contentUrl);
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -104,4 +87,3 @@ public class TaskCreateListener implements FlowableEventListener {
         return null;
     }
 }
-

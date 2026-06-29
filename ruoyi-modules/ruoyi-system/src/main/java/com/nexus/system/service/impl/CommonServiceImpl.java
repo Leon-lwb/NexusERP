@@ -14,6 +14,7 @@ import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.CommonMapper;
 import com.nexus.system.service.CommonService;
 import com.nexus.system.service.ISysUserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,9 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
     private final ISysUserService userService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Value("${flowable.message-base-url:/workflow/process/detail/}")
+    private String messageBaseUrl;
+
     @Override
     public void sendSysNotice(String message) {
         // TODO: 实现系统消息发送
@@ -41,6 +45,11 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
 
     @Override
     public void sendSysNotice(String fromUser, String toUser, String title, String msgContent, String setMsgCategory) {
+        sendSysNotice(fromUser, toUser, title, msgContent, setMsgCategory, null);
+    }
+
+    @Override
+    public void sendSysNotice(String fromUser, String toUser, String title, String msgContent, String setMsgCategory, String contentUrl) {
         log.info("发送系统消息 fromUser: {}, toUser: {}, title: {}", fromUser, toUser, title);
         if (StringUtils.isBlank(toUser)) {
             return;
@@ -57,21 +66,20 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
         } else if (Constants.MSG_CATEGORY_1.equals(setMsgCategory)) {
             category = "workflow_notice";
         }
-        eventPublisher.publishEvent(new UserNotificationEvent(
-            tenantId,
-            target.getUserId(),
-            category,
-            "workflow",
-            null,
-            title,
-            msgContent,
-            null));
+        UserNotificationEvent event = new UserNotificationEvent();
+        event.setTenantId(tenantId);
+        event.setTargetUserId(target.getUserId());
+        event.setCategory(category);
+        event.setRefType("workflow");
+        event.setTitle(title);
+        event.setContent(msgContent);
+        event.setContentUrl(contentUrl);
+        eventPublisher.publishEvent(event);
     }
 
     @Override
     public String getBaseUrl() {
-        // TODO: 获取流程发送消息基地址
-        return "";
+        return messageBaseUrl;
     }
 
     @Override

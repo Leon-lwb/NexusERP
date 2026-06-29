@@ -32,6 +32,17 @@ public interface CommonService extends IService<Object> {
     void sendSysNotice(String fromUser, String toUser, String title, String msgContent, String setMsgCategory);
 
     /**
+     * 发消息（带跳转链接）
+     * @param fromUser        发送人
+     * @param toUser          接收人
+     * @param title           标题
+     * @param msgContent      消息内容
+     * @param setMsgCategory  消息分类
+     * @param contentUrl      通知跳转链接
+     */
+    void sendSysNotice(String fromUser, String toUser, String title, String msgContent, String setMsgCategory, String contentUrl);
+
+    /**
      * 获取流程发送消息基地址
      * @return
      */

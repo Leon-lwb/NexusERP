@@ -43,7 +43,7 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         row.setExtJson(extJson);
         notificationMapper.insert(row);
         String preview = StrUtil.maxLength(StrUtil.removeAll(content, "<[^>]+>"), 200);
-        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), category, row.getTitle(), preview);
+        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), category, row.getTitle(), preview, null);
         imRealtimePush.publishToUser(userId, json);
         return row.getNotificationId();
     }
@@ -68,7 +68,7 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         }
         notificationMapper.insert(row);
         String preview = StrUtil.maxLength(StrUtil.removeAll(event.getContent(), "<[^>]+>"), 200);
-        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), row.getCategory(), row.getTitle(), preview);
+        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), row.getCategory(), row.getTitle(), preview, event.getContentUrl());
         imRealtimePush.publishToUser(event.getTargetUserId(), json);
     }
 

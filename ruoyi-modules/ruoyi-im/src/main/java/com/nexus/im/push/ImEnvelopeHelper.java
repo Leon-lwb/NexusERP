@@ -1,5 +1,6 @@
 package com.nexus.im.push;
 
+import cn.hutool.core.map.MapBuilder;
 import cn.hutool.core.map.MapUtil;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.im.constants.ImPayloadConstants;
@@ -11,14 +12,16 @@ public final class ImEnvelopeHelper {
     private ImEnvelopeHelper() {
     }
 
-    public static String userNotification(long notificationId, String category, String title, String contentPreview) {
-        Map<String, Object> payload = MapUtil.<String, Object>builder()
+    public static String userNotification(long notificationId, String category, String title, String contentPreview, String contentUrl) {
+        MapBuilder<String, Object> builder = MapUtil.<String, Object>builder()
             .put("notificationId", notificationId)
             .put("category", category)
             .put("title", title)
-            .put("contentPreview", contentPreview)
-            .build();
-        return envelope(ImPayloadConstants.TYPE_USER_NOTIFICATION, payload);
+            .put("contentPreview", contentPreview);
+        if (contentUrl != null) {
+            builder.put("contentUrl", contentUrl);
+        }
+        return envelope(ImPayloadConstants.TYPE_USER_NOTIFICATION, builder.build());
     }
 
     public static String imMessage(Map<String, Object> payload) {

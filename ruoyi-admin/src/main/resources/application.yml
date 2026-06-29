@@ -300,7 +300,7 @@ flowable:
   # 关闭历史任务定时任务job
   async-history-executor-activate: false
   #消息链接基地址
-  message-base-url: http://localhost:9666/workflow/process/detail/
+  message-base-url: /workflow/process/detail/
 
 --- # mq 消息队列通用配置
 mq:

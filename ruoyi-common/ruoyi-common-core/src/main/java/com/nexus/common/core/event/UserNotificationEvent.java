@@ -26,4 +26,6 @@ public class UserNotificationEvent implements Serializable {
     private String title;
     private String content;
     private String extJson;
+    /** 通知关联的跳转链接（如流程详情页地址） */
+    private String contentUrl;
 }
