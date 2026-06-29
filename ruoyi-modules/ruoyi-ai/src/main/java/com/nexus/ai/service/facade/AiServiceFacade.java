@@ -443,6 +443,8 @@ public class AiServiceFacade {
             try {
                 AiRequestContext.set(tenantId, userId, userName, sessionId,
                     modelConfig.getId(), modelConfig.getModelName());
+                // 设置当前知识库ID，供 KnowledgeGraphTool 限定图谱范围
+                AiRequestContext.setKnowledgeId(request.getKnowledgeId());
                 // 设置 ThreadLocal OutputChannel，使 AiToolExecutedListener 能推送事件
                 AiToolExecutedListener.setChannel(channel);
 

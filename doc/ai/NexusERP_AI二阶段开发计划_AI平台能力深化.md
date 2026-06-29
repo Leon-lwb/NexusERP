@@ -147,10 +147,12 @@ nexus:
 > - **v1 推荐 MySQL 存储**（`ai_kg_entity`/`ai_kg_relation` 表），实体邻接查询用 SQL 即可，无需新中间件，部署成本低，覆盖 80% 价值（实体扩展召回、关系事实问答）。
 > - **v2（可选）引入 Neo4j** 做多跳深度遍历（如"找物料 A 的二级供应商"），作为 S2-A 的可选拓展，预留接口 `GraphStoreStrategy`。
 > - 本计划按 MySQL 实现，Neo4j 作为接口预留。
+>
+> **实施状态（2026-06-30 更新）**：✅ 代码已完成并编译通过，详见 `doc/ai/NexusERP_AI二阶段实施计划_S2A.md`。实际实现超出本节原 v1 范围（用户规划阶段选定）：纳入**社区检测（自实现加权标签传播 `LabelPropagationClustering` 替代 Leiden）+ 社区摘要 + 全局检索（map-reduce `GlobalSearchService`）+ Agent 图谱查询 @Tool（`KnowledgeGraphTool`）**，工时由 18 上调至约 26 人天，周期延至第 12-16 周。新增第 4 张表 `ai_kg_community`。v1 零新依赖。⬜ 运行时验证待执行（需跑 `ai-stage2-a.sql` + 起应用 + 配 LLM）。
 
 ### 5.1 数据模型
 
-新增 3 张表 + 给 `ai_knowledge_chunk` 加抽取跟踪列：
+新增 4 张表（含社区表 `ai_kg_community`）+ 给 `ai_knowledge_chunk` 加抽取跟踪列：
 
 ```sql
 -- ============================================================
@@ -798,15 +800,16 @@ public class TongYiWanxImageService implements IImageGenerationService {
 
 | 表名 | 用途 | 子阶段 | 状态 |
 |------|------|--------|------|
-| `ai_knowledge_graph` | 知识图谱实例 | S2-A | ⬜（暂搁） |
-| `ai_kg_entity` | 图谱实体 | S2-A | ⬜（暂搁） |
-| `ai_kg_relation` | 图谱关系 | S2-A | ⬜（暂搁） |
-| `ai_knowledge_chunk`（ALTER） | 增抽取跟踪列 | S2-A | ⬜（暂搁） |
+| `ai_knowledge_graph` | 知识图谱实例 | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
+| `ai_kg_entity` | 图谱实体（含 community_id） | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
+| `ai_kg_relation` | 图谱关系 | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
+| `ai_kg_community` | 图谱社区（GraphRAG 社区检测+摘要） | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
+| `ai_knowledge_chunk`（ALTER） | 增抽取跟踪列 | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
 | `ai_mcp_market` | MCP 市场源 | S2-C | ✅ `doc/ai/sql/ai-stage2-c.sql` |
 | `ai_mcp_market_tool` | 市场工具 | S2-C | ✅ `doc/ai/sql/ai-stage2-c.sql` |
 | `ai_message`（ALTER） | 增 `thinking_content` 列（存思考过程） | S2-B | ✅ `doc/ai/sql/ai-stage2-b.sql` |
 
-> 脚本位置：`doc/ai/sql/ai-stage2-b.sql`（S2-B）、`doc/ai/sql/ai-stage2-c.sql`（S2-C）。
+> 脚本位置：`doc/ai/sql/ai-stage2-a.sql`（S2-A）、`doc/ai/sql/ai-stage2-b.sql`（S2-B）、`doc/ai/sql/ai-stage2-c.sql`（S2-C）。
 
 ---
 
@@ -814,8 +817,9 @@ public class TongYiWanxImageService implements IImageGenerationService {
 
 | 文件 | 说明 | 子阶段 | 状态 |
 |------|------|--------|------|
-| `api/ai/knowledgeGraph.ts` | 图谱接口 | S2-A | ⬜（暂搁） |
-| `views/ai/knowledge/graph.vue` | 图谱可视化 | S2-A | ⬜（暂搁） |
+| `api/ai/knowledgeGraph.ts` | 图谱接口 | S2-A | ✅ |
+| `views/ai/knowledge/graph.vue` | 图谱可视化（echarts 按社区着色 + 进度轮询 + 全局检索） | S2-A | ✅ |
+| `views/ai/knowledge/index.vue`（改） | 右侧改 el-tabs，新增「知识图谱」Tab | S2-A | ✅ |
 | `components/ai/DeepThinking.vue` | 深度思考开关 + 折叠展示 | S2-B | ✅ |
 | `api/ai/chat.ts`（改） | `sendAiMessage` 加 `enableThinking`/`enableWebSearch` | S2-B | ✅ |
 | `views/ai/assistant/index.vue`（改） | 思考折叠展示 + `AI_THINKING_TOKEN` | S2-B | ✅ |
@@ -832,12 +836,12 @@ public class TongYiWanxImageService implements IImageGenerationService {
 
 | 子阶段 | 周期 | 核心交付 | 人天估算 | 状态 |
 |--------|------|----------|----------|------|
-| **S2-A** 知识图谱 | 第 12-14 周 | 图谱构建 + 抽取管线 + 图谱增强检索 + 前端可视化 | 18 人天 | ⬜ 暂搁 |
+| **S2-A** 知识图谱 | 第 12-16 周 | 图谱构建 + 抽取 + 社区/全局检索 + Agent @Tool + 前端 | 26 人天 | ✅ 代码完成（待运行时验证） |
 | **S2-B** 推理 + 厂商增强 | 第 15-17 周 | Thinking 流 + 策略模式厂商 + 专用 Rerank | 16 人天 | ✅ 后端+前端完成 |
 | **S2-C** 联网 + 市场 + 多模态 | 第 18-22 周 | WebSearchAgent + MCP 市场 + 文生图 | 24 人天 | ✅ 后端+前端完成 |
-| **合计** | 11 周 | | **58 人天** | S2-B 16✅ / S2-C 24✅ / S2-A 18暂搁 |
+| **合计** | 12 周 | | **66 人天** | S2-A 26✅(待验证) / S2-B 16✅ / S2-C 24✅ |
 
-> 加上一阶段已完成 138 人天，截至目前累计完成约 **178 人天**（S2-A 暂搁 18 人天）。
+> 加上一阶段已完成 138 人天，截至目前累计完成约 **204 人天**（S2-A 代码完成 26 人天，待运行时验证）。
 
 ---
 

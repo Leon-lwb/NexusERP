@@ -3,3 +3,4 @@ com.nexus.common.web.config.FilterConfig
 com.nexus.common.web.config.I18nConfig
 com.nexus.common.web.config.ResourcesConfig
 com.nexus.common.web.config.UndertowConfig
+com.nexus.common.web.config.JacksonConfig

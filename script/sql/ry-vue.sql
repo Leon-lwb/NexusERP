@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : whbuild
+ Source Server         : 本地5.7
  Source Server Type    : MySQL
- Source Server Version : 50720
+ Source Server Version : 50714 (5.7.14)
  Source Host           : localhost:3306
  Source Schema         : ry-vue
 
  Target Server Type    : MySQL
- Target Server Version : 50720
+ Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 29/06/2026 17:47:48
+ Date: 30/06/2026 01:44:43
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,11 @@ CREATE TABLE `act_evt_log`  (
   `LOCK_TIME_` timestamp(3) NULL DEFAULT NULL,
   `IS_PROCESSED_` tinyint(4) NULL DEFAULT 0,
   PRIMARY KEY (`LOG_NR_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_evt_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ge_bytearray
@@ -51,7 +55,7 @@ CREATE TABLE `act_ge_bytearray`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `ACT_FK_BYTEARR_DEPL`(`DEPLOYMENT_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_BYTEARR_DEPL` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_bytearray
@@ -143,7 +147,7 @@ CREATE TABLE `act_ge_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_property
@@ -189,7 +193,7 @@ CREATE TABLE `act_hi_actinst`  (
   INDEX `ACT_IDX_HI_ACT_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_PROCINST`(`PROC_INST_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_EXEC`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_actinst
@@ -332,7 +336,11 @@ CREATE TABLE `act_hi_attachment`  (
   `CONTENT_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TIME_` datetime(3) NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_attachment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_comment
@@ -349,7 +357,7 @@ CREATE TABLE `act_hi_comment`  (
   `MESSAGE_` varchar(4000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `FULL_MSG_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_comment
@@ -418,7 +426,11 @@ CREATE TABLE `act_hi_detail`  (
   INDEX `ACT_IDX_HI_DETAIL_TIME`(`TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_NAME`(`NAME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_TASK_ID`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_detail
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_entitylink
@@ -444,7 +456,11 @@ CREATE TABLE `act_hi_entitylink`  (
   INDEX `ACT_IDX_HI_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_identitylink
@@ -469,7 +485,7 @@ CREATE TABLE `act_hi_identitylink`  (
   INDEX `ACT_IDX_HI_IDENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_TASK`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_identitylink
@@ -598,7 +614,7 @@ CREATE TABLE `act_hi_procinst`  (
   INDEX `ACT_IDX_HI_PRO_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_I_BUSKEY`(`BUSINESS_KEY_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_SUPER_PROCINST`(`SUPER_PROCESS_INSTANCE_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_procinst
@@ -660,7 +676,7 @@ CREATE TABLE `act_hi_taskinst`  (
   INDEX `ACT_IDX_HI_TASK_SUB_SCOPE`(`SUB_SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_INST_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_taskinst
@@ -722,7 +738,11 @@ CREATE TABLE `act_hi_tsk_log`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_tsk_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_varinst
@@ -754,7 +774,7 @@ CREATE TABLE `act_hi_varinst`  (
   INDEX `ACT_IDX_HI_PROCVAR_PROC_INST`(`PROC_INST_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_TASK_ID`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_EXE`(`EXECUTION_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_varinst
@@ -967,7 +987,11 @@ CREATE TABLE `act_id_bytearray`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_bytearray
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_group
@@ -979,7 +1003,11 @@ CREATE TABLE `act_id_group`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_group
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_info
@@ -995,7 +1023,11 @@ CREATE TABLE `act_id_info`  (
   `PASSWORD_` longblob NULL,
   `PARENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_membership
@@ -1008,7 +1040,11 @@ CREATE TABLE `act_id_membership`  (
   INDEX `ACT_FK_MEMB_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_MEMB_GROUP` FOREIGN KEY (`GROUP_ID_`) REFERENCES `act_id_group` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MEMB_USER` FOREIGN KEY (`USER_ID_`) REFERENCES `act_id_user` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_membership
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv
@@ -1019,7 +1055,11 @@ CREATE TABLE `act_id_priv`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PRIV_NAME`(`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv_mapping
@@ -1035,7 +1075,11 @@ CREATE TABLE `act_id_priv_mapping`  (
   INDEX `ACT_IDX_PRIV_USER`(`USER_ID_`) USING BTREE,
   INDEX `ACT_IDX_PRIV_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_PRIV_MAPPING` FOREIGN KEY (`PRIV_ID_`) REFERENCES `act_id_priv` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv_mapping
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_property
@@ -1046,7 +1090,7 @@ CREATE TABLE `act_id_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_id_property
@@ -1067,7 +1111,11 @@ CREATE TABLE `act_id_token`  (
   `USER_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TOKEN_DATA_` varchar(2000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_token
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_user
@@ -1084,7 +1132,11 @@ CREATE TABLE `act_id_user`  (
   `PICTURE_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_user
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_procdef_info
@@ -1101,7 +1153,11 @@ CREATE TABLE `act_procdef_info`  (
   INDEX `ACT_FK_INFO_JSON_BA`(`INFO_JSON_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_INFO_JSON_BA` FOREIGN KEY (`INFO_JSON_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_INFO_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_procdef_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_re_deployment
@@ -1119,7 +1175,7 @@ CREATE TABLE `act_re_deployment`  (
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `ENGINE_VERSION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_deployment
@@ -1167,7 +1223,7 @@ CREATE TABLE `act_re_model`  (
   CONSTRAINT `ACT_FK_MODEL_DEPLOYMENT` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE` FOREIGN KEY (`EDITOR_SOURCE_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE_EXTRA` FOREIGN KEY (`EDITOR_SOURCE_EXTRA_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_model
@@ -1230,7 +1286,7 @@ CREATE TABLE `act_re_procdef`  (
   `DERIVED_VERSION_` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PROCDEF`(`KEY_`, `VERSION_`, `DERIVED_VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_procdef
@@ -1282,7 +1338,7 @@ CREATE TABLE `act_ru_actinst`  (
   INDEX `ACT_IDX_RU_ACTI_EXEC`(`EXECUTION_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_EXEC_ACT`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_TASK`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_actinst
@@ -1347,7 +1403,11 @@ CREATE TABLE `act_ru_deadletter_job`  (
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_deadletter_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_entitylink
@@ -1374,7 +1434,11 @@ CREATE TABLE `act_ru_entitylink`  (
   INDEX `ACT_IDX_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_event_subscr
@@ -1403,7 +1467,11 @@ CREATE TABLE `act_ru_event_subscr`  (
   INDEX `ACT_IDX_EVENT_SUBSCR_SCOPEREF_`(`SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_FK_EVENT_EXEC`(`EXECUTION_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_EVENT_EXEC` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_event_subscr
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_execution
@@ -1461,7 +1529,7 @@ CREATE TABLE `act_ru_execution`  (
   CONSTRAINT `ACT_FK_EXE_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXE_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `ACT_FK_EXE_SUPER` FOREIGN KEY (`SUPER_EXEC_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_execution
@@ -1514,7 +1582,11 @@ CREATE TABLE `act_ru_external_job`  (
   INDEX `ACT_IDX_EJOB_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_CUSTOM_VALUES` FOREIGN KEY (`CUSTOM_VALUES_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_EXCEPTION` FOREIGN KEY (`EXCEPTION_STACK_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_external_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_history_job
@@ -1536,7 +1608,11 @@ CREATE TABLE `act_ru_history_job`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_history_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_identitylink
@@ -1567,7 +1643,7 @@ CREATE TABLE `act_ru_identitylink`  (
   CONSTRAINT `ACT_FK_ATHRZ_PROCEDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_IDL_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TSKASS_TASK` FOREIGN KEY (`TASK_ID_`) REFERENCES `act_ru_task` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_identitylink
@@ -1629,7 +1705,11 @@ CREATE TABLE `act_ru_job`  (
   CONSTRAINT `ACT_FK_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_suspended_job
@@ -1676,7 +1756,11 @@ CREATE TABLE `act_ru_suspended_job`  (
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_suspended_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_task
@@ -1724,7 +1808,7 @@ CREATE TABLE `act_ru_task`  (
   CONSTRAINT `ACT_FK_TASK_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_task
@@ -1781,7 +1865,11 @@ CREATE TABLE `act_ru_timer_job`  (
   CONSTRAINT `ACT_FK_TIMER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_timer_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_variable
@@ -1814,7 +1902,7 @@ CREATE TABLE `act_ru_variable`  (
   CONSTRAINT `ACT_FK_VAR_BYTEARRAY` FOREIGN KEY (`BYTEARRAY_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_variable
@@ -1869,11 +1957,15 @@ CREATE TABLE `ai_ab_test`  (
   `result_summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '结果摘要（JSON）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_ab_test
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_ab_test_result
@@ -1890,10 +1982,14 @@ CREATE TABLE `ai_ab_test_result`  (
   `token_usage` int(11) NULL DEFAULT NULL COMMENT 'Token 用量',
   `latency_ms` int(11) NULL DEFAULT NULL COMMENT '响应延迟（毫秒）',
   `score` int(11) NULL DEFAULT NULL COMMENT '人工评分（1-5）',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_test_id`(`test_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试结果' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试结果' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_ab_test_result
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_image_record
@@ -1910,14 +2006,193 @@ CREATE TABLE `ai_image_record`  (
   `model_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模型名称',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_id`(`user_id`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 文生图记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 文生图记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_image_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for ai_kg_community
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_kg_community`;
+CREATE TABLE `ai_kg_community`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `graph_id` bigint(20) NOT NULL COMMENT '图谱ID',
+  `community_level` int(11) NULL DEFAULT 0 COMMENT '社区层级（v1 单层=0）',
+  `parent_community_id` bigint(20) NULL DEFAULT NULL COMMENT '父社区ID（v1 为空）',
+  `community_index` int(11) NULL DEFAULT NULL COMMENT '社区序号',
+  `summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '社区摘要（LLM 生成）',
+  `summary_status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '摘要状态（0待生成 1生成中 2已完成 3失败）',
+  `entity_count` int(11) NULL DEFAULT 0 COMMENT '社区内实体数',
+  `relation_count` int(11) NULL DEFAULT 0 COMMENT '社区内关系数',
+  `token_used` bigint(20) NULL DEFAULT 0 COMMENT '摘要消耗token',
+  `error_message` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_graph_id`(`graph_id`) USING BTREE,
+  INDEX `idx_community_level`(`community_level`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱社区' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_kg_community
+-- ----------------------------
+INSERT INTO `ai_kg_community` VALUES (2071644798372163586, '000000', 2071631414633394178, 0, NULL, 0, '该社区聚焦于“国际中端/成长型ERP”这一产品分类，核心包含Infor LN/M3、IFS和Sage X3三款代表性产品。它们相互构成包含关系：分类包含产品，产品也归属于该分类，共同定义了市场定位为面向中型及成长型企业的企业资源计划系统。', '2', 4, 6, 386, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:19:46', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329409, '000000', 2071631414633394178, 0, NULL, 1, '该社区围绕“国际大型ERP”这一类别展开，核心实体包括SAP S/4HANA、Oracle ERP Cloud和Microsoft Dynamics 365三大代表产品。三者与类别之间存在双向“包含”关系：即这些产品均属于国际大型ERP的典型代表，同时各自也涵盖该类别范畴。整体主题聚焦于国际大型ERP市场的三大主流解决方案及其相互归属关系。', '2', 4, 6, 364, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:19:48', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329410, '000000', 2071631414633394178, 0, NULL, 2, '该社区围绕“国内主流ERP产品”主题展开，核心关系为相互包含：用友U9 cloud/YonSuite、金蝶云·星瀚/苍穹、浪潮inSuite均被归为国内主流ERP代表产品，同时每个产品也反向包含该分类，体现了产品与类别之间的归属与认同关系。', '2', 4, 6, 395, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:19:50', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329411, '000000', 2071631414633394178, 0, NULL, 3, '该社区围绕“新兴云原生ERP”这一分类主题展开，核心关系为相互包含。代表产品包括Odoo、Acumatica、多点及聚水潭（电商），它们既被归类于新兴云原生ERP，又共同构成该分类的核心实例。整体反映了云原生技术驱动下ERP市场的新兴产品生态。', '2', 6, 7, 502, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:19:53', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329412, '000000', 2071631414633394178, 0, NULL, 4, '该社区围绕ERP核心模块“供应链管理”展开，其包含采购管理、库存管理与销售管理三大子模块。采购管理涵盖供应商管理与采购订单，库存管理涉及多仓库与批次管理，销售管理则包括报价、订单及发货流程。三者共同构成企业供应链的完整闭环。', '2', 4, 3, 289, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:19:55', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329413, '000000', 2071631414633394178, 0, NULL, 5, '该社区围绕企业资源计划（ERP）系统展开，核心实体为ERP（起源于1990年代）及其关键模块——财务管理。核心关系为“包含”，即ERP系统整合了财务管理模块，该模块涵盖总账、应收应付等子功能。此外，ERP还可能包含其他未列出的模块，体现了其作为企业一体化管理平台的特征。', '2', 2, 1, 281, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:19:57', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329414, '000000', 2071631414633394178, 0, NULL, 6, '该社区围绕MRP（物料需求计划）这一核心实体展开，MRP起源于1960年代，是生产与库存管理的重要方法。由于社区内仅有单一实体，未发现其他关联实体或关系，主题聚焦于MRP自身的定义与历史起源。', '2', 1, 0, 227, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:19:59', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329415, '000000', 2071631414633394178, 0, NULL, 7, '该社区聚焦于制造资源计划（MRP II），它是20世纪80年代发展起来的生产管理思想，在物料需求计划（MRP）基础上整合了生产、财务、销售等环节，形成闭环系统，核心关系体现为计划与执行的协同。', '2', 1, 0, 306, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:20:02', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_community` VALUES (2071644798397329416, '000000', 2071631414633394178, 0, NULL, 8, '该社区聚焦于ERP II，即2000年代兴起的跨企业协同型ERP系统。其核心主题是从传统企业内部资源管理向供应链上下游协同拓展，强调与合作伙伴的信息共享与流程集成，以提升整体价值链效率。', '2', 1, 0, 233, NULL, -1, -1, '2026-06-30 01:19:44', -1, '2026-06-30 01:20:05', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_kg_entity
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_kg_entity`;
+CREATE TABLE `ai_kg_entity`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `graph_id` bigint(20) NOT NULL COMMENT '图谱ID',
+  `entity_name` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体名称',
+  `entity_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实体类型',
+  `description` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实体描述',
+  `confidence` decimal(3, 2) NULL DEFAULT NULL COMMENT '置信度（0-1）',
+  `source_chunk_id` bigint(20) NULL DEFAULT NULL COMMENT '来源切片ID',
+  `mention_count` int(11) NULL DEFAULT 1 COMMENT '被提及次数（同名合并）',
+  `community_id` bigint(20) NULL DEFAULT NULL COMMENT '所属社区ID',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_graph_id`(`graph_id`) USING BTREE,
+  INDEX `idx_entity_name`(`entity_name`) USING BTREE,
+  INDEX `idx_entity_type`(`entity_type`) USING BTREE,
+  INDEX `idx_source_chunk`(`source_chunk_id`) USING BTREE,
+  INDEX `idx_community`(`community_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱实体' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_kg_entity
+-- ----------------------------
+INSERT INTO `ai_kg_entity` VALUES (2071644570843754498, '000000', 2071631414633394178, 'MRP', '其他', '物料需求计划，起源于1960s', 0.90, 2071638101758971908, 1, 2071644798397329414, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570881503234, '000000', 2071631414633394178, 'MRP II', '其他', '制造资源计划，1980s', 0.90, 2071638101758971908, 1, 2071644798397329415, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570902474753, '000000', 2071631414633394178, 'ERP', '其他', '企业资源计划，1990s', 0.90, 2071638101758971908, 1, 2071644798397329413, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570902474754, '000000', 2071631414633394178, 'ERP II', '其他', '跨企业协同的ERP，2000s', 0.90, 2071638101758971908, 1, 2071644798397329416, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570902474755, '000000', 2071631414633394178, '财务管理', '其他', 'ERP核心模块之一，含总账、应收应付等', 0.90, 2071638101758971908, 1, 2071644798397329413, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570902474756, '000000', 2071631414633394178, '供应链管理', '其他', 'ERP核心模块之一，含采购、库存、销售', 0.90, 2071638101758971908, 1, 2071644798397329412, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570965389313, '000000', 2071631414633394178, '采购管理', '其他', '供应链管理子模块，含供应商管理、采购订单等', 0.90, 2071638101758971908, 1, 2071644798397329412, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570998943745, '000000', 2071631414633394178, '库存管理', '其他', '供应链管理子模块，含多仓库、批次等', 0.90, 2071638101758971908, 1, 2071644798397329412, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644570998943746, '000000', 2071631414633394178, '销售管理', '其他', '供应链管理子模块，含报价、订单、发货等', 0.90, 2071638101758971908, 1, 2071644798397329412, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644710946091009, '000000', 2071631414633394178, 'SAP S/4HANA', '产品', '国际大型ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329409, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644710946091010, '000000', 2071631414633394178, 'Oracle ERP Cloud', '产品', '国际大型ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329409, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644710946091011, '000000', 2071631414633394178, 'Microsoft Dynamics 365', '产品', '国际大型ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329409, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711000616961, '000000', 2071631414633394178, 'Infor LN/M3', '产品', '国际中端/成长型ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798372163586, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711000616962, '000000', 2071631414633394178, 'IFS', '产品', '国际中端/成长型ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798372163586, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711000616963, '000000', 2071631414633394178, 'Sage X3', '产品', '国际中端/成长型ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798372163586, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711000616964, '000000', 2071631414633394178, '用友U9 cloud/YonSuite', '产品', '国内主流ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329410, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711050948610, '000000', 2071631414633394178, '金蝶云·星瀚/苍穹', '产品', '国内主流ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329410, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711050948611, '000000', 2071631414633394178, '浪潮inSuite', '产品', '国内主流ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329410, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711076114434, '000000', 2071631414633394178, 'Odoo', '产品', '新兴云原生ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329411, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711076114435, '000000', 2071631414633394178, 'Acumatica', '产品', '新兴云原生ERP代表产品', 0.95, 2065105415016013826, 2, 2071644798397329411, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711101280258, '000000', 2071631414633394178, '国内的多点/聚水潭等（电商）', '产品', '新兴云原生ERP代表产品', 0.95, 2065105415016013826, 1, 2071644798397329411, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711101280259, '000000', 2071631414633394178, '国际大型ERP', '其他', 'ERP产品分类类型', 0.95, 2065105415016013826, 2, 2071644798397329409, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711126446082, '000000', 2071631414633394178, '国际中端/成长型', '其他', 'ERP产品分类类型', 0.95, 2065105415016013826, 2, 2071644798372163586, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711126446083, '000000', 2071631414633394178, '国内主流', '其他', 'ERP产品分类类型', 0.95, 2065105415016013826, 2, 2071644798397329410, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644711126446084, '000000', 2071631414633394178, '新兴云原生', '其他', 'ERP产品分类类型', 0.95, 2065105415016013826, 2, 2071644798397329411, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644773915176962, '000000', 2071631414633394178, '多点', '产品', '新兴云原生ERP代表产品（电商）', 0.95, 2071638101821886468, 1, 2071644798397329411, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_entity` VALUES (2071644773915176963, '000000', 2071631414633394178, '聚水潭', '产品', '新兴云原生ERP代表产品（电商）', 0.95, 2071638101821886468, 1, 2071644798397329411, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_kg_relation
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_kg_relation`;
+CREATE TABLE `ai_kg_relation`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `graph_id` bigint(20) NOT NULL COMMENT '图谱ID',
+  `source_entity_id` bigint(20) NOT NULL COMMENT '头实体ID',
+  `target_entity_id` bigint(20) NOT NULL COMMENT '尾实体ID',
+  `relation_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '关系类型',
+  `description` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '关系描述',
+  `strength` int(11) NULL DEFAULT NULL COMMENT '关系强度（0-10）',
+  `confidence` decimal(3, 2) NULL DEFAULT NULL COMMENT '置信度（0-1）',
+  `source_chunk_id` bigint(20) NULL DEFAULT NULL COMMENT '来源切片ID',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_graph_id`(`graph_id`) USING BTREE,
+  INDEX `idx_source`(`source_entity_id`) USING BTREE,
+  INDEX `idx_target`(`target_entity_id`) USING BTREE,
+  INDEX `idx_source_chunk`(`source_chunk_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱关系' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_kg_relation
+-- ----------------------------
+INSERT INTO `ai_kg_relation` VALUES (2071644571024109569, '000000', 2071631414633394178, 2071644570902474753, 2071644570902474755, '包含', 'ERP系统包含财务管理模块', 9, 0.90, 2071638101758971908, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:18:50', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644571024109570, '000000', 2071631414633394178, 2071644570902474753, 2071644570902474756, '包含', 'ERP系统包含供应链管理模块', 9, 0.90, 2071638101758971908, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:18:50', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644571091218433, '000000', 2071631414633394178, 2071644570902474756, 2071644570965389313, '包含', '供应链管理包含采购管理子模块', 9, 0.90, 2071638101758971908, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:18:50', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644571091218434, '000000', 2071631414633394178, 2071644570902474756, 2071644570998943745, '包含', '供应链管理包含库存管理子模块', 9, 0.90, 2071638101758971908, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:18:50', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644571158327297, '000000', 2071631414633394178, 2071644570902474756, 2071644570998943746, '包含', '供应链管理包含销售管理子模块', 9, 0.90, 2071638101758971908, -1, -1, '2026-06-30 01:18:50', -1, '2026-06-30 01:18:50', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711201943553, '000000', 2071631414633394178, 2071644711101280259, 2071644710946091009, '包含', '国际大型ERP分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711227109378, '000000', 2071631414633394178, 2071644711101280259, 2071644710946091010, '包含', '国际大型ERP分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711252275201, '000000', 2071631414633394178, 2071644711101280259, 2071644710946091011, '包含', '国际大型ERP分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711277441025, '000000', 2071631414633394178, 2071644711126446082, 2071644711000616961, '包含', '国际中端/成长型分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711277441026, '000000', 2071631414633394178, 2071644711126446082, 2071644711000616962, '包含', '国际中端/成长型分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711327772673, '000000', 2071631414633394178, 2071644711126446082, 2071644711000616963, '包含', '国际中端/成长型分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711327772674, '000000', 2071631414633394178, 2071644711126446083, 2071644711000616964, '包含', '国内主流分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711378104321, '000000', 2071631414633394178, 2071644711126446083, 2071644711050948610, '包含', '国内主流分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711403270145, '000000', 2071631414633394178, 2071644711126446083, 2071644711050948611, '包含', '国内主流分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711403270146, '000000', 2071631414633394178, 2071644711126446084, 2071644711076114434, '包含', '新兴云原生分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711403270147, '000000', 2071631414633394178, 2071644711126446084, 2071644711076114435, '包含', '新兴云原生分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644711474573313, '000000', 2071631414633394178, 2071644711126446084, 2071644711101280258, '包含', '新兴云原生分类包含该代表产品', 8, 0.95, 2065105415016013826, -1, -1, '2026-06-30 01:19:23', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644773982285826, '000000', 2071631414633394178, 2071644710946091009, 2071644711101280259, '包含', 'SAP S/4HANA属于国际大型ERP分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774028423170, '000000', 2071631414633394178, 2071644710946091010, 2071644711101280259, '包含', 'Oracle ERP Cloud属于国际大型ERP分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774045200385, '000000', 2071631414633394178, 2071644710946091011, 2071644711101280259, '包含', 'Microsoft Dynamics 365属于国际大型ERP分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774070366210, '000000', 2071631414633394178, 2071644711000616961, 2071644711126446082, '包含', 'Infor LN/M3属于国际中端/成长型分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774095532034, '000000', 2071631414633394178, 2071644711000616962, 2071644711126446082, '包含', 'IFS属于国际中端/成长型分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774095532035, '000000', 2071631414633394178, 2071644711000616963, 2071644711126446082, '包含', 'Sage X3属于国际中端/成长型分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774158446594, '000000', 2071631414633394178, 2071644711000616964, 2071644711126446083, '包含', '用友U9 cloud/YonSuite属于国内主流分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774158446595, '000000', 2071631414633394178, 2071644711050948610, 2071644711126446083, '包含', '金蝶云·星瀚/苍穹属于国内主流分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774158446596, '000000', 2071631414633394178, 2071644711050948611, 2071644711126446083, '包含', '浪潮inSuite属于国内主流分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774221361154, '000000', 2071631414633394178, 2071644711076114434, 2071644711126446084, '包含', 'Odoo属于新兴云原生分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774254915585, '000000', 2071631414633394178, 2071644711076114435, 2071644711126446084, '包含', 'Acumatica属于新兴云原生分类', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774296858626, '000000', 2071631414633394178, 2071644773915176962, 2071644711126446084, '包含', '多点属于新兴云原生分类（电商）', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_kg_relation` VALUES (2071644774322024449, '000000', 2071631414633394178, 2071644773915176963, 2071644711126446084, '包含', '聚水潭属于新兴云原生分类（电商）', 10, 0.95, 2071638101821886468, -1, -1, '2026-06-30 01:19:38', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_knowledge
@@ -1943,21 +2218,21 @@ CREATE TABLE `ai_knowledge`  (
   `system_prompt` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '系统提示词',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_knowledge
 -- ----------------------------
-INSERT INTO `ai_knowledge` VALUES (2065090090526457857, '000000', 'ERP知识库', '测试', 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'inmemory', '1', '#', 30, 500, 5, 0.5, 0, NULL, 0, 0.5, NULL, 103, 1, '2026-06-11 23:13:40', 1, '2026-06-12 00:05:18', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge` VALUES (2065090090526457857, '000000', 'ERP知识库', '测试', 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'milvus', '1', '#', 30, 500, 5, 0.5, 0, NULL, 0, 0.5, NULL, 103, 1, '2026-06-11 23:13:40', 1, '2026-06-30 00:49:58', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_knowledge_chunk
@@ -1971,11 +2246,16 @@ CREATE TABLE `ai_knowledge_chunk`  (
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '片段内容',
   `chunk_index` int(11) NULL DEFAULT NULL COMMENT '片段序号',
   `vector_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '向量数据库中的ID',
+  `extraction_status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '图谱抽取状态（0待处理 1处理中 2已完成 3失败）',
+  `entity_count` int(11) NULL DEFAULT 0 COMMENT '抽取实体数',
+  `relation_count` int(11) NULL DEFAULT 0 COMMENT '抽取关系数',
+  `token_used` bigint(20) NULL DEFAULT 0 COMMENT '抽取消耗token',
+  `kg_error_message` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '抽取错误信息',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -1985,20 +2265,29 @@ CREATE TABLE `ai_knowledge_chunk`  (
   INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
   INDEX `idx_document_id`(`document_id`) USING BTREE,
   FULLTEXT INDEX `ft_content`(`content`) WITH PARSER `ngram`
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_knowledge_chunk
 -- ----------------------------
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105414890184706, '000000', 2065103110631759873, 2065090090526457857, 'ERP系统知识文档\r\n\r\n---\n一、ERP概述\n1. 什么是ERP\r\nERP（Enterprise Resource Planning，企业资源计划）是一种集成化的企业管理信息系统。它通过统一的数据库和软件平台，将企业的财务、采购、生产、销售、库存、人力资源等核心业务流程整合在一起，实现数据的实时共享与业务协同，帮助企业高效配置资源、优化运营并支持决策。\n2. ERP的核心理念\r\n- **集成性**：打破部门壁垒，所有模块共用同一数据源，确保信息一致。\r\n- **实时性**：业务数据即时更新，管理层可随时掌握经营动态。\r\n- **标准化**：将企业最佳实践固化为标准流程，减少人为随意性，提升管理规范度。\r\n- **全局优化**：从整体而非局部视角规划资源，避免“部门最优但整体受损”。', 0, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105414890184707, '000000', 2065103110631759873, 2065090090526457857, '3. ERP与普通财务/进销存软件的区别\r\n| 对比维度 | 普通单功能软件   | ERP系统                      |\r\n| -------- | ---------------- | ---------------------------- |\r\n| 数据范围 | 孤立，部门内使用 | 企业级共享，跨职能打通       |\r\n| 流程联动 | 需要人工传递数据 | 自动触发上下游业务动作       |\r\n| 管控深度 | 事后记录         | 事前计划、事中控制、事后分析 |\r\n| 可扩展性 | 功能固定         | 可按需配置、二次开发         |\r\n\r\n---', 1, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099266, '000000', 2065103110631759873, 2065090090526457857, '二、ERP的发展简史\r\n\r\n- **1960s：MRP（物料需求计划）**  \r\n  起源于制造业，解决“需要什么、需要多少、何时需要”的物料计算问题。\r\n\r\n- **1980s：MRP II（制造资源计划）**  \r\n  把生产、财务、销售、工程等职能纳入统一计划体系，形成闭环。\r\n\r\n- **1990s：ERP（企业资源计划）**  \r\n  范围超越制造，延伸至全行业，整合供应链、人力资源、项目管理等。\r\n\r\n- **2000s至今：ERP II / 云ERP**  \r\n  强调跨企业协同、电子商务集成，技术架构向云端、移动化、智能化演进。\r\n\r\n---\n三、ERP的核心功能模块\r\n\r\n一套完整的ERP系统通常包含以下核心模块，不同行业会有所侧重：\n1. 财务管理（核心）\r\n- 总账、应收/应付、资产管理\r\n- 成本核算、预算控制、财务分析\r\n- 多币种、多会计准则支持\n2. 供应链管理（SCM）\r\n- **采购管理**：供应商管理、申购、采购订单、收货、对账\r\n- **库存管理**：多仓库、批次/序列号、安全库存、盘点\r\n- **销售管理**：报价、订单、发货、退货、开票', 2, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099267, '000000', 2065103110631759873, 2065090090526457857, '3. 生产管理\r\n- 主生产计划（MPS）、物料需求计划（MRP）\r\n- 工艺路线、车间排程、报工\r\n- 质量控制、设备维护\n4. 人力资源管理（HRM）\r\n- 组织架构、员工信息、考勤、薪酬\r\n- 招聘、绩效、培训\n5. 客户关系管理（CRM，常集成或作为模块）\r\n- 客户档案、商机跟踪、服务管理\r\n- 营销活动、销售漏斗分析\n6. 项目管理\r\n- 项目分解、预算、进度、成本归集\r\n- 适用于工程、专业服务等行业\n7. 商业智能（BI）与报表\r\n- 内置分析看板、KPI仪表盘\r\n- 自定义报表、数据钻取与预警\r\n\r\n以上模块并非所有企业都必须全部启用，而是根据业务需求灵活选用、分阶段部署。\r\n\r\n---', 3, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099268, '000000', 2065103110631759873, 2065090090526457857, '四、ERP实施方法论\r\n\r\nERP项目是管理变革，而非简单的IT工程。经典实施路径一般分为六个阶段：\r\n\r\n1. **项目准备**  \r\n   组建团队、明确目标与范围、制定计划、启动宣导。\r\n\r\n2. **需求分析与业务蓝图设计**  \r\n   梳理现有流程，结合系统功能设计未来流程（To-Be），形成蓝图文档。\r\n\r\n3. **系统实现**  \r\n   配置系统参数、二次开发、单元测试、集成测试。\r\n\r\n4. **数据准备**  \r\n   清理与迁移主数据（物料、客户、供应商、科目等）和期初余额。\r\n\r\n5. **上线准备与切换**  \r\n   用户培训、权限设定、模拟运行、制定切换策略（一次性/分步/并行）。\r\n\r\n6. **上线支持与持续优化**  \r\n   现场支持、问题处理、知识转移，系统进入稳定运行后持续评估改进。\n实施成功关键因素\r\n- 高层领导全力参与和推动\r\n- 清晰的需求与务实的范围控制\r\n- 关键用户（业务骨干）全程深度投入\r\n- 数据准确性和完整性\r\n- 有效的变革管理与培训\r\n- 合适的外部顾问团队与知识转移\r\n\r\n---\n五、ERP选型指南', 4, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099269, '000000', 2065103110631759873, 2065090090526457857, '1. 选型评估要点\r\n- **功能匹配度**：系统是否覆盖企业核心业务，行业特性支持如何（如离散/流程制造、零售、工程建设等）。\r\n- **技术架构**：是否支持云部署、移动端、开放API、低代码扩展。\r\n- **用户体验**：界面友好度、操作效率、学习成本。\r\n- **总拥有成本（TCO）**：软件许可、实施、定制、运维、升级等全生命周期费用。\r\n- **供应商能力**：行业案例、本地化服务、持续研发投入、生态伙伴。', 5, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013826, '000000', 2065103110631759873, 2065090090526457857, '2. 主流ERP产品概览（分类示例）\r\n\r\n| 类型            | 代表产品                                              | 适用对象                     |\r\n| --------------- | ----------------------------------------------------- | ---------------------------- |\r\n| 国际大型ERP     | SAP S/4HANA, Oracle ERP Cloud, Microsoft Dynamics 365 | 大型跨国企业、多业态集团     |\r\n| 国际中端/成长型 | Infor LN/M3, IFS, Sage X3                             | 中型企业、特定行业           |\r\n| 国内主流        | 用友U9 cloud/YonSuite, 金蝶云·星瀚/苍穹, 浪潮inSuite  | 本土中型至大型企业，政策合规 |\r\n| 新兴云原生      | Odoo, Acumatica, 国内的多点/聚水潭等（电商）          | 中小型、快速成长、特殊场景   |\r\n\r\n选型时不可只看品牌，应通过原型演示、客户参考、POC（概念验证）等方式验证实际匹配度。\r\n\r\n---', 6, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013827, '000000', 2065103110631759873, 2065090090526457857, '六、ERP的未来趋势\r\n\r\n1. **全面云化（Cloud ERP）**  \r\n   减少本地IT负担，支持快速弹性扩展、远程协同与持续迭代。\r\n\r\n2. **智能化（AI + ERP）**  \r\n   需求预测、异常检测、智能审批、财务对账自动化，由“记录系统”转向“决策系统”。\r\n\r\n3. **移动化与物联网（IoT）**  \r\n   通过移动设备完成审批、入库、巡检；设备数据直接传入ERP实现预防性维护与自动补料。\r\n\r\n4. **低代码/无代码扩展**  \r\n   让业务人员快速搭建个性化报表、审批流和小应用，提升系统灵活度。\r\n\r\n5. **行业深化与生态融合**  \r\n   头部ERP厂商构建行业云和平台生态，连接客户、供应商、物流、金融机构，形成端到端数字化协同。\r\n\r\n6. **安全与合规强化**  \r\n   随着数据法规趋严，ERP在权限管理、审计追踪、数据本地化等方面持续增强。\r\n\r\n---', 7, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013828, '000000', 2065103110631759873, 2065090090526457857, '七、总结\r\n\r\nERP不是普通的软件采购，而是企业运营体系的一次系统性梳理与升级。成功的ERP项目能够贯通信息孤岛、固化标准流程、提高运营效率和决策质量，但前提是必须将其作为管理工程来对待，投入充足的资源、耐心和变革管理精力。\r\n\r\n对于准备上线或更换ERP的企业，建议：\r\n- 先理清自身管理痛点与核心需求，勿盲目对标功能列表。\r\n- 选择有行业经验的实施伙伴，重视知识转移和内部团队培养。\r\n- 上线不是终点，要建立持续优化的机制，让系统与企业共同成长。\r\n\r\n---\r\n\r\n*本文档旨在提供ERP领域的框架性知识，供学习、选型参考。具体实施时请结合企业实际情况与专业顾问意见。*', 8, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-12 00:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414890184706, '0', 2065103110631759873, 2065090090526457857, 'ERP系统知识文档\r\n\r\n---\n一、ERP概述\n1. 什么是ERP\r\nERP（Enterprise Resource Planning，企业资源计划）是一种集成化的企业管理信息系统。它通过统一的数据库和软件平台，将企业的财务、采购、生产、销售、库存、人力资源等核心业务流程整合在一起，实现数据的实时共享与业务协同，帮助企业高效配置资源、优化运营并支持决策。\n2. ERP的核心理念\r\n- **集成性**：打破部门壁垒，所有模块共用同一数据源，确保信息一致。\r\n- **实时性**：业务数据即时更新，管理层可随时掌握经营动态。\r\n- **标准化**：将企业最佳实践固化为标准流程，减少人为随意性，提升管理规范度。\r\n- **全局优化**：从整体而非局部视角规划资源，避免“部门最优但整体受损”。', 0, NULL, '2', 0, 0, 640, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:18:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414890184707, '0', 2065103110631759873, 2065090090526457857, '3. ERP与普通财务/进销存软件的区别\r\n| 对比维度 | 普通单功能软件   | ERP系统                      |\r\n| -------- | ---------------- | ---------------------------- |\r\n| 数据范围 | 孤立，部门内使用 | 企业级共享，跨职能打通       |\r\n| 流程联动 | 需要人工传递数据 | 自动触发上下游业务动作       |\r\n| 管控深度 | 事后记录         | 事前计划、事中控制、事后分析 |\r\n| 可扩展性 | 功能固定         | 可按需配置、二次开发         |\r\n\r\n---', 1, NULL, '2', 0, 0, 604, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:18:36', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099266, '0', 2065103110631759873, 2065090090526457857, '二、ERP的发展简史\r\n\r\n- **1960s：MRP（物料需求计划）**  \r\n  起源于制造业，解决“需要什么、需要多少、何时需要”的物料计算问题。\r\n\r\n- **1980s：MRP II（制造资源计划）**  \r\n  把生产、财务、销售、工程等职能纳入统一计划体系，形成闭环。\r\n\r\n- **1990s：ERP（企业资源计划）**  \r\n  范围超越制造，延伸至全行业，整合供应链、人力资源、项目管理等。\r\n\r\n- **2000s至今：ERP II / 云ERP**  \r\n  强调跨企业协同、电子商务集成，技术架构向云端、移动化、智能化演进。\r\n\r\n---\n三、ERP的核心功能模块\r\n\r\n一套完整的ERP系统通常包含以下核心模块，不同行业会有所侧重：\n1. 财务管理（核心）\r\n- 总账、应收/应付、资产管理\r\n- 成本核算、预算控制、财务分析\r\n- 多币种、多会计准则支持\n2. 供应链管理（SCM）\r\n- **采购管理**：供应商管理、申购、采购订单、收货、对账\r\n- **库存管理**：多仓库、批次/序列号、安全库存、盘点\r\n- **销售管理**：报价、订单、发货、退货、开票', 2, NULL, '2', 0, 0, 1099, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:18:40', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099267, '0', 2065103110631759873, 2065090090526457857, '3. 生产管理\r\n- 主生产计划（MPS）、物料需求计划（MRP）\r\n- 工艺路线、车间排程、报工\r\n- 质量控制、设备维护\n4. 人力资源管理（HRM）\r\n- 组织架构、员工信息、考勤、薪酬\r\n- 招聘、绩效、培训\n5. 客户关系管理（CRM，常集成或作为模块）\r\n- 客户档案、商机跟踪、服务管理\r\n- 营销活动、销售漏斗分析\n6. 项目管理\r\n- 项目分解、预算、进度、成本归集\r\n- 适用于工程、专业服务等行业\n7. 商业智能（BI）与报表\r\n- 内置分析看板、KPI仪表盘\r\n- 自定义报表、数据钻取与预警\r\n\r\n以上模块并非所有企业都必须全部启用，而是根据业务需求灵活选用、分阶段部署。\r\n\r\n---', 3, NULL, '2', 0, 0, 670, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:18:51', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099268, '0', 2065103110631759873, 2065090090526457857, '四、ERP实施方法论\r\n\r\nERP项目是管理变革，而非简单的IT工程。经典实施路径一般分为六个阶段：\r\n\r\n1. **项目准备**  \r\n   组建团队、明确目标与范围、制定计划、启动宣导。\r\n\r\n2. **需求分析与业务蓝图设计**  \r\n   梳理现有流程，结合系统功能设计未来流程（To-Be），形成蓝图文档。\r\n\r\n3. **系统实现**  \r\n   配置系统参数、二次开发、单元测试、集成测试。\r\n\r\n4. **数据准备**  \r\n   清理与迁移主数据（物料、客户、供应商、科目等）和期初余额。\r\n\r\n5. **上线准备与切换**  \r\n   用户培训、权限设定、模拟运行、制定切换策略（一次性/分步/并行）。\r\n\r\n6. **上线支持与持续优化**  \r\n   现场支持、问题处理、知识转移，系统进入稳定运行后持续评估改进。\n实施成功关键因素\r\n- 高层领导全力参与和推动\r\n- 清晰的需求与务实的范围控制\r\n- 关键用户（业务骨干）全程深度投入\r\n- 数据准确性和完整性\r\n- 有效的变革管理与培训\r\n- 合适的外部顾问团队与知识转移\r\n\r\n---\n五、ERP选型指南', 4, NULL, '2', 0, 0, 835, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:19:04', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105414953099269, '0', 2065103110631759873, 2065090090526457857, '1. 选型评估要点\r\n- **功能匹配度**：系统是否覆盖企业核心业务，行业特性支持如何（如离散/流程制造、零售、工程建设等）。\r\n- **技术架构**：是否支持云部署、移动端、开放API、低代码扩展。\r\n- **用户体验**：界面友好度、操作效率、学习成本。\r\n- **总拥有成本（TCO）**：软件许可、实施、定制、运维、升级等全生命周期费用。\r\n- **供应商能力**：行业案例、本地化服务、持续研发投入、生态伙伴。', 5, NULL, '2', 0, 0, 706, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:19:08', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013826, '0', 2065103110631759873, 2065090090526457857, '2. 主流ERP产品概览（分类示例）\r\n\r\n| 类型            | 代表产品                                              | 适用对象                     |\r\n| --------------- | ----------------------------------------------------- | ---------------------------- |\r\n| 国际大型ERP     | SAP S/4HANA, Oracle ERP Cloud, Microsoft Dynamics 365 | 大型跨国企业、多业态集团     |\r\n| 国际中端/成长型 | Infor LN/M3, IFS, Sage X3                             | 中型企业、特定行业           |\r\n| 国内主流        | 用友U9 cloud/YonSuite, 金蝶云·星瀚/苍穹, 浪潮inSuite  | 本土中型至大型企业，政策合规 |\r\n| 新兴云原生      | Odoo, Acumatica, 国内的多点/聚水潭等（电商）          | 中小型、快速成长、特殊场景   |\r\n\r\n选型时不可只看品牌，应通过原型演示、客户参考、POC（概念验证）等方式验证实际匹配度。\r\n\r\n---', 6, NULL, '2', 16, 12, 2569, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:19:23', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013827, '0', 2065103110631759873, 2065090090526457857, '六、ERP的未来趋势\r\n\r\n1. **全面云化（Cloud ERP）**  \r\n   减少本地IT负担，支持快速弹性扩展、远程协同与持续迭代。\r\n\r\n2. **智能化（AI + ERP）**  \r\n   需求预测、异常检测、智能审批、财务对账自动化，由“记录系统”转向“决策系统”。\r\n\r\n3. **移动化与物联网（IoT）**  \r\n   通过移动设备完成审批、入库、巡检；设备数据直接传入ERP实现预防性维护与自动补料。\r\n\r\n4. **低代码/无代码扩展**  \r\n   让业务人员快速搭建个性化报表、审批流和小应用，提升系统灵活度。\r\n\r\n5. **行业深化与生态融合**  \r\n   头部ERP厂商构建行业云和平台生态，连接客户、供应商、物流、金融机构，形成端到端数字化协同。\r\n\r\n6. **安全与合规强化**  \r\n   随着数据法规趋严，ERP在权限管理、审计追踪、数据本地化等方面持续增强。\r\n\r\n---', 7, NULL, '2', 0, 0, 752, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:19:40', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2065105415016013828, '0', 2065103110631759873, 2065090090526457857, '七、总结\r\n\r\nERP不是普通的软件采购，而是企业运营体系的一次系统性梳理与升级。成功的ERP项目能够贯通信息孤岛、固化标准流程、提高运营效率和决策质量，但前提是必须将其作为管理工程来对待，投入充足的资源、耐心和变革管理精力。\r\n\r\n对于准备上线或更换ERP的企业，建议：\r\n- 先理清自身管理痛点与核心需求，勿盲目对标功能列表。\r\n- 选择有行业经验的实施伙伴，重视知识转移和内部团队培养。\r\n- 上线不是终点，要建立持续优化的机制，让系统与企业共同成长。\r\n\r\n---\r\n\r\n*本文档旨在提供ERP领域的框架性知识，供学习、选型参考。具体实施时请结合企业实际情况与专业顾问意见。*', 8, NULL, '2', 0, 0, 647, NULL, -1, -1, '2026-06-12 00:14:33', -1, '2026-06-30 01:19:42', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101758971906, '0', 2071638100471320578, 2065090090526457857, 'ERP系统知识文档\r\n\r\n---\n一、ERP概述\n1. 什么是ERP\r\nERP（Enterprise Resource Planning，企业资源计划）是一种集成化的企业管理信息系统。它通过统一的数据库和软件平台，将企业的财务、采购、生产、销售、库存、人力资源等核心业务流程整合在一起，实现数据的实时共享与业务协同，帮助企业高效配置资源、优化运营并支持决策。\n2. ERP的核心理念\r\n- **集成性**：打破部门壁垒，所有模块共用同一数据源，确保信息一致。\r\n- **实时性**：业务数据即时更新，管理层可随时掌握经营动态。\r\n- **标准化**：将企业最佳实践固化为标准流程，减少人为随意性，提升管理规范度。\r\n- **全局优化**：从整体而非局部视角规划资源，避免“部门最优但整体受损”。', 0, 'cc59b24e-8b4a-4048-9903-44afee2384ca', '2', 0, 0, 661, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:18:31', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101758971907, '0', 2071638100471320578, 2065090090526457857, '3. ERP与普通财务/进销存软件的区别\r\n| 对比维度 | 普通单功能软件   | ERP系统                      |\r\n| -------- | ---------------- | ---------------------------- |\r\n| 数据范围 | 孤立，部门内使用 | 企业级共享，跨职能打通       |\r\n| 流程联动 | 需要人工传递数据 | 自动触发上下游业务动作       |\r\n| 管控深度 | 事后记录         | 事前计划、事中控制、事后分析 |\r\n| 可扩展性 | 功能固定         | 可按需配置、二次开发         |\r\n\r\n---', 1, 'c72dcbfb-192a-4c1e-96bf-9da48e0db311', '2', 0, 0, 629, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:18:34', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101758971908, '0', 2071638100471320578, 2065090090526457857, '二、ERP的发展简史\r\n\r\n- **1960s：MRP（物料需求计划）**  \r\n  起源于制造业，解决“需要什么、需要多少、何时需要”的物料计算问题。\r\n\r\n- **1980s：MRP II（制造资源计划）**  \r\n  把生产、财务、销售、工程等职能纳入统一计划体系，形成闭环。\r\n\r\n- **1990s：ERP（企业资源计划）**  \r\n  范围超越制造，延伸至全行业，整合供应链、人力资源、项目管理等。\r\n\r\n- **2000s至今：ERP II / 云ERP**  \r\n  强调跨企业协同、电子商务集成，技术架构向云端、移动化、智能化演进。\r\n\r\n---\n三、ERP的核心功能模块\r\n\r\n一套完整的ERP系统通常包含以下核心模块，不同行业会有所侧重：\n1. 财务管理（核心）\r\n- 总账、应收/应付、资产管理\r\n- 成本核算、预算控制、财务分析\r\n- 多币种、多会计准则支持\n2. 供应链管理（SCM）\r\n- **采购管理**：供应商管理、申购、采购订单、收货、对账\r\n- **库存管理**：多仓库、批次/序列号、安全库存、盘点\r\n- **销售管理**：报价、订单、发货、退货、开票', 2, '543da7e6-75aa-4791-bca7-c95a040e8434', '2', 9, 5, 1939, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:18:50', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101758971909, '0', 2071638100471320578, 2065090090526457857, '3. 生产管理\r\n- 主生产计划（MPS）、物料需求计划（MRP）\r\n- 工艺路线、车间排程、报工\r\n- 质量控制、设备维护\n4. 人力资源管理（HRM）\r\n- 组织架构、员工信息、考勤、薪酬\r\n- 招聘、绩效、培训\n5. 客户关系管理（CRM，常集成或作为模块）\r\n- 客户档案、商机跟踪、服务管理\r\n- 营销活动、销售漏斗分析\n6. 项目管理\r\n- 项目分解、预算、进度、成本归集\r\n- 适用于工程、专业服务等行业\n7. 商业智能（BI）与报表\r\n- 内置分析看板、KPI仪表盘\r\n- 自定义报表、数据钻取与预警\r\n\r\n以上模块并非所有企业都必须全部启用，而是根据业务需求灵活选用、分阶段部署。\r\n\r\n---', 3, '6bccce1e-c4b6-4830-8228-d01da652785c', '2', 0, 0, 985, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:18:56', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101821886466, '0', 2071638100471320578, 2065090090526457857, '四、ERP实施方法论\r\n\r\nERP项目是管理变革，而非简单的IT工程。经典实施路径一般分为六个阶段：\r\n\r\n1. **项目准备**  \r\n   组建团队、明确目标与范围、制定计划、启动宣导。\r\n\r\n2. **需求分析与业务蓝图设计**  \r\n   梳理现有流程，结合系统功能设计未来流程（To-Be），形成蓝图文档。\r\n\r\n3. **系统实现**  \r\n   配置系统参数、二次开发、单元测试、集成测试。\r\n\r\n4. **数据准备**  \r\n   清理与迁移主数据（物料、客户、供应商、科目等）和期初余额。\r\n\r\n5. **上线准备与切换**  \r\n   用户培训、权限设定、模拟运行、制定切换策略（一次性/分步/并行）。\r\n\r\n6. **上线支持与持续优化**  \r\n   现场支持、问题处理、知识转移，系统进入稳定运行后持续评估改进。\n实施成功关键因素\r\n- 高层领导全力参与和推动\r\n- 清晰的需求与务实的范围控制\r\n- 关键用户（业务骨干）全程深度投入\r\n- 数据准确性和完整性\r\n- 有效的变革管理与培训\r\n- 合适的外部顾问团队与知识转移\r\n\r\n---\n五、ERP选型指南', 4, '4275eaf8-f367-412c-b836-66e0570c190d', '2', 0, 0, 1275, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:19:02', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101821886467, '0', 2071638100471320578, 2065090090526457857, '1. 选型评估要点\r\n- **功能匹配度**：系统是否覆盖企业核心业务，行业特性支持如何（如离散/流程制造、零售、工程建设等）。\r\n- **技术架构**：是否支持云部署、移动端、开放API、低代码扩展。\r\n- **用户体验**：界面友好度、操作效率、学习成本。\r\n- **总拥有成本（TCO）**：软件许可、实施、定制、运维、升级等全生命周期费用。\r\n- **供应商能力**：行业案例、本地化服务、持续研发投入、生态伙伴。', 5, 'aed86b12-aef7-40e5-b144-b629b198618e', '2', 0, 0, 605, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:19:05', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101821886468, '0', 2071638100471320578, 2065090090526457857, '2. 主流ERP产品概览（分类示例）\r\n\r\n| 类型            | 代表产品                                              | 适用对象                     |\r\n| --------------- | ----------------------------------------------------- | ---------------------------- |\r\n| 国际大型ERP     | SAP S/4HANA, Oracle ERP Cloud, Microsoft Dynamics 365 | 大型跨国企业、多业态集团     |\r\n| 国际中端/成长型 | Infor LN/M3, IFS, Sage X3                             | 中型企业、特定行业           |\r\n| 国内主流        | 用友U9 cloud/YonSuite, 金蝶云·星瀚/苍穹, 浪潮inSuite  | 本土中型至大型企业，政策合规 |\r\n| 新兴云原生      | Odoo, Acumatica, 国内的多点/聚水潭等（电商）          | 中小型、快速成长、特殊场景   |\r\n\r\n选型时不可只看品牌，应通过原型演示、客户参考、POC（概念验证）等方式验证实际匹配度。\r\n\r\n---', 6, '68ab5173-2bba-499b-abb3-1df593948cb0', '2', 17, 13, 2695, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:19:38', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101821886469, '0', 2071638100471320578, 2065090090526457857, '六、ERP的未来趋势\r\n\r\n1. **全面云化（Cloud ERP）**  \r\n   减少本地IT负担，支持快速弹性扩展、远程协同与持续迭代。\r\n\r\n2. **智能化（AI + ERP）**  \r\n   需求预测、异常检测、智能审批、财务对账自动化，由“记录系统”转向“决策系统”。\r\n\r\n3. **移动化与物联网（IoT）**  \r\n   通过移动设备完成审批、入库、巡检；设备数据直接传入ERP实现预防性维护与自动补料。\r\n\r\n4. **低代码/无代码扩展**  \r\n   让业务人员快速搭建个性化报表、审批流和小应用，提升系统灵活度。\r\n\r\n5. **行业深化与生态融合**  \r\n   头部ERP厂商构建行业云和平台生态，连接客户、供应商、物流、金融机构，形成端到端数字化协同。\r\n\r\n6. **安全与合规强化**  \r\n   随着数据法规趋严，ERP在权限管理、审计追踪、数据本地化等方面持续增强。\r\n\r\n---', 7, '6bd606d0-f983-48ab-bcb8-ec9f61056113', '2', 0, 0, 726, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:19:41', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_chunk` VALUES (2071638101821886470, '0', 2071638100471320578, 2065090090526457857, '七、总结\r\n\r\nERP不是普通的软件采购，而是企业运营体系的一次系统性梳理与升级。成功的ERP项目能够贯通信息孤岛、固化标准流程、提高运营效率和决策质量，但前提是必须将其作为管理工程来对待，投入充足的资源、耐心和变革管理精力。\r\n\r\n对于准备上线或更换ERP的企业，建议：\r\n- 先理清自身管理痛点与核心需求，勿盲目对标功能列表。\r\n- 选择有行业经验的实施伙伴，重视知识转移和内部团队培养。\r\n- 上线不是终点，要建立持续优化的机制，让系统与企业共同成长。\r\n\r\n---\r\n\r\n*本文档旨在提供ERP领域的框架性知识，供学习、选型参考。具体实施时请结合企业实际情况与专业顾问意见。*', 8, '8bdb9f97-8cbf-47c0-befd-3b6e071cfc31', '2', 0, 0, 701, NULL, -1, -1, '2026-06-30 00:53:07', -1, '2026-06-30 01:19:44', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_knowledge_document
@@ -2016,9 +2305,9 @@ CREATE TABLE `ai_knowledge_document`  (
   `error_message` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2026,12 +2315,49 @@ CREATE TABLE `ai_knowledge_document`  (
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_knowledge_document
 -- ----------------------------
-INSERT INTO `ai_knowledge_document` VALUES (2065103110631759873, '000000', 2065090090526457857, 'ERP.md', 'http://127.0.0.1:9005/ruoyi/2026/06/12/b2c8db1a7bd84251a3b523431fe60681.md', 7733, 9, '2', '未配置 Embedding 模型，请在模型管理中添加 EMBEDDING 类型模型', 103, 1, '2026-06-12 00:05:24', -1, '2026-06-12 00:14:34', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge_document` VALUES (2071638100471320578, '000000', 2065090090526457857, 'ERP.md', 'http://159.75.14.226:9005/ruoyi/2026/06/30/1cae442ec9554ad98664e009a1c723df.md', 7733, 9, '2', NULL, 103, 1, '2026-06-30 00:53:07', -1, '2026-06-30 00:53:11', '0', NULL, NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for ai_knowledge_graph
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_knowledge_graph`;
+CREATE TABLE `ai_knowledge_graph`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `knowledge_id` bigint(20) NOT NULL COMMENT '知识库ID',
+  `graph_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '图谱名称',
+  `graph_status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '状态（0未构建 1构建中 2已完成 3失败）',
+  `node_count` int(11) NULL DEFAULT 0 COMMENT '实体节点数',
+  `relationship_count` int(11) NULL DEFAULT 0 COMMENT '关系数',
+  `community_count` int(11) NULL DEFAULT 0 COMMENT '社区数',
+  `model_id` bigint(20) NULL DEFAULT NULL COMMENT '抽取用的LLM模型ID',
+  `entity_types` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实体类型（逗号分隔）',
+  `relation_types` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '关系类型（逗号分隔）',
+  `config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '图谱配置（JSON）',
+  `error_message` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱实例' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_knowledge_graph
+-- ----------------------------
+INSERT INTO `ai_knowledge_graph` VALUES (2071631414633394178, '000000', 2065090090526457857, NULL, '2', 27, 30, 9, NULL, '物料,客户,供应商,订单,采购订单,工单,BOM,车间,工序,设备,仓库,产品,其他', '供应,采购,包含,生产于,存储于,隶属于,关联', NULL, NULL, -1, -1, '2026-06-30 00:26:33', -1, '2026-06-30 01:20:05', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_mcp_market
@@ -2047,16 +2373,20 @@ CREATE TABLE `ai_mcp_market`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1启用 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场源' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场源' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_mcp_market
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_mcp_market_tool
@@ -2074,9 +2404,9 @@ CREATE TABLE `ai_mcp_market_tool`  (
   `local_tool_id` bigint(20) NULL DEFAULT NULL COMMENT '关联 ai_tool.id',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2085,7 +2415,11 @@ CREATE TABLE `ai_mcp_market_tool`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_market_id`(`market_id`) USING BTREE,
   INDEX `idx_tool_name`(`tool_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场工具' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场工具' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_mcp_market_tool
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_message
@@ -2102,9 +2436,9 @@ CREATE TABLE `ai_message`  (
   `feedback_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '反馈内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2116,7 +2450,7 @@ CREATE TABLE `ai_message`  (
   `thinking_content` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '推理过程内容（enableThinking 时存）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_session_id`(`session_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_message
@@ -2190,9 +2524,9 @@ CREATE TABLE `ai_model`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2203,15 +2537,15 @@ CREATE TABLE `ai_model`  (
   `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种：CNY/USD',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_provider_id`(`provider_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_model
 -- ----------------------------
-INSERT INTO `ai_model` VALUES (1, '000000', 1, 'deepseek-v4-flash', 'deepseek-v4-flash', 'CHAT', 4096, 0.70, '1', '1', NULL, NULL, NULL, 1, '2026-06-28 19:11:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (1, '000000', 1, 'deepseek-v4-flash', 'deepseek-v4-flash', 'CHAT', 4096, 0.70, '0', '1', NULL, NULL, NULL, 1, '2026-06-30 00:27:03', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
 INSERT INTO `ai_model` VALUES (2, '000000', 2, 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'Qwen3-Embedding-0.6B-Q8', 'EMBEDDING', 2048, 0.00, '1', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-11 23:42:56', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (2065468422648635394, '000000', 2065468199226449922, 'ark-code-latest', '方舟codingplan', 'CHAT', 4096, 0.70, '0', '1', 103, 1, '2026-06-13 00:17:01', 1, '2026-06-28 19:11:38', '0', NULL, NULL, NULL, NULL, 1.000000, 20.000000, 'CNY');
-INSERT INTO `ai_model` VALUES (2071188923190738945, '000000', 2, 'deepseek-r1:8b', 'deepseek-r1:8b', 'CHAT', 4096, 0.70, '0', '1', 103, 1, '2026-06-28 19:08:15', 1, '2026-06-28 19:11:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (2065468422648635394, '000000', 2065468199226449922, 'ark-code-latest', '方舟codingplan', 'CHAT', 4096, 0.70, '1', '1', 103, 1, '2026-06-13 00:17:01', 1, '2026-06-30 00:27:03', '0', NULL, NULL, NULL, NULL, 1.000000, 20.000000, 'CNY');
+INSERT INTO `ai_model` VALUES (2071188923190738945, '000000', 2, 'deepseek-r1:8b', 'deepseek-r1:8b', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-28 19:08:15', 1, '2026-06-28 19:11:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
 
 -- ----------------------------
 -- Table structure for ai_prompt_template
@@ -2229,13 +2563,13 @@ CREATE TABLE `ai_prompt_template`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_template_key`(`template_key`, `tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Prompt 模板' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Prompt 模板' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_prompt_template
@@ -2258,23 +2592,23 @@ CREATE TABLE `ai_provider`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_provider
 -- ----------------------------
-INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'FQpUdWFhWpAKW+CeFdpzPodyUXezI45zsNnZ6JV1+idVB4BBtbqzpoaFl+mCMe5X', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-06-29 00:58:03', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', '/4g3jwy3KRNzbwCVrHYnb4mWyRc5ye9aG7uXlVXGB4Kz8sV9q4VeIUVvepY8VUdG', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-06-30 01:44:08', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', 'YOkXtpT+eKGfwun/j+pGJK4qnWvkTi1xpXmZzzqXfZlYHquXozhFSa2LlW6jOgljXgCiryDMWYjfpcxAZqSLgSnGWiWzRCgmtfFYR4qtf4iTDRc0Fkj0uJwggeb6gguY', 'OLLAMA', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-28 19:09:22', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'Z4vLc4mE4Gy+ptrL2IBF7+iKSKsMVBjCGoON+ZUCLoBHPTqzmKqzEKt/7T6F46RW', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-06-29 00:58:09', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'WOM7825NEl8sTGf9bZGz09TFJ5dxfJfG7B8fAgTbQw1xJ1yoM0MjoSJQAeClCUmm', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-06-30 01:44:13', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_session
@@ -2288,9 +2622,9 @@ CREATE TABLE `ai_session`  (
   `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的模型名称',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2299,7 +2633,7 @@ CREATE TABLE `ai_session`  (
   `enabled_tool_ids` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '会话启用的工具ID列表（逗号分隔，null=全部）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_session
@@ -2333,14 +2667,14 @@ CREATE TABLE `ai_sql_example`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI SQL Few-Shot 示例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI SQL Few-Shot 示例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_sql_example
@@ -2371,14 +2705,14 @@ CREATE TABLE `ai_token_usage`  (
   `total_tokens` bigint(20) NULL DEFAULT 0 COMMENT '当日 Token 总量（input+output）',
   `request_count` int(11) NULL DEFAULT 0 COMMENT '当日请求次数',
   `total_cost` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '当日总成本（元）',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_model_date`(`tenant_id`, `user_id`, `model_id`, `usage_date`) USING BTREE,
   INDEX `idx_user_date`(`tenant_id`, `user_id`, `usage_date`) USING BTREE,
   INDEX `idx_model_date`(`tenant_id`, `model_id`, `usage_date`) USING BTREE,
   INDEX `idx_date`(`usage_date`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Token 用量日统计' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Token 用量日统计' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_token_usage
@@ -2388,6 +2722,9 @@ INSERT INTO `ai_token_usage` VALUES (2065812180435181569, 0, -1, '-1', 206546842
 INSERT INTO `ai_token_usage` VALUES (2071190236381184001, 0, 1, 'admin', 1, 'deepseek-v4-flash', '2026-06-28', 14738, 1121, 15859, 3, 0.0000, '2026-06-28 19:13:28', '2026-06-28 19:13:40');
 INSERT INTO `ai_token_usage` VALUES (2071272379455299585, 0, -1, '-1', 1, 'deepseek-v4-flash', '2026-06-28', 9744, 0, 9744, 2, 0.0000, '2026-06-29 00:39:52', '2026-06-29 00:39:52');
 INSERT INTO `ai_token_usage` VALUES (2071275716804222978, 0, 1, 'admin', 1, 'deepseek-v4-flash', '2026-06-29', 99509, 4746, 104255, 37, 0.0000, '2026-06-29 00:53:08', '2026-06-29 00:57:02');
+INSERT INTO `ai_token_usage` VALUES (2071638492034764801, 0, 1, 'admin', 2065468422648635394, 'ark-code-latest', '2026-06-30', 7789, 36458, 44247, 14, 0.7369, '2026-06-30 00:54:40', '2026-06-30 01:03:21');
+INSERT INTO `ai_token_usage` VALUES (2071641038199701506, 0, 1, 'admin', 2071188923190738945, 'deepseek-r1:8b', '2026-06-30', 3077, 6068, 9145, 5, 0.0000, '2026-06-30 01:04:47', '2026-06-30 01:08:07');
+INSERT INTO `ai_token_usage` VALUES (2071644493534343169, 0, 1, 'admin', 1, 'deepseek-v4-flash', '2026-06-30', 12739, 8982, 21721, 27, 0.0000, '2026-06-30 01:18:31', '2026-06-30 01:20:05');
 
 -- ----------------------------
 -- Table structure for ai_tool
@@ -2404,9 +2741,9 @@ CREATE TABLE `ai_tool`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ENABLED' COMMENT '状态: ENABLED/DISABLED',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2414,7 +2751,7 @@ CREATE TABLE `ai_tool`  (
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_tool_name`(`tool_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 工具配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 工具配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_tool
@@ -2426,6 +2763,7 @@ INSERT INTO `ai_tool` VALUES (2065501197141528579, '000000', 'execute_sql_query'
 INSERT INTO `ai_tool` VALUES (2065501197141528580, '000000', 'erp_inventory', '库存查询工具', '查询库存预警、出库趋势、库存金额分布、按仓库统计', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_tool` VALUES (2065501197204443138, '000000', 'erp_sales', '销售查询工具', '查询月度销售趋势、客户排行、退货统计、订单履行率', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_tool` VALUES (2065501197204443139, '000000', 'query_table_schema', '查询表结构', '查询指定表的 CREATE TABLE DDL（优先从缓存获取）', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2071627193573928962, '000000', 'query_knowledge_graph', '知识图谱查询', '查询当前知识库知识图谱的实体关系（1-2跳）或执行基于社区摘要的全局检索', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-30 00:09:47', -1, '2026-06-30 00:09:47', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for flw_channel_definition
@@ -2446,7 +2784,11 @@ CREATE TABLE `flw_channel_definition`  (
   `IMPLEMENTATION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_CHANNEL_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_channel_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ev_databasechangelog
@@ -2456,7 +2798,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
+  `DATEEXECUTED` datetime NULL DEFAULT NULL,
   `ORDEREXECUTED` int(11) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
@@ -2467,7 +2809,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `CONTEXTS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `LABELS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `DEPLOYMENT_ID` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangelog
@@ -2483,10 +2825,10 @@ DROP TABLE IF EXISTS `flw_ev_databasechangeloglock`;
 CREATE TABLE `flw_ev_databasechangeloglock`  (
   `ID` int(11) NOT NULL,
   `LOCKED` tinyint(4) NOT NULL,
-  `LOCKGRANTED` datetime(0) NULL DEFAULT NULL,
+  `LOCKGRANTED` datetime NULL DEFAULT NULL,
   `LOCKEDBY` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangeloglock
@@ -2509,7 +2851,11 @@ CREATE TABLE `flw_event_definition`  (
   `DESCRIPTION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_EVENT_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_deployment
@@ -2523,7 +2869,11 @@ CREATE TABLE `flw_event_deployment`  (
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_deployment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_resource
@@ -2535,7 +2885,11 @@ CREATE TABLE `flw_event_resource`  (
   `DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `RESOURCE_BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_resource
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch
@@ -2553,7 +2907,11 @@ CREATE TABLE `flw_ru_batch`  (
   `BATCH_DOC_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch_part
@@ -2577,7 +2935,11 @@ CREATE TABLE `flw_ru_batch_part`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `FLW_IDX_BATCH_PART`(`BATCH_ID_`) USING BTREE,
   CONSTRAINT `FLW_FK_BATCH_PART_PARENT` FOREIGN KEY (`BATCH_ID_`) REFERENCES `flw_ru_batch` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch_part
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for gen_table
@@ -2606,14 +2968,14 @@ CREATE TABLE `gen_table`  (
   `options` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE,
   INDEX `idx_gen_table_design_id`(`design_id`) USING BTREE,
   INDEX `idx_gen_table_source_type`(`source_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2663,11 +3025,11 @@ CREATE TABLE `gen_table_column`  (
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3083,11 +3445,15 @@ CREATE TABLE `gen_table_design_history`  (
   `design_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设计JSON内容',
   `version` int(11) NULL DEFAULT 1 COMMENT '版本号',
   `create_by` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`history_id`) USING BTREE,
   INDEX `idx_design_history_table_id`(`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of gen_table_design_history
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for im_friend
@@ -3100,14 +3466,14 @@ CREATE TABLE `im_friend`  (
   `friend_user_id` bigint(20) NOT NULL COMMENT '好友用户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_im_friend`(`tenant_id`, `user_id`, `friend_user_id`) USING BTREE,
   INDEX `idx_im_friend_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM好友关系' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM好友关系' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_friend
@@ -3128,13 +3494,13 @@ CREATE TABLE `im_group`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1解散）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`group_id`) USING BTREE,
   INDEX `idx_im_group_tenant`(`tenant_id`, `status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group
@@ -3151,16 +3517,16 @@ CREATE TABLE `im_group_member`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `group_id` bigint(20) NOT NULL COMMENT '群ID',
   `user_id` bigint(20) NOT NULL COMMENT '成员用户ID',
-  `join_time` datetime(0) NULL DEFAULT NULL COMMENT '加入时间',
+  `join_time` datetime NULL DEFAULT NULL COMMENT '加入时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_group_user`(`group_id`, `user_id`) USING BTREE,
   INDEX `idx_igm_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group_member
@@ -3189,14 +3555,14 @@ CREATE TABLE `im_message`  (
   `forward_from` bigint(20) NULL DEFAULT NULL COMMENT '杞?彂鏉ユ簮娑堟伅ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`message_id`) USING BTREE,
   INDEX `idx_im_msg_private`(`tenant_id`, `from_user_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_to`(`tenant_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_group`(`tenant_id`, `group_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_message
@@ -3235,14 +3601,14 @@ CREATE TABLE `jimu_dict`  (
   `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '描述',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `type` int(1) UNSIGNED ZEROFILL NULL DEFAULT 0 COMMENT '字典类型0为string,1为number',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_sd_dict_code`(`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict
@@ -3321,15 +3687,15 @@ CREATE TABLE `jimu_dict_item`  (
   `sort_order` int(10) NULL DEFAULT NULL COMMENT '排序',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态（1启用 0不启用）',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_sdi_role_dict_id`(`dict_id`) USING BTREE,
   INDEX `idx_sdi_role_sort_order`(`sort_order`) USING BTREE,
   INDEX `idx_sdi_status`(`status`) USING BTREE,
   INDEX `idx_sdi_dict_val`(`dict_id`, `item_value`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict_item
@@ -3568,9 +3934,9 @@ CREATE TABLE `jimu_report`  (
   `api_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求地址',
   `thumb` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '缩略图',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   `api_method` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求方法0-get,1-post',
   `api_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求编码',
@@ -3587,7 +3953,7 @@ CREATE TABLE `jimu_report`  (
   UNIQUE INDEX `uniq_jmreport_code`(`code`) USING BTREE,
   INDEX `uniq_jmreport_createby`(`create_by`) USING BTREE,
   INDEX `uniq_jmreport_delflag`(`del_flag`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report
@@ -3678,14 +4044,14 @@ CREATE TABLE `jimu_report_category`  (
   `iz_leaf` int(1) NULL DEFAULT NULL COMMENT '是否为叶子节点(0 否 1是)',
   `source_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型( report 积木报表 screen 大屏  drag 仪表盘)',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态(0未删除，1已删除，2临时删除)',
   `sort_no` int(11) NULL DEFAULT NULL COMMENT '排序',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_category
@@ -3714,16 +4080,16 @@ CREATE TABLE `jimu_report_data_source`  (
   `db_username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户名',
   `db_password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `connect_times` int(11) NULL DEFAULT 0 COMMENT '连接失败次数',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   `type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型(report:报表;drag:仪表盘)',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jmdatasource_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jmdatasource_code`(`code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_data_source
@@ -3750,8 +4116,8 @@ CREATE TABLE `jimu_report_db`  (
   `jimu_report_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '主键字段',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `db_code` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集编码',
   `db_ch_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集名字',
   `db_type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源类型',
@@ -3776,7 +4142,7 @@ CREATE TABLE `jimu_report_db`  (
   INDEX `idx_jmreportdb_db_key`(`db_key`) USING BTREE,
   INDEX `idx_jimu_report_id`(`jimu_report_id`) USING BTREE,
   INDEX `idx_db_source_id`(`db_source`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db
@@ -3925,9 +4291,9 @@ DROP TABLE IF EXISTS `jimu_report_db_field`;
 CREATE TABLE `jimu_report_db_field`  (
   `id` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `jimu_report_db_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源ID',
   `field_name` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字段名',
   `field_name_physics` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '物理字段名（文件数据集使用，存的是excel的字段标题）',
@@ -3944,7 +4310,7 @@ CREATE TABLE `jimu_report_db_field`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdf_jimu_report_db_id`(`jimu_report_db_id`) USING BTREE,
   INDEX `idx_dbfield_order_num`(`order_num`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_field
@@ -4868,9 +5234,9 @@ CREATE TABLE `jimu_report_db_param`  (
   `param_value` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '参数默认值',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `search_flag` int(1) NULL DEFAULT NULL COMMENT '查询标识0否1是 默认0',
   `widget_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询控件类型',
   `search_mode` int(1) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
@@ -4879,7 +5245,7 @@ CREATE TABLE `jimu_report_db_param`  (
   `ext_json` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '参数配置',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdp_jimu_report_head_id`(`jimu_report_head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_param
@@ -4921,21 +5287,21 @@ DROP TABLE IF EXISTS `jimu_report_export_job`;
 CREATE TABLE `jimu_report_export_job`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务名称',
-  `begin_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
-  `end_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `begin_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
   `exec_interval` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '执行频率',
   `report_conf` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '导出报表配置',
-  `last_run_time` datetime(0) NULL DEFAULT NULL COMMENT '最后执行时间',
+  `last_run_time` datetime NULL DEFAULT NULL COMMENT '最后执行时间',
   `receiver_email` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '接收通知的邮件',
   `file_sync_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件同步路径',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态(0:停止;1:启动)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_job
@@ -4959,11 +5325,11 @@ CREATE TABLE `jimu_report_export_log`  (
   `status` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '状态',
   `err_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误消息',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_log
@@ -5256,12 +5622,12 @@ CREATE TABLE `jimu_report_ext_data`  (
   `metadata` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '元数据，用于存储补充信息',
   `status` tinyint(4) NULL DEFAULT 1 COMMENT '状态标识：1正常 0禁用',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_biz`(`biz_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_ext_data
@@ -5278,12 +5644,12 @@ CREATE TABLE `jimu_report_icon_lib`  (
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图片类型',
   `image_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '图片地址',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户id',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_icon_lib
@@ -5519,7 +5885,7 @@ CREATE TABLE `jimu_report_link`  (
   `requirement` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '条件',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `uniq_link_reportid`(`report_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_link
@@ -5540,14 +5906,14 @@ CREATE TABLE `jimu_report_map`  (
   `name` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '地图编码',
   `data` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '地图数据',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '0表示未删除,1表示删除',
   `sys_org_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '所属部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_jmreport_map_name`(`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_map
@@ -5573,7 +5939,7 @@ CREATE TABLE `jimu_report_share`  (
   `report_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线excel设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，2:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁状态(0不存在密码锁，1存在密码锁)',
@@ -5581,7 +5947,7 @@ CREATE TABLE `jimu_report_share`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jrs_share_token`(`share_token`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_share
@@ -5606,14 +5972,14 @@ CREATE TABLE `jimu_report_sheet`  (
   `sheet_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Sheet名称',
   `sheet_order` int(11) NOT NULL COMMENT '排序（可以为负数，负数表示在默认sheet前面）',
   `json_str` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '该sheet的完整jsonStr',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_report_id`(`report_id`) USING BTREE,
   INDEX `idx_sheet_order`(`report_id`, `sheet_order`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_sheet
@@ -5641,13 +6007,17 @@ CREATE TABLE `mq_compensation_record`  (
   `compensation_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '补偿参数JSON',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 5 COMMENT '最大重试次数',
-  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_compensation_status`(`compensation_status`, `next_retry_time`) USING BTREE,
   INDEX `idx_business`(`business_type`, `business_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mq_compensation_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for mq_dead_letter_record
@@ -5662,11 +6032,15 @@ CREATE TABLE `mq_dead_letter_record`  (
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/RESOLVED/RESENT',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mq_dead_letter_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for mq_message_record
@@ -5681,14 +6055,14 @@ CREATE TABLE `mq_message_record`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'SENDING' COMMENT '状态: SENDING/SENT/CONSUMED/FAILED',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 3 COMMENT '最大重试次数',
-  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_message_id`(`message_id`) USING BTREE,
   INDEX `idx_status_create`(`status`, `create_time`) USING BTREE,
   INDEX `idx_next_retry`(`next_retry_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mq_message_record
@@ -5711,11 +6085,11 @@ CREATE TABLE `onl_drag_comp`  (
   `comp_config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `status` varchar(2) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态0:无效 1:有效',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_comp
@@ -5859,14 +6233,14 @@ CREATE TABLE `onl_drag_dataset_head`  (
   `iz_agent` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT 'iz_agent',
   `data_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据类型',
   `api_method` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'api方法：get/post',
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `low_app_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_head
@@ -5983,12 +6357,12 @@ CREATE TABLE `onl_drag_dataset_item`  (
   `search_mode` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询模式',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddi_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_item
@@ -6264,12 +6638,12 @@ CREATE TABLE `onl_drag_dataset_param`  (
   `search_mode` int(11) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
   `dict_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字典',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddp_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_param
@@ -6300,16 +6674,16 @@ CREATE TABLE `onl_drag_page`  (
   `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件夹类',
   `iz_template` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否模板(1:是；0不是)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   `update_count` int(10) NULL DEFAULT 1,
   `visits_num` int(11) NULL DEFAULT NULL COMMENT '访问次数',
   `del_flag` int(11) NULL DEFAULT NULL COMMENT '删除状态( 0未删除 1已删除)',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page
@@ -6377,11 +6751,11 @@ CREATE TABLE `onl_drag_page_comp`  (
   `component` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件名称',
   `config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page_comp
@@ -7358,14 +7732,14 @@ CREATE TABLE `onl_drag_share`  (
   `drag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线仪表盘设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，7:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为密码锁(0 否,1是)',
   `share_token` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分享token',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_ods_drag_id`(`drag_id`) USING BTREE COMMENT '仪表盘id唯一索引'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_share
@@ -7389,15 +7763,19 @@ CREATE TABLE `onl_drag_table_relation`  (
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户ID',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_aggregation_name`(`aggregation_name`) USING BTREE,
   INDEX `idx_del_flag`(`del_flag`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_create_by`(`create_by`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of onl_drag_table_relation
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pay_invoice
@@ -7415,12 +7793,12 @@ CREATE TABLE `pay_invoice`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`invoice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_invoice
@@ -7441,18 +7819,18 @@ CREATE TABLE `pay_order`  (
   `order_content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '订单内容',
   `order_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负载信息',
   `pay_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付方式',
-  `pay_time` datetime(0) NULL DEFAULT NULL COMMENT '支付时间',
+  `pay_time` datetime NULL DEFAULT NULL COMMENT '支付时间',
   `pay_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '支付人',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`order_id`) USING BTREE,
   INDEX `idx_order_number`(`order_number`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_order
@@ -7492,9 +7870,9 @@ CREATE TABLE `pu_contract`  (
   `vendor_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
   `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `contract_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同类型',
-  `sign_date` datetime(0) NULL DEFAULT NULL COMMENT '签订日期',
-  `effective_date` datetime(0) NULL DEFAULT NULL COMMENT '生效日期',
-  `expiry_date` datetime(0) NULL DEFAULT NULL COMMENT '失效日期',
+  `sign_date` datetime NULL DEFAULT NULL COMMENT '签订日期',
+  `effective_date` datetime NULL DEFAULT NULL COMMENT '生效日期',
+  `expiry_date` datetime NULL DEFAULT NULL COMMENT '失效日期',
   `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '合同总金额',
   `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY' COMMENT '币种',
   `payment_terms` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '付款条款',
@@ -7508,12 +7886,16 @@ CREATE TABLE `pu_contract`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同头表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_contract
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pu_contract_line
@@ -7530,7 +7912,7 @@ CREATE TABLE `pu_contract_line`  (
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '数量',
   `line_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '行金额',
-  `delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '交货日期',
+  `delivery_date` datetime NULL DEFAULT NULL COMMENT '交货日期',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
@@ -7540,13 +7922,17 @@ CREATE TABLE `pu_contract_line`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_contract_id`(`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_contract_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for rep_demo_dxtj
@@ -7555,16 +7941,16 @@ DROP TABLE IF EXISTS `rep_demo_dxtj`;
 CREATE TABLE `rep_demo_dxtj`  (
   `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '姓名',
-  `gtime` datetime(0) NULL DEFAULT NULL COMMENT '雇佣日期',
+  `gtime` datetime NULL DEFAULT NULL COMMENT '雇佣日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '职务',
   `jphone` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '家庭电话',
-  `birth` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birth` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `hukou` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '户口所在地',
   `laddress` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系地址',
   `jperson` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '紧急联系人',
   `sex` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'xingbie',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_dxtj
@@ -7604,7 +7990,7 @@ CREATE TABLE `rep_demo_employee`  (
   `num` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '编号',
   `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
   `sex` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '性别',
-  `birthday` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birthday` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `nation` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '民族',
   `political` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '政治面貌',
   `native_place` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '籍贯',
@@ -7622,18 +8008,18 @@ CREATE TABLE `rep_demo_employee`  (
   `foreign_language` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语语种',
   `foreign_language_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语水平',
   `computer_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '计算机水平',
-  `graduation_time` datetime(0) NULL DEFAULT NULL COMMENT '毕业时间',
-  `arrival_time` datetime(0) NULL DEFAULT NULL COMMENT '到职时间',
+  `graduation_time` datetime NULL DEFAULT NULL COMMENT '毕业时间',
+  `arrival_time` datetime NULL DEFAULT NULL COMMENT '到职时间',
   `positional_titles` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '职称',
   `education_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '教育经历',
   `work_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '工作经历',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_employee
@@ -7654,7 +8040,7 @@ CREATE TABLE `rep_demo_gongsi`  (
   `zhaiyao` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `num` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_gongsi
@@ -7678,7 +8064,7 @@ CREATE TABLE `rep_demo_jianpiao`  (
   `shihelv` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `s_id` int(11) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_jianpiao
@@ -7788,7 +8174,7 @@ CREATE TABLE `rep_demo_xiaoshou`  (
   `beizhu` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `s_id` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_xiaoshou
@@ -7821,10 +8207,25 @@ CREATE TABLE `sj_distributed_lock`  (
   `lock_until` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '锁定时长',
   `locked_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '锁定时间',
   `locked_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '锁定者',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_distributed_lock
+-- ----------------------------
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-06-29 23:50:33.599', '2026-06-29 23:49:33.599', '2071561698950643712', '2026-06-29 23:49:34', '2026-06-29 23:49:34');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-06-30 01:44:49.746', '2026-06-30 01:44:44.746', '2071561698950643712', '2026-06-29 21:12:53', '2026-06-30 01:44:45');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-06-29 23:50:33.595', '2026-06-29 23:49:33.595', '2071561698950643712', '2026-06-29 23:49:34', '2026-06-29 23:49:34');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-06-30 01:44:33.596', '2026-06-30 01:43:33.596', '2071561698950643712', '2026-06-29 21:13:34', '2026-06-30 01:43:34');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-06-30 01:44:53.595', '2026-06-30 01:44:33.595', '2071561698950643712', '2026-06-29 21:13:34', '2026-06-30 01:44:34');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-06-30 01:44:46.244', '2026-06-30 01:44:41.244', '2071561698950643712', '2026-06-29 21:12:54', '2026-06-30 01:44:41');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-06-30 01:40:34.388', '2026-06-30 01:39:34.388', '2071561698950643712', '2026-06-29 21:09:34', '2026-06-30 01:39:34');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-06-30 00:50:33.603', '2026-06-30 00:49:33.603', '2071561698950643712', '2026-06-29 21:49:34', '2026-06-30 00:49:34');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-06-30 01:44:53.595', '2026-06-30 01:44:33.595', '2071561698950643712', '2026-06-29 21:13:34', '2026-06-30 01:44:34');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-06-30 01:40:34.388', '2026-06-30 01:39:34.388', '2071561698950643712', '2026-06-29 21:09:34', '2026-06-30 01:39:34');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-06-30 01:44:53.595', '2026-06-30 01:44:33.595', '2071561698950643712', '2026-06-29 21:13:34', '2026-06-30 01:44:34');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -7841,11 +8242,11 @@ CREATE TABLE `sj_group_config`  (
   `group_partition` int(11) NOT NULL COMMENT '分区',
   `id_generator_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '唯一id生成模式 默认号段模式',
   `init_scene` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否初始化场景 0:否 1:是',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_group_config
@@ -7885,13 +8286,13 @@ CREATE TABLE `sj_job`  (
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_job_status_bucket_index`(`job_status`, `bucket_index`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job
@@ -7915,12 +8316,12 @@ CREATE TABLE `sj_job_executor`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `executor_info` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '任务执行器名称',
   `executor_type` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '1:java 2:python 3:go',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_executor
@@ -7961,12 +8362,12 @@ CREATE TABLE `sj_job_log_message`  (
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_id`(`task_batch_id`, `task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1744 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1744 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_log_message
@@ -7995,7 +8396,7 @@ CREATE TABLE `sj_job_summary`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `business_id` bigint(20) NOT NULL COMMENT '业务id (job_id或workflow_id)',
   `system_task_type` tinyint(4) NOT NULL DEFAULT 3 COMMENT '任务类型 3、JOB任务 4、WORKFLOW任务',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `success_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行成功-日志数量',
   `fail_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `fail_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
@@ -8003,12 +8404,12 @@ CREATE TABLE `sj_job_summary`  (
   `stop_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
   `cancel_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `cancel_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_trigger_at_system_task_type_business_id`(`trigger_at`, `system_task_type`, `business_id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_business_id`(`namespace_id`, `group_name`, `business_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 46 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 46 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_summary
@@ -8081,13 +8482,13 @@ CREATE TABLE `sj_job_task`  (
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '执行方法参数',
   `args_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '参数类型 ',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_status`(`task_batch_id`, `task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task
@@ -8113,14 +8514,14 @@ CREATE TABLE `sj_job_task_batch`  (
   `parent_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '父节点',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`job_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_workflow_task_batch_id_workflow_node_id`(`workflow_task_batch_id`, `workflow_node_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task_batch
@@ -8137,12 +8538,12 @@ CREATE TABLE `sj_namespace`  (
   `unique_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '唯一id',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_unique_id`(`unique_id`) USING BTREE,
   INDEX `idx_name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_namespace
@@ -8167,11 +8568,15 @@ CREATE TABLE `sj_notify_config`  (
   `rate_limiter_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '限流状态 0、未启用 1、启用',
   `rate_limiter_threshold` int(11) NOT NULL DEFAULT 0 COMMENT '每秒限流阈值',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_notify_recipient
@@ -8184,11 +8589,15 @@ CREATE TABLE `sj_notify_recipient`  (
   `notify_type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '通知类型 1、钉钉 2、邮件 3、企业微信 4 飞书 5 webhook',
   `notify_attribute` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置属性',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id`(`namespace_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_recipient
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry
@@ -8214,8 +8623,8 @@ CREATE TABLE `sj_retry`  (
   `bucket_index` int(11) NOT NULL DEFAULT 0 COMMENT 'bucket',
   `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父节点id',
   `deleted` bigint(20) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_tasktype_idempotentid_deleted`(`scene_id`, `task_type`, `idempotent_id`, `deleted`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
@@ -8223,7 +8632,11 @@ CREATE TABLE `sj_retry`  (
   INDEX `idx_retry_status_bucket_index`(`retry_status`, `bucket_index`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_dead_letter
@@ -8242,13 +8655,17 @@ CREATE TABLE `sj_retry_dead_letter`  (
   `serializer_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'jackson' COMMENT '执行方法参数序列化器名称',
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '执行方法参数',
   `ext_attrs` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `idx_idempotent_id`(`idempotent_id`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_dead_letter
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_scene_config
@@ -8275,11 +8692,15 @@ CREATE TABLE `sj_retry_scene_config`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_scene_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_summary
@@ -8290,17 +8711,21 @@ CREATE TABLE `sj_retry_summary`  (
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `scene_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '场景名称',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `running_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试中-日志数量',
   `finish_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试完成-日志数量',
   `max_count_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试到达最大次数-日志数量',
   `suspend_num` int(11) NOT NULL DEFAULT 0 COMMENT '暂停重试-日志数量',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_name_trigger_at`(`namespace_id`, `group_name`, `scene_name`, `trigger_at`) USING BTREE,
   INDEX `idx_trigger_at`(`trigger_at`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_summary
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task
@@ -8317,14 +8742,18 @@ CREATE TABLE `sj_retry_task`  (
   `task_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '任务类型 1、重试数据 2、回调数据',
   `operation_reason` tinyint(4) NOT NULL DEFAULT 0 COMMENT '操作原因',
   `client_info` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '客户端地址 clientId#ip:port',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `task_status`(`task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_retry_id`(`retry_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task_log_message
@@ -8339,11 +8768,15 @@ CREATE TABLE `sj_retry_task_log_message`  (
   `message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '异常信息',
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_retry_task_id`(`namespace_id`, `group_name`, `retry_task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task_log_message
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_server_node
@@ -8356,22 +8789,23 @@ CREATE TABLE `sj_server_node`  (
   `host_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主机id',
   `host_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '机器ip',
   `host_port` int(16) NOT NULL COMMENT '机器端口',
-  `expire_at` datetime(0) NOT NULL COMMENT '过期时间',
+  `expire_at` datetime NOT NULL COMMENT '过期时间',
   `node_type` tinyint(4) NOT NULL COMMENT '节点类型 1、客户端 2、是服务端',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 129 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 137 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (128, 'dev', 'ruoyi_group', '2071497629512052736', '192.168.200.1', 28080, '2026-06-29 15:51:11', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-06-29 15:34:58', '2026-06-29 15:50:41');
+INSERT INTO `sj_server_node` VALUES (129, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2071561698950643712', '192.168.1.104', 17888, '2026-06-30 01:45:04', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-06-29 20:13:14', '2026-06-30 01:44:33');
+INSERT INTO `sj_server_node` VALUES (136, 'dev', 'ruoyi_group', '2071650600961089536', '192.168.1.104', 28080, '2026-06-30 01:45:11', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-06-30 01:42:49', '2026-06-30 01:44:41');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -8382,11 +8816,11 @@ CREATE TABLE `sj_system_user`  (
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '账号',
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '密码',
   `role` tinyint(4) NOT NULL DEFAULT 0 COMMENT '角色：1-普通用户、2-管理员',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_system_user
@@ -8402,11 +8836,15 @@ CREATE TABLE `sj_system_user_permission`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `system_user_id` bigint(20) NOT NULL COMMENT '系统用户id',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_system_user_id`(`namespace_id`, `group_name`, `system_user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_system_user_permission
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow
@@ -8432,12 +8870,16 @@ CREATE TABLE `sj_workflow`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_node
@@ -8459,12 +8901,16 @@ CREATE TABLE `sj_workflow_node`  (
   `version` int(11) NOT NULL COMMENT '版本号',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_node
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_task_batch
@@ -8483,13 +8929,17 @@ CREATE TABLE `sj_workflow_task_batch`  (
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `version` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`workflow_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_task_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_auto_code_part
@@ -8519,14 +8969,14 @@ CREATE TABLE `sys_auto_code_part`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`part_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -8634,15 +9084,15 @@ CREATE TABLE `sys_auto_code_result`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`code_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_gen_date`(`gen_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -8700,14 +9150,14 @@ CREATE TABLE `sys_auto_code_rule`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -8760,13 +9210,13 @@ CREATE TABLE `sys_client`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `appid` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appid',
   `app_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appSecret',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_client
@@ -8788,12 +9238,12 @@ CREATE TABLE `sys_config`  (
   `config_type` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_config
@@ -8828,11 +9278,11 @@ CREATE TABLE `sys_dept`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -8889,16 +9339,16 @@ CREATE TABLE `sys_dic_area`  (
   `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`pkid`) USING BTREE,
   INDEX `idx_layered`(`layered`) USING BTREE,
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   INDEX `idx_parent_area_id`(`parent_area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dic_area
@@ -10581,12 +11031,12 @@ CREATE TABLE `sys_dict_data`  (
   `is_default` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -11105,13 +11555,13 @@ CREATE TABLE `sys_dict_type`  (
   `dict_type` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '字典类型',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `tenant_id`(`tenant_id`, `dict_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -11260,11 +11710,11 @@ CREATE TABLE `sys_logininfor`  (
   `os` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '操作系统',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
   `msg` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '提示消息',
-  `login_time` datetime(0) NULL DEFAULT NULL COMMENT '访问时间',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -11419,6 +11869,10 @@ INSERT INTO `sys_logininfor` VALUES (2071427805196849154, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2071427820011130881, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-29 10:57:32');
 INSERT INTO `sys_logininfor` VALUES (2071442042308837378, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-29 11:54:03');
 INSERT INTO `sys_logininfor` VALUES (2071497887923122178, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-29 15:35:58');
+INSERT INTO `sys_logininfor` VALUES (2071592294980743169, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '1', '验证码已失效', '2026-06-29 21:51:06');
+INSERT INTO `sys_logininfor` VALUES (2071592307043561473, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-29 21:51:09');
+INSERT INTO `sys_logininfor` VALUES (2071627255582519297, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '1', '验证码错误', '2026-06-30 00:10:01');
+INSERT INTO `sys_logininfor` VALUES (2071627268131876865, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-30 00:10:04');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -11441,12 +11895,12 @@ CREATE TABLE `sys_menu`  (
   `icon` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -11578,9 +12032,14 @@ INSERT INTO `sys_menu` VALUES (1702, '模型配置', 1707, 1, 'model', 'ai/model
 INSERT INTO `sys_menu` VALUES (1703, '厂商管理', 1707, 2, 'provider', 'ai/model/provider', '', 1, 0, 'C', '0', '0', 'ai:provider:list', 'office-building', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '厂商管理菜单');
 INSERT INTO `sys_menu` VALUES (1704, '知识库管理', 1708, 1, 'knowledge', 'ai/knowledge/index', '', 1, 0, 'C', '0', '0', 'ai:knowledge:list', 'collection', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '知识库管理菜单');
 INSERT INTO `sys_menu` VALUES (1705, '工具管理', 1708, 2, 'mcp', 'ai/mcp/index', '', 1, 0, 'C', '0', '0', 'ai:mcp:list', 'tool', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'MCP 工具管理菜单');
+INSERT INTO `sys_menu` VALUES (1706, '对话与应用', 1700, 1, 'chat', NULL, NULL, 1, 0, 'M', '0', '0', '', 'chat-dot-round', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '对话与应用目录');
+INSERT INTO `sys_menu` VALUES (1707, '模型配置', 1700, 2, 'modelCfg', NULL, NULL, 1, 0, 'M', '0', '0', '', 'cpu', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '模型配置目录');
+INSERT INTO `sys_menu` VALUES (1708, '知识与工具', 1700, 3, 'toolkit', NULL, NULL, 1, 0, 'M', '0', '0', '', 'collection', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '知识与工具目录');
+INSERT INTO `sys_menu` VALUES (1709, '提示工程', 1700, 4, 'promptEng', NULL, NULL, 1, 0, 'M', '0', '0', '', 'documentation', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '提示工程目录');
 INSERT INTO `sys_menu` VALUES (1710, '对话查询', 1701, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:assistant:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1711, '对话发送', 1701, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:assistant:send', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1712, '会话删除', 1701, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:assistant:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1713, '运营分析', 1700, 5, 'stats', NULL, NULL, 1, 0, 'M', '0', '0', '', 'chart', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '运营分析目录');
 INSERT INTO `sys_menu` VALUES (1720, '模型查询', 1702, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1721, '模型新增', 1702, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1722, '模型修改', 1702, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
@@ -11625,29 +12084,11 @@ INSERT INTO `sys_menu` VALUES (1810, '文生图', 1706, 2, 'imageGen', 'ai/image
 INSERT INTO `sys_menu` VALUES (1811, '图片生成', 1810, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:image:generate', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1812, '历史查询', 1810, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:image:list', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1813, '历史删除', 1810, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:image:remove', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1820, '图谱构建', 1704, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:knowledge:graph:build', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '知识图谱构建');
+INSERT INTO `sys_menu` VALUES (1821, '图谱查询', 1704, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:knowledge:graph:query', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1822, '图谱重抽', 1704, 7, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:knowledge:graph:edit', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '知识图谱全量重抽');
+INSERT INTO `sys_menu` VALUES (1823, '图谱删除', 1704, 8, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:knowledge:graph:remove', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000, 'ERP系统', 0, 5, 'erp', NULL, NULL, 1, 0, 'M', '0', '0', '', 'build', 103, 1, '2026-04-30 10:41:23', 1, '2026-06-17 17:37:21', 'ERP业务系统根菜单');
--- ========== 菜单结构优化新增二级目录 (ERP 14 + MES 2 + AI 5) ==========
-INSERT INTO `sys_menu` VALUES (2960, '工艺管理', 2000, 2, 'tech', NULL, NULL, 1, 0, 'M', '0', '0', '', 'cascader', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '工艺管理目录');
-INSERT INTO `sys_menu` VALUES (2961, '业务伙伴', 2000, 3, 'partner', NULL, NULL, 1, 0, 'M', '0', '0', '', 'peoples', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '业务伙伴目录');
-INSERT INTO `sys_menu` VALUES (2962, '制造资源', 2000, 4, 'mfg', NULL, NULL, 1, 0, 'M', '0', '0', '', 'tool', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '制造资源目录');
-INSERT INTO `sys_menu` VALUES (2963, '入库管理', 2000, 6, 'inbound', NULL, NULL, 1, 0, 'M', '0', '0', '', 'inbound', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '入库管理目录');
-INSERT INTO `sys_menu` VALUES (2964, '出库管理', 2000, 7, 'outbound', NULL, NULL, 1, 0, 'M', '0', '0', '', 'outbound', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '出库管理目录');
-INSERT INTO `sys_menu` VALUES (2965, '库存管理', 2000, 8, 'inventory', NULL, NULL, 1, 0, 'M', '0', '0', '', 'list', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '库存管理目录');
-INSERT INTO `sys_menu` VALUES (2966, '仓储策略', 2000, 10, 'wmRule', NULL, NULL, 1, 0, 'M', '0', '0', '', 'setting', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '仓储策略目录');
-INSERT INTO `sys_menu` VALUES (2967, '销售商务', 2000, 12, 'soBiz', NULL, NULL, 1, 0, 'M', '0', '0', '', 'documentation', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '销售商务目录');
-INSERT INTO `sys_menu` VALUES (2968, '生产执行', 2000, 14, 'prdExec', NULL, NULL, 1, 0, 'M', '0', '0', '', 'work-order', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '生产执行目录');
-INSERT INTO `sys_menu` VALUES (2969, '委外返工', 2000, 15, 'prdSub', NULL, NULL, 1, 0, 'M', '0', '0', '', 'outsource', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '委外返工目录');
-INSERT INTO `sys_menu` VALUES (2970, '班次管理', 2000, 17, 'schShift', NULL, NULL, 1, 0, 'M', '0', '0', '', 'time', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '班次管理目录');
-INSERT INTO `sys_menu` VALUES (2971, '排班考勤', 2000, 18, 'schAttend', NULL, NULL, 1, 0, 'M', '0', '0', '', 'date', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '排班考勤目录');
-INSERT INTO `sys_menu` VALUES (2972, '采购执行', 2000, 20, 'puExec', NULL, NULL, 1, 0, 'M', '0', '0', '', 'order', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '采购执行目录');
-INSERT INTO `sys_menu` VALUES (2973, '采购商务', 2000, 21, 'puBiz', NULL, NULL, 1, 0, 'M', '0', '0', '', 'star', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '采购商务目录');
-INSERT INTO `sys_menu` VALUES (4150, '主数据', 4000, 1, 'md', NULL, '', 1, 0, 'M', '0', '0', '', 'tree', 103, 1, '2026-06-29 00:00:00', NULL, NULL, 'MES主数据目录');
-INSERT INTO `sys_menu` VALUES (4151, '生产订单', 4000, 2, 'wo', NULL, '', 1, 0, 'M', '0', '0', '', 'list', 103, 1, '2026-06-29 00:00:00', NULL, NULL, 'MES生产订单目录');
-INSERT INTO `sys_menu` VALUES (1706, '对话与应用', 1700, 1, 'chat', NULL, NULL, 1, 0, 'M', '0', '0', '', 'chat-dot-round', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '对话与应用目录');
-INSERT INTO `sys_menu` VALUES (1707, '模型配置', 1700, 2, 'modelCfg', NULL, NULL, 1, 0, 'M', '0', '0', '', 'cpu', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '模型配置目录');
-INSERT INTO `sys_menu` VALUES (1708, '知识与工具', 1700, 3, 'toolkit', NULL, NULL, 1, 0, 'M', '0', '0', '', 'collection', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '知识与工具目录');
-INSERT INTO `sys_menu` VALUES (1709, '提示工程', 1700, 4, 'promptEng', NULL, NULL, 1, 0, 'M', '0', '0', '', 'documentation', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '提示工程目录');
-INSERT INTO `sys_menu` VALUES (1713, '运营分析', 1700, 5, 'stats', NULL, NULL, 1, 0, 'M', '0', '0', '', 'chart', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '运营分析目录');
 INSERT INTO `sys_menu` VALUES (2001, '物料主数据', 2000, 1, 'bd', NULL, NULL, 1, 0, 'M', '0', '0', '', 'category', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '基础数据管理');
 INSERT INTO `sys_menu` VALUES (2002, '物料分类', 2001, 1, 'materialCategory', 'erp/bd/category/index', NULL, 1, 0, 'C', '0', '0', 'bd:category:list', 'tree-table', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '物料分类菜单');
 INSERT INTO `sys_menu` VALUES (2003, '物料分类查询', 2002, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:category:query', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
@@ -12026,6 +12467,20 @@ INSERT INTO `sys_menu` VALUES (2952, 'MBOM新增', 2950, 2, '', '', '', 1, 0, 'F
 INSERT INTO `sys_menu` VALUES (2953, 'MBOM修改', 2950, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:mbom:edit', '#', 103, 1, '2026-06-21 11:40:45', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2954, 'MBOM删除', 2950, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:mbom:remove', '#', 103, 1, '2026-06-21 11:40:45', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2955, 'MBOM导出', 2950, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:pro:mbom:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2960, '工艺管理', 2000, 2, 'tech', NULL, NULL, 1, 0, 'M', '0', '0', '', 'cascader', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '工艺管理目录');
+INSERT INTO `sys_menu` VALUES (2961, '业务伙伴', 2000, 3, 'partner', NULL, NULL, 1, 0, 'M', '0', '0', '', 'peoples', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '业务伙伴目录');
+INSERT INTO `sys_menu` VALUES (2962, '制造资源', 2000, 4, 'mfg', NULL, NULL, 1, 0, 'M', '0', '0', '', 'tool', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '制造资源目录');
+INSERT INTO `sys_menu` VALUES (2963, '入库管理', 2000, 6, 'inbound', NULL, NULL, 1, 0, 'M', '0', '0', '', 'inbound', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '入库管理目录');
+INSERT INTO `sys_menu` VALUES (2964, '出库管理', 2000, 7, 'outbound', NULL, NULL, 1, 0, 'M', '0', '0', '', 'outbound', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '出库管理目录');
+INSERT INTO `sys_menu` VALUES (2965, '库存管理', 2000, 8, 'inventory', NULL, NULL, 1, 0, 'M', '0', '0', '', 'list', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '库存管理目录');
+INSERT INTO `sys_menu` VALUES (2966, '仓储策略', 2000, 10, 'wmRule', NULL, NULL, 1, 0, 'M', '0', '0', '', 'setting', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '仓储策略目录');
+INSERT INTO `sys_menu` VALUES (2967, '销售商务', 2000, 12, 'soBiz', NULL, NULL, 1, 0, 'M', '0', '0', '', 'documentation', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '销售商务目录');
+INSERT INTO `sys_menu` VALUES (2968, '生产执行', 2000, 14, 'prdExec', NULL, NULL, 1, 0, 'M', '0', '0', '', 'work-order', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '生产执行目录');
+INSERT INTO `sys_menu` VALUES (2969, '委外返工', 2000, 15, 'prdSub', NULL, NULL, 1, 0, 'M', '0', '0', '', 'outsource', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '委外返工目录');
+INSERT INTO `sys_menu` VALUES (2970, '班次管理', 2000, 17, 'schShift', NULL, NULL, 1, 0, 'M', '0', '0', '', 'time', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '班次管理目录');
+INSERT INTO `sys_menu` VALUES (2971, '排班考勤', 2000, 18, 'schAttend', NULL, NULL, 1, 0, 'M', '0', '0', '', 'date', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '排班考勤目录');
+INSERT INTO `sys_menu` VALUES (2972, '采购执行', 2000, 20, 'puExec', NULL, NULL, 1, 0, 'M', '0', '0', '', 'order', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '采购执行目录');
+INSERT INTO `sys_menu` VALUES (2973, '采购商务', 2000, 21, 'puBiz', NULL, NULL, 1, 0, 'M', '0', '0', '', 'star', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '采购商务目录');
 INSERT INTO `sys_menu` VALUES (3000, '支付管理', 0, 16, 'pay', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-05-02 16:13:09', 1, '2026-06-17 17:38:34', '支付管理目录');
 INSERT INTO `sys_menu` VALUES (3001, '订单管理', 3000, 1, 'order', 'pay/order/index', '', 1, 0, 'C', '0', '0', 'pay:order:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:14', '订单管理菜单');
 INSERT INTO `sys_menu` VALUES (3002, '订单查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:query', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
@@ -12134,6 +12589,8 @@ INSERT INTO `sys_menu` VALUES (4142, '控制图删除', 4138, 4, '', '', '', 1, 
 INSERT INTO `sys_menu` VALUES (4143, '控制图分析', 4138, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:chart:analyze', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4144, 'SPC数据点', 4005, 2, 'data-point', 'mes/spc/data-point/index', '', 1, 0, 'C', '0', '0', 'mes:spc:point:list', 'tickets', 103, 1, '2026-06-20 00:53:54', NULL, NULL, 'MES SPC数据点');
 INSERT INTO `sys_menu` VALUES (4145, '数据点查询', 4144, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:point:query', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4150, '主数据', 4000, 1, 'md', NULL, '', 1, 0, 'M', '0', '0', '', 'tree', 103, 1, '2026-06-29 00:00:00', NULL, NULL, 'MES主数据目录');
+INSERT INTO `sys_menu` VALUES (4151, '生产订单', 4000, 2, 'wo', NULL, '', 1, 0, 'M', '0', '0', '', 'list', 103, 1, '2026-06-29 00:00:00', NULL, NULL, 'MES生产订单目录');
 INSERT INTO `sys_menu` VALUES (5000, '序列号管理', 2600, 3, 'sn', 'erp/wm/sn/index', NULL, 1, 0, 'C', '0', '0', 'wm:sn:list', 'code', 103, 1, '2026-06-03 00:38:59', 1, '2026-06-03 11:09:57', '序列号管理菜单');
 INSERT INTO `sys_menu` VALUES (5001, '序列号查询', 5000, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:query', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (5002, '序列号新增', 5000, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:add', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
@@ -12213,6 +12670,775 @@ INSERT INTO `sys_menu` VALUES (2045078769934303233, '任务管理', 0, 12, 'work
 INSERT INTO `sys_menu` VALUES (2053846181246812161, '驾驶舱', 0, 14, 'http://localhost:8080/drag/share/view/1014376428645961728?shareToken=RalXd4a2eMV9WUJSRER0SvEKxK5r0paW', NULL, NULL, 0, 0, 'M', '0', '0', NULL, 'dashboard', 103, 1, '2026-05-11 22:34:23', 1, '2026-05-11 22:34:23', '');
 
 -- ----------------------------
+-- Table structure for sys_menu_bak_20260629
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_menu_bak_20260629`;
+CREATE TABLE `sys_menu_bak_20260629`  (
+  `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
+  `menu_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '菜单名称',
+  `parent_id` bigint(20) NULL DEFAULT 0 COMMENT '父菜单ID',
+  `order_num` int(4) NULL DEFAULT 0 COMMENT '显示顺序',
+  `path` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '路由地址',
+  `component` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '组件路径',
+  `query_param` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '路由参数',
+  `is_frame` int(1) NULL DEFAULT 1 COMMENT '是否为外链（0是 1否）',
+  `is_cache` int(1) NULL DEFAULT 0 COMMENT '是否缓存（0缓存 1不缓存）',
+  `menu_type` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
+  `visible` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '显示状态（0显示 1隐藏）',
+  `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
+  `perms` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '权限标识',
+  `icon` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '备注'
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_menu_bak_20260629
+-- ----------------------------
+INSERT INTO `sys_menu_bak_20260629` VALUES (1, '系统管理', 0, 1, 'system', NULL, '', 1, 0, 'M', '0', '0', '', 'system', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '系统管理目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2, '系统监控', 0, 3, 'monitor', NULL, '', 1, 0, 'M', '0', '0', '', 'monitor', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '系统监控目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3, '系统工具', 0, 4, 'tool', NULL, '', 1, 0, 'M', '0', '0', '', 'tool', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '系统工具目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4, 'PLUS官网', 0, 13, 'https://gitee.com/dromara/RuoYi-Vue-Plus', NULL, '', 0, 0, 'M', '1', '1', '', 'guide', 103, 1, '2026-04-15 10:51:23', 1, '2026-06-17 17:38:56', 'RuoYi-Vue-Plus官网地址');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5, '测试菜单', 0, 5, 'demo', NULL, '', 1, 0, 'M', '1', '1', '', 'star', 103, 1, '2026-04-15 10:51:23', 1, '2026-06-17 17:37:03', '测试菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6, '租户管理', 0, 2, 'tenant', NULL, '', 1, 0, 'M', '0', '0', '', 'chart', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '租户管理目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (100, '用户管理', 1, 1, 'user', 'system/user/index', '', 1, 0, 'C', '0', '0', 'system:user:list', 'user', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '用户管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (101, '角色管理', 1, 2, 'role', 'system/role/index', '', 1, 0, 'C', '0', '0', 'system:role:list', 'peoples', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '角色管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (102, '菜单管理', 1, 3, 'menu', 'system/menu/index', '', 1, 0, 'C', '0', '0', 'system:menu:list', 'tree-table', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '菜单管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (103, '部门管理', 1, 4, 'dept', 'system/dept/index', '', 1, 0, 'C', '0', '0', 'system:dept:list', 'tree', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '部门管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (104, '岗位管理', 1, 5, 'post', 'system/post/index', '', 1, 0, 'C', '0', '0', 'system:post:list', 'post', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '岗位管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (105, '字典管理', 1, 6, 'dict', 'system/dict/index', '', 1, 0, 'C', '0', '0', 'system:dict:list', 'dict', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '字典管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (106, '参数设置', 1, 7, 'config', 'system/config/index', '', 1, 0, 'C', '0', '0', 'system:config:list', 'edit', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '参数设置菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (107, '通知公告', 1, 8, 'notice', 'system/notice/index', '', 1, 0, 'C', '0', '0', 'system:notice:list', 'message', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '通知公告菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (108, '日志管理', 1, 9, 'log', '', '', 1, 0, 'M', '0', '0', '', 'log', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '日志管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (109, '在线用户', 2, 1, 'online', 'monitor/online/index', '', 1, 0, 'C', '0', '0', 'monitor:online:list', 'online', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '在线用户菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (113, '缓存监控', 2, 5, 'cache', 'monitor/cache/index', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '缓存监控菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (115, '代码生成', 3, 2, 'gen', 'tool/gen/index', '', 1, 0, 'C', '0', '0', 'tool:gen:list', 'code', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '代码生成菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (116, '修改生成配置', 3, 2, 'gen-edit/index/:tableId', 'tool/gen/editTable', '', 1, 1, 'C', '1', '0', 'tool:gen:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '/tool/gen');
+INSERT INTO `sys_menu_bak_20260629` VALUES (117, 'Admin监控', 2, 5, 'Admin', 'monitor/admin/index', '', 1, 0, 'C', '0', '0', 'monitor:admin:list', 'dashboard', 103, 1, '2026-04-15 10:51:23', NULL, NULL, 'Admin监控菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (118, '文件管理', 1, 10, 'oss', 'system/oss/index', '', 1, 0, 'C', '0', '0', 'system:oss:list', 'upload', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '文件管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (120, '任务调度中心', 2, 6, 'snailjob', 'monitor/snailjob/index', '', 1, 0, 'C', '0', '0', 'monitor:snailjob:list', 'job', 103, 1, '2026-04-15 10:51:23', NULL, NULL, 'SnailJob控制台菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (121, '租户管理', 6, 1, 'tenant', 'system/tenant/index', '', 1, 0, 'C', '0', '0', 'system:tenant:list', 'list', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '租户管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (122, '租户套餐管理', 6, 2, 'tenantPackage', 'system/tenant-package/index', '', 1, 0, 'C', '0', '0', 'system:tenantPackage:list', 'form', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '租户套餐管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (123, '客户端管理', 1, 11, 'client', 'system/client/index', '', 1, 0, 'C', '0', '0', 'system:client:list', 'international', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '客户端管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (130, '分配用户', 1, 2, 'role-auth/user/:roleId', 'system/role/authUser', '', 1, 1, 'C', '1', '0', 'system:role:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '/system/role');
+INSERT INTO `sys_menu_bak_20260629` VALUES (131, '分配角色', 1, 1, 'user-auth/role/:userId', 'system/user/authRole', '', 1, 1, 'C', '1', '0', 'system:user:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '/system/user');
+INSERT INTO `sys_menu_bak_20260629` VALUES (132, '字典数据', 1, 6, 'dict-data/index/:dictId', 'system/dict/data', '', 1, 1, 'C', '1', '0', 'system:dict:list', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '/system/dict');
+INSERT INTO `sys_menu_bak_20260629` VALUES (133, '文件配置管理', 1, 10, 'oss-config/index', 'system/oss/config', '', 1, 1, 'C', '1', '0', 'system:ossConfig:list', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '/system/oss');
+INSERT INTO `sys_menu_bak_20260629` VALUES (500, '操作日志', 108, 1, 'operlog', 'monitor/operlog/index', '', 1, 0, 'C', '0', '0', 'monitor:operlog:list', 'form', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '操作日志菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (501, '登录日志', 108, 2, 'logininfor', 'monitor/logininfor/index', '', 1, 0, 'C', '0', '0', 'monitor:logininfor:list', 'logininfor', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '登录日志菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1001, '用户查询', 100, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:user:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1002, '用户新增', 100, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:user:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1003, '用户修改', 100, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:user:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1004, '用户删除', 100, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:user:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1005, '用户导出', 100, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:user:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1006, '用户导入', 100, 6, '', '', '', 1, 0, 'F', '0', '0', 'system:user:import', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1007, '重置密码', 100, 7, '', '', '', 1, 0, 'F', '0', '0', 'system:user:resetPwd', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1008, '角色查询', 101, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:role:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1009, '角色新增', 101, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:role:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1010, '角色修改', 101, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:role:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1011, '角色删除', 101, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:role:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1012, '角色导出', 101, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:role:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1013, '菜单查询', 102, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1014, '菜单新增', 102, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1015, '菜单修改', 102, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1016, '菜单删除', 102, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:menu:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1017, '部门查询', 103, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1018, '部门新增', 103, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1019, '部门修改', 103, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1020, '部门删除', 103, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:dept:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1021, '岗位查询', 104, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:post:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1022, '岗位新增', 104, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:post:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1023, '岗位修改', 104, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:post:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1024, '岗位删除', 104, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:post:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1025, '岗位导出', 104, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:post:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1026, '字典查询', 105, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1027, '字典新增', 105, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1028, '字典修改', 105, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1029, '字典删除', 105, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1030, '字典导出', 105, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:dict:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1031, '参数查询', 106, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1032, '参数新增', 106, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1033, '参数修改', 106, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1034, '参数删除', 106, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1035, '参数导出', 106, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:config:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1036, '公告查询', 107, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1037, '公告新增', 107, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1038, '公告修改', 107, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1039, '公告删除', 107, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:notice:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1040, '操作查询', 500, 1, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1041, '操作删除', 500, 2, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1042, '日志导出', 500, 4, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:operlog:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1043, '登录查询', 501, 1, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1044, '登录删除', 501, 2, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1045, '日志导出', 501, 3, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1046, '在线查询', 109, 1, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1047, '批量强退', 109, 2, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:batchLogout', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1048, '单条强退', 109, 3, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:online:forceLogout', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1050, '账户解锁', 501, 4, '#', '', '', 1, 0, 'F', '0', '0', 'monitor:logininfor:unlock', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1055, '生成查询', 115, 1, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1056, '生成修改', 115, 2, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1057, '生成删除', 115, 3, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1058, '导入代码', 115, 2, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:import', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1059, '预览代码', 115, 4, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:preview', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1060, '生成代码', 115, 5, '#', '', '', 1, 0, 'F', '0', '0', 'tool:gen:code', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1061, '客户端管理查询', 123, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:client:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1062, '客户端管理新增', 123, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:client:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1063, '客户端管理修改', 123, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:client:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1064, '客户端管理删除', 123, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:client:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1065, '客户端管理导出', 123, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:client:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1500, '测试单表', 5, 1, 'demo', 'demo/demo/index', '', 1, 0, 'C', '0', '0', 'demo:demo:list', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '测试单表菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1501, '测试单表查询', 1500, 1, '#', '', '', 1, 0, 'F', '0', '0', 'demo:demo:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1502, '测试单表新增', 1500, 2, '#', '', '', 1, 0, 'F', '0', '0', 'demo:demo:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1503, '测试单表修改', 1500, 3, '#', '', '', 1, 0, 'F', '0', '0', 'demo:demo:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1504, '测试单表删除', 1500, 4, '#', '', '', 1, 0, 'F', '0', '0', 'demo:demo:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1505, '测试单表导出', 1500, 5, '#', '', '', 1, 0, 'F', '0', '0', 'demo:demo:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1506, '测试树表', 5, 1, 'tree', 'demo/tree/index', '', 1, 0, 'C', '0', '0', 'demo:tree:list', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '测试树表菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1507, '测试树表查询', 1506, 1, '#', '', '', 1, 0, 'F', '0', '0', 'demo:tree:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1508, '测试树表新增', 1506, 2, '#', '', '', 1, 0, 'F', '0', '0', 'demo:tree:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1509, '测试树表修改', 1506, 3, '#', '', '', 1, 0, 'F', '0', '0', 'demo:tree:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1510, '测试树表删除', 1506, 4, '#', '', '', 1, 0, 'F', '0', '0', 'demo:tree:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1511, '测试树表导出', 1506, 5, '#', '', '', 1, 0, 'F', '0', '0', 'demo:tree:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1600, '文件查询', 118, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1601, '文件上传', 118, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:upload', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1602, '文件下载', 118, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:download', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1603, '文件删除', 118, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:oss:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1606, '租户查询', 121, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1607, '租户新增', 121, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1608, '租户修改', 121, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1609, '租户删除', 121, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1610, '租户导出', 121, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenant:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1611, '租户套餐查询', 122, 1, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:query', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1612, '租户套餐新增', 122, 2, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1613, '租户套餐修改', 122, 3, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1614, '租户套餐删除', 122, 4, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1615, '租户套餐导出', 122, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:tenantPackage:export', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1620, '配置列表', 118, 5, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:list', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1621, '配置添加', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:add', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1622, '配置编辑', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1623, '配置删除', 118, 6, '#', '', '', 1, 0, 'F', '0', '0', 'system:ossConfig:remove', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1700, 'AI 智能助手', 0, 8, 'ai', NULL, '', 1, 0, 'M', '0', '0', '', 'robot', 103, 1, '2026-06-09 14:00:00', 1, '2026-06-17 17:38:11', 'AI 智能助手目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1701, '智能对话', 1700, 1, 'assistant', 'ai/assistant/index', '', 1, 0, 'C', '0', '0', 'ai:assistant:list', 'chat-dot-round', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '智能对话菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1702, '模型配置', 1700, 2, 'model', 'ai/model/index', '', 1, 0, 'C', '0', '0', 'ai:model:list', 'cpu', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '模型配置菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1703, '厂商管理', 1700, 3, 'provider', 'ai/model/provider', '', 1, 0, 'C', '0', '0', 'ai:provider:list', 'office-building', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '厂商管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1704, '知识库管理', 1700, 4, 'knowledge', 'ai/knowledge/index', '', 1, 0, 'C', '0', '0', 'ai:knowledge:list', 'collection', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '知识库管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1705, '工具管理', 1700, 5, 'mcp', 'ai/mcp/index', '', 1, 0, 'C', '0', '0', 'ai:mcp:list', 'tool', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'MCP 工具管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1710, '对话查询', 1701, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:assistant:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1711, '对话发送', 1701, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:assistant:send', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1712, '会话删除', 1701, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:assistant:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1720, '模型查询', 1702, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1721, '模型新增', 1702, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1722, '模型修改', 1702, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1723, '模型删除', 1702, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1730, '厂商查询', 1703, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1731, '厂商新增', 1703, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1732, '厂商修改', 1703, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1733, '厂商删除', 1703, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1740, '知识库查询', 1704, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1741, '知识库新增', 1704, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1742, '知识库修改', 1704, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1743, '知识库删除', 1704, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1750, '工具查询', 1705, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:query', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1751, '工具新增', 1705, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:add', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1752, '工具修改', 1705, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:edit', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1753, '工具删除', 1705, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:remove', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1760, 'Prompt模板', 1700, 6, 'prompt', 'ai/prompt/index', NULL, 1, 0, 'C', '0', '0', 'ai:prompt:list', 'documentation', NULL, 1, '2026-06-13 13:47:00', NULL, NULL, 'Prompt模板管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1761, '模板查询', 1760, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:prompt:query', '#', NULL, 1, '2026-06-13 13:47:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1762, '模板新增', 1760, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:prompt:add', '#', NULL, 1, '2026-06-13 13:47:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1763, '模板修改', 1760, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:prompt:edit', '#', NULL, 1, '2026-06-13 13:47:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1764, '模板删除', 1760, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:prompt:remove', '#', NULL, 1, '2026-06-13 13:47:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1770, 'SQL示例', 1700, 7, 'sqlExample', 'ai/sqlExample/index', NULL, 1, 0, 'C', '0', '0', 'ai:sqlExample:list', 'code', NULL, 1, '2026-06-13 16:28:19', NULL, NULL, 'SQL Few-Shot示例管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1771, '示例查询', 1770, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:sqlExample:query', '#', NULL, 1, '2026-06-13 16:28:19', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1772, '示例新增', 1770, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:sqlExample:add', '#', NULL, 1, '2026-06-13 16:28:19', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1773, '示例修改', 1770, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:sqlExample:edit', '#', NULL, 1, '2026-06-13 16:28:19', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1774, '示例删除', 1770, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:sqlExample:remove', '#', NULL, 1, '2026-06-13 16:28:19', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1775, '对话导出', 1701, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:chat:export', '#', NULL, 1, '2026-06-13 16:28:19', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1780, 'A/B测试', 1700, 8, 'abTest', 'ai/abTest/index', NULL, 1, 0, 'C', '0', '0', 'ai:abtest:list', 'data-analysis', NULL, 1, '2026-06-13 18:22:49', NULL, NULL, 'A/B测试管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1781, '测试查询', 1780, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:abtest:query', '#', NULL, 1, '2026-06-13 18:22:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1782, '测试新增', 1780, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:abtest:add', '#', NULL, 1, '2026-06-13 18:22:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1783, '测试修改', 1780, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:abtest:edit', '#', NULL, 1, '2026-06-13 18:22:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1784, '测试删除', 1780, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:abtest:remove', '#', NULL, 1, '2026-06-13 18:22:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1790, 'Token用量', 1700, 9, 'tokenUsage', 'ai/tokenUsage/index', NULL, 1, 0, 'C', '0', '0', 'ai:tokenUsage:list', 'chart', NULL, 1, '2026-06-13 21:36:01', NULL, NULL, 'Token用量统计菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1791, '用量查询', 1790, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:tokenUsage:query', '#', NULL, 1, '2026-06-13 21:36:01', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1792, '数据回填', 1790, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:tokenUsage:backfill', '#', NULL, 1, '2026-06-13 21:36:01', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1800, 'MCP市场', 1700, 10, 'mcpMarket', 'ai/mcp/market', NULL, 1, 0, 'C', '0', '0', 'ai:mcp:market:list', 'shopping', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, 'MCP 市场管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1801, '市场查询', 1800, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:query', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1802, '市场新增', 1800, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:add', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1803, '市场修改', 1800, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:edit', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1804, '市场删除', 1800, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:mcp:market:remove', '#', NULL, 1, '2026-06-28 19:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1810, '文生图', 1700, 11, 'imageGen', 'ai/imageGen/index', NULL, 1, 0, 'C', '0', '0', 'ai:imageGen:list', 'picture', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, 'AI 文生图菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1811, '图片生成', 1810, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:image:generate', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1812, '历史查询', 1810, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:image:list', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (1813, '历史删除', 1810, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'ai:image:remove', '#', NULL, 1, '2026-06-29 10:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2000, 'ERP系统', 0, 5, 'erp', NULL, NULL, 1, 0, 'M', '0', '0', '', 'build', 103, 1, '2026-04-30 10:41:23', 1, '2026-06-17 17:37:21', 'ERP业务系统根菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2001, '基础数据', 2000, 1, 'bd', NULL, NULL, 1, 0, 'M', '0', '0', '', 'category', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '基础数据管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2002, '物料分类', 2001, 1, 'materialCategory', 'erp/bd/category/index', NULL, 1, 0, 'C', '0', '0', 'bd:category:list', 'tree-table', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '物料分类菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2003, '物料分类查询', 2002, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:category:query', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2004, '物料分类新增', 2002, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:category:add', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2005, '物料分类修改', 2002, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:category:edit', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2006, '物料分类删除', 2002, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:category:remove', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2007, '物料分类导出', 2002, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:category:export', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2008, '物料管理', 2001, 2, 'material', 'erp/bd/material/index', NULL, 1, 0, 'C', '0', '0', 'bd:material:list', 'component', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2009, '物料查询', 2008, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:material:query', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2010, '物料新增', 2008, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:material:add', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2011, '物料修改', 2008, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:material:edit', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2012, '物料删除', 2008, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:material:remove', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2013, '物料导出', 2008, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:material:export', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2014, 'BOM管理', 2001, 3, 'bom', 'erp/bd/bom/index', NULL, 1, 0, 'C', '0', '0', 'bd:bom:list', 'list', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2015, 'BOM查询', 2014, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:bom:query', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2016, 'BOM新增', 2014, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:bom:add', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2017, 'BOM修改', 2014, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:bom:edit', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2018, 'BOM删除', 2014, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:bom:remove', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2019, 'BOM导出', 2014, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:bom:export', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2020, '客户管理', 2001, 4, 'client', 'erp/bd/client/index', NULL, 1, 0, 'C', '0', '0', 'bd:client:list', 'user', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2021, '客户查询', 2020, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:client:query', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2022, '客户新增', 2020, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:client:add', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2023, '客户修改', 2020, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:client:edit', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2024, '客户删除', 2020, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:client:remove', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2025, '客户导出', 2020, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:client:export', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2026, '供应商管理', 2001, 5, 'vendor', 'erp/bd/vendor/index', NULL, 1, 0, 'C', '0', '0', 'bd:vendor:list', 'peoples', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2027, '供应商查询', 2026, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:vendor:query', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2028, '供应商新增', 2026, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:vendor:add', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2029, '供应商修改', 2026, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:vendor:edit', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2030, '供应商删除', 2026, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:vendor:remove', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2031, '供应商导出', 2026, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:vendor:export', '#', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2032, '计量单位', 2001, 6, 'measure', 'erp/bd/measure/index', NULL, 1, 0, 'C', '0', '0', 'bd:measure:list', 'number', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2033, '车间管理', 2001, 7, 'workshop', 'erp/bd/workshop/index', NULL, 1, 0, 'C', '0', '0', 'bd:workshop:list', 'guide', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2034, '工位管理', 2001, 8, 'workstation', 'erp/bd/workstation/index', NULL, 1, 0, 'C', '0', '0', 'bd:workstation:list', 'tool', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-13 15:18:23', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2035, '序列号规则', 2001, 9, 'serialNumberRule', 'erp/bd/serial-number-rule/index', NULL, 1, 0, 'C', '0', '0', 'bd:serialNumberRule:list', 'key', 103, 1, '2026-05-24 00:00:00', NULL, NULL, '产品序列号/条码规则菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2036, '序列号规则查询', 2035, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:serialNumberRule:query', '#', 103, 1, '2026-05-24 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2037, '序列号规则新增', 2035, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:serialNumberRule:add', '#', 103, 1, '2026-05-24 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2038, '序列号规则修改', 2035, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:serialNumberRule:edit', '#', 103, 1, '2026-05-24 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2039, '序列号规则删除', 2035, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:serialNumberRule:remove', '#', 103, 1, '2026-05-24 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2040, '序列号规则导出', 2035, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:serialNumberRule:export', '#', 103, 1, '2026-05-24 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2041, '序列号生成', 2035, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:serialNumberRule:generate', '#', 103, 1, '2026-05-24 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2042, '计量单位查询', 2032, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:measure:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2043, '计量单位新增', 2032, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:measure:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2044, '计量单位修改', 2032, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:measure:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2045, '计量单位删除', 2032, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:measure:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2046, '计量单位导出', 2032, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:measure:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2050, '物料-供应商关系', 2001, 10, 'materialVendor', 'erp/bd/material-vendor/index', NULL, 1, 0, 'C', '0', '0', 'bd:materialVendor:list', 'shopping', 103, 1, '2026-06-14 22:02:50', NULL, NULL, '物料-供应商关系菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2051, '物料-供应商关系查询', 2050, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:materialVendor:query', '#', 103, 1, '2026-06-14 22:02:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2052, '物料-供应商关系新增', 2050, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:materialVendor:add', '#', 103, 1, '2026-06-14 22:02:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2053, '物料-供应商关系修改', 2050, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:materialVendor:edit', '#', 103, 1, '2026-06-14 22:02:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2054, '物料-供应商关系删除', 2050, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:materialVendor:remove', '#', 103, 1, '2026-06-14 22:02:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2055, '物料-供应商关系导出', 2050, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:materialVendor:export', '#', 103, 1, '2026-06-14 22:02:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2060, '合同管理', 2200, 4, 'contract', 'erp/so/contract/index', NULL, 1, 0, 'C', '0', '0', 'so:contract:list', 'contract', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '销售合同管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2061, '合同查询', 2060, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:contract:query', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2062, '合同新增', 2060, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:contract:add', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2063, '合同修改', 2060, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:contract:edit', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2064, '合同删除', 2060, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:contract:remove', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2065, '合同导出', 2060, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:contract:export', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2070, '开票管理', 2200, 5, 'invoice', 'erp/so/invoice/index', NULL, 1, 0, 'C', '0', '0', 'so:invoice:list', 'money', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '销售发票管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2071, '发票查询', 2070, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:query', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2072, '发票新增', 2070, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:add', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2073, '发票修改', 2070, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:edit', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2074, '发票删除', 2070, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:remove', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2075, '发票导出', 2070, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:export', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2080, '部门请购单', 2000, 6, 'requisition', 'erp/po/requisition/index', NULL, 1, 0, 'C', '0', '0', 'po:requisition:list', 'form', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '部门请购单菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2081, '部门请购单查询', 2080, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'po:requisition:query', '#', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2082, '部门请购单新增', 2080, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'po:requisition:add', '#', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2083, '部门请购单修改', 2080, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'po:requisition:edit', '#', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2084, '部门请购单删除', 2080, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'po:requisition:remove', '#', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2085, '部门请购单导出', 2080, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'po:requisition:export', '#', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2086, '车间管理查询', 2033, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workshop:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2087, '车间管理新增', 2033, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workshop:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2088, '车间管理修改', 2033, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workshop:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2089, '车间管理删除', 2033, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workshop:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2090, '车间管理导出', 2033, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workshop:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2091, '工位管理查询', 2034, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workstation:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2092, '工位管理新增', 2034, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workstation:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2093, '工位管理修改', 2034, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workstation:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2094, '工位管理删除', 2034, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workstation:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2095, '工位管理导出', 2034, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'bd:workstation:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2100, '仓库管理', 2000, 2, 'wm', NULL, NULL, 1, 0, 'M', '0', '0', '', 'warehouse', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '仓库管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2101, '仓库设置', 2100, 1, 'warehouse', 'erp/wm/warehouse/index', NULL, 1, 0, 'C', '0', '0', 'wm:warehouse:list', 'build', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2102, '库区设置', 2100, 2, 'storagearea', 'erp/wm/storagearea/index', NULL, 1, 0, 'C', '1', '1', 'wm:storagearea:list', 'grid', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-11 17:30:25', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2103, '库位设置', 2100, 3, 'storagelocation', 'erp/wm/storagelocation/index', NULL, 1, 0, 'C', '1', '1', 'wm:storagelocation:list', 'grid', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-11 17:30:33', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2104, '到货通知', 2100, 4, 'arrivalnotice', 'erp/wm/arrivalnotice/index', NULL, 1, 0, 'C', '0', '0', 'wm:arrivalnotice:list', 'message', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2105, '物料入库', 2100, 5, 'receive', 'erp/wm/receive/index', NULL, 1, 0, 'C', '0', '0', 'wm:receive:list', 'inbound', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-13 15:18:54', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2106, '库存清单', 2100, 6, 'stock', 'erp/wm/stock/index', NULL, 1, 0, 'C', '0', '0', 'wm:stock:list', 'list', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2107, '出库管理', 2100, 7, 'salesIssue', 'erp/wm/sales-issue/index', NULL, 1, 0, 'C', '0', '0', 'wm:salesIssue:list', 'outbound', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-13 15:19:14', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2108, '调拨管理', 2100, 8, 'transfer', 'erp/wm/transfer/index', NULL, 1, 0, 'C', '0', '0', 'wm:transfer:list', 'transfer', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2109, '调拨查询', 2108, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:transfer:query', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2110, '调拨新增', 2108, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:transfer:add', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2111, '调拨修改', 2108, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:transfer:edit', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2112, '调拨删除', 2108, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:transfer:remove', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2113, '调拨导出', 2108, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:transfer:export', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2114, '盘点管理', 2100, 9, 'stocktaking', 'erp/wm/stocktaking/index', NULL, 1, 0, 'C', '0', '0', 'wm:stocktaking:list', 'table', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2115, '盘点查询', 2114, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:stocktaking:query', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2116, '盘点新增', 2114, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:stocktaking:add', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2117, '盘点修改', 2114, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:stocktaking:edit', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2118, '盘点删除', 2114, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:stocktaking:remove', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2119, '盘点导出', 2114, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:stocktaking:export', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2120, '杂项出库', 2100, 10, 'miscissue', 'erp/wm/miscissue/index', NULL, 1, 0, 'C', '0', '0', 'wm:miscissue:list', 'outbound', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2121, '杂出查询', 2120, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscissue:query', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2122, '杂出新增', 2120, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscissue:add', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2123, '杂出修改', 2120, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscissue:edit', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2124, '杂出删除', 2120, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscissue:remove', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2125, '杂出导出', 2120, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscissue:export', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2126, '杂项入库', 2100, 11, 'miscrecpt', 'erp/wm/miscrecpt/index', NULL, 1, 0, 'C', '0', '0', 'wm:miscrecpt:list', 'inbound', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2127, '杂入查询', 2126, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscrecpt:query', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2128, '杂入新增', 2126, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscrecpt:add', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2129, '杂入修改', 2126, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscrecpt:edit', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2130, '杂入删除', 2126, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscrecpt:remove', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2131, '杂入导出', 2126, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:miscrecpt:export', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2132, '安全库存预警', 2100, 6, 'stockAlert', 'erp/wm/stock-alert/index', NULL, 1, 0, 'C', '0', '0', 'wm:stockAlert:list', 'form', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '安全库存预警菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2133, '安全库存预警查询', 2132, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:stockAlert:query', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2134, '安全库存预警新增', 2132, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:stockAlert:add', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2135, '安全库存预警修改', 2132, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:stockAlert:edit', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2136, '安全库存预警删除', 2132, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:stockAlert:remove', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2137, '安全库存预警导出', 2132, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:stockAlert:export', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2138, '库存台账校验', 2100, 7, 'reconciliation', 'erp/wm/reconciliation/index', NULL, 1, 0, 'C', '0', '0', 'wm:reconciliation:list', 'form', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '库存台账校验菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2139, '库存台账校验查询', 2138, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:reconciliation:query', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2140, '库存台账校验新增', 2138, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:reconciliation:add', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2141, '库存台账校验修改', 2138, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:reconciliation:edit', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2142, '库存台账校验删除', 2138, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:reconciliation:remove', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2143, '库存台账校验导出', 2138, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'wm:reconciliation:export', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2144, '委外订单', 2300, 6, 'subcontract', 'erp/prd/subcontract/index', NULL, 1, 0, 'C', '0', '0', 'prd:subcontract:list', 'outsource', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '委外订单菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2145, '委外订单查询', 2144, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:query', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2146, '委外订单新增', 2144, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:add', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2147, '委外订单修改', 2144, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:edit', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2148, '委外订单删除', 2144, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:remove', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2149, '委外订单导出', 2144, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:export', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2150, '返工订单', 2300, 7, 'rework', 'erp/prd/rework/index', NULL, 1, 0, 'C', '0', '0', 'prd:rework:list', 'rework', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '返工订单菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2151, '返工订单查询', 2150, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:query', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2152, '返工订单新增', 2150, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:add', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2153, '返工订单修改', 2150, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:edit', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2154, '返工订单删除', 2150, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:remove', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2155, '返工订单导出', 2150, 5, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:rework:export', '#', 103, 1, '2026-05-28 16:31:32', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2156, '上架确认', 2105, 1, '', '', '', 1, 0, 'F', '0', '0', 'wm:receive:shelf', '#', 103, 1, '2026-06-07 10:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2157, '仓库设置查询', 2101, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:warehouse:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2158, '仓库设置新增', 2101, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:warehouse:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2159, '仓库设置修改', 2101, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:warehouse:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2160, '仓库设置删除', 2101, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:warehouse:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2161, '仓库设置导出', 2101, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:warehouse:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2162, '库区设置查询', 2102, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagearea:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2163, '库区设置新增', 2102, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagearea:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2164, '库区设置修改', 2102, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagearea:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2165, '库区设置删除', 2102, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagearea:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2166, '库区设置导出', 2102, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagearea:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2167, '库位设置查询', 2103, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagelocation:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2168, '库位设置新增', 2103, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagelocation:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2169, '库位设置修改', 2103, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagelocation:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2170, '库位设置删除', 2103, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagelocation:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2171, '库位设置导出', 2103, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:storagelocation:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2172, '到货通知查询', 2104, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:arrivalnotice:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2173, '到货通知新增', 2104, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:arrivalnotice:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2174, '到货通知修改', 2104, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:arrivalnotice:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2175, '到货通知删除', 2104, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:arrivalnotice:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2176, '到货通知导出', 2104, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:arrivalnotice:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2177, '库存清单查询', 2106, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:stock:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2178, '库存清单新增', 2106, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:stock:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2179, '库存清单修改', 2106, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:stock:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2180, '库存清单删除', 2106, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:stock:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2181, '库存清单导出', 2106, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:stock:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2182, '出库管理查询', 2107, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:salesIssue:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2183, '出库管理新增', 2107, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:salesIssue:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2184, '出库管理修改', 2107, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:salesIssue:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2185, '出库管理删除', 2107, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:salesIssue:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2186, '出库管理导出', 2107, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:salesIssue:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2190, '生产领料', 2100, 12, 'productionissue', 'erp/wm/productionissue/index', NULL, 1, 0, 'C', '0', '0', 'wm:productionissue:list', 'outbound', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '生产领料单管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2191, '生产领料查询', 2190, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:query', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2192, '生产领料新增', 2190, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:add', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2193, '生产领料修改', 2190, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:edit', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2194, '生产领料删除', 2190, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:remove', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2195, '生产领料导出', 2190, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:export', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2196, '生产领料执行', 2190, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionissue:execute', '#', 103, 1, '2026-06-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2200, '销售管理', 2000, 3, 'so', NULL, NULL, 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '销售管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2201, '客户订单', 2200, 1, 'customerOrder', 'erp/so/customerorder/index', NULL, 1, 0, 'C', '0', '0', 'so:customerOrder:list', 'order', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2202, '销售订单', 2200, 2, 'orderheader', 'erp/so/orderheader/index', NULL, 1, 0, 'C', '0', '0', 'so:orderheader:list', 'order', 103, 1, '2026-04-30 10:41:23', 1, '2026-05-13 15:19:26', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2203, '报价管理', 2200, 3, 'quotation', 'erp/so/quotation/index', NULL, 1, 0, 'C', '0', '0', 'so:quotation:list', 'money', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2204, '报价查询', 2203, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:quotation:query', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2205, '报价新增', 2203, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:quotation:add', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2206, '报价修改', 2203, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:quotation:edit', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2207, '报价删除', 2203, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:quotation:remove', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2208, '报价导出', 2203, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:quotation:export', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2209, '退货管理', 2200, 4, 'return', 'erp/so/return/index', NULL, 1, 0, 'C', '0', '0', 'so:return:list', 'back', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2210, '退货查询', 2209, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:return:query', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2211, '退货新增', 2209, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:return:add', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2212, '退货修改', 2209, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:return:edit', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2213, '退货删除', 2209, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:return:remove', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2214, '退货导出', 2209, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:return:export', '#', 103, 1, '2026-05-22 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2215, '客户订单查询', 2201, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'so:customerOrder:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2216, '客户订单新增', 2201, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'so:customerOrder:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2217, '客户订单修改', 2201, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'so:customerOrder:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2218, '客户订单删除', 2201, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'so:customerOrder:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2219, '客户订单导出', 2201, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'so:customerOrder:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2220, '销售订单查询', 2202, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'so:orderheader:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2221, '销售订单新增', 2202, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'so:orderheader:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2222, '销售订单修改', 2202, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'so:orderheader:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2223, '销售订单删除', 2202, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'so:orderheader:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2224, '销售订单导出', 2202, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'so:orderheader:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2300, '生产管理', 2000, 4, 'prd', NULL, NULL, 1, 0, 'M', '0', '0', '', 'tool', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '生产管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2301, '生产计划', 2300, 1, 'plan', 'erp/prd/prdplan/index', NULL, 1, 0, 'C', '0', '0', 'prd:plan:list', 'calendar', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2302, '物料需求', 2300, 2, 'requirement', 'erp/prd/requirement/index', NULL, 1, 0, 'C', '0', '0', 'prd:requirement:list', 'component', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2303, '生产工单', 2300, 3, 'work', 'erp/prd/prdwork/index', NULL, 1, 0, 'C', '0', '0', 'prd:work:list', 'work-order', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2304, '工单报工', 2300, 4, 'report', 'erp/prd/report/index', NULL, 1, 0, 'C', '0', '0', 'prd:report:list', 'form', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2305, '生产计划查询', 2301, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:plan:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2306, '生产计划新增', 2301, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:plan:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2307, '生产计划修改', 2301, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:plan:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2308, '生产计划删除', 2301, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:plan:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2309, '生产计划导出', 2301, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:plan:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2310, '物料需求查询', 2302, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:requirement:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2311, '物料需求新增', 2302, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:requirement:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2312, '物料需求修改', 2302, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:requirement:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2313, '物料需求删除', 2302, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:requirement:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2314, '物料需求导出', 2302, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:requirement:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2315, '生产工单查询', 2303, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:work:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2316, '生产工单新增', 2303, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:work:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2317, '生产工单修改', 2303, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:work:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2318, '生产工单删除', 2303, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:work:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2319, '生产工单导出', 2303, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:work:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2320, '工单报工查询', 2304, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:report:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2321, '工单报工新增', 2304, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:report:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2322, '工单报工修改', 2304, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:report:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2323, '工单报工删除', 2304, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:report:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2324, '工单报工导出', 2304, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:report:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2400, '排班管理', 2000, 5, 'sch', NULL, NULL, 1, 0, 'M', '0', '0', '', 'calendar', 103, 1, '2026-04-30 10:33:44', 1, '2026-05-13 15:17:12', '排班管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2401, '工人管理', 2400, 1, 'worker', 'erp/sch/worker/index', NULL, 1, 0, 'C', '0', '0', 'sch:worker:list', 'user', 103, 1, '2026-04-30 10:33:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2402, '班组管理', 2400, 2, 'team', 'erp/sch/team/index', NULL, 1, 0, 'C', '0', '0', 'sch:team:list', 'peoples', 103, 1, '2026-04-30 10:33:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2403, '班次管理', 2400, 3, 'shift', 'erp/sch/shift/index', NULL, 1, 0, 'C', '0', '0', 'sch:shift:list', 'number', 103, 1, '2026-04-30 10:33:44', 1, '2026-05-13 15:17:40', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2404, '排班计划', 2400, 4, 'plan', 'erp/sch/plan/index', NULL, 1, 0, 'C', '0', '0', 'sch:plan:list', 'date-range', 103, 1, '2026-04-30 10:33:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2405, '考勤记录', 2400, 5, 'attendance', 'erp/sch/attendance/index', NULL, 1, 0, 'C', '0', '0', 'sch:attendance:list', 'list', 103, 1, '2026-04-30 10:33:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2406, '打卡规则', 2400, 6, 'punchRule', 'erp/sch/punchrule/index', NULL, 1, 0, 'C', '0', '0', 'sch:punchRule:list', 'validCode', 103, 1, '2026-04-30 10:33:44', 1, '2026-05-30 15:31:11', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2407, '节假日', 2400, 7, 'holiday', 'erp/sch/holiday/index', NULL, 1, 0, 'C', '0', '0', 'sch:holiday:list', 'star', 103, 1, '2026-04-30 10:33:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2408, '工人管理查询', 2401, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:worker:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2409, '工人管理新增', 2401, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:worker:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2410, '工人管理修改', 2401, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:worker:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2411, '工人管理删除', 2401, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:worker:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2412, '工人管理导出', 2401, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:worker:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2413, '班组管理查询', 2402, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:team:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2414, '班组管理新增', 2402, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:team:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2415, '班组管理修改', 2402, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:team:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2416, '班组管理删除', 2402, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:team:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2417, '班组管理导出', 2402, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:team:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2418, '班次管理查询', 2403, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:shift:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2419, '班次管理新增', 2403, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:shift:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2420, '班次管理修改', 2403, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:shift:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2421, '班次管理删除', 2403, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:shift:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2422, '班次管理导出', 2403, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:shift:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2423, '排班计划查询', 2404, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:plan:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2424, '排班计划新增', 2404, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:plan:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2425, '排班计划修改', 2404, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:plan:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2426, '排班计划删除', 2404, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:plan:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2427, '排班计划导出', 2404, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:plan:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2428, '考勤记录查询', 2405, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:attendance:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2429, '考勤记录新增', 2405, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:attendance:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2430, '考勤记录修改', 2405, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:attendance:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2431, '考勤记录删除', 2405, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:attendance:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2432, '考勤记录导出', 2405, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:attendance:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2433, '打卡规则查询', 2406, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:punchRule:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2434, '打卡规则新增', 2406, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:punchRule:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2435, '打卡规则修改', 2406, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:punchRule:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2436, '打卡规则删除', 2406, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:punchRule:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2437, '打卡规则导出', 2406, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:punchRule:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2438, '节假日查询', 2407, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:holiday:query', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2439, '节假日新增', 2407, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:holiday:add', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2440, '节假日修改', 2407, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:holiday:edit', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2441, '节假日删除', 2407, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:holiday:remove', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2442, '节假日导出', 2407, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:holiday:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2500, '采购管理', 2000, 9, 'pu', NULL, NULL, 1, 0, 'M', '0', '0', '', 'shopping', 103, 1, '2026-05-23 14:00:17', 1, '2026-05-23 14:26:07', '采购管理目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2501, '采购申请', 2500, 1, 'requisition', 'erp/pu/requisition/index', NULL, 1, 0, 'C', '0', '0', 'pu:requisition:list', 'document', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '采购申请菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2502, '采购申请查询', 2501, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:query', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2503, '采购申请新增', 2501, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:add', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2504, '采购申请修改', 2501, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2505, '采购申请删除', 2501, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:remove', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2506, '采购申请导出', 2501, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:export', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2507, '采购申请提交', 2501, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2508, '采购申请审批', 2501, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2509, '采购申请转单', 2501, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2510, '采购订单', 2500, 2, 'order', 'erp/pu/order/index', NULL, 1, 0, 'C', '0', '0', 'pu:order:list', 'order', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '采购订单菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2511, '采购订单查询', 2510, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:query', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2512, '采购订单新增', 2510, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:add', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2513, '采购订单修改', 2510, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2514, '采购订单删除', 2510, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:remove', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2515, '采购订单导出', 2510, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:export', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2516, '采购订单提交', 2510, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2517, '采购订单审批', 2510, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2518, '采购订单收货联动', 2510, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2520, '采购退货', 2500, 3, 'return', 'erp/pu/return/index', NULL, 1, 0, 'C', '0', '0', 'pu:return:list', 'back', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '采购退货菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2521, '采购退货查询', 2520, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:query', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2522, '采购退货新增', 2520, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:add', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2523, '采购退货修改', 2520, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2524, '采购退货删除', 2520, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:remove', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2525, '采购退货导出', 2520, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:export', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2526, '采购退货确认', 2520, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2527, '采购退货执行', 2520, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2530, '供应商评估', 2500, 5, 'vendorEvaluation', 'erp/pu/vendor-evaluation/index', NULL, 1, 0, 'C', '0', '0', 'pu:vendorEvaluation:list', 'star', 103, 1, '2026-05-27 23:48:41', NULL, NULL, '供应商评估菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2531, '供应商评估查询', 2530, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:query', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2532, '供应商评估新增', 2530, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:add', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2533, '供应商评估修改', 2530, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:edit', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2534, '供应商评估删除', 2530, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:remove', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2535, '供应商评估导出', 2530, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:export', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2536, '供应商评估计算', 2530, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:calculate', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2537, '供应商评估批量计算', 2530, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:calculateAll', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2540, '采购合同', 2500, 4, 'contract', 'erp/pu/contract/index', NULL, 1, 0, 'C', '0', '0', 'pu:contract:list', 'documentation', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '采购合同管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2541, '合同查询', 2540, 1, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:query', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2542, '合同新增', 2540, 2, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:add', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2543, '合同修改', 2540, 3, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:edit', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2544, '合同删除', 2540, 4, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:remove', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2545, '合同审批', 2540, 5, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:submit', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2600, '条码管理', 2000, 10, 'barcode', NULL, NULL, 1, 0, 'M', '0', '0', '', 'category', 103, 1, '2026-05-23 17:54:58', 1, '2026-06-03 11:08:41', '条码管理目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2601, '条码实例', 2600, 1, 'index', 'erp/wm/barcode/index', NULL, 1, 0, 'C', '0', '0', 'wm:barcode:list', 'ticket', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '条码实例菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2602, '条码实例查询', 2601, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:query', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2603, '条码实例新增', 2601, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:add', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2604, '条码实例修改', 2601, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:edit', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2605, '条码实例删除', 2601, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:remove', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2606, '条码实例导出', 2601, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:export', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2607, '条码生成', 2601, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:add', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2610, '条码配置', 2600, 2, 'config', 'erp/wm/barcode/config/index', NULL, 1, 0, 'C', '0', '0', 'wm:barcodeConfig:list', 'setting', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '条码配置菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2611, '条码配置查询', 2610, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:query', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2612, '条码配置新增', 2610, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:add', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2613, '条码配置修改', 2610, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:edit', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2614, '条码配置删除', 2610, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:remove', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2615, '条码配置导出', 2610, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcodeConfig:export', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2616, '上架规则', 2600, 6, 'putawayRule', 'erp/wm/putawayrule/index', NULL, 1, 0, 'C', '0', '0', 'wm:putawayRule:list', 'setting', 103, 1, '2026-05-28 00:23:23', 1, '2026-05-28 17:13:31', '上架规则菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2617, '上架规则查询', 2616, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:query', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2618, '上架规则新增', 2616, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:add', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2619, '上架规则修改', 2616, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:edit', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2620, '上架规则删除', 2616, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:remove', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2621, '拣货规则', 2600, 7, 'pickingRule', 'erp/wm/pickingrule/index', NULL, 1, 0, 'C', '0', '0', 'wm:pickingRule:list', 'pick', 103, 1, '2026-05-28 00:23:23', 1, '2026-05-28 17:13:40', '拣货规则菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2622, '拣货规则查询', 2621, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:query', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2623, '拣货规则新增', 2621, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:add', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2624, '拣货规则修改', 2621, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:edit', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2625, '拣货规则删除', 2621, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:remove', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2626, '拣货规则导出', 2621, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:pickingRule:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2631, '库存估值', 2600, 8, 'valuation', 'erp/wm/valuation/index', NULL, 1, 0, 'C', '0', '0', 'wm:valuation:list', 'money', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '库存估值菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2632, '库存估值查询', 2631, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:valuation:query', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2633, '库存估值导出', 2631, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:valuation:export', '#', 103, 1, '2026-05-28 00:23:23', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2634, '上架规则导出', 2616, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:putawayRule:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2700, '产能日历', 2300, 10, 'capacityCalendar', 'erp/prd/capacity-calendar/index', NULL, 1, 0, 'C', '0', '0', 'prd:capacityCalendar:list', 'date', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '产能日历管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2701, '产能日历查询', 2700, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:capacityCalendar:query', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2702, '产能日历新增', 2700, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:capacityCalendar:add', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2703, '产能日历修改', 2700, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:capacityCalendar:edit', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2704, '产能日历删除', 2700, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:capacityCalendar:remove', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2705, '产能日历导出', 2700, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:capacityCalendar:export', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2710, '生产入库', 2100, 8, 'productionrecpt', 'erp/wm/productionrecpt/index', NULL, 1, 0, 'C', '0', '0', 'wm:productionrecpt:list', 'inbound', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '生产完工入库');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2711, '生产入库查询', 2710, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:query', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2712, '生产入库新增', 2710, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:add', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2713, '生产入库修改', 2710, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:edit', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2714, '生产入库删除', 2710, 4, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:remove', '#', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2715, '生产入库导出', 2710, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:productionrecpt:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2800, '供应商评估报表', 2530, 8, 'report', 'erp/pu/vendor-evaluation/report', NULL, 1, 0, 'C', '0', '0', 'pu:vendorEvaluation:query', 'chart', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '供应商评估报表与趋势分析');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2810, '工单资源分配', 2300, 8, 'workOrderResource', 'erp/prd/work-order-resource/index', NULL, 1, 0, 'C', '0', '0', 'prd:workOrderResource:list', 'peoples', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '工单资源分配管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2811, '工单资源查询', 2810, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:query', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2812, '工单资源新增', 2810, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:add', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2813, '工单资源修改', 2810, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:edit', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2814, '工单资源删除', 2810, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:remove', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2815, '工单资源导出', 2810, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'prd:workOrderResource:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2820, '返工出库', 2150, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:rework:issue', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2821, '返工入库', 2150, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:rework:receive', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2830, '委外发料', 2144, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:issue', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2831, '委外收货', 2144, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'prd:subcontract:receive', '#', 103, 1, '2026-05-31 00:24:50', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2900, '工序管理', 2001, 11, 'process', 'erp/bd/process/index', NULL, 1, 0, 'C', '0', '0', 'bd:process:list', 'tool', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '工序管理(加工/装配/检验/包装)');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2901, '工序查询', 2900, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:process:query', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2902, '工序新增', 2900, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:process:add', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2903, '工序修改', 2900, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:process:edit', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2904, '工序删除', 2900, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:process:remove', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2905, '工序导出', 2900, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:process:export', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2910, '工艺路线', 2001, 12, 'routing', 'erp/bd/routing/index', NULL, 1, 0, 'C', '0', '0', 'bd:routing:list', 'cascader', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '工艺路线管理(工序步骤编排)');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2911, '工艺路线查询', 2910, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:routing:query', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2912, '工艺路线新增', 2910, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:routing:add', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2913, '工艺路线修改', 2910, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:routing:edit', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2914, '工艺路线删除', 2910, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:routing:remove', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2915, '工艺路线导出', 2910, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'bd:routing:export', '#', 103, 1, '2026-06-17 10:58:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2950, 'MBOM管理', 4001, 75, 'mbom', 'mes/pro/mbom/index', '', 1, 0, 'C', '0', '0', 'mes:pro:mbom:list', 'tree', 103, 1, '2026-06-21 11:40:45', NULL, NULL, 'MES制造BOM(MBOM)管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2951, 'MBOM查询', 2950, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:mbom:query', '#', 103, 1, '2026-06-21 11:40:45', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2952, 'MBOM新增', 2950, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:mbom:add', '#', 103, 1, '2026-06-21 11:40:45', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2953, 'MBOM修改', 2950, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:mbom:edit', '#', 103, 1, '2026-06-21 11:40:45', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2954, 'MBOM删除', 2950, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:mbom:remove', '#', 103, 1, '2026-06-21 11:40:45', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2955, 'MBOM导出', 2950, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:pro:mbom:export', '#', 103, 1, '2026-06-21 18:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3000, '支付管理', 0, 16, 'pay', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-05-02 16:13:09', 1, '2026-06-17 17:38:34', '支付管理目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3001, '订单管理', 3000, 1, 'order', 'pay/order/index', '', 1, 0, 'C', '0', '0', 'pay:order:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:14', '订单管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3002, '订单查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:query', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3003, '订单新增', 3001, 2, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:add', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3004, '订单修改', 3001, 3, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:edit', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3005, '订单删除', 3001, 4, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:remove', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3006, '订单导出', 3001, 5, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:export', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3007, '发票管理', 3000, 2, 'invoice', 'pay/invoice/index', '', 1, 0, 'C', '0', '0', 'pay:invoice:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:27', '发票管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3008, '发票查询', 3007, 1, '#', '', '', 1, 0, 'F', '0', '0', 'pay:invoice:query', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3009, '发票新增', 3007, 2, '#', '', '', 1, 0, 'F', '0', '0', 'pay:invoice:add', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3010, '发票修改', 3007, 3, '#', '', '', 1, 0, 'F', '0', '0', 'pay:invoice:edit', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3011, '发票删除', 3007, 4, '#', '', '', 1, 0, 'F', '0', '0', 'pay:invoice:remove', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3012, '导出发票', 3007, 5, '#', '', '', 1, 0, 'F', '0', '0', 'pay:invoice:export', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3013, '支付测试', 3000, 3, 'paytest', 'pay/paytest/index', '', 1, 0, 'C', '0', '0', 'pay:paytest:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:41', '支付测试菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3020, '积木报表', 0, 15, 'report', NULL, '', 1, 0, 'M', '0', '0', '', 'tab', 103, 1, '2026-05-03 14:54:28', 1, '2026-06-17 17:38:21', '积木报表目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3021, '报表设计', 3020, 1, 'reportDesign', 'report/design/index', '', 1, 0, 'C', '0', '0', 'report:design:list', 'edit', 103, 1, '2026-05-03 14:54:28', NULL, NULL, '积木报表设计器菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (3022, '报表大屏', 3020, 2, 'reportDashboard', 'report/dashboard/index', '', 1, 0, 'C', '0', '0', 'report:dashboard:list', 'dashboard', 103, 1, '2026-05-03 14:54:28', NULL, NULL, '积木报表大屏设计器菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4000, 'MES系统', 0, 6, 'mes', NULL, '', 1, 0, 'M', '0', '0', '', 'setting', 103, 1, '2026-06-16 18:00:58', 1, '2026-06-17 17:37:42', 'MES制造执行系统');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4001, '生产执行', 4000, 1, 'pro', NULL, '', 1, 0, 'M', '0', '0', '', 'tool', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '生产执行管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4002, '质量管理', 4000, 2, 'qc', NULL, '', 1, 0, 'M', '0', '0', '', 'documentation', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '质量管理(IQC/IPQC/OQC)');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4003, '设备管理', 4000, 3, 'eq', NULL, '', 1, 0, 'M', '0', '0', '', 'computer', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '设备台账/保养/维修');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4004, '数据采集', 4000, 4, 'dc', NULL, '', 1, 0, 'M', '0', '0', '', 'monitor', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '数据采集点/采集记录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4005, 'SPC分析', 4000, 5, 'spc', NULL, '', 1, 0, 'M', '0', '0', '', 'chart', 103, 1, '2026-06-16 18:00:58', NULL, NULL, '统计过程控制(SPC)');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4010, 'MES工单', 4001, 1, 'workorder', 'mes/pro/workorder/index', '', 1, 0, 'C', '0', '0', 'mes:pro:work:list', 'list', 103, 1, '2026-06-16 18:00:58', NULL, NULL, 'MES工单列表');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4019, 'MES工单查询', 4010, 9, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:query', '#', 103, 1, '2026-06-18 09:45:23', NULL, NULL, '与Controller mes:pro:work:query 对齐');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4020, 'MES工单新增', 4010, 10, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:add', '#', 103, 1, '2026-06-18 09:45:23', NULL, NULL, '与Controller mes:pro:work:add 对齐');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4021, 'MES工单修改', 4010, 11, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:edit', '#', 103, 1, '2026-06-18 09:45:23', NULL, NULL, '与Controller mes:pro:work:edit 对齐(含下达)');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4022, 'MES工单删除', 4010, 12, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:remove', '#', 103, 1, '2026-06-18 09:45:23', NULL, NULL, '与Controller mes:pro:work:remove 对齐');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4023, 'MES工单导出', 4010, 13, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:export', '#', 103, 1, '2026-06-18 09:45:23', NULL, NULL, '与Controller mes:pro:work:export 对齐');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4024, 'MES工单提交审批', 4010, 14, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:submit', '#', 103, 1, '2026-06-18 09:45:43', NULL, NULL, 'MES工单提交审批按钮');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4030, '物料查询', 4000, 10, 'md-material', 'mes/md/material/index', NULL, 1, 0, 'C', '0', '0', 'mes:md:material:list', '#', 103, 1, '2026-06-18 09:45:43', NULL, NULL, 'MES物料只读查询');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4031, 'BOM查询', 4000, 11, 'md-bom', 'mes/md/bom/index', NULL, 1, 0, 'C', '0', '0', 'mes:md:bom:list', '#', 103, 1, '2026-06-18 09:45:43', NULL, NULL, 'MES BOM只读查询');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4032, '工艺路线查询', 4000, 12, 'md-routing', 'mes/md/routing/index', NULL, 1, 0, 'C', '0', '0', 'mes:md:routing:list', '#', 103, 1, '2026-06-18 09:45:43', NULL, NULL, 'MES工艺路线只读查询');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4040, '流转卡', 4001, 2, 'flow-card', 'mes/pro/flow-card/index', '', 1, 0, 'C', '0', '0', 'mes:pro:flowcard:list', 'card', 103, 1, '2026-06-18 09:46:02', NULL, NULL, 'MES流转卡列表');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4041, '流转卡详情', 4040, 1, 'flow-card/detail/:cardId', 'mes/pro/flow-card/detail', '', 1, 0, 'C', '1', '0', 'mes:pro:flowcard:query', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, 'MES流转卡详情');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4042, '流转卡查询', 4040, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:query', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4043, '流转卡创建', 4040, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:add', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4044, '流转卡下达', 4040, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:release', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4045, '流转卡开工', 4040, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:start', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4046, '流转卡完工', 4040, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:complete', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4047, '流转卡导出', 4040, 6, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:export', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4048, '流转卡关闭', 4040, 7, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:edit', '#', 103, 1, '2026-06-18 09:46:02', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4060, '派工管理', 4001, 3, 'dispatch', 'mes/pro/dispatch/index', '', 1, 0, 'C', '0', '0', 'mes:pro:dispatch:list', 'people', 103, 1, '2026-06-18 17:40:06', NULL, NULL, 'MES派工管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4061, '派工详情', 4060, 1, 'dispatch/detail/:dispatchId', 'mes/pro/dispatch/detail', '', 1, 0, 'C', '1', '0', 'mes:pro:dispatch:query', '#', 103, 1, '2026-06-18 17:40:06', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4062, '派工查询', 4060, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:dispatch:query', '#', 103, 1, '2026-06-18 17:40:06', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4063, '派工创建', 4060, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:dispatch:add', '#', 103, 1, '2026-06-18 17:40:06', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4064, '派工开工', 4060, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:dispatch:start', '#', 103, 1, '2026-06-18 17:40:06', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4065, '派工完工', 4060, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:dispatch:complete', '#', 103, 1, '2026-06-18 17:40:06', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4066, '派工取消', 4060, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:dispatch:cancel', '#', 103, 1, '2026-06-18 17:40:06', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4067, '扫码执行', 4060, 6, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:dispatch:scan', '#', 103, 1, '2026-06-18 17:40:06', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4070, '安灯看板', 4001, 4, 'andon', 'mes/pro/andon/index', '', 1, 0, 'C', '0', '0', 'mes:pro:andon:list', 'bell', 103, 1, '2026-06-19 00:17:07', NULL, NULL, 'MES安灯看板');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4071, '安灯查询', 4070, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:andon:query', '#', 103, 1, '2026-06-19 00:17:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4072, '安灯呼叫', 4070, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:andon:call', '#', 103, 1, '2026-06-19 00:17:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4073, '安灯响应', 4070, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:andon:respond', '#', 103, 1, '2026-06-19 00:17:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4074, '安灯解决', 4070, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:andon:resolve', '#', 103, 1, '2026-06-19 00:17:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4075, '安灯取消', 4070, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:andon:cancel', '#', 103, 1, '2026-06-19 00:17:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4080, 'SN追溯', 4001, 5, 'sn', 'mes/pro/sn/index', '', 1, 0, 'C', '0', '0', 'mes:pro:sn:list', 'barcode', 103, 1, '2026-06-19 00:54:48', NULL, NULL, 'MES SN序列号追溯');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4081, 'SN追溯树', 4080, 1, 'sn/trace/:snId', 'mes/pro/sn/trace', '', 1, 0, 'C', '1', '0', 'mes:pro:sn:query', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4082, 'SN查询', 4080, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:query', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4083, 'SN生成', 4080, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:add', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4084, 'SN完工', 4080, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:complete', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4085, 'SN报废', 4080, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:scrap', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4086, 'SN发货', 4080, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:ship', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4090, 'IQC来料检验', 4002, 1, 'qc/iqc', 'mes/qc/iqc/index', '', 1, 0, 'C', '0', '0', 'mes:qc:iqc:list', 'check', 103, 1, '2026-06-19 23:29:37', NULL, NULL, 'MES来料检验');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4091, 'IQC查询', 4090, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:iqc:query', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4092, 'IQC新增', 4090, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:iqc:add', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4093, 'IQC检验', 4090, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:iqc:inspect', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4094, 'IPQC过程检验', 4002, 2, 'qc/ipqc', 'mes/qc/ipqc/index', '', 1, 0, 'C', '0', '0', 'mes:qc:ipqc:list', 'check', 103, 1, '2026-06-19 23:29:37', NULL, NULL, 'MES过程检验');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4095, 'IPQC查询', 4094, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:ipqc:query', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4096, 'IPQC新增', 4094, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:ipqc:add', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4097, 'IPQC检验', 4094, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:ipqc:inspect', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4098, 'OQC出货检验', 4002, 3, 'qc/oqc', 'mes/qc/oqc/index', '', 1, 0, 'C', '0', '0', 'mes:qc:oqc:list', 'check', 103, 1, '2026-06-19 23:29:37', NULL, NULL, 'MES出货检验');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4099, 'OQC查询', 4098, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:oqc:query', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4100, 'OQC新增', 4098, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:oqc:add', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4101, 'OQC检验', 4098, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:oqc:inspect', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4110, '设备台账', 4003, 1, 'eq/equipment', 'mes/eq/equipment/index', '', 1, 0, 'C', '0', '0', 'mes:eq:equipment:list', 'computer', 103, 1, '2026-06-20 00:21:04', NULL, NULL, 'MES设备台账');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4111, '设备查询', 4110, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:equipment:query', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4112, '设备新增', 4110, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:equipment:add', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4113, '设备编辑', 4110, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:equipment:edit', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4114, '设备删除', 4110, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:equipment:remove', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4115, '保养计划', 4003, 2, 'eq/maintenance', 'mes/eq/maintenance/index', '', 1, 0, 'C', '0', '0', 'mes:eq:maintenance:list', 'tool', 103, 1, '2026-06-20 00:21:04', NULL, NULL, 'MES设备保养计划');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4116, '保养查询', 4115, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:query', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4117, '保养新增', 4115, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:add', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4118, '保养编辑', 4115, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:edit', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4119, '保养删除', 4115, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:remove', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4120, '维修记录', 4003, 3, 'eq/repair', 'mes/eq/repair/index', '', 1, 0, 'C', '0', '0', 'mes:eq:repair:list', 'wrench', 103, 1, '2026-06-20 00:21:04', NULL, NULL, 'MES设备维修记录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4121, '维修查询', 4120, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:query', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4122, '维修报修', 4120, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:add', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4123, '维修开工', 4120, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:start', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4124, '维修完成', 4120, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:complete', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4125, '设备点检', 4003, 5, 'eq-inspection', 'mes/eq/inspection/index', NULL, 1, 0, 'C', '0', '0', 'mes:eq:inspection:list', 'check', 103, 1, '2026-06-27 00:24:07', NULL, NULL, 'MES设备点检执行菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4126, '点检执行', 4125, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:equipment:inspect', '#', 103, 1, '2026-06-27 00:24:07', NULL, NULL, '提交点检结果');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4130, '数据采集点', 4004, 1, 'dc/collection-point', 'mes/dc/collection-point/index', '', 1, 0, 'C', '0', '0', 'mes:dc:point:list', 'monitor', 103, 1, '2026-06-20 00:53:54', NULL, NULL, 'MES数据采集点');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4131, '采集点查询', 4130, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:dc:point:query', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4132, '采集点新增', 4130, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:dc:point:add', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4133, '采集点编辑', 4130, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:dc:point:edit', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4134, '采集点删除', 4130, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:dc:point:remove', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4135, '采集数据记录', 4004, 2, 'dc/data-record', 'mes/dc/data-record/index', '', 1, 0, 'C', '0', '0', 'mes:dc:record:list', 'document', 103, 1, '2026-06-20 00:53:54', NULL, NULL, 'MES采集数据记录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4136, '记录查询', 4135, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:dc:record:query', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4137, '记录录入', 4135, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:dc:record:add', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4138, 'SPC控制图', 4005, 1, 'spc/control-chart', 'mes/spc/control-chart/index', '', 1, 0, 'C', '0', '0', 'mes:spc:chart:list', 'chart', 103, 1, '2026-06-20 00:53:54', NULL, NULL, 'MES SPC控制图');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4139, '控制图查询', 4138, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:chart:query', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4140, '控制图新增', 4138, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:chart:add', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4141, '控制图编辑', 4138, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:chart:edit', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4142, '控制图删除', 4138, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:chart:remove', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4143, '控制图分析', 4138, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:chart:analyze', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4144, 'SPC数据点', 4005, 2, 'spc/data-point', 'mes/spc/data-point/index', '', 1, 0, 'C', '0', '0', 'mes:spc:point:list', 'tickets', 103, 1, '2026-06-20 00:53:54', NULL, NULL, 'MES SPC数据点');
+INSERT INTO `sys_menu_bak_20260629` VALUES (4145, '数据点查询', 4144, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:spc:point:query', '#', 103, 1, '2026-06-20 00:53:54', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5000, '序列号管理', 2600, 10, 'sn', 'erp/wm/sn/index', NULL, 1, 0, 'C', '0', '0', 'wm:sn:list', 'code', 103, 1, '2026-06-03 00:38:59', 1, '2026-06-03 11:09:57', '序列号管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5001, '序列号查询', 5000, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:query', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5002, '序列号新增', 5000, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:add', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5003, '序列号修改', 5000, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:edit', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5004, '序列号删除', 5000, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:remove', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5005, '序列号导出', 5000, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:export', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5010, '批次管理', 2600, 12, 'batch', 'erp/wm/batch/index', NULL, 1, 0, 'C', '0', '0', 'wm:batch:list', 'cascader', 103, 1, '2026-06-03 00:38:27', 1, '2026-06-03 11:10:06', '批次管理菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5011, '批次查询', 5010, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:batch:query', '#', 103, 1, '2026-06-03 00:38:27', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5012, '批次新增', 5010, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:batch:add', '#', 103, 1, '2026-06-03 00:38:27', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5013, '批次修改', 5010, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:batch:edit', '#', 103, 1, '2026-06-03 00:38:27', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5014, '批次删除', 5010, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:batch:remove', '#', 103, 1, '2026-06-03 00:38:27', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5015, '批次导出', 5010, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:batch:export', '#', 103, 1, '2026-06-03 00:38:27', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5020, '追溯查询', 2100, 13, 'trace', 'erp/wm/trace/index', NULL, 1, 0, 'C', '0', '0', 'wm:trace:list', 'trace', 103, 1, '2026-06-03 00:40:17', NULL, NULL, '追溯查询菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5021, '追溯列表', 5020, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:trace:list', '#', 103, 1, '2026-06-03 00:40:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (5022, '追溯查询', 5020, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:trace:query', '#', 103, 1, '2026-06-03 00:40:17', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6000, 'IoT平台', 0, 7, 'iot', NULL, '', 1, 0, 'M', '0', '0', '', 'monitor', 103, 1, '2026-06-17 17:35:58', 1, '2026-06-17 17:37:35', 'IoT物联网平台');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6010, '产品管理', 6000, 1, 'product', 'iot/product/index', '', 1, 0, 'C', '0', '0', 'iot:product:list', 'list', 103, 1, '2026-06-17 17:35:58', NULL, NULL, 'IoT产品(设备模板)管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6011, '产品查询', 6010, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:product:query', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6012, '产品新增', 6010, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:product:add', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6013, '产品修改', 6010, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:product:edit', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6014, '产品删除', 6010, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:product:remove', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6015, '产品导出', 6010, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:product:export', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6020, '设备管理', 6000, 2, 'device', 'iot/device/index', '', 1, 0, 'C', '0', '0', 'iot:device:list', 'server', 103, 1, '2026-06-17 17:35:58', NULL, NULL, 'IoT设备实例管理(含在线状态)');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6021, '设备查询', 6020, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:query', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6022, '设备新增', 6020, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:add', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6023, '设备修改', 6020, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:edit', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6024, '设备删除', 6020, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:remove', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (6025, '设备导出', 6020, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:export', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (9000, '即时通讯', 0, 20, 'im', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'message', NULL, 1, '2026-05-07 12:55:00', NULL, NULL, '即时通讯一级菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (9001, '聊天', 9000, 1, 'chat', 'im/chat/index', NULL, 1, 0, 'C', '0', '0', 'im:chat:list', 'chat-dot-round', NULL, 1, '2026-05-07 12:55:03', NULL, NULL, '即时通讯聊天菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (11638, '请假申请', 5, 1, 'leave', 'workflow/leave/index', '', 1, 0, 'C', '0', '0', 'workflow:leave:list', '#', 103, 1, '2026-04-15 10:51:44', NULL, NULL, '请假申请菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (11639, '请假申请查询', 11638, 1, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:leave:query', '#', 103, 1, '2026-04-15 10:51:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (11640, '请假申请新增', 11638, 2, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:leave:add', '#', 103, 1, '2026-04-15 10:51:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (11641, '请假申请修改', 11638, 3, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:leave:edit', '#', 103, 1, '2026-04-15 10:51:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (11642, '请假申请删除', 11638, 4, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:leave:remove', '#', 103, 1, '2026-04-15 10:51:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (11643, '请假申请导出', 11638, 5, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:leave:export', '#', 103, 1, '2026-04-15 10:51:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20000, '流程管理', 0, 9, 'process', NULL, '', 1, 0, 'M', '0', '0', '', 'tree', 103, 1, '2026-04-17 15:59:07', 1, '2026-05-03 14:39:48', '流程管理目录');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20001, '流程分类', 20000, 0, 'category', 'workflow/category/index', '', 1, 0, 'C', '0', '0', 'workflow:category:list', 'nested', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-17 15:59:07', '流程分类菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20002, '流程模型', 20000, 3, 'model', 'workflow/model/index', '', 1, 0, 'C', '0', '0', 'workflow:model:list', 'component', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '流程模型菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20003, '新建流程', 2045078769934303233, 1, 'create', 'workflow/work/index', '', 1, 0, 'C', '0', '0', 'workflow:process:startList', 'guide', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-21 17:06:03', '新建流程菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20004, '我的流程', 2045078769934303233, 2, 'own', 'workflow/work/own', '', 1, 0, 'C', '0', '0', 'workflow:process:ownList', 'cascader', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-21 17:06:58', '我的流程菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20005, '待办任务', 2045078769934303233, 3, 'todo', 'workflow/work/todo', '', 1, 0, 'C', '0', '0', 'workflow:process:todoList', 'time-range', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-21 17:07:16', '待办任务菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20006, '待签任务', 2045078769934303233, 4, 'claim', 'workflow/work/claim', '', 1, 0, 'C', '0', '0', 'workflow:process:claimList', 'checkbox', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-21 17:07:22', '待签任务菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20007, '已办任务', 2045078769934303233, 5, 'finished', 'workflow/work/finished', '', 1, 0, 'C', '0', '0', 'workflow:process:finishedList', 'documentation', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-21 17:07:28', '已办任务菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20008, '抄送任务', 2045078769934303233, 6, 'copy', 'workflow/work/copy', '', 1, 0, 'C', '0', '0', 'workflow:process:copyList', 'peoples', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-21 17:07:34', '抄送任务菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20009, '流程部署', 20002, 9, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:model:deploy', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20010, '发起流程', 20003, 1, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:start', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20011, '新建流程导出', 20003, 2, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:startExport', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20012, '流程详情', 20004, 1, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:query', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20013, '流程删除', 20004, 2, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:remove', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20014, '流程取消', 20004, 3, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:cancel', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20015, '我的流程导出', 20004, 4, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:ownExport', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20016, '流程办理', 20005, 1, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:approval', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20017, '待办流程导出', 20005, 2, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:todoExport', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20018, '流程签收', 20006, 1, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:claim', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20019, '待签流程导出', 20006, 2, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:claimExport', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20020, '流程撤回', 20007, 1, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:revoke', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20021, '已办流程导出', 20007, 2, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:finishedExport', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20022, '抄送流程导出', 20008, 1, '#', '', '', 1, 0, 'F', '0', '0', 'workflow:process:copyExport', '#', 103, 1, '2026-04-17 15:59:07', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20026, '编码规则', 1, 10, 'autocodeRule', 'system/autocode/index', NULL, 1, 0, 'C', '0', '0', 'system:autocode:rule:list', 'code', 103, 1, '2026-04-30 11:56:44', NULL, NULL, '编码规则管理');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20027, '编码查询', 20026, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:autocode:rule:query', '#', 103, 1, '2026-04-30 11:56:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20028, '编码新增', 20026, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:autocode:rule:add', '#', 103, 1, '2026-04-30 11:56:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20029, '编码修改', 20026, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:autocode:rule:edit', '#', 103, 1, '2026-04-30 11:56:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20030, '编码删除', 20026, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:autocode:rule:remove', '#', 103, 1, '2026-04-30 11:56:44', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20031, '行政区划', 1, 10, 'area', 'system/area/index', NULL, 1, 0, 'C', '0', '0', 'system:area:list', 'tree-table', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '行政区划菜单');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20032, '行政区划查询', 20031, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:query', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20033, '行政区划新增', 20031, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:add', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20034, '行政区划修改', 20031, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:edit', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20035, '行政区划删除', 20031, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:remove', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20036, '行政区划导出', 20031, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:export', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (20200, '流程案例', 0, 10, 'flowdemo', NULL, '', 1, 0, 'M', '0', '0', '', 'list', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-28 13:20:29', NULL);
+INSERT INTO `sys_menu_bak_20260629` VALUES (20201, '单表流程', 20200, 1, 'demo', 'workflow/demo/index', '', 1, 0, 'C', '0', '0', 'workflow:demo:list', 'tree', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-17 15:59:07', NULL);
+INSERT INTO `sys_menu_bak_20260629` VALUES (2045078110832984065, '表单设计', 20000, 2, 'designer', 'workflow/nform/index', NULL, 1, 0, 'C', '0', '0', 'workflow:nform:list', 'form', 103, 1, '2026-04-17 17:53:12', 1, '2026-04-17 17:53:12', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2045078330752925697, '部署管理', 20000, 4, 'deploy', 'workflow/deploy/index', NULL, 1, 0, 'C', '0', '0', 'workflow:deploy:list', 'deploy', 103, 1, '2026-04-17 17:54:04', 1, '2026-04-17 17:54:23', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2045078556964323330, '业务表单', 20000, 5, 'customForm', 'workflow/custom-form/index', NULL, 1, 0, 'C', '0', '0', 'workflow:customForm:list', 'form', 103, 1, '2026-04-17 17:54:58', 1, '2026-04-17 17:54:58', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2045078769934303233, '任务管理', 0, 12, 'work', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'list', 103, 1, '2026-04-17 17:55:49', 1, '2026-04-28 13:20:47', '');
+INSERT INTO `sys_menu_bak_20260629` VALUES (2053846181246812161, '驾驶舱', 0, 14, 'http://localhost:8080/drag/share/view/1014376428645961728?shareToken=RalXd4a2eMV9WUJSRER0SvEKxK5r0paW', NULL, NULL, 0, 0, 'M', '0', '0', NULL, 'dashboard', 103, 1, '2026-05-11 22:34:23', 1, '2026-05-11 22:34:23', '');
+
+-- ----------------------------
 -- Table structure for sys_notice
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_notice`;
@@ -12225,12 +13451,12 @@ CREATE TABLE `sys_notice`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2070560802330542082 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2070560802330542082 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -12263,13 +13489,13 @@ CREATE TABLE `sys_oper_log`  (
   `json_result` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '返回参数',
   `status` int(1) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
   `error_msg` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '错误消息',
-  `oper_time` datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
+  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
   `cost_time` bigint(20) NULL DEFAULT 0 COMMENT '消耗时间',
   PRIMARY KEY (`oper_id`) USING BTREE,
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -12543,6 +13769,24 @@ INSERT INTO `sys_oper_log` VALUES (2071442594212134913, '000000', '采购申请'
 INSERT INTO `sys_oper_log` VALUES (2071442767654993921, '000000', '采购申请', 2, 'com.nexus.erp.pu.controller.PuPurchaseRequisitionController.edit()', 'PUT', 1, 'admin', '研发部门', '/erp/pu/requisition', '127.0.0.1', '内网IP', '{\"createDept\":103,\"createBy\":1,\"createTime\":\"2026-06-29 11:55:16\",\"updateBy\":1,\"updateTime\":\"2026-06-29 11:55:28\",\"requisitionId\":\"2071442348321062913\",\"requisitionNo\":\"CGSQ202606290001\",\"requisitionName\":\"测试\",\"applicantId\":null,\"applicantName\":null,\"requisitionDate\":\"2026-06-29 00:00:00\",\"requiredDate\":\"2026-06-30 00:00:00\",\"sourceType\":\"MANUAL\",\"status\":\"DRAFT\",\"selectFlowId\":\"2058435612079448066\",\"remark\":null,\"attr1\":null,\"attr2\":null,\"attr3\":null,\"attr4\":null,\"puPurchaseRequisitionLineList\":[{\"createDept\":103,\"createBy\":1,\"createTime\":\"2026-06-29 11:55:16\",\"updateBy\":1,\"updateTime\":\"2026-06-29 11:55:16\",\"tenantId\":\"000000\",\"lineId\":\"2071442767617245185\",\"requisitionId\":\"2071442348321062913\",\"materialId\":2,\"materialCode\":\"IF20251018001\",\"materialName\":\"电机Y132M-4 7.5KW\",\"materialSpec\":\"7.5KW 380V\",\"unit\":\"千克\",\"applyQuantity\":\"2.0000\",\"approvedQuantity\":null,\"shortageQuantity\":null,\"requiredDate\":\"2026-06-30 00:00:00\",\"sourceType\":null,\"sourceId\":null,\"remark\":null,\"attr1\":null,\"attr2\":null,\"attr3\":null,\"attr4\":null,\"delFlag\":\"0\"}]}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-29 11:56:56', 16);
 INSERT INTO `sys_oper_log` VALUES (2071442770611978242, '000000', '采购申请', 2, 'com.nexus.erp.pu.controller.PuPurchaseRequisitionController.submitWithFlow()', 'POST', 1, 'admin', '研发部门', '/erp/pu/requisition/2071442348321062913/submit', '127.0.0.1', '内网IP', '{\"selectFlowId\":\"2058435612079448066\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-29 11:56:57', 369);
 INSERT INTO `sys_oper_log` VALUES (2071499717453361153, '000000', 'IoT设备关联MES', 2, 'com.nexus.iot.device.controller.IotDeviceController.updateMesLink()', 'PUT', 1, 'admin', '研发部门', '/iot/device/1/mesLink', '127.0.0.1', '内网IP', '1 {\"mesEquipmentId\":1}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-29 15:43:14', 22);
+INSERT INTO `sys_oper_log` VALUES (2071598380064403458, '000000', '控制图分析', 0, 'com.nexus.mes.spc.controller.SpcControlChartController.analyze()', 'GET', 1, 'admin', '研发部门', '/mes/spc/control-chart/analyze/1', '127.0.0.1', '内网IP', '{}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"lcl\":\"67.9650\",\"oocCount\":0,\"cl\":\"76.6200\",\"chart\":{\"chartId\":1,\"chartName\":\"CNC主轴温度控制图\",\"chartType\":\"X_BAR_R\",\"pointId\":1,\"materialId\":1,\"processId\":1,\"ucl\":\"85.2750\",\"cl\":\"76.6200\",\"lcl\":\"67.9650\",\"sampleSize\":5,\"status\":\"ACTIVE\",\"remark\":\"数控车床主轴温度SPC监控\"},\"points\":[{\"dataId\":\"2071598379930185729\",\"chartId\":1,\"sampleGroup\":1,\"sampleIndex\":null,\"value\":\"76.6200\",\"isOoc\":\"0\",\"oocRule\":null,\"collectTime\":\"2026-06-10 08:10:00\"}],\"ucl\":\"85.2750\"}}', 0, '', '2026-06-29 22:15:17', 37);
+INSERT INTO `sys_oper_log` VALUES (2071602382403497986, '000000', '设备关联IoT', 2, 'com.nexus.mes.eq.controller.EqEquipmentController.updateIotLink()', 'PUT', 1, 'admin', '研发部门', '/mes/eq/equipment/1/iotLink', '127.0.0.1', '内网IP', '1 {\"iotDeviceId\":1}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-29 22:31:11', 17);
+INSERT INTO `sys_oper_log` VALUES (2071631414700503042, '000000', '知识图谱构建', 0, 'com.nexus.ai.controller.AiKnowledgeGraphController.build()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/graph/build/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:26:33', 8);
+INSERT INTO `sys_oper_log` VALUES (2071631542362533889, '000000', 'AI模型管理', 2, 'com.nexus.ai.controller.AiModelController.setDefault()', 'PUT', 1, 'admin', '研发部门', '/ai/model/setDefault/2065468422648635394', '127.0.0.1', '内网IP', '\"2065468422648635394\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:27:03', 11);
+INSERT INTO `sys_oper_log` VALUES (2071631688949264385, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2065468199226449922\",\"name\":\"火山方舟\",\"apiHost\":\"https://ark.cn-beijing.volces.com/api/coding/v3\",\"apiKey\":\"4b955efc-8600-4694-a9ed-67a79dbf7b67\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:27:38', 80);
+INSERT INTO `sys_oper_log` VALUES (2071631715885084674, '000000', '知识图谱构建', 0, 'com.nexus.ai.controller.AiKnowledgeGraphController.build()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/graph/build/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:27:45', 0);
+INSERT INTO `sys_oper_log` VALUES (2071637281814482945, '000000', 'AI知识库文档管理', 3, 'com.nexus.ai.controller.AiKnowledgeController.removeDocument()', 'DELETE', 1, 'admin', '研发部门', '/ai/knowledge/document/2065103110631759873', '127.0.0.1', '内网IP', '[\"2065103110631759873\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:49:52', 19);
+INSERT INTO `sys_oper_log` VALUES (2071637306271469569, '000000', 'AI知识库管理', 2, 'com.nexus.ai.controller.AiKnowledgeController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/knowledge', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2065090090526457857\",\"knowledgeName\":\"ERP知识库\",\"description\":\"测试\",\"embeddingModel\":\"dengcao/Qwen3-Embedding-0.6B:Q8_0\",\"vectorStore\":\"milvus\",\"status\":\"1\",\"separator\":\"#\",\"overlapChar\":30,\"textBlockSize\":500,\"retrieveLimit\":5,\"similarityThreshold\":0.5,\"enableRerank\":0,\"rerankModel\":null,\"enableHybrid\":0,\"hybridAlpha\":0.5,\"systemPrompt\":null,\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:49:58', 22);
+INSERT INTO `sys_oper_log` VALUES (2071638063666302978, '000000', '对象存储配置', 2, 'com.nexus.system.controller.system.SysOssConfigController.edit()', 'PUT', 1, 'admin', '研发部门', '/resource/oss/config', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"ossConfigId\":1,\"configKey\":\"minio\",\"accessKey\":\"minio\",\"secretKey\":\"minio123\",\"bucketName\":\"ruoyi\",\"prefix\":\"\",\"endpoint\":\"159.75.14.226:9005\",\"domain\":\"\",\"isHttps\":\"N\",\"status\":\"0\",\"region\":\"\",\"ext1\":\"\",\"remark\":\"\",\"accessPolicy\":\"0\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:52:58', 16);
+INSERT INTO `sys_oper_log` VALUES (2071638100471320579, '000000', 'AI知识库文档上传', 1, 'com.nexus.ai.controller.AiKnowledgeController.uploadDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/upload/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":\"2071638100471320578\"}', 0, '', '2026-06-30 00:53:07', 280);
+INSERT INTO `sys_oper_log` VALUES (2071638195912708098, '000000', 'AI知识库文档上传', 1, 'com.nexus.ai.controller.AiKnowledgeController.uploadDocument()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/document/upload/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '', 1, '文件上传到 OSS 失败: 上传文件失败，请检查配置信息:[The service request was not made within 120 seconds of doBlockingWrite being invoked. Make sure to invoke the service request BEFORE invoking doBlockingWrite if your caller is single-threaded.]', '2026-06-30 00:53:30', 120712);
+INSERT INTO `sys_oper_log` VALUES (2071638396081672194, '000000', '知识图谱构建', 0, 'com.nexus.ai.controller.AiKnowledgeGraphController.build()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/graph/build/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 00:54:17', 5);
+INSERT INTO `sys_oper_log` VALUES (2071640984818794498, '000000', '知识图谱构建', 0, 'com.nexus.ai.controller.AiKnowledgeGraphController.build()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/graph/build/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 01:04:35', 12);
+INSERT INTO `sys_oper_log` VALUES (2071644428296138754, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":1,\"name\":\"DeepSeek\",\"apiHost\":\"https://api.deepseek.com\",\"apiKey\":\"sk-2b5c94a2083942b1aa16449c7253039b\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 01:18:16', 98);
+INSERT INTO `sys_oper_log` VALUES (2071644486320140289, '000000', '知识图谱构建', 0, 'com.nexus.ai.controller.AiKnowledgeGraphController.build()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/graph/build/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 01:18:29', 10);
+INSERT INTO `sys_oper_log` VALUES (2071650903357825025, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"1\",\"name\":\"DeepSeek\",\"apiHost\":\"https://api.deepseek.com\",\"apiKey\":\"aaa\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 01:43:59', 102);
+INSERT INTO `sys_oper_log` VALUES (2071650937751117825, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"1\",\"name\":\"DeepSeek\",\"apiHost\":\"https://api.deepseek.com\",\"apiKey\":\"aaa\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 01:44:08', 9);
+INSERT INTO `sys_oper_log` VALUES (2071650961176305666, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2065468199226449922\",\"name\":\"火山方舟\",\"apiHost\":\"https://ark.cn-beijing.volces.com/api/coding/v3\",\"apiKey\":\"aaaa\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-06-30 01:44:13', 8);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -12557,13 +13801,13 @@ CREATE TABLE `sys_oss`  (
   `url` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'URL地址',
   `ext1` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '上传人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `service` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'minio' COMMENT '服务商',
   PRIMARY KEY (`oss_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss
@@ -12593,17 +13837,17 @@ CREATE TABLE `sys_oss_config`  (
   `ext1` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`oss_config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss_config
 -- ----------------------------
-INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'minio', 'minio123', 'ruoyi', '', '127.0.0.1:9005', '', 'N', '', '0', '0', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-06-11 23:25:54', '');
+INSERT INTO `sys_oss_config` VALUES (1, '000000', 'minio', 'minio', 'minio123', 'ruoyi', '', '159.75.14.226:9005', '', 'N', '', '0', '0', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-06-30 00:52:58', '');
 INSERT INTO `sys_oss_config` VALUES (2, '000000', 'qiniu', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 's3-cn-north-1.qiniucs.com', '', 'N', '', '1', '1', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_oss_config` VALUES (3, '000000', 'aliyun', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi', '', 'oss-cn-beijing.aliyuncs.com', '', 'N', '', '1', '1', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_oss_config` VALUES (4, '000000', 'qcloud', 'XXXXXXXXXXXXXXX', 'XXXXXXXXXXXXXXX', 'ruoyi-1240000000', '', 'cos.ap-beijing.myqcloud.com', '', 'N', 'ap-beijing', '1', '1', '', 103, 1, '2026-04-15 10:51:23', 1, '2026-04-15 10:51:23', NULL);
@@ -12624,12 +13868,12 @@ CREATE TABLE `sys_post`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_post
@@ -12656,12 +13900,12 @@ CREATE TABLE `sys_role`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role
@@ -12679,7 +13923,7 @@ CREATE TABLE `sys_role_dept`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `dept_id` bigint(20) NOT NULL COMMENT '部门ID',
   PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_dept
@@ -12694,7 +13938,7 @@ CREATE TABLE `sys_role_menu`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -12787,9 +14031,14 @@ INSERT INTO `sys_role_menu` VALUES (3, 1702);
 INSERT INTO `sys_role_menu` VALUES (3, 1703);
 INSERT INTO `sys_role_menu` VALUES (3, 1704);
 INSERT INTO `sys_role_menu` VALUES (3, 1705);
+INSERT INTO `sys_role_menu` VALUES (3, 1706);
+INSERT INTO `sys_role_menu` VALUES (3, 1707);
+INSERT INTO `sys_role_menu` VALUES (3, 1708);
+INSERT INTO `sys_role_menu` VALUES (3, 1709);
 INSERT INTO `sys_role_menu` VALUES (3, 1710);
 INSERT INTO `sys_role_menu` VALUES (3, 1711);
 INSERT INTO `sys_role_menu` VALUES (3, 1712);
+INSERT INTO `sys_role_menu` VALUES (3, 1713);
 INSERT INTO `sys_role_menu` VALUES (3, 1720);
 INSERT INTO `sys_role_menu` VALUES (3, 1721);
 INSERT INTO `sys_role_menu` VALUES (3, 1722);
@@ -13191,6 +14440,20 @@ INSERT INTO `sys_role_menu` VALUES (3, 2952);
 INSERT INTO `sys_role_menu` VALUES (3, 2953);
 INSERT INTO `sys_role_menu` VALUES (3, 2954);
 INSERT INTO `sys_role_menu` VALUES (3, 2955);
+INSERT INTO `sys_role_menu` VALUES (3, 2960);
+INSERT INTO `sys_role_menu` VALUES (3, 2961);
+INSERT INTO `sys_role_menu` VALUES (3, 2962);
+INSERT INTO `sys_role_menu` VALUES (3, 2963);
+INSERT INTO `sys_role_menu` VALUES (3, 2964);
+INSERT INTO `sys_role_menu` VALUES (3, 2965);
+INSERT INTO `sys_role_menu` VALUES (3, 2966);
+INSERT INTO `sys_role_menu` VALUES (3, 2967);
+INSERT INTO `sys_role_menu` VALUES (3, 2968);
+INSERT INTO `sys_role_menu` VALUES (3, 2969);
+INSERT INTO `sys_role_menu` VALUES (3, 2970);
+INSERT INTO `sys_role_menu` VALUES (3, 2971);
+INSERT INTO `sys_role_menu` VALUES (3, 2972);
+INSERT INTO `sys_role_menu` VALUES (3, 2973);
 INSERT INTO `sys_role_menu` VALUES (3, 4000);
 INSERT INTO `sys_role_menu` VALUES (3, 4001);
 INSERT INTO `sys_role_menu` VALUES (3, 4002);
@@ -13280,6 +14543,8 @@ INSERT INTO `sys_role_menu` VALUES (3, 4142);
 INSERT INTO `sys_role_menu` VALUES (3, 4143);
 INSERT INTO `sys_role_menu` VALUES (3, 4144);
 INSERT INTO `sys_role_menu` VALUES (3, 4145);
+INSERT INTO `sys_role_menu` VALUES (3, 4150);
+INSERT INTO `sys_role_menu` VALUES (3, 4151);
 INSERT INTO `sys_role_menu` VALUES (3, 5000);
 INSERT INTO `sys_role_menu` VALUES (3, 5001);
 INSERT INTO `sys_role_menu` VALUES (3, 5002);
@@ -13480,6 +14745,20 @@ INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2404);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2405);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2406);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2407);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2960);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2961);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2962);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2963);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2964);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2965);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2966);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2967);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2968);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2969);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2970);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2971);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2972);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 2973);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20026);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20027);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20028);
@@ -13491,6 +14770,811 @@ INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20033);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20034);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20035);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20036);
+
+-- ----------------------------
+-- Table structure for sys_role_menu_bak_20260629
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role_menu_bak_20260629`;
+CREATE TABLE `sys_role_menu_bak_20260629`  (
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+  `menu_id` bigint(20) NOT NULL COMMENT '菜单ID'
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_role_menu_bak_20260629
+-- ----------------------------
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (1, 1705);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (1, 1750);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (1, 1751);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (1, 1752);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (1, 1753);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 100);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 101);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 102);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 103);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 104);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 105);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 106);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 107);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 108);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 118);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 123);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 130);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 131);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 132);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 133);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 500);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 501);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1002);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1003);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1004);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1005);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1006);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1007);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1008);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1009);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1011);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1012);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1013);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1014);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1015);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1016);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1017);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1018);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1019);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1023);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1024);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1025);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1026);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1027);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1028);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1029);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1030);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1031);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1032);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1033);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1034);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1035);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1036);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1037);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1038);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1039);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1040);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1041);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1042);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1043);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1044);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1045);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1050);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1061);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1062);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1063);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1064);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1065);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1600);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1601);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1602);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1603);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1620);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1621);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1622);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1623);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1700);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1701);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1702);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1703);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1704);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1705);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1710);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1711);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1712);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1720);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1721);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1722);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1723);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1730);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1731);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1732);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1733);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1740);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1741);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1742);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1743);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1750);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1751);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1752);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1753);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1760);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1761);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1762);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1763);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1764);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1770);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1771);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1772);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1773);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1774);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1775);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1780);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1781);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1782);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1783);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1784);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1790);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1791);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 1792);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2000);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2002);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2003);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2004);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2005);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2006);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2007);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2008);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2009);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2011);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2012);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2013);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2014);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2015);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2016);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2017);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2018);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2019);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2023);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2024);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2025);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2026);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2027);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2028);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2029);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2030);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2031);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2032);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2033);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2034);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2035);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2036);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2037);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2038);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2039);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2040);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2041);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2042);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2043);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2044);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2045);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2046);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2050);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2051);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2052);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2053);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2054);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2055);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2060);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2061);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2062);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2063);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2064);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2065);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2070);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2071);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2072);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2073);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2074);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2075);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2080);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2081);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2082);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2083);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2084);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2085);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2086);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2087);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2088);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2089);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2090);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2091);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2092);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2093);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2094);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2095);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2100);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2101);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2102);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2103);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2104);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2105);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2106);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2107);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2108);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2109);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2110);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2111);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2112);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2113);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2114);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2115);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2116);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2117);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2118);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2119);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2120);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2121);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2122);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2123);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2124);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2125);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2126);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2127);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2128);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2129);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2130);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2131);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2132);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2133);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2134);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2135);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2136);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2137);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2138);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2139);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2140);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2141);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2142);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2143);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2144);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2145);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2146);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2147);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2148);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2149);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2150);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2151);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2152);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2153);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2154);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2155);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2156);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2157);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2158);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2159);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2160);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2161);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2162);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2163);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2164);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2165);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2166);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2167);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2168);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2169);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2170);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2171);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2172);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2173);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2174);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2175);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2176);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2177);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2178);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2179);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2180);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2181);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2182);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2183);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2184);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2185);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2186);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2200);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2201);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2202);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2203);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2204);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2205);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2206);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2207);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2208);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2209);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2210);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2211);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2212);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2213);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2214);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2215);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2216);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2217);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2218);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2219);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2220);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2221);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2222);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2223);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2224);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2300);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2301);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2302);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2303);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2304);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2305);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2306);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2307);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2308);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2309);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2310);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2311);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2312);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2313);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2314);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2315);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2316);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2317);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2318);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2319);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2320);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2321);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2322);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2323);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2324);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2400);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2401);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2402);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2403);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2404);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2405);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2406);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2407);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2408);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2409);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2410);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2411);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2412);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2413);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2414);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2415);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2416);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2417);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2418);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2419);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2420);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2421);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2422);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2423);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2424);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2425);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2426);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2427);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2428);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2429);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2430);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2431);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2432);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2433);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2434);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2435);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2436);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2437);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2438);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2439);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2440);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2441);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2442);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2500);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2501);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2502);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2503);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2504);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2505);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2506);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2507);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2508);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2509);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2510);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2511);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2512);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2513);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2514);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2515);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2516);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2517);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2518);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2520);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2521);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2522);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2523);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2524);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2525);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2526);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2527);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2530);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2531);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2532);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2533);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2534);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2535);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2536);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2537);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2600);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2601);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2602);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2603);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2604);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2605);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2606);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2607);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2610);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2611);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2612);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2613);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2614);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2615);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2616);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2617);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2618);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2619);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2620);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2621);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2622);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2623);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2624);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2625);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2626);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2631);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2632);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2633);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2634);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2700);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2701);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2702);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2703);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2704);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2705);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2710);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2711);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2712);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2713);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2714);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2715);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2800);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2810);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2811);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2812);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2813);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2814);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2815);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2820);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2821);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2830);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2831);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2900);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2901);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2902);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2903);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2904);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2905);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2910);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2911);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2912);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2913);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2914);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2915);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2950);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2951);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2952);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2953);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2954);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2955);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4000);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4002);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4003);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4004);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4005);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4019);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4023);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4024);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4030);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4031);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4032);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4040);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4041);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4042);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4043);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4044);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4045);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4046);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4047);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4048);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4060);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4061);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4062);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4063);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4064);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4065);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4066);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4067);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4070);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4071);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4072);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4073);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4074);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4075);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4080);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4081);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4082);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4083);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4084);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4085);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4086);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4090);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4091);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4092);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4093);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4094);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4095);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4096);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4097);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4098);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4099);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4100);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4101);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4110);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4111);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4112);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4113);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4114);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4115);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4116);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4117);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4118);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4119);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4120);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4121);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4122);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4123);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4124);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4130);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4131);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4132);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4133);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4134);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4135);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4136);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4137);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4138);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4139);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4140);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4141);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4142);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4143);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4144);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 4145);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5000);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5002);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5003);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5004);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5005);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5011);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5012);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5013);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5014);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5015);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 5022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6000);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6011);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6012);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6013);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6014);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6015);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6023);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6024);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 6025);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 9000);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 9001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20000);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20002);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20003);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20004);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20005);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20006);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20007);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20008);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20009);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20011);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20012);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20013);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20014);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20015);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20016);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20017);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20018);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20019);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 20022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2045078110832984065);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2045078330752925697);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2045078556964323330);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (3, 2045078769934303233);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 100);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 101);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 102);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 103);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 104);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 105);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 106);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 107);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 108);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 118);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 123);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 130);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 131);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 132);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 133);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 500);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 501);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1002);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1003);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1004);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1005);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1006);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1007);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1008);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1009);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1011);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1012);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1013);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1014);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1015);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1016);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1017);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1018);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1019);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1023);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1024);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1025);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1026);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1027);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1028);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1029);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1030);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1031);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1032);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1033);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1034);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1035);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1036);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1037);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1038);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1039);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1040);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1041);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1042);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1043);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1044);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1045);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1050);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1061);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1062);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1063);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1064);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1065);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1600);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1601);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1602);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1603);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1620);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1621);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1622);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 1623);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2000);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2001);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2002);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2003);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2004);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2005);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2006);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2007);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2008);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2009);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2010);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2011);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2012);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2013);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2014);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2015);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2016);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2017);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2018);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2019);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2020);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2021);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2022);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2023);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2024);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2025);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2026);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2027);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2028);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2029);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2030);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2031);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2032);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2033);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2034);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2100);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2101);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2102);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2103);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2104);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2105);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2106);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2107);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2190);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2191);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2192);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2193);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2194);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2195);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2196);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2200);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2201);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2202);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2300);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2301);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2302);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2303);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2304);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2400);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2401);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2402);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2403);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2404);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2405);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2406);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 2407);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20026);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20027);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20028);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20029);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20030);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20031);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20032);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20033);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20034);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20035);
+INSERT INTO `sys_role_menu_bak_20260629` VALUES (2054472456595238913, 20036);
 
 -- ----------------------------
 -- Table structure for sys_social
@@ -13522,12 +15606,12 @@ CREATE TABLE `sys_social`  (
   `oauth_token_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Twitter平台用户的附带属性，部分平台可能没有',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_social
@@ -13550,17 +15634,17 @@ CREATE TABLE `sys_tenant`  (
   `domain` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '域名',
   `remark` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   `package_id` bigint(20) NULL DEFAULT NULL COMMENT '租户套餐编号',
-  `expire_time` datetime(0) NULL DEFAULT NULL COMMENT '过期时间',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
   `account_count` int(11) NULL DEFAULT -1 COMMENT '用户数量（-1不限制）',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '租户状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_tenant
@@ -13582,11 +15666,11 @@ CREATE TABLE `sys_tenant_package`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`package_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_tenant_package
@@ -13612,20 +15696,20 @@ CREATE TABLE `sys_user`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `login_ip` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `login_date` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
+  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2070553780042235905, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-29 15:35:58', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-29 15:35:58', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2070553780042235905, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-06-30 00:10:04', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-30 00:10:04', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-06-13 02:44:41', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-13 02:44:41', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-06-22 12:47:16', NULL, 1, '2025-10-23 17:03:16', -1, '2026-06-22 12:47:16', '耳朵聋');
@@ -13664,14 +15748,14 @@ CREATE TABLE `sys_user_notification`  (
   `ext_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '扩展JSON',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notification_id`) USING BTREE,
   INDEX `idx_sun_user_read`(`tenant_id`, `user_id`, `read_flag`, `create_time`) USING BTREE,
   INDEX `idx_sun_category`(`tenant_id`, `user_id`, `category`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_notification
@@ -13723,7 +15807,7 @@ CREATE TABLE `sys_user_post`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
   PRIMARY KEY (`user_id`, `post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_post
@@ -13738,7 +15822,7 @@ CREATE TABLE `sys_user_role`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -13772,7 +15856,7 @@ CREATE TABLE `test_customer`  (
   `tbr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '填表人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_customer
@@ -13797,13 +15881,13 @@ CREATE TABLE `test_demo`  (
   `value` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_demo
@@ -13831,18 +15915,18 @@ CREATE TABLE `test_leave`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `apply_code` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '申请编号',
   `leave_type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '请假类型',
-  `start_date` datetime(0) NOT NULL COMMENT '开始时间',
-  `end_date` datetime(0) NOT NULL COMMENT '结束时间',
+  `start_date` datetime NOT NULL COMMENT '开始时间',
+  `end_date` datetime NOT NULL COMMENT '结束时间',
   `leave_days` int(10) NOT NULL COMMENT '请假天数',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请假原因',
   `status` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_leave
@@ -13892,7 +15976,11 @@ CREATE TABLE `test_monthly_report`  (
   `by_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '本月-弃水天数',
   `lj_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '累计-弃水天数',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_monthly_report
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order
@@ -13902,15 +15990,19 @@ CREATE TABLE `test_order`  (
   `id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `order_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单名称',
   `order_no` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单编号',
-  `order_sign_date` datetime(0) NULL DEFAULT NULL COMMENT '订单签订日期',
-  `order_delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '订单交付日期',
+  `order_sign_date` datetime NULL DEFAULT NULL COMMENT '订单签订日期',
+  `order_delivery_date` datetime NULL DEFAULT NULL COMMENT '订单交付日期',
   `order_coms` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户名称',
   `order_pers` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系人',
   `order_phone` varchar(15) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系方式',
   `fzr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order_pros
@@ -13926,7 +16018,11 @@ CREATE TABLE `test_order_pros`  (
   `pro_model` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '型号',
   `main_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外键',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order_pros
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_resume
@@ -13950,7 +16046,7 @@ CREATE TABLE `test_resume`  (
   `edu_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '教育经历',
   `work_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '工作经历',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_resume
@@ -13971,13 +16067,13 @@ CREATE TABLE `test_tree`  (
   `tree_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_tree
@@ -14007,7 +16103,7 @@ CREATE TABLE `tmp_report_data_1`  (
   `his_lowest` decimal(10, 2) NULL DEFAULT NULL,
   `his_average` decimal(10, 2) NULL DEFAULT NULL,
   `his_highest` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_1
@@ -14038,7 +16134,7 @@ CREATE TABLE `tmp_report_data_income`  (
   `tb_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `neikong_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `total` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_income
@@ -14061,14 +16157,14 @@ CREATE TABLE `wf_category`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`category_id`) USING BTREE,
   UNIQUE INDEX `codeIndex`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_category
@@ -14098,12 +16194,16 @@ CREATE TABLE `wf_copy`  (
   `state` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`copy_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_copy
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_custom_form
@@ -14119,13 +16219,13 @@ CREATE TABLE `wf_custom_form`  (
   `component` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件注入方法',
   `table_id` bigint(20) NULL DEFAULT NULL COMMENT '业务主表ID',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_custom_form
@@ -14159,11 +16259,15 @@ CREATE TABLE `wf_custom_rule`  (
   `attribute` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '属性0-隐藏1-只读默认2-可编辑',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_custom_rule
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_dd_flow
@@ -14174,11 +16278,15 @@ CREATE TABLE `wf_dd_flow`  (
   `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '流程名称',
   `flow_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '流程JSON数据',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_dd_flow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_default_operate
@@ -14191,11 +16299,15 @@ CREATE TABLE `wf_default_operate`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_default_operate
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_demo
@@ -14210,14 +16322,14 @@ CREATE TABLE `wf_demo`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`demo_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_demo
@@ -14237,7 +16349,7 @@ CREATE TABLE `wf_deploy_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`deploy_id`, `form_key`, `node_key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_deploy_form
@@ -14260,11 +16372,15 @@ CREATE TABLE `wf_flow_config`  (
   `form_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表单Key',
   `app_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用类型',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_flow_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_form
@@ -14276,16 +16392,20 @@ CREATE TABLE `wf_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `db` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否保存数据库',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_form
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_my_business
@@ -14294,9 +16414,9 @@ DROP TABLE IF EXISTS `wf_my_business`;
 CREATE TABLE `wf_my_business`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `process_definition_key` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义key 一个key会有多个版本的id',
   `process_definition_id` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义id 一个流程定义唯一',
   `process_instance_id` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程业务实例id 一个流程业务唯一，本表中也唯一',
@@ -14317,7 +16437,7 @@ CREATE TABLE `wf_my_business`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `dataid`(`data_id`) USING BTREE COMMENT '业务数据Id索引'
-) ENGINE = InnoDB AUTO_INCREMENT = 2071442769148166146 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2071442769148166146 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_my_business
@@ -14362,12 +16482,12 @@ CREATE TABLE `wf_nform`  (
   `form_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_nform
@@ -14392,10 +16512,14 @@ CREATE TABLE `wf_operate_rule`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_operate_rule
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;

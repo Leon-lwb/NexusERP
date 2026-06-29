@@ -51,4 +51,23 @@ public class AiKnowledgeChunkVo implements Serializable {
     @ExcelProperty(value = "向量ID")
     private String vectorId;
 
+    /** 图谱抽取状态（0待处理 1处理中 2已完成 3失败） */
+    @ExcelProperty(value = "抽取状态")
+    private String extractionStatus;
+
+    /** 抽取实体数 */
+    @ExcelProperty(value = "抽取实体数")
+    private Integer entityCount;
+
+    /** 抽取关系数 */
+    @ExcelProperty(value = "抽取关系数")
+    private Integer relationCount;
+
+    /** 抽取消耗token */
+    @ExcelProperty(value = "抽取消耗token")
+    private Long tokenUsed;
+
+    /** 抽取错误信息 */
+    private String kgErrorMessage;
+
 }

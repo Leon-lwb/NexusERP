@@ -39,4 +39,19 @@ public class AiKnowledgeChunk extends BaseEntity {
 
     /** 向量数据库中的ID */
     private String vectorId;
+
+    /** 图谱抽取状态（0待处理 1处理中 2已完成 3失败） */
+    private String extractionStatus;
+
+    /** 抽取实体数 */
+    private Integer entityCount;
+
+    /** 抽取关系数 */
+    private Integer relationCount;
+
+    /** 抽取消耗token */
+    private Long tokenUsed;
+
+    /** 抽取错误信息 */
+    private String kgErrorMessage;
 }

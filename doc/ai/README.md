@@ -8,7 +8,7 @@
 | 文档 | 主题 | 状态 |
 |------|------|------|
 | [NexusERP_AI开发计划.md](./NexusERP_AI开发计划.md) | 项目总开发计划 v6.1（Phase 0-6） | 🚧 Phase 0/1/2 完成 |
-| [NexusERP_AI二阶段开发计划_AI平台能力深化.md](./NexusERP_AI二阶段开发计划_AI平台能力深化.md) | 二阶段：S2-A 知识图谱 / S2-B 推理增强 / S2-C 联网+MCP+多模态 | ✅ S2-B/S2-C 完成 / S2-A 搁置 |
+| [NexusERP_AI二阶段开发计划_AI平台能力深化.md](./NexusERP_AI二阶段开发计划_AI平台能力深化.md) | 二阶段：S2-A 知识图谱 / S2-B 推理增强 / S2-C 联网+MCP+多模态 | ✅ S2-A/S2-B/S2-C 代码完成（S2-A 待运行时验证） |
 
 ### 周计划 / 审查
 | 文档 | 周次 | 主题 | 状态 |
@@ -58,6 +58,10 @@
 - 前端：MCP 市场页（`views/ai/mcp/market.vue`）、文生图渲染（`ImageRenderer.vue` + `AI_IMAGE` 接线）、联网开关+来源卡（`WebSearchToggle.vue`）全部完成
 - 代码审查发现并修复 2 个 Bug（MCP 加载状态值、crawlWebpage 超时）
 
-### S2-A 知识图谱 — 暂搁
+### S2-A 知识图谱 ✅ 代码完成（待运行时验证）
 
-- 用户决定暂搁（工作量最大、需自研），后续单独排期
+- 后端 + 前端 + SQL 全部完成并编译通过（后端 BUILD SUCCESS / 前端 vue-tsc 零新增错误）
+- 实施计划与开发文档详见 `doc/ai/NexusERP_AI二阶段实施计划_S2A.md`
+- 范围超出主计划原 v1：纳入社区检测（自实现标签传播）+ 社区摘要 + 全局检索（map-reduce）+ Agent 图谱查询 @Tool，约 26 人天
+- 存储 MySQL 优先，Neo4j 经 `GraphStoreStrategy` 预留 v2；可视化用已安装的 echarts；v1 零新依赖
+- ⬜ 待运行时验证：执行 `doc/ai/sql/ai-stage2-a.sql` + 起应用 + 配置 LLM 跑端到端构建

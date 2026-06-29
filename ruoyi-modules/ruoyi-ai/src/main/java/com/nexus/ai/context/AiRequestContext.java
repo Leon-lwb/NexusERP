@@ -24,6 +24,9 @@ public final class AiRequestContext {
     private static final ThreadLocal<Long> MODEL_ID = new InheritableThreadLocal<>();
     private static final ThreadLocal<String> MODEL_NAME = new InheritableThreadLocal<>();
 
+    /** 当前对话选中的知识库ID（供 KnowledgeGraphTool 限定图谱范围） */
+    private static final ThreadLocal<Long> KNOWLEDGE_ID = new InheritableThreadLocal<>();
+
     /** Agent 模式下暂存最后一次 LLM 调用的 token 用量（由 AiChatModelListener 写入） */
     private static final ThreadLocal<Integer> LAST_INPUT_TOKENS = new InheritableThreadLocal<>();
     private static final ThreadLocal<Integer> LAST_OUTPUT_TOKENS = new InheritableThreadLocal<>();
@@ -118,6 +121,24 @@ public final class AiRequestContext {
     }
 
     /**
+     * 设置当前对话选中的知识库ID
+     *
+     * @param knowledgeId 知识库ID
+     */
+    public static void setKnowledgeId(Long knowledgeId) {
+        KNOWLEDGE_ID.set(knowledgeId);
+    }
+
+    /**
+     * 获取当前对话选中的知识库ID
+     *
+     * @return 知识库ID，可能为 null
+     */
+    public static Long getKnowledgeId() {
+        return KNOWLEDGE_ID.get();
+    }
+
+    /**
      * 清理上下文（必须在异步任务结束时调用，避免内存泄漏）
      */
     public static void clear() {
@@ -127,6 +148,7 @@ public final class AiRequestContext {
         SESSION_ID.remove();
         MODEL_ID.remove();
         MODEL_NAME.remove();
+        KNOWLEDGE_ID.remove();
         LAST_INPUT_TOKENS.remove();
         LAST_OUTPUT_TOKENS.remove();
         LAST_MODEL_ID.remove();

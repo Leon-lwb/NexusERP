@@ -1,8 +1,13 @@
 package com.nexus.ai.service.rag;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.ai.config.AiProperties;
+import com.nexus.ai.service.kg.GraphStoreStrategy;
 import com.nexus.common.ai.domain.entity.AiKnowledge;
 import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
+import com.nexus.common.ai.domain.entity.AiKnowledgeGraph;
+import com.nexus.common.ai.domain.entity.AiKgEntity;
+import com.nexus.common.ai.domain.entity.AiKgRelation;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
@@ -35,6 +40,8 @@ public class RetrieverService {
     private final JdbcTemplate jdbcTemplate;
     private final RerankService rerankService;
     private final IAiModelService aiModelService;
+    private final GraphStoreStrategy graphStoreStrategy;
+    private final AiProperties aiProperties;
 
     /** 默认最大返回结果数 */
     private static final int DEFAULT_MAX_RESULTS = 5;
@@ -217,6 +224,18 @@ public class RetrieverService {
             contentMap.putIfAbsent(chunk.getId(), chunk.getContent());
         }
 
+        // 3. 图谱召回（第三路，并入 RRF）
+        AiProperties.KnowledgeGraphConfig graphCfg = aiProperties.getKnowledgeGraph();
+        if (graphCfg.isEnabled()) {
+            List<AiKnowledgeChunk> graphChunks = performGraphRecall(knowledgeId, query, maxResults, graphCfg);
+            double gw = graphCfg.getGraphWeight();
+            for (int i = 0; i < graphChunks.size(); i++) {
+                AiKnowledgeChunk c = graphChunks.get(i);
+                scoreMap.merge(c.getId(), gw * (1.0 / (RRF_K + i + 1)), Double::sum);
+                contentMap.putIfAbsent(c.getId(), c.getContent());
+            }
+        }
+
         // 按 RRF 分数降序排列
         return scoreMap.entrySet().stream()
             .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
@@ -324,5 +343,100 @@ public class RetrieverService {
         config.setHybridAlpha(vo.getHybridAlpha());
         config.setEmbeddingModel(vo.getEmbeddingModel());
         return config;
+    }
+
+    /**
+     * 图谱局部召回（local search）：实体链接 → 1 跳邻居 → 回溯来源 chunk
+     * <p>仅图谱构建完成（status=2）时生效；失败回退空列表，不阻断 RRF 融合</p>
+     *
+     * @param knowledgeId 知识库ID
+     * @param query       查询文本
+     * @param limit       最大返回数
+     * @param cfg         知识图谱配置
+     * @return 回溯到的来源 chunk 列表（按来源实体 mention_count 降序）
+     */
+    private List<AiKnowledgeChunk> performGraphRecall(Long knowledgeId, String query, int limit,
+                                                       AiProperties.KnowledgeGraphConfig cfg) {
+        try {
+            AiKnowledgeGraph graph = graphStoreStrategy.findGraphByKnowledge(knowledgeId);
+            if (graph == null || !"2".equals(graph.getGraphStatus())) {
+                return List.of();
+            }
+            List<AiKgEntity> allEntities = graphStoreStrategy.listEntitiesByGraphId(graph.getId());
+            if (allEntities.isEmpty()) {
+                return List.of();
+            }
+            Map<Long, AiKgEntity> entityById = new HashMap<>();
+            Map<Long, Long> chunkToMaxMention = new HashMap<>();
+            List<AiKgEntity> hits = new ArrayList<>();
+            for (AiKgEntity e : allEntities) {
+                entityById.put(e.getId(), e);
+                if (e.getSourceChunkId() != null) {
+                    long mc = e.getMentionCount() != null ? e.getMentionCount() : 0;
+                    chunkToMaxMention.merge(e.getSourceChunkId(), mc, Math::max);
+                }
+                String name = e.getEntityName();
+                if (name != null && !name.isBlank() && query.contains(name)) {
+                    hits.add(e);
+                }
+            }
+            if (hits.isEmpty()) {
+                return List.of();
+            }
+            Set<Long> hitIds = hits.stream().map(AiKgEntity::getId).collect(Collectors.toSet());
+
+            // 1 跳邻居（限 maxNeighbors）
+            Set<Long> neighborIds = graphStoreStrategy.findNeighborEntityIds(graph.getId(), hitIds);
+            if (neighborIds.size() > cfg.getMaxNeighbors()) {
+                neighborIds = new HashSet<>(new ArrayList<>(neighborIds).subList(0, cfg.getMaxNeighbors()));
+            }
+
+            // 收集候选 chunkId：命中实体 + 邻居实体 + 相关关系的来源 chunk
+            Set<Long> candidateChunkIds = new HashSet<>();
+            for (AiKgEntity e : hits) {
+                if (e.getSourceChunkId() != null) {
+                    candidateChunkIds.add(e.getSourceChunkId());
+                }
+            }
+            for (Long nbId : neighborIds) {
+                AiKgEntity nb = entityById.get(nbId);
+                if (nb != null && nb.getSourceChunkId() != null) {
+                    candidateChunkIds.add(nb.getSourceChunkId());
+                }
+            }
+            Set<Long> relatedIds = new HashSet<>(hitIds);
+            relatedIds.addAll(neighborIds);
+            List<AiKgRelation> rels = graphStoreStrategy.listRelationsByEntities(graph.getId(), relatedIds);
+            for (AiKgRelation r : rels) {
+                if (r.getSourceChunkId() != null) {
+                    candidateChunkIds.add(r.getSourceChunkId());
+                }
+            }
+
+            // 按来源实体 max mention 降序，截 limit
+            List<Long> ordered = candidateChunkIds.stream()
+                .sorted(Comparator.comparingLong((Long c) -> chunkToMaxMention.getOrDefault(c, 0L)).reversed())
+                .limit(limit)
+                .collect(Collectors.toList());
+            if (ordered.isEmpty()) {
+                return List.of();
+            }
+            List<AiKnowledgeChunk> chunks = graphStoreStrategy.findSourceChunks(ordered);
+            Map<Long, AiKnowledgeChunk> chunkById = new HashMap<>();
+            for (AiKnowledgeChunk c : chunks) {
+                chunkById.put(c.getId(), c);
+            }
+            List<AiKnowledgeChunk> result = new ArrayList<>();
+            for (Long id : ordered) {
+                AiKnowledgeChunk c = chunkById.get(id);
+                if (c != null) {
+                    result.add(c);
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            log.warn("[RetrieverService] 图谱召回失败，回退: {}", e.getMessage());
+            return List.of();
+        }
     }
 }

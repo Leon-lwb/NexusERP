@@ -363,3 +363,18 @@ nexus:
     image:
       enabled: true
       default-provider: Tongyiwanx
+    # 知识图谱
+    knowledge-graph:
+      enabled: true
+      storage: mysql
+      batch-size: 5
+      max-entities-per-chunk: 20
+      max-relations-per-chunk: 30
+      confidence-threshold: 0.5
+      extraction-model-id: 1        # deepseek-v4-flash（DeepSeek 官方）
+      graph-weight: 0.5
+      max-neighbors: 20
+      label-propagation-max-iter: 8
+      max-communities: 50
+      max-communities-for-global: 50
+      gleaning-enabled: false

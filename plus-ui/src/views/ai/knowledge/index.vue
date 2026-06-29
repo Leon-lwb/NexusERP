@@ -72,8 +72,9 @@
 
       <!-- 右侧：文档管理 + 检索测试 -->
       <el-col v-if="selectedKnowledge" :span="12">
-        <!-- 文档管理 -->
-        <el-card shadow="hover" class="mb-[10px]">
+        <el-tabs v-model="kgTab" class="knowledge-tabs">
+          <el-tab-pane label="文档管理" name="doc">
+            <el-card shadow="hover">
           <template #header>
             <el-row :gutter="10" class="mb8">
               <el-col :span="12">
@@ -115,10 +116,10 @@
               </template>
             </el-table-column>
           </el-table>
-        </el-card>
-
-        <!-- 检索测试 -->
-        <el-card shadow="hover">
+            </el-card>
+          </el-tab-pane>
+          <el-tab-pane label="检索测试" name="retrieval">
+            <el-card shadow="hover">
           <template #header>
             <span class="font-bold">检索测试</span>
           </template>
@@ -154,7 +155,12 @@
             </div>
           </div>
           <el-empty v-else-if="retrievalQueried" description="未检索到相关内容" />
-        </el-card>
+            </el-card>
+          </el-tab-pane>
+          <el-tab-pane label="知识图谱" name="graph">
+            <Graph :knowledge-id="selectedKnowledge.id" />
+          </el-tab-pane>
+        </el-tabs>
       </el-col>
     </el-row>
 
@@ -274,6 +280,11 @@ const single = ref(true)
 const multiple = ref(true)
 const selectedKnowledge = ref<any>(null)
 const showAdvanced = ref(false)
+
+/** 知识图谱 Tab 组件（懒加载，避免首屏加载 echarts） */
+const Graph = defineAsyncComponent(() => import('./graph.vue'))
+/** 右侧详情当前 Tab */
+const kgTab = ref('doc')
 
 // 检索测试相关
 const retrievalQuery = ref('')

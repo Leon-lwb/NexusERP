@@ -10,6 +10,7 @@ import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -24,6 +25,9 @@ import java.util.List;
 public class OllamaServiceProvider implements ChatServiceProvider {
 
     private final List<ChatModelListener> chatModelListeners;
+
+    /** Ollama 单次调用超时秒数（本地推理模型如 deepseek-r1 较慢，设大避免 timeout） */
+    private static final long OLLAMA_TIMEOUT_SECONDS = 300;
 
     @Override
     public String getProviderType() {
@@ -41,6 +45,8 @@ public class OllamaServiceProvider implements ChatServiceProvider {
             .baseUrl(config.getApiHost())
             .modelName(config.getModelName())
             .temperature(config.getTemperature() != null ? config.getTemperature().doubleValue() : 0.7)
+            .numPredict(config.getMaxTokens())
+            .timeout(Duration.ofSeconds(OLLAMA_TIMEOUT_SECONDS))
             .listeners(chatModelListeners)
             .build();
     }
@@ -51,6 +57,8 @@ public class OllamaServiceProvider implements ChatServiceProvider {
             .baseUrl(config.getApiHost())
             .modelName(config.getModelName())
             .temperature(temperature)
+            .numPredict(config.getMaxTokens())
+            .timeout(Duration.ofSeconds(OLLAMA_TIMEOUT_SECONDS))
             .listeners(chatModelListeners)
             .build();
     }
