@@ -165,6 +165,7 @@ public class WmTransferController extends BaseController {
     @SaCheckPermission("wm:transfer:query")
     @GetMapping("/{transferId}/proc")
     public R<String> getProcInsId(@PathVariable Long transferId) {
-        return R.ok(wmTransferService.getProcInsId(String.valueOf(transferId)));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
+        return R.ok("查询成功", wmTransferService.getProcInsId(String.valueOf(transferId)));
     }
 }

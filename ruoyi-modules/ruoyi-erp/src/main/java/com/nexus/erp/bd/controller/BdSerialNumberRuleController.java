@@ -142,6 +142,7 @@ public class BdSerialNumberRuleController extends BaseController {
     @SaCheckPermission("bd:serialNumberRule:generate")
     @PostMapping("/generate/{ruleCode}")
     public R<String> generate(@PathVariable String ruleCode) {
-        return R.ok(serialNumberRuleService.generateSerialNumber(ruleCode));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把流水号误塞进 msg
+        return R.ok("查询成功", serialNumberRuleService.generateSerialNumber(ruleCode));
     }
 }

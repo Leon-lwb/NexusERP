@@ -1,7 +1,6 @@
 package com.nexus.erp.so.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -25,8 +24,7 @@ public class SoCustomerOrderBo extends BaseEntity {
     /** 客户订单ID */
     private Long coId;
 
-    /** 客户订单号 */
-    @NotBlank(message = "客户订单号不能为空")
+    /** 客户订单号（为空时由后端按 SO_CO_NO 规则自动生成） */
     private String coNo;
 
     /** 客户ID */

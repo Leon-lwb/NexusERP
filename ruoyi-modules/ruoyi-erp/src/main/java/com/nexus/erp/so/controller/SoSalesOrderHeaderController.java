@@ -117,7 +117,10 @@ public class SoSalesOrderHeaderController extends BaseController {
     @GetMapping("/{soId}/proc")
     public R<String> getProcInsId(@PathVariable Long soId) {
         String procInsId = soSalesOrderHeaderService.getProcInsId(String.valueOf(soId));
-        return R.ok(procInsId);
+        // 注意：不能使用 R.ok(procInsId)。procInsId 是 String，会命中重载 R.ok(String msg)，
+        // 导致流程实例 ID 被塞进 msg、data 为 null，前端读取 res.data 时拿不到值（显示“暂无流程信息”）。
+        // 这里显式使用 R.ok(String msg, T data) 重载，把 ID 放入 data。
+        return R.ok("查询成功", procInsId);
     }
 
     /**

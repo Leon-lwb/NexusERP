@@ -80,6 +80,7 @@ public class MesMbomController extends BaseController {
     @SaCheckPermission("mes:pro:mbom:query")
     @GetMapping("/verify/{mbomId}")
     public R<String> verify(@PathVariable Long mbomId) {
-        return R.ok(mesMbomService.verify(mbomId));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把校验结果误塞进 msg
+        return R.ok("查询成功", mesMbomService.verify(mbomId));
     }
 }

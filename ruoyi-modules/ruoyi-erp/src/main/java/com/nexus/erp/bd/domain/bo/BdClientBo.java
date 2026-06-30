@@ -26,9 +26,8 @@ public class BdClientBo extends BaseEntity {
     private Long clientId;
 
     /**
-     * 客户编码
+     * 客户编码（为空时由后端按 CLIENT_CODE 规则自动生成）
      */
-    @NotBlank(message = "客户编码不能为空")
     private String clientCode;
 
     /**

@@ -1,7 +1,6 @@
 package com.nexus.erp.so.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -26,8 +25,7 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     /** 销售订单ID */
     private Long soId;
 
-    /** 销售订单编号 */
-    @NotBlank(message = "销售订单编号不能为空")
+    /** 销售订单编号（为空时由后端按 SO_ORDER_CODE 规则自动生成） */
     private String soNo;
 
     /** 客户订单ID */

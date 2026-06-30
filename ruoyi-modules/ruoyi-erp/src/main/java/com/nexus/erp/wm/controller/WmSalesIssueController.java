@@ -192,6 +192,7 @@ public class WmSalesIssueController extends BaseController {
     @SaCheckPermission("wm:salesIssue:query")
     @GetMapping("/{issueId}/proc")
     public R<String> getProcInsId(@PathVariable Long issueId) {
-        return R.ok(wmSalesIssueService.getProcInsId(String.valueOf(issueId)));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
+        return R.ok("查询成功", wmSalesIssueService.getProcInsId(String.valueOf(issueId)));
     }
 }

@@ -181,6 +181,7 @@ public class WmStockTakingPlanController extends BaseController {
     @SaCheckPermission("wm:stocktaking:query")
     @GetMapping("/proc/{id}")
     public R<String> getProcInsId(@PathVariable Long id) {
-        return R.ok(wmStockTakingPlanService.getProcInsId(String.valueOf(id)));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
+        return R.ok("查询成功", wmStockTakingPlanService.getProcInsId(String.valueOf(id)));
     }
 }

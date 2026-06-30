@@ -225,6 +225,7 @@ public class PrdWorkOrderController extends BaseController {
     @SaCheckPermission("prd:work:query")
     @GetMapping("/{woId}/proc")
     public R<String> getProcInsId(@PathVariable Long woId) {
-        return R.ok(prdWorkOrderService.getProcInsId(String.valueOf(woId)));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
+        return R.ok("查询成功", prdWorkOrderService.getProcInsId(String.valueOf(woId)));
     }
 }

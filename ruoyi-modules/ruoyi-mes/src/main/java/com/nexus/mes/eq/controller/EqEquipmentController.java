@@ -85,7 +85,8 @@ public class EqEquipmentController extends BaseController {
     @SaCheckPermission("mes:eq:equipment:query")
     @GetMapping("/{equipmentId}/iotStatus")
     public R<String> getIotStatus(@PathVariable Long equipmentId) {
-        return R.ok(eqEquipmentService.getIotStatus(equipmentId));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把状态误塞进 msg
+        return R.ok("查询成功", eqEquipmentService.getIotStatus(equipmentId));
     }
 
     /**

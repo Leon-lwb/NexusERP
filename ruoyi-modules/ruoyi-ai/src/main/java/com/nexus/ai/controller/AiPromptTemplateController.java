@@ -119,6 +119,7 @@ public class AiPromptTemplateController extends BaseController {
             case "supervisor" -> rendered = promptTemplateRenderingService.renderSupervisorContext();
             default -> rendered = promptTemplateRenderingService.render(templateKey, java.util.Map.of());
         }
-        return R.ok(rendered);
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把渲染结果误塞进 msg
+        return R.ok("查询成功", rendered);
     }
 }

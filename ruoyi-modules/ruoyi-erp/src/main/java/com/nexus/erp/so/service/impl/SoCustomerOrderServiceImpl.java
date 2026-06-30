@@ -13,6 +13,7 @@ import com.nexus.erp.so.domain.bo.SoCustomerOrderBo;
 import com.nexus.erp.so.domain.vo.SoCustomerOrderVo;
 import com.nexus.erp.so.mapper.SoCustomerOrderMapper;
 import com.nexus.erp.so.service.ISoCustomerOrderService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.List;
 public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
 
     private final SoCustomerOrderMapper baseMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * 分页查询客户订单列表
@@ -64,6 +66,9 @@ public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoCustomerOrderBo bo) {
         SoCustomerOrder entity = MapstructUtils.convert(bo, SoCustomerOrder.class);
+        if (StringUtils.isBlank(entity.getCoNo())) {
+            entity.setCoNo(autoCodeUtil.genSerialCode("SO_CO_NO", null));
+        }
         return baseMapper.insert(entity);
     }
 

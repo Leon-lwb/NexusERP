@@ -127,6 +127,7 @@ public class BdRoutingController extends BaseController {
     @GetMapping("/verify/{routingId}")
     public R<String> verify(@PathVariable Long routingId) {
         String result = bdRoutingService.verifyRouting(routingId);
-        return R.ok(result);
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把校验结果误塞进 msg
+        return R.ok("查询成功", result);
     }
 }

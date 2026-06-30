@@ -154,7 +154,8 @@ public class BdBomController extends BaseController {
     @GetMapping("/verify/{bomId}")
     public R<String> verify(@PathVariable Long bomId) {
         String result = bdBomService.verifyBom(bomId);
-        return R.ok(result);
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把校验结果误塞进 msg
+        return R.ok("查询成功", result);
     }
 
     /**

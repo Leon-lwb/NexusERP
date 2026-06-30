@@ -279,7 +279,8 @@ public class UnifiedGenController extends BaseController {
             throw new ServiceException("设计内容不能为空");
         }
         String sql = unifiedGenService.generateCreateTableSql(designJson);
-        return R.ok(sql);
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 SQL 误塞进 msg、data 为 null
+        return R.ok("查询成功", sql);
     }
 
     /**

@@ -120,6 +120,7 @@ public class ProWorkOrderController extends BaseController {
     @SaCheckPermission("mes:pro:work:query")
     @GetMapping("/{mesWoId}/proc")
     public R<String> getProcInsId(@PathVariable Long mesWoId) {
-        return R.ok(proWorkOrderService.getProcInsId(String.valueOf(mesWoId)));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
+        return R.ok("查询成功", proWorkOrderService.getProcInsId(String.valueOf(mesWoId)));
     }
 }

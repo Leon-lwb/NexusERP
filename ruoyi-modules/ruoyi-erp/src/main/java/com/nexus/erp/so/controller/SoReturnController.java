@@ -179,6 +179,7 @@ public class SoReturnController extends BaseController {
     @SaCheckPermission("so:return:query")
     @GetMapping("/{returnId}/proc")
     public R<String> getProcInsId(@PathVariable Long returnId) {
-        return R.ok(soReturnService.getProcInsId(String.valueOf(returnId)));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
+        return R.ok("查询成功", soReturnService.getProcInsId(String.valueOf(returnId)));
     }
 }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.extern.slf4j.Slf4j;
-import com.nexus.common.json.handler.BigNumberSerializer;
 import com.nexus.common.json.handler.CustomDateDeserializer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
@@ -33,9 +32,9 @@ public class JacksonConfig {
     public Module registerJavaTimeModule() {
         // 全局配置序列化返回 JSON 处理
         JavaTimeModule javaTimeModule = new JavaTimeModule();
-        javaTimeModule.addSerializer(Long.class, BigNumberSerializer.INSTANCE);
-        javaTimeModule.addSerializer(Long.TYPE, BigNumberSerializer.INSTANCE);
-        javaTimeModule.addSerializer(BigInteger.class, BigNumberSerializer.INSTANCE);
+        // 注意：Long / long 的“超长数字转 String”由 ruoyi-common-web 的 BigNumberSerializer 负责。
+        // 这里不再为 Long 注册序列化器，避免两个模块对同一类型重复注册、导致最终生效的序列化器不确定。
+        javaTimeModule.addSerializer(BigInteger.class, ToStringSerializer.instance);
         javaTimeModule.addSerializer(BigDecimal.class, ToStringSerializer.instance);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(formatter));

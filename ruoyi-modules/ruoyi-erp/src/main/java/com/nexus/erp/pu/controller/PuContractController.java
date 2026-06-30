@@ -107,7 +107,8 @@ public class PuContractController extends BaseController {
     @SaCheckPermission("pu:contract:query")
     @GetMapping("/procInsId/{contractIdStr}")
     public R<String> getProcInsId(@PathVariable String contractIdStr) {
-        return R.ok(puContractService.getProcInsId(contractIdStr));
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
+        return R.ok("查询成功", puContractService.getProcInsId(contractIdStr));
     }
 
     /**
