@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
 import com.nexus.erp.wm.domain.WmStorageArea;
+import com.nexus.erp.wm.domain.vo.WmStorageArea3dVo;
 import com.nexus.erp.wm.domain.vo.WmStorageAreaTreeVo;
 import com.nexus.erp.wm.domain.vo.WmStorageAreaVo;
 import org.apache.ibatis.annotations.Param;
@@ -40,4 +41,12 @@ public interface WmStorageAreaMapper extends BaseMapperPlus<WmStorageArea, WmSto
      * @return 库区树形数据列表
      */
     List<WmStorageAreaTreeVo> selectAreaTreeList();
+
+    /**
+     * 查询指定仓库的库区 3D 可视化列表（含 3D 字段）
+     *
+     * @param warehouseId 仓库ID
+     * @return 库区 3D 视图列表
+     */
+    List<WmStorageArea3dVo> selectArea3dByWarehouseId(@Param("warehouseId") Long warehouseId);
 }

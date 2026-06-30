@@ -2,8 +2,10 @@ package com.nexus.erp.wm.mapper;
 
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
 import com.nexus.erp.wm.domain.WmWarehouse;
+import com.nexus.erp.wm.domain.vo.WmWarehouse3dVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -20,4 +22,12 @@ public interface WmWarehouseMapper extends BaseMapperPlus<WmWarehouse, WmWarehou
      * @return 仓库树形数据列表
      */
     List<WmWarehouseTreeVo> selectWarehouseTreeList();
+
+    /**
+     * 查询仓库 3D 可视化基础信息
+     *
+     * @param warehouseId 仓库ID
+     * @return 仓库 3D 视图对象
+     */
+    WmWarehouse3dVo selectWarehouse3dById(@Param("warehouseId") Long warehouseId);
 }

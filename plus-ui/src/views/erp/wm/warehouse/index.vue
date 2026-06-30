@@ -70,10 +70,12 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220px">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260px">
         <template #default="scope">
           <el-button size="mini" type="text" icon="box" @click="handleStoragearea(scope.row.warehouseId)"
             v-hasPermi="['wm:storagearea:edit', 'wm:storagearea:list']">库区</el-button>
+          <el-button link type="primary" icon="View" @click="handleView3d(scope.row.warehouseId)"
+            v-hasPermi="['wm:warehouse:query']">3D预览</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
             v-hasPermi="['wm:warehouse:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
@@ -596,6 +598,10 @@ function updateAddressField() {
 
 function handleStoragearea(warehouseId: number) {
   proxy.$router.push({ path: '/erp/wm/storagearea/index', query: { warehouseId: warehouseId || 0 } })
+}
+
+function handleView3d(warehouseId: number) {
+  proxy.$router.push('/erp/wm/warehouse/3d/' + warehouseId)
 }
 
 getList()

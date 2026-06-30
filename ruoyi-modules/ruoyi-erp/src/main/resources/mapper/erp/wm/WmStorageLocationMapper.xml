@@ -30,4 +30,17 @@
         ORDER BY area_id, location_id
     </select>
 
+    <!-- 查询指定仓库的库位 3D 可视化列表 -->
+    <select id="selectLocation3dByWarehouseId" resultType="com.nexus.erp.wm.domain.vo.WmStorageLocation3dVo">
+        SELECT location_id, location_code, location_name, area_id,
+               pos_x, pos_y, pos_z, width, height, location_depth,
+               rotation_x, rotation_y, rotation_z,
+               color_empty, color_occupied, color_locked, color_warning, opacity,
+               show_border, border_color, border_width, show_label, label_position, label_size,
+               frozen_flag, enable_flag, rack_id, layer, col, row_num, status, occupancy_rate
+        FROM wm_storage_location
+        WHERE warehouse_id = #{warehouseId} AND del_flag = '0'
+        ORDER BY area_id, location_id
+    </select>
+
 </mapper>

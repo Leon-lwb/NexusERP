@@ -11,6 +11,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.wm.domain.bo.WmWarehouseBo;
+import com.nexus.erp.wm.domain.vo.WmWarehouse3dVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
 import com.nexus.erp.wm.service.IWmWarehouseService;
@@ -138,5 +139,22 @@ public class WmWarehouseController extends BaseController {
     @GetMapping("/tree")
     public R<List<WmWarehouseTreeVo>> getWareHouseTree() {
         return R.ok(wmWarehouseService.getWareHouseTree());
+    }
+
+    /**
+     * 获取仓库 3D 可视化聚合数据
+     * <p>
+     * 权限标识：{@code wm:warehouse:query}</p>
+     * <p>
+     * 返回仓库基础信息 + 库区列表（含库位 3D 坐标与库存状态），供前端 three.js 渲染。
+     * </p>
+     *
+     * @param id 仓库 ID
+     * @return 仓库 3D 可视化聚合数据
+     */
+    @SaCheckPermission("wm:warehouse:query")
+    @GetMapping("/{id}/3d")
+    public R<WmWarehouse3dVo> getWarehouse3d(@PathVariable Long id) {
+        return R.ok(wmWarehouseService.getWarehouse3d(id));
     }
 }

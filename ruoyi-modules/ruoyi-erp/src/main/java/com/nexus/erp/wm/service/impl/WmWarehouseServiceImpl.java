@@ -14,8 +14,12 @@ import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.domain.bo.WmWarehouseBo;
+import com.nexus.erp.wm.domain.vo.WmLocationStockAggVo;
+import com.nexus.erp.wm.domain.vo.WmStorageArea3dVo;
 import com.nexus.erp.wm.domain.vo.WmStorageAreaTreeVo;
+import com.nexus.erp.wm.domain.vo.WmStorageLocation3dVo;
 import com.nexus.erp.wm.domain.vo.WmStorageLocationTreeVo;
+import com.nexus.erp.wm.domain.vo.WmWarehouse3dVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
@@ -28,6 +32,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -150,6 +156,93 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
         }
 
         return warehouses;
+    }
+
+    /**
+     * 获取仓库 3D 可视化聚合数据
+     * <p>
+     * 一次性查询仓库、库区、库位与库存聚合，在内存中组装：
+     * 库存聚合挂库位 → 计算库位状态(EMPTY/OCCUPIED/WARNING/LOCKED) → 库位按库区分组 → 汇总计数。
+     * 状态优先级：LOCKED > WARNING > OCCUPIED > EMPTY。
+     * </p>
+     *
+     * @param warehouseId 仓库ID
+     * @return 仓库 3D 视图对象
+     */
+    @Override
+    public WmWarehouse3dVo getWarehouse3d(Long warehouseId) {
+        WmWarehouse3dVo warehouse = baseMapper.selectWarehouse3dById(warehouseId);
+        if (warehouse == null) {
+            return null;
+        }
+        List<WmStorageArea3dVo> areas = wmStorageAreaMapper.selectArea3dByWarehouseId(warehouseId);
+        List<WmStorageLocation3dVo> locations = wmStorageLocationMapper.selectLocation3dByWarehouseId(warehouseId);
+        List<WmLocationStockAggVo> stocks = wmMaterialStockMapper.aggregateStockByWarehouse(warehouseId);
+
+        // 库存聚合按库位建立索引
+        Map<Long, WmLocationStockAggVo> stockMap = stocks.stream()
+            .collect(Collectors.toMap(WmLocationStockAggVo::getLocationId, s -> s));
+        // 装配库存并计算库位状态
+        for (WmStorageLocation3dVo loc : locations) {
+            applyStatus(loc, stockMap.get(loc.getLocationId()));
+        }
+        // 库位按库区分组挂载
+        Map<Long, List<WmStorageLocation3dVo>> locByArea = locations.stream()
+            .collect(Collectors.groupingBy(WmStorageLocation3dVo::getAreaId));
+        for (WmStorageArea3dVo area : areas) {
+            area.setLocations(locByArea.get(area.getAreaId()));
+        }
+
+        warehouse.setAreas(areas);
+        warehouse.setTotalLocations(locations.size());
+        warehouse.setOccupiedLocations(countByStatus(locations, "OCCUPIED"));
+        warehouse.setEmptyLocations(countByStatus(locations, "EMPTY"));
+        warehouse.setLockedLocations(countByStatus(locations, "LOCKED"));
+        warehouse.setWarningLocations(countByStatus(locations, "WARNING"));
+        return warehouse;
+    }
+
+    /**
+     * 根据库存聚合计算库位状态并回填库存字段
+     */
+    private void applyStatus(WmStorageLocation3dVo loc, WmLocationStockAggVo agg) {
+        if (agg == null || agg.getStockCount() == null || agg.getStockCount() == 0
+            || agg.getStockQuantity() == null || agg.getStockQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+            loc.setStatus("EMPTY");
+            loc.setStockQuantity(BigDecimal.ZERO);
+            loc.setReservedQuantity(BigDecimal.ZERO);
+            loc.setStockCount(0);
+            return;
+        }
+        loc.setStockQuantity(agg.getStockQuantity());
+        loc.setReservedQuantity(agg.getReservedQuantity());
+        loc.setStockCount(agg.getStockCount());
+        // 锁定：库位冻结或库位下任一库存冻结
+        boolean locked = Long.valueOf(1L).equals(loc.getFrozenFlag())
+            || Long.valueOf(1L).equals(agg.getFrozenFlag());
+        if (locked) {
+            loc.setStatus("LOCKED");
+            return;
+        }
+        // 预警：预留占比 >= 80%
+        BigDecimal reserved = agg.getReservedQuantity() != null ? agg.getReservedQuantity() : BigDecimal.ZERO;
+        if (reserved.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal ratio = reserved.divide(agg.getStockQuantity(), 2, RoundingMode.HALF_UP);
+            if (ratio.compareTo(new BigDecimal("0.8")) >= 0) {
+                loc.setStatus("WARNING");
+                return;
+            }
+        }
+        loc.setStatus("OCCUPIED");
+    }
+
+    /**
+     * 统计指定状态的库位数量
+     */
+    private int countByStatus(List<WmStorageLocation3dVo> locations, String status) {
+        return (int) locations.stream()
+            .filter(l -> status.equals(l.getStatus()))
+            .count();
     }
 
     private LambdaQueryWrapper<WmWarehouse> buildQueryWrapper(WmWarehouseBo bo) {

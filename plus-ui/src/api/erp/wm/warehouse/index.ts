@@ -24,6 +24,13 @@ export const getWareHouseTree = (): AxiosPromise<any> => {
   });
 };
 
+export const getWarehouse3d = (warehouseId: string | number): AxiosPromise<Warehouse3dVO> => {
+  return request({
+    url: '/erp/wm/warehouse/' + warehouseId + '/3d',
+    method: 'get'
+  });
+};
+
 export const addWarehouse = (data: WarehouseForm) => {
   return request({
     url: '/erp/wm/warehouse',

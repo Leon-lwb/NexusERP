@@ -23,4 +23,16 @@
         </foreach>
     </select>
 
+    <!-- 按库位聚合查询指定仓库的库存汇总 -->
+    <select id="aggregateStockByWarehouse" resultType="com.nexus.erp.wm.domain.vo.WmLocationStockAggVo">
+        SELECT location_id              AS locationId,
+               COUNT(*)                 AS stockCount,
+               COALESCE(SUM(stock_quantity), 0)     AS stockQuantity,
+               COALESCE(SUM(reserved_quantity), 0)  AS reservedQuantity,
+               MAX(frozen_flag)         AS frozenFlag
+        FROM wm_material_stock
+        WHERE warehouse_id = #{warehouseId} AND del_flag = '0'
+        GROUP BY location_id
+    </select>
+
 </mapper>

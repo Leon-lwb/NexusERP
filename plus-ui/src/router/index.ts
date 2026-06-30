@@ -346,6 +346,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/wm/warehouse/3d/:warehouseId',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:warehouse:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/warehouse/3d.vue'),
+        name: 'Warehouse3d',
+        meta: { title: '3D仓库可视化', activeMenu: '/erp/wm/warehouse' }
+      }
+    ]
+  },
+  {
     path: '/erp/wm/transfer/form',
     component: Layout,
     hidden: true,

@@ -3,6 +3,7 @@ package com.nexus.erp.wm.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.domain.bo.WmWarehouseBo;
+import com.nexus.erp.wm.domain.vo.WmWarehouse3dVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
 
@@ -50,4 +51,12 @@ public interface IWmWarehouseService {
      * 获取仓库树
      */
     List<WmWarehouseTreeVo> getWareHouseTree();
+
+    /**
+     * 获取仓库 3D 可视化聚合数据（仓库 + 库区 + 库位 + 库存状态）
+     *
+     * @param warehouseId 仓库ID
+     * @return 仓库 3D 视图对象
+     */
+    WmWarehouse3dVo getWarehouse3d(Long warehouseId);
 }

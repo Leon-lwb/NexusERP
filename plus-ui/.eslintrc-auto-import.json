@@ -5,6 +5,7 @@
     "ComputedRef": true,
     "DirectiveBinding": true,
     "EffectScope": true,
+    "ElCheckbox": true,
     "ElForm": true,
     "ElLoading": true,
     "ElMessage": true,

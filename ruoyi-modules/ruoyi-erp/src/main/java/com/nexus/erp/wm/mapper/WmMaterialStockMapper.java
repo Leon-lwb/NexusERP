@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
 import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.vo.WmLocationStockAggVo;
 import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
 
 import java.math.BigDecimal;
@@ -24,6 +25,14 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
      * @return 库存清单集合
      */
     List<WmMaterialStockVo> selectByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
+
+    /**
+     * 按库位聚合查询指定仓库的库存汇总（供 3D 可视化库位状态计算）
+     *
+     * @param warehouseId 仓库ID
+     * @return 库位库存聚合列表
+     */
+    List<WmLocationStockAggVo> aggregateStockByWarehouse(@Param("warehouseId") Long warehouseId);
 
     /**
      * 原子扣减库存

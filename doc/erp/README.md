@@ -13,6 +13,11 @@
 | [BOM管理增强-需求变更文档.md](./BOM管理增强-需求变更文档.md) | NexusERP-CHG-2026-001 | BOM 增强 Phase 1-5 | 2026-06-17 |
 | [BOM优化-ERP成本融合MES制造BOM-变更说明文档.md](./BOM优化-ERP成本融合MES制造BOM-变更说明文档.md) | NexusERP-CHG-2026-002 | ERP 成本 BOM 与 MES 制造 BOM 融合 | 2026-06-25 |
 
+### 实施计划（plans/）
+| 文档 | 编号 | 主题 | 日期 |
+|------|------|------|------|
+| [2026-06-30-erp-wm-3d-warehouse-plan.md](./plans/2026-06-30-erp-wm-3d-warehouse-plan.md) | NexusERP-PLAN-2026-003 | 仓储管理（wm）3D 可视化仓库实施计划 | 2026-06-30 |
+
 ### SQL 脚本（sql/）
 | 脚本 | 用途 | 幂等 | 执行顺序 |
 |------|------|------|----------|
@@ -23,6 +28,7 @@
 | [erp-production-issue.sql](./sql/erp-production-issue.sql) | 生产领料单加字段 | ✅ | — |
 | [erp-production-issue-dict.sql](./sql/erp-production-issue-dict.sql) | 生产领料单状态字典 | ✅ | — |
 | [erp-purchase-order-contract.sql](./sql/erp-purchase-order-contract.sql) | 采购订单合同字段 | ✅ | — |
+| [erp-wm-3d-demo-seed.sql](./sql/erp-wm-3d-demo-seed.sql) | 3D仓库可视化演示数据（仓库/库区/库位/库存） | ✅ | — |
 
 ⚠️ **关键执行顺序**：`erp-bom-routing-enhancement.sql` 会给 `bd_bom_detail` 增加 `process_id`/`routing_step_id`，而 `erp-bom-cleanup.sql` 会删除这两个字段。必须按 enhancement → cleanup 顺序执行，否则会失败。
 

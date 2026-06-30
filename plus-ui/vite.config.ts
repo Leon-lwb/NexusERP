@@ -65,6 +65,7 @@ export default defineConfig(({ mode, command }) => {
         'vue-i18n',
         '@vueup/vue-quill',
         'image-conversion',
+        'three',
         'element-plus/es/components/**/css'
       ]
     }

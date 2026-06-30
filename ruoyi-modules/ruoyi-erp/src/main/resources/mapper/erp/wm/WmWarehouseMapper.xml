@@ -11,4 +11,11 @@
         ORDER BY w.warehouse_id
     </select>
 
+    <!-- 查询仓库 3D 可视化基础信息 -->
+    <select id="selectWarehouse3dById" resultType="com.nexus.erp.wm.domain.vo.WmWarehouse3dVo">
+        SELECT warehouse_id, warehouse_code, warehouse_name, status
+        FROM wm_warehouse
+        WHERE warehouse_id = #{warehouseId} AND del_flag = '0'
+    </select>
+
 </mapper>
