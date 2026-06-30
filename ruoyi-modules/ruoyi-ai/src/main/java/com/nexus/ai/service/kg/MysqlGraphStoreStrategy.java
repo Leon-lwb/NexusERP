@@ -54,8 +54,12 @@ public class MysqlGraphStoreStrategy implements GraphStoreStrategy {
 
     @Override
     public AiKnowledgeGraph findGraphByKnowledge(Long knowledgeId) {
+        // ORDER BY id DESC LIMIT 1：确定性地返回最新图谱记录。
+        // 原仅 LIMIT 1 无 ORDER BY，非确定性——防重检查/findOrCreateGraph/getInfo 各调一次可能返回不同记录，
+        // 导致"构建写入图A、前端查询图B（空）"错位，且并发构建时 findOrCreateGraph 找不到一致记录而创建重复 graph 行。
         return graphMapper.selectOne(Wrappers.<AiKnowledgeGraph>lambdaQuery()
             .eq(AiKnowledgeGraph::getKnowledgeId, knowledgeId)
+            .orderByDesc(AiKnowledgeGraph::getId)
             .last("LIMIT 1"));
     }
 
@@ -245,6 +249,19 @@ public class MysqlGraphStoreStrategy implements GraphStoreStrategy {
             .eq(AiKgCommunity::getGraphId, graphId)
             .eq(AiKgCommunity::getSummaryStatus, "2")
             .orderByDesc(AiKgCommunity::getEntityCount));
+    }
+
+    @Override
+    public long countCommunities(Long graphId) {
+        return communityMapper.selectCount(Wrappers.<AiKgCommunity>lambdaQuery()
+            .eq(AiKgCommunity::getGraphId, graphId));
+    }
+
+    @Override
+    public long countCommunitiesBySummaryStatus(Long graphId, String summaryStatus) {
+        return communityMapper.selectCount(Wrappers.<AiKgCommunity>lambdaQuery()
+            .eq(AiKgCommunity::getGraphId, graphId)
+            .eq(AiKgCommunity::getSummaryStatus, summaryStatus));
     }
 
     @Override

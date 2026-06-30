@@ -138,6 +138,16 @@ public class Neo4jGraphStoreStrategy implements GraphStoreStrategy {
     }
 
     @Override
+    public long countCommunities(Long graphId) {
+        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
+    }
+
+    @Override
+    public long countCommunitiesBySummaryStatus(Long graphId, String summaryStatus) {
+        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
+    }
+
+    @Override
     public void assignCommunityIds(Map<Long, Long> entityIdToCommunityId) {
         throw new UnsupportedOperationException(NOT_IMPLEMENTED);
     }

@@ -22,8 +22,8 @@ public class AiKgRelation extends BaseEntity {
     @TableId(value = "id")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（varchar(20)，存 '000000'，不可用 Long 否则被解析为 0） */
+    private String tenantId;
 
     /** 图谱ID */
     private Long graphId;

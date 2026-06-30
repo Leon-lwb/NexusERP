@@ -19,6 +19,9 @@
             placeholder="描述你想要生成的图片，例如：一只在月光下的猫，写实风格"
           />
         </el-form-item>
+        <el-form-item label="模型">
+          <ModelSelect v-model="form.modelId" model-type="IMAGE" value-field="id" placeholder="默认图像模型" style="width: 240px" @change="onModelChange" />
+        </el-form-item>
         <el-form-item label="尺寸">
           <el-select v-model="form.size" style="width: 240px">
             <el-option
@@ -93,6 +96,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Picture } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ImageRenderer from '@/components/ai/ImageRenderer.vue'
+import ModelSelect from '@/components/ai/ModelSelect.vue'
 import { generateImage, listImage, delImage, type AiImageRecord } from '@/api/ai/image'
 
 defineOptions({ name: 'AiImageGen' })
@@ -108,7 +112,8 @@ const queryParams = reactive({ pageNum: 1, pageSize: 10 })
 
 const form = reactive({
   prompt: '',
-  size: '1280*1280'
+  size: '1280*1280',
+  modelId: undefined as number | undefined
 })
 
 const sizeOptions = [
@@ -118,6 +123,11 @@ const sizeOptions = [
   { label: '1280 × 720（横版）', value: '1280*720' }
 ]
 
+/** 模型选择变化时回显模型名（供头部 el-tag 展示） */
+const onModelChange = (model: any) => {
+  if (model?.modelName) currentModelName.value = model.modelName
+}
+
 const handleGenerate = async () => {
   if (!form.prompt.trim()) {
     ElMessage.warning('请输入提示词')
@@ -125,7 +135,7 @@ const handleGenerate = async () => {
   }
   generating.value = true
   try {
-    const res: any = await generateImage({ prompt: form.prompt, size: form.size })
+    const res: any = await generateImage({ prompt: form.prompt, size: form.size, modelId: form.modelId })
     if (res.code === 200 && res.data) {
       lastUrl.value = res.data.imageUrl
       lastPrompt.value = res.data.prompt || form.prompt

@@ -13,6 +13,8 @@ export interface AiImageRecord {
 export interface ImageGenerateRequest {
   prompt: string;
   size?: string;
+  /** 图像模型ID（为空使用默认 IMAGE 模型） */
+  modelId?: number;
 }
 
 /** 生成图片 */

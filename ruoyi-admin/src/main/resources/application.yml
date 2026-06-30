@@ -342,7 +342,9 @@ nexus:
     sql-timeout: 5000
     sql-max-rows: 1000
     vector-store:
-      type: inmemory
+      # 向量存储类型：milvus（持久化，重启不丢）/ inmemory（仅内存，重启清空，仅用于无 Milvus 环境的演示）
+      # ⚠️ inmemory 模式下重启服务后向量全部丢失，RAG 检索返回空；生产必须用 milvus
+      type: milvus
       milvus:
         url: http://localhost:19530
         collection-name: AiKnowledge

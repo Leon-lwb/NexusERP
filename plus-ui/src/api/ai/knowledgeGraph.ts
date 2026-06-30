@@ -62,6 +62,12 @@ export interface GraphProgress {
   nodeCount?: number
   relationCount?: number
   communityCount?: number
+  /** 社区总数（阶段二进度） */
+  communityTotal?: number
+  /** 已生成摘要社区数（阶段二进度） */
+  communitySummarized?: number
+  /** 构建阶段：EXTRACTING/DETECTING/SUMMARIZING/DONE/FAILED/PENDING */
+  stage?: string
 }
 
 // ==================== 知识图谱 API ====================

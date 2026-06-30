@@ -42,6 +42,7 @@
             <el-radio-button label="agent">数据查询</el-radio-button>
             <el-radio-button label="rag">知识库</el-radio-button>
           </el-radio-group>
+          <ModelSelect v-model="selectedModel" model-type="CHAT" placeholder="默认模型" style="width: 130px" />
         </div>
         <el-input
           v-model="inputText"
@@ -72,6 +73,7 @@ import { marked } from 'marked'
 import { createAiRenderer } from '@/utils/aiRenderers'
 import DeepThinking from '@/components/ai/DeepThinking.vue'
 import WebSearchToggle from '@/components/ai/WebSearchToggle.vue'
+import ModelSelect from '@/components/ai/ModelSelect.vue'
 import * as echarts from 'echarts'
 import 'github-markdown-css'
 
@@ -94,6 +96,8 @@ const sessionId = ref<number | null>(null)
 const chatMode = ref('auto')
 const enableThinking = ref(false)
 const enableWebSearch = ref(false)
+/** 选中模型名称（为空使用默认模型），ModelSelect 组件会预选默认模型 */
+const selectedModel = ref('')
 
 /** 根据当前模式显示不同的输入提示 */
 const modePlaceholder = computed(() => {
@@ -239,6 +243,7 @@ async function sendMessage() {
       content: text,
       sessionId: sessionId.value ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
+      model: selectedModel.value || undefined,
       enableThinking: enableThinking.value || undefined,
       enableWebSearch: enableWebSearch.value || undefined
     })

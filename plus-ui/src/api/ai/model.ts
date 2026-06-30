@@ -15,6 +15,10 @@ export interface AiModel {
   id?: number
   providerId: number
   providerName?: string
+  /** 厂商类型（OPENAI/OLLAMA/DEEPSEEK/DASHSCOPE/ZHIPU...），区分本地 vs 官网 */
+  providerType?: string
+  /** API 请求地址，区分实际调用 endpoint */
+  apiHost?: string
   modelName: string
   displayName?: string
   modelType: string
@@ -95,6 +99,19 @@ export function listModel(query?: object) {
     url: '/ai/model/list',
     method: 'get',
     params: query
+  })
+}
+
+/**
+ * 查询启用模型选项（按分类，供对话/文生图选择）
+ * <p>仅返回 status=1 的模型，不需管理权限</p>
+ * @param modelType 模型类型（CHAT/EMBEDDING/RERANK/IMAGE）
+ */
+export function listModelOptions(modelType?: string) {
+  return request({
+    url: '/ai/model/options',
+    method: 'get',
+    params: modelType ? { modelType } : {}
   })
 }
 

@@ -132,6 +132,7 @@
               </span>
             </div>
             <div class="toolbar-right">
+              <ModelSelect v-model="selectedModel" model-type="CHAT" placeholder="默认模型" style="width: 170px" />
               <span v-if="tokenUsage > 0" class="token-usage">{{ tokenUsage.toLocaleString() }} tokens</span>
               <DeepThinking v-model="enableThinking" />
               <WebSearchToggle v-model="enableWebSearch" />
@@ -218,6 +219,7 @@ import { ElMessageBox } from 'element-plus'
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers'
 import DeepThinking from '@/components/ai/DeepThinking.vue'
 import WebSearchToggle from '@/components/ai/WebSearchToggle.vue'
+import ModelSelect from '@/components/ai/ModelSelect.vue'
 import 'github-markdown-css'
 
 /** 工具调用状态 */
@@ -252,6 +254,8 @@ const messageListRef = ref<HTMLElement>()
 const sessions = ref<AiSession[]>([])
 const currentSessionId = ref<number | string | null>(null)
 const chatMode = ref('auto')
+/** 选中模型名称（为空使用默认模型），ModelSelect 组件会预选默认模型 */
+const selectedModel = ref('')
 const enableThinking = ref(false)
 const enableWebSearch = ref(false)
 
@@ -542,6 +546,7 @@ async function sendMessage() {
       content: text,
       sessionId: currentSessionId.value ?? undefined,
       mode: chatMode.value === 'auto' ? undefined : chatMode.value,
+      model: selectedModel.value || undefined,
       enableThinking: enableThinking.value || undefined,
       enableWebSearch: enableWebSearch.value || undefined,
       enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined

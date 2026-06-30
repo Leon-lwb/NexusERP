@@ -7,6 +7,7 @@
       <span v-if="graph" class="kg-stats">
         实体 {{ graph.nodeCount || 0 }} · 关系 {{ graph.relationshipCount || 0 }} · 社区 {{ graph.communityCount || 0 }}
       </span>
+      <el-tag v-if="graph && entities.length >= LOAD_PAGE_SIZE" size="small" type="info" effect="plain">仅显示前 {{ LOAD_PAGE_SIZE }} 个实体</el-tag>
       <el-button v-if="!building" type="primary" size="small" icon="MagicStick" @click="handleBuild">构建图谱</el-button>
       <el-button v-if="!building && graph" type="warning" size="small" icon="RefreshRight" @click="handleRebuild">重建</el-button>
       <el-button v-if="!building && graph" type="danger" size="small" icon="Delete" @click="handleDelete">删除</el-button>
@@ -14,10 +15,14 @@
     </div>
 
     <!-- 进度条 -->
-    <el-progress v-if="building && progress" :percentage="progressPct" :status="progressStatus" :stroke-width="14" />
-    <div v-if="building && progress" class="kg-progress-tip">
-      已处理 {{ progress.processed || 0 }} / {{ progress.total || 0 }} 切片{{ progress.failed ? '（失败 ' + progress.failed + '）' : '' }}
-    </div>
+    <el-progress
+      v-if="building && progress"
+      :percentage="progressPct"
+      :status="progressStatus"
+      :indeterminate="progressIndeterminate"
+      :stroke-width="14"
+    />
+    <div v-if="building && progress" class="kg-progress-tip">{{ progressTip }}</div>
 
     <!-- 图谱可视化 -->
     <div v-if="!graph" class="kg-empty">
@@ -118,38 +123,71 @@ const globalLoading = ref(false)
 const chartRef = ref<HTMLElement>()
 let chartInstance: echarts.ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
+let intersectionObserver: IntersectionObserver | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const LOAD_PAGE_SIZE = 500
 
 const progressPct = computed(() => {
-  if (!progress.value || !progress.value.total) return 0
-  return Math.round(((progress.value.processed || 0) / progress.value.total) * 100)
+  const p = progress.value
+  if (!p) return 0
+  const stage = p.stage
+  if (stage === 'SUMMARIZING') {
+    const total = p.communityTotal || 0
+    return total ? Math.round(((p.communitySummarized || 0) / total) * 100) : 0
+  }
+  if (stage === 'DETECTING' || stage === 'PENDING') {
+    return 100 // 配合 indeterminate 走不定进度条
+  }
+  // EXTRACTING / 默认
+  if (!p.total) return 0
+  return Math.round(((p.processed || 0) / p.total) * 100)
+})
+const progressIndeterminate = computed(() => {
+  const stage = progress.value?.stage
+  return stage === 'DETECTING' || stage === 'PENDING'
 })
 const progressStatus = computed(() => {
   if (progress.value?.graphStatus === '3') return 'exception'
   if (progress.value?.graphStatus === '2') return 'success'
   return undefined
 })
+const progressTip = computed(() => {
+  const p = progress.value
+  if (!p) return ''
+  const stage = p.stage
+  if (stage === 'EXTRACTING') {
+    return `实体抽取中 ${p.processed || 0} / ${p.total || 0} 切片${p.failed ? '（失败 ' + p.failed + '）' : ''}`
+  }
+  if (stage === 'DETECTING') {
+    return '社区检测中…'
+  }
+  if (stage === 'SUMMARIZING') {
+    return `社区摘要生成中 ${p.communitySummarized || 0} / ${p.communityTotal || 0}`
+  }
+  return `已处理 ${p.processed || 0} / ${p.total || 0} 切片${p.failed ? '（失败 ' + p.failed + '）' : ''}`
+})
 
 onMounted(() => {
   loadAll()
-  nextTick(() => {
-    if (chartRef.value) {
-      resizeObserver = new ResizeObserver(() => chartInstance?.resize())
-      resizeObserver.observe(chartRef.value)
-    }
-  })
 })
 
 onUnmounted(() => {
   stopPolling()
   resizeObserver?.disconnect()
+  intersectionObserver?.disconnect()
   chartInstance?.dispose()
   chartInstance = null
 })
 
 watch(() => props.knowledgeId, () => {
+  // 切换知识库：先销毁旧 echarts 实例与 observer，避免 setOption 作用于脱离 DOM 的旧实例导致新容器无图
+  chartInstance?.dispose()
+  chartInstance = null
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  intersectionObserver?.disconnect()
+  intersectionObserver = null
   graph.value = null
   entities.value = []
   relations.value = []
@@ -231,12 +269,19 @@ function startPolling() {
     const res: any = await getGraphProgress(props.knowledgeId)
     progress.value = res.data
     const status = res.data?.graphStatus
-    if (status === '2' || status === '3' || status === '0') {
+    // 只认 2(完成)/3(失败) 为终止态：rebuild 会先把 status 置 0 再异步构建，
+    // 若把 0 当终止会误判"未构建"→进度消失、按钮重现而后端仍在跑
+    if (status === '2' || status === '3') {
       stopPolling()
       building.value = false
       if (status === '2') {
         await loadAll()
-        proxy?.$modal.msgSuccess('图谱构建完成')
+        const errMsg = graph.value?.errorMessage
+        if (errMsg && errMsg.includes('失败')) {
+          proxy?.$modal.msgWarning('图谱构建完成（' + errMsg + '）')
+        } else {
+          proxy?.$modal.msgSuccess('图谱构建完成')
+        }
       } else if (status === '3') {
         proxy?.$modal.msgError('图谱构建失败：' + (graph.value?.errorMessage || ''))
       }
@@ -251,6 +296,27 @@ function stopPolling() {
   }
 }
 
+/**
+ * 挂载 echarts 容器尺寸/可见性监听（仅创建一次）
+ * <p>ResizeObserver 处理容器尺寸变化；IntersectionObserver 处理容器由隐藏转可见
+ * （如 Tab 从"文档管理"切到"知识图谱"、菜单重入），可见时 resize 修正 width=0 初始化导致的偏移</p>
+ */
+function setupObservers() {
+  if (!chartRef.value) return
+  if (!resizeObserver) {
+    resizeObserver = new ResizeObserver(() => chartInstance?.resize())
+    resizeObserver.observe(chartRef.value)
+  }
+  if (!intersectionObserver) {
+    intersectionObserver = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && entries[0].intersectionRatio > 0) {
+        chartInstance?.resize()
+      }
+    })
+    intersectionObserver.observe(chartRef.value)
+  }
+}
+
 /** 渲染 echarts 力导向图（按社区着色） */
 function renderChart() {
   if (!chartRef.value || !entities.value.length) return
@@ -261,6 +327,8 @@ function renderChart() {
         handleNodeClick(String(params.data.id))
       }
     })
+    // init 后挂载 observer：此处 chartRef 必然存在（onMounted 时数据未加载、chartRef 尚不存在，旧逻辑里 observer 永不创建）
+    setupObservers()
   }
   const communityIds = [...new Set(entities.value.map((e) => e.communityId).filter((c) => c != null))] as number[]
   const categories = communityIds.map((id) => ({ name: '社区 ' + id }))

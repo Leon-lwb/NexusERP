@@ -22,8 +22,8 @@ public class AiKnowledgeGraph extends BaseEntity {
     @TableId(value = "id")
     private Long id;
 
-    /** 租户编号 */
-    private Long tenantId;
+    /** 租户编号（varchar(20)，存 '000000'，不可用 Long 否则 '000000' 被解析为 0 导致查询过滤失配） */
+    private String tenantId;
 
     /** 知识库ID */
     private Long knowledgeId;

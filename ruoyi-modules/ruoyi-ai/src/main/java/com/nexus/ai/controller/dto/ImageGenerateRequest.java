@@ -18,4 +18,7 @@ public class ImageGenerateRequest {
 
     /** 尺寸，可选，默认 1280*1280 */
     private String size;
+
+    /** 图像模型ID（可选，为空使用默认 IMAGE 模型） */
+    private Long modelId;
 }

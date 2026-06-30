@@ -391,7 +391,7 @@ function reset() {
     knowledgeName: undefined,
     description: undefined,
     embeddingModel: undefined,
-    vectorStore: 'inmemory',
+    vectorStore: 'milvus',
     status: '1',
     separator: '#',
     overlapChar: 30,

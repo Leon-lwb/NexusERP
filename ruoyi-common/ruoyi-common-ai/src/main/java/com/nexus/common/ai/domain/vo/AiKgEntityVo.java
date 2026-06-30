@@ -28,7 +28,7 @@ public class AiKgEntityVo implements Serializable {
     private Long id;
 
     /** 租户编号 */
-    private Long tenantId;
+    private String tenantId;
 
     /** 图谱ID */
     private Long graphId;

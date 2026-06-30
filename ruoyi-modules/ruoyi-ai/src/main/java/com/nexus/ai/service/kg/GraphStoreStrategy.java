@@ -140,6 +140,16 @@ public interface GraphStoreStrategy {
     List<AiKgCommunity> listSummarizedCommunities(Long graphId);
 
     /**
+     * 统计图谱社区总数（构建进度查询用，避免加载摘要全文）
+     */
+    long countCommunities(Long graphId);
+
+    /**
+     * 按摘要状态统计社区数（"2"=已完成 "3"=失败，构建进度/部分失败提示用）
+     */
+    long countCommunitiesBySummaryStatus(Long graphId, String summaryStatus);
+
+    /**
      * 批量回填实体所属社区ID
      *
      * @param entityIdToCommunityId 实体ID → 社区ID

@@ -67,6 +67,7 @@ public class KnowledgeGraphService {
      * @param tenantId    租户ID（字符串，保留前导零如 "000000"）
      * @param userName    用户名称
      */
+    @com.baomidou.lock.annotation.Lock4j(keys = {"#knowledgeId"})
     public void buildGraph(Long knowledgeId, Long modelId, Long userId, String tenantId, String userName) {
         // 调用线程预检查防重（缩小与异步内防重的竞态窗口，避免双击重复提交任务）
         AiKnowledgeGraph existing = graphStoreStrategy.findGraphByKnowledge(knowledgeId);
@@ -153,15 +154,23 @@ public class KnowledgeGraphService {
             int nodeCount = graphStoreStrategy.listEntitiesByGraphId(graph.getId()).size();
             int relationCount = graphStoreStrategy.listRelationsByGraphId(graph.getId()).size();
             int summarizedCount = graphStoreStrategy.listSummarizedCommunities(graph.getId()).size();
+            long failedCommunityCount = graphStoreStrategy.countCommunitiesBySummaryStatus(graph.getId(), "3");
             graph.setNodeCount(nodeCount);
             graph.setRelationshipCount(relationCount);
             graph.setCommunityCount(communityCount);
             graph.setGraphStatus(processedCount == 0 && failedCount > 0 ? "3" : "2");
+            // 拼接切片抽取失败与社区摘要失败提示（不阻断完成，前端据此 msgWarning）
+            StringBuilder err = new StringBuilder();
             if (failedCount > 0) {
-                graph.setErrorMessage(failedCount + " 个切片抽取失败");
-            } else {
-                graph.setErrorMessage(null);
+                err.append(failedCount).append(" 个切片抽取失败");
             }
+            if (failedCommunityCount > 0) {
+                if (err.length() > 0) {
+                    err.append("；");
+                }
+                err.append(failedCommunityCount).append(" 个社区摘要失败");
+            }
+            graph.setErrorMessage(err.length() > 0 ? err.toString() : null);
             graphStoreStrategy.updateGraph(graph);
 
             log.info("[KG] 图谱构建完成 knowledgeId={}, nodes={}, relations={}, communities={}, summaries={}, tokens={}",
@@ -347,6 +356,9 @@ public class KnowledgeGraphService {
             progress.put("nodeCount", 0);
             progress.put("relationCount", 0);
             progress.put("communityCount", 0);
+            progress.put("communityTotal", 0);
+            progress.put("communitySummarized", 0);
+            progress.put("stage", null);
             return progress;
         }
         Long total = chunkMapper.selectCount(Wrappers.<AiKnowledgeChunk>lambdaQuery()
@@ -357,6 +369,8 @@ public class KnowledgeGraphService {
         Long failed = chunkMapper.selectCount(Wrappers.<AiKnowledgeChunk>lambdaQuery()
             .eq(AiKnowledgeChunk::getKnowledgeId, knowledgeId)
             .eq(AiKnowledgeChunk::getExtractionStatus, "3"));
+        long communityTotal = graphStoreStrategy.countCommunities(graph.getId());
+        long communitySummarized = graphStoreStrategy.countCommunitiesBySummaryStatus(graph.getId(), "2");
         progress.put("graphStatus", graph.getGraphStatus());
         progress.put("total", total);
         progress.put("processed", processed);
@@ -364,7 +378,33 @@ public class KnowledgeGraphService {
         progress.put("nodeCount", graph.getNodeCount());
         progress.put("relationCount", graph.getRelationshipCount());
         progress.put("communityCount", graph.getCommunityCount());
+        progress.put("communityTotal", communityTotal);
+        progress.put("communitySummarized", communitySummarized);
+        progress.put("stage", deriveStage(graph.getGraphStatus(), processed, total, communityTotal));
         return progress;
+    }
+
+    /**
+     * 推导构建阶段（前端阶段化进度展示用，无需新增 DB 字段）
+     * <p>依据 graphStatus + chunk 抽取进度 + 社区落库情况推导：
+     * EXTRACTING（实体抽取中）/ DETECTING（社区检测中）/ SUMMARIZING（社区摘要中 M/N）/ DONE / FAILED / PENDING</p>
+     */
+    private String deriveStage(String graphStatus, long processed, long total, long communityTotal) {
+        if ("2".equals(graphStatus)) {
+            return "DONE";
+        }
+        if ("3".equals(graphStatus)) {
+            return "FAILED";
+        }
+        if ("0".equals(graphStatus)) {
+            return "PENDING";
+        }
+        // graphStatus == "1" 构建中
+        if (total > 0 && processed < total) {
+            return "EXTRACTING";
+        }
+        // 抽取已结束：社区未落库 → 检测中；已落库 → 摘要中
+        return communityTotal == 0 ? "DETECTING" : "SUMMARIZING";
     }
 
     /**
@@ -372,6 +412,7 @@ public class KnowledgeGraphService {
      * <p>语义为强制全量重抽，不受 buildGraphInternal 的构建中防重拦截（先置 status=0）。
      * 全量重抽耗时较长，必须异步执行避免阻塞 HTTP 线程。</p>
      */
+    @com.baomidou.lock.annotation.Lock4j(keys = {"#knowledgeId"})
     public void rebuild(Long knowledgeId, Long modelId, Long userId, String tenantIdStr, String userName) {
         aiExecutor.execute(() -> {
             try {

@@ -46,6 +46,22 @@ public class AiModelController extends BaseController {
     }
 
     /**
+     * 查询启用模型选项（供对话/文生图等终端用户按分类选择）
+     * <p>不加 {@code @SaCheckPermission}——仅要求登录即可访问。返回的 {@link AiModelVo} 不含 apiKey，
+     * 仅暴露 id/modelName/displayName/modelType/isDefault 等选择所需字段。</p>
+     *
+     * @param modelType 模型类型（CHAT/EMBEDDING/RERANK/IMAGE），可选
+     * @return 启用状态(status=1)的模型列表
+     */
+    @GetMapping("/options")
+    public R<List<AiModelVo>> options(@RequestParam(required = false) String modelType) {
+        AiModelBo bo = new AiModelBo();
+        bo.setModelType(modelType);
+        bo.setStatus("1");
+        return R.ok(aiModelService.selectList(bo));
+    }
+
+    /**
      * 导出模型数据到 Excel
      * <p>权限标识：{@code ai:model:export}</p>
      *

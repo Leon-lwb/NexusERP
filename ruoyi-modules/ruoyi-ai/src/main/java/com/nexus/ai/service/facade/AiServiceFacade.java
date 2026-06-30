@@ -123,6 +123,10 @@ public class AiServiceFacade {
             AiSseMessageHelper.sendError(userId, "未找到可用的 AI 模型，请先配置模型");
             return null;
         }
+        // 打印实际解析到的模型配置，便于排查"切换模型是否生效"：apiHost 即实际调用 endpoint
+        log.info("[AI对话] 模型解析 modelId={}, modelName={}, providerType={}, apiHost={}, mode={}, thinking={}, webSearch={}",
+            modelConfig.getId(), modelConfig.getModelName(), modelConfig.getProviderType(), modelConfig.getApiHost(),
+            request.getMode(), request.getEnableThinking(), request.getEnableWebSearch());
 
         // 2. 创建或复用会话
         Long sessionId = request.getSessionId();

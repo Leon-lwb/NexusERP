@@ -45,12 +45,14 @@ public class AiImageController extends BaseController {
 
     /**
      * 生成图片
-     * <p>取默认 IMAGE 模型 + 厂商实现 → 调通义万相 → OSS 持久化 → 落库历史记录</p>
+     * <p>取指定 IMAGE 模型（未指定则取默认 IMAGE 模型）+ 厂商实现 → 调通义万相 → OSS 持久化 → 落库历史记录</p>
      */
     @SaCheckPermission("ai:image:generate")
     @PostMapping("/generate")
     public R<AiImageRecord> generate(@Validated @RequestBody ImageGenerateRequest req) {
-        AiModel imageModel = aiModelService.selectDefaultImageModel();
+        AiModel imageModel = req.getModelId() != null
+            ? aiModelService.selectModelById(req.getModelId())
+            : aiModelService.selectDefaultImageModel();
         if (imageModel == null) {
             return R.fail("未配置默认图像生成模型（modelType=IMAGE），请先在模型管理中配置");
         }
