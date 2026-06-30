@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 29/06/2026 17:47:33
+ Date: 30/06/2026 18:06:59
 */
 
 SET NAMES utf8mb4;
@@ -254,6 +254,7 @@ CREATE TABLE `mes_mbom`  (
 -- ----------------------------
 INSERT INTO `mes_mbom` VALUES (1, '000000', 5, 1, '1.0', 'ACTIVE', '自行车制造BOM，关联ERP BOM#5', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `mes_mbom` VALUES (2, '000000', 1, 2, '1.0', 'ACTIVE', '减速机JZQ-350制造BOM，关联ERP BOM#1', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom` VALUES (30, '000000', 20, 3, '1.0', 'ACTIVE', '工具架MBOM，关联工艺路线和BOM', 103, 1, '2026-06-30 10:13:11', 1, '2026-06-30 10:13:11', '0');
 
 -- ----------------------------
 -- Table structure for mes_mbom_line
@@ -302,6 +303,9 @@ INSERT INTO `mes_mbom_line` VALUES (6, '000000', 2, 1, NULL, 7, 4.000000, 0.0000
 INSERT INTO `mes_mbom_line` VALUES (7, '000000', 2, 1, NULL, 5, 1.000000, 0.0100, 7, 3, 1, '齿轮组装配', 1, 3, '齿轮组在总装配工序投入(反冲)', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `mes_mbom_line` VALUES (8, '000000', 2, 1, NULL, 8, 2.000000, 0.0050, 7, 3, 1, '轴承装配', 0, 4, '轴承在总装配工序投入', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `mes_mbom_line` VALUES (9, '000000', 2, 1, NULL, 10, 0.500000, 0.0000, 8, 4, 3, '润滑处理', 0, 5, '润滑油在质检前投入', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `mes_mbom_line` VALUES (100, '000000', 30, 20, 100, 8001, 2.000000, 0.0000, 11, 3, 1, '取侧板组件2件，装配至工具架', 0, 10, NULL, 103, 1, '2026-06-30 10:13:16', 1, '2026-06-30 10:13:16', '0');
+INSERT INTO `mes_mbom_line` VALUES (101, '000000', 30, 20, 101, 8002, 1.000000, 0.0000, 11, 3, 1, '取连接件包1套，装配至工具架', 0, 20, NULL, 103, 1, '2026-06-30 10:13:16', 1, '2026-06-30 10:13:16', '0');
+INSERT INTO `mes_mbom_line` VALUES (102, '000000', 30, 21, 102, 1, 1.500000, 2.0000, 9, 1, 1, '取钢板1.5kg，切割为侧板坯料', 0, 10, NULL, 103, 1, '2026-06-30 10:13:16', 1, '2026-06-30 10:13:16', '0');
 
 -- ----------------------------
 -- Table structure for pro_andon
