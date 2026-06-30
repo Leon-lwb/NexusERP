@@ -40,51 +40,27 @@ public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
     private final AiMessageMapper aiMessageMapper;
 
     /**
-     * 增量更新日统计
-     * <p>先查询是否存在当日记录，存在则累加，不存在则插入</p>
+     * 增量更新日统计（原子 upsert）
+     * <p>用 INSERT ... ON DUPLICATE KEY UPDATE 原子写入，依赖唯一索引 uk_user_model_date 保证幂等，
+     * 避免并发场景下 select-then-insert 导致唯一索引冲突丢统计（S2-D R1 修复）</p>
      */
     @Override
     public void incrementDailyUsage(Long tenantId, Long userId, String userName, Long modelId,
                                     String modelName, int inputTokens, int outputTokens, BigDecimal cost) {
-        LocalDate today = LocalDate.now();
-
-        // 查询当日是否已有记录
-        LambdaQueryWrapper<AiTokenUsage> query = new LambdaQueryWrapper<>();
-        query.eq(AiTokenUsage::getTenantId, tenantId != null ? tenantId : 0)
-            .eq(AiTokenUsage::getUserId, userId)
-            .eq(AiTokenUsage::getModelId, modelId)
-            .eq(AiTokenUsage::getUsageDate, today);
-        AiTokenUsage existing = aiTokenUsageMapper.selectOne(query);
-
-        if (existing != null) {
-            // 累加
-            LambdaUpdateWrapper<AiTokenUsage> update = new LambdaUpdateWrapper<>();
-            update.eq(AiTokenUsage::getId, existing.getId())
-                .set(AiTokenUsage::getTotalInputTokens, existing.getTotalInputTokens() + inputTokens)
-                .set(AiTokenUsage::getTotalOutputTokens, existing.getTotalOutputTokens() + outputTokens)
-                .set(AiTokenUsage::getTotalTokens, existing.getTotalTokens() + inputTokens + outputTokens)
-                .set(AiTokenUsage::getRequestCount, existing.getRequestCount() + 1)
-                .set(AiTokenUsage::getTotalCost, existing.getTotalCost().add(cost))
-                .set(AiTokenUsage::getUpdateTime, LocalDateTime.now());
-            aiTokenUsageMapper.update(null, update);
-        } else {
-            // 插入新记录
-            AiTokenUsage usage = new AiTokenUsage();
-            usage.setTenantId(tenantId != null ? tenantId : 0);
-            usage.setUserId(userId);
-            usage.setUserName(userName);
-            usage.setModelId(modelId);
-            usage.setModelName(modelName);
-            usage.setUsageDate(today);
-            usage.setTotalInputTokens((long) inputTokens);
-            usage.setTotalOutputTokens((long) outputTokens);
-            usage.setTotalTokens((long) (inputTokens + outputTokens));
-            usage.setRequestCount(1);
-            usage.setTotalCost(cost);
-            usage.setCreateTime(LocalDateTime.now());
-            usage.setUpdateTime(LocalDateTime.now());
-            aiTokenUsageMapper.insert(usage);
-        }
+        long totalTokens = inputTokens + outputTokens;
+        aiTokenUsageMapper.upsertDailyUsage(
+            com.baomidou.mybatisplus.core.toolkit.IdWorker.getId(),
+            tenantId != null ? tenantId : 0,
+            userId,
+            userName,
+            modelId,
+            modelName,
+            LocalDate.now(),
+            inputTokens,
+            outputTokens,
+            totalTokens,
+            cost != null ? cost : BigDecimal.ZERO
+        );
     }
 
     /**

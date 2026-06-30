@@ -208,33 +208,41 @@ public class KnowledgeGraphService {
 
         AiProperties.KnowledgeGraphConfig cfg = aiProperties.getKnowledgeGraph();
         double threshold = cfg.getConfidenceThreshold();
+        try {
+            // 置信度过滤 + 数量上限
+            List<GraphExtractionResult.EntityDto> entities = filterAndCap(
+                result.getEntities(), threshold, cfg.getMaxEntitiesPerChunk());
+            List<GraphExtractionResult.RelationDto> relations = filterAndCap(
+                result.getRelations(), threshold, cfg.getMaxRelationsPerChunk());
 
-        // 置信度过滤 + 数量上限
-        List<GraphExtractionResult.EntityDto> entities = filterAndCap(
-            result.getEntities(), threshold, cfg.getMaxEntitiesPerChunk());
-        List<GraphExtractionResult.RelationDto> relations = filterAndCap(
-            result.getRelations(), threshold, cfg.getMaxRelationsPerChunk());
-
-        // 同名实体合并 + 落库
-        for (GraphExtractionResult.EntityDto dto : entities) {
-            mergeEntity(graphId, dto, chunk.getId(), entityCache);
-        }
-        // 关系落库
-        int relationCount = 0;
-        for (GraphExtractionResult.RelationDto dto : relations) {
-            if (persistRelation(graphId, chunk.getId(), dto)) {
-                relationCount++;
+            // 同名实体合并 + 落库
+            for (GraphExtractionResult.EntityDto dto : entities) {
+                mergeEntity(graphId, dto, chunk.getId(), entityCache);
             }
-        }
+            // 关系落库
+            int relationCount = 0;
+            for (GraphExtractionResult.RelationDto dto : relations) {
+                if (persistRelation(graphId, chunk.getId(), dto)) {
+                    relationCount++;
+                }
+            }
 
-        long used = captureTokens();
-        chunk.setEntityCount(entities.size());
-        chunk.setRelationCount(relationCount);
-        chunk.setTokenUsed(used);
-        chunk.setExtractionStatus("2");
-        chunk.setKgErrorMessage(null);
-        chunkMapper.updateById(chunk);
-        return new int[]{entities.size(), relationCount};
+            long used = captureTokens();
+            chunk.setEntityCount(entities.size());
+            chunk.setRelationCount(relationCount);
+            chunk.setTokenUsed(used);
+            chunk.setExtractionStatus("2");
+            chunk.setKgErrorMessage(null);
+            chunkMapper.updateById(chunk);
+            return new int[]{entities.size(), relationCount};
+        } catch (Exception e) {
+            // 后处理异常（filterAndCap NPE / mergeEntity DB 超长 / persistRelation 写库失败等）置失败状态可重试，避免 chunk 永久卡在 "1"
+            log.error("[KG] chunk 后处理失败 chunkId={}, error={}", chunk.getId(), e.getMessage(), e);
+            chunk.setExtractionStatus("3");
+            chunk.setKgErrorMessage(truncate(e.getMessage(), 1000));
+            chunkMapper.updateById(chunk);
+            return new int[]{0, 0};
+        }
     }
 
     /**
@@ -260,7 +268,12 @@ public class KnowledgeGraphService {
             if (desc != null && !desc.isBlank()) {
                 String existing = entity.getDescription();
                 if (existing == null || !existing.contains(desc)) {
-                    entity.setDescription(existing == null ? desc : existing + "；" + desc);
+                    String merged = existing == null ? desc : existing + "；" + desc;
+                    // 截断防止超 varchar(1024) 触发 DB 异常
+                    if (merged.length() > 1000) {
+                        merged = merged.substring(0, 997) + "...";
+                    }
+                    entity.setDescription(merged);
                 }
             }
             if (confidence > (entity.getConfidence() == null ? 0 : entity.getConfidence())) {
@@ -419,7 +432,15 @@ public class KnowledgeGraphService {
             }
         }
         if (filtered.size() > max) {
-            filtered.sort(Comparator.comparingDouble(this::extractConfidence).reversed());
+            // null 安全排序（null confidence 排最后），避免 comparingDouble 自动拆箱导致 NPE
+            filtered.sort((a, b) -> {
+                Double ca = extractConfidence(a);
+                Double cb = extractConfidence(b);
+                if (ca == null && cb == null) return 0;
+                if (ca == null) return 1;
+                if (cb == null) return -1;
+                return Double.compare(cb, ca);  // 降序，高置信度优先
+            });
             filtered = new ArrayList<>(filtered.subList(0, max));
         }
         return filtered;

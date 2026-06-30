@@ -10,6 +10,7 @@ import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.oss.entity.UploadResult;
 import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.common.oss.core.OssClient;
+import com.nexus.common.tenant.helper.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -84,9 +85,13 @@ public class KnowledgeProcessService {
         Long documentId = document.getId();
 
         // 4. 异步处理文档
+        // 请求线程捕获租户上下文，异步线程内 TenantHelper.dynamic 恢复，避免 chunk/document insert 时 tenant_id 落 0
+        final String tenantIdStr = TenantHelper.getTenantId();
         aiExecutor.execute(() -> {
             try {
-                processDocument(documentId, knowledgeId);
+                TenantHelper.dynamic(tenantIdStr, () -> {
+                    processDocument(documentId, knowledgeId);
+                });
             } catch (Exception e) {
                 log.error("文档处理失败: documentId={}, error={}", documentId, e.getMessage(), e);
                 updateDocumentStatus(documentId, "3", e.getMessage());
@@ -203,10 +208,13 @@ public class KnowledgeProcessService {
             .eq(AiKnowledgeChunk::getDocumentId, documentId));
         vectorStoreService.deleteByDocumentId(documentId, document.getKnowledgeId());
 
-        // 异步重新处理
+        // 异步重新处理（请求线程捕获租户上下文，异步线程内 TenantHelper.dynamic 恢复）
+        final String tenantIdStr = TenantHelper.getTenantId();
         aiExecutor.execute(() -> {
             try {
-                processDocument(documentId, document.getKnowledgeId());
+                TenantHelper.dynamic(tenantIdStr, () -> {
+                    processDocument(documentId, document.getKnowledgeId());
+                });
             } catch (Exception e) {
                 log.error("文档重试处理失败: documentId={}, error={}", documentId, e.getMessage(), e);
                 updateDocumentStatus(documentId, "3", e.getMessage());

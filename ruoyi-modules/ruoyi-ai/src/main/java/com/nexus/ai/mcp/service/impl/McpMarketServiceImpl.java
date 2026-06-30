@@ -4,6 +4,8 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.mcp.service.IMcpMarketService;
 import com.nexus.common.ai.domain.entity.AiMcpMarket;
 import com.nexus.common.ai.domain.entity.AiMcpMarketTool;
@@ -130,7 +132,9 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                     java.util.Map.of("baseUrl", baseUrl)));
             } else {
                 tool.setToolType("LOCAL");
-                tool.setConfigJson(mt.getToolMetadata());
+                // 市场元数据通常只含 package（npm 包名），而 McpClientManager.createStdioClient 只认 command/args，
+                // 需物化为 {command:"npx", args:["-y", package]}，否则启用即报错熔断（S2-C-2 修复）
+                tool.setConfigJson(buildLocalConfig(metadata));
             }
 
             // 加载后默认 DISABLED（ai_tool.status 使用 ENABLED/DISABLED 串，管理员需手动启用+测试，安全要求）
@@ -147,6 +151,47 @@ public class McpMarketServiceImpl implements IMcpMarketService {
         } catch (Exception e) {
             throw new RuntimeException("加载市场工具失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 构建 LOCAL 工具的 configJson
+     * <p>McpClientManager.createStdioClient 只识别 command/args 字段；市场元数据通常只含 package（npm 包名），
+     * 需物化为 {command:"npx", args:["-y", package]}，否则启用即报"command 不能为空"熔断（S2-C-2 修复）</p>
+     *
+     * @param metadata 市场工具元数据 JSON
+     * @return LOCAL 工具 configJson
+     */
+    private String buildLocalConfig(JsonNode metadata) throws Exception {
+        ObjectNode cfg = objectMapper.createObjectNode();
+        if (metadata.has("command") && !metadata.get("command").asText("").isBlank()) {
+            // 元数据已含 command，直接保留 command + args
+            cfg.put("command", metadata.get("command").asText());
+            JsonNode args = metadata.path("args");
+            if (args.isArray()) {
+                cfg.set("args", args);
+            }
+        } else if (metadata.has("package") && !metadata.get("package").asText("").isBlank()) {
+            // 市场元数据只有 package，合成 npx -y <package>
+            cfg.put("command", "npx");
+            ArrayNode args = cfg.putArray("args");
+            args.add("-y");
+            args.add(metadata.get("package").asText());
+            JsonNode extraArgs = metadata.path("args");
+            if (extraArgs.isArray()) {
+                for (JsonNode a : extraArgs) {
+                    args.add(a.asText());
+                }
+            }
+        } else {
+            // 无 command 无 package，原样回退（createStdioClient 会抛出明确错误）
+            return metadata.toString();
+        }
+        // 保留 env（如有）
+        JsonNode env = metadata.path("env");
+        if (env.isObject()) {
+            cfg.set("env", env);
+        }
+        return objectMapper.writeValueAsString(cfg);
     }
 
     @Override

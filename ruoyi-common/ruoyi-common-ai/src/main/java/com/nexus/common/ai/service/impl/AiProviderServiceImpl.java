@@ -15,6 +15,7 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import org.jasypt.encryption.StringEncryptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class AiProviderServiceImpl implements IAiProviderService {
 
     private final AiProviderMapper baseMapper;
     private final StringEncryptor stringEncryptor;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 查询AI厂商配置分页列表
@@ -105,7 +107,12 @@ public class AiProviderServiceImpl implements IAiProviderService {
         } else {
             encryptApiKey(entity);
         }
-        return baseMapper.updateById(entity);
+        int rows = baseMapper.updateById(entity);
+        if (rows > 0) {
+            // 厂商凭证/地址变更，已缓存的 ChatModel 持旧凭证需失效（S2-D B 修复）
+            eventPublisher.publishEvent(new AiProviderChangeEvent(this, entity.getId()));
+        }
+        return rows;
     }
 
     /**
@@ -117,7 +124,13 @@ public class AiProviderServiceImpl implements IAiProviderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        int rows = baseMapper.deleteBatchIds(List.of(ids));
+        if (rows > 0) {
+            for (Long id : ids) {
+                eventPublisher.publishEvent(new AiProviderChangeEvent(this, id));
+            }
+        }
+        return rows;
     }
 
     /**
@@ -172,6 +185,24 @@ public class AiProviderServiceImpl implements IAiProviderService {
     private void encryptApiKey(AiProvider entity) {
         if (StrUtil.isNotBlank(entity.getApiKey())) {
             entity.setApiKey(stringEncryptor.encrypt(entity.getApiKey()));
+        }
+    }
+
+    /**
+     * AI 厂商配置变更事件
+     * <p>厂商 apiKey/apiHost/providerType 变更后，已缓存的 ChatModel 仍持旧凭证，
+     * 监听器据此全量失效缓存（S2-D B 修复）</p>
+     */
+    public static class AiProviderChangeEvent extends org.springframework.context.ApplicationEvent {
+        private final Long providerId;
+
+        public AiProviderChangeEvent(Object source, Long providerId) {
+            super(source);
+            this.providerId = providerId;
+        }
+
+        public Long getProviderId() {
+            return providerId;
         }
     }
 

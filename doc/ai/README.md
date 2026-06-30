@@ -24,6 +24,7 @@
 | [NexusERP_AI_Week9_Plan.md](./NexusERP_AI_Week9_Plan.md) | Week 9 | Schema Token 优化 + 知识库导入 + 前端补齐 | — |
 | [NexusERP_AI_Week10_Plan.md](./NexusERP_AI_Week10_Plan.md) | Week 10 | MCP 动态选择 + A/B 测试（2026-06-16~06-20） | — |
 | [NexusERP_AI_Week11_Plan.md](./NexusERP_AI_Week11_Plan.md) | Week 11 | Token 用量统计与成本分析（2026-06-23~06-27） | — |
+| [NexusERP_AI_Week12_Plan_S2D.md](./NexusERP_AI_Week12_Plan_S2D.md) | Week 12 | S2-D 平台稳定化与运行时验证（2026-06-30~07-04） | 🚧 代码层完成 |
 
 ## 阅读顺序
 
@@ -65,3 +66,11 @@
 - 范围超出主计划原 v1：纳入社区检测（自实现标签传播）+ 社区摘要 + 全局检索（map-reduce）+ Agent 图谱查询 @Tool，约 26 人天
 - 存储 MySQL 优先，Neo4j 经 `GraphStoreStrategy` 预留 v2；可视化用已安装的 echarts；v1 零新依赖
 - ⬜ 待运行时验证：执行 `doc/ai/sql/ai-stage2-a.sql` + 起应用 + 配置 LLM 跑端到端构建
+
+### S2-D 平台稳定化与运行时验证 🚧 进行中（2026-06-30~07-04）
+
+- 二阶段 S2-A/B/C 代码全部完成后、进入 Phase 3 前的**稳定化缓冲周**，以验证 + 修复为主，非新功能开发
+- 计划详见 `doc/ai/NexusERP_AI_Week12_Plan_S2D.md`
+- 七项验收：①4 份二阶段 SQL 落库（注意 ALTER 非幂等）②应用启动 ③S2-A 端到端 ④S2-B 厂商/推理/Rerank 回归 ⑤S2-C 联网/市场/文生图回归 ⑥异步写库租户上下文审计（以 `KnowledgeGraphService:79` 为正确范例）⑦成本/性能基线 + 文档收尾
+- 产出：`doc/ai/NexusERP_AI_S2D_验证报告.md` + 修复清单 + 基线表
+- 完成后 S2-A「待运行时验证」标记闭合，二阶段正式收尾，进入 Phase 3（MES 智能赋能，第 23 周起）

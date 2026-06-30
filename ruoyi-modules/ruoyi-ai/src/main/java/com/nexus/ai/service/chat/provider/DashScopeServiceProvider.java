@@ -38,9 +38,12 @@ public class DashScopeServiceProvider implements ChatServiceProvider {
 
     @Override
     public StreamingChatModel buildStreamingChatModel(AiModel config, AiChatRequest request) {
+        float temperature = config.getTemperature() != null ? config.getTemperature().floatValue() : 0.7f;
         return QwenStreamingChatModel.builder()
             .apiKey(config.getApiKey())
             .modelName(config.getModelName())
+            .temperature(temperature)
+            .maxTokens(config.getMaxTokens())
             .listeners(chatModelListeners)
             .build();
     }
@@ -50,6 +53,9 @@ public class DashScopeServiceProvider implements ChatServiceProvider {
         return QwenChatModel.builder()
             .apiKey(config.getApiKey())
             .modelName(config.getModelName())
+            .temperature((float) temperature)
+            .maxTokens(config.getMaxTokens())
+            .listeners(chatModelListeners)
             .build();
     }
 }

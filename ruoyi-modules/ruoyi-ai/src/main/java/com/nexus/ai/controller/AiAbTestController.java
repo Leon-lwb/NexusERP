@@ -10,6 +10,7 @@ import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.ai.service.chat.ChatModelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -154,15 +155,19 @@ public class AiAbTestController {
         abTestMapper.updateById(test);
 
         // 异步执行
+        // 请求线程捕获租户上下文，异步线程内 TenantHelper.dynamic 恢复，避免 ab_test_result/ab_test 写库时 tenant_id 落 0
+        final String tenantIdStr = TenantHelper.getTenantId();
         CompletableFuture.runAsync(() -> {
-            try {
-                executeTestInternal(test);
-            } catch (Exception e) {
-                log.error("[A/B测试] 执行失败: testId={}", id, e);
-                test.setStatus("COMPLETED");
-                test.setResultSummary("{\"error\":\"" + e.getMessage() + "\"}");
-                abTestMapper.updateById(test);
-            }
+            TenantHelper.dynamic(tenantIdStr, () -> {
+                try {
+                    executeTestInternal(test);
+                } catch (Exception e) {
+                    log.error("[A/B测试] 执行失败: testId={}", id, e);
+                    test.setStatus("COMPLETED");
+                    test.setResultSummary("{\"error\":\"" + e.getMessage() + "\"}");
+                    abTestMapper.updateById(test);
+                }
+            });
         }, aiExecutor);
 
         return R.ok();

@@ -256,6 +256,10 @@ public class McpClientManager {
      */
     public void refreshClient(Long toolId) {
         closeClient(toolId);
+        // 重置熔断状态，使管理员改配置/重启后可立即重试，而非被禁用 5 分钟（S2-C-3 修复）
+        toolHealthStatus.remove(toolId);
+        toolFailureCount.remove(toolId);
+        toolDisabledUntil.remove(toolId);
         log.info("[MCP] 刷新客户端: toolId={}", toolId);
     }
 

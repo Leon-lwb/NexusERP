@@ -25,6 +25,7 @@ import com.nexus.common.ai.mapper.AiSessionMapper;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.ai.service.IAiTokenUsageService;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
@@ -142,10 +143,11 @@ public class AiServiceFacade {
         userMsg.setContent(request.getContent());
         aiMessageMapper.insert(userMsg);
 
-        // 4. 捕获请求上下文
+        // 4. 捕获请求上下文（tenantIdStr 透传给异步路径，TenantHelper.dynamic 恢复，避免 ai_message insert 时 tenant_id 落 0）
         Long tenantId = null;
+        String tenantIdStr = null;
         try {
-            String tenantIdStr = LoginHelper.getTenantId();
+            tenantIdStr = LoginHelper.getTenantId();
             if (tenantIdStr != null && !tenantIdStr.isEmpty()) {
                 tenantId = Long.parseLong(tenantIdStr);
             }
@@ -165,7 +167,7 @@ public class AiServiceFacade {
 
         // 5a. 显式开关优先（独立于 mode，用户主动开启时覆盖路由）
         if (Boolean.TRUE.equals(request.getEnableWebSearch())) {
-            invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+            invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
             return sessionId;
         }
 
@@ -186,7 +188,7 @@ public class AiServiceFacade {
         } else {
             // auto 模式（默认）：关键词自动检测联网搜索
             if (containsWebSearchKeywords(request.getContent())) {
-                invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+                invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
                 return sessionId;
             }
             needAgent = containsDataQueryKeywords(request.getContent());
@@ -194,11 +196,11 @@ public class AiServiceFacade {
         }
 
         if (needAgent) {
-            invokeWithAgent(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+            invokeWithAgent(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
         } else if (needRag) {
-            invokeWithRag(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+            invokeWithRag(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
         } else {
-            invokeWithStreaming(modelConfig, request, userId, finalSessionId, tenantId, finalUserName);
+            invokeWithStreaming(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
         }
 
         return sessionId;
@@ -208,7 +210,7 @@ public class AiServiceFacade {
      * 普通流式对话：StreamingChatModel → 逐 Token 推送
      */
     private void invokeWithStreaming(AiModel modelConfig, AiChatRequest request,
-                                     Long userId, Long sessionId, Long tenantId, String userName) {
+                                     Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
         StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
 
         // 使用 MessageWindowChatMemory 加载历史消息，限制最近 20 条（约 10 轮对话），避免超出 token 限制
@@ -256,7 +258,7 @@ public class AiServiceFacade {
                             // 因此直接使用闭包捕获的局部变量传递上下文
                             String thinkingContent = fullThinking.length() > 0 ? fullThinking.toString() : null;
                             saveAiMessageWithTokens(sessionId, fullContent.toString(),
-                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent);
+                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent, tenantIdStr);
                             AiSseMessageHelper.sendDone(userId);
                         }
 
@@ -280,7 +282,7 @@ public class AiServiceFacade {
      * <p>将检索到的知识片段注入提示词，让 LLM 基于知识库内容回答</p>
      */
     private void invokeWithRag(AiModel modelConfig, AiChatRequest request,
-                               Long userId, Long sessionId, Long tenantId, String userName) {
+                               Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
         StreamingChatModel streamingModel = chatModelFactory.getStreamingChatModel(modelConfig.getId(), request);
 
         // 加载历史消息
@@ -346,7 +348,7 @@ public class AiServiceFacade {
                         public void onCompleteResponse(ChatResponse response) {
                             String thinkingContent = fullThinking.length() > 0 ? fullThinking.toString() : null;
                             saveAiMessageWithTokens(sessionId, fullContent.toString(),
-                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent);
+                                modelConfig.getId(), response, tenantId, userId, userName, modelConfig.getModelName(), thinkingContent, tenantIdStr);
                             AiSseMessageHelper.sendDone(userId);
                         }
 
@@ -373,7 +375,7 @@ public class AiServiceFacade {
      * </p>
      */
     private void invokeWithAgent(AiModel modelConfig, AiChatRequest request,
-                                 Long userId, Long sessionId, Long tenantId, String userName) {
+                                 Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
         // Agent 模式使用低 temperature（0.1），提高 SQL 生成准确性
         ChatModel chatModel = chatModelFactory.getAgentChatModel(modelConfig.getId());
 
@@ -460,7 +462,7 @@ public class AiServiceFacade {
                 aiAgentListener.onAgentComplete("SupervisorAgent", duration, 0);
 
                 // 保存 AI 回复（含 Token 明细，从 AiRequestContext 暂存中读取）
-                saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName());
+                saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
 
                 // 推送最终结果
                 AiSseMessageHelper.sendContent(userId, result);
@@ -645,7 +647,7 @@ public class AiServiceFacade {
      */
     private void saveAiMessageFromContext(Long sessionId, String content,
                                            Long tenantId, Long userId,
-                                           String userName, String modelName) {
+                                           String userName, String modelName, String tenantIdStr) {
         AiMessage aiMsg = new AiMessage();
         aiMsg.setSessionId(sessionId);
         aiMsg.setRole("ASSISTANT");
@@ -665,7 +667,10 @@ public class AiServiceFacade {
             aiMsg.setTokenUsage((long) (inputTokens + outputTokens));
         }
 
-        aiMessageMapper.insert(aiMsg);
+        // 异步线程（Agent 闭包）恢复租户上下文，避免 ai_message insert 时 tenant_id 落 0
+        TenantHelper.dynamic(tenantIdStr, () -> {
+            aiMessageMapper.insert(aiMsg);
+        });
         // Agent 模式的日统计已由 AiChatModelListener 处理，无需重复
     }
 
@@ -688,7 +693,7 @@ public class AiServiceFacade {
      */
     private void saveAiMessageWithTokens(Long sessionId, String content, Long modelId,
                                           ChatResponse response, Long tenantId, Long userId,
-                                          String userName, String modelName, String thinkingContent) {
+                                          String userName, String modelName, String thinkingContent, String tenantIdStr) {
         AiMessage aiMsg = new AiMessage();
         aiMsg.setSessionId(sessionId);
         aiMsg.setRole("ASSISTANT");
@@ -696,16 +701,36 @@ public class AiServiceFacade {
         aiMsg.setThinkingContent(thinkingContent);
         aiMsg.setModelId(modelId);
 
-        // 提取 Token 用量（仅写入消息记录，日统计由 AiChatModelListener.onResponse() 统一处理，避免双重计数）
+        // 提取 Token 用量
+        int inputTokens = 0;
+        int outputTokens = 0;
         if (response != null && response.tokenUsage() != null) {
-            int inputTokens = response.tokenUsage().inputTokenCount() != null ? response.tokenUsage().inputTokenCount() : 0;
-            int outputTokens = response.tokenUsage().outputTokenCount() != null ? response.tokenUsage().outputTokenCount() : 0;
+            inputTokens = response.tokenUsage().inputTokenCount() != null ? response.tokenUsage().inputTokenCount() : 0;
+            outputTokens = response.tokenUsage().outputTokenCount() != null ? response.tokenUsage().outputTokenCount() : 0;
             aiMsg.setInputTokens(inputTokens);
             aiMsg.setOutputTokens(outputTokens);
             aiMsg.setTokenUsage((long) (inputTokens + outputTokens));
         }
 
-        aiMessageMapper.insert(aiMsg);
+        // 异步线程（流式回调 I/O 线程）恢复租户上下文，避免 ai_message insert 时 tenant_id 落 0
+        TenantHelper.dynamic(tenantIdStr, () -> {
+            aiMessageMapper.insert(aiMsg);
+        });
+
+        // 流式/RAG 路径日统计：listener.onResponse 在 OkHttp I/O 线程读不到 AiRequestContext（InheritableThreadLocal
+        // 不跨线程池），日统计不会被写入；此处已持有闭包上下文 + token 用量，补写日统计。
+        // Agent 路径走 saveAiMessageFromContext，listener 在 aiExecutor 线程同步执行已写日统计，不双计。
+        if (userId != null && modelId != null && (inputTokens > 0 || outputTokens > 0)) {
+            try {
+                java.math.BigDecimal cost = aiTokenUsageService.calculateCost(modelId, inputTokens, outputTokens);
+                aiTokenUsageService.incrementDailyUsage(tenantId, userId,
+                    userName != null ? userName : String.valueOf(userId),
+                    modelId, modelName != null ? modelName : "unknown",
+                    inputTokens, outputTokens, cost);
+            } catch (Exception e) {
+                log.warn("[流式对话] 更新日统计失败: {}", e.getMessage());
+            }
+        }
     }
 
     /**
@@ -833,7 +858,7 @@ public class AiServiceFacade {
      * 联网搜索模式：WebSearchAgent + WebSearchTool → SSE 推送结果
      */
     private void invokeWithWebSearch(AiModel modelConfig, AiChatRequest request,
-                                      Long userId, Long sessionId, Long tenantId, String userName) {
+                                      Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
         CompletableFuture.runAsync(() -> {
             try {
                 AiRequestContext.set(tenantId, userId, userName, sessionId,
@@ -848,7 +873,7 @@ public class AiServiceFacade {
 
                 String result = agent.search(request.getContent());
 
-                saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName());
+                saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
                 AiSseMessageHelper.sendContent(userId, result);
                 AiSseMessageHelper.sendDone(userId);
             } catch (Exception e) {

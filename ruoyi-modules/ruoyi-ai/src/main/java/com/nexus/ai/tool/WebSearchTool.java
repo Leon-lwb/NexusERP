@@ -8,6 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.Map;
 
 /**
@@ -46,9 +50,14 @@ public class WebSearchTool {
 
     @Tool("抓取指定URL的网页正文内容")
     public String crawlWebpage(@P("网页URL") String url) {
+        // SSRF 防护：校验 URL 协议与目标地址，禁止访问内网/环回/链路本地地址
+        String safeUrl = sanitizeUrl(url);
+        if (safeUrl == null) {
+            return "网页抓取失败：URL 不合法或指向禁止访问的地址（仅允许 http/https，且禁止内网/环回/链路本地地址）";
+        }
         try {
             // Jsoup 连接 + 读取均带超时，避免长连接阻塞
-            String body = Jsoup.connect(url)
+            String body = Jsoup.connect(safeUrl)
                 .userAgent("Mozilla/5.0")
                 .timeout(15000)
                 .maxBodySize(300_000)
@@ -61,8 +70,50 @@ public class WebSearchTool {
             }
             return body;
         } catch (Exception e) {
-            log.warn("[联网搜索] 网页抓取失败: url={}", url, e);
+            log.warn("[联网搜索] 网页抓取失败: url={}", safeUrl, e);
             return "网页抓取失败: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 校验并净化 URL，防止 SSRF
+     * <p>仅允许 http/https 协议；解析主机地址后拒绝内网/环回/链路本地/任意本地/组播地址</p>
+     * <p>注意：存在 DNS rebinding 残余风险（解析时返回公网 IP，连接时 DNS 返回内网），
+     * 本方法做基础防护覆盖主要 SSRF 场景，不依赖外部白名单配置</p>
+     *
+     * @param url 原始 URL
+     * @return 净化后的 URL；不合法或指向禁止地址返回 null
+     */
+    private String sanitizeUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                log.warn("[SSRF] 拒绝非 http/https 协议: {}", url);
+                return null;
+            }
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
+                log.warn("[SSRF] URL 缺少 host: {}", url);
+                return null;
+            }
+            // 解析主机 IP，任一地址命中内网/保留段即拒绝
+            InetAddress[] addrs = InetAddress.getAllByName(host);
+            for (InetAddress addr : addrs) {
+                if (addr.isLoopbackAddress() || addr.isSiteLocalAddress()
+                    || addr.isLinkLocalAddress() || addr.isAnyLocalAddress()
+                    || addr.isMulticastAddress()) {
+                    log.warn("[SSRF] 拒绝访问内网/保留地址: host={}, addr={}", host, addr.getHostAddress());
+                    return null;
+                }
+            }
+            return uri.toString();
+        } catch (URISyntaxException | UnknownHostException e) {
+            log.warn("[SSRF] URL 解析失败: {}", url, e);
+            return null;
         }
     }
 
