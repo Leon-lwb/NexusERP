@@ -1,0 +1,79 @@
+# 质量检验规范（人工标注版）
+
+[[ENTITY:其他|IQC]] 来料检验组 [[ATTR:所属部门|质量部]] [[ATTR:驻厂数|2]] [[ATTR:职责|原材料/外协件进厂检验]]
+[[ENTITY:其他|IPQC]] 制程检验组 [[ATTR:所属部门|质量部]] [[ATTR:职责|工序巡检+末序抽检]]
+[[ENTITY:其他|OQC]] 出货检验组 [[ATTR:所属部门|质量部]] [[ATTR:职责|成品出货终检]]
+[[ENTITY:其他|QA]] 质量保证工程师 [[ATTR:所属部门|质量部]] [[ATTR:职责|体系维护/不合格品分析/CAPA]]
+
+[[ENTITY:物料|MAT-2024-0001]] 高性能MCU芯片 [[ATTR:类别|电子元器件]] [[ATTR:供应商|SUP-SZ-0001]]
+[[ENTITY:物料|MAT-2024-0002]] 电源管理IC [[ATTR:类别|电子元器件]] [[ATTR:供应商|SUP-SZ-0001]]
+[[ENTITY:物料|MAT-2024-0003]] 0805贴片电阻 [[ATTR:类别|电子元器件]] [[ATTR:供应商|SUP-SZ-0003]]
+[[ENTITY:物料|MAT-2024-0005]] 板对板连接器 [[ATTR:类别|电子元器件]] [[ATTR:供应商|SUP-SZ-0002]]
+[[ENTITY:物料|MAT-2024-0007]] 铝合金外壳 [[ATTR:类别|机械结构件]] [[ATTR:供应商|SUP-SH-0002]]
+[[ENTITY:物料|MAT-2024-0011]] 无铅焊锡丝 [[ATTR:类别|辅助材料]] [[ATTR:供应商|SUP-CD-0001]]
+[[ENTITY:物料|MAT-2024-0015]] 智能控制器NX-200A [[ATTR:类别|成品]]
+[[ENTITY:物料|MAT-2024-0016]] 温度传感器模组NX-T100 [[ATTR:类别|成品]]
+[[ENTITY:物料|MAT-2024-0017]] 工业以太网网关NX-G200 [[ATTR:类别|成品]]
+
+[[ENTITY:供应商|SUP-SZ-0001]] 深圳芯源微电子 [[ATTR:等级|A]]
+[[ENTITY:供应商|SUP-SZ-0002]] 东莞精准连接科技 [[ATTR:等级|A]]
+[[ENTITY:供应商|SUP-SZ-0003]] 深圳恒丰泰电子 [[ATTR:等级|B]]
+[[ENTITY:供应商|SUP-SH-0002]] 苏州精工五金 [[ATTR:等级|A]]
+[[ENTITY:供应商|SUP-CD-0001]] 成都焊研科技 [[ATTR:等级|A]]
+
+[[ENTITY:采购订单|PO-2024-001]] 芯片采购订单 [[ATTR:状态|已审批]] [[ATTR:关联ASN|ASN-2024-001]]
+[[ENTITY:采购订单|PO-2024-002]] 结构件采购订单 [[ATTR:状态|执行中]] [[ATTR:关联ASN|ASN-2024-002]]
+
+[[ENTITY:其他|ASN-2024-001]] PO-2024-001到货 [[ATTR:预计到货|2024-04-20]]
+[[ENTITY:其他|ASN-2024-002]] PO-2024-002到货 [[ATTR:预计到货|2024-04-25]]
+
+[[ENTITY:工单|WO-2024-015]] 深圳智联1500台NX-200A工单 [[ATTR:状态|执行中]]
+[[ENTITY:工单|WO-2024-017]] 上海数通1000台NX-G200工单 [[ATTR:状态|已完成]]
+
+[[ENTITY:销售订单|SO-2024-001]] 深圳智联订单 [[ATTR:状态|已确认]]
+[[ENTITY:销售订单|SO-2024-004]] 上海数通订单 [[ATTR:状态|已发货]]
+
+[[ENTITY:其他|RET-2024-001]] 不合格焊锡丝退货 [[ATTR:状态|待退货]]
+[[ENTITY:其他|SR-2024-001]] 深圳智联退货 [[ATTR:状态|已退货]]
+
+[[ENTITY:其他|REWORK-2024-001]] WO-2024-015焊接不良返工 [[ATTR:不良数|50]] [[ATTR:状态|执行中]]
+
+[[ENTITY:其他|WLD]] 焊接不良 [[ATTR:类别|工艺不良]] [[ATTR:严重等级|Major]]
+[[ENTITY:其他|POL]] 元件极性反 [[ATTR:类别|操作失误]] [[ATTR:严重等级|Major]]
+[[ENTITY:其他|TST]] 测试FAIL [[ATTR:类别|功能不良]] [[ATTR:严重等级|Critical]]
+[[ENTITY:其他|MTL]] 来料不良 [[ATTR:类别|原料问题]] [[ATTR:严重等级|Major]]
+
+[[ENTITY:其他|NCR-2024-001]] 焊锡丝批次不合格 [[ATTR:关联PO|PO-2023-089]] [[ATTR:等级|Major]] [[ATTR:状态|已关闭]]
+[[ENTITY:其他|NCR-2024-002]] NX-200A焊接不良 [[ATTR:关联工单|WO-2024-015]] [[ATTR:等级|Major]] [[ATTR:状态|执行中]]
+[[ENTITY:其他|NCR-2024-003]] NX-G200测试FAIL [[ATTR:关联工单|WO-2024-017]] [[ATTR:等级|Critical]] [[ATTR:状态|已关闭]]
+
+[[RELATION:检验|IQC|MAT-2024-0001]] [[ATTR:方式|抽样]] [[ATTR:抽样方案|AQL 1.0 二次]]
+[[RELATION:检验|IQC|MAT-2024-0002]]
+[[RELATION:检验|IQC|MAT-2024-0003]]
+[[RELATION:检验|IQC|MAT-2024-0005]]
+[[RELATION:检验|IQC|MAT-2024-0007]]
+[[RELATION:检验|IQC|MAT-2024-0011]]
+
+[[RELATION:检验|IPQC|WO-2024-015]] [[ATTR:频次|每2小时巡检+末序抽检]]
+[[RELATION:检验|IPQC|WO-2024-016]]
+[[RELATION:检验|IPQC|WO-2024-017]]
+
+[[RELATION:检验|OQC|WO-2024-015]] [[ATTR:项目|功能测试+外观+包装]]
+[[RELATION:检验|OQC|WO-2024-017]] [[ATTR:项目|功能测试+外观+包装]] [[ATTR:结果|合格]]
+
+[[RELATION:关联|NCR-2024-001|RET-2024-001]]
+[[RELATION:关联|NCR-2024-002|REWORK-2024-001]]
+[[RELATION:关联|NCR-2024-003|WO-2024-017]]
+
+[[RELATION:关联|RET-2024-001|PO-2023-089]] [[ATTR:供应商|SUP-CD-0001]]
+[[RELATION:关联|SR-2024-001|SO-2024-001]]
+
+[[ENTITY:仓库|WH-D]] 待检区 [[ATTR:最长存放|7天]]
+[[ENTITY:仓库|WH-E]] 退货仓 [[ATTR:用途|不良品隔离]]
+
+[[RELATION:存储于|MAT-2024-0001|WH-D]] [[ATTR:状态|待检]]
+[[RELATION:存储于|MAT-2024-0007|WH-D]] [[ATTR:状态|待检]]
+
+[[COMMUNITY:质量检验全流程|IQC,IPQC,OQC,QA,WH-D,WH-E,MAT-2024-0001,MAT-2024-0003,MAT-2024-0005,MAT-2024-0007,MAT-2024-0011,MAT-2024-0015,MAT-2024-0017,PO-2024-001,PO-2024-002,WO-2024-015,WO-2024-017,NCR-2024-001,NCR-2024-002,NCR-2024-003,REWORK-2024-001,RET-2024-001,SR-2024-001,ASN-2024-001,ASN-2024-002]]
+[[COMMUNITY:不良代码与不合格品|WLD,POL,TST,MTL,NCR-2024-001,NCR-2024-002,NCR-2024-003,REWORK-2024-001,WO-2024-015,WO-2024-017,MAT-2024-0001,MAT-2024-0007,MAT-2024-0011]]
+[[COMMUNITY:供应商与来料质量|SUP-SZ-0001,SUP-SZ-0002,SUP-SZ-0003,SUP-SH-0002,SUP-CD-0001,IQC,MAT-2024-0001,MAT-2024-0003,MAT-2024-0005,MAT-2024-0007,MAT-2024-0011,PO-2024-001,PO-2024-002,ASN-2024-001,ASN-2024-002,RET-2024-001]]

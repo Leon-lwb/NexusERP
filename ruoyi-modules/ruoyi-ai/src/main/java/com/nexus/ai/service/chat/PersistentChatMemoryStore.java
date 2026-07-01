@@ -1,6 +1,8 @@
 package com.nexus.ai.service.chat;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nexus.common.ai.domain.entity.AiMessage;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import dev.langchain4j.data.message.ChatMessage;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 会话记忆持久化存储
@@ -28,8 +29,13 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
 
     private final AiMessageMapper aiMessageMapper;
 
-    /** 内存缓存：sessionId -> 最近一次保存的 ASSISTANT 消息内容，避免每次 updateMessages 都查库去重 */
-    private final ConcurrentHashMap<Long, String> lastSavedContentCache = new ConcurrentHashMap<>();
+    /** 内存缓存：sessionId -> 最近一次保存的 ASSISTANT 消息内容，避免每次 updateMessages 都查库去重。
+     * <p>有界 + 2h 访问过期：会话被放弃但不显式删除时，条目自动逐出，避免长期运行内存泄漏。
+     * 缓存语义为「最近一次保存内容」，丢失后可从 DB 重建，加 TTL 安全。</p> */
+    private final Cache<Long, String> lastSavedContentCache = Caffeine.newBuilder()
+        .maximumSize(1000)
+        .expireAfterAccess(2, java.util.concurrent.TimeUnit.HOURS)
+        .build();
 
     /**
      * 根据 sessionId 获取历史消息，转换为 LangChain4j ChatMessage 列表
@@ -102,7 +108,7 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
         }
 
         // 去重：优先使用内存缓存，缓存未命中时查库
-        String cachedContent = lastSavedContentCache.get(sessionId);
+        String cachedContent = lastSavedContentCache.getIfPresent(sessionId);
         if (cachedContent != null && cachedContent.equals(content)) {
             log.debug("AI 回复已存在（缓存命中），跳过重复保存, sessionId={}", sessionId);
             return;
@@ -145,7 +151,7 @@ public class PersistentChatMemoryStore implements ChatMemoryStore {
                 new LambdaQueryWrapper<AiMessage>()
                     .eq(AiMessage::getSessionId, sessionId)
             );
-            lastSavedContentCache.remove(sessionId);
+            lastSavedContentCache.invalidate(sessionId);
         }
     }
 

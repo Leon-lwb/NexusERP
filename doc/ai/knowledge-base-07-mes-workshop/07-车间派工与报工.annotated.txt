@@ -1,0 +1,73 @@
+# 车间派工与报工（人工标注版）
+
+[[ENTITY:车间|SMT车间]] SMT贴片车间 [[ATTR:产线|SMT-01,SMT-02,SMT-03,SMT-04,SMT-05]] [[ATTR:班次|两班倒]] [[ATTR:产能|NX-200A 500台/班]]
+[[ENTITY:车间|组装车间]] 组装测试车间 [[ATTR:产线|ASM-01,ASM-02,ASM-03,ASM-04]] [[ATTR:班次|三班倒]] [[ATTR:产能|NX-T100 800台/班,NX-G200 300台/班]]
+
+[[ENTITY:其他|SMT-01]] 三星贴片机线 [[ATTR:所属车间|SMT车间]]
+[[ENTITY:其他|SMT-02]] 雅马哈贴片机线 [[ATTR:所属车间|SMT车间]]
+[[ENTITY:其他|SMT-03]] 锡膏印刷工位 [[ATTR:所属车间|SMT车间]]
+[[ENTITY:其他|SMT-04]] 回流焊工位 [[ATTR:所属车间|SMT车间]]
+[[ENTITY:其他|SMT-05]] AOI检测工位 [[ATTR:所属车间|SMT车间]]
+[[ENTITY:其他|ASM-01]] DIP插件线 [[ATTR:所属车间|组装车间]]
+[[ENTITY:其他|ASM-02]] 组装测试线（NX-200A） [[ATTR:所属车间|组装车间]]
+[[ENTITY:其他|ASM-03]] 组装测试线（NX-T100/NX-G200） [[ATTR:所属车间|组装车间]]
+[[ENTITY:其他|ASM-04]] 包装线 [[ATTR:所属车间|组装车间]]
+
+[[ENTITY:工单|WO-2024-015]] 深圳智联1500台NX-200A工单 [[ATTR:状态|执行中]] [[ATTR:排产车间|SMT车间+组装车间]]
+[[ENTITY:工单|WO-2024-016]] 东莞明辉800台NX-200A+200台NX-T100工单 [[ATTR:状态|已排产]] [[ATTR:排产车间|组装车间]]
+[[ENTITY:工单|WO-2024-017]] 上海数通1000台NX-G200工单 [[ATTR:状态|已完成]]
+
+[[ENTITY:其他|DO-WO-2024-015-01]] WO-2024-015第一批750台 [[ATTR:关联工单|WO-2024-015]] [[ATTR:产线|SMT-01→ASM-02]] [[ATTR:班次|早班]] [[ATTR:开工日期|2024-04-11]] [[ATTR:计划完工|2024-04-15]] [[ATTR:计划数量|750]] [[ATTR:优先级|P1]]
+[[ENTITY:其他|DO-WO-2024-015-02]] WO-2024-015第二批750台 [[ATTR:关联工单|WO-2024-015]] [[ATTR:产线|SMT-02→ASM-02]] [[ATTR:班次|中班]] [[ATTR:开工日期|2024-04-12]] [[ATTR:计划完工|2024-04-16]] [[ATTR:计划数量|750]] [[ATTR:优先级|P2]]
+[[ENTITY:其他|DO-WO-2024-016-01]] WO-2024-016第一批400台 [[ATTR:关联工单|WO-2024-016]] [[ATTR:产线|ASM-03]] [[ATTR:班次|早班]] [[ATTR:开工日期|2024-04-15]] [[ATTR:计划数量|400]]
+
+[[ENTITY:其他|FC-DO-WO-2024-015-01-0001]] WO-2024-015-01 第1片 [[ATTR:派工单|DO-WO-2024-015-01]] [[ATTR:SN|NX200A-2404-0001]]
+[[ENTITY:其他|FC-DO-WO-2024-015-01-0002]] WO-2024-015-01 第2片 [[ATTR:派工单|DO-WO-2024-015-01]] [[ATTR:SN|NX200A-2404-0002]]
+[[ENTITY:其他|FC-DO-WO-2024-015-01-0750]] WO-2024-015-01 第750片 [[ATTR:派工单|DO-WO-2024-015-01]] [[ATTR:SN|NX200A-2404-0750]]
+
+[[ENTITY:工序|SMT贴片]] SMT贴片 [[ATTR:标准工时|0.5h/台]] [[ATTR:工序单价|¥5/台]]
+[[ENTITY:工序|DIP插件]] DIP插件 [[ATTR:标准工时|0.3h/台]] [[ATTR:工序单价|¥3/台]]
+[[ENTITY:工序|组装测试]] 组装测试 [[ATTR:标准工时|1.2h/台]] [[ATTR:工序单价|¥15/台]]
+[[ENTITY:工序|包装]] 包装 [[ATTR:标准工时|0.2h/台]] [[ATTR:工序单价|¥2/台]]
+
+[[ENTITY:其他|EMP-001]] 张师傅 [[ATTR:工号|EMP-001]] [[ATTR:工种|SMT操作员]] [[ATTR:班次|早班]] [[ATTR:所属产线|SMT-01]]
+[[ENTITY:其他|EMP-002]] 李师傅 [[ATTR:工号|EMP-002]] [[ATTR:工种|SMT操作员]] [[ATTR:班次|中班]] [[ATTR:所属产线|SMT-02]]
+[[ENTITY:其他|EMP-003]] 王师傅 [[ATTR:工号|EMP-003]] [[ATTR:工种|组装技术员]] [[ATTR:班次|早班]] [[ATTR:所属产线|ASM-02]]
+[[ENTITY:其他|EMP-004]] 赵师傅 [[ATTR:工号|EMP-004]] [[ATTR:工种|包装操作员]] [[ATTR:班次|早班]] [[ATTR:所属产线|ASM-04]]
+
+[[ENTITY:其他|WLD]] 焊接不良 [[ATTR:类别|工艺不良]]
+[[ENTITY:其他|POL]] 元件极性反 [[ATTR:类别|操作失误]]
+[[ENTITY:其他|TST]] 测试FAIL [[ATTR:类别|功能不良]]
+[[ENTITY:其他|MTL]] 来料不良 [[ATTR:类别|原料问题]]
+
+[[ENTITY:其他|REWORK-2024-001]] WO-2024-015焊接不良返工 [[ATTR:关联工单|WO-2024-015]] [[ATTR:不良数|50]] [[ATTR:状态|执行中]]
+[[ENTITY:其他|REWORK-2024-002]] WO-2024-017固件返工 [[ATTR:关联工单|WO-2024-017]] [[ATTR:不良数|10]] [[ATTR:状态|已完成]]
+
+[[RELATION:关联|DO-WO-2024-015-01|WO-2024-015]]
+[[RELATION:关联|DO-WO-2024-015-02|WO-2024-015]]
+[[RELATION:关联|DO-WO-2024-016-01|WO-2024-016]]
+[[RELATION:关联|FC-DO-WO-2024-015-01-0001|DO-WO-2024-015-01]]
+[[RELATION:关联|FC-DO-WO-2024-015-01-0750|DO-WO-2024-015-01]]
+[[RELATION:关联|REWORK-2024-001|WO-2024-015]]
+[[RELATION:关联|REWORK-2024-002|WO-2024-017]]
+
+[[RELATION:隶属于|EMP-001|SMT-01]]
+[[RELATION:隶属于|EMP-002|SMT-02]]
+[[RELATION:隶属于|EMP-003|ASM-02]]
+[[RELATION:隶属于|EMP-004|ASM-04]]
+
+[[RELATION:生产于|WO-2024-015|SMT车间]]
+[[RELATION:生产于|WO-2024-015|组装车间]]
+[[RELATION:生产于|WO-2024-016|组装车间]]
+[[RELATION:生产于|WO-2024-017|组装车间]]
+
+[[RELATION:包含|BOM-NX200A-V1|MAT-2024-0001]]
+[[RELATION:包含|BOM-NX200A-V1|MAT-2024-0005]]
+
+[[ENTITY:物料|MAT-2024-0015]] 智能控制器NX-200A [[ATTR:日产能|500台/班]]
+[[ENTITY:物料|MAT-2024-0016]] 温度传感器NX-T100 [[ATTR:日产能|800台/班]]
+[[ENTITY:物料|MAT-2024-0017]] 工业网关NX-G200 [[ATTR:日产能|300台/班]]
+
+[[COMMUNITY:车间派工执行链|WO-2024-015,WO-2024-016,WO-2024-017,DO-WO-2024-015-01,DO-WO-2024-015-02,DO-WO-2024-016-01,SMT车间,组装车间,SMT-01,SMT-02,ASM-02,ASM-03,ASM-04,EMP-001,EMP-002,EMP-003,EMP-004]]
+[[COMMUNITY:流转卡与工序|FC-DO-WO-2024-015-01-0001,FC-DO-WO-2024-015-01-0750,SMT贴片,DIP插件,组装测试,包装,DO-WO-2024-015-01,DO-WO-2024-015-02]]
+[[COMMUNITY:不良品与返工|REWORK-2024-001,REWORK-2024-002,WLD,POL,TST,MTL,WO-2024-015,WO-2024-017,EMP-001,EMP-003]]

@@ -138,6 +138,12 @@
             <artifactId>ruoyi-common-oss</artifactId>
         </dependency>
 
+        <!-- 本地缓存（模型实例、会话记忆、向量存储等有界缓存） -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

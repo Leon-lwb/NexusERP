@@ -1,6 +1,8 @@
 package com.nexus.ai.service.rag;
 
 import com.nexus.ai.config.AiProperties;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nexus.common.ai.domain.entity.AiKnowledge;
 import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 向量存储服务
@@ -41,11 +44,20 @@ public class VectorStoreService {
     private final AiKnowledgeMapper knowledgeMapper;
     private final AiProperties aiProperties;
 
-    /** InMemory 模式：按知识库ID隔离的存储实例 */
+    /**
+     * InMemory 模式：按知识库ID隔离的存储实例。
+     * <p>注意：此 Map 持有 InMemory 模式的<strong>权威数据</strong>（chunk 向量仅在导入时写入，
+     * 缓存未命中不会从 DB 重建），因此<strong>不能加 TTL/大小逐出</strong>——逐出等于数据丢失。
+     * InMemory 模式本身常驻堆内存是其已知代价；如需控制内存占用请切换到 milvus 模式。</p>
+     */
     private final ConcurrentHashMap<Long, InMemoryEmbeddingStore<TextSegment>> inMemoryStores = new ConcurrentHashMap<>();
 
-    /** Milvus 模式：按知识库ID缓存 EmbeddingStore 实例 */
-    private final ConcurrentHashMap<Long, EmbeddingStore<TextSegment>> milvusStores = new ConcurrentHashMap<>();
+    /** Milvus 模式：按知识库ID缓存 EmbeddingStore 客户端实例。MilvusEmbeddingStore 为无状态客户端
+     * （数据在 Milvus 服务端），逐出后重建仅重连，故可安全加有界 + TTL 限制客户端实例数。 */
+    private final Cache<Long, EmbeddingStore<TextSegment>> milvusStores = Caffeine.newBuilder()
+        .maximumSize(64)
+        .expireAfterAccess(1, TimeUnit.HOURS)
+        .build();
 
     /** 批量向量化批大小（Embedding API 通常支持批量请求，减少网络往返） */
     private static final int EMBEDDING_BATCH_SIZE = 32;
@@ -88,7 +100,7 @@ public class VectorStoreService {
     private EmbeddingStore<TextSegment> getStore(Long knowledgeId) {
         String storeType = getStoreType(knowledgeId);
         if ("milvus".equalsIgnoreCase(storeType)) {
-            return milvusStores.computeIfAbsent(knowledgeId, kid -> {
+            return milvusStores.get(knowledgeId, kid -> {
                 String collectionName = getCollectionName(kid);
                 String url = aiProperties.getVectorStore().getMilvus().getUrl();
                 int dimension = aiProperties.getVectorStore().getMilvus().getDimension();
@@ -256,7 +268,7 @@ public class VectorStoreService {
             } catch (Exception e) {
                 log.warn("[VectorStore] Milvus removeAll 失败，回退到清除缓存: knowledgeId={}, error={}", knowledgeId, e.getMessage());
             }
-            milvusStores.remove(knowledgeId);
+            milvusStores.invalidate(knowledgeId);
         } else {
             inMemoryStores.remove(knowledgeId);
             log.info("[VectorStore] 已删除 InMemory 存储: knowledgeId={}", knowledgeId);
@@ -284,7 +296,7 @@ public class VectorStoreService {
                 log.error("[VectorStore] Milvus 按文档ID删除向量失败: documentId={}, knowledgeId={}, error={}",
                     documentId, knowledgeId, e.getMessage());
                 // 降级：清除缓存，提示重新导入
-                milvusStores.remove(knowledgeId);
+                milvusStores.invalidate(knowledgeId);
                 log.warn("[VectorStore] 已清除 Milvus 知识库缓存 (knowledgeId={})，建议重新导入该知识库", knowledgeId);
             }
         } else {

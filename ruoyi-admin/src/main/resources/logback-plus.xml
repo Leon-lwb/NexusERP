@@ -21,6 +21,8 @@
             <fileNamePattern>${log.path}/sys-console.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- 日志最大 1天 -->
             <maxHistory>1</maxHistory>
+            <!-- 日志总大小上限，防止磁盘爆满 -->
+            <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>${log.pattern}</pattern>
@@ -41,6 +43,8 @@
             <fileNamePattern>${log.path}/sys-info.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
             <!-- 日志最大的历史 60天 -->
             <maxHistory>60</maxHistory>
+            <!-- 日志总大小上限，防止磁盘爆满 -->
+            <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>${log.pattern}</pattern>
@@ -63,6 +67,8 @@
             <fileNamePattern>${log.path}/sys-error.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
             <!-- 日志最大的历史 60天 -->
             <maxHistory>60</maxHistory>
+            <!-- 日志总大小上限，防止磁盘爆满 -->
+            <totalSizeCap>512MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>${log.pattern}</pattern>

@@ -179,9 +179,9 @@ services:
       TZ: Asia/Shanghai
       SERVER_PORT: 8080
       SNAIL_PORT: 28080
-      # 内存优化: 堆256~448M, Metaspace 256M(解决OOM), CodeCache 48M, DirectMemory 32M
-      # 总JVM内存上限 ≈ 448+256+48+32+64(threads) ≈ 848M, 容器限制896M留有余量
-      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xms256m -Xmx448m -XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=64m -XX:ReservedCodeCacheSize=48m -XX:MaxDirectMemorySize=32m -Xss512k -XX:+AlwaysPreTouch -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/ruoyi/server/logs/ -Dfile.encoding=UTF-8"
+      # 内存优化（紧凑档）：堆固定 512m，Metaspace 192m，CodeCache 48m，Direct 64m
+      # 总 JVM 上限 ≈ 512+192+48+64+75(线程栈)+80(G1+Native) ≈ 971M，容器限制 1024M 留有余量
+      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=2m -Xms512m -Xmx512m -XX:MetaspaceSize=192m -XX:MaxMetaspaceSize=192m -XX:CompressedClassSpaceSize=32m -XX:ReservedCodeCacheSize=48m -XX:MaxDirectMemorySize=64m -Xss512k -XX:+AlwaysPreTouch -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/ruoyi/server/logs/ -Xlog:gc*:file=/ruoyi/server/logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10m -Dfile.encoding=UTF-8"
       # Jasypt 加密密钥（用于解密 application-prod.yml 中的 ENC(...) 密码）
       # 请替换为您的实际密钥
       JASYPT_PASSWORD: "your-jasypt-key-here"
@@ -211,4 +211,4 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768M
+          memory: 1024M

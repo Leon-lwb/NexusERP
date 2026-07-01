@@ -123,6 +123,8 @@ spring:
         maxLifetime: 1800000
         # 多久检查一次连接的活性
         keepaliveTime: 30000
+        # 连接泄漏检测，超过 60s 未归还则告警（开销极小）
+        leakDetectionThreshold: 60000
 
 --- # redis 单机配置(单机与集群只能开启一个另一个需要注释掉)
 spring.data:

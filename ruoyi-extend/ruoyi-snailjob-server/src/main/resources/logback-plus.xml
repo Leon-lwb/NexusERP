@@ -22,6 +22,8 @@
             <fileNamePattern>${log.path}/console.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- 日志最大 1天 -->
             <maxHistory>1</maxHistory>
+            <!-- 日志总大小上限，防止磁盘爆满 -->
+            <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>${log.pattern}</pattern>
@@ -38,6 +40,7 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <FileNamePattern>${log.path}/info.%d{yyyy-MM-dd}.log</FileNamePattern>
             <MaxHistory>60</MaxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>${log.pattern}</pattern>
@@ -55,6 +58,7 @@
             <FileNamePattern>${log.path}/error.%d{yyyy-MM-dd}.log
             </FileNamePattern>
             <MaxHistory>60</MaxHistory>
+            <totalSizeCap>512MB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>${log.pattern}</pattern>

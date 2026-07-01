@@ -45,8 +45,8 @@ public class IotRealtimeSseManager {
      * @return SseEmitter
      */
     public SseEmitter connect(Long deviceId, String sessionKey) {
-        // 不超时（0L），依赖 onCompletion/onError + 推送时 IOException 自愈清理
-        SseEmitter emitter = new SseEmitter(0L);
+        // 1 小时超时兜底，防止客户端 TCP 假死（half-open）不触发 onCompletion/onError 导致 emitter 永久驻留
+        SseEmitter emitter = new SseEmitter(3_600_000L);
         Map<String, SseEmitter> sessions = deviceEmitters.computeIfAbsent(deviceId, k -> new ConcurrentHashMap<>());
         SseEmitter old = sessions.put(sessionKey, emitter);
         if (old != null) {

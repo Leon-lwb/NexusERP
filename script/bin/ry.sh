@@ -1,11 +1,11 @@
 #!/bin/sh
 # ./ry.sh start 启动 stop 停止 restart 重启 status 状态
 AppName=ruoyi-admin.jar
-
-# JVM参数
-JVM_OPTS="-Dname=$AppName  -Duser.timezone=Asia/Shanghai -Xms512m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseZGC"
 APP_HOME=`pwd`
 LOG_PATH=$APP_HOME/logs/$AppName.log
+
+# JVM参数
+JVM_OPTS="-Dname=$AppName  -Duser.timezone=Asia/Shanghai -Xms512m -Xmx1024m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$APP_HOME/logs/ -XX:+ExitOnOutOfMemoryError -XX:+UseZGC -Xlog:gc*:file=$APP_HOME/logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10m"
 
 if [ "$1" = "" ];
 then

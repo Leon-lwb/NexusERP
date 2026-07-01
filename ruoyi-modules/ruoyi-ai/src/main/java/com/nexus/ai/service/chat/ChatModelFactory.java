@@ -1,6 +1,8 @@
 package com.nexus.ai.service.chat;
 
 import com.nexus.ai.service.chat.provider.ChatServiceProviderFactory;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
 import com.nexus.common.ai.service.IAiModelService;
@@ -10,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * AI 模型工厂（带缓存 + 厂商策略路由）
@@ -34,14 +36,23 @@ public class ChatModelFactory {
     private final IAiModelService aiModelService;
     private final ChatServiceProviderFactory providerFactory;
 
-    /** 同步模型缓存（key = modelId） */
-    private final ConcurrentHashMap<Long, ChatModel> chatModelCache = new ConcurrentHashMap<>();
+    /** 同步模型缓存（key = modelId）。有界 + 1h 访问过期，防止模型实例（持 OkHttp 连接池/线程）无限堆积。 */
+    private final Cache<Long, ChatModel> chatModelCache = Caffeine.newBuilder()
+        .maximumSize(16)
+        .expireAfterAccess(1, TimeUnit.HOURS)
+        .build();
 
-    /** 流式模型缓存（key = modelId + ":" + (enableThinking?"T":"F")） */
-    private final ConcurrentHashMap<String, StreamingChatModel> streamingModelCache = new ConcurrentHashMap<>();
+    /** 流式模型缓存（key = modelId + ":" + (enableThinking?"T":"F")）。有界 + 1h 访问过期。 */
+    private final Cache<String, StreamingChatModel> streamingModelCache = Caffeine.newBuilder()
+        .maximumSize(32)
+        .expireAfterAccess(1, TimeUnit.HOURS)
+        .build();
 
-    /** Agent 专用同步模型缓存（key = modelId，使用低 temperature） */
-    private final ConcurrentHashMap<Long, ChatModel> agentModelCache = new ConcurrentHashMap<>();
+    /** Agent 专用同步模型缓存（key = modelId，使用低 temperature）。有界 + 1h 访问过期。 */
+    private final Cache<Long, ChatModel> agentModelCache = Caffeine.newBuilder()
+        .maximumSize(16)
+        .expireAfterAccess(1, TimeUnit.HOURS)
+        .build();
 
     /** Agent 模式 temperature（低温度提高 SQL 生成准确性） */
     private static final double AGENT_TEMPERATURE = 0.1;
@@ -53,7 +64,7 @@ public class ChatModelFactory {
      * @return ChatModel 实例
      */
     public ChatModel getChatModel(Long modelId) {
-        return chatModelCache.computeIfAbsent(modelId, id -> {
+        return chatModelCache.get(modelId, id -> {
             AiModel config = aiModelService.selectModelById(id);
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
@@ -73,7 +84,7 @@ public class ChatModelFactory {
     public StreamingChatModel getStreamingChatModel(Long modelId, AiChatRequest request) {
         boolean thinking = request != null && Boolean.TRUE.equals(request.getEnableThinking());
         String key = modelId + ":" + (thinking ? "T" : "F");
-        return streamingModelCache.computeIfAbsent(key, k -> {
+        return streamingModelCache.get(key, k -> {
             AiModel config = aiModelService.selectModelById(modelId);
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + modelId);
@@ -99,7 +110,7 @@ public class ChatModelFactory {
      * @return ChatModel 实例（temperature=0.1）
      */
     public ChatModel getAgentChatModel(Long modelId) {
-        return agentModelCache.computeIfAbsent(modelId, id -> {
+        return agentModelCache.get(modelId, id -> {
             AiModel config = aiModelService.selectModelById(id);
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
@@ -130,18 +141,18 @@ public class ChatModelFactory {
      */
     public void evictCache(Long modelId) {
         String prefix = modelId + ":";
-        streamingModelCache.keySet().removeIf(k -> k.startsWith(prefix));
-        chatModelCache.remove(modelId);
-        agentModelCache.remove(modelId);
+        streamingModelCache.asMap().keySet().removeIf(k -> k.startsWith(prefix));
+        chatModelCache.invalidate(modelId);
+        agentModelCache.invalidate(modelId);
     }
 
     /**
      * 清除全部模型缓存
      */
     public void evictAllCache() {
-        streamingModelCache.clear();
-        chatModelCache.clear();
-        agentModelCache.clear();
+        streamingModelCache.invalidateAll();
+        chatModelCache.invalidateAll();
+        agentModelCache.invalidateAll();
     }
 
     /**

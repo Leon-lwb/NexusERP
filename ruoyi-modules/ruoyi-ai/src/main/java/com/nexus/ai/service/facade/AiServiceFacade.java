@@ -26,6 +26,8 @@ import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.ai.service.IAiTokenUsageService;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agentic.AgenticServices;
 import dev.langchain4j.agentic.supervisor.SupervisorAgent;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
@@ -79,6 +81,9 @@ public class AiServiceFacade {
 
     private final WebSearchTool webSearchTool;
     private final AiProperties aiProperties;
+
+    /** OutputChannel 事件 JSON 解析复用单例（ObjectMapper 线程安全，避免每请求 new 产生 GC 压力） */
+    private static final ObjectMapper DRAIN_MAPPER = new ObjectMapper();
 
     /** 数据查询关键词（包含这些词时走 Agent 模式） */
     private static final Set<String> DATA_QUERY_KEYWORDS = Set.of(
@@ -487,12 +492,11 @@ public class AiServiceFacade {
         }, aiExecutor);
 
         // 异步消费 OutputChannel 事件，根据事件类型路由到对应的 SSE 推送方法
-        final com.fasterxml.jackson.databind.ObjectMapper drainMapper = new com.fasterxml.jackson.databind.ObjectMapper();
         CompletableFuture.runAsync(() -> {
             try {
                 channel.drain(eventJson -> {
                     try {
-                        com.fasterxml.jackson.databind.JsonNode node = drainMapper.readTree(eventJson);
+                        JsonNode node = DRAIN_MAPPER.readTree(eventJson);
                         String eventType = node.has("type") ? node.get("type").asText() : "";
 
                         switch (eventType) {

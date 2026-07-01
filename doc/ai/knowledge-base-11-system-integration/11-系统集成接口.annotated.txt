@@ -1,0 +1,92 @@
+# 系统集成接口（人工标注版）
+
+[[ENTITY:其他|ruoyi-system]] 系统管理模块 [[ATTR:数据库|ry-vue]] [[ATTR:功能|用户/角色/菜单/租户/客户端]]
+[[ENTITY:其他|ruoyi-erp]] ERP业务模块 [[ATTR:数据库|ry-erp]] [[ATTR:功能|基础数据/销售/采购/排产/仓储]]
+[[ENTITY:其他|ruoyi-mes]] MES制造执行模块 [[ATTR:数据库|ry-erp]] [[ATTR:功能|工单/派工/安灯/数据采集/设备/质量/SPC]]
+[[ENTITY:其他|ruoyi-iot]] IoT物联网模块 [[ATTR:数据库|ry-erp,ry-vue-iot]] [[ATTR:功能|设备管理/MQTT/实时数据/告警]]
+[[ENTITY:其他|ruoyi-ai]] AI智能助手模块 [[ATTR:数据库|ry-vue,ry-erp]] [[ATTR:功能|Agent/RAG/知识图谱/MCP]]
+[[ENTITY:其他|ruoyi-im]] 即时通讯模块 [[ATTR:数据库|ry-vue]] [[ATTR:功能|私聊/群聊/通知]]
+[[ENTITY:其他|ruoyi-flowable]] 工作流模块 [[ATTR:数据库|ry-vue]] [[ATTR:功能|BPMN流程引擎]]
+
+[[ENTITY:其他|ry-vue]] 系统管理库 [[ATTR:内容|用户/角色/菜单/租户/AI配置/IM消息]]
+[[ENTITY:其他|ry-erp]] ERP业务库 [[ATTR:内容|物料/订单/采购/生产/库存/MES/IoT数据]]
+[[ENTITY:其他|ry-vue-iot]] IoT时序库 [[ATTR:内容|IoT设备数据历史]]
+
+[[ENTITY:其他|MES_WORK_ORDER_RELEASE]] 工单下发消息 [[ATTR:方向|ERP→MES]] [[ATTR:用途|工单下发]] [[ATTR:Tag|CREATE/UPDATE/CANCEL]]
+[[ENTITY:其他|ERP_WORK_ORDER_ACK]] 工单确认消息 [[ATTR:方向|MES→ERP]] [[ATTR:用途|工单确认]]
+[[ENTITY:其他|MES_PRODUCTION_DATA]] 设备生产数据消息 [[ATTR:方向|IoT→MES]] [[ATTR:用途|设备数据回写]]
+[[ENTITY:其他|ERP_EQUIPMENT_ALERT]] 设备故障告警消息 [[ATTR:方向|IoT→ERP]] [[ATTR:用途|设备告警]]
+[[ENTITY:其他|MES_QUALITY_ALERT]] 质量异常告警消息 [[ATTR:方向|MES→ERP]] [[ATTR:用途|质量异常告警]]
+
+[[ENTITY:其他|/erp/api/production/work-order/complete-callback]] 工单完工回调 [[ATTR:方向|MES→ERP]] [[ATTR:方法|POST]] [[ATTR:认证|专用Token]]
+[[ENTITY:其他|/mes/api/erp-bridge/sync-bom]] BOM同步 [[ATTR:方向|ERP→MES]] [[ATTR:方法|POST]]
+[[ENTITY:其他|/flowable/process/start]] 启动流程 [[ATTR:方向|业务→Flowable]] [[ATTR:方法|POST]]
+[[ENTITY:其他|/flowable/task/complete]] 完成任务 [[ATTR:方向|Flowable→业务]] [[ATTR:方法|POST]]
+[[ENTITY:其他|/ai/chat/send]] AI对话 [[ATTR:方向|前端→AI]] [[ATTR:方法|POST]]
+[[ENTITY:其他|/ai/knowledge/**]] 知识库管理 [[ATTR:方向|前端→AI]] [[ATTR:方法|GET/POST/PUT/DELETE]]
+[[ENTITY:其他|/ai/knowledge/graph/**]] 知识图谱管理 [[ATTR:方向|前端→AI]] [[ATTR:方法|GET/POST]]
+
+[[ENTITY:工单|WO-2024-015]] 深圳智联1500台NX-200A工单 [[ATTR:模块|ERP→MES]]
+[[ENTITY:工单|WO-2024-016]] 东莞明辉工单 [[ATTR:模块|ERP→MES]]
+[[ENTITY:工单|WO-2024-017]] 上海数通工单 [[ATTR:模块|MES→ERP完工回写]]
+
+[[ENTITY:订单|SO-2024-001]] 深圳智联订单 [[ATTR:模块|ERP]] [[ATTR:审批|Flowable]]
+[[ENTITY:采购订单|PO-2024-001]] 芯片采购订单 [[ATTR:模块|ERP]] [[ATTR:审批|Flowable]]
+
+[[ENTITY:物料|MAT-2024-0015]] 智能控制器NX-200A [[ATTR:BOM同步|ERP→MES]]
+[[ENTITY:物料|MAT-2024-0016]] 温度传感器模组 [[ATTR:BOM同步|ERP→MES]]
+
+[[ENTITY:其他|kb-erp-master]] ERP基础数据知识库 [[ATTR:模块|ruoyi-ai]]
+[[ENTITY:其他|kb-mes-quality]] MES质量规范知识库 [[ATTR:模块|ruoyi-ai]]
+[[ENTITY:其他|kb-system-deploy]] 系统部署知识库 [[ATTR:模块|ruoyi-ai]]
+
+[[ENTITY:其他|DEV-001]] 温度传感器设备 [[ATTR:Topic|nexus/iot/device/DEV-001/data]] [[ATTR:模块|ruoyi-iot]]
+[[ENTITY:其他|DEV-002]] 压力传感器设备 [[ATTR:Topic|nexus/iot/device/DEV-002/data]] [[ATTR:模块|ruoyi-iot]]
+
+[[ENTITY:其他|微信小程序]] 移动端 [[ATTR:协议|HTTPS]] [[ATTR:认证|OAuth2]]
+[[ENTITY:其他|顺丰API]] 物流接口 [[ATTR:协议|HTTPS]] [[ATTR:用途|电子面单/轨迹查询]]
+[[ENTITY:其他|京东API]] 物流接口 [[ATTR:协议|HTTPS]] [[ATTR:用途|电子面单/轨迹查询]]
+[[ENTITY:其他|电子发票API]] 税务系统 [[ATTR:协议|HTTPS]] [[ATTR:用途|开具电子发票]]
+
+[[RELATION:发送|ruoyi-erp|MES_WORK_ORDER_RELEASE]] [[ATTR:内容|工单下发]]
+[[RELATION:消费|ruoyi-mes|MES_WORK_ORDER_RELEASE]] [[ATTR:消费者|WorkOrderReleaseConsumer]]
+[[RELATION:发送|ruoyi-mes|ERP_WORK_ORDER_ACK]] [[ATTR:内容|工单确认]]
+[[RELATION:消费|ruoyi-erp|ERP_WORK_ORDER_ACK]] [[ATTR:内容|状态更新]]
+
+[[RELATION:发送|ruoyi-iot|MES_PRODUCTION_DATA]] [[ATTR:内容|设备生产数据]]
+[[RELATION:消费|ruoyi-mes|MES_PRODUCTION_DATA]] [[ATTR:用途|SPC分析]]
+[[RELATION:发送|ruoyi-iot|ERP_EQUIPMENT_ALERT]] [[ATTR:内容|设备故障告警]]
+[[RELATION:消费|ruoyi-erp|ERP_EQUIPMENT_ALERT]] [[ATTR:处理|暂停工单+通知]]
+
+[[RELATION:调用|ruoyi-mes|/erp/api/production/work-order/complete-callback]] [[ATTR:方向|MES→ERP]]
+[[RELATION:调用|ruoyi-erp|/mes/api/erp-bridge/sync-bom]] [[ATTR:方向|ERP→MES]]
+[[RELATION:调用|ruoyi-ai|/ai/chat/send]] [[ATTR:方向|前端→AI]]
+[[RELATION:调用|ruoyi-ai|ExecuteSqlQueryTool]] [[ATTR:方向|AI→ERP]] [[ATTR:数据源|ry-erp]]
+
+[[RELATION:发送|ruoyi-mes|MES_QUALITY_ALERT]] [[ATTR:内容|质量异常]]
+[[RELATION:消费|ruoyi-erp|MES_QUALITY_ALERT]] [[ATTR:处理|生成NCR]]
+
+[[RELATION:关联|WO-2024-015|MES_WORK_ORDER_RELEASE]] [[ATTR:消息内容|CREATE]]
+[[RELATION:关联|WO-2024-015|/erp/api/production/work-order/complete-callback]] [[ATTR:消息内容|完工回写]]
+[[RELATION:关联|WO-2024-015|BOM-NX200A-V1]] [[ATTR:同步|BOM同步]]
+
+[[RELATION:关联|SO-2024-001|/flowable/process/start]] [[ATTR:触发|价格异常审批]]
+[[RELATION:关联|PO-2024-001|/flowable/process/start]] [[ATTR:触发|金额>1万审批]]
+
+[[RELATION:关联|ruoyi-ai|kb-erp-master]] [[ATTR:用途|RAG检索]]
+[[RELATION:关联|ruoyi-ai|kb-mes-quality]] [[ATTR:用途|RAG检索]]
+[[RELATION:关联|ruoyi-ai|kb-system-deploy]] [[ATTR:用途|RAG检索]]
+
+[[RELATION:关联|ruoyi-iot|DEV-001]] [[ATTR:MQTT Topic|nexus/iot/device/DEV-001/data]]
+[[RELATION:关联|ruoyi-iot|DEV-002]] [[ATTR:MQTT Topic|nexus/iot/device/DEV-002/data]]
+
+[[ENTITY:其他|MES_WORK_ORDER_RELEASE]] 工单下发消息 [[ATTR:发送方|ruoyi-erp]] [[ATTR:接收方|ruoyi-mes]] [[ATTR:协议|RocketMQ]]
+[[ENTITY:其他|ERP_WORK_ORDER_ACK]] 工单确认消息 [[ATTR:发送方|ruoyi-mes]] [[ATTR:接收方|ruoyi-erp]] [[ATTR:协议|RocketMQ]]
+[[ENTITY:其他|MES_PRODUCTION_DATA]] 生产数据消息 [[ATTR:发送方|ruoyi-iot]] [[ATTR:接收方|ruoyi-mes]] [[ATTR:协议|RocketMQ]]
+[[ENTITY:其他|ERP_EQUIPMENT_ALERT]] 设备告警消息 [[ATTR:发送方|ruoyi-iot]] [[ATTR:接收方|ruoyi-erp]] [[ATTR:协议|RocketMQ]]
+
+[[COMMUNITY:ERP-MES工单全链路|ruoyi-erp,ruoyi-mes,WO-2024-015,WO-2024-016,WO-2024-017,MES_WORK_ORDER_RELEASE,ERP_WORK_ORDER_ACK,/erp/api/production/work-order/complete-callback,/mes/api/erp-bridge/sync-bom,SO-2024-001,SO-2024-004,MAT-2024-0015,MAT-2024-0016]]
+[[COMMUNITY:AI与多模块集成|ruoyi-ai,ruoyi-erp,ruoyi-iot,ruoyi-im,ExecuteSqlQueryTool,/ai/chat/send,/ai/knowledge/**,kb-erp-master,kb-mes-quality,kb-system-deploy,RAG,GraphRAG]]
+[[COMMUNITY:MQTT设备数据流|ruoyi-iot,DEV-001,DEV-002,nexus-mqtt,MQTT Broker,MES_PRODUCTION_DATA,ERP_EQUIPMENT_ALERT,ruoyi-mes,ruoyi-erp]]
+[[COMMUNITY:工作流与业务单据|ruoyi-flowable,ruoyi-erp,PO-2024-001,SO-2024-001,SO-2024-003,/flowable/process/start,/flowable/task/complete]]
+[[COMMUNITY:系统基础设施|nexus-node1,nexus-node2,nexus-db01,nexus-db02,nexus-redis,nexus-storage,nexus-mq,nexus-mqtt,ruoyi-admin,Nginx,ry-vue,ry-erp]]
