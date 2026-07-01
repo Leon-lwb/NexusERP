@@ -77,6 +77,7 @@ public class BdWorkshopServiceImpl implements IBdWorkshopService {
         LambdaQueryWrapper<BdWorkshop> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getWorkshopCode()), BdWorkshop::getWorkshopCode, bo.getWorkshopCode());
         lqw.like(StringUtils.isNotBlank(bo.getWorkshopName()), BdWorkshop::getWorkshopName, bo.getWorkshopName());
+        lqw.eq(bo.getDeptId() != null, BdWorkshop::getDeptId, bo.getDeptId());
         lqw.eq(bo.getStatus() != null, BdWorkshop::getStatus, bo.getStatus());
         lqw.orderByAsc(BdWorkshop::getSortOrder);
         return lqw;

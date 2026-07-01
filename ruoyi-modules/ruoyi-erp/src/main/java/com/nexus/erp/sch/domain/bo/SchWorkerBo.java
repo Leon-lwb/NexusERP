@@ -33,6 +33,16 @@ public class SchWorkerBo extends BaseEntity {
     private Long userId;
 
     /**
+     * 所属车间ID（关联bd_workshop）
+     */
+    private Long workshopId;
+
+    /**
+     * 所属车间名称
+     */
+    private String workshopName;
+
+    /**
      * 员工姓名
      */
     @NotBlank(message = "员工姓名不能为空")

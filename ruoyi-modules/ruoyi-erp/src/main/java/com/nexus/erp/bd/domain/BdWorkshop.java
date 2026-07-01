@@ -61,6 +61,17 @@ public class BdWorkshop extends TenantEntity {
     private String managerName;
 
     /**
+     * 所属部门ID（关联sys_dept，打通行政组织体系）
+     */
+    private Long deptId;
+
+    /**
+     * 所属部门名称
+     */
+    @ExcelProperty("所属部门")
+    private String deptName;
+
+    /**
      * 产能（标准工时/天）
      */
     @ExcelProperty("产能")

@@ -8,6 +8,7 @@ import com.nexus.erp.sch.domain.SchTeam;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 班组设置视图对象 sch_team
@@ -82,4 +83,9 @@ public class SchTeamVo implements Serializable {
      */
     @ExcelProperty(value = "状态")
     private Long status;
+
+    /**
+     * 班组成员列表
+     */
+    private List<SchTeamMemberVo> schTeamMemberList;
 }

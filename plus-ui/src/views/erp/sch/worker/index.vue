@@ -54,6 +54,9 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['sch:worker:add']">新增</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['sch:worker:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -73,6 +76,7 @@
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="员工工号" align="center" prop="employeeId" />
       <el-table-column label="姓名" align="center" prop="userName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="所属车间" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
       <el-table-column label="手机号码" align="center" prop="phonenumber" />
       <el-table-column label="性别" align="center" prop="sex">
         <template #default="scope">
@@ -114,29 +118,52 @@
       <el-form ref="workerRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-row :gutter="10">
           <el-col :span="8">
+            <el-form-item label="关联用户" prop="userId">
+              <el-input v-model="form.userName" placeholder="选择系统用户建档" readonly>
+                <template #append>
+                  <el-button v-if="!isViewMode" icon="Search" @click="openUserSelect" />
+                  <el-button v-if="!isViewMode && form.userId" icon="RefreshLeft" @click="clearUserSelect" />
+                </template>
+              </el-input>
+              <el-input v-model="form.userId" style="display: none" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="所属车间" prop="workshopName">
+              <el-input v-model="form.workshopName" placeholder="请选择所属车间" readonly>
+                <template #append>
+                  <el-button v-if="!isViewMode" icon="Search" @click="openWorkshopSelect" />
+                </template>
+              </el-input>
+              <el-input v-model="form.workshopId" style="display: none" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="员工工号" prop="employeeId">
-              <el-input v-model="form.employeeId" placeholder="请输入员工工号" :disabled="true" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="用户姓名" prop="userName">
-              <el-input v-model="form.userName" placeholder="请输入用户姓名" :disabled="true" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="手机号码" prop="phonenumber">
-              <el-input v-model="form.phonenumber" placeholder="请输入手机号码" :disabled="true" />
+              <el-input v-model="form.employeeId" placeholder="请输入员工工号" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="10">
           <el-col :span="8">
+            <el-form-item label="员工姓名" prop="userName">
+              <el-input v-model="form.userName" placeholder="请输入员工姓名" :disabled="hasUser" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="手机号码" prop="phonenumber">
+              <el-input v-model="form.phonenumber" placeholder="请输入手机号码" :disabled="hasUser" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="性别" prop="sex">
-              <el-select v-model="form.sex" placeholder="请选择性别" style="width: 100%" :disabled="true">
+              <el-select v-model="form.sex" placeholder="请选择性别" style="width: 100%" :disabled="hasUser">
                 <el-option v-for="dict in sys_user_sex" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="10">
           <el-col :span="8">
             <el-form-item label="工种" prop="workCategory">
               <el-select v-model="form.workCategory" placeholder="请选择工种" style="width: 100%">
@@ -151,8 +178,6 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="10">
           <el-col :span="8">
             <el-form-item label="在岗状态" prop="workStatus">
               <el-select v-model="form.workStatus" placeholder="请选择在岗状态" style="width: 100%">
@@ -160,6 +185,8 @@
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="10">
           <el-col :span="8">
             <el-form-item label="入职日期" prop="entryDate">
               <el-date-picker
@@ -200,15 +227,107 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog title="选择系统用户" v-model="userVisible" width="800px" append-to-body>
+      <el-form :model="userQueryParams" ref="userQueryRef" :inline="true">
+        <el-form-item label="用户名称" prop="userName">
+          <el-input v-model="userQueryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="getUserList" />
+        </el-form-item>
+        <el-form-item label="手机号码" prop="phonenumber">
+          <el-input v-model="userQueryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="getUserList" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="getUserList">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table v-loading="userLoading" :data="userList" @row-dblclick="selectUser" show-overflow-tooltip>
+        <el-table-column label="用户账号" align="center" prop="userName" />
+        <el-table-column label="用户昵称" align="center" prop="nickName" />
+        <el-table-column label="手机号码" align="center" prop="phonenumber" />
+        <el-table-column label="性别" align="center" prop="sex">
+          <template #default="scope">
+            <dict-tag :options="sys_user_sex" :value="scope.row.sex" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectUser(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="userTotal > 0"
+        :total="userTotal"
+        v-model:page="userQueryParams.pageNum"
+        v-model:limit="userQueryParams.pageSize"
+        @pagination="getUserList"
+      />
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="userVisible = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <el-dialog title="选择车间" v-model="workshopVisible" width="800px" append-to-body>
+      <el-form :model="workshopQueryParams" ref="workshopQueryRef" :inline="true">
+        <el-form-item label="车间编码" prop="workshopCode">
+          <el-input v-model="workshopQueryParams.workshopCode" placeholder="请输入车间编码" clearable @keyup.enter="getWorkshopList" />
+        </el-form-item>
+        <el-form-item label="车间名称" prop="workshopName">
+          <el-input v-model="workshopQueryParams.workshopName" placeholder="请输入车间名称" clearable @keyup.enter="getWorkshopList" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="workshopQueryParams.status" placeholder="请选择状态" clearable>
+            <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="getWorkshopList">搜索</el-button>
+          <el-button icon="Refresh" @click="resetWorkshopQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table v-loading="workshopLoading" :data="workshopList" @row-dblclick="selectWorkshop" show-overflow-tooltip>
+        <el-table-column label="车间编码" align="center" prop="workshopCode" />
+        <el-table-column label="车间名称" align="center" prop="workshopName" />
+        <el-table-column label="车间描述" align="center" prop="workshopDesc" />
+        <el-table-column label="车间主任" align="center" prop="managerName" />
+        <el-table-column label="状态" align="center" prop="status">
+          <template #default="scope">
+            <dict-tag :options="sys_core_status" :value="scope.row.status" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectWorkshop(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="workshopTotal > 0"
+        :total="workshopTotal"
+        v-model:page="workshopQueryParams.pageNum"
+        v-model:limit="workshopQueryParams.pageSize"
+        @pagination="getWorkshopList"
+      />
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="workshopVisible = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="Worker">
 import { listWorker, getWorker, delWorker, addWorker, updateWorker } from '@/api/erp/sch/worker';
+import { listUser } from '@/api/system/user';
+import { listWorkshop } from '@/api/erp/bd/workshop';
 
 const { proxy } = getCurrentInstance();
-const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex } = toRefs(
-  proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex')
+const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex, sys_core_status } = toRefs(
+  proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex', 'sys_core_status')
 );
 
 const workerList = ref([]);
@@ -222,6 +341,31 @@ const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
 
+// 系统用户选择
+const userList = ref([]);
+const userLoading = ref(false);
+const userVisible = ref(false);
+const userTotal = ref(0);
+const userQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  userName: undefined,
+  phonenumber: undefined
+});
+
+// 车间选择
+const workshopList = ref([]);
+const workshopLoading = ref(false);
+const workshopVisible = ref(false);
+const workshopTotal = ref(0);
+const workshopQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  workshopCode: undefined,
+  workshopName: undefined,
+  status: '0'
+});
+
 const data = reactive({
   form: {},
   queryParams: {
@@ -233,16 +377,20 @@ const data = reactive({
     employeeId: null,
     workCategory: null,
     workStatus: null,
+    workshopId: null,
     entryDate: null,
     regularizationDate: null
   },
   rules: {
-    userId: [{ required: true, message: '关联的系统用户ID不能为空', trigger: 'blur' }],
-    employeeId: [{ required: true, message: '员工工号不能为空', trigger: 'blur' }]
+    employeeId: [{ required: true, message: '员工工号不能为空', trigger: 'blur' }],
+    userName: [{ required: true, message: '员工姓名不能为空', trigger: 'blur' }]
   }
 });
 
 const { queryParams, form, rules } = toRefs(data);
+
+// 是否已关联系统用户：关联后身份字段只读带出，未关联（无账号工人）可手填
+const hasUser = computed(() => !!form.value.userId);
 
 function getList() {
   loading.value = true;
@@ -262,6 +410,8 @@ function reset() {
   form.value = {
     workerId: null,
     userId: null,
+    workshopId: null,
+    workshopName: null,
     employeeId: null,
     workCategory: null,
     skillLevel: null,
@@ -294,6 +444,13 @@ function handleSelectionChange(selection) {
   ids.value = selection.map((item) => item.workerId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
+}
+
+function handleAdd() {
+  reset();
+  isViewMode.value = false;
+  open.value = true;
+  title.value = '添加生产工人档案';
 }
 
 function handleUpdate(row) {
@@ -360,6 +517,69 @@ function handleExport() {
     },
     `worker_${new Date().getTime()}.xlsx`
   );
+}
+
+// ============ 系统用户选择 ============
+function getUserList() {
+  userLoading.value = true;
+  listUser(userQueryParams).then((response) => {
+    userList.value = response.rows;
+    userTotal.value = response.total;
+    userLoading.value = false;
+  });
+}
+
+function openUserSelect() {
+  userVisible.value = true;
+  getUserList();
+}
+
+function resetUserQuery() {
+  userQueryParams.userName = undefined;
+  userQueryParams.phonenumber = undefined;
+  getUserList();
+}
+
+function selectUser(row) {
+  form.value.userId = row.userId;
+  // 优先用昵称（显示名）作为员工姓名，回退到账号
+  form.value.userName = row.nickName || row.userName;
+  form.value.phonenumber = row.phonenumber;
+  form.value.sex = row.sex;
+  userVisible.value = false;
+}
+
+function clearUserSelect() {
+  form.value.userId = null;
+}
+
+// ============ 车间选择 ============
+function getWorkshopList() {
+  workshopLoading.value = true;
+  listWorkshop(workshopQueryParams).then((response) => {
+    workshopList.value = response.rows;
+    workshopTotal.value = response.total;
+    workshopLoading.value = false;
+  });
+}
+
+function openWorkshopSelect() {
+  workshopVisible.value = true;
+  workshopQueryParams.status = '0';
+  getWorkshopList();
+}
+
+function resetWorkshopQuery() {
+  workshopQueryParams.workshopCode = undefined;
+  workshopQueryParams.workshopName = undefined;
+  workshopQueryParams.status = '0';
+  getWorkshopList();
+}
+
+function selectWorkshop(row) {
+  form.value.workshopId = row.workshopId;
+  form.value.workshopName = row.workshopName;
+  workshopVisible.value = false;
 }
 
 getList();

@@ -37,6 +37,18 @@ public class SchWorkerVo implements Serializable {
     private Long userId;
 
     /**
+     * 所属车间ID（关联bd_workshop）
+     */
+    @ExcelProperty(value = "所属车间ID")
+    private Long workshopId;
+
+    /**
+     * 所属车间名称
+     */
+    @ExcelProperty(value = "所属车间名称")
+    private String workshopName;
+
+    /**
      * 员工姓名
      */
     @ExcelProperty(value = "员工姓名")

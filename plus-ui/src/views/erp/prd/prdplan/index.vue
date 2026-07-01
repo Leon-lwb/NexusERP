@@ -61,48 +61,48 @@
 
     <el-table v-loading="loading" :data="planList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="生产计划编号" align="center" prop="planNo" />
-      <el-table-column label="计划名称" align="center" prop="planName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="版本号" align="center" prop="version" />
-      <el-table-column label="是否当前版本" align="center" prop="isCurrent">
+      <el-table-column label="生产计划编号" align="center" prop="planNo" width="140" show-overflow-tooltip />
+      <el-table-column label="计划名称" align="center" prop="planName" width="180" show-overflow-tooltip />
+      <el-table-column label="版本号" align="center" prop="version" width="70" />
+      <el-table-column label="是否当前版本" align="center" prop="isCurrent" width="110">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isCurrent" />
         </template>
       </el-table-column>
-      <el-table-column label="参考单据号" align="center" prop="referenceNo" min-width="120" show-overflow-tooltip />
-      <el-table-column label="计划类型" align="center" prop="planType">
+      <el-table-column label="参考单据号" align="center" prop="referenceNo" width="150" show-overflow-tooltip />
+      <el-table-column label="计划类型" align="center" prop="planType" width="100">
         <template #default="scope">
           <dict-tag :options="prd_plan_type" :value="scope.row.planType" />
         </template>
       </el-table-column>
-      <el-table-column label="计划日期" align="center" prop="planDate">
+      <el-table-column label="计划日期" align="center" prop="planDate" width="120">
         <template #default="scope">
           <span>{{ parseTime(scope.row.planDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="计划开始日期" align="center" prop="startDate">
+      <el-table-column label="计划开始日期" align="center" prop="startDate" width="120">
         <template #default="scope">
           <span>{{ parseTime(scope.row.startDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="计划结束日期" align="center" prop="endDate">
+      <el-table-column label="计划结束日期" align="center" prop="endDate" width="120">
         <template #default="scope">
           <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" width="80">
         <template #default="scope">
           <dict-tag :options="prd_plan_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="优先级" align="center" prop="priority">
+      <el-table-column label="优先级" align="center" prop="priority" width="80">
         <template #default="scope">
           <dict-tag :options="so_order_priority" :value="scope.row.priority" />
         </template>
       </el-table-column>
-      <el-table-column label="计划员" align="center" prop="plannerName" />
-      <el-table-column label="生产部门" align="center" prop="departmentName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="计划总数量" align="center" prop="totalQuantity" />
+      <el-table-column label="计划员" align="center" prop="plannerName" width="90" />
+      <el-table-column label="生产部门" align="center" prop="departmentName" width="140" show-overflow-tooltip />
+      <el-table-column label="计划总数量" align="center" prop="totalQuantity" width="110" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>

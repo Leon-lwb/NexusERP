@@ -3,11 +3,14 @@ export interface WorkerQuery extends PageQuery {
   employeeId?: string;
   workCategory?: string;
   workStatus?: string;
+  workshopId?: number;
 }
 
 export interface WorkerVO {
   workerId: number;
   userId: number;
+  workshopId: number;
+  workshopName: string;
   userName: string;
   employeeId: string;
   phonenumber: string;
@@ -27,6 +30,8 @@ export interface WorkerVO {
 export interface WorkerForm {
   workerId?: number;
   userId?: number;
+  workshopId?: number;
+  workshopName?: string;
   userName?: string;
   employeeId?: string;
   phonenumber?: string;

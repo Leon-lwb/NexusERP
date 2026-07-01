@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -77,6 +78,7 @@ public class SchWorkerServiceImpl implements ISchWorkerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchWorkerBo bo) {
+        checkUserIdUnique(bo.getUserId(), null);
         SchWorker entity = MapstructUtils.convert(bo, SchWorker.class);
         return baseMapper.insert(entity);
     }
@@ -90,6 +92,7 @@ public class SchWorkerServiceImpl implements ISchWorkerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchWorkerBo bo) {
+        checkUserIdUnique(bo.getUserId(), bo.getWorkerId());
         SchWorker entity = MapstructUtils.convert(bo, SchWorker.class);
         return baseMapper.updateById(entity);
     }
@@ -112,9 +115,29 @@ public class SchWorkerServiceImpl implements ISchWorkerService {
             lqw.like(StringUtils.isNotBlank(bo.getUserName()), SchWorker::getUserName, bo.getUserName());
             lqw.eq(StringUtils.isNotBlank(bo.getEmployeeId()), SchWorker::getEmployeeId, bo.getEmployeeId());
             lqw.eq(bo.getUserId() != null, SchWorker::getUserId, bo.getUserId());
+            lqw.eq(bo.getWorkshopId() != null, SchWorker::getWorkshopId, bo.getWorkshopId());
             lqw.eq(StringUtils.isNotBlank(bo.getWorkStatus()), SchWorker::getWorkStatus, bo.getWorkStatus());
             lqw.eq(StringUtils.isNotBlank(bo.getWorkCategory()), SchWorker::getWorkCategory, bo.getWorkCategory());
         }
         return lqw;
+    }
+
+    /**
+     * 校验一个系统用户只能建档一个工人档案（无账号工人 userId 为空，跳过校验）
+     *
+     * @param userId           关联的系统用户ID
+     * @param excludeWorkerId  排除的工人档案ID（修改时排除自身）
+     */
+    private void checkUserIdUnique(Long userId, Long excludeWorkerId) {
+        if (userId == null) {
+            return;
+        }
+        LambdaQueryWrapper<SchWorker> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SchWorker::getUserId, userId);
+        lqw.ne(excludeWorkerId != null, SchWorker::getWorkerId, excludeWorkerId);
+        Long count = baseMapper.selectCount(lqw);
+        if (count != null && count > 0) {
+            throw new ServiceException("该系统用户已建档工人档案，不能重复建档");
+        }
     }
 }

@@ -63,6 +63,7 @@
       <el-table-column label="车间名称" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
       <el-table-column label="车间描述" align="center" prop="workshopDesc" min-width="120" show-overflow-tooltip />
       <el-table-column label="车间主任" align="center" prop="managerName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="所属部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
       <el-table-column label="产能" align="center" prop="capacity" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
@@ -140,6 +141,24 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
+            <el-form-item label="所属部门" prop="deptId">
+              <el-tree-select
+                v-model="form.deptId"
+                :data="deptOptions"
+                :props="{ value: 'deptId', label: 'deptName', children: 'children' }"
+                value-key="deptId"
+                placeholder="请选择所属部门"
+                check-strictly
+                clearable
+                style="width: 100%"
+                @node-click="handleDeptChange"
+                @clear="form.deptName = null"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="24">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
@@ -202,6 +221,7 @@
 <script setup lang="ts" name="Workshop">
 import { listWorkshop, getWorkshop, delWorkshop, addWorkshop, updateWorkshop } from '@/api/erp/bd/workshop';
 import { listUser } from '@/api/system/user';
+import { listDept } from '@/api/system/dept';
 import { previewCode } from '@/api/system/autocode/rule';
 
 const { proxy } = getCurrentInstance();
@@ -230,6 +250,9 @@ const userQueryParams = reactive({
   userName: undefined,
   phonenumber: undefined
 });
+
+// 部门树
+const deptOptions = ref([]);
 
 const data = reactive({
   form: {},
@@ -280,6 +303,8 @@ function reset() {
     workshopDesc: null,
     managerId: null,
     managerName: null,
+    deptId: null,
+    deptName: null,
     capacity: null,
     status: null,
     sortOrder: null,
@@ -440,7 +465,22 @@ function handleAutoGenChange(autoGenFlag) {
   }
 }
 
+// ============ 部门树 ============
+/** 加载部门树（扁平列表构建为树） */
+function getDeptTree() {
+  listDept().then((response) => {
+    deptOptions.value = proxy.handleTree(response.data, 'deptId');
+  });
+}
+
+/** 选择部门节点时同步部门名称 */
+function handleDeptChange(data) {
+  form.value.deptId = data.deptId;
+  form.value.deptName = data.deptName;
+}
+
 getList();
+getDeptTree();
 </script>
 
 <style scoped lang="scss">

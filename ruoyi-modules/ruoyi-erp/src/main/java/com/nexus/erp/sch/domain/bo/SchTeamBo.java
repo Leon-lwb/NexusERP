@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.erp.sch.domain.SchTeam;
 
+import java.util.List;
+
 /**
  * 班组设置业务对象 sch_team
  *
@@ -70,6 +72,11 @@ public class SchTeamBo extends BaseEntity {
      * 状态
      */
     private Long status;
+
+    /**
+     * 班组成员列表
+     */
+    private List<SchTeamMemberBo> schTeamMemberList;
 
     /**
      * 批量删除ID集合

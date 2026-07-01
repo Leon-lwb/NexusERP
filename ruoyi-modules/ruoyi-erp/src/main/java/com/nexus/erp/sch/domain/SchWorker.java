@@ -34,6 +34,16 @@ public class SchWorker extends TenantEntity {
     @ExcelProperty("关联的系统用户ID")
     private Long userId;
     /**
+     * 所属车间ID（关联bd_workshop）
+     */
+    @ExcelProperty("所属车间ID")
+    private Long workshopId;
+    /**
+     * 所属车间名称
+     */
+    @ExcelProperty("所属车间名称")
+    private String workshopName;
+    /**
      * 员工姓名
      */
     @ExcelProperty("员工姓名")
