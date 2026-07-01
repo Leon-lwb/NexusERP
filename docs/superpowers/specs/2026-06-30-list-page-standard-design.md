@@ -1,7 +1,7 @@
 # 列表页搜索栏与表格字段排列标准
 
-- **日期**:2026-06-30
-- **范围**:Nexus-ERP `plus-ui` 前端所有业务列表页(`views/erp/*`、`views/mes/*`、`views/iot/*` 等)
+- **日期**:2026-06-30(2026-07-01 修订:搜索栏改 4 列 `:span="6"`;表格全局 `show-overflow-tooltip` 数据一行展示;操作列固定 `width="208"` 按钮 ≤3 一行、超过换行;并完成全量回灌)
+- **范围**:Nexus-ERP `plus-ui` 前端所有业务列表页(`views/erp/*`、`views/mes/*`、`views/iot/*`、`views/im/*`)
 - **示范页**:本标准首次落地于 `views/erp/so/orderheader/index.vue`,作为其余页面回灌的参照样板
 
 ## 一、背景与问题
@@ -18,18 +18,18 @@
 
 ### 2.1 结构骨架(网格分栏)
 
-采用 `el-row` + `el-col :span="8"` 网格,每行 3 个搜索项,窄屏自动收缩:
+采用 `el-row` + `el-col :span="6"` 网格,每行 4 个搜索项,窄屏自动收缩:
 
 ```vue
 <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
   <el-row :gutter="16">
-    <el-col :span="8">
+    <el-col :span="6">
       <el-form-item label="销售订单编号" prop="soNo">
         <el-input v-model="queryParams.soNo" placeholder="请输入销售订单编号" clearable @keyup.enter="handleQuery" />
       </el-form-item>
     </el-col>
-    <!-- 其余 el-col :span="8" ... -->
-    <el-col :span="8" class="search-actions">
+    <!-- 其余 el-col :span="6" ... -->
+    <el-col :span="6" class="search-actions">
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -41,9 +41,10 @@
 
 **关键点**:
 - **不再用 `:inline="true"`**。inline 模式下各项宽度不一时换行会错列,无法保证对齐。网格分栏强制每项占据等宽格子,从根本上解决对齐问题。
+- **`:span="6"`(每行 4 项)**。早期版本用 `:span="8"`(每行 3 项)搜索框偏宽,现统一为 4 项/行,单格宽度更紧凑均衡。
 - `label-width="100px"` 统一(项目所有页均适用,无 4 字以上超长 label;若有,单独在该 `el-form-item` 上覆写,不破坏全局统一)。
 - `el-row :gutter="16"` 给列间留白。
-- 每个搜索项独占一个 `<el-col :span="8">`,**不允许多项挤在同一个 el-col 里**。
+- 每个搜索项独占一个 `<el-col :span="6">`,**不允许多项挤在同一个 el-col 里**。
 
 ### 2.2 控件宽度规则
 
@@ -58,19 +59,28 @@
 
 ### 2.3 搜索/重置按钮摆放(占位+靠右)
 
-按钮独占一个 `el-col :span="8"`,放在最后一格。当搜索项不是 3 的倍数时,按钮自然落到下一行的末格;无需动态计算 span,**始终保持 :span=8**:
+按钮独占一个 `el-col :span="6"`,始终放在网格流的最末格、内容右对齐。**始终保持 :span=6**,通过 `:offset` 把按钮推到当前行的最右一格:
+
+设搜索项数为 N,N % 4 的余数 R:
+
+| R (N%4) | 按钮位置 | 按钮 el-col 写法 |
+|---------|---------|----------------|
+| 0 | 下一行最右格 | `<el-col :span="6" :offset="18" class="search-actions">` |
+| 1 | 当前行第 4 格 | `<el-col :span="6" :offset="12" class="search-actions">` |
+| 2 | 当前行第 4 格 | `<el-col :span="6" :offset="6" class="search-actions">` |
+| 3 | 当前行第 4 格 | `<el-col :span="6" class="search-actions">`(offset=0) |
 
 ```
-3 项(1 行):                 4 项(2 行):
-┌─A─┬─B─┬─C─┐              ┌─A─┬─B─┬─C─┐
-│   │   │   │              │   │   │   │
-└───┴───┴───┘              ├─D─┼搜索重置┤
-                            │   │       │
-                            └───┴───────┘
-按钮始终 :span=8 占满末格, 内容右对齐(text-align: right)
+4 项(1 行满):               3 项(1 行,按钮补末格):
+┌─A─┬─B─┬─C─┬─D─┐          ┌─A─┬─B─┬─C─┬按钮┐
+│   │   │   │   │          │   │   │   │    │
+├─按钮──────────┤          └───┴───┴───┴────┘
+(offset=18 推到右下)        (offset=0,补第4格)
 ```
 
-按钮 el-col 加 `class="search-actions"`,内部 `el-form-item` 的按钮靠右对齐(通过 CSS `text-align: right` 或 flex 实现,见 2.5)。
+按钮 el-col 加 `class="search-actions"`,内部 `el-form-item` 的按钮靠右对齐(通过 CSS `justify-content: flex-end` 实现,见 2.5)。
+
+> 简化做法:若不想逐页算 offset,也可让按钮 `:span="6"` 顺序排入网格,它会自然落到下一行;但为视觉整齐(按钮始终靠右),推荐按上表设 offset。
 
 ### 2.4 搜索项取舍原则(硬性准则)
 
@@ -107,21 +117,24 @@
 
 ## 三、表格字段排列标准
 
-### 3.1 列宽策略:纯自适应
+### 3.1 列宽策略:纯自适应 + 全局一行展示
 
-**所有列一律不设 `width`**,靠 Element 表格按内容自适应分配列宽(配合表格整体的 `min-width` 行为)。这是统一策略,消除"全设派"与"全不设派"的分化。
+**所有数据列一律不设 `width`**,靠 Element 表格按内容自适应分配列宽(配合表格整体的 `min-width` 行为)。这是统一策略,消除"全设派"与"全不设派"的分化。
 
-**唯一例外处理长文本**:对名称、规格、备注等可能很长的文本列,加 `min-width`(给一个最小宽下限,如 120) + `show-overflow-tooltip`(超出宽度时鼠标悬停显示全文,不换行撑高)。
+**数据一行展示(不换行撑高)**:在 `<el-table>` 上全局加 `show-overflow-tooltip` 属性。这样所有数据列内容超长时自动截断为一行(末尾省略号,鼠标悬停显示全文),不会换行撑高行高。无需逐列重复加 `show-overflow-tooltip`。
 
 ```vue
-<!-- 普通列:不设 width -->
-<el-table-column label="销售订单编号" align="center" prop="soNo" />
-
-<!-- 长文本列:min-width + show-overflow-tooltip -->
-<el-table-column label="来源客户" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
+<el-table v-loading="loading" :data="xxxList" show-overflow-tooltip @selection-change="...">
+  <!-- 普通列:不设 width,内容一行展示,超长截断 tooltip -->
+  <el-table-column label="销售订单编号" align="center" prop="soNo" />
+  <!-- 长文本列:给 min-width 下限,内容仍由全局 show-overflow-tooltip 一行截断 -->
+  <el-table-column label="来源客户" align="center" prop="clientName" min-width="120" />
+</el-table>
 ```
 
-> **关于序号列与操作列**:本标准采用"全删 width 纯自适应",即序号列、操作列也不设 width,与数据列一视同仁。操作列因按钮多会自然分到较宽,通常无需干预;若个别页操作按钮极多导致拥挤,可对该页操作列单独设 width,但这是页面级特例,不写入通用标准。
+> **长文本列**:名称/规格/备注等列额外加 `min-width="120"` 给一个最小宽下限,避免被自适应压得过窄;内容一行展示由全局 `show-overflow-tooltip` 接管,不再单独写 `show-overflow-tooltip`。
+>
+> **操作列例外**:操作列要按钮换行而非截断,必须单独 `:show-overflow-tooltip="false"`(见 3.5)。
 
 ### 3.2 序号列与原始主键 ID 列
 
@@ -166,19 +179,24 @@
 
 - **所有列表页必须有行内「操作」列**,行级动作(查看/修改/删除/状态流转如确认/履行/关闭/取消)统一放在行内操作列,**不再上移工具栏**(pu/order、pu/requisition 现状即此问题)。
 - 操作列统一加 `class-name="small-padding fixed-width"`。
-- 列宽走 3.1 纯自适应,不设 width(按钮多时自适应会给较宽);若按钮极多导致拥挤,页面级特例可设 width。
+- **列宽:固定 `width="208"`,按钮 ≤3 个一行排开;超过 3 个自然换行成多行。** 208px 约容纳 3 个 link 按钮(图标 + 2~3 字标签)。必须单独 `:show-overflow-tooltip="false"`,让按钮可换行而非被全局 tooltip 截断。
 - 顶部工具栏仅保留「新增」「导出」这类**整表级**动作 + `RightToolbar`。状态流转类按钮不进工具栏。
 
 ```vue
-<el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-  <template #default="scope">
-    <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-    <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:orderheader:edit']">修改</el-button>
-    <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:orderheader:remove']">删除</el-button>
-    <!-- 状态流转按钮按 v-if 控制显隐 -->
-  </template>
-</el-table-column>
+<el-table show-overflow-tooltip ...>
+  ...
+  <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+    <template #default="scope">
+      <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+      <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:orderheader:edit']">修改</el-button>
+      <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:orderheader:remove']">删除</el-button>
+      <!-- 第 4 个及以后按钮自动换行到下一行 -->
+    </template>
+  </el-table-column>
+</el-table>
 ```
+
+> 注:固定 208 让操作列不再占用过多宽度,腾出空间给数据列;按钮多时换行成 2~3 行,行高自适应,不横向溢出。
 
 ### 3.6 表格列排列顺序(通用约定)
 
@@ -246,7 +264,7 @@
 | 货币 currency | 保留 | 删 width=80,dict-tag 不变 |
 | 信用状态 creditStatus | 保留 | 删 width=100,dict-tag 不变 |
 | 订单状态 orderStatus | 保留 | 删 width=100,dict-tag 不变 |
-| 操作 | 保留 | 删 width=280,保留 fixed-width |
+| 操作 | 保留 | 删 width=280,保留 fixed-width,按按钮数(最多 7 个)设 `min-width="464"` |
 
 > 表格列本次**未删备注列**(orderheader 表格原本就没有备注列);5.1 搜索项移除不等于表格列移除,两者独立。
 
@@ -258,8 +276,8 @@
 
 ## 六、落地范围与后续
 
-- **本次仅改 `orderheader/index.vue` 一页**,作为标准示范样板。
-- 其余 9 个抽样页面(customerorder/quotation/so-return/pu-order/pu-requisition/pu-return/material/stock/workorder)及未抽样页面,后续按本标准逐页回灌,不在本次范围。
+- **2026-06-30**:仅改 `orderheader/index.vue` 一页,作为标准示范样板。
+- **2026-07-01 起**:按第八节规范全量回灌 `erp/mes/iot/im` 下所有业务列表页。
 - 回灌时注意:material/stock 的左侧分类树布局、pu-order 的展开子表、workorder 的状态字典补齐,需单独处理,不照搬 orderheader。
 - workorder 的硬编码状态需先确认/补建对应字典(如 `mes_work_order_status`),再按标准改 dict-tag。
 
@@ -267,11 +285,22 @@
 
 orderheader/index.vue 改造后需满足:
 
-1. 搜索栏为 el-row/el-col 网格,label-width=100px,无 inline 属性。
+1. 搜索栏为 el-row/el-col 网格(`:span="6"` 每行 4 项),label-width=100px,无 inline 属性。
 2. 搜索项精简至 4 个,queryParams 中已删字段同步删除。
 3. 订单状态下拉 `width: 100%`,不再 120px 内联。
-4. 表格所有列 width 已删(序号列也删,纯自适应),来源客户列有 min-width + show-overflow-tooltip。
+4. 表格 `<el-table>` 加全局 `show-overflow-tooltip`(数据列一行展示);数据列 width 已删(纯自适应),来源客户列有 min-width + show-overflow-tooltip。
 5. 序号列去掉 `prop="soId"`。
-6. 操作列删 width=280,保留 fixed-width。
+6. 操作列固定 `width="208"` + `:show-overflow-tooltip="false"`,按钮 ≤3 一行、超过换行(删旧 min-width)。
 7. 工具栏与状态流转业务逻辑零改动,仅搜索栏/表格列变更。
 8. `npm run lint:eslint` 通过。
+
+## 八、全量回灌规范(erp/mes/iot/im)
+
+自 2026-07-01 起将本标准回灌至所有业务列表页(`views/erp/*`、`views/mes/*`、`views/iot/*`、`views/im/*`),每页统一执行:
+
+1. **搜索栏**:改为 `el-row`/`el-col :span="6"` 网格,去 `:inline="true"`,加 `class="list-search"`,label-width=100px;下拉/日期统一 `width: 100%`;搜索项按 2.4 四原则精简(高频单号/名称/主状态/制单日期保留,内部 ID、低频日期、次状态移除);按钮 el-col 按 2.3 表设 `:offset` 靠右;`queryParams` 同步删除移除字段。配套 `.list-search` 样式(见 2.5)逐页加入 scoped style。
+2. **表格列**:`<el-table>` 加全局 `show-overflow-tooltip`(数据列一行展示,超长截断);数据列删 `width`(纯自适应),长文本列加 `min-width="120"`;序号列去 `prop`、不设 width;删除原始主键 ID 列;状态列统一 `dict-tag` + `useDict`,禁硬编码 el-option/el-tag;列顺序按 3.6。已逐列单独写的 `show-overflow-tooltip` 可保留(无害)或删(由全局接管)。
+3. **操作列**:必须有行内操作列,`class-name="small-padding fixed-width"`,固定 `width="208"` + `:show-overflow-tooltip="false"`,按钮 ≤3 一行、超过换行(删旧 min-width);行级动作放行内,不进工具栏;工具栏仅留新增/导出/RightToolbar 等整表级动作。
+4. **容器命名**:外层 `app-container`、表单 ref `queryRef`、表格 `v-loading="loading"`、数据变量 `xxxList`。
+5. **特例**(单列处理,不照搬 orderheader):material/stock 左侧分类树布局、pu-order 展开子表、workorder 硬编码状态需先补字典(如 `mes_work_order_status`)再改 dict-tag。
+6. 每页改完跑 `npx eslint <file>` 通过。

@@ -36,42 +36,39 @@
 
       <!-- 右侧物料列表 -->
       <el-col :span="19">
-        <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-          <el-form-item label="物料编码" prop="materialCode">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="物料名称" prop="materialName">
-            <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="来源类型" prop="sourceType">
-            <el-select v-model="queryParams.sourceType" placeholder="请选择" clearable style="width: 120px">
-              <el-option v-for="dict in prd_material_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="批次管理" prop="isBatchManage">
-            <el-select v-model="queryParams.isBatchManage" placeholder="请选择" clearable style="width: 120px">
-              <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="序列号管理" prop="isSerialManage" label-width="100px" label-position="left">
-            <el-select v-model="queryParams.isSerialManage" placeholder="请选择" clearable style="width: 120px">
-              <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="状态" prop="status">
-            <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 120px">
-              <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="质量状态" prop="qualityStatus">
-            <el-select v-model="queryParams.qualityStatus" placeholder="请选择" clearable style="width: 120px">
-              <el-option v-for="dict in bd_quality_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          </el-form-item>
+        <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+          <el-row :gutter="16">
+            <el-col :span="6">
+              <el-form-item label="物料编码" prop="materialCode">
+                <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="物料名称" prop="materialName">
+                <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="来源类型" prop="sourceType">
+                <el-select v-model="queryParams.sourceType" placeholder="请选择" clearable style="width: 100%">
+                  <el-option v-for="dict in prd_material_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="状态" prop="status">
+                <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 100%">
+                  <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6" :offset="18" class="search-actions">
+              <el-form-item>
+                <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+                <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
 
         <el-row :gutter="10" class="mb8">
@@ -95,11 +92,11 @@
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange">
+        <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="物料编码" align="center" prop="materialCode" />
-          <el-table-column label="物料名称" align="center" prop="materialName" />
-          <el-table-column label="规格型号" align="center" prop="materialSpec" />
+          <el-table-column label="物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
           <el-table-column label="物料类型" align="center" prop="materialType">
             <template #default="scope">
               <dict-tag :options="bd_material_type" :value="scope.row.materialType" />
@@ -130,7 +127,7 @@
               <dict-tag :options="bd_quality_status" :value="scope.row.qualityStatus" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:material:edit']">修改</el-button>
@@ -409,7 +406,7 @@
           </el-form>
         </el-tab-pane>
         <el-tab-pane label="供应商" name="vendor" v-if="form.materialId">
-          <el-table v-loading="vendorLoading" :data="vendorList" border size="small">
+          <el-table v-loading="vendorLoading" :data="vendorList" border size="small" show-overflow-tooltip>
             <el-table-column label="供应商编码" align="center" prop="vendorCode" width="120" />
             <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="150" />
             <el-table-column label="单价" align="center" prop="price" width="100" />
@@ -485,10 +482,7 @@ const data = reactive({
     materialSpec: null,
     materialType: null,
     sourceType: null,
-    isBatchManage: null,
-    isSerialManage: null,
     status: null,
-    qualityStatus: null,
     categoryId: null,
     categoryIds: null,
     autoGenFlag: false
@@ -771,6 +765,21 @@ onMounted(() => {
   getUomList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>
 
 <style scoped>
 .left-tree {

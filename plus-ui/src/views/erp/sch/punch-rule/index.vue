@@ -1,21 +1,31 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="规则名称" prop="ruleName">
-        <el-input v-model="queryParams.ruleName" placeholder="请输入规则名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="班次名称" prop="shiftName">
-        <el-input v-model="queryParams.shiftName" placeholder="请输入班次名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="是否启用" prop="isEnabled">
-        <el-select v-model="queryParams.isEnabled" placeholder="请选择是否启用" clearable>
-          <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="规则名称" prop="ruleName">
+            <el-input v-model="queryParams.ruleName" placeholder="请输入规则名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="班次名称" prop="shiftName">
+            <el-input v-model="queryParams.shiftName" placeholder="请输入班次名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="是否启用" prop="isEnabled">
+            <el-select v-model="queryParams.isEnabled" placeholder="请选择是否启用" clearable style="width: 100%">
+              <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -37,20 +47,24 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="punchRuleList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="punchRuleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="规则ID" align="center" prop="ruleId" width="80" />
-      <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" />
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" show-overflow-tooltip />
       <el-table-column label="适用班次" align="center" min-width="150">
         <template #default="scope">
           <span>{{ scope.row.shiftName || '所有班次' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="上班时间" align="center" prop="workStartTime" width="100">
-        <template #default="scope"><span>{{ scope.row.workStartTime }}</span></template>
+      <el-table-column label="上班时间" align="center" prop="workStartTime">
+        <template #default="scope"
+          ><span>{{ scope.row.workStartTime }}</span></template
+        >
       </el-table-column>
-      <el-table-column label="下班时间" align="center" prop="workEndTime" width="100">
-        <template #default="scope"><span>{{ scope.row.workEndTime }}</span></template>
+      <el-table-column label="下班时间" align="center" prop="workEndTime">
+        <template #default="scope"
+          ><span>{{ scope.row.workEndTime }}</span></template
+        >
       </el-table-column>
       <el-table-column label="允许打卡时间" align="center" min-width="200">
         <template #default="scope">
@@ -60,18 +74,18 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="打卡地点" align="center" prop="locationAddress" min-width="120" />
-      <el-table-column label="是否允许外勤" align="center" prop="allowOutdoorPunch" width="100">
+      <el-table-column label="打卡地点" align="center" prop="locationAddress" min-width="120" show-overflow-tooltip />
+      <el-table-column label="是否允许外勤" align="center" prop="allowOutdoorPunch">
         <template #default="scope">
-          <dict-tag :options="sys_true_or_false" :value="scope.row.allowOutdoorPunch"/>
+          <dict-tag :options="sys_true_or_false" :value="scope.row.allowOutdoorPunch" />
         </template>
       </el-table-column>
-      <el-table-column label="是否启用" align="center" prop="isEnabled" width="80">
+      <el-table-column label="是否启用" align="center" prop="isEnabled">
         <template #default="scope">
-          <dict-tag :options="sys_true_or_false" :value="scope.row.isEnabled"/>
+          <dict-tag :options="sys_true_or_false" :value="scope.row.isEnabled" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:punchRule:edit']">修改</el-button>
@@ -80,7 +94,7 @@
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total>0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <el-dialog :title="title" v-model="open" width="700px" append-to-body>
       <el-form ref="punchRuleRef" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode">
@@ -141,17 +155,17 @@
           <el-col :span="12">
             <el-form-item label="是否允许外勤打卡" prop="allowOutdoorPunch">
               <el-radio-group v-model="form.allowOutdoorPunch">
-                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{dict.label}}</el-radio>
+                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="外勤打卡是否要求拍照" prop="outdoorRequirePhoto">
               <el-radio-group v-model="form.outdoorRequirePhoto">
-                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{dict.label}}</el-radio>
+                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="是否允许补卡" prop="allowSupplement">
               <el-radio-group v-model="form.allowSupplement">
-                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{dict.label}}</el-radio>
+                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -172,7 +186,7 @@
         </el-row>
         <el-form-item label="是否启用" prop="isEnabled">
           <el-radio-group v-model="form.isEnabled">
-            <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{dict.label}}</el-radio>
+            <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
@@ -190,23 +204,23 @@
 </template>
 
 <script setup lang="ts" name="PunchRule">
-import { listPunchRule, getPunchRule, delPunchRule, addPunchRule, updatePunchRule } from "@/api/erp/sch/punch-rule"
-import { ref, reactive, toRefs } from "vue"
-import { getCurrentInstance } from "vue"
+import { listPunchRule, getPunchRule, delPunchRule, addPunchRule, updatePunchRule } from '@/api/erp/sch/punch-rule';
+import { ref, reactive, toRefs } from 'vue';
+import { getCurrentInstance } from 'vue';
 
-const { proxy } = getCurrentInstance()
-const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'))
+const { proxy } = getCurrentInstance();
+const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'));
 
-const punchRuleList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const isViewMode = ref(false)
+const punchRuleList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const isViewMode = ref(false);
 
 const data = reactive({
   form: {},
@@ -215,148 +229,189 @@ const data = reactive({
     pageSize: 10,
     ruleName: null,
     shiftName: null,
-    isEnabled: null,
+    isEnabled: null
   },
   rules: {
-    ruleName: [{ required: true, message: "规则名称不能为空", trigger: "blur" }],
-    workStartTime: [{ required: true, message: "上班时间不能为空", trigger: "blur" }],
-    workEndTime: [{ required: true, message: "下班时间不能为空", trigger: "blur" }],
-    allowClockInStart: [{ required: true, message: "允许上班打卡开始时间不能为空", trigger: "blur" }],
-    allowClockInEnd: [{ required: true, message: "允许上班打卡结束时间不能为空", trigger: "blur" }],
-    allowClockOutStart: [{ required: true, message: "允许下班打卡开始时间不能为空", trigger: "blur" }],
-    allowClockOutEnd: [{ required: true, message: "允许下班打卡结束时间不能为空", trigger: "blur" }],
+    ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
+    workStartTime: [{ required: true, message: '上班时间不能为空', trigger: 'blur' }],
+    workEndTime: [{ required: true, message: '下班时间不能为空', trigger: 'blur' }],
+    allowClockInStart: [{ required: true, message: '允许上班打卡开始时间不能为空', trigger: 'blur' }],
+    allowClockInEnd: [{ required: true, message: '允许上班打卡结束时间不能为空', trigger: 'blur' }],
+    allowClockOutStart: [{ required: true, message: '允许下班打卡开始时间不能为空', trigger: 'blur' }],
+    allowClockOutEnd: [{ required: true, message: '允许下班打卡结束时间不能为空', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 function handleTimeFields(data) {
-  const timeFields = ['workStartTime', 'workEndTime', 'allowClockInStart', 'allowClockInEnd', 'allowClockOutStart', 'allowClockOutEnd']
-  timeFields.forEach(field => {
+  const timeFields = ['workStartTime', 'workEndTime', 'allowClockInStart', 'allowClockInEnd', 'allowClockOutStart', 'allowClockOutEnd'];
+  timeFields.forEach((field) => {
     if (data[field]) {
       if (typeof data[field] === 'string') {
         if (data[field].includes('T')) {
-          data[field] = data[field].split('T')[1].substring(0, 8)
+          data[field] = data[field].split('T')[1].substring(0, 8);
         } else if (data[field].includes('-')) {
-          data[field] = data[field].split(' ')[1]
+          data[field] = data[field].split(' ')[1];
         }
       }
     }
-  })
-  return data
+  });
+  return data;
 }
 
 function getList() {
-  loading.value = true
-  listPunchRule(queryParams.value).then(response => {
-    punchRuleList.value = response.rows.map(row => handleTimeFields(row))
-    total.value = response.total
-    loading.value = false
-  })
+  loading.value = true;
+  listPunchRule(queryParams.value).then((response) => {
+    punchRuleList.value = response.rows.map((row) => handleTimeFields(row));
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 function reset() {
   form.value = {
-    ruleId: null, ruleName: null, shiftId: null, shiftName: null,
-    workStartTime: null, workEndTime: null,
-    allowClockInStart: null, allowClockInEnd: null,
-    allowClockOutStart: null, allowClockOutEnd: null,
-    locationLat: null, locationLng: null, locationRadius: null, locationAddress: null,
-    allowWifiSsids: null, allowBluetoothDevices: null,
-    allowOutdoorPunch: null, outdoorRequirePhoto: null,
-    allowSupplement: null, supplementDeadline: null,
-    lateThreshold: null, earlyLeaveThreshold: null, absentThreshold: null,
-    isEnabled: null, remark: null,
-    createBy: null, createTime: null, updateBy: null, updateTime: null
-  }
-  proxy.resetForm("punchRuleRef")
+    ruleId: null,
+    ruleName: null,
+    shiftId: null,
+    shiftName: null,
+    workStartTime: null,
+    workEndTime: null,
+    allowClockInStart: null,
+    allowClockInEnd: null,
+    allowClockOutStart: null,
+    allowClockOutEnd: null,
+    locationLat: null,
+    locationLng: null,
+    locationRadius: null,
+    locationAddress: null,
+    allowWifiSsids: null,
+    allowBluetoothDevices: null,
+    allowOutdoorPunch: null,
+    outdoorRequirePhoto: null,
+    allowSupplement: null,
+    supplementDeadline: null,
+    lateThreshold: null,
+    earlyLeaveThreshold: null,
+    absentThreshold: null,
+    isEnabled: null,
+    remark: null,
+    createBy: null,
+    createTime: null,
+    updateBy: null,
+    updateTime: null
+  };
+  proxy.resetForm('punchRuleRef');
 }
 
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.ruleId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.ruleId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 function handleAdd() {
-  reset()
-  isViewMode.value = false
-  open.value = true
-  title.value = "添加打卡规则"
+  reset();
+  isViewMode.value = false;
+  open.value = true;
+  title.value = '添加打卡规则';
 }
 
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false
-  const _ruleId = row.ruleId || ids.value
-  getPunchRule(_ruleId).then(response => {
-    form.value = handleTimeFields(response.data)
-    open.value = true
-    title.value = "修改打卡规则"
-  })
+  reset();
+  isViewMode.value = false;
+  const _ruleId = row.ruleId || ids.value;
+  getPunchRule(_ruleId).then((response) => {
+    form.value = handleTimeFields(response.data);
+    open.value = true;
+    title.value = '修改打卡规则';
+  });
 }
 
 function handleView(row) {
-  reset()
-  isViewMode.value = true
-  const _ruleId = row.ruleId || ids.value
-  getPunchRule(_ruleId).then(response => {
-    form.value = handleTimeFields(response.data)
-    open.value = true
-    title.value = "查看打卡规则"
-  })
+  reset();
+  isViewMode.value = true;
+  const _ruleId = row.ruleId || ids.value;
+  getPunchRule(_ruleId).then((response) => {
+    form.value = handleTimeFields(response.data);
+    open.value = true;
+    title.value = '查看打卡规则';
+  });
 }
 
 function submitForm() {
-  proxy.$refs["punchRuleRef"].validate(valid => {
+  proxy.$refs['punchRuleRef'].validate((valid) => {
     if (valid) {
       if (form.value.ruleId != null) {
-        updatePunchRule(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+        updatePunchRule(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
-        addPunchRule(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+        addPunchRule(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 function handleDelete(row) {
-  const _ruleIds = row.ruleId || ids.value
-  proxy.$modal.confirm('是否确认删除打卡规则编号为"' + _ruleIds + '"的数据项？').then(function() {
-    return delPunchRule(_ruleIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+  const _ruleIds = row.ruleId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除打卡规则编号为"' + _ruleIds + '"的数据项？')
+    .then(function () {
+      return delPunchRule(_ruleIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 function handleExport() {
-  proxy.download('sch/punchRule/export', {
-    ...queryParams.value
-  }, `punchRule_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    'sch/punchRule/export',
+    {
+      ...queryParams.value
+    },
+    `punchRule_${new Date().getTime()}.xlsx`
+  );
 }
 
-getList()
+getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

@@ -1,35 +1,42 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="派工单号" prop="dispatchNo">
-          <el-input v-model="queryParams.dispatchNo" placeholder="请输入派工单号" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="操作员" prop="operatorId">
-          <el-select v-model="queryParams.operatorId" placeholder="请选择操作员" clearable filterable style="width: 200px">
-            <el-option
-              v-for="w in workerOptions"
-              :key="w.workerId"
-              :label="w.userName + (w.employeeId ? ' / ' + w.employeeId : '')"
-              :value="w.workerId"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="工作中心" prop="workcenterId">
-          <el-input v-model="queryParams.workcenterId" placeholder="请输入工作中心ID" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="状态" prop="dispatchStatus">
-          <el-select v-model="queryParams.dispatchStatus" placeholder="请选择状态" clearable>
-            <el-option label="待开工" value="PENDING" />
-            <el-option label="进行中" value="IN_PROGRESS" />
-            <el-option label="已完工" value="COMPLETED" />
-            <el-option label="已取消" value="CANCELLED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="派工单号" prop="dispatchNo">
+              <el-input v-model="queryParams.dispatchNo" placeholder="请输入派工单号" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="操作员" prop="operatorId">
+              <el-select v-model="queryParams.operatorId" placeholder="请选择操作员" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="w in workerOptions"
+                  :key="w.workerId"
+                  :label="w.userName + (w.employeeId ? ' / ' + w.employeeId : '')"
+                  :value="w.workerId"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="dispatchStatus">
+              <el-select v-model="queryParams.dispatchStatus" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="待开工" value="PENDING" />
+                <el-option label="进行中" value="IN_PROGRESS" />
+                <el-option label="已完工" value="COMPLETED" />
+                <el-option label="已取消" value="CANCELLED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -39,21 +46,21 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="派工单号" prop="dispatchNo" width="180" />
-        <el-table-column label="工单编号" prop="woNo" width="160" />
-        <el-table-column label="流转卡编号" prop="cardNo" width="180" />
-        <el-table-column label="工序" prop="processName" show-overflow-tooltip />
-        <el-table-column label="操作员" prop="operatorName" width="120" />
-        <el-table-column label="工作中心" prop="workcenterCode" width="120" />
-        <el-table-column label="派工数量" prop="plannedQty" width="100" align="right" />
-        <el-table-column label="已完成" prop="completedQty" width="100" align="right" />
-        <el-table-column label="状态" prop="dispatchStatus" width="100" align="center">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="派工单号" prop="dispatchNo" />
+        <el-table-column label="工单编号" prop="woNo" />
+        <el-table-column label="流转卡编号" prop="cardNo" />
+        <el-table-column label="工序" prop="processName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="操作员" prop="operatorName" />
+        <el-table-column label="工作中心" prop="workcenterCode" />
+        <el-table-column label="派工数量" prop="plannedQty" align="right" />
+        <el-table-column label="已完成" prop="completedQty" align="right" />
+        <el-table-column label="状态" prop="dispatchStatus" align="center">
           <template #default="scope">
             <el-tag :type="statusTagType(scope.row.dispatchStatus)">{{ statusLabel(scope.row.dispatchStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" align="center">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
             <el-button
@@ -95,6 +102,7 @@
 </template>
 
 <script setup lang="ts" name="MesDispatch">
+// 技术债: 缺 mes_dispatch_status 字典, 派工状态暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
 import { listDispatch, startDispatch, completeDispatch, cancelDispatch } from '@/api/mes/pro/dispatch';
 import type { ProDispatchVO, ProDispatchQuery } from '@/api/mes/pro/dispatch';
 import { listWorker } from '@/api/erp/sch/worker/index';
@@ -116,7 +124,6 @@ const queryParams = ref<ProDispatchQuery>({
   pageSize: 10,
   dispatchNo: undefined,
   operatorId: undefined,
-  workcenterId: undefined,
   dispatchStatus: undefined
 });
 
@@ -205,3 +212,18 @@ onMounted(async () => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

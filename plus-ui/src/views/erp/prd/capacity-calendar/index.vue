@@ -1,26 +1,46 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="日期" prop="calendarDate">
-        <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 240px" />
-      </el-form-item>
-      <el-form-item label="对象类型" prop="objectType">
-        <el-select v-model="queryParams.objectType" placeholder="请选择对象类型" clearable>
-          <el-option v-for="dict in prd_capacity_object_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="对象名称" prop="objectName">
-        <el-input v-model="queryParams.objectName" placeholder="请输入对象名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in prd_capacity_calendar_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="日期" prop="calendarDate">
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              range-separator="-"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="对象类型" prop="objectType">
+            <el-select v-model="queryParams.objectType" placeholder="请选择对象类型" clearable style="width: 100%">
+              <el-option v-for="dict in prd_capacity_object_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="对象名称" prop="objectName">
+            <el-input v-model="queryParams.objectName" placeholder="请输入对象名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in prd_capacity_calendar_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-tabs v-model="activeView" class="mt10">
@@ -30,10 +50,14 @@
             <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:capacityCalendar:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:capacityCalendar:edit']">修改</el-button>
+            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:capacityCalendar:edit']"
+              >修改</el-button
+            >
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:capacityCalendar:remove']">删除</el-button>
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:capacityCalendar:remove']"
+              >删除</el-button
+            >
           </el-col>
           <el-col :span="1.5">
             <el-button type="info" plain icon="Calendar" @click="handleGenerate" v-hasPermi="['prd:capacityCalendar:add']">生成</el-button>
@@ -44,28 +68,28 @@
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
         </el-row>
 
-        <el-table v-loading="loading" :data="calendarList" @selection-change="handleSelectionChange">
+        <el-table v-loading="loading" :data="calendarList" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="日期" align="center" prop="calendarDate" width="120" />
-          <el-table-column label="对象类型" align="center" prop="objectType" width="100">
+          <el-table-column label="日期" align="center" prop="calendarDate" />
+          <el-table-column label="对象类型" align="center" prop="objectType">
             <template #default="scope">
               <dict-tag :options="prd_capacity_object_type" :value="scope.row.objectType" />
             </template>
           </el-table-column>
-          <el-table-column label="对象编码" align="center" prop="objectCode" width="120" />
+          <el-table-column label="对象编码" align="center" prop="objectCode" />
           <el-table-column label="对象名称" align="center" prop="objectName" min-width="140" show-overflow-tooltip />
-          <el-table-column label="班次编码" align="center" prop="shiftCode" width="100" />
-          <el-table-column label="班次名称" align="center" prop="shiftName" width="100" />
-          <el-table-column label="可用工时" align="center" prop="availableHours" width="100" />
-          <el-table-column label="已计划工时" align="center" prop="plannedHours" width="100" />
-          <el-table-column label="剩余工时" align="center" prop="remainingHours" width="100" />
-          <el-table-column label="效率(%)" align="center" prop="efficiency" width="90" />
-          <el-table-column label="状态" align="center" prop="status" width="100">
+          <el-table-column label="班次编码" align="center" prop="shiftCode" />
+          <el-table-column label="班次名称" align="center" prop="shiftName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="可用工时" align="center" prop="availableHours" />
+          <el-table-column label="已计划工时" align="center" prop="plannedHours" />
+          <el-table-column label="剩余工时" align="center" prop="remainingHours" />
+          <el-table-column label="效率(%)" align="center" prop="efficiency" />
+          <el-table-column label="状态" align="center" prop="status">
             <template #default="scope">
               <dict-tag :options="prd_capacity_calendar_status" :value="scope.row.status" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
+          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
             <template #default="scope">
               <el-tooltip content="修改" placement="top">
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:capacityCalendar:edit']" />
@@ -189,7 +213,15 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="日期范围" prop="dateRange">
-              <el-date-picker v-model="generateForm.dateRange" type="daterange" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+              <el-date-picker
+                v-model="generateForm.dateRange"
+                type="daterange"
+                range-separator="-"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -222,11 +254,20 @@
 </template>
 
 <script setup name="CapacityCalendar" lang="ts">
-import { listCapacityCalendar, getCapacityCalendar, addCapacityCalendar, updateCapacityCalendar, delCapacityCalendar, generateFromSchedule } from '@/api/erp/prd/capacity-calendar';
+import {
+  listCapacityCalendar,
+  getCapacityCalendar,
+  addCapacityCalendar,
+  updateCapacityCalendar,
+  delCapacityCalendar,
+  generateFromSchedule
+} from '@/api/erp/prd/capacity-calendar';
 import { CapacityCalendarVO, CapacityCalendarQuery, CapacityCalendarForm } from '@/api/erp/prd/capacity-calendar/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { prd_capacity_object_type, prd_capacity_calendar_status } = toRefs<any>(proxy?.useDict('prd_capacity_object_type', 'prd_capacity_calendar_status'));
+const { prd_capacity_object_type, prd_capacity_calendar_status } = toRefs<any>(
+  proxy?.useDict('prd_capacity_object_type', 'prd_capacity_calendar_status')
+);
 
 const calendarList = ref<CapacityCalendarVO[]>([]);
 const loading = ref(true);
@@ -259,14 +300,14 @@ const rules = {
   calendarDate: [{ required: true, message: '日期不能为空', trigger: 'change' }],
   objectType: [{ required: true, message: '对象类型不能为空', trigger: 'change' }],
   objectId: [{ required: true, message: '对象ID不能为空', trigger: 'blur' }],
-  availableHours: [{ required: true, message: '可用工时不能为空', trigger: 'blur' }],
+  availableHours: [{ required: true, message: '可用工时不能为空', trigger: 'blur' }]
 };
 
 const generateRules = {
   planId: [{ required: true, message: '排班计划ID不能为空', trigger: 'blur' }],
   dateRange: [{ required: true, message: '日期范围不能为空', trigger: 'change' }],
   objectType: [{ required: true, message: '对象类型不能为空', trigger: 'change' }],
-  objectId: [{ required: true, message: '对象ID不能为空', trigger: 'blur' }],
+  objectId: [{ required: true, message: '对象ID不能为空', trigger: 'blur' }]
 };
 
 const getList = async () => {
@@ -281,10 +322,17 @@ const getList = async () => {
   loading.value = false;
 };
 
-const handleQuery = () => { queryParams.value.pageNum = 1; getList(); };
-const resetQuery = () => { dateRange.value = []; queryRef.value?.resetFields(); handleQuery(); };
+const handleQuery = () => {
+  queryParams.value.pageNum = 1;
+  getList();
+};
+const resetQuery = () => {
+  dateRange.value = [];
+  queryRef.value?.resetFields();
+  handleQuery();
+};
 const handleSelectionChange = (selection: CapacityCalendarVO[]) => {
-  ids.value = selection.map(item => item.calendarId);
+  ids.value = selection.map((item) => item.calendarId);
   single.value = selection.length !== 1;
   multiple.value = !selection.length;
 };
@@ -294,7 +342,11 @@ const reset = () => {
   calendarRef.value?.resetFields();
 };
 
-const handleAdd = () => { reset(); open.value = true; title.value = '添加产能日历'; };
+const handleAdd = () => {
+  reset();
+  open.value = true;
+  title.value = '添加产能日历';
+};
 
 const handleUpdate = async (row?: CapacityCalendarVO) => {
   reset();
@@ -346,7 +398,10 @@ const submitGenerate = () => {
   });
 };
 
-const cancel = () => { open.value = false; reset(); };
+const cancel = () => {
+  open.value = false;
+  reset();
+};
 
 const activeView = ref('list');
 const calendarDate = ref(new Date());
@@ -399,12 +454,28 @@ watch(calendarDate, () => {
   }
 });
 
-const handleExport = () => { proxy?.download('erp/prd/capacityCalendar/export', { ...queryParams.value }, `产能日历_${new Date().getTime()}.xlsx`); };
+const handleExport = () => {
+  proxy?.download('erp/prd/capacityCalendar/export', { ...queryParams.value }, `产能日历_${new Date().getTime()}.xlsx`);
+};
 
-onMounted(() => { getList(); });
+onMounted(() => {
+  getList();
+});
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
 .calendar-cell {
   height: 100%;
   min-height: 60px;

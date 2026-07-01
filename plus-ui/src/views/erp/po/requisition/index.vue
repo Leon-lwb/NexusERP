@@ -1,29 +1,42 @@
 <template>
   <div class="app-container">
     <!-- 搜索表单 -->
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px" class="query-form">
-      <el-form-item label="请购单号" prop="requisitionNo" style="width: 250px;">
-        <el-input v-model="queryParams.requisitionNo" placeholder="请输入请购单号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="部门" prop="departmentName" style="width: 250px;">
-        <el-input v-model="queryParams.departmentName" placeholder="请输入部门" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="申请人" prop="applicantName" style="width: 250px;">
-        <el-input v-model="queryParams.applicantName" placeholder="请输入申请人" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
-          <el-option label="草稿" value="draft" />
-          <el-option label="已提交" value="submitted" />
-          <el-option label="已批准" value="approved" />
-          <el-option label="已拒绝" value="rejected" />
-          <el-option label="已关闭" value="closed" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="请购单号" prop="requisitionNo">
+            <el-input v-model="queryParams.requisitionNo" placeholder="请输入请购单号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="部门" prop="departmentName">
+            <el-input v-model="queryParams.departmentName" placeholder="请输入部门" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="申请人" prop="applicantName">
+            <el-input v-model="queryParams.applicantName" placeholder="请输入申请人" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <!-- 技术债:状态为硬编码 el-option,暂无对应字典,待补字典后改 useDict -->
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option label="草稿" value="draft" />
+              <el-option label="已提交" value="submitted" />
+              <el-option label="已批准" value="approved" />
+              <el-option label="已拒绝" value="rejected" />
+              <el-option label="已关闭" value="closed" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <!-- 操作按钮 -->
@@ -35,7 +48,9 @@
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['po:requisition:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['po:requisition:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['po:requisition:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['po:requisition:export']">导出</el-button>
@@ -44,20 +59,22 @@
     </el-row>
 
     <!-- 数据表格 -->
-    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="请购单号" align="center" prop="requisitionNo" width="150" />
-      <el-table-column label="部门" align="center" prop="departmentName" width="120" />
-      <el-table-column label="申请人" align="center" prop="applicantName" width="100" />
-      <el-table-column label="需求日期" align="center" prop="requiredDate" width="110" />
-      <el-table-column label="状态" align="center" prop="status" width="100">
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="请购单号" align="center" prop="requisitionNo" />
+      <el-table-column label="部门" align="center" prop="departmentName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="申请人" align="center" prop="applicantName" />
+      <el-table-column label="需求日期" align="center" prop="requiredDate" />
+      <!-- 技术债:状态为硬编码 el-tag,暂无对应字典,待补字典后改 dict-tag -->
+      <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" min-width="150" show-overflow-tooltip />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
+      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['po:requisition:edit']">修改</el-button>
@@ -123,7 +140,7 @@
             <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除行</el-button>
           </el-col>
         </el-row>
-        <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small">
+        <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
           <el-table-column type="selection" width="50" v-if="!isViewMode" />
           <el-table-column label="行号" width="60" type="index" />
           <el-table-column label="物料编码" width="150">
@@ -139,7 +156,14 @@
           <el-table-column label="规格" prop="materialSpec" width="120" />
           <el-table-column label="需求数量" width="120">
             <template #default="scope">
-              <el-input-number v-model="scope.row.requiredQuantity" size="small" controls-position="right" :min="0" :precision="4" style="width: 100%" />
+              <el-input-number
+                v-model="scope.row.requiredQuantity"
+                size="small"
+                controls-position="right"
+                :min="0"
+                :precision="4"
+                style="width: 100%"
+              />
             </template>
           </el-table-column>
           <el-table-column label="单位" width="80">
@@ -170,9 +194,9 @@
 </template>
 
 <script setup lang="ts" name="PoRequisition">
-import { listRequisition, getRequisition, delRequisition, addRequisition, updateRequisition } from "@/api/erp/po/requisition";
-import { listMaterial } from "@/api/erp/bd/material";
-import { RequisitionVO, RequisitionForm, RequisitionDetailForm } from "@/api/erp/po/requisition/types";
+import { listRequisition, getRequisition, delRequisition, addRequisition, updateRequisition } from '@/api/erp/po/requisition';
+import { listMaterial } from '@/api/erp/bd/material';
+import { RequisitionVO, RequisitionForm, RequisitionDetailForm } from '@/api/erp/po/requisition/types';
 
 const { proxy } = getCurrentInstance();
 
@@ -185,7 +209,7 @@ const ids = ref<number[]>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const title = ref("");
+const title = ref('');
 const isViewMode = ref(false);
 
 // 明细行数据
@@ -209,7 +233,7 @@ const data = reactive({
     status: undefined
   },
   rules: {
-    requisitionNo: [{ required: true, message: "请购单号不能为空", trigger: "blur" }]
+    requisitionNo: [{ required: true, message: '请购单号不能为空', trigger: 'blur' }]
   }
 });
 
@@ -242,7 +266,7 @@ function getStatusLabel(status: string) {
 /** 查询列表 */
 function getList() {
   loading.value = true;
-  listRequisition(queryParams.value).then(response => {
+  listRequisition(queryParams.value).then((response) => {
     dataList.value = response.rows;
     total.value = response.total;
     loading.value = false;
@@ -268,7 +292,7 @@ function reset() {
     poRequisitionDetailList: []
   };
   lineList.value = [];
-  proxy.resetForm("formRef");
+  proxy.resetForm('formRef');
 }
 
 /** 搜索 */
@@ -279,13 +303,13 @@ function handleQuery() {
 
 /** 重置搜索 */
 function resetQuery() {
-  proxy.resetForm("queryRef");
+  proxy.resetForm('queryRef');
   handleQuery();
 }
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection: RequisitionVO[]) {
-  ids.value = selection.map(item => item.requisitionId);
+  ids.value = selection.map((item) => item.requisitionId);
   single.value = selection.length !== 1;
   multiple.value = !selection.length;
 }
@@ -295,7 +319,7 @@ function handleAdd() {
   reset();
   isViewMode.value = false;
   open.value = true;
-  title.value = "添加部门请购单";
+  title.value = '添加部门请购单';
 }
 
 /** 修改 */
@@ -303,11 +327,11 @@ function handleUpdate(row?: RequisitionVO) {
   reset();
   isViewMode.value = false;
   const requisitionId = row?.requisitionId || ids.value[0];
-  getRequisition(requisitionId).then(response => {
+  getRequisition(requisitionId).then((response) => {
     form.value = response.data;
     lineList.value = response.data.poRequisitionDetailList || [];
     open.value = true;
-    title.value = "修改部门请购单";
+    title.value = '修改部门请购单';
   });
 }
 
@@ -315,28 +339,28 @@ function handleUpdate(row?: RequisitionVO) {
 function handleView(row: RequisitionVO) {
   reset();
   isViewMode.value = true;
-  getRequisition(row.requisitionId).then(response => {
+  getRequisition(row.requisitionId).then((response) => {
     form.value = response.data;
     lineList.value = response.data.poRequisitionDetailList || [];
     open.value = true;
-    title.value = "查看部门请购单";
+    title.value = '查看部门请购单';
   });
 }
 
 /** 提交表单 */
 function submitForm() {
-  proxy.$refs["formRef"].validate((valid: boolean) => {
+  proxy.$refs['formRef'].validate((valid: boolean) => {
     if (valid) {
       form.value.poRequisitionDetailList = lineList.value;
       if (form.value.requisitionId != null) {
         updateRequisition(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功");
+          proxy.$modal.msgSuccess('修改成功');
           open.value = false;
           getList();
         });
       } else {
         addRequisition(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功");
+          proxy.$modal.msgSuccess('新增成功');
           open.value = false;
           getList();
         });
@@ -348,12 +372,16 @@ function submitForm() {
 /** 删除 */
 function handleDelete(row?: RequisitionVO) {
   const requisitionIds = row?.requisitionId || ids.value;
-  proxy.$modal.confirm('是否确认删除部门请购单编号为"' + requisitionIds + '"的数据项？').then(function () {
-    return delRequisition(requisitionIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  proxy.$modal
+    .confirm('是否确认删除部门请购单编号为"' + requisitionIds + '"的数据项？')
+    .then(function () {
+      return delRequisition(requisitionIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 导出 */
@@ -414,3 +442,18 @@ function selectMaterial(row: any) {
 
 getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

@@ -1,122 +1,78 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px" class="query-form">
-      <el-form-item label="客户编码" prop="clientCode">
-        <el-input
-          v-model="queryParams.clientCode"
-          placeholder="请输入客户编码"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="客户名称" prop="clientName">
-        <el-input
-          v-model="queryParams.clientName"
-          placeholder="请输入客户名称"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="客户类型" prop="clientType" style="width: 200px;">
-        <el-select v-model="queryParams.clientType" placeholder="请选择" clearable>
-          <el-option
-            v-for="dict in bd_client_type"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="客户电话" prop="tel">
-        <el-input
-          v-model="queryParams.tel"
-          placeholder="请输入客户电话"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="统一代码" prop="creditCode">
-        <el-input
-          v-model="queryParams.creditCode"
-          placeholder="请输入统一社会信用代码"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="客户编码" prop="clientCode">
+            <el-input v-model="queryParams.clientCode" placeholder="请输入客户编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="客户名称" prop="clientName">
+            <el-input v-model="queryParams.clientName" placeholder="请输入客户名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="客户类型" prop="clientType">
+            <el-select v-model="queryParams.clientType" placeholder="请选择" clearable style="width: 100%">
+              <el-option v-for="dict in bd_client_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="客户电话" prop="tel">
+            <el-input v-model="queryParams.tel" placeholder="请输入客户电话" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="统一代码" prop="creditCode">
+            <el-input v-model="queryParams.creditCode" placeholder="请输入统一社会信用代码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['core:bd:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['core:bd:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['core:bd:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['core:bd:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['core:bd:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['core:bd:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="info"
-          plain
-          icon="View"
-          :disabled="single"
-          @click="handleView"
-          v-hasPermi="['core:bd:query']"
-        >查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['core:bd:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['core:bd:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['core:bd:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="bdList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="bdList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" width="50" align="center" prop="clientId" />
-      <el-table-column label="客户编码" align="center" prop="clientCode" :show-overflow-tooltip="true" />
-      <el-table-column label="客户名称" align="center" prop="clientName" :show-overflow-tooltip="true" />
-      <el-table-column label="客户类型" align="center" prop="clientType" width="120">
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="客户编码" align="center" prop="clientCode" min-width="120" show-overflow-tooltip />
+      <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="客户类型" align="center" prop="clientType">
         <template #default="scope">
-          <dict-tag :options="bd_client_type" :value="scope.row.clientType"/>
+          <dict-tag :options="bd_client_type" :value="scope.row.clientType" />
         </template>
       </el-table-column>
-      <el-table-column label="客户电话" align="center" prop="tel" :show-overflow-tooltip="true" />
-      <el-table-column label="客户LOGO" align="center" prop="clientLogo" width="100">
+      <el-table-column label="客户电话" align="center" prop="tel" min-width="120" show-overflow-tooltip />
+      <el-table-column label="客户LOGO" align="center" prop="clientLogo">
         <template #default="scope">
-          <el-image 
-            v-if="scope.row.clientLogo" 
-            :src="getFullImageUrl(scope.row.clientLogo)" 
+          <el-image
+            v-if="scope.row.clientLogo"
+            :src="getFullImageUrl(scope.row.clientLogo)"
             :preview-src-list="[getFullImageUrl(scope.row.clientLogo)]"
             preview-teleported
             fit="cover"
@@ -125,7 +81,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['core:bd:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['core:bd:edit']">修改</el-button>
@@ -134,13 +90,7 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改客户信息对话框 -->
     <el-dialog :title="title" v-model="open" @close="cancel" width="960px" append-to-body>
@@ -152,11 +102,13 @@
                 <el-form-item label="客户编码" prop="clientCode">
                   <div style="display: flex; align-items: center; gap: 10px;">
                     <el-input v-model="form.clientCode" placeholder="请输入客户编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
-                    <el-switch v-model="autoGenFlag"
+                    <el-switch
+                      v-model="autoGenFlag"
                       active-color="#13ce66"
                       active-text="自动生成"
                       @change="handleAutoGenChange"
-                      :disabled="isViewMode">
+                      :disabled="isViewMode"
+                    >
                     </el-switch>
                   </div>
                 </el-form-item>
@@ -178,18 +130,12 @@
                   <el-input v-model="form.clientEn" placeholder="请输入客户英文名称" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
-              
             </el-row>
-            <el-row> 
+            <el-row>
               <el-col :span="12">
                 <el-form-item label="客户类型" prop="clientType">
                   <el-select v-model="form.clientType" placeholder="请选择客户类型" style="width: 100%" :disabled="isViewMode">
-                    <el-option
-                      v-for="dict in bd_client_type"
-                      :key="dict.value"
-                      :label="dict.label"
-                      :value="dict.value">
-                    </el-option>
+                    <el-option v-for="dict in bd_client_type" :key="dict.value" :label="dict.label" :value="dict.value"> </el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -203,69 +149,53 @@
             <el-row>
               <el-col :span="6">
                 <el-form-item label="省份" prop="provinceAreaId">
-                  <el-select 
-                    v-model="form.provinceAreaId" 
-                    placeholder="请选择省份" 
+                  <el-select
+                    v-model="form.provinceAreaId"
+                    placeholder="请选择省份"
                     :disabled="isViewMode"
                     @change="handleProvinceChange"
-                    style="width: 100%">
-                    <el-option
-                      v-for="item in provinceOptions"
-                      :key="item.areaId"
-                      :label="item.areaName"
-                      :value="item.areaId">
-                    </el-option>
+                    style="width: 100%"
+                  >
+                    <el-option v-for="item in provinceOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="城市" prop="cityAreaId">
-                  <el-select 
-                    v-model="form.cityAreaId" 
-                    placeholder="请选择城市" 
+                  <el-select
+                    v-model="form.cityAreaId"
+                    placeholder="请选择城市"
                     :disabled="isViewMode || !cityOptions.length"
                     @change="handleCityChange"
-                    style="width: 100%">
-                    <el-option
-                      v-for="item in cityOptions"
-                      :key="item.areaId"
-                      :label="item.areaName"
-                      :value="item.areaId">
-                    </el-option>
+                    style="width: 100%"
+                  >
+                    <el-option v-for="item in cityOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="区县" prop="districtAreaId">
-                  <el-select 
-                    v-model="form.districtAreaId" 
-                    placeholder="请选择区县" 
+                  <el-select
+                    v-model="form.districtAreaId"
+                    placeholder="请选择区县"
                     :disabled="isViewMode || !districtOptions.length"
                     @change="handleDistrictChange"
-                    style="width: 100%">
-                    <el-option
-                      v-for="item in districtOptions"
-                      :key="item.areaId"
-                      :label="item.areaName"
-                      :value="item.areaId">
-                    </el-option>
+                    style="width: 100%"
+                  >
+                    <el-option v-for="item in districtOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="街道" prop="streetId">
-                  <el-select 
-                    v-model="form.streetId" 
-                    placeholder="请选择街道" 
+                  <el-select
+                    v-model="form.streetId"
+                    placeholder="请选择街道"
                     :disabled="isViewMode || !streetOptions.length"
                     style="width: 100%"
-                    @change="handleStreetChange">
-                    <el-option
-                      v-for="item in streetOptions"
-                      :key="item.areaId"
-                      :label="item.areaName"
-                      :value="item.areaId">
-                    </el-option>
+                    @change="handleStreetChange"
+                  >
+                    <el-option v-for="item in streetOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -297,7 +227,7 @@
               </el-col>
             </el-row>
           </el-tab-pane>
-          
+
           <el-tab-pane label="联系方式" name="contact">
             <el-row>
               <el-col :span="12">
@@ -322,9 +252,9 @@
                   <div class="logo-upload-container">
                     <!-- 查看模式下显示静态图片 -->
                     <div v-if="isViewMode" class="logo-preview-view">
-                      <el-image 
+                      <el-image
                         v-if="form.clientLogo"
-                        :src="getFullImageUrl(form.clientLogo)" 
+                        :src="getFullImageUrl(form.clientLogo)"
                         :preview-src-list="[getFullImageUrl(form.clientLogo)]"
                         preview-teleported
                         fit="cover"
@@ -338,21 +268,14 @@
                       <div class="single-logo-upload">
                         <!-- 如果已有图片，显示图片预览 -->
                         <div v-if="form.clientLogo" class="logo-preview-existing">
-                          <el-image 
-                            :src="getFullImageUrl(form.clientLogo)" 
+                          <el-image
+                            :src="getFullImageUrl(form.clientLogo)"
                             :preview-src-list="[getFullImageUrl(form.clientLogo)]"
                             preview-teleported
                             fit="cover"
                             class="logo-image-preview"
                           />
-                          <el-button 
-                            type="danger" 
-                            icon="Delete" 
-                            size="small" 
-                            @click="removeLogo"
-                            circle
-                            class="remove-btn"
-                          />
+                          <el-button type="danger" icon="Delete" size="small" @click="removeLogo" circle class="remove-btn" />
                         </div>
                         <!-- 如果没有图片，显示上传区域 -->
                         <div v-else class="logo-upload-area">
@@ -369,7 +292,9 @@
                           >
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-                            <div class="el-upload__tip" slot="tip">只能上传jpg/png文件，且不超过5MB</div>
+                            <template v-slot:tip>
+                              <div class="el-upload__tip">只能上传jpg/png文件，且不超过5MB</div>
+                            </template>
                           </el-upload>
                         </div>
                       </div>
@@ -433,33 +358,33 @@
 </template>
 
 <script setup lang="ts" name="Bd">
-import { listClient, getClient, addClient, updateClient, delClient } from "@/api/erp/bd/client"
-import { previewCode } from "@/api/system/autocode/rule"
-import request from '@/utils/request'
-import { getToken } from "@/utils/auth"
-import { getProvinces, getNextLevel } from "@/api/system/area"
+import { listClient, getClient, addClient, updateClient, delClient } from '@/api/erp/bd/client';
+import { previewCode } from '@/api/system/autocode/rule';
+import request from '@/utils/request';
+import { getToken } from '@/utils/auth';
+import { getProvinces, getNextLevel } from '@/api/system/area';
 
-const { proxy } = getCurrentInstance()
-const { bd_client_type } = toRefs<any>(proxy.useDict('bd_client_type'))
+const { proxy } = getCurrentInstance();
+const { bd_client_type } = toRefs<any>(proxy.useDict('bd_client_type'));
 
-const bdList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const autoGenFlag = ref(false)
-const activeTab = ref("basic")
-const isViewMode = ref(false) // 标识是否为查看模式
+const bdList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const autoGenFlag = ref(false);
+const activeTab = ref('basic');
+const isViewMode = ref(false); // 标识是否为查看模式
 
 // 添加logo上传相关数据
-const uploadUrl = ref("/erp/bd/client/uploadLogo")
+const uploadUrl = ref('/erp/bd/client/uploadLogo');
 
 // 添加 baseURL
-const baseURL = 'http://localhost'
+const baseURL = 'http://localhost';
 
 const data = reactive({
   form: {},
@@ -471,64 +396,46 @@ const data = reactive({
     clientEn: null,
     clientType: null,
     tel: null,
-    creditCode: null,
+    creditCode: null
   },
   rules: {
-    clientCode: [
-      { required: true, message: "客户编码不能为空", trigger: "blur" }
-    ],
-    clientName: [
-      { required: true, message: "客户名称不能为空", trigger: "blur" }
-    ],
-    clientDesc: [
-      { required: true, message: "客户简介不能为空", trigger: "blur" }
-    ],
-    clientType: [
-      { required: true, message: "客户类型不能为空", trigger: "change" }
-    ],
-    address: [
-      { required: true, message: "客户默认送货地点不能为空", trigger: "blur" }
-    ],
-    email: [
-      { required: true, message: "客户邮箱不能为空", trigger: "blur" }
-    ],
-    tel: [
-      { required: true, message: "客户电话不能为空", trigger: "blur" }
-    ],
-    contact1: [
-      { required: true, message: "联系人1不能为空", trigger: "blur" }
-    ],
-    contact1Tel: [
-      { required: true, message: "联系人1电话不能为空", trigger: "blur" }
-    ],
+    clientCode: [{ required: true, message: '客户编码不能为空', trigger: 'blur' }],
+    clientName: [{ required: true, message: '客户名称不能为空', trigger: 'blur' }],
+    clientDesc: [{ required: true, message: '客户简介不能为空', trigger: 'blur' }],
+    clientType: [{ required: true, message: '客户类型不能为空', trigger: 'change' }],
+    address: [{ required: true, message: '客户默认送货地点不能为空', trigger: 'blur' }],
+    email: [{ required: true, message: '客户邮箱不能为空', trigger: 'blur' }],
+    tel: [{ required: true, message: '客户电话不能为空', trigger: 'blur' }],
+    contact1: [{ required: true, message: '联系人1不能为空', trigger: 'blur' }],
+    contact1Tel: [{ required: true, message: '联系人1电话不能为空', trigger: 'blur' }]
   }
-})
+});
 
 // 新增地址相关数据
-const provinceOptions = ref([])
-const cityOptions = ref([])
-const districtOptions = ref([])
-const streetOptions = ref([])
+const provinceOptions = ref([]);
+const cityOptions = ref([]);
+const districtOptions = ref([]);
+const streetOptions = ref([]);
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
-const dialogImageUrl = ref('')
-const dialogVisible = ref(false)
+const dialogImageUrl = ref('');
+const dialogVisible = ref(false);
 
 /** 查询客户信息列表 */
 function getList() {
-  loading.value = true
-  listClient(queryParams.value).then(response => {
-    bdList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+  loading.value = true;
+  listClient(queryParams.value).then((response) => {
+    bdList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 // 取消按钮
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 // 表单重置
@@ -569,91 +476,51 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  }
-  proxy.resetForm("bdRef")
-  activeTab.value = "basic"
+  };
+  proxy.resetForm('bdRef');
+  activeTab.value = 'basic';
   // 重置查看模式标识
-  isViewMode.value = false
+  isViewMode.value = false;
   // 重置地址选项
-  cityOptions.value = []
-  districtOptions.value = []
-  streetOptions.value = []
+  cityOptions.value = [];
+  districtOptions.value = [];
+  streetOptions.value = [];
 }
 
 /** 搜索按钮操作 */
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 // 多选框选中数据
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.clientId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.clientId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 /** 新增按钮操作 */
 function handleAdd() {
-  reset()
-  isViewMode.value = false
-  loadProvinceOptions() // 加载省份数据
-  open.value = true
-  title.value = "添加客户信息"
+  reset();
+  isViewMode.value = false;
+  loadProvinceOptions(); // 加载省份数据
+  open.value = true;
+  title.value = '添加客户信息';
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false
-  const _clientId = row.clientId || ids.value
-  getClient(_clientId).then(response => {
-    form.value = response.data
-    // 加载地址级联数据
-    loadProvinceOptions().then(() => {
-      if (form.value.provinceAreaId) {
-        loadCityOptions(form.value.provinceAreaId).then(() => {
-          if (form.value.cityAreaId) {
-            loadDistrictOptions(form.value.cityAreaId).then(() => {
-              // 如果有街道ID，加载街道数据
-              if (form.value.streetId && form.value.districtAreaId) {
-                loadStreetOptions(form.value.districtAreaId).then(() => {
-                  // 确保街道选项中包含当前选中的街道
-                  const selectedStreet = streetOptions.value.find(option => option.areaId === form.value.streetId);
-                  if (!selectedStreet && form.value.streetId) {
-                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
-                    // 创建一个新的街道选项对象
-                    const newStreetOption = {
-                      areaId: form.value.streetId,
-                      areaName: form.value.streetName || form.value.streetId,
-                      parentAreaId: form.value.districtAreaId
-                    };
-                    streetOptions.value.push(newStreetOption);
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-    open.value = true;
-    title.value = "修改客户信息";
-  });
-}
-
-/** 查看按钮操作 */
-function handleView(row) {
   reset();
-  isViewMode.value = true; // 设置为查看模式
-  const _clientId = row.clientId || ids.value[0];
-  getClient(_clientId).then(response => {
+  isViewMode.value = false;
+  const _clientId = row.clientId || ids.value;
+  getClient(_clientId).then((response) => {
     form.value = response.data;
     // 加载地址级联数据
     loadProvinceOptions().then(() => {
@@ -665,7 +532,7 @@ function handleView(row) {
               if (form.value.streetId && form.value.districtAreaId) {
                 loadStreetOptions(form.value.districtAreaId).then(() => {
                   // 确保街道选项中包含当前选中的街道
-                  const selectedStreet = streetOptions.value.find(option => option.areaId === form.value.streetId);
+                  const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
                   if (!selectedStreet && form.value.streetId) {
                     // 如果街道选项中没有当前选中的街道，添加该街道到选项中
                     // 创建一个新的街道选项对象
@@ -684,53 +551,93 @@ function handleView(row) {
       }
     });
     open.value = true;
-    title.value = "查看客户信息";
+    title.value = '修改客户信息';
+  });
+}
+
+/** 查看按钮操作 */
+function handleView(row) {
+  reset();
+  isViewMode.value = true; // 设置为查看模式
+  const _clientId = row.clientId || ids.value[0];
+  getClient(_clientId).then((response) => {
+    form.value = response.data;
+    // 加载地址级联数据
+    loadProvinceOptions().then(() => {
+      if (form.value.provinceAreaId) {
+        loadCityOptions(form.value.provinceAreaId).then(() => {
+          if (form.value.cityAreaId) {
+            loadDistrictOptions(form.value.cityAreaId).then(() => {
+              // 如果有街道ID，加载街道数据
+              if (form.value.streetId && form.value.districtAreaId) {
+                loadStreetOptions(form.value.districtAreaId).then(() => {
+                  // 确保街道选项中包含当前选中的街道
+                  const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
+                  if (!selectedStreet && form.value.streetId) {
+                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
+                    // 创建一个新的街道选项对象
+                    const newStreetOption = {
+                      areaId: form.value.streetId,
+                      areaName: form.value.streetName || form.value.streetId,
+                      parentAreaId: form.value.districtAreaId
+                    };
+                    streetOptions.value.push(newStreetOption);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+    open.value = true;
+    title.value = '查看客户信息';
   });
 }
 
 // 添加图片路径处理方法
 function getFullImageUrl(url) {
-  if (!url) return ''
+  if (!url) return '';
   // 如果已经是完整URL，直接返回
   if (url.startsWith('http')) {
-    return url
+    return url;
   }
   // 如果是相对路径，拼接基础URL
   if (url.startsWith('/')) {
-    return baseURL + '/dev-api' + url
+    return baseURL + '/dev-api' + url;
   }
   // 如果是profile开头的路径，拼接基础URL
   if (url.startsWith('profile')) {
-    return baseURL + '/dev-api/' + url
+    return baseURL + '/dev-api/' + url;
   }
-  return baseURL + '/dev-api/' + url
+  return baseURL + '/dev-api/' + url;
 }
 
 // 优化后的logo上传相关方法 - 修改为5MB限制
 function beforeLogoUpload(file) {
-  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
-  const isLt5M = file.size / 1024 / 1024 < 5
+  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
+  const isLt5M = file.size / 1024 / 1024 < 5;
 
   if (!isJPG) {
-    proxy.$modal.msgError('上传头像图片只能是 JPG/PNG 格式!')
-    return false
+    proxy.$modal.msgError('上传头像图片只能是 JPG/PNG 格式!');
+    return false;
   }
   if (!isLt5M) {
-    proxy.$modal.msgError('上传头像图片大小不能超过 5MB!')
-    return false
+    proxy.$modal.msgError('上传头像图片大小不能超过 5MB!');
+    return false;
   }
-  return true
+  return true;
 }
 
 // 自定义上传方法
 function handleLogoUpload(option) {
-  const formData = new FormData()
-  formData.append('file', option.file)
-  formData.append('clientId', form.value.clientId || 0)
-  
+  const formData = new FormData();
+  formData.append('file', option.file);
+  formData.append('clientId', form.value.clientId || 0);
+
   const headers = {
     'Authorization': 'Bearer ' + getToken()
-  }
+  };
 
   request({
     method: 'post',
@@ -740,11 +647,13 @@ function handleLogoUpload(option) {
       ...headers,
       'Content-Type': 'multipart/form-data'
     }
-  }).then(response => {
-    option.onSuccess(response)
-  }).catch(error => {
-    option.onError(error)
   })
+    .then((response) => {
+      option.onSuccess(response);
+    })
+    .catch((error) => {
+      option.onError(error);
+    });
 }
 
 // 处理上传成功回调
@@ -759,179 +668,196 @@ function handleLogoSuccess(response, file) {
         form.value.clientLogo = response.filePath;
       }
     }
-    proxy.$modal.msgSuccess("上传成功")
+    proxy.$modal.msgSuccess('上传成功');
   } else {
-    proxy.$modal.msgError(response.msg || "上传失败")
+    proxy.$modal.msgError(response.msg || '上传失败');
   }
 }
 
 function handleLogoError(error) {
-  proxy.$modal.msgError("上传失败: " + (error.message || "未知错误"))
+  proxy.$modal.msgError('上传失败: ' + (error.message || '未知错误'));
 }
 
 // 移除logo
 function removeLogo() {
-  form.value.clientLogo = null
+  form.value.clientLogo = null;
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["bdRef"].validate(valid => {
+  proxy.$refs['bdRef'].validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
         form.value.clientCode = undefined;
       }
       if (form.value.clientId != null) {
-        updateClient(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+        updateClient(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
-        addClient(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+        addClient(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const _clientIds = row.clientId || ids.value
-  proxy.$modal.confirm('是否确认删除客户信息编号为"' + _clientIds + '"的数据项？').then(function() {
-    return delClient(_clientIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+  const _clientIds = row.clientId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除客户信息编号为"' + _clientIds + '"的数据项？')
+    .then(function () {
+      return delClient(_clientIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('erp/bd/client/export', {
-    ...queryParams.value
-  }, `bd_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    'erp/bd/client/export',
+    {
+      ...queryParams.value
+    },
+    `bd_${new Date().getTime()}.xlsx`
+  );
 }
 
 //自动生成编码
-function handleAutoGenChange(autoGenFlag){
-  if(autoGenFlag){
-    previewCode('CLIENT_CODE').then(response =>{
+function handleAutoGenChange(autoGenFlag) {
+  if (autoGenFlag) {
+    previewCode('CLIENT_CODE').then((response) => {
       form.value.clientCode = response;
     });
-  }else{
+  } else {
     form.value.clientCode = null;
   }
 }
 
 // 加载省份数据
 function loadProvinceOptions() {
-  return getProvinces().then(response => {
-    provinceOptions.value = response.data
-  })
+  return getProvinces().then((response) => {
+    provinceOptions.value = response.data;
+  });
 }
 
 // 省份变化处理
 function handleProvinceChange(value) {
-  form.value.cityAreaId = null
-  form.value.districtAreaId = null
-  form.value.streetId = null
-  cityOptions.value = []
-  districtOptions.value = []
-  streetOptions.value = []
-  
+  form.value.cityAreaId = null;
+  form.value.districtAreaId = null;
+  form.value.streetId = null;
+  cityOptions.value = [];
+  districtOptions.value = [];
+  streetOptions.value = [];
+
   if (value) {
-    loadCityOptions(value)
+    loadCityOptions(value);
   }
-  
+
   // 更新地址字段
   nextTick(() => {
-    updateAddressField()
-  })
+    updateAddressField();
+  });
 }
 
 // 加载城市数据
 function loadCityOptions(parentId) {
-  return getNextLevel(parentId).then(response => {
-    cityOptions.value = response.data
-  })
+  return getNextLevel(parentId).then((response) => {
+    cityOptions.value = response.data;
+  });
 }
 
 // 城市变化处理
 function handleCityChange(value) {
-  form.value.districtAreaId = null
-  form.value.streetId = null
-  districtOptions.value = []
-  streetOptions.value = []
-  
+  form.value.districtAreaId = null;
+  form.value.streetId = null;
+  districtOptions.value = [];
+  streetOptions.value = [];
+
   if (value) {
-    loadDistrictOptions(value)
+    loadDistrictOptions(value);
   }
-  
+
   // 更新地址字段
   nextTick(() => {
-    updateAddressField()
-  })
+    updateAddressField();
+  });
 }
 
 // 区县变化处理
 function handleDistrictChange(value) {
-  form.value.streetId = null
-  streetOptions.value = []
-  
+  form.value.streetId = null;
+  streetOptions.value = [];
+
   if (value) {
-    loadStreetOptions(value)
+    loadStreetOptions(value);
   }
-  
+
   // 更新地址字段
   nextTick(() => {
-    updateAddressField()
-  })
+    updateAddressField();
+  });
 }
 
 // 街道变化处理
 function handleStreetChange(value) {
   // 更新地址字段
-  updateAddressField()
+  updateAddressField();
 }
 
 // 加载区县数据
 function loadDistrictOptions(parentId) {
-  return getNextLevel(parentId).then(response => {
-    districtOptions.value = response.data
-  })
+  return getNextLevel(parentId).then((response) => {
+    districtOptions.value = response.data;
+  });
 }
 
 // 加载街道数据
 function loadStreetOptions(parentId) {
-  return getNextLevel(parentId).then(response => {
-    streetOptions.value = response.data
-  })
+  return getNextLevel(parentId).then((response) => {
+    streetOptions.value = response.data;
+  });
 }
 
 // 更新地址字段
 function updateAddressField() {
   // 获取各级区域的名称
-  const provinceName = provinceOptions.value.find(p => p.areaId === form.value.provinceAreaId)?.areaName || ''
-  const cityName = cityOptions.value.find(c => c.areaId === form.value.cityAreaId)?.areaName || ''
-  const districtName = districtOptions.value.find(d => d.areaId === form.value.districtAreaId)?.areaName || ''
-  const streetName = streetOptions.value.find(s => s.areaId === form.value.streetId)?.areaName || ''
-  
+  const provinceName = provinceOptions.value.find((p) => p.areaId === form.value.provinceAreaId)?.areaName || '';
+  const cityName = cityOptions.value.find((c) => c.areaId === form.value.cityAreaId)?.areaName || '';
+  const districtName = districtOptions.value.find((d) => d.areaId === form.value.districtAreaId)?.areaName || '';
+  const streetName = streetOptions.value.find((s) => s.areaId === form.value.streetId)?.areaName || '';
+
   // 拼接地址
-  const addressParts = [provinceName, cityName, districtName, streetName].filter(part => part !== '')
-  form.value.address = addressParts.join('')
+  const addressParts = [provinceName, cityName, districtName, streetName].filter((part) => part !== '');
+  form.value.address = addressParts.join('');
 }
 
-getList()
+getList();
 </script>
 
-<style scoped>
-.query-form .el-form-item {
+<style scoped lang="scss">
+.list-search .el-form-item {
   margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
 }
 .logo-image {
   width: 40px;

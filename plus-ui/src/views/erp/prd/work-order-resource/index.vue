@@ -1,11 +1,24 @@
 <template>
   <div class="app-container">
-    <el-form :inline="true" class="mb8">
-      <el-form-item label="工单号">
-        <el-select v-model="selectedWoId" filterable remote :remote-method="searchWo" placeholder="请选择工单" @change="loadResources" clearable style="width: 300px;">
-          <el-option v-for="wo in woOptions" :key="wo.woId" :label="`${wo.woNo} - ${wo.materialName || ''}`" :value="wo.woId" />
-        </el-select>
-      </el-form-item>
+    <el-form class="list-search" label-width="100px">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="工单号">
+            <el-select
+              v-model="selectedWoId"
+              filterable
+              remote
+              :remote-method="searchWo"
+              placeholder="请选择工单"
+              @change="loadResources"
+              clearable
+              style="width: 100%"
+            >
+              <el-option v-for="wo in woOptions" :key="wo.woId" :label="`${wo.woNo} - ${wo.materialName || ''}`" :value="wo.woId" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -20,16 +33,16 @@
       </el-col>
     </el-row>
 
-    <el-table :data="resourceList" border v-loading="loading">
-      <el-table-column label="序号" type="index" width="60" align="center" />
-      <el-table-column label="资源类型" prop="resourceType" width="140">
+    <el-table :data="resourceList" border v-loading="loading" show-overflow-tooltip>
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="资源类型" prop="resourceType" min-width="120">
         <template #default="scope">
           <el-select v-model="scope.row.resourceType" placeholder="请选择" style="width: 100%">
             <el-option v-for="(label, key) in RESOURCE_TYPE_LABEL" :key="key" :label="label" :value="key" />
           </el-select>
         </template>
       </el-table-column>
-      <el-table-column label="资源编码" prop="resourceCode" width="150">
+      <el-table-column label="资源编码" prop="resourceCode" min-width="120">
         <template #default="scope">
           <el-input v-model="scope.row.resourceCode" placeholder="请输入编码" />
         </template>
@@ -39,29 +52,42 @@
           <el-input v-model="scope.row.resourceName" placeholder="请输入名称" />
         </template>
       </el-table-column>
-      <el-table-column label="计划开始" prop="planStartTime" width="180">
+      <el-table-column label="计划开始" prop="planStartTime" min-width="120">
         <template #default="scope">
-          <el-date-picker v-model="scope.row.planStartTime" type="datetime" placeholder="选择时间" style="width: 100%" value-format="YYYY-MM-DD HH:mm:ss" />
+          <el-date-picker
+            v-model="scope.row.planStartTime"
+            type="datetime"
+            placeholder="选择时间"
+            style="width: 100%"
+            value-format="YYYY-MM-DD HH:mm:ss"
+          />
         </template>
       </el-table-column>
-      <el-table-column label="计划结束" prop="planEndTime" width="180">
+      <el-table-column label="计划结束" prop="planEndTime" min-width="120">
         <template #default="scope">
-          <el-date-picker v-model="scope.row.planEndTime" type="datetime" placeholder="选择时间" style="width: 100%" value-format="YYYY-MM-DD HH:mm:ss" />
+          <el-date-picker
+            v-model="scope.row.planEndTime"
+            type="datetime"
+            placeholder="选择时间"
+            style="width: 100%"
+            value-format="YYYY-MM-DD HH:mm:ss"
+          />
         </template>
       </el-table-column>
-      <el-table-column label="状态" prop="status" width="100" align="center">
+      <!-- 技术债：状态列使用硬编码 el-tag + RESOURCE_STATUS_LABEL 映射，待补建对应字典后改为 dict-tag -->
+      <el-table-column label="状态" prop="status" align="center">
         <template #default="scope">
           <el-tag :type="scope.row.status === 'COMPLETED' ? 'success' : scope.row.status === 'PROCESSING' ? 'primary' : 'info'" size="small">
             {{ RESOURCE_STATUS_LABEL[scope.row.status as keyof typeof RESOURCE_STATUS_LABEL] || scope.row.status }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="备注" prop="remark" width="150">
+      <el-table-column label="备注" prop="remark" min-width="120">
         <template #default="scope">
           <el-input v-model="scope.row.remark" placeholder="请输入备注" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="80" align="center">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="danger" icon="Delete" @click="removeRow(scope.$index)" />
         </template>
@@ -72,7 +98,13 @@
 
 <script setup lang="ts" name="WorkOrderResource">
 import { ref, onMounted } from 'vue';
-import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, delWorkOrderResource, RESOURCE_TYPE_LABEL, RESOURCE_STATUS_LABEL } from '@/api/erp/prd/work-order-resource';
+import {
+  getWorkOrderResourceByWoId,
+  saveWorkOrderResourceBatch,
+  delWorkOrderResource,
+  RESOURCE_TYPE_LABEL,
+  RESOURCE_STATUS_LABEL
+} from '@/api/erp/prd/work-order-resource';
 import { listWork } from '@/api/erp/prd/work';
 import { WorkOrderResourceForm } from '@/api/erp/prd/work-order-resource/types';
 
@@ -87,7 +119,9 @@ const searchWo = async (query: string) => {
   try {
     const res = await listWork({ woNo: query || undefined, pageNum: 1, pageSize: 20 });
     woOptions.value = res.rows || [];
-  } catch { woOptions.value = []; }
+  } catch {
+    woOptions.value = [];
+  }
 };
 
 const loadResources = async () => {
@@ -150,3 +184,18 @@ onMounted(() => {
   searchWo('');
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

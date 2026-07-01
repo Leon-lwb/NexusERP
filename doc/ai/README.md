@@ -1,76 +1,85 @@
-# AI 模块文档
+# AI 模块知识库文档
 
-本目录包含 NexusERP AI 模块（LangChain4j + 知识图谱 + MCP）的设计与开发计划文档。
+本目录存放供 RAG 检索和知识图谱构建使用的知识内容源文档。
 
-## 文档清单
+## 目录结构
 
-### 总体计划
-| 文档 | 主题 | 状态 |
-|------|------|------|
-| [NexusERP_AI开发计划.md](./NexusERP_AI开发计划.md) | 项目总开发计划 v6.1（Phase 0-6） | 🚧 Phase 0/1/2 完成 |
-| [NexusERP_AI二阶段开发计划_AI平台能力深化.md](./NexusERP_AI二阶段开发计划_AI平台能力深化.md) | 二阶段：S2-A 知识图谱 / S2-B 推理增强 / S2-C 联网+MCP+多模态 | ✅ S2-A/S2-B/S2-C 代码完成（S2-A 待运行时验证） |
+```
+/doc/ai/
+├── README.md
+├── knowledge-base-01-erp-master-data/
+│   ├── 01-物料主数据.txt
+│   └── 01-物料主数据.annotated.txt
+├── knowledge-base-02-erp-supplier/
+│   ├── 02-供应商档案.txt
+│   └── 02-供应商档案.annotated.txt
+├── knowledge-base-03-erp-procurement/
+│   ├── 03-采购订单流程.txt
+│   └── 03-采购订单流程.annotated.txt
+├── knowledge-base-04-erp-sales/
+│   ├── 04-销售订单流程.txt
+│   └── 04-销售订单流程.annotated.txt
+├── knowledge-base-05-erp-inventory/
+│   ├── 05-库存管理规则.txt
+│   └── 05-库存管理规则.annotated.txt
+├── knowledge-base-06-erp-production/
+│   ├── 06-生产计划与工单.txt
+│   └── 06-生产计划与工单.annotated.txt
+├── knowledge-base-07-mes-workshop/
+│   ├── 07-车间派工与报工.txt
+│   └── 07-车间派工与报工.annotated.txt
+├── knowledge-base-08-mes-quality/
+│   ├── 08-质量检验规范.txt
+│   └── 08-质量检验规范.annotated.txt
+├── knowledge-base-09-system-deploy/
+│   ├── 09-系统部署架构.txt
+│   └── 09-系统部署架构.annotated.txt
+├── knowledge-base-10-system-troubleshoot/
+│   ├── 10-故障排查手册.txt
+│   └── 10-故障排查手册.annotated.txt
+└── knowledge-base-11-system-integration/
+    ├── 11-系统集成接口.txt
+    └── 11-系统集成接口.annotated.txt
+```
 
-### 周计划 / 审查
-| 文档 | 周次 | 主题 | 状态 |
-|------|------|------|------|
-| [NexusERP_AI_QuickStart_Phase0.md](./NexusERP_AI_QuickStart_Phase0.md) | Phase 0 | 5 天最小可运行版本实施手册 | ✅ |
-| [NexusERP_AI_Week2_Plan.md](./NexusERP_AI_Week2_Plan.md) | Week 2 | 前端对接 + 流式推送 + ErpReportAgent | — |
-| [NexusERP_AI_Week3_Review.md](./NexusERP_AI_Week3_Review.md) | Week 3 | RAG 知识库审查（对照 ruoyi-ai） | — |
-| [NexusERP_AI_Week4_Plan.md](./NexusERP_AI_Week4_Plan.md) | Week 4 | 修复补齐 + 重排序集成 | ✅ |
-| [NexusERP_AI_Week5_Plan.md](./NexusERP_AI_Week5_Plan.md) | Week 5 | Schema 增强 + 业务 Tool + MCP（含两轮代码审查） | — |
-| [NexusERP_AI_Week6_Plan.md](./NexusERP_AI_Week6_Plan.md) | Week 6 | MCP 外部工具 + Agent 流式 + 质量评估 | ✅ |
-| [NexusERP_AI_Week7_Plan.md](./NexusERP_AI_Week7_Plan.md) | Week 7 | Text2SQL 优化 + Prompt 模板 | — |
-| [NexusERP_AI_Week8_Plan.md](./NexusERP_AI_Week8_Plan.md) | Week 8 | 业务 Tool 增强 + SQL Few-Shot | — |
-| [NexusERP_AI_Week9_Plan.md](./NexusERP_AI_Week9_Plan.md) | Week 9 | Schema Token 优化 + 知识库导入 + 前端补齐 | — |
-| [NexusERP_AI_Week10_Plan.md](./NexusERP_AI_Week10_Plan.md) | Week 10 | MCP 动态选择 + A/B 测试（2026-06-16~06-20） | — |
-| [NexusERP_AI_Week11_Plan.md](./NexusERP_AI_Week11_Plan.md) | Week 11 | Token 用量统计与成本分析（2026-06-23~06-27） | — |
-| [NexusERP_AI_Week12_Plan_S2D.md](./NexusERP_AI_Week12_Plan_S2D.md) | Week 12 | S2-D 平台稳定化与运行时验证（2026-06-30~07-04） | 🚧 代码层完成 |
+## 使用方式
+
+### RAG 知识库
+1. 在系统前端创建知识库，名称对应各文件夹标题
+2. 上传对应 `.txt` 原始文档
+3. 系统自动完成解析、分段、向量化
+4. 对话时携带 `knowledgeId` 参数即可触发 RAG 增强检索
+
+### 知识图谱构建
+1. 先上传原始 `.txt` 文档完成 RAG 入库
+2. 在知识库详情页触发"构建知识图谱"
+3. 系统逐 chunk 调用 LLM 抽取实体与关系
+4. 完成后执行社区检测与摘要生成
+
+### 标注版说明
+`.annotated.txt` 文件使用行内标记语法，用于人工核验图谱抽取准确性：
+
+```
+[[ENTITY:实体类型|实体ID]]          定义实体
+[[ATTR:属性名|属性值]]               标注属性（不影响抽取，仅人工核验用）
+[[RELATION:关系类型|源ID|目标ID]]   标注关系
+[[COMMUNITY:社区名|实体列表]]       段落后标注预期社区归属
+```
+
+实体类型仅使用系统内置值：物料、客户、供应商、订单、采购订单、工单、BOM、车间、工序、设备、仓库、产品、其他
+
+关系类型仅使用系统内置值：供应、采购、包含、生产于、存储于、隶属于、关联
 
 ## 阅读顺序
 
-1. 新人：先读 [NexusERP_AI开发计划.md](./NexusERP_AI开发计划.md) 第一、二章了解架构与技术栈
-2. 快速上手 Phase 0：读 [NexusERP_AI_QuickStart_Phase0.md](./NexusERP_AI_QuickStart_Phase0.md)
-3. 二阶段规划：读 [NexusERP_AI二阶段开发计划_AI平台能力深化.md](./NexusERP_AI二阶段开发计划_AI平台能力深化.md)
-4. 周计划按 Week 序号顺序阅读
+1. ERP 业务流程类（01–06）：了解企业核心数据流与规则
+2. MES 制造执行类（07–08）：了解车间层数据与质量标准
+3. 系统运维类（09–11）：了解部署架构、故障排查与模块间集成
 
-## 已知问题
+## 内容说明
 
-1. **Week 1 计划缺失**：周计划序列从 Week 2 开始，推测 Week 1 即 QuickStart_Phase0，但未建立明确关联（待确认）
-2. **路径不一致**：QuickStart 与主计划使用 `E:\Nexus\nexus-erp`，Week3_Review 使用 `d:\workspace\nexus-erp`；参照项目路径 `E:\ruoyi-ai` vs `D:\ruoyi-ai` 大小写不一
-3. **状态标记不统一**：Week 2-9 多数无状态标记与日期，仅 Week 10/11 有明确日期
-4. **内容重复**：QuickStart 与主计划 Phase 0 内容大量重叠，构成双重维护
-5. **跨周问题不闭环**：Week 5 二次审查遗留 6 个 Critical 未在 Week 6 交代；Week 7/8 前端欠债仅由 Week 9 揭示
-6. **Phase 2 收尾缺失**：Week 11 为 Phase 2 最后一周，无整体收尾/总结文档，与二阶段（Week 12 起）无过渡说明
+每份文档均包含：
+- **原始版**（无标注）：纯结构化文本，含表格、流程描述、规则条款，适合 Apache Tika 解析后直接进入 RAG 管线
+- **标注版**（`.annotated`）：在原始版基础上叠加实体/关系标注，用于验证知识图谱抽取准确率
 
-## 二阶段（S2-B/S2-C）实施记录
-
-> 更新日期：2026-06-28
-
-### S2-B 推理模式 + 厂商增强 + 专用 Rerank ✅ 完成
-
-- 后端 + 前端全部完成，深度思考已在 Chat/RAG 模式验证可用
-- 实施计划详见 `doc/ai/NexusERP_AI二阶段实施计划_S2B_S2C.md`
-- 关键文件：`ChatServiceProvider` 策略层（8 厂商）、`RerankProvider`（3 API）、`DeepThinking.vue`
-- 注意：Agent 模式暂不支持 thinking token 流（设计限制，使用同步 ChatModel）
-
-### S2-C 联网搜索 + MCP 市场 + 文生图 ✅ 完成
-
-- 后端：WebSearchTool/Agent、McpMarketService/Controller、TongYiWanxImageService 全部编译通过
-- 前端：MCP 市场页（`views/ai/mcp/market.vue`）、文生图渲染（`ImageRenderer.vue` + `AI_IMAGE` 接线）、联网开关+来源卡（`WebSearchToggle.vue`）全部完成
-- 代码审查发现并修复 2 个 Bug（MCP 加载状态值、crawlWebpage 超时）
-
-### S2-A 知识图谱 ✅ 代码完成（待运行时验证）
-
-- 后端 + 前端 + SQL 全部完成并编译通过（后端 BUILD SUCCESS / 前端 vue-tsc 零新增错误）
-- 实施计划与开发文档详见 `doc/ai/NexusERP_AI二阶段实施计划_S2A.md`
-- 范围超出主计划原 v1：纳入社区检测（自实现标签传播）+ 社区摘要 + 全局检索（map-reduce）+ Agent 图谱查询 @Tool，约 26 人天
-- 存储 MySQL 优先，Neo4j 经 `GraphStoreStrategy` 预留 v2；可视化用已安装的 echarts；v1 零新依赖
-- ⬜ 待运行时验证：执行 `doc/ai/sql/ai-stage2-a.sql` + 起应用 + 配置 LLM 跑端到端构建
-
-### S2-D 平台稳定化与运行时验证 🚧 进行中（2026-06-30~07-04）
-
-- 二阶段 S2-A/B/C 代码全部完成后、进入 Phase 3 前的**稳定化缓冲周**，以验证 + 修复为主，非新功能开发
-- 计划详见 `doc/ai/NexusERP_AI_Week12_Plan_S2D.md`
-- 七项验收：①4 份二阶段 SQL 落库（注意 ALTER 非幂等）②应用启动 ③S2-A 端到端 ④S2-B 厂商/推理/Rerank 回归 ⑤S2-C 联网/市场/文生图回归 ⑥异步写库租户上下文审计（以 `KnowledgeGraphService:79` 为正确范例）⑦成本/性能基线 + 文档收尾
-- 产出：`doc/ai/NexusERP_AI_S2D_验证报告.md` + 修复清单 + 基线表
-- 完成后 S2-A「待运行时验证」标记闭合，二阶段正式收尾，进入 Phase 3（MES 智能赋能，第 23 周起）
+文档长度控制在 1500–3000 字，对应 3–8 个文本 chunk，适合观察图谱抽取质量与 RAG 检索效果。

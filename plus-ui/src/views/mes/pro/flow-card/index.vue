@@ -1,40 +1,45 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="流转卡编号" prop="cardNo">
-          <el-input v-model="queryParams.cardNo" placeholder="请输入流转卡编号" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="工单ID" prop="mesWoId">
-          <el-input v-model="queryParams.mesWoId" placeholder="请输入工单ID" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="状态" prop="cardStatus">
-          <el-select v-model="queryParams.cardStatus" placeholder="请选择状态" clearable>
-            <el-option label="新建" value="CREATED" />
-            <el-option label="已下达" value="RELEASED" />
-            <el-option label="生产中" value="IN_PROGRESS" />
-            <el-option label="已完工" value="COMPLETED" />
-            <el-option label="已关闭" value="CLOSED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="流转卡编号" prop="cardNo">
+              <el-input v-model="queryParams.cardNo" placeholder="请输入流转卡编号" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="cardStatus">
+              <el-select v-model="queryParams.cardStatus" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="新建" value="CREATED" />
+                <el-option label="已下达" value="RELEASED" />
+                <el-option label="生产中" value="IN_PROGRESS" />
+                <el-option label="已完工" value="COMPLETED" />
+                <el-option label="已关闭" value="CLOSED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="流转卡编号" prop="cardNo" width="180" />
-        <el-table-column label="工单编号" prop="woNo" width="160" />
-        <el-table-column label="产品名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="计划数量" prop="plannedQty" width="100" align="right" />
-        <el-table-column label="完成数量" prop="completedQty" width="100" align="right" />
-        <el-table-column label="状态" prop="cardStatus" width="100" align="center">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="流转卡编号" prop="cardNo" />
+        <el-table-column label="工单编号" prop="woNo" />
+        <el-table-column label="产品名称" prop="materialName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="计划数量" prop="plannedQty" align="right" />
+        <el-table-column label="完成数量" prop="completedQty" align="right" />
+        <el-table-column label="状态" prop="cardStatus" align="center">
           <template #default="scope">
             <el-tag :type="statusTagType(scope.row.cardStatus)">{{ statusLabel(scope.row.cardStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" align="center">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
             <el-button
@@ -56,6 +61,8 @@
 </template>
 
 <script setup lang="ts" name="MesFlowCard">
+// 技术债: 缺 mes_flow_card_status 字典, 流转卡状态暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
+// 注: mesWoId 保留在 queryParams(供路由 query 预过滤), 但不暴露为搜索项(内部 ID)
 import { listFlowCard, releaseFlowCard } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO, ProFlowCardQuery } from '@/api/mes/pro/flowcard';
 
@@ -136,3 +143,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

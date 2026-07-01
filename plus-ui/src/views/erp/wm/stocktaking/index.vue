@@ -1,21 +1,31 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="盘点编号" prop="planCode">
-        <el-input v-model="queryParams.planCode" placeholder="请输入盘点编号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="盘点名称" prop="planName">
-        <el-input v-model="queryParams.planName" placeholder="请输入盘点名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in wm_stocktaking_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="盘点编号" prop="planCode">
+            <el-input v-model="queryParams.planCode" placeholder="请输入盘点编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="盘点名称" prop="planName">
+            <el-input v-model="queryParams.planName" placeholder="请输入盘点名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in wm_stocktaking_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -26,7 +36,9 @@
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:stocktaking:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:stocktaking:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:stocktaking:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:stocktaking:query']">查看</el-button>
@@ -37,12 +49,13 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="planList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="planList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="盘点编号" align="center" prop="planCode" />
-      <el-table-column label="盘点名称" align="center" prop="planName" />
-      <el-table-column label="仓库" align="center" prop="warehouseName" />
-      <el-table-column label="盘点日期" align="center" prop="plannedDate" width="180">
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="盘点编号" align="center" prop="planCode" min-width="120" show-overflow-tooltip />
+      <el-table-column label="盘点名称" align="center" prop="planName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="盘点日期" align="center" prop="plannedDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.plannedDate, '{y}-{m}-{d}') }}</span>
         </template>
@@ -52,11 +65,19 @@
           <dict-tag :options="wm_stocktaking_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button v-if="scope.row.status !== 'COMPLETED'" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stocktaking:edit']">修改</el-button>
+          <el-button
+            v-if="scope.row.status !== 'COMPLETED'"
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+            v-hasPermi="['wm:stocktaking:edit']"
+            >修改</el-button
+          >
           <el-button v-else link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stocktaking:edit']">盘点</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:stocktaking:remove']">删除</el-button>
         </template>
@@ -68,20 +89,20 @@
 </template>
 
 <script setup lang="ts" name="StockTaking">
-import { listStockTakingPlan, delStockTakingPlan } from "@/api/erp/wm/stocktaking"
-import { useRouter } from 'vue-router'
+import { listStockTakingPlan, delStockTakingPlan } from '@/api/erp/wm/stocktaking';
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any
-const { wm_stocktaking_status } = toRefs<any>(proxy.useDict('wm_stocktaking_status'))
+const { proxy } = getCurrentInstance() as any;
+const { wm_stocktaking_status } = toRefs<any>(proxy.useDict('wm_stocktaking_status'));
 
-const planList = ref([])
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
+const planList = ref([]);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
 
 const data = reactive({
   queryParams: {
@@ -89,78 +110,113 @@ const data = reactive({
     pageSize: 10,
     planCode: null,
     planName: null,
-    status: null,
+    status: null
   }
-})
+});
 
-const { queryParams } = toRefs(data)
+const { queryParams } = toRefs(data);
 
 function getList() {
-  loading.value = true
+  loading.value = true;
   listStockTakingPlan(queryParams.value).then((response: any) => {
-    planList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+    planList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.planId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item: any) => item.planId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 function handleAdd() {
-  router.push({ path: '/erp/wm/stocktaking/form', query: { action: 'add' } })
+  router.push({ path: '/erp/wm/stocktaking/form', query: { action: 'add' } });
 }
 
 function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) { row = null }
-  if (!row) {
-    if (ids.value.length !== 1) { proxy.$modal.msgWarning("请选择一条数据进行修改"); return }
-    const selected = planList.value.find((item: any) => item.planId == ids.value[0])
-    if (!selected) { proxy.$modal.msgWarning("未找到选中的数据"); return }
-    row = selected
+  if (row && row.type && row instanceof Event) {
+    row = null;
   }
-  router.push({ path: '/erp/wm/stocktaking/form', query: { id: row.planId, action: 'edit' } })
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行修改');
+      return;
+    }
+    const selected = planList.value.find((item: any) => item.planId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/wm/stocktaking/form', query: { id: row.planId, action: 'edit' } });
 }
 
 function handleView(row: any) {
-  if (row && row.type && row instanceof Event) { row = null }
-  if (!row) {
-    if (ids.value.length !== 1) { proxy.$modal.msgWarning("请选择一条数据进行查看"); return }
-    const selected = planList.value.find((item: any) => item.planId == ids.value[0])
-    if (!selected) { proxy.$modal.msgWarning("未找到选中的数据"); return }
-    row = selected
+  if (row && row.type && row instanceof Event) {
+    row = null;
   }
-  router.push({ path: '/erp/wm/stocktaking/form', query: { id: row.planId, action: 'view' } })
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行查看');
+      return;
+    }
+    const selected = planList.value.find((item: any) => item.planId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/wm/stocktaking/form', query: { id: row.planId, action: 'view' } });
 }
 
 function handleDelete(row: any) {
-  const _ids = row.planId || ids.value
-  proxy.$modal.confirm('是否确认删除盘点编号为"' + _ids + '"的数据项？').then(function () {
-    return delStockTakingPlan(_ids)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _ids = row.planId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除盘点编号为"' + _ids + '"的数据项？')
+    .then(function () {
+      return delStockTakingPlan(_ids);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 function handleExport() {
-  proxy.download('/erp/wm/stocktaking/export', { ...queryParams.value }, `stocktaking_${new Date().getTime()}.xlsx`)
+  proxy.download('/erp/wm/stocktaking/export', { ...queryParams.value }, `stocktaking_${new Date().getTime()}.xlsx`);
 }
 
 onActivated(() => {
-  getList()
-})
+  getList();
+});
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

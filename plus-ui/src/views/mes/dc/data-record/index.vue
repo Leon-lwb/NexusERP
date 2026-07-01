@@ -1,23 +1,23 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="采集点ID" prop="pointId">
-          <el-input v-model.number="queryParams.pointId" placeholder="采集点ID" clearable style="width: 130px" />
-        </el-form-item>
-        <el-form-item label="工单ID" prop="mesWoId">
-          <el-input v-model.number="queryParams.mesWoId" placeholder="工单ID" clearable style="width: 130px" />
-        </el-form-item>
-        <el-form-item label="来源" prop="source">
-          <el-select v-model="queryParams.source" placeholder="请选择来源" clearable style="width: 120px">
-            <el-option label="手动" value="MANUAL" />
-            <el-option label="IoT" value="IoT" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="来源" prop="source">
+              <el-select v-model="queryParams.source" placeholder="请选择来源" clearable style="width: 100%">
+                <el-option label="手动" value="MANUAL" />
+                <el-option label="IoT" value="IoT" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="12" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -27,21 +27,15 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="记录ID" prop="recordId" width="120" align="right" />
-        <el-table-column label="采集点编码" prop="pointCode" width="150" />
-        <el-table-column label="数值" prop="numericValue" width="120" align="right" />
-        <el-table-column label="文本值" prop="textValue" show-overflow-tooltip>
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="采集点编码" prop="pointCode" />
+        <el-table-column label="数值" prop="numericValue" align="right" />
+        <el-table-column label="文本值" prop="textValue" min-width="120" show-overflow-tooltip>
           <template #default="scope">{{ scope.row.textValue || '-' }}</template>
         </el-table-column>
-        <el-table-column label="工单ID" prop="mesWoId" width="100" align="right">
-          <template #default="scope">{{ scope.row.mesWoId || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="流转卡ID" prop="cardId" width="100" align="right">
-          <template #default="scope">{{ scope.row.cardId || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="采集时间" prop="collectTime" width="160" />
-        <el-table-column label="来源" prop="source" width="90" align="center">
+        <el-table-column label="采集时间" prop="collectTime" />
+        <!-- 技术债:来源暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="来源" prop="source" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.source === 'IoT' ? 'primary' : 'info'" size="small">{{ scope.row.source === 'IoT' ? 'IoT' : '手动' }}</el-tag>
           </template>
@@ -104,8 +98,6 @@ const total = ref(0);
 const queryParams = ref<DcDataRecordQuery>({
   pageNum: 1,
   pageSize: 10,
-  pointId: undefined,
-  mesWoId: undefined,
   source: undefined
 });
 
@@ -169,3 +161,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

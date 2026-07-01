@@ -1,31 +1,38 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="设备编码" prop="deviceCode">
-        <el-input v-model="queryParams.deviceCode" placeholder="请输入设备编码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="设备名称" prop="deviceName">
-        <el-input v-model="queryParams.deviceName" placeholder="请输入设备名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="协议类型" prop="protocolType">
-        <el-select v-model="queryParams.protocolType" placeholder="请选择协议类型" clearable style="width: 160px;">
-          <el-option v-for="dict in iot_protocol_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="连接状态" prop="connectionStatus">
-        <el-select v-model="queryParams.connectionStatus" placeholder="请选择连接状态" clearable style="width: 140px;">
-          <el-option v-for="dict in iot_connection_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
-          <el-option v-for="dict in iot_device_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="设备编码" prop="deviceCode">
+            <el-input v-model="queryParams.deviceCode" placeholder="请输入设备编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="设备名称" prop="deviceName">
+            <el-input v-model="queryParams.deviceName" placeholder="请输入设备名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="协议类型" prop="protocolType">
+            <el-select v-model="queryParams.protocolType" placeholder="请选择协议类型" clearable style="width: 100%">
+              <el-option v-for="dict in iot_protocol_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in iot_device_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -47,32 +54,21 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="deviceList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="deviceList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="设备ID" align="center" prop="deviceId" />
+      <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="设备编码" align="center" prop="deviceCode" />
-      <el-table-column label="设备名称" align="center" prop="deviceName" />
-      <el-table-column label="所属产品" align="center" prop="productName" />
+      <el-table-column label="设备名称" align="center" prop="deviceName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="所属产品" align="center" prop="productName" min-width="120" show-overflow-tooltip />
       <el-table-column label="协议类型" align="center" prop="protocolType">
         <template #default="scope">
           <dict-tag :options="iot_protocol_type" :value="scope.row.protocolType" />
         </template>
       </el-table-column>
+      <el-table-column label="最后在线" align="center" prop="lastOnlineTime" />
       <el-table-column label="连接状态" align="center" prop="connectionStatus">
         <template #default="scope">
-          <el-tag :type="scope.row.connectionStatus === 'ONLINE' ? 'success' : 'info'">
-            {{ scope.row.connectionStatus === 'ONLINE' ? '在线' : '离线' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="最后在线" align="center" prop="lastOnlineTime" width="160" />
-      <el-table-column label="MES 设备" align="center" width="140">
-        <template #default="scope">
-          <el-button v-if="scope.row.mesEquipmentId" link type="primary"
-                     @click="goToMesEquipment(scope.row.mesEquipmentId)">
-            查看 MES 设备
-          </el-button>
-          <span v-else>-</span>
+          <dict-tag :options="iot_connection_status" :value="scope.row.connectionStatus" />
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status">
@@ -80,7 +76,15 @@
           <dict-tag :options="iot_device_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="MES 设备" align="center">
+        <template #default="scope">
+          <el-button v-if="scope.row.mesEquipmentId" link type="primary" @click="goToMesEquipment(scope.row.mesEquipmentId)">
+            查看 MES 设备
+          </el-button>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="DataLine" @click="handleRealtime(scope.row)" v-hasPermi="['iot:device:query']">实时</el-button>
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
@@ -164,8 +168,12 @@
         </el-form-item>
         <el-form-item label="MES 设备">
           <el-select v-model="mesBindDialog.mesEquipmentId" placeholder="请选择 MES 设备" clearable filterable>
-            <el-option v-for="e in mesBindDialog.mesEquipmentList" :key="e.equipmentId"
-                       :label="e.equipmentCode + ' - ' + e.equipmentName" :value="e.equipmentId" />
+            <el-option
+              v-for="e in mesBindDialog.mesEquipmentList"
+              :key="e.equipmentId"
+              :label="e.equipmentCode + ' - ' + e.equipmentName"
+              :value="e.equipmentId"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -209,7 +217,6 @@ const data = reactive({
     deviceCode: null,
     deviceName: null,
     protocolType: null,
-    connectionStatus: null,
     status: null
   },
   rules: {
@@ -418,3 +425,18 @@ async function submitMesBind() {
 loadProductOptions();
 getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

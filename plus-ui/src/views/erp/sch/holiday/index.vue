@@ -9,9 +9,7 @@
         <el-button type="primary" link @click="nextMonth">
           <el-icon><ArrowRight /></el-icon>
         </el-button>
-        <el-button type="primary" @click="handleAdd" style="margin-left: 20px;">
-          新增节假日
-        </el-button>
+        <el-button type="primary" @click="handleAdd" style="margin-left: 20px;"> 新增节假日 </el-button>
       </div>
 
       <div class="custom-calendar">
@@ -20,11 +18,7 @@
         </div>
 
         <div class="calendar-grid">
-          <div
-            class="calendar-day prev-month"
-            v-for="day in prevMonthDaysList"
-            :key="'prev-' + day"
-          >
+          <div class="calendar-day prev-month" v-for="day in prevMonthDaysList" :key="'prev-' + day">
             <div class="day-number">{{ day }}</div>
           </div>
 
@@ -38,12 +32,7 @@
             <div class="day-number">{{ day }}</div>
             <div class="lunar-info">{{ getLunarDate(getDateString(currentYear, currentMonth, day)) }}</div>
             <div class="tags">
-              <el-tag
-                v-if="getHolidayType(getDateString(currentYear, currentMonth, day)) === 'working'"
-                effect="dark"
-                type="warning"
-                size="small"
-              >
+              <el-tag v-if="getHolidayType(getDateString(currentYear, currentMonth, day)) === 'working'" effect="dark" type="warning" size="small">
                 班
               </el-tag>
               <el-tag
@@ -54,14 +43,7 @@
               >
                 休
               </el-tag>
-              <el-tag
-                v-else
-                effect="dark"
-                type="warning"
-                size="small"
-              >
-                班
-              </el-tag>
+              <el-tag v-else effect="dark" type="warning" size="small"> 班 </el-tag>
             </div>
             <div class="setting-button" @click.stop="openContextMenu(getDateString(currentYear, currentMonth, day), $event)">
               <el-button type="primary" size="small" circle>
@@ -70,11 +52,7 @@
             </div>
           </div>
 
-          <div
-            class="calendar-day next-month"
-            v-for="day in nextMonthDaysList"
-            :key="'next-' + day"
-          >
+          <div class="calendar-day next-month" v-for="day in nextMonthDaysList" :key="'next-' + day">
             <div class="day-number">{{ day }}</div>
           </div>
         </div>
@@ -109,12 +87,7 @@
           <el-col :span="24">
             <el-form-item label="类型" prop="holidayType">
               <el-select v-model="form.holidayType" placeholder="请选择类型" style="width: 100%">
-                <el-option
-                  v-for="dict in sch_holiday_type"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value">
-                </el-option>
+                <el-option v-for="dict in sch_holiday_type" :key="dict.value" :label="dict.label" :value="dict.value"> </el-option>
               </el-select>
             </el-form-item>
           </el-col>
@@ -123,10 +96,7 @@
           <el-col :span="24">
             <el-form-item label="是否调休" prop="isWorkingDay">
               <el-radio-group v-model="form.isWorkingDay">
-                <el-radio
-                  v-for="dict in sys_true_or_false"
-                  :key="dict.value"
-                  :label="parseInt(dict.value)">
+                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">
                   {{ dict.label }}
                 </el-radio>
               </el-radio-group>
@@ -153,24 +123,24 @@
 </template>
 
 <script setup lang="ts" name="Holiday">
-import { ref, reactive, onMounted, computed } from 'vue'
-import { listHoliday, getHoliday, delHoliday, addHoliday, updateHoliday } from "@/api/erp/sch/holiday"
-import calendar from '@/utils/calendar'
+import { ref, reactive, onMounted, computed } from 'vue';
+import { listHoliday, getHoliday, delHoliday, addHoliday, updateHoliday } from '@/api/erp/sch/holiday';
+import calendar from '@/utils/calendar';
 
-const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sch_holiday_type } = toRefs(proxy.useDict('sys_true_or_false', 'sch_holiday_type'))
+const { proxy } = getCurrentInstance();
+const { sys_true_or_false, sch_holiday_type } = toRefs(proxy.useDict('sys_true_or_false', 'sch_holiday_type'));
 
-const currentDate = ref(new Date())
-const currentYear = computed(() => currentDate.value.getFullYear())
-const currentMonth = computed(() => currentDate.value.getMonth())
+const currentDate = ref(new Date());
+const currentYear = computed(() => currentDate.value.getFullYear());
+const currentMonth = computed(() => currentDate.value.getMonth());
 
-const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
 
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
-const isEdit = ref(false)
+const dialogVisible = ref(false);
+const dialogTitle = ref('');
+const isEdit = ref(false);
 
-const holidayList = ref([])
+const holidayList = ref([]);
 
 const data = reactive({
   form: {},
@@ -180,131 +150,123 @@ const data = reactive({
     year: currentYear.value
   },
   rules: {
-    holidayDate: [
-      { required: true, message: "日期不能为空", trigger: "blur" }
-    ],
-    holidayName: [
-      { required: true, message: "节假日名称不能为空", trigger: "blur" }
-    ]
+    holidayDate: [{ required: true, message: '日期不能为空', trigger: 'blur' }],
+    holidayName: [{ required: true, message: '节假日名称不能为空', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 const prevMonthDaysList = computed(() => {
-  const firstDayOfMonth = new Date(currentYear.value, currentMonth.value, 1)
-  const dayOfWeek = firstDayOfMonth.getDay()
-  if (dayOfWeek === 0) return []
-  const prevMonth = currentMonth.value === 0 ? 11 : currentMonth.value - 1
-  const prevYear = currentMonth.value === 0 ? currentYear.value - 1 : currentYear.value
-  const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate()
-  const days = []
+  const firstDayOfMonth = new Date(currentYear.value, currentMonth.value, 1);
+  const dayOfWeek = firstDayOfMonth.getDay();
+  if (dayOfWeek === 0) return [];
+  const prevMonth = currentMonth.value === 0 ? 11 : currentMonth.value - 1;
+  const prevYear = currentMonth.value === 0 ? currentYear.value - 1 : currentYear.value;
+  const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+  const days = [];
   for (let i = daysInPrevMonth - dayOfWeek + 1; i <= daysInPrevMonth; i++) {
-    days.push(i)
+    days.push(i);
   }
-  return days
-})
+  return days;
+});
 
 const daysInMonthList = computed(() => {
-  return new Date(currentYear.value, currentMonth.value + 1, 0).getDate()
-})
+  return new Date(currentYear.value, currentMonth.value + 1, 0).getDate();
+});
 
 const nextMonthDaysList = computed(() => {
-  const totalCells = 42
-  const usedCells = prevMonthDaysList.value.length + daysInMonthList.value
-  const remainingCells = totalCells - usedCells
-  const days = []
+  const totalCells = 42;
+  const usedCells = prevMonthDaysList.value.length + daysInMonthList.value;
+  const remainingCells = totalCells - usedCells;
+  const days = [];
   for (let i = 1; i <= remainingCells; i++) {
-    days.push(i)
+    days.push(i);
   }
-  return days
-})
+  return days;
+});
 
 function prevMonth() {
-  currentDate.value.setMonth(currentDate.value.getMonth() - 1)
-  currentDate.value = new Date(currentDate.value)
-  getList()
+  currentDate.value.setMonth(currentDate.value.getMonth() - 1);
+  currentDate.value = new Date(currentDate.value);
+  getList();
 }
 
 function nextMonth() {
-  currentDate.value.setMonth(currentDate.value.getMonth() + 1)
-  currentDate.value = new Date(currentDate.value)
-  getList()
+  currentDate.value.setMonth(currentDate.value.getMonth() + 1);
+  currentDate.value = new Date(currentDate.value);
+  getList();
 }
 
 function isWeekend(year, month, day) {
-  const date = new Date(year, month, day)
-  const dayOfWeek = date.getDay()
-  return dayOfWeek === 0 || dayOfWeek === 6
+  const date = new Date(year, month, day);
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
 function isToday(year, month, day) {
-  const today = new Date()
-  return (
-    today.getFullYear() === year &&
-    today.getMonth() === month &&
-    today.getDate() === day
-  )
+  const today = new Date();
+  return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
 }
 
 function getDateString(year, month, day) {
-  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 function getLunarDate(date) {
   try {
-    const solarDate = new Date(date)
-    const solarYear = solarDate.getFullYear()
-    const solarMonth = solarDate.getMonth() + 1
-    const solarDay = solarDate.getDate()
-    const lunarInfo = calendar.solar2lunar(solarYear, solarMonth, solarDay)
+    const solarDate = new Date(date);
+    const solarYear = solarDate.getFullYear();
+    const solarMonth = solarDate.getMonth() + 1;
+    const solarDay = solarDate.getDate();
+    const lunarInfo = calendar.solar2lunar(solarYear, solarMonth, solarDay);
     if (lunarInfo && lunarInfo.IDayCn) {
       if (lunarInfo.lDay === 1) {
-        return lunarInfo.IMonthCn + lunarInfo.IDayCn
+        return lunarInfo.IMonthCn + lunarInfo.IDayCn;
       }
-      return lunarInfo.IDayCn
+      return lunarInfo.IDayCn;
     }
-    return ''
+    return '';
   } catch (error) {
-    console.error('农历转换失败:', error)
-    return ''
+    console.error('农历转换失败:', error);
+    return '';
   }
 }
 
 function getHolidayType(date) {
-  const holiday = holidayList.value.find(item => item.holidayDate === date)
+  const holiday = holidayList.value.find((item) => item.holidayDate === date);
   if (holiday) {
     if (holiday.isWorkingDay === '1') {
-      return 'working'
+      return 'working';
     } else {
-      return 'holiday'
+      return 'holiday';
     }
   }
-  return 'normal'
+  return 'normal';
 }
 
 function formatDisplayDate(date) {
-  if (!date) return ''
-  const d = new Date(date)
-  return `${d.getFullYear()}年${(d.getMonth() + 1).toString().padStart(2, '0')}月${d.getDate().toString().padStart(2, '0')}日`
+  if (!date) return '';
+  const d = new Date(date);
+  return `${d.getFullYear()}年${(d.getMonth() + 1).toString().padStart(2, '0')}月${d.getDate().toString().padStart(2, '0')}日`;
 }
 
 function openContextMenu(date, event) {
-  event.preventDefault()
-  event.stopPropagation()
-  resetForm()
-  form.value.holidayDate = date
-  const holiday = holidayList.value.find(item => item.holidayDate === date)
+  event.preventDefault();
+  event.stopPropagation();
+  resetForm();
+  form.value.holidayDate = date;
+  const holiday = holidayList.value.find((item) => item.holidayDate === date);
   if (holiday) {
-    handleEdit(holiday)
+    handleEdit(holiday);
   } else {
-    const dateObj = new Date(date)
-    form.value.holidayName = isWeekend(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()) ? '周末' : '自定义假日'
-    form.value.holidayType = 'legal'
-    form.value.isWorkingDay = '0'
-    dialogTitle.value = `添加节假日 - ${formatDisplayDate(date)}`
-    isEdit.value = false
-    dialogVisible.value = true
+    const dateObj = new Date(date);
+    form.value.holidayName = isWeekend(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()) ? '周末' : '自定义假日';
+    form.value.holidayType = 'legal';
+    form.value.isWorkingDay = '0';
+    dialogTitle.value = `添加节假日 - ${formatDisplayDate(date)}`;
+    isEdit.value = false;
+    dialogVisible.value = true;
   }
 }
 
@@ -316,69 +278,73 @@ function resetForm() {
     holidayType: null,
     isWorkingDay: '0',
     remark: null
-  }
+  };
 }
 
 function getList() {
-  queryParams.value.year = currentYear.value
-  listHoliday(queryParams.value).then(response => {
-    holidayList.value = response.rows
-  })
+  queryParams.value.year = currentYear.value;
+  listHoliday(queryParams.value).then((response) => {
+    holidayList.value = response.rows;
+  });
 }
 
 function handleAdd() {
-  resetForm()
-  dialogTitle.value = "添加节假日"
-  isEdit.value = false
-  dialogVisible.value = true
+  resetForm();
+  dialogTitle.value = '添加节假日';
+  isEdit.value = false;
+  dialogVisible.value = true;
 }
 
 function handleEdit(row) {
-  resetForm()
-  Object.assign(form.value, row)
-  dialogTitle.value = `修改节假日 - ${formatDisplayDate(row.holidayDate)}`
-  isEdit.value = true
-  dialogVisible.value = true
+  resetForm();
+  Object.assign(form.value, row);
+  dialogTitle.value = `修改节假日 - ${formatDisplayDate(row.holidayDate)}`;
+  isEdit.value = true;
+  dialogVisible.value = true;
 }
 
 function handleDeleteCurrent() {
   if (!form.value.holidayId) return;
-  proxy.$modal.confirm('是否确认删除日期为"' + form.value.holidayDate + '"的节假日数据项？').then(function() {
-    return delHoliday(form.value.holidayId);
-  }).then(() => {
-    proxy.$modal.msgSuccess("删除成功");
-    dialogVisible.value = false;
-    getList();
-  }).catch(() => {});
+  proxy.$modal
+    .confirm('是否确认删除日期为"' + form.value.holidayDate + '"的节假日数据项？')
+    .then(function () {
+      return delHoliday(form.value.holidayId);
+    })
+    .then(() => {
+      proxy.$modal.msgSuccess('删除成功');
+      dialogVisible.value = false;
+      getList();
+    })
+    .catch(() => {});
 }
 
 function submitForm() {
-  proxy.$refs["holidayFormRef"].validate(valid => {
+  proxy.$refs['holidayFormRef'].validate((valid) => {
     if (valid) {
       const formData = {
         ...form.value,
         year: form.value.holidayDate ? new Date(form.value.holidayDate).getFullYear() : new Date().getFullYear()
       };
       if (isEdit.value) {
-        updateHoliday(formData).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          dialogVisible.value = false
-          getList()
-        })
+        updateHoliday(formData).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          dialogVisible.value = false;
+          getList();
+        });
       } else {
-        addHoliday(formData).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          dialogVisible.value = false
-          getList()
-        })
+        addHoliday(formData).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          dialogVisible.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 onMounted(() => {
-  getList()
-})
+  getList();
+});
 </script>
 
 <style scoped>

@@ -1,31 +1,45 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="产品编码" prop="productCode">
-        <el-input v-model="queryParams.productCode" placeholder="请输入产品编码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="产品名称" prop="productName">
-        <el-input v-model="queryParams.productName" placeholder="请输入产品名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="产品类型" prop="productType">
-        <el-select v-model="queryParams.productType" placeholder="请选择产品类型" clearable style="width: 160px;">
-          <el-option v-for="dict in product_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="协议类型" prop="protocolType">
-        <el-select v-model="queryParams.protocolType" placeholder="请选择协议类型" clearable style="width: 160px;">
-          <el-option v-for="dict in iot_protocol_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
-          <el-option v-for="dict in iot_device_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="产品编码" prop="productCode">
+            <el-input v-model="queryParams.productCode" placeholder="请输入产品编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="产品名称" prop="productName">
+            <el-input v-model="queryParams.productName" placeholder="请输入产品名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="产品类型" prop="productType">
+            <el-select v-model="queryParams.productType" placeholder="请选择产品类型" clearable style="width: 100%">
+              <el-option v-for="dict in product_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="协议类型" prop="protocolType">
+            <el-select v-model="queryParams.protocolType" placeholder="请选择协议类型" clearable style="width: 100%">
+              <el-option v-for="dict in iot_protocol_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in iot_device_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -47,11 +61,11 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="productList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="productList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="产品ID" align="center" prop="productId" />
+      <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="产品编码" align="center" prop="productCode" />
-      <el-table-column label="产品名称" align="center" prop="productName" />
+      <el-table-column label="产品名称" align="center" prop="productName" min-width="120" show-overflow-tooltip />
       <el-table-column label="产品类型" align="center" prop="productType">
         <template #default="scope">
           <dict-tag :options="product_type" :value="scope.row.productType" />
@@ -62,13 +76,13 @@
           <dict-tag :options="iot_protocol_type" :value="scope.row.protocolType" />
         </template>
       </el-table-column>
+      <el-table-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="iot_device_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['iot:product:edit']">修改</el-button>
@@ -287,3 +301,18 @@ function handleExport() {
 
 getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

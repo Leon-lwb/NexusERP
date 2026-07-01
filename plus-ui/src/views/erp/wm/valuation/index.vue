@@ -20,13 +20,12 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport"
-          v-hasPermi="['wm:valuation:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:valuation:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="valuationList">
+    <el-table v-loading="loading" :data="valuationList" show-overflow-tooltip>
       <el-table-column label="序号" type="index" width="50" align="center" />
       <el-table-column label="物料编码" align="center" prop="materialCode" />
       <el-table-column label="物料名称" align="center" prop="materialName" />
@@ -47,22 +46,21 @@
       <el-table-column label="库位" align="center" prop="locationName" />
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
   </div>
 </template>
 
 <script setup lang="ts" name="Valuation">
-import { listValuation } from "@/api/erp/wm/valuation"
-import { listWarehouse } from "@/api/erp/wm/warehouse"
+import { listValuation } from '@/api/erp/wm/valuation';
+import { listWarehouse } from '@/api/erp/wm/warehouse';
 
-const { proxy } = getCurrentInstance() as any
+const { proxy } = getCurrentInstance() as any;
 
-const valuationList = ref([])
-const loading = ref(true)
-const showSearch = ref(true)
-const total = ref(0)
-const warehouseOptions = ref([])
+const valuationList = ref([]);
+const loading = ref(true);
+const showSearch = ref(true);
+const total = ref(0);
+const warehouseOptions = ref([]);
 
 const data = reactive({
   queryParams: {
@@ -72,48 +70,52 @@ const data = reactive({
     materialName: null,
     warehouseId: null
   }
-})
+});
 
-const { queryParams } = toRefs(data)
+const { queryParams } = toRefs(data);
 
 function getList() {
-  loading.value = true
+  loading.value = true;
   listValuation(queryParams.value).then((response: any) => {
-    valuationList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+    valuationList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function handleExport() {
-  proxy.download('/erp/wm/valuation/export', {
-    ...queryParams.value
-  }, `valuation_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    '/erp/wm/valuation/export',
+    {
+      ...queryParams.value
+    },
+    `valuation_${new Date().getTime()}.xlsx`
+  );
 }
 
 function formatMoney(value: number) {
-  if (value === null || value === undefined) return '0.00'
-  return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  if (value === null || value === undefined) return '0.00';
+  return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 function getWarehouseOptions() {
   listWarehouse({ pageSize: 100, pageNum: 1 }).then((response: any) => {
-    warehouseOptions.value = response.rows
-  })
+    warehouseOptions.value = response.rows;
+  });
 }
 
 onActivated(() => {
-  getList()
-  getWarehouseOptions()
-})
+  getList();
+  getWarehouseOptions();
+});
 </script>

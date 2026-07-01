@@ -50,14 +50,14 @@ const renderExecutionChart = (data: any[]) => {
     title: { text: '销售趋势' },
     tooltip: { trigger: 'axis' },
     legend: { data: ['订单数', '销售额'] },
-    xAxis: { type: 'category', data: data.map(d => d.month) },
+    xAxis: { type: 'category', data: data.map((d) => d.month) },
     yAxis: [
       { type: 'value', name: '订单数' },
       { type: 'value', name: '销售额' }
     ],
     series: [
-      { name: '订单数', type: 'bar', data: data.map(d => d.orderCount) },
-      { name: '销售额', type: 'line', yAxisIndex: 1, data: data.map(d => d.totalAmount) }
+      { name: '订单数', type: 'bar', data: data.map((d) => d.orderCount) },
+      { name: '销售额', type: 'line', yAxisIndex: 1, data: data.map((d) => d.totalAmount) }
     ]
   });
   window.addEventListener('resize', () => chart.resize());
@@ -68,9 +68,9 @@ const renderRankingChart = (data: any[]) => {
   chart.setOption({
     title: { text: '客户销售排名 TOP10' },
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: data.map(d => d.clientName), axisLabel: { rotate: 30 } },
+    xAxis: { type: 'category', data: data.map((d) => d.clientName), axisLabel: { rotate: 30 } },
     yAxis: { type: 'value', name: '销售额' },
-    series: [{ type: 'bar', data: data.map(d => d.totalAmount), itemStyle: { color: '#E6A23C' } }]
+    series: [{ type: 'bar', data: data.map((d) => d.totalAmount), itemStyle: { color: '#E6A23C' } }]
   });
   window.addEventListener('resize', () => chart.resize());
 };

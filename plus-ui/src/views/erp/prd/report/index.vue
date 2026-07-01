@@ -50,15 +50,15 @@ const renderCompletionChart = (data: any[]) => {
     title: { text: '工单完工率' },
     tooltip: { trigger: 'axis' },
     legend: { data: ['总工单', '已完工', '完工率(%)'] },
-    xAxis: { type: 'category', data: data.map(d => d.month) },
+    xAxis: { type: 'category', data: data.map((d) => d.month) },
     yAxis: [
       { type: 'value', name: '工单数' },
       { type: 'value', name: '完工率(%)', max: 100 }
     ],
     series: [
-      { name: '总工单', type: 'bar', data: data.map(d => d.totalOrders) },
-      { name: '已完工', type: 'bar', data: data.map(d => d.completedOrders) },
-      { name: '完工率(%)', type: 'line', yAxisIndex: 1, data: data.map(d => d.completionRate) }
+      { name: '总工单', type: 'bar', data: data.map((d) => d.totalOrders) },
+      { name: '已完工', type: 'bar', data: data.map((d) => d.completedOrders) },
+      { name: '完工率(%)', type: 'line', yAxisIndex: 1, data: data.map((d) => d.completionRate) }
     ]
   });
   window.addEventListener('resize', () => chart.resize());
@@ -70,15 +70,15 @@ const renderEfficiencyChart = (data: any[]) => {
     title: { text: '计划 vs 实际完工' },
     tooltip: { trigger: 'axis' },
     legend: { data: ['计划数量', '实际数量', '效率(%)'] },
-    xAxis: { type: 'category', data: data.map(d => d.month) },
+    xAxis: { type: 'category', data: data.map((d) => d.month) },
     yAxis: [
       { type: 'value', name: '数量' },
       { type: 'value', name: '效率(%)', max: 150 }
     ],
     series: [
-      { name: '计划数量', type: 'bar', data: data.map(d => d.plannedQty) },
-      { name: '实际数量', type: 'bar', data: data.map(d => d.completedQty) },
-      { name: '效率(%)', type: 'line', yAxisIndex: 1, data: data.map(d => d.efficiencyRate) }
+      { name: '计划数量', type: 'bar', data: data.map((d) => d.plannedQty) },
+      { name: '实际数量', type: 'bar', data: data.map((d) => d.completedQty) },
+      { name: '效率(%)', type: 'line', yAxisIndex: 1, data: data.map((d) => d.efficiencyRate) }
     ]
   });
   window.addEventListener('resize', () => chart.resize());

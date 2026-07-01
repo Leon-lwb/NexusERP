@@ -1,18 +1,24 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="状态" prop="mbomStatus">
-          <el-select v-model="queryParams.mbomStatus" placeholder="全部状态" clearable>
-            <el-option label="草稿" value="DRAFT" />
-            <el-option label="已激活" value="ACTIVE" />
-            <el-option label="冻结" value="FROZEN" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="状态" prop="mbomStatus">
+              <el-select v-model="queryParams.mbomStatus" placeholder="全部状态" clearable style="width: 100%">
+                <el-option label="草稿" value="DRAFT" />
+                <el-option label="已激活" value="ACTIVE" />
+                <el-option label="冻结" value="FROZEN" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="12" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -22,33 +28,37 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="MBOM ID" prop="mbomId" width="100" />
-        <el-table-column label="父项物料" width="200">
+        <el-table-column label="父项物料" min-width="120" show-overflow-tooltip>
+          <template #default="scope"> {{ scope.row.parentMaterialCode }} - {{ scope.row.parentMaterialName }} </template>
+        </el-table-column>
+        <el-table-column label="BOM版本" prop="bomVersion" align="center" />
+        <el-table-column label="工艺路线" min-width="120" show-overflow-tooltip>
           <template #default="scope">
-            {{ scope.row.parentMaterialCode }} - {{ scope.row.parentMaterialName }}
+            {{ scope.row.routingCode && scope.row.routingName ? scope.row.routingCode + ' - ' + scope.row.routingName : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="BOM版本" prop="bomVersion" width="100" align="center" />
-        <el-table-column label="工艺路线" width="200">
-          <template #default="scope">
-            {{ scope.row.routingCode && scope.row.routingName ? (scope.row.routingCode + ' - ' + scope.row.routingName) : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="MBOM版本" prop="mbomVersion" width="100" align="center" />
-        <el-table-column label="状态" prop="mbomStatus" width="80" align="center">
+        <el-table-column label="MBOM版本" prop="mbomVersion" align="center" />
+        <el-table-column label="状态" prop="mbomStatus" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.mbomStatus === 'ACTIVE' ? 'success' : scope.row.mbomStatus === 'FROZEN' ? 'danger' : 'info'">
               {{ { DRAFT: '草稿', ACTIVE: '已激活', FROZEN: '冻结' }[scope.row.mbomStatus] || scope.row.mbomStatus }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" width="250" class-name="small-padding fixed-width">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:pro:mbom:edit']">编辑</el-button>
-            <el-button link type="success" icon="Check" @click="handleActivate(scope.row)" v-hasPermi="['mes:pro:mbom:edit']"
-              v-if="scope.row.mbomStatus !== 'ACTIVE'">激活</el-button>
+            <el-button
+              link
+              type="success"
+              icon="Check"
+              @click="handleActivate(scope.row)"
+              v-hasPermi="['mes:pro:mbom:edit']"
+              v-if="scope.row.mbomStatus !== 'ACTIVE'"
+              >激活</el-button
+            >
             <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:pro:mbom:remove']">删除</el-button>
           </template>
         </el-table-column>
@@ -63,19 +73,32 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="ERP BOM" prop="bomId" :disabled="!!form.mbomId">
-              <el-select v-model="form.bomId" placeholder="选择ERP BOM" filterable :disabled="!!form.mbomId" @change="handleBomChange" style="width: 100%">
-                <el-option v-for="b in bomOptions" :key="b.bomId"
+              <el-select
+                v-model="form.bomId"
+                placeholder="选择ERP BOM"
+                filterable
+                :disabled="!!form.mbomId"
+                @change="handleBomChange"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="b in bomOptions"
+                  :key="b.bomId"
                   :label="(b.parentMaterialCode || '') + ' - ' + (b.parentMaterialName || '') + ' v' + (b.bomVersion || '')"
-                  :value="b.bomId" />
+                  :value="b.bomId"
+                />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="工艺路线" prop="routingId">
               <el-select v-model="form.routingId" placeholder="选择工艺路线" filterable clearable @change="handleRoutingChange" style="width: 100%">
-                <el-option v-for="r in routingOptions" :key="r.routingId"
+                <el-option
+                  v-for="r in routingOptions"
+                  :key="r.routingId"
                   :label="r.routingCode + ' - ' + r.routingName + ' v' + (r.routingVersion || '')"
-                  :value="r.routingId" />
+                  :value="r.routingId"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -100,7 +123,7 @@
 
         <el-divider content-position="left">MBOM明细行</el-divider>
         <el-button type="primary" icon="Plus" size="small" @click="addLine" style="margin-bottom: 8px;">添加行</el-button>
-        <el-table :data="form.lines || []" border size="small">
+        <el-table :data="form.lines || []" border size="small" show-overflow-tooltip>
           <el-table-column label="物料" width="250">
             <template #default="scope">
               <el-select
@@ -111,9 +134,7 @@
                 style="width: 100%"
                 @change="(val) => handleMaterialChangeForLine(val, scope.$index)"
               >
-                <el-option v-for="m in materialOptions" :key="m.materialId"
-                  :label="m.materialCode + ' - ' + m.materialName"
-                  :value="m.materialId" />
+                <el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" />
               </el-select>
             </template>
           </el-table-column>
@@ -130,18 +151,19 @@
           <el-table-column label="工序步骤" width="180">
             <template #default="scope">
               <el-select v-model="scope.row.routingStepId" placeholder="选择工序步骤" filterable clearable size="small" style="width: 100%">
-                <el-option v-for="s in routingSteps" :key="s.stepId"
-                  :label="s.sequenceNum + ' - ' + (s.processName || '未命名')"
-                  :value="s.stepId" />
+                <el-option v-for="s in routingSteps" :key="s.stepId" :label="s.sequenceNum + ' - ' + (s.processName || '未命名')" :value="s.stepId" />
               </el-select>
             </template>
           </el-table-column>
           <el-table-column label="工位" width="160">
             <template #default="scope">
               <el-select v-model="scope.row.workstationId" placeholder="选择工位" filterable clearable size="small" style="width: 100%">
-                <el-option v-for="w in workstationOptions" :key="w.workstationId"
+                <el-option
+                  v-for="w in workstationOptions"
+                  :key="w.workstationId"
                   :label="w.workstationCode + ' - ' + w.workstationName"
-                  :value="w.workstationId" />
+                  :value="w.workstationId"
+                />
               </el-select>
             </template>
           </el-table-column>
@@ -171,6 +193,7 @@
 </template>
 
 <script setup lang="ts" name="MesMbomIndex">
+// 技术债: 缺 mes_mbom_status 字典, MBOM 状态暂用硬编码 el-tag, 待补字典后改 dict-tag
 import { listMbom, getMbom, addMbom, updateMbom, delMbom, activateMbom } from '@/api/mes/pro/mbom';
 import { listBom } from '@/api/erp/bd/bom/index';
 import { listRouting, getRoutingSteps } from '@/api/erp/bd/routing/index';
@@ -212,9 +235,17 @@ const getList = async () => {
   }
 };
 
-const handleQuery = () => { queryParams.value.pageNum = 1; getList(); };
-const resetQuery = () => { proxy?.resetForm('queryFormRef'); handleQuery(); };
-const handleSelectionChange = (rows: any[]) => { ids.value = rows.map(r => r.mbomId); };
+const handleQuery = () => {
+  queryParams.value.pageNum = 1;
+  getList();
+};
+const resetQuery = () => {
+  proxy?.resetForm('queryFormRef');
+  handleQuery();
+};
+const handleSelectionChange = (rows: any[]) => {
+  ids.value = rows.map((r) => r.mbomId);
+};
 
 const loadOptions = async () => {
   const [bomRes, routingRes, matRes, wsRes] = await Promise.all([
@@ -257,7 +288,7 @@ const handleUpdate = async (row: MesMbomVO) => {
 
 const handleBomChange = (bomId: number) => {
   // 选择BOM后自动关联其路由
-  const bom = bomOptions.value.find(b => b.bomId === bomId);
+  const bom = bomOptions.value.find((b) => b.bomId === bomId);
   if (bom?.routingId) {
     form.value.routingId = bom.routingId;
     handleRoutingChange(bom.routingId);
@@ -266,9 +297,13 @@ const handleBomChange = (bomId: number) => {
 
 const handleRoutingChange = (routingId: number) => {
   if (routingId) {
-    getRoutingSteps(routingId).then(res => {
-      routingSteps.value = res.data || [];
-    }).catch(() => { routingSteps.value = []; });
+    getRoutingSteps(routingId)
+      .then((res) => {
+        routingSteps.value = res.data || [];
+      })
+      .catch(() => {
+        routingSteps.value = [];
+      });
   } else {
     routingSteps.value = [];
   }
@@ -314,7 +349,7 @@ const submitForm = async () => {
   // 准备提交数据
   const submitData = { ...form.value };
   if (submitData.lines) {
-    submitData.lines = submitData.lines.map(l => ({ ...l }));
+    submitData.lines = submitData.lines.map((l) => ({ ...l }));
   }
   if (form.value.mbomId) {
     await updateMbom(submitData as any);
@@ -344,3 +379,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

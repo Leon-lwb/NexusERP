@@ -13,13 +13,7 @@
           <el-tabs v-model="leftTab" class="left-tabs">
             <el-tab-pane label="聊天" name="chat">
               <div class="toolbar between">
-                <el-input
-                  v-model="keyword"
-                  size="small"
-                  placeholder="搜索会话"
-                  clearable
-                  class="w-60"
-                />
+                <el-input v-model="keyword" size="small" placeholder="搜索会话" clearable class="w-60" />
                 <el-button size="small" @click="loadConversations">刷新</el-button>
               </div>
 
@@ -55,21 +49,10 @@
 
               <el-divider content-position="left">常用联系人</el-divider>
               <div class="quick-list">
-                <el-tag
-                  v-for="uid in recentPeers"
-                  :key="uid"
-                  class="quick-item"
-                  @click="openPeer(uid)"
-                >
-                  用户 {{ uid }}
-                </el-tag>
+                <el-tag v-for="uid in recentPeers" :key="uid" class="quick-item" @click="openPeer(uid)"> 用户 {{ uid }} </el-tag>
               </div>
 
-              <el-alert
-                title="联系人接口待接入，当前以最近私聊对象与手动输入为主。"
-                type="info"
-                :closable="false"
-              />
+              <el-alert title="联系人接口待接入，当前以最近私聊对象与手动输入为主。" type="info" :closable="false" />
             </el-tab-pane>
 
             <el-tab-pane label="群聊" name="groups">
@@ -124,12 +107,7 @@
             <el-scrollbar max-height="460px" class="msg-scroll">
               <div v-if="!messages.length" class="msg-empty">暂无消息</div>
 
-              <div
-                v-for="m in messages"
-                :key="m.messageId"
-                class="msg-row"
-                :class="{ mine: isMine(m) }"
-              >
+              <div v-for="m in messages" :key="m.messageId" class="msg-row" :class="{ mine: isMine(m) }">
                 <div class="msg-bubble">
                   <div class="msg-meta">
                     <span class="msg-user">{{ isMine(m) ? '我' : m.fromUserId }}</span>
@@ -141,13 +119,7 @@
             </el-scrollbar>
 
             <div class="editor">
-              <el-input
-                v-model="draft"
-                type="textarea"
-                :rows="4"
-                placeholder="输入消息..."
-                @keydown="onEditorKeydown"
-              />
+              <el-input v-model="draft" type="textarea" :rows="4" placeholder="输入消息..." @keydown="onEditorKeydown" />
               <div class="editor-actions">
                 <el-text type="info" size="small">{{ sendTip }}</el-text>
                 <el-button type="primary" @click="onSend">发送</el-button>
@@ -214,7 +186,11 @@ const sendTip = computed(() => (sendMode.value === 'enter' ? 'Enter 发送，Shi
 const filteredConversations = computed(() => {
   const list = conversations.value || [];
   if (!keyword.value.trim()) return list;
-  return list.filter((c) => String(c.title || '').toLowerCase().includes(keyword.value.toLowerCase()));
+  return list.filter((c) =>
+    String(c.title || '')
+      .toLowerCase()
+      .includes(keyword.value.toLowerCase())
+  );
 });
 
 const recentPeers = computed(() => {

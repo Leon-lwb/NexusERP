@@ -2,27 +2,37 @@
   <div class="p-2">
     <el-card>
       <!-- 搜索栏 -->
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="工单编号" prop="woNo">
-          <el-input v-model="queryParams.woNo" placeholder="请输入工单编号" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="产品名称" prop="materialName">
-          <el-input v-model="queryParams.materialName" placeholder="请输入产品名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="状态" prop="woStatus">
-          <el-select v-model="queryParams.woStatus" placeholder="请选择状态" clearable>
-            <el-option label="新建" value="CREATED" />
-            <el-option label="审批中" value="APPROVING" />
-            <el-option label="已下达" value="RELEASED" />
-            <el-option label="生产中" value="IN_PROGRESS" />
-            <el-option label="已完工" value="COMPLETED" />
-            <el-option label="已取消" value="CANCELLED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="工单编号" prop="woNo">
+              <el-input v-model="queryParams.woNo" placeholder="请输入工单编号" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="产品名称" prop="materialName">
+              <el-input v-model="queryParams.materialName" placeholder="请输入产品名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="woStatus">
+              <el-select v-model="queryParams.woStatus" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="新建" value="CREATED" />
+                <el-option label="审批中" value="APPROVING" />
+                <el-option label="已下达" value="RELEASED" />
+                <el-option label="生产中" value="IN_PROGRESS" />
+                <el-option label="已完工" value="COMPLETED" />
+                <el-option label="已取消" value="CANCELLED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <!-- 操作栏 -->
@@ -39,21 +49,20 @@
       </el-row>
 
       <!-- 数据表格 -->
-      <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="workOrderList" @selection-change="handleSelectionChange" show-overflow-tooltip>
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="工单编号" prop="woNo" width="160" />
-        <el-table-column label="ERP工单ID" prop="erpWoId" width="120" align="center" />
-        <el-table-column label="产品编码" prop="materialCode" width="140" />
-        <el-table-column label="产品名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="计划数量" prop="plannedQty" width="100" align="right" />
-        <el-table-column label="车间" prop="workshopName" width="120" />
-        <el-table-column label="状态" prop="woStatus" width="100" align="center">
+        <el-table-column label="工单编号" prop="woNo" />
+        <el-table-column label="产品编码" prop="materialCode" />
+        <el-table-column label="产品名称" prop="materialName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="计划数量" prop="plannedQty" align="right" />
+        <el-table-column label="车间" prop="workshopName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="计划开工" prop="planStartDate" />
+        <el-table-column label="状态" prop="woStatus" align="center">
           <template #default="scope">
             <el-tag :type="statusTagType(scope.row.woStatus)">{{ statusLabel(scope.row.woStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="计划开工" prop="planStartDate" width="160" />
-        <el-table-column label="操作" width="240" align="center">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
             <el-button
@@ -85,6 +94,7 @@
 </template>
 
 <script setup lang="ts" name="MesWorkOrder">
+// 技术债: 缺 mes_work_order_status 字典, 工单状态暂用硬编码 el-tag + 本地 map(statusLabel/statusTagType), 待补字典后改 dict-tag
 import { listWorkOrder, delWorkOrder, releaseWorkOrder } from '@/api/mes/pro/workorder';
 import type { ProWorkOrderVO, ProWorkOrderQuery } from '@/api/mes/pro/types';
 
@@ -186,3 +196,18 @@ onActivated(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

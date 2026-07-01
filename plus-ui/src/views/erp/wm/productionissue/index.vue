@@ -1,21 +1,31 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="领料单编号" prop="issueCode">
-        <el-input v-model="queryParams.issueCode" placeholder="请输入领料单编号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="工单编号" prop="woNo">
-        <el-input v-model="queryParams.woNo" placeholder="请输入工单编号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in wm_production_issue_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="领料单编号" prop="issueCode">
+            <el-input v-model="queryParams.issueCode" placeholder="请输入领料单编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工单编号" prop="woNo">
+            <el-input v-model="queryParams.woNo" placeholder="请输入工单编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in wm_production_issue_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -26,7 +36,9 @@
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:productionissue:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:productionissue:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:productionissue:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:productionissue:query']">查看</el-button>
@@ -37,12 +49,12 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="issueList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="issueList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="领料单编号" align="center" prop="issueCode" />
       <el-table-column label="工单编号" align="center" prop="woNo" />
-      <el-table-column label="仓库" align="center" prop="warehouseName" />
-      <el-table-column label="领料日期" align="center" prop="issueDate" width="180">
+      <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="领料日期" align="center" prop="issueDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.issueDate, '{y}-{m}-{d}') }}</span>
         </template>
@@ -52,12 +64,20 @@
           <dict-tag :options="wm_production_issue_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:productionissue:edit']">修改</el-button>
-          <el-button link type="success" icon="Promotion" @click="handleExecute(scope.row)" v-hasPermi="['wm:productionissue:edit']" v-if="scope.row.status === 'CREATED' || scope.row.status === 'PARTIAL' || scope.row.status === 'DRAFT'">执行领料</el-button>
+          <el-button
+            link
+            type="success"
+            icon="Promotion"
+            @click="handleExecute(scope.row)"
+            v-hasPermi="['wm:productionissue:edit']"
+            v-if="scope.row.status === 'CREATED' || scope.row.status === 'PARTIAL' || scope.row.status === 'DRAFT'"
+            >执行领料</el-button
+          >
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:productionissue:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -68,20 +88,20 @@
 </template>
 
 <script setup lang="ts" name="ProductionIssue">
-import { listProductionIssue, delProductionIssue, executeProductionIssue } from "@/api/erp/wm/productionissue"
-import { useRouter } from 'vue-router'
+import { listProductionIssue, delProductionIssue, executeProductionIssue } from '@/api/erp/wm/productionissue';
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any
-const { wm_production_issue_status } = toRefs<any>(proxy.useDict('wm_production_issue_status'))
+const { proxy } = getCurrentInstance() as any;
+const { wm_production_issue_status } = toRefs<any>(proxy.useDict('wm_production_issue_status'));
 
-const issueList = ref([])
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
+const issueList = ref([]);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
 
 const data = reactive({
   queryParams: {
@@ -89,83 +109,118 @@ const data = reactive({
     pageSize: 10,
     issueCode: null,
     woNo: null,
-    status: null,
+    status: null
   }
-})
+});
 
-const { queryParams } = toRefs(data)
+const { queryParams } = toRefs(data);
 
 function getList() {
-  loading.value = true
+  loading.value = true;
   listProductionIssue(queryParams.value).then((response: any) => {
-    issueList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+    issueList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.issueId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item: any) => item.issueId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 function handleAdd() {
-  router.push({ path: '/erp/wm/productionissue/form', query: { action: 'add' } })
+  router.push({ path: '/erp/wm/productionissue/form', query: { action: 'add' } });
 }
 
 function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) { row = null }
-  if (!row) {
-    if (ids.value.length !== 1) { proxy.$modal.msgWarning("请选择一条数据进行修改"); return }
-    const selected = issueList.value.find((item: any) => item.issueId == ids.value[0])
-    if (!selected) { proxy.$modal.msgWarning("未找到选中的数据"); return }
-    row = selected
+  if (row && row.type && row instanceof Event) {
+    row = null;
   }
-  router.push({ path: '/erp/wm/productionissue/form', query: { id: row.issueId, action: 'edit' } })
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行修改');
+      return;
+    }
+    const selected = issueList.value.find((item: any) => item.issueId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/wm/productionissue/form', query: { id: row.issueId, action: 'edit' } });
 }
 
 function handleView(row: any) {
-  if (row && row.type && row instanceof Event) { row = null }
-  if (!row) {
-    if (ids.value.length !== 1) { proxy.$modal.msgWarning("请选择一条数据进行查看"); return }
-    const selected = issueList.value.find((item: any) => item.issueId == ids.value[0])
-    if (!selected) { proxy.$modal.msgWarning("未找到选中的数据"); return }
-    row = selected
+  if (row && row.type && row instanceof Event) {
+    row = null;
   }
-  router.push({ path: '/erp/wm/productionissue/form', query: { id: row.issueId, action: 'view' } })
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行查看');
+      return;
+    }
+    const selected = issueList.value.find((item: any) => item.issueId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/wm/productionissue/form', query: { id: row.issueId, action: 'view' } });
 }
 
 function handleDelete(row: any) {
-  const _ids = row.issueId || ids.value
-  proxy.$modal.confirm('是否确认删除领料单编号为"' + _ids + '"的数据项？').then(function () {
-    return delProductionIssue(_ids)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _ids = row.issueId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除领料单编号为"' + _ids + '"的数据项？')
+    .then(function () {
+      return delProductionIssue(_ids);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 列表行执行领料（跳转表单页填写本次领料数量后执行） */
 function handleExecute(row: any) {
-  router.push({ path: '/erp/wm/productionissue/form', query: { id: row.issueId, action: 'edit' } })
+  router.push({ path: '/erp/wm/productionissue/form', query: { id: row.issueId, action: 'edit' } });
 }
 
 function handleExport() {
-  proxy.download('/erp/wm/productionissue/export', { ...queryParams.value }, `productionissue_${new Date().getTime()}.xlsx`)
+  proxy.download('/erp/wm/productionissue/export', { ...queryParams.value }, `productionissue_${new Date().getTime()}.xlsx`);
 }
 
 onActivated(() => {
-  getList()
-})
+  getList();
+});
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

@@ -1,32 +1,46 @@
 <template>
   <div class="app-container">
     <!-- 搜索表单 -->
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px" class="query-form">
-      <el-form-item label="发票号" prop="invoiceNo" style="width: 250px;">
-        <el-input v-model="queryParams.invoiceNo" placeholder="请输入发票号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="客户名称" prop="clientName" style="width: 250px;">
-        <el-input v-model="queryParams.clientName" placeholder="请输入客户名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="发票类型" prop="invoiceType">
-        <el-select v-model="queryParams.invoiceType" placeholder="请选择类型" clearable style="width: 120px;">
-          <el-option label="增值税专用发票" value="VAT_SPECIAL" />
-          <el-option label="增值税普通发票" value="VAT_NORMAL" />
-          <el-option label="其他" value="OTHER" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="发票状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
-          <el-option label="草稿" value="DRAFT" />
-          <el-option label="已开" value="ISSUED" />
-          <el-option label="已核销" value="VERIFIED" />
-          <el-option label="已作废" value="CANCELLED" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="发票号" prop="invoiceNo">
+            <el-input v-model="queryParams.invoiceNo" placeholder="请输入发票号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="客户名称" prop="clientName">
+            <el-input v-model="queryParams.clientName" placeholder="请输入客户名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <!-- 技术债:发票类型暂用硬编码 el-option,待补字典后改为 useDict -->
+          <el-form-item label="发票类型" prop="invoiceType">
+            <el-select v-model="queryParams.invoiceType" placeholder="请选择类型" clearable style="width: 100%">
+              <el-option label="增值税专用发票" value="VAT_SPECIAL" />
+              <el-option label="增值税普通发票" value="VAT_NORMAL" />
+              <el-option label="其他" value="OTHER" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <!-- 技术债:发票状态暂用硬编码 el-option,待补字典后改为 useDict + dict-tag -->
+          <el-form-item label="发票状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option label="草稿" value="DRAFT" />
+              <el-option label="已开" value="ISSUED" />
+              <el-option label="已核销" value="VERIFIED" />
+              <el-option label="已作废" value="CANCELLED" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <!-- 操作按钮 -->
@@ -47,26 +61,27 @@
     </el-row>
 
     <!-- 数据表格 -->
-    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="发票号" align="center" prop="invoiceNo" width="150" />
-      <el-table-column label="客户名称" align="center" prop="clientName" width="150" />
-      <el-table-column label="发票类型" align="center" prop="invoiceType" width="130">
+      <el-table-column label="发票号" align="center" prop="invoiceNo" />
+      <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
+      <!-- 技术债:发票类型/状态暂用硬编码 map+el-tag,待补字典后改为 dict-tag -->
+      <el-table-column label="发票类型" align="center" prop="invoiceType">
         <template #default="scope">
           {{ getInvoiceTypeLabel(scope.row.invoiceType) }}
         </template>
       </el-table-column>
-      <el-table-column label="开票日期" align="center" prop="invoiceDate" width="110" />
-      <el-table-column label="金额" align="center" prop="amount" width="120" />
-      <el-table-column label="税额" align="center" prop="taxAmount" width="100" />
-      <el-table-column label="价税合计" align="center" prop="totalAmount" width="120" />
-      <el-table-column label="已核销" align="center" prop="verifiedAmount" width="100" />
-      <el-table-column label="状态" align="center" prop="status" width="100">
+      <el-table-column label="开票日期" align="center" prop="invoiceDate" />
+      <el-table-column label="金额" align="center" prop="amount" />
+      <el-table-column label="税额" align="center" prop="taxAmount" />
+      <el-table-column label="价税合计" align="center" prop="totalAmount" />
+      <el-table-column label="已核销" align="center" prop="verifiedAmount" />
+      <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:invoice:edit']">修改</el-button>
@@ -169,7 +184,7 @@
                 <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除行</el-button>
               </el-col>
             </el-row>
-            <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small">
+            <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
               <el-table-column type="selection" width="50" v-if="!isViewMode" />
               <el-table-column label="行号" width="60" type="index" />
               <el-table-column label="物料编码" width="150">
@@ -184,7 +199,15 @@
               <el-table-column label="物料名称" prop="materialName" min-width="150" />
               <el-table-column label="数量" width="120">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.quantity" size="small" controls-position="right" :min="0" :precision="4" @change="calcLineAmount(scope.row)" style="width: 100%" />
+                  <el-input-number
+                    v-model="scope.row.quantity"
+                    size="small"
+                    controls-position="right"
+                    :min="0"
+                    :precision="4"
+                    @change="calcLineAmount(scope.row)"
+                    style="width: 100%"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="单位" width="80">
@@ -194,17 +217,41 @@
               </el-table-column>
               <el-table-column label="单价" width="120">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.unitPrice" size="small" controls-position="right" :min="0" :precision="4" @change="calcLineAmount(scope.row)" style="width: 100%" />
+                  <el-input-number
+                    v-model="scope.row.unitPrice"
+                    size="small"
+                    controls-position="right"
+                    :min="0"
+                    :precision="4"
+                    @change="calcLineAmount(scope.row)"
+                    style="width: 100%"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="行金额" width="120">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.lineAmount" size="small" controls-position="right" :precision="2" readonly style="width: 100%" />
+                  <el-input-number
+                    v-model="scope.row.lineAmount"
+                    size="small"
+                    controls-position="right"
+                    :precision="2"
+                    readonly
+                    style="width: 100%"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="税率(%)" width="100">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.taxRate" size="small" controls-position="right" :min="0" :max="100" :precision="2" @change="calcLineTax(scope.row)" style="width: 100%" />
+                  <el-input-number
+                    v-model="scope.row.taxRate"
+                    size="small"
+                    controls-position="right"
+                    :min="0"
+                    :max="100"
+                    :precision="2"
+                    @change="calcLineTax(scope.row)"
+                    style="width: 100%"
+                  />
                 </template>
               </el-table-column>
               <el-table-column label="税额" width="100">
@@ -235,10 +282,10 @@
 </template>
 
 <script setup lang="ts" name="SoInvoice">
-import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice } from "@/api/erp/so/invoice";
-import { listMaterial } from "@/api/erp/bd/material";
-import { InvoiceVO, InvoiceForm, InvoiceLineForm } from "@/api/erp/so/invoice/types";
-import ClientSelectDialog from "@/views/erp/so/components/ClientSelectDialog.vue";
+import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice } from '@/api/erp/so/invoice';
+import { listMaterial } from '@/api/erp/bd/material';
+import { InvoiceVO, InvoiceForm, InvoiceLineForm } from '@/api/erp/so/invoice/types';
+import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 
 const { proxy } = getCurrentInstance();
 
@@ -254,9 +301,9 @@ const ids = ref<number[]>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const title = ref("");
+const title = ref('');
 const isViewMode = ref(false);
-const activeTab = ref("basic");
+const activeTab = ref('basic');
 
 // 明细行数据
 const lineList = ref<InvoiceLineForm[]>([]);
@@ -279,7 +326,7 @@ const data = reactive({
     status: undefined
   },
   rules: {
-    invoiceNo: [{ required: true, message: "发票号不能为空", trigger: "blur" }]
+    invoiceNo: [{ required: true, message: '发票号不能为空', trigger: 'blur' }]
   }
 });
 
@@ -320,7 +367,7 @@ function getStatusLabel(status: string) {
 /** 查询列表 */
 function getList() {
   loading.value = true;
-  listInvoice(queryParams.value).then(response => {
+  listInvoice(queryParams.value).then((response) => {
     dataList.value = response.rows;
     total.value = response.total;
     loading.value = false;
@@ -355,8 +402,8 @@ function reset() {
     soInvoiceLineList: []
   };
   lineList.value = [];
-  activeTab.value = "basic";
-  proxy.resetForm("formRef");
+  activeTab.value = 'basic';
+  proxy.resetForm('formRef');
 }
 
 /** 搜索 */
@@ -367,13 +414,13 @@ function handleQuery() {
 
 /** 重置搜索 */
 function resetQuery() {
-  proxy.resetForm("queryRef");
+  proxy.resetForm('queryRef');
   handleQuery();
 }
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection: InvoiceVO[]) {
-  ids.value = selection.map(item => item.invoiceId);
+  ids.value = selection.map((item) => item.invoiceId);
   single.value = selection.length !== 1;
   multiple.value = !selection.length;
 }
@@ -383,7 +430,7 @@ function handleAdd() {
   reset();
   isViewMode.value = false;
   open.value = true;
-  title.value = "添加销售发票";
+  title.value = '添加销售发票';
 }
 
 /** 修改 */
@@ -391,11 +438,11 @@ function handleUpdate(row?: InvoiceVO) {
   reset();
   isViewMode.value = false;
   const invoiceId = row?.invoiceId || ids.value[0];
-  getInvoice(invoiceId).then(response => {
+  getInvoice(invoiceId).then((response) => {
     form.value = response.data;
     lineList.value = response.data.soInvoiceLineList || [];
     open.value = true;
-    title.value = "修改销售发票";
+    title.value = '修改销售发票';
   });
 }
 
@@ -403,28 +450,28 @@ function handleUpdate(row?: InvoiceVO) {
 function handleView(row: InvoiceVO) {
   reset();
   isViewMode.value = true;
-  getInvoice(row.invoiceId).then(response => {
+  getInvoice(row.invoiceId).then((response) => {
     form.value = response.data;
     lineList.value = response.data.soInvoiceLineList || [];
     open.value = true;
-    title.value = "查看销售发票";
+    title.value = '查看销售发票';
   });
 }
 
 /** 提交表单 */
 function submitForm() {
-  proxy.$refs["formRef"].validate((valid: boolean) => {
+  proxy.$refs['formRef'].validate((valid: boolean) => {
     if (valid) {
       form.value.soInvoiceLineList = lineList.value;
       if (form.value.invoiceId != null) {
         updateInvoice(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功");
+          proxy.$modal.msgSuccess('修改成功');
           open.value = false;
           getList();
         });
       } else {
         addInvoice(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功");
+          proxy.$modal.msgSuccess('新增成功');
           open.value = false;
           getList();
         });
@@ -436,12 +483,16 @@ function submitForm() {
 /** 删除 */
 function handleDelete(row?: InvoiceVO) {
   const invoiceIds = row?.invoiceId || ids.value;
-  proxy.$modal.confirm('是否确认删除销售发票编号为"' + invoiceIds + '"的数据项？').then(function () {
-    return delInvoice(invoiceIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  proxy.$modal
+    .confirm('是否确认删除销售发票编号为"' + invoiceIds + '"的数据项？')
+    .then(function () {
+      return delInvoice(invoiceIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 导出 */
@@ -480,13 +531,13 @@ function handleLineSelectionChange(rows: InvoiceLineForm[]) {
 
 /** 计算行金额 */
 function calcLineAmount(row: InvoiceLineForm) {
-  row.lineAmount = ((row.quantity || 0) * (row.unitPrice || 0));
+  row.lineAmount = (row.quantity || 0) * (row.unitPrice || 0);
   calcLineTax(row);
 }
 
 /** 计算行税额 */
 function calcLineTax(row: InvoiceLineForm) {
-  row.taxAmount = ((row.lineAmount || 0) * (row.taxRate || 0) / 100);
+  row.taxAmount = ((row.lineAmount || 0) * (row.taxRate || 0)) / 100;
   row.totalAmount = (row.lineAmount || 0) + (row.taxAmount || 0);
   calcTotalAmount();
 }
@@ -538,3 +589,18 @@ function handleClientConfirm(client: any) {
 
 getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

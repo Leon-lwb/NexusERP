@@ -1,29 +1,39 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="控制图名称" prop="chartName">
-          <el-input v-model="queryParams.chartName" placeholder="请输入控制图名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="类型" prop="chartType">
-          <el-select v-model="queryParams.chartType" placeholder="请选择类型" clearable style="width: 150px">
-            <el-option label="均值-极差(X̄-R)" value="X_BAR_R" />
-            <el-option label="均值-标准差(X̄-S)" value="X_BAR_S" />
-            <el-option label="不良率(P)" value="P" />
-            <el-option label="缺陷数(C)" value="C" />
-            <el-option label="单位缺陷数(U)" value="U" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
-            <el-option label="启用" value="ACTIVE" />
-            <el-option label="停用" value="INACTIVE" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="控制图名称" prop="chartName">
+              <el-input v-model="queryParams.chartName" placeholder="请输入控制图名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="类型" prop="chartType">
+              <el-select v-model="queryParams.chartType" placeholder="请选择类型" clearable style="width: 100%">
+                <el-option label="均值-极差(X̄-R)" value="X_BAR_R" />
+                <el-option label="均值-标准差(X̄-S)" value="X_BAR_S" />
+                <el-option label="不良率(P)" value="P" />
+                <el-option label="缺陷数(C)" value="C" />
+                <el-option label="单位缺陷数(U)" value="U" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="启用" value="ACTIVE" />
+                <el-option label="停用" value="INACTIVE" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -33,32 +43,31 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="控制图名称" prop="chartName" width="200" />
-        <el-table-column label="类型" prop="chartType" width="160" align="center">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="控制图名称" prop="chartName" min-width="120" show-overflow-tooltip />
+        <!-- 技术债:类型暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="类型" prop="chartType" align="center">
           <template #default="scope">
             <el-tag type="primary">{{ typeLabel(scope.row.chartType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="采集点ID" prop="pointId" width="100" align="right">
-          <template #default="scope">{{ scope.row.pointId || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="样本大小" prop="sampleSize" width="90" align="right" />
-        <el-table-column label="UCL" prop="ucl" width="100" align="right">
+        <el-table-column label="样本大小" prop="sampleSize" align="right" />
+        <el-table-column label="UCL" prop="ucl" align="right">
           <template #default="scope">{{ scope.row.ucl ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="CL" prop="cl" width="100" align="right">
+        <el-table-column label="CL" prop="cl" align="right">
           <template #default="scope">{{ scope.row.cl ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="LCL" prop="lcl" width="100" align="right">
+        <el-table-column label="LCL" prop="lcl" align="right">
           <template #default="scope">{{ scope.row.lcl ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="状态" prop="status" width="90" align="center">
+        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.status === 'ACTIVE' ? 'success' : 'info'">{{ scope.row.status === 'ACTIVE' ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" align="center" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="warning" icon="DataAnalysis" @click="handleAnalyze(scope.row)" v-hasPermi="['mes:spc:chart:analyze']"
               >分析</el-button
@@ -352,3 +361,18 @@ onUnmounted(() => {
   chartInstance?.dispose();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

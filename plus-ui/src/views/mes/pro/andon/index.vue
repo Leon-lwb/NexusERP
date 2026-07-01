@@ -37,36 +37,40 @@
     </el-row>
 
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="安灯编号" prop="andonNo">
-          <el-input v-model="queryParams.andonNo" placeholder="请输入安灯编号" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="呼叫类型" prop="callType">
-          <el-select v-model="queryParams.callType" placeholder="请选择类型" clearable style="width: 160px">
-            <el-option label="质量异常" value="QUALITY" />
-            <el-option label="物料短缺" value="MATERIAL" />
-            <el-option label="设备故障" value="EQUIPMENT" />
-            <el-option label="其他" value="OTHER" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态" prop="andonStatus">
-          <el-select v-model="queryParams.andonStatus" placeholder="请选择状态" clearable style="width: 140px">
-            <el-option label="已呼叫" value="CALLED" />
-            <el-option label="已响应" value="RESPONDED" />
-            <el-option label="已解决" value="RESOLVED" />
-            <el-option label="已取消" value="CANCELLED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="来源" prop="source">
-          <el-select v-model="queryParams.source" placeholder="请选择来源" clearable style="width: 120px">
-            <el-option label="手动" value="MANUAL" />
-            <el-option label="IoT" value="IoT" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="安灯编号" prop="andonNo">
+              <el-input v-model="queryParams.andonNo" placeholder="请输入安灯编号" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="呼叫类型" prop="callType">
+              <el-select v-model="queryParams.callType" placeholder="请选择类型" clearable style="width: 100%">
+                <el-option label="质量异常" value="QUALITY" />
+                <el-option label="物料短缺" value="MATERIAL" />
+                <el-option label="设备故障" value="EQUIPMENT" />
+                <el-option label="其他" value="OTHER" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="andonStatus">
+              <el-select v-model="queryParams.andonStatus" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="已呼叫" value="CALLED" />
+                <el-option label="已响应" value="RESPONDED" />
+                <el-option label="已解决" value="RESOLVED" />
+                <el-option label="已取消" value="CANCELLED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -76,40 +80,40 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="安灯编号" prop="andonNo" width="200" />
-        <el-table-column label="工单编号" prop="woNo" width="160">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="安灯编号" prop="andonNo" />
+        <el-table-column label="工单编号" prop="woNo">
           <template #default="scope">{{ scope.row.woNo || '-' }}</template>
         </el-table-column>
-        <el-table-column label="流转卡" prop="cardNo" width="170">
+        <el-table-column label="流转卡" prop="cardNo">
           <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
         </el-table-column>
-        <el-table-column label="呼叫类型" prop="callType" width="110" align="center">
+        <el-table-column label="呼叫类型" prop="callType" align="center">
           <template #default="scope">
             <el-tag :type="callTypeTagType(scope.row.callType)">{{ callTypeLabel(scope.row.callType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" prop="andonStatus" width="100" align="center">
-          <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.andonStatus)">{{ statusLabel(scope.row.andonStatus) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="呼叫人" prop="callerName" width="100">
+        <el-table-column label="呼叫人" prop="callerName">
           <template #default="scope">{{ scope.row.callerName || '-' }}</template>
         </el-table-column>
-        <el-table-column label="来源" prop="source" width="80" align="center">
+        <el-table-column label="来源" prop="source" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.source === 'IoT' ? 'primary' : 'info'" size="small">
               {{ scope.row.source === 'IoT' ? 'IoT' : '手动' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="呼叫时间" prop="callTime" width="160" />
-        <el-table-column label="持续(分)" prop="durationMinutes" width="90" align="right">
+        <el-table-column label="持续(分)" prop="durationMinutes" align="right">
           <template #default="scope">{{ scope.row.durationMinutes ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="呼叫原因" prop="callReason" show-overflow-tooltip />
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="呼叫时间" prop="callTime" />
+        <el-table-column label="状态" prop="andonStatus" align="center">
+          <template #default="scope">
+            <el-tag :type="statusTagType(scope.row.andonStatus)">{{ statusLabel(scope.row.andonStatus) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="呼叫原因" prop="callReason" min-width="120" show-overflow-tooltip />
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button
               link
@@ -175,6 +179,7 @@
 </template>
 
 <script setup lang="ts" name="MesAndon">
+// 技术债: 缺 mes_andon_status / mes_andon_call_type 字典, 安灯状态与呼叫类型暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
 import { ElNotification } from 'element-plus';
 import { listAndon, andonStats, callAndon, respondAndon, resolveAndon, cancelAndon } from '@/api/mes/pro/andon';
 import type { ProAndonVO, ProAndonQuery, AndonStats } from '@/api/mes/pro/andon';
@@ -192,8 +197,7 @@ const queryParams = ref<ProAndonQuery>({
   pageSize: 10,
   andonNo: undefined,
   callType: undefined,
-  andonStatus: undefined,
-  source: undefined
+  andonStatus: undefined
 });
 
 const callDialog = reactive({ visible: false });
@@ -336,5 +340,20 @@ onUnmounted(() => {
 }
 .stat-value.primary {
   color: var(--el-color-primary);
+}
+</style>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
 }
 </style>

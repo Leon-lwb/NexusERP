@@ -1,29 +1,36 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="返工单号" prop="reworkNo">
-        <el-input v-model="queryParams.reworkNo" placeholder="请输入返工单号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="来源工单" prop="sourceWoNo">
-        <el-input v-model="queryParams.sourceWoNo" placeholder="请输入来源工单号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="物料编码" prop="materialCode">
-        <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="返工状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择返工状态" clearable>
-          <el-option v-for="dict in prd_rework_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="返工原因" prop="reworkReason">
-        <el-select v-model="queryParams.reworkReason" placeholder="请选择返工原因" clearable>
-          <el-option v-for="dict in prd_rework_reason" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="返工单号" prop="reworkNo">
+            <el-input v-model="queryParams.reworkNo" placeholder="请输入返工单号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="来源工单" prop="sourceWoNo">
+            <el-input v-model="queryParams.sourceWoNo" placeholder="请输入来源工单号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="物料编码" prop="materialCode">
+            <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="返工状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择返工状态" clearable style="width: 100%">
+              <el-option v-for="dict in prd_rework_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -39,28 +46,28 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="reworkList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="reworkList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="返工单号" align="center" prop="reworkNo" width="150" />
-      <el-table-column label="来源工单" align="center" prop="sourceWoNo" width="150" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" width="120" />
+      <el-table-column label="返工单号" align="center" prop="reworkNo" />
+      <el-table-column label="来源工单" align="center" prop="sourceWoNo" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
-      <el-table-column label="规格型号" align="center" prop="materialSpec" width="120" show-overflow-tooltip />
-      <el-table-column label="单位" align="center" prop="baseUomName" width="80" />
-      <el-table-column label="返工数量" align="center" prop="reworkQty" width="100" />
-      <el-table-column label="返工原因" align="center" prop="reworkReason" width="100">
+      <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
+      <el-table-column label="单位" align="center" prop="baseUomName" />
+      <el-table-column label="返工数量" align="center" prop="reworkQty" />
+      <el-table-column label="返工原因" align="center" prop="reworkReason">
         <template #default="scope">
           <dict-tag :options="prd_rework_reason" :value="scope.row.reworkReason" />
         </template>
       </el-table-column>
-      <el-table-column label="实际数量" align="center" prop="actualQty" width="100" />
-      <el-table-column label="报废数量" align="center" prop="scrapQty" width="100" />
-      <el-table-column label="返工状态" align="center" prop="status" width="100">
+      <el-table-column label="实际数量" align="center" prop="actualQty" />
+      <el-table-column label="报废数量" align="center" prop="scrapQty" />
+      <el-table-column label="返工状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="prd_rework_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="开始" placement="top" v-if="scope.row.status === 'DRAFT'">
             <el-button link type="success" icon="VideoPlay" @click="handleStart(scope.row)" v-hasPermi="['prd:rework:edit']" />
@@ -96,7 +103,15 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="来源工单" prop="sourceWoId">
-              <el-select v-model="form.sourceWoId" filterable remote :remote-method="searchWorkOrder" placeholder="请选择来源工单" @change="onSourceWoChange" style="width: 100%">
+              <el-select
+                v-model="form.sourceWoId"
+                filterable
+                remote
+                :remote-method="searchWorkOrder"
+                placeholder="请选择来源工单"
+                @change="onSourceWoChange"
+                style="width: 100%"
+              >
                 <el-option v-for="wo in woOptions" :key="wo.woId" :label="`${wo.woNo} - ${wo.materialName || ''}`" :value="wo.woId" />
               </el-select>
             </el-form-item>
@@ -141,7 +156,17 @@
 </template>
 
 <script setup name="PrdRework" lang="ts">
-import { listReworkOrder, getReworkOrder, addReworkOrder, updateReworkOrder, delReworkOrder, startReworkOrder, completeReworkOrder, issueReworkMaterial, receiveReworkMaterial } from '@/api/erp/prd/rework';
+import {
+  listReworkOrder,
+  getReworkOrder,
+  addReworkOrder,
+  updateReworkOrder,
+  delReworkOrder,
+  startReworkOrder,
+  completeReworkOrder,
+  issueReworkMaterial,
+  receiveReworkMaterial
+} from '@/api/erp/prd/rework';
 import { PrdReworkOrderVO, PrdReworkOrderQuery, PrdReworkOrderForm } from '@/api/erp/prd/rework/types';
 import { listWork } from '@/api/erp/prd/work';
 
@@ -169,7 +194,9 @@ const searchWorkOrder = async (query: string) => {
   try {
     const res = await listWork({ woNo: query || undefined, pageNum: 1, pageSize: 20 });
     woOptions.value = res.rows || [];
-  } catch { woOptions.value = []; }
+  } catch {
+    woOptions.value = [];
+  }
 };
 
 const onSourceWoChange = (woId: number) => {
@@ -187,7 +214,7 @@ const onSourceWoChange = (woId: number) => {
 const rules = {
   reworkNo: [{ required: true, message: '返工单号不能为空', trigger: 'blur' }],
   sourceWoId: [{ required: true, message: '来源工单ID不能为空', trigger: 'blur' }],
-  reworkQty: [{ required: true, message: '返工数量不能为空', trigger: 'blur' }],
+  reworkQty: [{ required: true, message: '返工数量不能为空', trigger: 'blur' }]
 };
 
 const getList = async () => {
@@ -198,10 +225,16 @@ const getList = async () => {
   loading.value = false;
 };
 
-const handleQuery = () => { queryParams.value.pageNum = 1; getList(); };
-const resetQuery = () => { queryRef.value?.resetFields(); handleQuery(); };
+const handleQuery = () => {
+  queryParams.value.pageNum = 1;
+  getList();
+};
+const resetQuery = () => {
+  queryRef.value?.resetFields();
+  handleQuery();
+};
 const handleSelectionChange = (selection: PrdReworkOrderVO[]) => {
-  ids.value = selection.map(item => item.reworkId);
+  ids.value = selection.map((item) => item.reworkId);
   single.value = selection.length !== 1;
   multiple.value = !selection.length;
 };
@@ -211,7 +244,11 @@ const reset = () => {
   reworkRef.value?.resetFields();
 };
 
-const handleAdd = () => { reset(); open.value = true; title.value = '添加返工订单'; };
+const handleAdd = () => {
+  reset();
+  open.value = true;
+  title.value = '添加返工订单';
+};
 
 const handleUpdate = async (row: PrdReworkOrderVO) => {
   reset();
@@ -273,9 +310,31 @@ const handleReceive = async (row: PrdReworkOrderVO) => {
   getList();
 };
 
-const cancel = () => { open.value = false; reset(); };
+const cancel = () => {
+  open.value = false;
+  reset();
+};
 
-const handleExport = () => { proxy?.download('erp/prd/rework/export', { ...queryParams.value }, `返工订单_${new Date().getTime()}.xlsx`); };
+const handleExport = () => {
+  proxy?.download('erp/prd/rework/export', { ...queryParams.value }, `返工订单_${new Date().getTime()}.xlsx`);
+};
 
-onMounted(() => { getList(); });
+onMounted(() => {
+  getList();
+});
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

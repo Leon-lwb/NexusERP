@@ -1,31 +1,34 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="IPQC编号" prop="ipqcNo">
-          <el-input v-model="queryParams.ipqcNo" placeholder="请输入IPQC编号" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="工单编号" prop="woNo">
-          <el-input v-model="queryParams.woNo" placeholder="工单编号" clearable style="width: 150px" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 140px">
-            <el-option label="待检验" value="PENDING" />
-            <el-option label="检验中" value="INSPECTING" />
-            <el-option label="已完成" value="COMPLETED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="检验结果" prop="inspectResult">
-          <el-select v-model="queryParams.inspectResult" placeholder="请选择结果" clearable style="width: 140px">
-            <el-option label="合格" value="QUALIFIED" />
-            <el-option label="不合格" value="UNQUALIFIED" />
-            <el-option label="待定" value="PENDING" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="IPQC编号" prop="ipqcNo">
+              <el-input v-model="queryParams.ipqcNo" placeholder="请输入IPQC编号" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="工单编号" prop="woNo">
+              <el-input v-model="queryParams.woNo" placeholder="工单编号" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="待检验" value="PENDING" />
+                <el-option label="检验中" value="INSPECTING" />
+                <el-option label="已完成" value="COMPLETED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -35,36 +38,38 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="IPQC编号" prop="ipqcNo" width="190" />
-        <el-table-column label="工单编号" prop="woNo" width="150">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="IPQC编号" prop="ipqcNo" />
+        <el-table-column label="工单编号" prop="woNo">
           <template #default="scope">{{ scope.row.woNo || '-' }}</template>
         </el-table-column>
-        <el-table-column label="工序" prop="processName" width="140">
+        <el-table-column label="工序" prop="processName" min-width="120" show-overflow-tooltip>
           <template #default="scope">{{ scope.row.processName || '-' }}</template>
         </el-table-column>
-        <el-table-column label="物料编码" prop="materialCode" width="140">
+        <el-table-column label="物料编码" prop="materialCode">
           <template #default="scope">{{ scope.row.materialCode || '-' }}</template>
         </el-table-column>
-        <el-table-column label="抽样数量" prop="sampleQty" width="100" align="right" />
-        <el-table-column label="不良数量" prop="defectQty" width="100" align="right" />
-        <el-table-column label="不良率(%)" prop="defectRate" width="100" align="right">
+        <el-table-column label="抽样数量" prop="sampleQty" align="right" />
+        <el-table-column label="不良数量" prop="defectQty" align="right" />
+        <el-table-column label="不良率(%)" prop="defectRate" align="right">
           <template #default="scope">{{ scope.row.defectRate ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="状态" prop="status" width="100" align="center">
+        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
             <el-tag :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="检验结果" prop="inspectResult" width="100" align="center">
+        <!-- 技术债:检验结果暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="检验结果" prop="inspectResult" align="center">
           <template #default="scope">
             <el-tag :type="resultTagType(scope.row.inspectResult)">{{ resultLabel(scope.row.inspectResult) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="检验员" prop="inspectorName" width="100">
+        <el-table-column label="检验员" prop="inspectorName">
           <template #default="scope">{{ scope.row.inspectorName || '-' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button
               link
@@ -168,8 +173,7 @@ const queryParams = ref<QcIpqcQuery>({
   pageSize: 10,
   ipqcNo: undefined,
   woNo: undefined,
-  status: undefined,
-  inspectResult: undefined
+  status: undefined
 });
 
 const addDialog = reactive({ visible: false });
@@ -291,3 +295,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

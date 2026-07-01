@@ -1,26 +1,35 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="物料编码" prop="materialCode">
-          <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="物料名称" prop="materialName">
-          <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="物料编码" prop="materialCode">
+              <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="物料名称" prop="materialName">
+              <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="物料编码" prop="materialCode" width="160" />
-        <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="规格型号" prop="materialSpec" show-overflow-tooltip />
-        <el-table-column label="物料类型" prop="materialType" width="100" />
-        <el-table-column label="计量单位" prop="unitName" width="100" />
-        <el-table-column label="状态" prop="status" width="80" align="center">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="物料编码" prop="materialCode" />
+        <el-table-column label="物料名称" prop="materialName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="规格型号" prop="materialSpec" min-width="120" show-overflow-tooltip />
+        <el-table-column label="物料类型" prop="materialType" />
+        <el-table-column label="计量单位" prop="unitName" />
+        <!-- 技术债: 缺独立物料状态字典, 且本只读镜像 status 极性(0=正常)与 ERP 源页 sys_true_or_false(1=是=启用)相反, 暂保留硬编码 el-tag -->
+        <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
               {{ scope.row.status === '0' ? '正常' : '停用' }}
@@ -76,3 +85,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

@@ -35,48 +35,68 @@
 
       <!-- 右侧库存列表 -->
       <el-col :span="19">
-        <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-          <el-form-item label="产品物料编码" prop="materialCode">
-            <el-input v-model="queryParams.materialCode" placeholder="请输入产品物料编码" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="产品物料名称" prop="materialName">
-            <el-input v-model="queryParams.materialName" placeholder="请输入产品物料名称" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="入库批次号" prop="batchCode">
-            <el-input v-model="queryParams.batchCode" placeholder="请输入入库批次号" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="仓库名称" prop="warehouseName">
-            <el-input v-model="queryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="库区名称" prop="areaName">
-            <el-input v-model="queryParams.areaName" placeholder="请输入库区名称" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="库位名称" prop="locationName">
-            <el-input v-model="queryParams.locationName" placeholder="请输入库位名称" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="供应商名称" prop="vendorName">
-            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="生产工单编号" prop="woNo">
-            <el-input v-model="queryParams.woNo" placeholder="请输入生产工单编号" clearable @keyup.enter="handleQuery" />
-          </el-form-item>
-          <el-form-item label="入库时间" prop="recptDate">
-            <el-date-picker clearable v-model="queryParams.recptDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择入库时间">
-            </el-date-picker>
-          </el-form-item>
-          <el-form-item label="库存有效期" prop="expireDate">
-            <el-date-picker clearable v-model="queryParams.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择库存有效期">
-            </el-date-picker>
-          </el-form-item>
-          <el-form-item label="冻结标志" prop="frozenFlag">
-            <el-select v-model="queryParams.frozenFlag" placeholder="请选择冻结标志" clearable>
-              <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          </el-form-item>
+        <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+          <el-row :gutter="16">
+            <el-col :span="6">
+              <el-form-item label="产品物料编码" prop="materialCode">
+                <el-input v-model="queryParams.materialCode" placeholder="请输入产品物料编码" clearable @keyup.enter="handleQuery" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="产品物料名称" prop="materialName">
+                <el-input v-model="queryParams.materialName" placeholder="请输入产品物料名称" clearable @keyup.enter="handleQuery" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="入库批次号" prop="batchCode">
+                <el-input v-model="queryParams.batchCode" placeholder="请输入入库批次号" clearable @keyup.enter="handleQuery" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="仓库名称" prop="warehouseName">
+                <el-input v-model="queryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="handleQuery" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="入库时间" prop="recptDate">
+                <el-date-picker
+                  clearable
+                  v-model="queryParams.recptDate"
+                  type="date"
+                  value-format="YYYY-MM-DD"
+                  placeholder="请选择入库时间"
+                  style="width: 100%"
+                >
+                </el-date-picker>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="库存有效期" prop="expireDate">
+                <el-date-picker
+                  clearable
+                  v-model="queryParams.expireDate"
+                  type="date"
+                  value-format="YYYY-MM-DD"
+                  placeholder="请选择库存有效期"
+                  style="width: 100%"
+                >
+                </el-date-picker>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="冻结标志" prop="frozenFlag">
+                <el-select v-model="queryParams.frozenFlag" placeholder="请选择冻结标志" clearable style="width: 100%">
+                  <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6" class="search-actions">
+              <el-form-item>
+                <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+                <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
 
         <el-row :gutter="10" class="mb8">
@@ -98,36 +118,36 @@
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="stockList" @selection-change="handleSelectionChange">
+        <el-table v-loading="loading" :data="stockList" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="产品物料编码" align="center" prop="materialCode" />
-          <el-table-column label="产品物料名称" align="center" prop="materialName" />
-          <el-table-column label="规格型号" align="center" prop="materialSpec" />
+          <el-table-column label="序号" type="index" align="center" />
+          <el-table-column label="产品物料编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip />
+          <el-table-column label="产品物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="规格型号" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
           <el-table-column label="单位名称" align="center" prop="baseUomName" />
-          <el-table-column label="入库批次号" align="center" prop="batchCode" />
-          <el-table-column label="仓库编码" align="center" prop="warehouseCode" />
-          <el-table-column label="仓库名称" align="center" prop="warehouseName" />
-          <el-table-column label="库区编码" align="center" prop="areaCode" />
-          <el-table-column label="库区名称" align="center" prop="areaName" />
-          <el-table-column label="库位编码" align="center" prop="locationCode" />
-          <el-table-column label="库位名称" align="center" prop="locationName" />
-          <el-table-column label="供应商编号" align="center" prop="vendorCode" />
-          <el-table-column label="供应商名称" align="center" prop="vendorName" />
-          <el-table-column label="供应商简称" align="center" prop="vendorNick" />
+          <el-table-column label="入库批次号" align="center" prop="batchCode" min-width="120" show-overflow-tooltip />
+          <el-table-column label="仓库编码" align="center" prop="warehouseCode" min-width="120" show-overflow-tooltip />
+          <el-table-column label="仓库名称" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="库区编码" align="center" prop="areaCode" min-width="120" show-overflow-tooltip />
+          <el-table-column label="库区名称" align="center" prop="areaName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="库位编码" align="center" prop="locationCode" min-width="120" show-overflow-tooltip />
+          <el-table-column label="库位名称" align="center" prop="locationName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="供应商编号" align="center" prop="vendorCode" min-width="120" show-overflow-tooltip />
+          <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="供应商简称" align="center" prop="vendorNick" min-width="120" show-overflow-tooltip />
           <el-table-column label="在库数量" align="center" prop="stockQuantity" />
-          <el-table-column label="生产工单ID" align="center" prop="woId" />
-          <el-table-column label="生产工单编号" align="center" prop="woNo" />
-          <el-table-column label="生产日期" align="center" prop="productionDate" width="180">
+          <el-table-column label="生产工单编号" align="center" prop="woNo" min-width="120" show-overflow-tooltip />
+          <el-table-column label="生产日期" align="center" prop="productionDate">
             <template #default="scope">
               <span>{{ parseTime(scope.row.productionDate, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="入库时间" align="center" prop="recptDate" width="180">
+          <el-table-column label="入库时间" align="center" prop="recptDate">
             <template #default="scope">
               <span>{{ parseTime(scope.row.recptDate, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="库存有效期" align="center" prop="expireDate" width="180">
+          <el-table-column label="库存有效期" align="center" prop="expireDate">
             <template #default="scope">
               <span>{{ parseTime(scope.row.expireDate, '{y}-{m}-{d}') }}</span>
             </template>
@@ -137,7 +157,7 @@
               <dict-tag :options="sys_true_or_false" :value="scope.row.frozenFlag" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
             <template #default="scope">
               <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
               <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:stock:edit']">修改</el-button>
@@ -295,17 +315,13 @@ const data = reactive({
     warehouseName: null,
     areaId: null,
     areaCode: null,
-    areaName: null,
     locationId: null,
     locationCode: null,
-    locationName: null,
     vendorId: null,
     vendorCode: null,
-    vendorName: null,
     vendorNick: null,
     stockQuantity: null,
     woId: null,
-    woNo: null,
     productionDate: null,
     recptDate: null,
     expireDate: null,
@@ -559,5 +575,20 @@ getCategoryTree();
 
 .category-search-input {
   margin-bottom: 10px;
+}
+</style>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
 }
 </style>

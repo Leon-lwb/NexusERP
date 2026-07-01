@@ -2,32 +2,46 @@
   <div class="p-2">
     <!-- 搜索区域 -->
     <el-card shadow="never" class="mb-2">
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="68px">
-        <el-form-item label="合同编号" prop="contractNo">
-          <el-input v-model="queryParams.contractNo" placeholder="请输入合同编号" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="合同名称" prop="contractName">
-          <el-input v-model="queryParams.contractName" placeholder="请输入合同名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="供应商" prop="vendorName">
-          <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="合同状态" prop="status">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-            <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="合同类型" prop="contractType">
-          <el-select v-model="queryParams.contractType" placeholder="请选择类型" clearable>
-            <el-option label="框架合同" value="FRAMEWORK" />
-            <el-option label="现货合同" value="SPOT" />
-            <el-option label="服务合同" value="SERVICE" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="合同编号" prop="contractNo">
+              <el-input v-model="queryParams.contractNo" placeholder="请输入合同编号" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="合同名称" prop="contractName">
+              <el-input v-model="queryParams.contractName" placeholder="请输入合同名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="供应商" prop="vendorName">
+              <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="合同状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="合同类型" prop="contractType">
+              <el-select v-model="queryParams.contractType" placeholder="请选择类型" clearable style="width: 100%">
+                <el-option label="框架合同" value="FRAMEWORK" />
+                <el-option label="现货合同" value="SPOT" />
+                <el-option label="服务合同" value="SERVICE" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="12" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </el-card>
 
@@ -45,11 +59,13 @@
       </template>
 
       <!-- 数据表格 -->
-      <el-table v-loading="loading" :data="contractList">
-        <el-table-column label="合同编号" align="center" prop="contractNo" min-width="140" />
-        <el-table-column label="合同名称" align="center" prop="contractName" min-width="160" show-overflow-tooltip />
-        <el-table-column label="供应商" align="center" prop="vendorName" min-width="140" show-overflow-tooltip />
-        <el-table-column label="合同类型" align="center" prop="contractType" min-width="100">
+      <el-table v-loading="loading" :data="contractList" show-overflow-tooltip>
+        <el-table-column label="序号" type="index" align="center" />
+        <el-table-column label="合同编号" align="center" prop="contractNo" />
+        <el-table-column label="合同名称" align="center" prop="contractName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="供应商" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
+        <!-- 技术债:合同类型为硬编码映射,暂无对应字典,待补字典后改 dict-tag -->
+        <el-table-column label="合同类型" align="center" prop="contractType">
           <template #default="scope">
             <span v-if="scope.row.contractType === 'FRAMEWORK'">框架合同</span>
             <span v-else-if="scope.row.contractType === 'SPOT'">现货合同</span>
@@ -57,25 +73,39 @@
             <span v-else>{{ scope.row.contractType }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="签订日期" align="center" prop="signDate" min-width="110">
+        <el-table-column label="合同金额" align="right" prop="totalAmount" />
+        <el-table-column label="签订日期" align="center" prop="signDate">
           <template #default="scope">
             <span>{{ scope.row.signDate ? scope.row.signDate.substring(0, 10) : '' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="合同金额" align="right" prop="totalAmount" min-width="120" />
-        <el-table-column label="状态" align="center" prop="status" min-width="90">
+        <!-- 技术债:合同状态为硬编码 el-tag,暂无对应字典,待补字典后改 dict-tag -->
+        <el-table-column label="状态" align="center" prop="status">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" width="200" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-            <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+            <el-button
+              link
+              type="primary"
+              icon="Edit"
+              @click="handleUpdate(scope.row)"
               v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
-              v-hasPermi="['pu:contract:edit']">编辑</el-button>
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)"
-              v-if="scope.row.status === 'DRAFT'" v-hasPermi="['pu:contract:remove']">删除</el-button>
+              v-hasPermi="['pu:contract:edit']"
+              >编辑</el-button
+            >
+            <el-button
+              link
+              type="danger"
+              icon="Delete"
+              @click="handleDelete(scope.row)"
+              v-if="scope.row.status === 'DRAFT'"
+              v-hasPermi="['pu:contract:remove']"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -164,7 +194,7 @@
 
         <!-- 明细行 -->
         <el-divider content-position="left">合同明细</el-divider>
-        <el-table :data="form.puContractLineList" border style="width: 100%">
+        <el-table :data="form.puContractLineList" border style="width: 100%" show-overflow-tooltip>
           <el-table-column label="物料编码" min-width="130">
             <template #default="scope">
               <el-input v-model="scope.row.materialCode" placeholder="请输入" />
@@ -187,12 +217,26 @@
           </el-table-column>
           <el-table-column label="单价" min-width="110">
             <template #default="scope">
-              <el-input-number v-model="scope.row.unitPrice" :precision="4" :min="0" :controls="false" style="width: 100%" @change="calcLineAmount(scope.row)" />
+              <el-input-number
+                v-model="scope.row.unitPrice"
+                :precision="4"
+                :min="0"
+                :controls="false"
+                style="width: 100%"
+                @change="calcLineAmount(scope.row)"
+              />
             </template>
           </el-table-column>
           <el-table-column label="数量" min-width="110">
             <template #default="scope">
-              <el-input-number v-model="scope.row.quantity" :precision="4" :min="0" :controls="false" style="width: 100%" @change="calcLineAmount(scope.row)" />
+              <el-input-number
+                v-model="scope.row.quantity"
+                :precision="4"
+                :min="0"
+                :controls="false"
+                style="width: 100%"
+                @change="calcLineAmount(scope.row)"
+              />
             </template>
           </el-table-column>
           <el-table-column label="行金额" min-width="110">
@@ -283,16 +327,26 @@ const rules = {
 
 const getStatusType = (status: string) => {
   const map: Record<string, string> = {
-    DRAFT: 'info', APPROVING: 'warning', APPROVED: 'success',
-    EXECUTING: '', COMPLETED: 'success', TERMINATED: 'danger', REJECTED: 'danger'
+    DRAFT: 'info',
+    APPROVING: 'warning',
+    APPROVED: 'success',
+    EXECUTING: '',
+    COMPLETED: 'success',
+    TERMINATED: 'danger',
+    REJECTED: 'danger'
   };
   return map[status] || 'info';
 };
 
 const getStatusLabel = (status: string) => {
   const map: Record<string, string> = {
-    DRAFT: '草稿', APPROVING: '审批中', APPROVED: '已批准',
-    EXECUTING: '执行中', COMPLETED: '已完成', TERMINATED: '已终止', REJECTED: '已驳回'
+    DRAFT: '草稿',
+    APPROVING: '审批中',
+    APPROVED: '已批准',
+    EXECUTING: '执行中',
+    COMPLETED: '已完成',
+    TERMINATED: '已终止',
+    REJECTED: '已驳回'
   };
   return map[status] || status;
 };
@@ -395,3 +449,18 @@ const openVendorDialog = () => {
 
 getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

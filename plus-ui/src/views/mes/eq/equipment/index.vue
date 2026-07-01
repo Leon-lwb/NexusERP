@@ -1,25 +1,35 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="设备编码" prop="equipmentCode">
-          <el-input v-model="queryParams.equipmentCode" placeholder="请输入设备编码" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="设备名称" prop="equipmentName">
-          <el-input v-model="queryParams.equipmentName" placeholder="请输入设备名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 140px">
-            <el-option label="正常" value="NORMAL" />
-            <el-option label="保养中" value="MAINTENANCE" />
-            <el-option label="故障" value="FAULT" />
-            <el-option label="已报废" value="SCRAPPED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="设备编码" prop="equipmentCode">
+              <el-input v-model="queryParams.equipmentCode" placeholder="请输入设备编码" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="设备名称" prop="equipmentName">
+              <el-input v-model="queryParams.equipmentName" placeholder="请输入设备名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="正常" value="NORMAL" />
+                <el-option label="保养中" value="MAINTENANCE" />
+                <el-option label="故障" value="FAULT" />
+                <el-option label="已报废" value="SCRAPPED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -29,30 +39,29 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="设备编码" prop="equipmentCode" width="140" />
-        <el-table-column label="设备名称" prop="equipmentName" width="160" />
-        <el-table-column label="类型" prop="equipmentType" width="100">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="设备编码" prop="equipmentCode" />
+        <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="类型" prop="equipmentType">
           <template #default="scope">{{ scope.row.equipmentType || '-' }}</template>
         </el-table-column>
-        <el-table-column label="型号" prop="model" width="120">
+        <el-table-column label="型号" prop="model">
           <template #default="scope">{{ scope.row.model || '-' }}</template>
         </el-table-column>
-        <el-table-column label="工作中心" prop="workcenterCode" width="120">
+        <el-table-column label="工作中心" prop="workcenterCode">
           <template #default="scope">{{ scope.row.workcenterCode || '-' }}</template>
         </el-table-column>
-        <el-table-column label="安装位置" prop="location" show-overflow-tooltip>
+        <el-table-column label="安装位置" prop="location" min-width="120" show-overflow-tooltip>
           <template #default="scope">{{ scope.row.location || '-' }}</template>
         </el-table-column>
-        <el-table-column label="状态" prop="status" width="100" align="center">
+        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
             <el-tag :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="IoT设备ID" prop="iotDeviceId" width="100" align="right">
-          <template #default="scope">{{ scope.row.iotDeviceId || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="IoT 在线" align="center" width="100">
+        <!-- 技术债:IoT在线状态暂无对应字典,使用硬编码 el-tag -->
+        <el-table-column label="IoT 在线" align="center">
           <template #default="scope">
             <el-tag v-if="scope.row.iotStatus === 'ONLINE'" type="success" size="small">在线</el-tag>
             <el-tag v-else-if="scope.row.iotStatus === 'OFFLINE'" type="info" size="small">离线</el-tag>
@@ -60,7 +69,7 @@
             <el-tag v-else type="danger" size="small">未知</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" align="center" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleOpenEdit(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">编辑</el-button>
             <el-button v-if="scope.row.iotDeviceId" link type="primary" icon="View" @click="handleViewIotLatest(scope.row)">IoT数据</el-button>
@@ -193,8 +202,7 @@
         </el-form-item>
         <el-form-item label="IoT 设备">
           <el-select v-model="iotBindDialog.iotDeviceId" placeholder="请选择 IoT 设备" clearable filterable>
-            <el-option v-for="d in iotBindDialog.iotDeviceList" :key="d.deviceId"
-                       :label="d.deviceCode + ' - ' + d.deviceName" :value="d.deviceId" />
+            <el-option v-for="d in iotBindDialog.iotDeviceList" :key="d.deviceId" :label="d.deviceCode + ' - ' + d.deviceName" :value="d.deviceId" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -409,3 +417,18 @@ onMounted(() => {
   }
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

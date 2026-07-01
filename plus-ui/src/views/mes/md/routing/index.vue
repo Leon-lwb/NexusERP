@@ -1,36 +1,42 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="工艺路线编码" prop="routingCode">
-          <el-input v-model="queryParams.routingCode" placeholder="请输入编码" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="工艺路线名称" prop="routingName">
-          <el-input v-model="queryParams.routingName" placeholder="请输入名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="工艺路线编码" prop="routingCode">
+              <el-input v-model="queryParams.routingCode" placeholder="请输入编码" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="工艺路线名称" prop="routingName">
+              <el-input v-model="queryParams.routingName" placeholder="请输入名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="工艺路线编码" prop="routingCode" width="160" />
-        <el-table-column label="工艺路线名称" prop="routingName" show-overflow-tooltip />
-        <el-table-column label="物料编码" prop="materialCode" width="140" />
-        <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="版本" prop="routingVersion" width="80" align="center" />
-        <el-table-column label="是否当前版本" prop="isCurrent" width="120" align="center">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="工艺路线编码" prop="routingCode" />
+        <el-table-column label="工艺路线名称" prop="routingName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="物料编码" prop="materialCode" />
+        <el-table-column label="物料名称" prop="materialName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="版本" prop="routingVersion" align="center" />
+        <el-table-column label="是否当前版本" prop="isCurrent" align="center">
           <template #default="scope">
             <el-tag v-if="scope.row.isCurrent === 1" type="success">是</el-tag>
             <span v-else>否</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" prop="status" width="80" align="center">
+        <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="Number(scope.row.status) === 1 ? 'success' : 'danger'">
-              {{ Number(scope.row.status) === 1 ? '正常' : '停用' }}
-            </el-tag>
+            <dict-tag :options="sys_core_status" :value="scope.row.status" />
           </template>
         </el-table-column>
       </el-table>
@@ -44,6 +50,7 @@
 import { listRouting } from '@/api/erp/bd/routing/index';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
 
 const dataList = ref<any[]>([]);
 const loading = ref(true);
@@ -82,3 +89,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

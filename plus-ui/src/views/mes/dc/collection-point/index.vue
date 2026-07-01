@@ -1,29 +1,41 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="采集点编码" prop="pointCode">
-          <el-input v-model="queryParams.pointCode" placeholder="请输入采集点编码" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="采集点名称" prop="pointName">
-          <el-input v-model="queryParams.pointName" placeholder="请输入采集点名称" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="类型" prop="pointType">
-          <el-select v-model="queryParams.pointType" placeholder="请选择类型" clearable style="width: 130px">
-            <el-option label="手动" value="MANUAL" />
-            <el-option label="自动" value="AUTO" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
-            <el-option label="启用" value="ACTIVE" />
-            <el-option label="停用" value="INACTIVE" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="采集点编码" prop="pointCode">
+              <el-input v-model="queryParams.pointCode" placeholder="请输入采集点编码" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="采集点名称" prop="pointName">
+              <el-input v-model="queryParams.pointName" placeholder="请输入采集点名称" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="类型" prop="pointType">
+              <el-select v-model="queryParams.pointType" placeholder="请选择类型" clearable style="width: 100%">
+                <el-option label="手动" value="MANUAL" />
+                <el-option label="自动" value="AUTO" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="启用" value="ACTIVE" />
+                <el-option label="停用" value="INACTIVE" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="18" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -33,32 +45,31 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="采集点编码" prop="pointCode" width="150" />
-        <el-table-column label="采集点名称" prop="pointName" width="180" />
-        <el-table-column label="类型" prop="pointType" width="90" align="center">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="采集点编码" prop="pointCode" />
+        <el-table-column label="采集点名称" prop="pointName" min-width="120" show-overflow-tooltip />
+        <!-- 技术债:类型暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="类型" prop="pointType" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.pointType === 'AUTO' ? 'primary' : 'info'">{{ scope.row.pointType === 'AUTO' ? '自动' : '手动' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="数据类型" prop="dataType" width="100">
+        <el-table-column label="数据类型" prop="dataType">
           <template #default="scope">{{ scope.row.dataType || '-' }}</template>
         </el-table-column>
-        <el-table-column label="单位" prop="unit" width="90">
+        <el-table-column label="单位" prop="unit">
           <template #default="scope">{{ scope.row.unit || '-' }}</template>
         </el-table-column>
-        <el-table-column label="频率(秒)" prop="frequency" width="90" align="right">
+        <el-table-column label="频率(秒)" prop="frequency" align="right">
           <template #default="scope">{{ scope.row.frequency ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="设备ID" prop="equipmentId" width="90" align="right">
-          <template #default="scope">{{ scope.row.equipmentId || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="状态" prop="status" width="90" align="center">
+        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
+        <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.status === 'ACTIVE' ? 'success' : 'info'">{{ scope.row.status === 'ACTIVE' ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleOpenEdit(scope.row)" v-hasPermi="['mes:dc:point:edit']">编辑</el-button>
             <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:dc:point:remove']">删除</el-button>
@@ -232,3 +243,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

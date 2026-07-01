@@ -50,14 +50,14 @@ const renderExecutionChart = (data: any[]) => {
     title: { text: '采购执行趋势' },
     tooltip: { trigger: 'axis' },
     legend: { data: ['订单数', '完成率(%)'] },
-    xAxis: { type: 'category', data: data.map(d => d.month) },
+    xAxis: { type: 'category', data: data.map((d) => d.month) },
     yAxis: [
       { type: 'value', name: '订单数' },
       { type: 'value', name: '完成率(%)', max: 100 }
     ],
     series: [
-      { name: '订单数', type: 'bar', data: data.map(d => d.orderCount) },
-      { name: '完成率(%)', type: 'line', yAxisIndex: 1, data: data.map(d => d.completionRate) }
+      { name: '订单数', type: 'bar', data: data.map((d) => d.orderCount) },
+      { name: '完成率(%)', type: 'line', yAxisIndex: 1, data: data.map((d) => d.completionRate) }
     ]
   });
   window.addEventListener('resize', () => chart.resize());
@@ -68,9 +68,9 @@ const renderDeliveryChart = (data: any[]) => {
   chart.setOption({
     title: { text: '供应商交货准时率' },
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: data.map(d => d.vendorName), axisLabel: { rotate: 30 } },
+    xAxis: { type: 'category', data: data.map((d) => d.vendorName), axisLabel: { rotate: 30 } },
     yAxis: { type: 'value', name: '准时率(%)', max: 100 },
-    series: [{ type: 'bar', data: data.map(d => d.onTimeRate), itemStyle: { color: '#67C23A' } }]
+    series: [{ type: 'bar', data: data.map((d) => d.onTimeRate), itemStyle: { color: '#67C23A' } }]
   });
   window.addEventListener('resize', () => chart.resize());
 };

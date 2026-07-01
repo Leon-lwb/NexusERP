@@ -1,21 +1,31 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="分类编码" prop="categoryCode">
-        <el-input v-model="queryParams.categoryCode" placeholder="请输入分类编码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="分类名称" prop="categoryName">
-        <el-input v-model="queryParams.categoryName" placeholder="请输入分类名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status" style="width: 160px">
-        <el-select v-model="queryParams.status" placeholder="请选择" clearable>
-          <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="parseInt(dict.value)" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="分类编码" prop="categoryCode">
+            <el-input v-model="queryParams.categoryCode" placeholder="请输入分类编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="分类名称" prop="categoryName">
+            <el-input v-model="queryParams.categoryName" placeholder="请输入分类名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 100%">
+              <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="parseInt(dict.value)" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -34,22 +44,23 @@
       row-key="categoryId"
       :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
       ref="tableRef"
+      show-overflow-tooltip
     >
-      <el-table-column label="分类名称" align="left" prop="categoryName" />
+      <el-table-column label="分类名称" align="left" prop="categoryName" min-width="120" show-overflow-tooltip />
       <el-table-column label="分类编码" align="center" prop="categoryCode" />
-      <el-table-column label="分类描述" align="center" prop="categoryDesc" />
-      <el-table-column label="显示排序" align="center" prop="sortOrder" width="100" />
-      <el-table-column label="状态" align="center" prop="status" width="100">
+      <el-table-column label="分类描述" align="center" prop="categoryDesc" min-width="120" show-overflow-tooltip />
+      <el-table-column label="显示排序" align="center" prop="sortOrder" />
+      <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+      <el-table-column label="创建时间" align="center" prop="createTime">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['bd:category:query']">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:category:edit']">修改</el-button>
@@ -312,3 +323,18 @@ function toggleRowExpansion(rows, expanded) {
 
 getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

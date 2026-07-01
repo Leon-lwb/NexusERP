@@ -9,13 +9,7 @@
         </span>
       </div>
       <div class="panel-body">
-        <div
-          v-for="cat in categories"
-          :key="cat"
-          class="category-item"
-          :class="{ active: selectedCategory === cat }"
-          @click="selectCategory(cat)"
-        >
+        <div v-for="cat in categories" :key="cat" class="category-item" :class="{ active: selectedCategory === cat }" @click="selectCategory(cat)">
           <span class="category-name">{{ cat }}</span>
           <el-tag size="small" type="info" class="count-tag">{{ baseUnitCountMap[cat] || 0 }}</el-tag>
         </div>
@@ -30,14 +24,7 @@
           <el-icon><ScaleToOriginal /></el-icon>
           基本单位
         </span>
-        <el-button
-          v-hasPermi="['bd:measure:add']"
-          link
-          type="primary"
-          icon="Plus"
-          size="small"
-          @click="handleAddBase"
-        >新增</el-button>
+        <el-button v-hasPermi="['bd:measure:add']" link type="primary" icon="Plus" size="small" @click="handleAddBase">新增</el-button>
       </div>
       <div class="panel-body" v-loading="baseUnitLoading">
         <div
@@ -55,22 +42,8 @@
             </div>
           </div>
           <div class="baseunit-actions">
-            <el-button
-              v-hasPermi="['bd:measure:edit']"
-              link
-              type="primary"
-              icon="Edit"
-              size="small"
-              @click.stop="handleUpdate(unit)"
-            />
-            <el-button
-              v-hasPermi="['bd:measure:remove']"
-              link
-              type="danger"
-              icon="Delete"
-              size="small"
-              @click.stop="handleDelete(unit)"
-            />
+            <el-button v-hasPermi="['bd:measure:edit']" link type="primary" icon="Edit" size="small" @click.stop="handleUpdate(unit)" />
+            <el-button v-hasPermi="['bd:measure:remove']" link type="danger" icon="Delete" size="small" @click.stop="handleDelete(unit)" />
           </div>
         </div>
         <el-empty v-if="!baseUnitLoading && baseUnitList.length === 0" description="暂无基本单位" :image-size="60" />
@@ -109,30 +82,18 @@
                 <el-tag size="small" type="info" class="count-badge">{{ derivedUnitList.length }}</el-tag>
               </span>
               <div class="header-actions">
-                <el-button
-                  type="warning"
-                  plain
-                  icon="Download"
-                  size="small"
-                  @click="handleExport"
-                  v-hasPermi="['bd:measure:export']"
-                >导出</el-button>
-                <el-button
-                  v-hasPermi="['bd:measure:add']"
-                  type="primary"
-                  plain
-                  icon="Plus"
-                  size="small"
-                  @click="handleAddDerived"
-                >新增衍生单位</el-button>
+                <el-button type="warning" plain icon="Download" size="small" @click="handleExport" v-hasPermi="['bd:measure:export']">导出</el-button>
+                <el-button v-hasPermi="['bd:measure:add']" type="primary" plain icon="Plus" size="small" @click="handleAddDerived"
+                  >新增衍生单位</el-button
+                >
               </div>
             </div>
           </template>
 
-          <el-table v-loading="derivedUnitLoading" :data="derivedUnitList" stripe>
-            <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
+          <el-table v-loading="derivedUnitLoading" :data="derivedUnitList" stripeshow-overflow-tooltip>
+            <el-table-column label="排序" align="center" prop="sortOrder" />
             <el-table-column label="单位编码" align="center" prop="uomCode" />
-            <el-table-column label="单位名称" align="center" prop="uomName" />
+            <el-table-column label="单位名称" align="center" prop="uomName" min-width="120" show-overflow-tooltip />
             <el-table-column label="单位符号" align="center" prop="uomSymbol" />
             <el-table-column label="转换率" align="center" prop="conversionRate" min-width="180">
               <template #default="scope">
@@ -141,12 +102,12 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column label="状态" align="center" prop="status" width="80">
+            <el-table-column label="状态" align="center" prop="status">
               <template #default="scope">
                 <dict-tag :options="sys_core_status" :value="scope.row.status" />
               </template>
             </el-table-column>
-            <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+            <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
               <template #default="scope">
                 <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:measure:edit']">修改</el-button>
                 <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:measure:remove']">删除</el-button>
@@ -191,7 +152,9 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="单位类别" prop="category">
-              <el-select v-model="form.category" placeholder="请选择单位类别" clearable style="width: 100%"><el-option v-for="item in categories" :key="item" :label="item" :value="item" /></el-select>
+              <el-select v-model="form.category" placeholder="请选择单位类别" clearable style="width: 100%"
+                ><el-option v-for="item in categories" :key="item" :label="item" :value="item"
+              /></el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -200,8 +163,7 @@
           <el-col :span="12">
             <el-form-item label="基本单位" prop="isBase">
               <el-select v-model="form.isBase" placeholder="是/否" style="width: 100%" @change="handleBaseUnitChange">
-                <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label"
-                  :value="dict.value"></el-option>
+                <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
             </el-form-item>
           </el-col>
@@ -229,15 +191,13 @@
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
-                <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label"
-                  :value="dict.value"></el-option>
+                <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="排序" prop="sortOrder">
-              <el-input-number v-model="form.sortOrder" placeholder="请输入排序" controls-position="right"
-                style="width: 100%" />
+              <el-input-number v-model="form.sortOrder" placeholder="请输入排序" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -253,7 +213,7 @@
 
       <div v-if="isViewMode && form.isBase === '1'" style="margin-top: 20px; border-top: 1px solid #e8e8e8; padding-top: 16px">
         <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #333">引用该基本单位的衍生单位</h4>
-        <el-table v-loading="derivedUnitLoading" :data="derivedUnitList" max-height="300" border>
+        <el-table v-loading="derivedUnitLoading" :data="derivedUnitList" max-height="300" bordershow-overflow-tooltip>
           <el-table-column label="单位编码" align="center" prop="uomCode" />
           <el-table-column label="单位名称" align="center" prop="uomName" />
           <el-table-column label="单位符号" align="center" prop="uomSymbol" />
@@ -275,12 +235,10 @@
     <el-dialog title="选择基本单位" v-model="baseUnitVisible" width="800px" append-to-body>
       <el-form :model="baseUnitQueryParams" ref="baseUnitQueryRef" :inline="true">
         <el-form-item label="单位编码" prop="uomCode">
-          <el-input v-model="baseUnitQueryParams.uomCode" placeholder="请输入单位编码" clearable
-            @keyup.enter="getBaseUnitList" />
+          <el-input v-model="baseUnitQueryParams.uomCode" placeholder="请输入单位编码" clearable @keyup.enter="getBaseUnitList" />
         </el-form-item>
         <el-form-item label="单位名称" prop="uomName">
-          <el-input v-model="baseUnitQueryParams.uomName" placeholder="请输入单位名称" clearable
-            @keyup.enter="getBaseUnitList" />
+          <el-input v-model="baseUnitQueryParams.uomName" placeholder="请输入单位名称" clearable @keyup.enter="getBaseUnitList" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" @click="getBaseUnitList">搜索</el-button>
@@ -288,7 +246,7 @@
         </el-form-item>
       </el-form>
 
-      <el-table v-loading="baseUnitLoading" :data="baseUnitListDialog" @row-dblclick="selectBaseUnit">
+      <el-table v-loading="baseUnitLoading" :data="baseUnitListDialog" @row-dblclick="selectBaseUnit" show-overflow-tooltip>
         <el-table-column label="单位编码" align="center" prop="uomCode" />
         <el-table-column label="单位名称" align="center" prop="uomName" />
         <el-table-column label="单位符号" align="center" prop="uomSymbol" />
@@ -300,8 +258,13 @@
         </el-table-column>
       </el-table>
 
-      <pagination v-show="baseUnitTotal > 0" :total="baseUnitTotal" v-model:page="baseUnitQueryParams.pageNum"
-        v-model:limit="baseUnitQueryParams.pageSize" @pagination="getBaseUnitList" />
+      <pagination
+        v-show="baseUnitTotal > 0"
+        :total="baseUnitTotal"
+        v-model:page="baseUnitQueryParams.pageNum"
+        v-model:limit="baseUnitQueryParams.pageSize"
+        @pagination="getBaseUnitList"
+      />
 
       <template #footer>
         <div class="dialog-footer">
@@ -313,31 +276,31 @@
 </template>
 
 <script setup lang="ts" name="Measure">
-import { listMeasure, getMeasure, delMeasure, addMeasure, updateMeasure, listByPrimary, listCategories } from "@/api/erp/bd/measure"
-import { Folder, ScaleToOriginal, Collection, Connection } from '@element-plus/icons-vue'
+import { listMeasure, getMeasure, delMeasure, addMeasure, updateMeasure, listByPrimary, listCategories } from '@/api/erp/bd/measure';
+import { Folder, ScaleToOriginal, Collection, Connection } from '@element-plus/icons-vue';
 
-const { proxy } = getCurrentInstance()
-const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'))
+const { proxy } = getCurrentInstance();
+const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'));
 
 // ==================== 级联布局数据 ====================
-const categories = ref([])
-const baseUnitList = ref([])
-const baseUnitCountMap = ref<Record<string, number>>({})
-const derivedUnitList = ref([])
-const baseUnitLoading = ref(false)
-const derivedUnitLoading = ref(false)
-const selectedCategory = ref('')
-const selectedBaseUnit = ref<any>(null)
+const categories = ref([]);
+const baseUnitList = ref([]);
+const baseUnitCountMap = ref<Record<string, number>>({});
+const derivedUnitList = ref([]);
+const baseUnitLoading = ref(false);
+const derivedUnitLoading = ref(false);
+const selectedCategory = ref('');
+const selectedBaseUnit = ref<any>(null);
 
 // ==================== 原有弹窗数据 ====================
-const open = ref(false)
-const loading = ref(false)
-const title = ref("")
-const isViewMode = ref(false)
-const baseUnitVisible = ref(false)
-const baseUnitListDialog = ref([])
-const baseUnitTotal = ref(0)
-const baseUnitName = ref('')
+const open = ref(false);
+const loading = ref(false);
+const title = ref('');
+const isViewMode = ref(false);
+const baseUnitVisible = ref(false);
+const baseUnitListDialog = ref([]);
+const baseUnitTotal = ref(0);
+const baseUnitName = ref('');
 
 const baseUnitQueryParams = reactive({
   pageNum: 1,
@@ -346,7 +309,7 @@ const baseUnitQueryParams = reactive({
   uomName: undefined,
   isBase: '1',
   excludeId: undefined
-})
+});
 
 const data = reactive({
   form: {},
@@ -358,90 +321,94 @@ const data = reactive({
     uomSymbol: null,
     category: null,
     isBase: null,
-    status: null,
+    status: null
   }
-})
+});
 
-const { queryParams, form } = toRefs(data)
+const { queryParams, form } = toRefs(data);
 
 const rules = computed(() => ({
-  uomCode: [{ required: true, message: "单位编码不能为空", trigger: "blur" }],
-  uomName: [{ required: true, message: "单位名称不能为空", trigger: "blur" }],
-  uomSymbol: [{ required: true, message: "单位符号不能为空", trigger: "blur" }],
-  category: [{ required: true, message: "单位类别不能为空", trigger: "blur" }],
-  isBase: [{ required: true, message: "是否基本单位不能为空", trigger: "change" }],
-  conversionRate: [{ required: form.value.isBase === '0', message: "转换率不能为空", trigger: "blur" }],
-  status: [{ required: true, message: "状态不能为空", trigger: "change" }],
-}))
+  uomCode: [{ required: true, message: '单位编码不能为空', trigger: 'blur' }],
+  uomName: [{ required: true, message: '单位名称不能为空', trigger: 'blur' }],
+  uomSymbol: [{ required: true, message: '单位符号不能为空', trigger: 'blur' }],
+  category: [{ required: true, message: '单位类别不能为空', trigger: 'blur' }],
+  isBase: [{ required: true, message: '是否基本单位不能为空', trigger: 'change' }],
+  conversionRate: [{ required: form.value.isBase === '0', message: '转换率不能为空', trigger: 'blur' }],
+  status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
+}));
 
 // ==================== 初始化 ====================
 onMounted(() => {
-  loadCategories()
-  loadAllBaseUnits()
-})
+  loadCategories();
+  loadAllBaseUnits();
+});
 
 /** 加载类别列表 */
 function loadCategories() {
-  listCategories().then(response => {
-    categories.value = response.data || response
+  listCategories().then((response) => {
+    categories.value = response.data || response;
     if (categories.value.length > 0 && !selectedCategory.value) {
-      selectCategory(categories.value[0])
+      selectCategory(categories.value[0]);
     }
-  })
+  });
 }
 
 /** 加载所有基本单位用于统计 */
 function loadAllBaseUnits() {
   listMeasure({ pageNum: 1, pageSize: 9999, isBase: '1' }).then((res: any) => {
-    const units = res.rows || []
-    const countMap: Record<string, number> = {}
+    const units = res.rows || [];
+    const countMap: Record<string, number> = {};
     units.forEach((u: any) => {
-      if (u.category) countMap[u.category] = (countMap[u.category] || 0) + 1
-    })
-    baseUnitCountMap.value = countMap
-  })
+      if (u.category) countMap[u.category] = (countMap[u.category] || 0) + 1;
+    });
+    baseUnitCountMap.value = countMap;
+  });
 }
 
 // ==================== 级联选择 ====================
 function selectCategory(category: string) {
-  selectedCategory.value = category
-  selectedBaseUnit.value = null
-  derivedUnitList.value = []
-  loadBaseUnitsByCategory(category)
+  selectedCategory.value = category;
+  selectedBaseUnit.value = null;
+  derivedUnitList.value = [];
+  loadBaseUnitsByCategory(category);
 }
 
 function loadBaseUnitsByCategory(category: string) {
-  baseUnitLoading.value = true
-  listMeasure({ pageNum: 1, pageSize: 9999, category, isBase: '1' }).then((res: any) => {
-    baseUnitList.value = res.rows || []
-    baseUnitLoading.value = false
-    if (baseUnitList.value.length > 0) {
-      selectBaseUnit(baseUnitList.value[0])
-    }
-  }).catch(() => {
-    baseUnitLoading.value = false
-  })
+  baseUnitLoading.value = true;
+  listMeasure({ pageNum: 1, pageSize: 9999, category, isBase: '1' })
+    .then((res: any) => {
+      baseUnitList.value = res.rows || [];
+      baseUnitLoading.value = false;
+      if (baseUnitList.value.length > 0) {
+        selectBaseUnit(baseUnitList.value[0]);
+      }
+    })
+    .catch(() => {
+      baseUnitLoading.value = false;
+    });
 }
 
 function selectBaseUnit(unit: any) {
-  selectedBaseUnit.value = unit
-  loadDerivedUnits(unit.uomId)
+  selectedBaseUnit.value = unit;
+  loadDerivedUnits(unit.uomId);
 }
 
 function loadDerivedUnits(primaryId: number) {
-  derivedUnitLoading.value = true
-  listByPrimary(primaryId).then((res: any) => {
-    derivedUnitList.value = res.data || []
-    derivedUnitLoading.value = false
-  }).catch(() => {
-    derivedUnitLoading.value = false
-  })
+  derivedUnitLoading.value = true;
+  listByPrimary(primaryId)
+    .then((res: any) => {
+      derivedUnitList.value = res.data || [];
+      derivedUnitLoading.value = false;
+    })
+    .catch(() => {
+      derivedUnitLoading.value = false;
+    });
 }
 
 // ==================== 弹窗操作 ====================
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 function reset() {
@@ -462,180 +429,188 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  }
-  baseUnitName.value = ''
-  proxy.resetForm("measureRef")
+  };
+  baseUnitName.value = '';
+  proxy.resetForm('measureRef');
 }
 
 function normalizeFormData(data: any) {
-  data.isBase = String(data.isBase)
-  data.status = String(data.status)
-  return data
+  data.isBase = String(data.isBase);
+  data.status = String(data.status);
+  return data;
 }
 
 /** 新增基本单位 */
 function handleAddBase() {
-  reset()
-  isViewMode.value = false
-  form.value.category = selectedCategory.value || categories.value[0] || ''
-  form.value.isBase = '1'
-  form.value.status = '1'
-  open.value = true
-  title.value = "新增基本单位"
+  reset();
+  isViewMode.value = false;
+  form.value.category = selectedCategory.value || categories.value[0] || '';
+  form.value.isBase = '1';
+  form.value.status = '1';
+  open.value = true;
+  title.value = '新增基本单位';
 }
 
 /** 新增衍生单位 */
 function handleAddDerived() {
-  if (!selectedBaseUnit.value) return
-  reset()
-  isViewMode.value = false
-  form.value.category = selectedBaseUnit.value.category
-  form.value.isBase = '0'
-  form.value.status = '1'
-  form.value.primaryId = selectedBaseUnit.value.uomId
-  form.value.primaryName = selectedBaseUnit.value.uomName
-  open.value = true
-  title.value = `新增「${selectedBaseUnit.value.uomName}」的衍生单位`
+  if (!selectedBaseUnit.value) return;
+  reset();
+  isViewMode.value = false;
+  form.value.category = selectedBaseUnit.value.category;
+  form.value.isBase = '0';
+  form.value.status = '1';
+  form.value.primaryId = selectedBaseUnit.value.uomId;
+  form.value.primaryName = selectedBaseUnit.value.uomName;
+  open.value = true;
+  title.value = `新增「${selectedBaseUnit.value.uomName}」的衍生单位`;
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row: any) {
-  reset()
-  isViewMode.value = false
-  getMeasure(row.uomId).then(response => {
-    const data = normalizeFormData(response.data)
-    form.value = data
+  reset();
+  isViewMode.value = false;
+  getMeasure(row.uomId).then((response) => {
+    const data = normalizeFormData(response.data);
+    form.value = data;
     if (data.primaryId) {
-      loadPrimaryUnitName(data.primaryId)
+      loadPrimaryUnitName(data.primaryId);
     }
-    open.value = true
-    title.value = "修改计量单位"
-  })
+    open.value = true;
+    title.value = '修改计量单位';
+  });
 }
 
 /** 查看按钮操作 */
 function handleView(row: any) {
-  reset()
-  isViewMode.value = true
-  getMeasure(row.uomId).then(response => {
-    const data = normalizeFormData(response.data)
-    form.value = data
+  reset();
+  isViewMode.value = true;
+  getMeasure(row.uomId).then((response) => {
+    const data = normalizeFormData(response.data);
+    form.value = data;
     if (data.primaryId) {
-      loadPrimaryUnitName(data.primaryId)
+      loadPrimaryUnitName(data.primaryId);
     }
     if (data.isBase === '1') {
-      loadDerivedUnits(data.uomId)
+      loadDerivedUnits(data.uomId);
     }
-    open.value = true
-    title.value = "查看计量单位"
-  })
+    open.value = true;
+    title.value = '查看计量单位';
+  });
 }
 
 function loadPrimaryUnitName(primaryId: number) {
   if (primaryId) {
-    getMeasure(primaryId).then(response => {
-      form.value.primaryName = response.data.uomName
-      baseUnitName.value = response.data.uomName
-    })
+    getMeasure(primaryId).then((response) => {
+      form.value.primaryName = response.data.uomName;
+      baseUnitName.value = response.data.uomName;
+    });
   }
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["measureRef"].validate(valid => {
+  proxy.$refs['measureRef'].validate((valid) => {
     if (valid) {
-      const submitForm = { ...form.value }
+      const submitForm = { ...form.value };
       if (submitForm.isBase === '1') {
-        submitForm.primaryId = null
-        submitForm.primaryName = null
+        submitForm.primaryId = null;
+        submitForm.primaryName = null;
       }
 
-      submitForm.isBase = parseInt(submitForm.isBase)
-      submitForm.status = parseInt(submitForm.status)
+      submitForm.isBase = parseInt(submitForm.isBase);
+      submitForm.status = parseInt(submitForm.status);
 
       if (submitForm.uomId != null) {
         updateMeasure(submitForm).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          refreshData()
-        })
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          refreshData();
+        });
       } else {
         addMeasure(submitForm).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          refreshData()
-        })
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          refreshData();
+        });
       }
     }
-  })
+  });
 }
 
 /** 删除按钮操作 */
 function handleDelete(row: any) {
-  const _uomIds = row.uomId
-  proxy.$modal.confirm('是否确认删除计量单位「' + row.uomName + '」？').then(function () {
-    return delMeasure(_uomIds)
-  }).then(() => {
-    proxy.$modal.msgSuccess("删除成功")
-    refreshData()
-  }).catch(() => { })
+  const _uomIds = row.uomId;
+  proxy.$modal
+    .confirm('是否确认删除计量单位「' + row.uomName + '」？')
+    .then(function () {
+      return delMeasure(_uomIds);
+    })
+    .then(() => {
+      proxy.$modal.msgSuccess('删除成功');
+      refreshData();
+    })
+    .catch(() => {});
 }
 
 /** 导出按钮操作 */
 function handleExport() {
-  if (!selectedBaseUnit.value) return
-  proxy.download('bd/measure/export', {
-    primaryId: selectedBaseUnit.value.uomId
-  }, `measure_${selectedBaseUnit.value.uomCode}_${new Date().getTime()}.xlsx`)
+  if (!selectedBaseUnit.value) return;
+  proxy.download(
+    'bd/measure/export',
+    {
+      primaryId: selectedBaseUnit.value.uomId
+    },
+    `measure_${selectedBaseUnit.value.uomCode}_${new Date().getTime()}.xlsx`
+  );
 }
 
 function handleBaseUnitChange(value: string) {
   if (value === '1') {
-    form.value.primaryId = null
-    baseUnitName.value = ''
+    form.value.primaryId = null;
+    baseUnitName.value = '';
   }
 }
 
 function openBaseUnitSelect() {
   if (form.value.isBase !== '0') {
-    proxy.$modal.msgWarning("请先选择'基本单位'为'否'")
-    return
+    proxy.$modal.msgWarning("请先选择'基本单位'为'否'");
+    return;
   }
-  baseUnitVisible.value = true
-  baseUnitQueryParams.excludeId = form.value.uomId || undefined
-  getBaseUnitList()
+  baseUnitVisible.value = true;
+  baseUnitQueryParams.excludeId = form.value.uomId || undefined;
+  getBaseUnitList();
 }
 
 function getBaseUnitList() {
-  baseUnitLoading.value = true
-  baseUnitQueryParams.isBase = '1'
-  listMeasure(baseUnitQueryParams).then(response => {
-    baseUnitListDialog.value = response.rows
-    baseUnitTotal.value = response.total
-    baseUnitLoading.value = false
-  })
+  baseUnitLoading.value = true;
+  baseUnitQueryParams.isBase = '1';
+  listMeasure(baseUnitQueryParams).then((response) => {
+    baseUnitListDialog.value = response.rows;
+    baseUnitTotal.value = response.total;
+    baseUnitLoading.value = false;
+  });
 }
 
 function pickBaseUnit(row: any) {
-  form.value.primaryId = row.uomId
-  form.value.primaryName = row.uomName
-  baseUnitName.value = row.uomName
-  baseUnitVisible.value = false
+  form.value.primaryId = row.uomId;
+  form.value.primaryName = row.uomName;
+  baseUnitName.value = row.uomName;
+  baseUnitVisible.value = false;
 }
 
 function resetBaseUnitQuery() {
-  baseUnitQueryParams.uomCode = undefined
-  baseUnitQueryParams.uomName = undefined
-  getBaseUnitList()
+  baseUnitQueryParams.uomCode = undefined;
+  baseUnitQueryParams.uomName = undefined;
+  getBaseUnitList();
 }
 
 /** 刷新数据 */
 function refreshData() {
-  loadAllBaseUnits()
+  loadAllBaseUnits();
   if (selectedCategory.value) {
-    loadBaseUnitsByCategory(selectedCategory.value)
+    loadBaseUnitsByCategory(selectedCategory.value);
   } else {
-    loadCategories()
+    loadCategories();
   }
 }
 </script>

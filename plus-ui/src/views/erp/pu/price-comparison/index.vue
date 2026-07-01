@@ -1,31 +1,37 @@
 <template>
   <div class="app-container">
     <!-- 搜索表单 -->
-    <el-form :inline="true" label-width="100px" class="query-form">
-      <el-form-item label="物料选择">
-        <el-select
-          v-model="selectedMaterialId"
-          placeholder="请选择物料"
-          filterable
-          remote
-          :remote-method="searchMaterial"
-          :loading="materialLoading"
-          style="width: 300px"
-          @change="handleMaterialChange"
-        >
-          <el-option
-            v-for="item in materialOptions"
-            :key="item.materialId"
-            :label="item.materialCode + ' - ' + item.materialName"
-            :value="item.materialId"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="queryPriceComparison" :disabled="!selectedMaterialId">查询</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        <el-button type="warning" icon="Download" @click="handleExport" :disabled="priceList.length === 0">导出</el-button>
-      </el-form-item>
+    <el-form label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="物料选择">
+            <el-select
+              v-model="selectedMaterialId"
+              placeholder="请选择物料"
+              filterable
+              remote
+              :remote-method="searchMaterial"
+              :loading="materialLoading"
+              style="width: 100%"
+              @change="handleMaterialChange"
+            >
+              <el-option
+                v-for="item in materialOptions"
+                :key="item.materialId"
+                :label="item.materialCode + ' - ' + item.materialName"
+                :value="item.materialId"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="queryPriceComparison" :disabled="!selectedMaterialId">查询</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="warning" icon="Download" @click="handleExport" :disabled="priceList.length === 0">导出</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <!-- 物料信息卡片 -->
@@ -49,33 +55,35 @@
           <el-tag type="info">共 {{ priceList.length }} 家供应商</el-tag>
         </div>
       </template>
-      <el-table :data="priceList" border stripe>
-        <el-table-column label="排名" width="70" align="center" type="index" />
-        <el-table-column label="供应商编码" prop="vendorCode" width="120" />
-        <el-table-column label="供应商名称" prop="vendorName" min-width="180" />
-        <el-table-column label="单价" prop="price" width="120" align="right">
+      <el-table :data="priceList" border stripeshow-overflow-tooltip>
+        <el-table-column label="排名" align="center" type="index" />
+        <el-table-column label="供应商编码" prop="vendorCode" />
+        <el-table-column label="供应商名称" prop="vendorName" min-width="180" show-overflow-tooltip />
+        <el-table-column label="单价" prop="price" align="right">
           <template #default="scope">
             <span :class="{ 'price-lowest': scope.$index === 0 }">
               {{ formatPrice(scope.row.price) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="币种" prop="currency" width="80" align="center" />
-        <el-table-column label="供货周期(天)" prop="leadTime" width="110" align="center" />
-        <el-table-column label="最小订货量" prop="minOrderQty" width="110" align="right">
+        <el-table-column label="币种" prop="currency" align="center" />
+        <el-table-column label="供货周期(天)" prop="leadTime" align="center" />
+        <el-table-column label="最小订货量" prop="minOrderQty" align="right">
           <template #default="scope">
             {{ formatPrice(scope.row.minOrderQty) }}
           </template>
         </el-table-column>
-        <el-table-column label="默认供应商" width="100" align="center">
+        <!-- 技术债:默认供应商标志为硬编码 el-tag,应补字典后改 dict-tag -->
+        <el-table-column label="默认供应商" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.isDefault === 1 ? 'success' : 'info'" size="small">
               {{ scope.row.isDefault === 1 ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="优先级" prop="priority" width="80" align="center" />
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column label="优先级" prop="priority" align="center" />
+        <!-- 技术债:状态为硬编码 el-tag,应补字典后改 dict-tag -->
+        <el-table-column label="状态" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="small">
               {{ scope.row.status === 1 ? '启用' : '停用' }}
@@ -127,8 +135,8 @@
 </template>
 
 <script setup lang="ts" name="PriceComparison">
-import { listMaterial } from "@/api/erp/bd/material";
-import { listPriceComparison, getPriceTrend } from "@/api/erp/pu/price-comparison";
+import { listMaterial } from '@/api/erp/bd/material';
+import { listPriceComparison, getPriceTrend } from '@/api/erp/pu/price-comparison';
 import * as echarts from 'echarts';
 
 const { proxy } = getCurrentInstance();
@@ -158,13 +166,13 @@ function formatPrice(price: number) {
 /** 最低价格 */
 const lowestPrice = computed(() => {
   if (priceList.value.length === 0) return 0;
-  return Math.min(...priceList.value.map(item => item.price || 0));
+  return Math.min(...priceList.value.map((item) => item.price || 0));
 });
 
 /** 最高价格 */
 const highestPrice = computed(() => {
   if (priceList.value.length === 0) return 0;
-  return Math.max(...priceList.value.map(item => item.price || 0));
+  return Math.max(...priceList.value.map((item) => item.price || 0));
 });
 
 /** 平均价格 */
@@ -184,7 +192,7 @@ const priceDiffPercent = computed(() => {
 function searchMaterial(query: string) {
   if (query) {
     materialLoading.value = true;
-    listMaterial({ materialName: query, pageNum: 1, pageSize: 20 }).then(response => {
+    listMaterial({ materialName: query, pageNum: 1, pageSize: 20 }).then((response) => {
       materialOptions.value = response.rows || [];
       materialLoading.value = false;
     });
@@ -196,7 +204,7 @@ function searchMaterial(query: string) {
 /** 物料选择变化 */
 function handleMaterialChange(materialId: number) {
   if (materialId) {
-    selectedMaterial.value = materialOptions.value.find(item => item.materialId === materialId);
+    selectedMaterial.value = materialOptions.value.find((item) => item.materialId === materialId);
     queryPriceComparison();
   } else {
     selectedMaterial.value = null;
@@ -208,17 +216,19 @@ function handleMaterialChange(materialId: number) {
 function queryPriceComparison() {
   if (!selectedMaterialId.value) return;
   loading.value = true;
-  listPriceComparison({ materialId: selectedMaterialId.value }).then((response: any) => {
-    priceList.value = response.data || [];
-    loading.value = false;
-    // 数据加载后渲染图表
-    nextTick(() => {
-      renderBarChart();
-      renderTrendChart();
+  listPriceComparison({ materialId: selectedMaterialId.value })
+    .then((response: any) => {
+      priceList.value = response.data || [];
+      loading.value = false;
+      // 数据加载后渲染图表
+      nextTick(() => {
+        renderBarChart();
+        renderTrendChart();
+      });
+    })
+    .catch(() => {
+      loading.value = false;
     });
-  }).catch(() => {
-    loading.value = false;
-  });
 }
 
 /** 渲染价格柱状图 */
@@ -229,8 +239,8 @@ function renderBarChart() {
     barChart = echarts.init(barChartRef.value);
   }
 
-  const vendorNames = priceList.value.map(item => item.vendorName);
-  const prices = priceList.value.map(item => item.price);
+  const vendorNames = priceList.value.map((item) => item.vendorName);
+  const prices = priceList.value.map((item) => item.price);
   const minPrice = Math.min(...prices);
 
   barChart.setOption({
@@ -251,21 +261,23 @@ function renderBarChart() {
       type: 'value',
       axisLabel: { formatter: (val: number) => val.toFixed(2) }
     },
-    series: [{
-      type: 'bar',
-      data: prices.map((price, index) => ({
-        value: price,
-        itemStyle: {
-          color: price === minPrice ? '#67c23a' : '#409eff'
+    series: [
+      {
+        type: 'bar',
+        data: prices.map((price, index) => ({
+          value: price,
+          itemStyle: {
+            color: price === minPrice ? '#67c23a' : '#409eff'
+          }
+        })),
+        barMaxWidth: 50,
+        label: {
+          show: true,
+          position: 'top',
+          formatter: (params: any) => params.value.toFixed(2)
         }
-      })),
-      barMaxWidth: 50,
-      label: {
-        show: true,
-        position: 'top',
-        formatter: (params: any) => params.value.toFixed(2)
       }
-    }]
+    ]
   });
 }
 
@@ -280,10 +292,59 @@ function renderTrendChart() {
   if (!selectedMaterialId.value) return;
 
   // 查询价格趋势数据
-  getPriceTrend(selectedMaterialId.value, 12).then((response: any) => {
-    const trendData = response.data || [];
+  getPriceTrend(selectedMaterialId.value, 12)
+    .then((response: any) => {
+      const trendData = response.data || [];
 
-    if (trendData.length === 0) {
+      if (trendData.length === 0) {
+        trendChart.setOption({
+          title: {
+            text: '暂无趋势数据',
+            left: 'center',
+            top: 'center',
+            textStyle: { color: '#999', fontSize: 14 }
+          }
+        });
+        return;
+      }
+
+      // 按供应商分组
+      const vendorMap = new Map<string, { months: string[]; prices: number[] }>();
+      trendData.forEach((item: any) => {
+        if (!vendorMap.has(item.vendorName)) {
+          vendorMap.set(item.vendorName, { months: [], prices: [] });
+        }
+        vendorMap.get(item.vendorName)!.months.push(item.month);
+        vendorMap.get(item.vendorName)!.prices.push(item.price);
+      });
+
+      // 获取所有月份（去重排序）
+      const allMonths = [...new Set(trendData.map((item: any) => item.month))].sort();
+
+      const series = Array.from(vendorMap.entries()).map(([vendorName, data]) => ({
+        name: vendorName,
+        type: 'line' as const,
+        data: allMonths.map((month) => {
+          const idx = data.months.indexOf(month);
+          return idx >= 0 ? data.prices[idx] : null;
+        }),
+        smooth: true,
+        connectNulls: true
+      }));
+
+      trendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { bottom: 0 },
+        grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+        xAxis: { type: 'category', data: allMonths, boundaryGap: false },
+        yAxis: {
+          type: 'value',
+          axisLabel: { formatter: (val: number) => val.toFixed(2) }
+        },
+        series
+      });
+    })
+    .catch(() => {
       trendChart.setOption({
         title: {
           text: '暂无趋势数据',
@@ -292,54 +353,7 @@ function renderTrendChart() {
           textStyle: { color: '#999', fontSize: 14 }
         }
       });
-      return;
-    }
-
-    // 按供应商分组
-    const vendorMap = new Map<string, { months: string[]; prices: number[] }>();
-    trendData.forEach((item: any) => {
-      if (!vendorMap.has(item.vendorName)) {
-        vendorMap.set(item.vendorName, { months: [], prices: [] });
-      }
-      vendorMap.get(item.vendorName)!.months.push(item.month);
-      vendorMap.get(item.vendorName)!.prices.push(item.price);
     });
-
-    // 获取所有月份（去重排序）
-    const allMonths = [...new Set(trendData.map((item: any) => item.month))].sort();
-
-    const series = Array.from(vendorMap.entries()).map(([vendorName, data]) => ({
-      name: vendorName,
-      type: 'line' as const,
-      data: allMonths.map(month => {
-        const idx = data.months.indexOf(month);
-        return idx >= 0 ? data.prices[idx] : null;
-      }),
-      smooth: true,
-      connectNulls: true
-    }));
-
-    trendChart.setOption({
-      tooltip: { trigger: 'axis' },
-      legend: { bottom: 0 },
-      grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
-      xAxis: { type: 'category', data: allMonths, boundaryGap: false },
-      yAxis: {
-        type: 'value',
-        axisLabel: { formatter: (val: number) => val.toFixed(2) }
-      },
-      series
-    });
-  }).catch(() => {
-    trendChart.setOption({
-      title: {
-        text: '暂无趋势数据',
-        left: 'center',
-        top: 'center',
-        textStyle: { color: '#999', fontSize: 14 }
-      }
-    });
-  });
 }
 
 /** 重置查询 */
@@ -355,12 +369,16 @@ function resetQuery() {
 /** 导出价格对比数据 */
 function handleExport() {
   if (priceList.value.length === 0) {
-    proxy.$modal.msgWarning("暂无数据可导出");
+    proxy.$modal.msgWarning('暂无数据可导出');
     return;
   }
-  proxy.download('erp/bd/materialVendor/export', {
-    materialId: selectedMaterialId.value
-  }, `price_comparison_${new Date().getTime()}.xlsx`);
+  proxy.download(
+    'erp/bd/materialVendor/export',
+    {
+      materialId: selectedMaterialId.value
+    },
+    `price_comparison_${new Date().getTime()}.xlsx`
+  );
 }
 
 /** 窗口大小变化时自适应图表 */
@@ -397,5 +415,17 @@ onBeforeUnmount(() => {
 .price-lowest {
   color: #67c23a;
   font-weight: 600;
+}
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
 }
 </style>

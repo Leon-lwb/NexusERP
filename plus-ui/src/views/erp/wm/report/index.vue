@@ -21,7 +21,7 @@
           </el-col>
           <el-col :span="12">
             <el-card shadow="never">
-              <el-table :data="summaryData" border>
+              <el-table :data="summaryData" bordershow-overflow-tooltip>
                 <el-table-column label="物料分类" prop="categoryName" />
                 <el-table-column label="物料数" prop="materialCount" align="right" />
                 <el-table-column label="总数量" prop="totalQty" align="right" />
@@ -52,7 +52,7 @@
           </el-col>
           <el-col :span="12">
             <el-card shadow="never">
-              <el-table :data="agingData" border>
+              <el-table :data="agingData" bordershow-overflow-tooltip>
                 <el-table-column label="库龄区间" prop="agingRange" />
                 <el-table-column label="SKU数" prop="skuCount" align="right" />
                 <el-table-column label="总数量" prop="totalQty" align="right" />
@@ -127,11 +127,14 @@ const renderSummaryChart = () => {
   chart.setOption({
     title: { text: '库存金额分布（按分类）' },
     tooltip: { trigger: 'item' },
-    series: [{
-      type: 'pie', radius: ['40%', '70%'],
-      data: summaryData.value.map((d: any) => ({ name: d.categoryName, value: d.totalAmount })),
-      emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' } }
-    }]
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        data: summaryData.value.map((d: any) => ({ name: d.categoryName, value: d.totalAmount })),
+        emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' } }
+      }
+    ]
   });
   window.addEventListener('resize', () => chart.resize());
 };
@@ -158,9 +161,10 @@ const renderTurnoverChart = () => {
     legend: { data: categories },
     xAxis: { type: 'category', data: months },
     yAxis: { type: 'value', name: '周转率' },
-    series: categories.map(cat => ({
-      name: cat, type: 'line',
-      data: months.map(m => {
+    series: categories.map((cat) => ({
+      name: cat,
+      type: 'line',
+      data: months.map((m) => {
         const item = turnoverData.value.find((d: any) => d.month === m && d.categoryName === cat);
         return item ? item.turnoverRate : 0;
       })

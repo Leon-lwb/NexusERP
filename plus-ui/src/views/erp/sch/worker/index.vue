@@ -1,42 +1,55 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="员工工号" prop="employeeId">
-        <el-input v-model="queryParams.employeeId" placeholder="请输入员工工号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="姓名" prop="userName">
-        <el-input v-model="queryParams.userName" placeholder="请输入姓名" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="手机号码" prop="phonenumber">
-        <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="性别" prop="sex">
-        <el-select v-model="queryParams.sex" placeholder="请选择性别" clearable>
-          <el-option v-for="dict in sys_user_sex" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="工种" prop="workCategory">
-        <el-select v-model="queryParams.workCategory" placeholder="请选择工种" clearable>
-          <el-option v-for="dict in sch_work_category" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="技能等级" prop="skillLevel">
-        <el-select v-model="queryParams.skillLevel" placeholder="请选择技能等级" clearable>
-          <el-option v-for="dict in sch_skill_level" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="在岗状态" prop="workStatus">
-        <el-select v-model="queryParams.workStatus" placeholder="请选择在岗状态" clearable>
-          <el-option v-for="dict in sch_work_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="入职日期" prop="entryDate">
-        <el-date-picker clearable v-model="queryParams.entryDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择入职日期" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="员工工号" prop="employeeId">
+            <el-input v-model="queryParams.employeeId" placeholder="请输入员工工号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="姓名" prop="userName">
+            <el-input v-model="queryParams.userName" placeholder="请输入姓名" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="手机号码" prop="phonenumber">
+            <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工种" prop="workCategory">
+            <el-select v-model="queryParams.workCategory" placeholder="请选择工种" clearable style="width: 100%">
+              <el-option v-for="dict in sch_work_category" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="在岗状态" prop="workStatus">
+            <el-select v-model="queryParams.workStatus" placeholder="请选择在岗状态" clearable style="width: 100%">
+              <el-option v-for="dict in sch_work_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="入职日期" prop="entryDate">
+            <el-date-picker
+              clearable
+              v-model="queryParams.entryDate"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择入职日期"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -55,11 +68,11 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workerList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workerList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="工人档案ID" align="center" prop="workerId" />
+      <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="员工工号" align="center" prop="employeeId" />
-      <el-table-column label="姓名" align="center" prop="userName" />
+      <el-table-column label="姓名" align="center" prop="userName" min-width="120" show-overflow-tooltip />
       <el-table-column label="手机号码" align="center" prop="phonenumber" />
       <el-table-column label="性别" align="center" prop="sex">
         <template #default="scope">
@@ -81,12 +94,12 @@
           <dict-tag :options="sch_work_status" :value="scope.row.workStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="入职日期" align="center" prop="entryDate" width="180">
+      <el-table-column label="入职日期" align="center" prop="entryDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.entryDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:worker:edit']">修改</el-button>
@@ -149,12 +162,26 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="入职日期" prop="entryDate">
-              <el-date-picker clearable v-model="form.entryDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择入职日期" style="width: 100%" />
+              <el-date-picker
+                clearable
+                v-model="form.entryDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择入职日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="转正日期" prop="regularizationDate">
-              <el-date-picker clearable v-model="form.regularizationDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择转正日期" style="width: 100%" />
+              <el-date-picker
+                clearable
+                v-model="form.regularizationDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择转正日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -177,21 +204,23 @@
 </template>
 
 <script setup lang="ts" name="Worker">
-import { listWorker, getWorker, delWorker, addWorker, updateWorker } from "@/api/erp/sch/worker"
+import { listWorker, getWorker, delWorker, addWorker, updateWorker } from '@/api/erp/sch/worker';
 
-const { proxy } = getCurrentInstance()
-const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex } = toRefs(proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex'))
+const { proxy } = getCurrentInstance();
+const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex } = toRefs(
+  proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex')
+);
 
-const workerList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const isViewMode = ref(false)
+const workerList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const isViewMode = ref(false);
 
 const data = reactive({
   form: {},
@@ -201,121 +230,152 @@ const data = reactive({
     userId: null,
     userName: null,
     phonenumber: null,
-    sex: null,
+    employeeId: null,
+    workCategory: null,
+    workStatus: null,
+    entryDate: null,
+    regularizationDate: null
+  },
+  rules: {
+    userId: [{ required: true, message: '关联的系统用户ID不能为空', trigger: 'blur' }],
+    employeeId: [{ required: true, message: '员工工号不能为空', trigger: 'blur' }]
+  }
+});
+
+const { queryParams, form, rules } = toRefs(data);
+
+function getList() {
+  loading.value = true;
+  listWorker(queryParams.value).then((response) => {
+    workerList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
+}
+
+function cancel() {
+  open.value = false;
+  reset();
+}
+
+function reset() {
+  form.value = {
+    workerId: null,
+    userId: null,
     employeeId: null,
     workCategory: null,
     skillLevel: null,
     workStatus: null,
     entryDate: null,
     regularizationDate: null,
-  },
-  rules: {
-    userId: [{ required: true, message: "关联的系统用户ID不能为空", trigger: "blur" }],
-    employeeId: [{ required: true, message: "员工工号不能为空", trigger: "blur" }],
-  }
-})
-
-const { queryParams, form, rules } = toRefs(data)
-
-function getList() {
-  loading.value = true
-  listWorker(queryParams.value).then(response => {
-    workerList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
-}
-
-function cancel() {
-  open.value = false
-  reset()
-}
-
-function reset() {
-  form.value = {
-    workerId: null, userId: null, employeeId: null,
-    workCategory: null, skillLevel: null, workStatus: null,
-    entryDate: null, regularizationDate: null,
-    userName: null, phonenumber: null, sex: null,
-    createBy: null, updateBy: null, remark: null,
-    createTime: null, updateTime: null
-  }
-  proxy.resetForm("workerRef")
+    userName: null,
+    phonenumber: null,
+    sex: null,
+    createBy: null,
+    updateBy: null,
+    remark: null,
+    createTime: null,
+    updateTime: null
+  };
+  proxy.resetForm('workerRef');
 }
 
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.workerId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.workerId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false
-  const _workerId = row.workerId || ids.value
-  getWorker(_workerId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "修改生产工人档案"
-  })
+  reset();
+  isViewMode.value = false;
+  const _workerId = row.workerId || ids.value;
+  getWorker(_workerId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '修改生产工人档案';
+  });
 }
 
 function handleView(row) {
-  reset()
-  isViewMode.value = true
-  const _workerId = row.workerId || ids.value
-  getWorker(_workerId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "查看生产工人档案"
-  })
+  reset();
+  isViewMode.value = true;
+  const _workerId = row.workerId || ids.value;
+  getWorker(_workerId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '查看生产工人档案';
+  });
 }
 
 function submitForm() {
-  proxy.$refs["workerRef"].validate(valid => {
+  proxy.$refs['workerRef'].validate((valid) => {
     if (valid) {
       if (form.value.workerId != null) {
-        updateWorker(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+        updateWorker(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
-        addWorker(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+        addWorker(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 function handleDelete(row) {
-  const _workerIds = row.workerId || ids.value
-  proxy.$modal.confirm('是否确认删除生产工人档案编号为"' + _workerIds + '"的数据项？').then(function () {
-    return delWorker(_workerIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _workerIds = row.workerId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除生产工人档案编号为"' + _workerIds + '"的数据项？')
+    .then(function () {
+      return delWorker(_workerIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 function handleExport() {
-  proxy.download('sch/worker/export', {
-    ...queryParams.value
-  }, `worker_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    'sch/worker/export',
+    {
+      ...queryParams.value
+    },
+    `worker_${new Date().getTime()}.xlsx`
+  );
 }
 
-getList()
+getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

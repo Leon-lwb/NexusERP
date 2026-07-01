@@ -1,34 +1,30 @@
 <template>
   <div class="p-2">
     <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-        <el-form-item label="SN编码" prop="snCode">
-          <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="状态" prop="snStatus">
-          <el-select v-model="queryParams.snStatus" placeholder="请选择状态" clearable style="width: 140px">
-            <el-option label="生产中" value="IN_PRODUCTION" />
-            <el-option label="已完成" value="COMPLETED" />
-            <el-option label="已报废" value="SCRAPPED" />
-            <el-option label="已发货" value="SHIPPED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="来源" prop="source">
-          <el-select v-model="queryParams.source" placeholder="请选择来源" clearable style="width: 120px">
-            <el-option label="手动" value="MANUAL" />
-            <el-option label="批量" value="BATCH" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="工单ID" prop="mesWoId">
-          <el-input v-model.number="queryParams.mesWoId" placeholder="请输入工单ID" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item label="物料ID" prop="materialId">
-          <el-input v-model.number="queryParams.materialId" placeholder="请输入物料ID" clearable @keyup.enter="handleQuery" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="SN编码" prop="snCode">
+              <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable @keyup.enter="handleQuery" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="snStatus">
+              <el-select v-model="queryParams.snStatus" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option label="生产中" value="IN_PRODUCTION" />
+                <el-option label="已完成" value="COMPLETED" />
+                <el-option label="已报废" value="SCRAPPED" />
+                <el-option label="已发货" value="SHIPPED" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" :offset="6" class="search-actions">
+            <el-form-item>
+              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <el-row :gutter="10" class="mb8">
@@ -41,34 +37,34 @@
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList">
-        <el-table-column label="SN编码" prop="snCode" width="220" />
-        <el-table-column label="工单编号" prop="woNo" width="160">
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+        <el-table-column label="SN编码" prop="snCode" />
+        <el-table-column label="工单编号" prop="woNo">
           <template #default="scope">{{ scope.row.woNo || '-' }}</template>
         </el-table-column>
-        <el-table-column label="流转卡" prop="cardNo" width="170">
+        <el-table-column label="流转卡" prop="cardNo">
           <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
         </el-table-column>
-        <el-table-column label="物料" prop="materialName" show-overflow-tooltip>
+        <el-table-column label="物料" prop="materialName" min-width="120" show-overflow-tooltip>
           <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
         </el-table-column>
-        <el-table-column label="父SN" prop="parentSnCode" width="180">
+        <el-table-column label="父SN" prop="parentSnCode">
           <template #default="scope">{{ scope.row.parentSnCode || '-' }}</template>
         </el-table-column>
-        <el-table-column label="状态" prop="snStatus" width="100" align="center">
+        <el-table-column label="生产日期" prop="productionDate" />
+        <el-table-column label="状态" prop="snStatus" align="center">
           <template #default="scope">
             <el-tag :type="statusTagType(scope.row.snStatus)">{{ statusLabel(scope.row.snStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="来源" prop="source" width="80" align="center">
+        <el-table-column label="来源" prop="source" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.source === 'BATCH' ? 'primary' : 'info'" size="small">
               {{ scope.row.source === 'BATCH' ? '批量' : '手动' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="生产日期" prop="productionDate" width="120" />
-        <el-table-column label="操作" width="240" align="center" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="View" @click="handleTrace(scope.row)" v-hasPermi="['mes:pro:sn:query']">追溯</el-button>
             <el-button
@@ -158,6 +154,7 @@
 </template>
 
 <script setup lang="ts" name="MesSn">
+// 技术债: 缺 mes_sn_status 字典, SN 状态暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
 import { listSn, generateSnForCard, createSn, completeSn, scrapSn, shipSn } from '@/api/mes/pro/sn';
 import type { ProSnVO, ProSnQuery } from '@/api/mes/pro/sn';
 
@@ -173,10 +170,7 @@ const queryParams = ref<ProSnQuery>({
   pageNum: 1,
   pageSize: 10,
   snCode: undefined,
-  snStatus: undefined,
-  source: undefined,
-  mesWoId: undefined,
-  materialId: undefined
+  snStatus: undefined
 });
 
 const generateDialog = reactive({ visible: false });
@@ -299,3 +293,18 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

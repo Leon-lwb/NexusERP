@@ -1,31 +1,46 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="人员ID" prop="workerId">
-        <el-input v-model="queryParams.workerId" placeholder="请输入人员ID" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="人员姓名" prop="workerName">
-        <el-input v-model="queryParams.workerName" placeholder="请输入人员姓名" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="考勤日期" prop="recordDate">
-        <el-date-picker clearable v-model="queryParams.recordDate" type="date" value-format="YYYY-MM-DD"
-          placeholder="请选择考勤日期">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="考勤结果" prop="attendanceStatus">
-        <el-select v-model="queryParams.attendanceStatus" placeholder="请选择考勤结果" clearable>
-          <el-option v-for="dict in sch_attendance_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="数据来源" prop="sourceType">
-        <el-select v-model="queryParams.sourceType" placeholder="请选择数据来源" clearable>
-          <el-option v-for="dict in sch_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="人员姓名" prop="workerName">
+            <el-input v-model="queryParams.workerName" placeholder="请输入人员姓名" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="考勤日期" prop="recordDate">
+            <el-date-picker
+              clearable
+              v-model="queryParams.recordDate"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择考勤日期"
+              style="width: 100%"
+            >
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="考勤结果" prop="attendanceStatus">
+            <el-select v-model="queryParams.attendanceStatus" placeholder="请选择考勤结果" clearable style="width: 100%">
+              <el-option v-for="dict in sch_attendance_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="数据来源" prop="sourceType">
+            <el-select v-model="queryParams.sourceType" placeholder="请选择数据来源" clearable style="width: 100%">
+              <el-option v-for="dict in sch_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -36,7 +51,9 @@
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['sch:attendance:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['sch:attendance:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['sch:attendance:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['sch:attendance:query']">查看</el-button>
@@ -47,22 +64,21 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="attendanceList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="attendanceList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="考勤记录ID" align="center" prop="attendanceId" />
-      <el-table-column label="人员ID" align="center" prop="workerId" />
-      <el-table-column label="人员姓名" align="center" prop="workerName" />
-      <el-table-column label="考勤日期" align="center" prop="recordDate" width="180">
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="人员姓名" align="center" prop="workerName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="考勤日期" align="center" prop="recordDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.recordDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="上班打卡时间" align="center" prop="clockInTime" width="200">
+      <el-table-column label="上班打卡时间" align="center" prop="clockInTime">
         <template #default="scope">
           <span>{{ parseTime(scope.row.clockInTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="下班打卡时间" align="center" prop="clockOutTime" width="200">
+      <el-table-column label="下班打卡时间" align="center" prop="clockOutTime">
         <template #default="scope">
           <span>{{ parseTime(scope.row.clockOutTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
@@ -79,7 +95,7 @@
           <dict-tag :options="sch_source_type" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['sch:attendance:edit']">修改</el-button>
@@ -88,8 +104,7 @@
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
-      @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form ref="attendanceRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
@@ -106,38 +121,45 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="考勤日期" prop="recordDate">
-              <el-date-picker clearable v-model="form.recordDate" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择考勤日期">
+              <el-date-picker clearable v-model="form.recordDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择考勤日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="上班打卡时间" prop="clockInTime">
-              <el-date-picker clearable v-model="form.clockInTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss"
-                placeholder="请选择上班打卡时间">
+              <el-date-picker
+                clearable
+                v-model="form.clockInTime"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="请选择上班打卡时间"
+              >
               </el-date-picker>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="下班打卡时间" prop="clockOutTime">
-              <el-date-picker clearable v-model="form.clockOutTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss"
-                placeholder="请选择下班打卡时间">
+              <el-date-picker
+                clearable
+                v-model="form.clockOutTime"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="请选择下班打卡时间"
+              >
               </el-date-picker>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="考勤结果" prop="attendanceStatus">
               <el-radio-group v-model="form.attendanceStatus">
-                <el-radio v-for="dict in sch_attendance_status" :key="dict.value"
-                  :label="dict.value">{{ dict.label }}</el-radio>
+                <el-radio v-for="dict in sch_attendance_status" :key="dict.value" :label="dict.value">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="数据来源" prop="sourceType">
               <el-select v-model="form.sourceType" placeholder="请选择数据来源">
-                <el-option v-for="dict in sch_source_type" :key="dict.value" :label="dict.label"
-                  :value="dict.value"></el-option>
+                <el-option v-for="dict in sch_source_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
             </el-form-item>
           </el-col>
@@ -159,53 +181,52 @@
 </template>
 
 <script setup lang="ts" name="SchAttendance">
-import { listAttendance, getAttendance, delAttendance, addAttendance, updateAttendance } from "@/api/erp/sch/attendance"
+import { listAttendance, getAttendance, delAttendance, addAttendance, updateAttendance } from '@/api/erp/sch/attendance';
 
-const { proxy } = getCurrentInstance()
-const { sch_attendance_status, sch_source_type } = toRefs(proxy.useDict('sch_attendance_status', 'sch_source_type'))
+const { proxy } = getCurrentInstance();
+const { sch_attendance_status, sch_source_type } = toRefs(proxy.useDict('sch_attendance_status', 'sch_source_type'));
 
-const attendanceList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const isViewMode = ref(false)
+const attendanceList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const isViewMode = ref(false);
 
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    workerId: null,
     workerName: null,
     recordDate: null,
     attendanceStatus: null,
-    sourceType: null,
+    sourceType: null
   },
   rules: {
-    workerId: [{ required: true, message: "人员ID不能为空", trigger: "blur" }],
-    recordDate: [{ required: true, message: "考勤日期不能为空", trigger: "blur" }],
+    workerId: [{ required: true, message: '人员ID不能为空', trigger: 'blur' }],
+    recordDate: [{ required: true, message: '考勤日期不能为空', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 function getList() {
-  loading.value = true
-  listAttendance(queryParams.value).then(response => {
-    attendanceList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+  loading.value = true;
+  listAttendance(queryParams.value).then((response) => {
+    attendanceList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 function reset() {
@@ -221,91 +242,114 @@ function reset() {
     overtimeHours: null,
     attendanceStatus: null,
     sourceType: null,
-    remark: null,
-  }
-  proxy.resetForm("attendanceRef")
+    remark: null
+  };
+  proxy.resetForm('attendanceRef');
 }
 
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.attendanceId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.attendanceId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 function handleAdd() {
-  reset()
-  isViewMode.value = false
-  open.value = true
-  title.value = "添加考勤记录"
+  reset();
+  isViewMode.value = false;
+  open.value = true;
+  title.value = '添加考勤记录';
 }
 
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false
-  const _attendanceId = row.attendanceId || ids.value
-  getAttendance(_attendanceId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "修改考勤记录"
-  })
+  reset();
+  isViewMode.value = false;
+  const _attendanceId = row.attendanceId || ids.value;
+  getAttendance(_attendanceId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '修改考勤记录';
+  });
 }
 
 function handleView(row) {
-  reset()
-  isViewMode.value = true
-  const _attendanceId = row.attendanceId || ids.value
-  getAttendance(_attendanceId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "查看考勤记录"
-  })
+  reset();
+  isViewMode.value = true;
+  const _attendanceId = row.attendanceId || ids.value;
+  getAttendance(_attendanceId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '查看考勤记录';
+  });
 }
 
 function submitForm() {
-  proxy.$refs["attendanceRef"].validate(valid => {
+  proxy.$refs['attendanceRef'].validate((valid) => {
     if (valid) {
       if (form.value.attendanceId != null) {
-        updateAttendance(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+        updateAttendance(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
-        addAttendance(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+        addAttendance(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 function handleDelete(row) {
-  const _attendanceIds = row.attendanceId || ids.value
-  proxy.$modal.confirm('是否确认删除考勤记录编号为"' + _attendanceIds + '"的数据项？').then(function () {
-    return delAttendance(_attendanceIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _attendanceIds = row.attendanceId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除考勤记录编号为"' + _attendanceIds + '"的数据项？')
+    .then(function () {
+      return delAttendance(_attendanceIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 function handleExport() {
-  proxy.download('erp/sch/attendance/export', {
-    ...queryParams.value
-  }, `attendance_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    'erp/sch/attendance/export',
+    {
+      ...queryParams.value
+    },
+    `attendance_${new Date().getTime()}.xlsx`
+  );
 }
 
-getList()
+getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

@@ -1,21 +1,31 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="入库单号" prop="recptCode">
-        <el-input v-model="queryParams.recptCode" placeholder="请输入入库单号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="工单号" prop="woNo">
-        <el-input v-model="queryParams.woNo" placeholder="请输入工单号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in wm_production_recpt_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="入库单号" prop="recptCode">
+            <el-input v-model="queryParams.recptCode" placeholder="请输入入库单号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工单号" prop="woNo">
+            <el-input v-model="queryParams.woNo" placeholder="请输入工单号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in wm_production_recpt_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -36,23 +46,23 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="recptList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="recptList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="入库单号" align="center" prop="recptCode" width="150" />
-      <el-table-column label="工单号" align="center" prop="woNo" width="150" />
-      <el-table-column label="物料编码" align="center" prop="materialCode" width="120" />
+      <el-table-column label="入库单号" align="center" prop="recptCode" />
+      <el-table-column label="工单号" align="center" prop="woNo" />
+      <el-table-column label="物料编码" align="center" prop="materialCode" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
-      <el-table-column label="规格" align="center" prop="materialSpec" width="120" show-overflow-tooltip />
-      <el-table-column label="入库数量" align="center" prop="quantity" width="100" />
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" />
-      <el-table-column label="库位" align="center" prop="locationName" width="120" />
-      <el-table-column label="状态" align="center" prop="status" width="100">
+      <el-table-column label="规格" align="center" prop="materialSpec" min-width="120" show-overflow-tooltip />
+      <el-table-column label="入库数量" align="center" prop="quantity" />
+      <el-table-column label="仓库" align="center" prop="warehouseName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="库位" align="center" prop="locationName" />
+      <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="wm_production_recpt_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="250">
+      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-tooltip content="执行入库" placement="top">
             <el-button
@@ -180,7 +190,7 @@
           ><el-button icon="Refresh" @click="resetWorkOrderQuery">重置</el-button></el-form-item
         >
       </el-form>
-      <el-table v-loading="workOrderLoading" :data="workOrderList" highlight-current-row height="400">
+      <el-table v-loading="workOrderLoading" :data="workOrderList" highlight-current-row height="400" show-overflow-tooltip>
         <el-table-column label="工单号" align="center" prop="woNo" />
         <el-table-column label="物料编码" align="center" prop="materialCode" />
         <el-table-column label="物料名称" align="center" prop="materialName" />
@@ -220,7 +230,13 @@
           ><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item
         >
       </el-form>
-      <el-table v-loading="warehouseLoading" :data="warehouseList" highlight-current-row @current-change="handleWarehouseSelect">
+      <el-table
+        v-loading="warehouseLoading"
+        :data="warehouseList"
+        highlight-current-row
+        @current-change="handleWarehouseSelect"
+        show-overflow-tooltip
+      >
         <el-table-column label="仓库编码" align="center" prop="warehouseCode" />
         <el-table-column label="仓库名称" align="center" prop="warehouseName" />
         <el-table-column label="操作" align="center"
@@ -454,8 +470,20 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .mb8 {
   margin-bottom: 8px;
+}
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
 }
 </style>

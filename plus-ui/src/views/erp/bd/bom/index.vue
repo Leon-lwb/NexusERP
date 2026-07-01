@@ -1,36 +1,66 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="BOM名称" prop="bomName">
-        <el-input v-model="queryParams.bomName" placeholder="请输入BOM名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="BOM类型" prop="bomType">
-        <el-select v-model="queryParams.bomType" placeholder="请选择BOM类型" clearable>
-          <el-option v-for="dict in bd_bom_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="生效日期" prop="effectiveDate">
-        <el-date-picker clearable v-model="queryParams.effectiveDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择生效日期">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="失效日期" prop="expiryDate">
-        <el-date-picker clearable v-model="queryParams.expiryDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择失效日期">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="是否当前版本" prop="isCurrent">
-        <el-select v-model="queryParams.isCurrent" placeholder="请选择是否当前版本" clearable>
-          <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="BOM名称" prop="bomName">
+            <el-input v-model="queryParams.bomName" placeholder="请输入BOM名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="BOM类型" prop="bomType">
+            <el-select v-model="queryParams.bomType" placeholder="请选择BOM类型" clearable style="width: 100%">
+              <el-option v-for="dict in bd_bom_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="生效日期" prop="effectiveDate">
+            <el-date-picker
+              clearable
+              v-model="queryParams.effectiveDate"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择生效日期"
+              style="width: 100%"
+            >
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="失效日期" prop="expiryDate">
+            <el-date-picker
+              clearable
+              v-model="queryParams.expiryDate"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择失效日期"
+              style="width: 100%"
+            >
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="是否当前版本" prop="isCurrent">
+            <el-select v-model="queryParams.isCurrent" placeholder="请选择是否当前版本" clearable style="width: 100%">
+              <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -61,7 +91,9 @@
         <el-button type="primary" plain icon="Share" :disabled="single" @click="handleViewBomTree()" v-hasPermi="['bd:bom:query']">BOM树</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="DocumentCopy" :disabled="single" @click="handleCopyBom()" v-hasPermi="['bd:bom:add']">复制BOM</el-button>
+        <el-button type="success" plain icon="DocumentCopy" :disabled="single" @click="handleCopyBom()" v-hasPermi="['bd:bom:add']"
+          >复制BOM</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="DataAnalysis" :disabled="compareDisabled" @click="handleCompareBom" v-hasPermi="['bd:bom:query']"
@@ -83,42 +115,43 @@
       :load="loadBomChildren"
       :key="tableKey"
       @selection-change="handleSelectionChange"
+      show-overflow-tooltip
     >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="50" align="center" prop="bomId" />
       <el-table-column label="BOM版本号" align="center" prop="bomVersion" sortable />
-      <el-table-column label="BOM名称" align="center" prop="bomName" show-overflow-tooltip />
-      <el-table-column label="BOM类型" align="center" prop="bomType" width="100">
+      <el-table-column label="BOM名称" align="center" prop="bomName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="BOM类型" align="center" prop="bomType">
         <template #default="scope">
           <dict-tag :options="bd_bom_type" :value="scope.row.bomType" />
         </template>
       </el-table-column>
-      <el-table-column label="生效日期" align="center" prop="effectiveDate" width="120" sortable>
+      <el-table-column label="生效日期" align="center" prop="effectiveDate" sortable>
         <template #default="scope">
           <span>{{ parseTime(scope.row.effectiveDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="失效日期" align="center" prop="expiryDate" width="120" sortable>
+      <el-table-column label="失效日期" align="center" prop="expiryDate" sortable>
         <template #default="scope">
           <span>{{ parseTime(scope.row.expiryDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="是否当前版本" align="center" prop="isCurrent" width="110">
+      <el-table-column label="是否当前版本" align="center" prop="isCurrent">
         <template #default="scope">
           <dict-tag :options="sys_true_or_false" :value="scope.row.isCurrent" />
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="90">
+      <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="sys_core_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="来源类型" align="center" prop="sourceType" width="100">
+      <el-table-column label="来源类型" align="center" prop="sourceType">
         <template #default="scope">
           <dict-tag :options="prd_material_source_type" :value="scope.row.sourceType" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="280" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" fixed="right" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:bom:edit']">修改</el-button>
@@ -240,7 +273,7 @@
           <!-- 差异明细 -->
           <el-tabs v-model="compareActiveTab">
             <el-tab-pane label="移除" name="removed" v-if="compareData.onlyInBom1.length > 0">
-              <el-table :data="compareData.onlyInBom1" border size="small">
+              <el-table :data="compareData.onlyInBom1" border size="small" show-overflow-tooltip>
                 <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
                 <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
                 <el-table-column label="规格" prop="childMaterialSpec" width="120" />
@@ -250,7 +283,7 @@
               </el-table>
             </el-tab-pane>
             <el-tab-pane label="新增" name="added" v-if="compareData.onlyInBom2.length > 0">
-              <el-table :data="compareData.onlyInBom2" border size="small">
+              <el-table :data="compareData.onlyInBom2" border size="small" show-overflow-tooltip>
                 <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
                 <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
                 <el-table-column label="规格" prop="childMaterialSpec" width="120" />
@@ -260,7 +293,7 @@
               </el-table>
             </el-tab-pane>
             <el-tab-pane label="修改" name="changed" v-if="compareData.changed.length > 0">
-              <el-table :data="compareData.changed" border size="small">
+              <el-table :data="compareData.changed" border size="small" show-overflow-tooltip>
                 <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
                 <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
                 <el-table-column label="规格" prop="childMaterialSpec" width="120" />
@@ -272,7 +305,7 @@
               </el-table>
             </el-tab-pane>
             <el-tab-pane label="相同" name="unchanged" v-if="compareData.unchanged.length > 0">
-              <el-table :data="compareData.unchanged" border size="small">
+              <el-table :data="compareData.unchanged" border size="small" show-overflow-tooltip>
                 <el-table-column label="物料编码" prop="childMaterialCode" width="120" />
                 <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
                 <el-table-column label="规格" prop="childMaterialSpec" width="120" />
@@ -292,7 +325,7 @@
 
     <!-- Where-Used 反查结果对话框 -->
     <el-dialog :title="'Where-Used反查 - ' + whereUsedMaterialName" v-model="whereUsedOpen" width="900px" append-to-body>
-      <el-table v-loading="whereUsedLoading" :data="whereUsedData" border size="small">
+      <el-table v-loading="whereUsedLoading" :data="whereUsedData" border size="small" show-overflow-tooltip>
         <el-table-column label="BOM名称" prop="bomName" min-width="150" />
         <el-table-column label="版本号" prop="bomVersion" width="100" align="center" />
         <el-table-column label="BOM类型" prop="bomType" width="100" align="center">
@@ -324,17 +357,7 @@
 </template>
 
 <script setup lang="ts" name="Bom">
-import {
-  listBom,
-  delBom,
-  activateBomVersion,
-  verifyBom,
-  getBomTree,
-  getBomChildren,
-  copyBom,
-  compareBom,
-  whereUsedBom
-} from '@/api/erp/bd/bom';
+import { listBom, delBom, activateBomVersion, verifyBom, getBomTree, getBomChildren, copyBom, compareBom, whereUsedBom } from '@/api/erp/bd/bom';
 import { useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
@@ -662,6 +685,21 @@ onActivated(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>
 
 <style scoped>
 .bom-tree-dialog-content {

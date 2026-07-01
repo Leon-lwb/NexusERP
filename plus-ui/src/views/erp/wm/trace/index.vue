@@ -62,7 +62,7 @@
     </div>
 
     <!-- 列表视图 -->
-    <el-table v-if="viewMode === 'table' && traceResult" :data="traceResult.nodes" border>
+    <el-table v-if="viewMode === 'table' && traceResult" :data="traceResult.nodes" bordershow-overflow-tooltip>
       <el-table-column label="物料编码" align="center" prop="materialCode" width="120" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
       <el-table-column label="批次编码" align="center" prop="batchCode" width="130" show-overflow-tooltip />

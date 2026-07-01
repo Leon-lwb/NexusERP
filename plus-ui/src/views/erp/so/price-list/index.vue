@@ -1,34 +1,46 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="价格表名称" prop="listName">
-        <el-input v-model="queryParams.listName" placeholder="请输入价格表名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="价格表类型" prop="listType">
-        <el-select v-model="queryParams.listType" placeholder="请选择价格表类型" clearable>
-          <el-option v-for="dict in so_price_list_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-          <el-option v-for="dict in so_price_list_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="生效日期">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="-"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="YYYY-MM-DD"
-          style="width: 240px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="价格表名称" prop="listName">
+            <el-input v-model="queryParams.listName" placeholder="请输入价格表名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="价格表类型" prop="listType">
+            <el-select v-model="queryParams.listType" placeholder="请选择价格表类型" clearable style="width: 100%">
+              <el-option v-for="dict in so_price_list_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in so_price_list_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="生效日期">
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              range-separator="-"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -47,21 +59,21 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="priceListList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="priceListList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="价格表名称" align="center" prop="listName" />
+      <el-table-column label="价格表名称" align="center" prop="listName" min-width="120" show-overflow-tooltip />
       <el-table-column label="价格表类型" align="center" prop="listType">
         <template #default="scope">
           <dict-tag :options="so_price_list_type" :value="scope.row.listType" />
         </template>
       </el-table-column>
-      <el-table-column label="客户名称" align="center" prop="clientName" />
-      <el-table-column label="生效日期" align="center" prop="effectiveDateFrom" width="120">
+      <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="生效日期" align="center" prop="effectiveDateFrom">
         <template #default="scope">
           <span>{{ parseTime(scope.row.effectiveDateFrom, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="失效日期" align="center" prop="effectiveDateTo" width="120">
+      <el-table-column label="失效日期" align="center" prop="effectiveDateTo">
         <template #default="scope">
           <span>{{ parseTime(scope.row.effectiveDateTo, '{y}-{m}-{d}') }}</span>
         </template>
@@ -71,12 +83,12 @@
           <dict-tag :options="so_price_list_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:priceList:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:priceList:remove']">删除</el-button>
@@ -194,5 +206,20 @@ function handleExport() {
 
 onActivated(() => {
   getList();
-})
+});
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

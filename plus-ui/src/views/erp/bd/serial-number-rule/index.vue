@@ -1,60 +1,73 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="规则编码" prop="ruleCode">
-        <el-input v-model="queryParams.ruleCode" placeholder="请输入规则编码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="规则名称" prop="ruleName">
-        <el-input v-model="queryParams.ruleName" placeholder="请输入规则名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="规则类型" prop="ruleType">
-        <el-select v-model="queryParams.ruleType" placeholder="请选择类型" clearable style="width: 140px;">
-          <el-option label="产品序列号" value="PRODUCT_SN" />
-          <el-option label="条码" value="BARCODE" />
-          <el-option label="批次号" value="BATCH_NO" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
-          <el-option label="启用" value="ACTIVE" />
-          <el-option label="停用" value="INACTIVE" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <!-- 技术债：规则类型/状态下拉使用硬编码 el-option，缺对应字典，待补字典后改 useDict -->
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="规则编码" prop="ruleCode">
+            <el-input v-model="queryParams.ruleCode" placeholder="请输入规则编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="规则名称" prop="ruleName">
+            <el-input v-model="queryParams.ruleName" placeholder="请输入规则名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="规则类型" prop="ruleType">
+            <el-select v-model="queryParams.ruleType" placeholder="请选择类型" clearable style="width: 100%">
+              <el-option label="产品序列号" value="PRODUCT_SN" />
+              <el-option label="条码" value="BARCODE" />
+              <el-option label="批次号" value="BATCH_NO" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option label="启用" value="ACTIVE" />
+              <el-option label="停用" value="INACTIVE" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd"
-          v-hasPermi="['bd:serialNumberRule:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:serialNumberRule:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
-          v-hasPermi="['bd:serialNumberRule:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['bd:serialNumberRule:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
-          v-hasPermi="['bd:serialNumberRule:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['bd:serialNumberRule:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView"
-          v-hasPermi="['bd:serialNumberRule:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['bd:serialNumberRule:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport"
-          v-hasPermi="['bd:serialNumberRule:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['bd:serialNumberRule:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange">
+    <!-- 技术债：状态列使用硬编码 el-tag，缺对应字典，待补字典后改 dict-tag -->
+    <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="规则编码" align="center" prop="ruleCode" width="140" />
-      <el-table-column label="规则名称" align="center" prop="ruleName" show-overflow-tooltip />
-      <el-table-column label="规则类型" align="center" prop="ruleType" width="120">
+      <el-table-column label="规则编码" align="center" prop="ruleCode" />
+      <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="规则类型" align="center" prop="ruleType">
         <template #default="scope">
           <dict-tag :options="rule_type_options" :value="scope.row.ruleType" />
         </template>
@@ -80,21 +93,17 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-            v-hasPermi="['bd:serialNumberRule:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-            v-hasPermi="['bd:serialNumberRule:remove']">删除</el-button>
-          <el-button link type="primary" icon="Key" @click="handleGenerate(scope.row)"
-            v-hasPermi="['bd:serialNumberRule:generate']">生成</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:serialNumberRule:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:serialNumberRule:remove']">删除</el-button>
+          <el-button link type="primary" icon="Key" @click="handleGenerate(scope.row)" v-hasPermi="['bd:serialNumberRule:generate']">生成</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
-      @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改序列号规则对话框 -->
     <el-dialog :title="title" v-model="open" width="700px" append-to-body>
@@ -203,8 +212,12 @@
 
 <script setup lang="ts" name="SerialNumberRule">
 import {
-  listSerialNumberRule, getSerialNumberRule, delSerialNumberRule,
-  addSerialNumberRule, updateSerialNumberRule, generateSerialNumber
+  listSerialNumberRule,
+  getSerialNumberRule,
+  delSerialNumberRule,
+  addSerialNumberRule,
+  updateSerialNumberRule,
+  generateSerialNumber
 } from '@/api/erp/bd/serial-number-rule';
 
 const { proxy } = getCurrentInstance();
@@ -254,18 +267,10 @@ const data = reactive({
     status: null
   },
   rules: {
-    ruleCode: [
-      { required: true, message: '规则编码不能为空', trigger: 'blur' }
-    ],
-    ruleName: [
-      { required: true, message: '规则名称不能为空', trigger: 'blur' }
-    ],
-    ruleType: [
-      { required: true, message: '规则类型不能为空', trigger: 'change' }
-    ],
-    status: [
-      { required: true, message: '状态不能为空', trigger: 'change' }
-    ]
+    ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
+    ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
+    ruleType: [{ required: true, message: '规则类型不能为空', trigger: 'change' }],
+    status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
   }
 });
 
@@ -273,7 +278,7 @@ const { queryParams, form, rules } = toRefs(data);
 
 function getList() {
   loading.value = true;
-  listSerialNumberRule(queryParams.value).then(response => {
+  listSerialNumberRule(queryParams.value).then((response) => {
     ruleList.value = response.rows;
     total.value = response.total;
     loading.value = false;
@@ -314,7 +319,7 @@ function resetQuery() {
 }
 
 function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map(item => item.ruleId);
+  ids.value = selection.map((item) => item.ruleId);
   single.value = selection.length !== 1;
   multiple.value = !selection.length;
 }
@@ -330,7 +335,7 @@ function handleUpdate(row: any) {
   reset();
   isViewMode.value = false;
   const _ruleId = row.ruleId || ids.value;
-  getSerialNumberRule(_ruleId).then(response => {
+  getSerialNumberRule(_ruleId).then((response) => {
     form.value = response.data;
     open.value = true;
     title.value = '修改序列号规则';
@@ -341,7 +346,7 @@ function handleView(row: any) {
   reset();
   isViewMode.value = true;
   const _ruleId = row.ruleId || ids.value;
-  getSerialNumberRule(_ruleId).then(response => {
+  getSerialNumberRule(_ruleId).then((response) => {
     form.value = response.data;
     open.value = true;
     title.value = '查看序列号规则';
@@ -370,24 +375,32 @@ function submitForm() {
 
 function handleDelete(row: any) {
   const _ruleIds = row.ruleId || ids.value;
-  proxy.$modal.confirm('是否确认删除序列号规则编号为"' + _ruleIds + '"的数据项？').then(() => {
-    return delSerialNumberRule(_ruleIds);
-  }).then(() => {
-    getList();
-    proxy.$modal.msgSuccess('删除成功');
-  }).catch(() => {});
+  proxy.$modal
+    .confirm('是否确认删除序列号规则编号为"' + _ruleIds + '"的数据项？')
+    .then(() => {
+      return delSerialNumberRule(_ruleIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 function handleExport() {
-  proxy.download('bd/serial-number-rule/export', {
-    ...queryParams.value
-  }, `serial-number-rule_${new Date().getTime()}.xlsx`);
+  proxy.download(
+    'bd/serial-number-rule/export',
+    {
+      ...queryParams.value
+    },
+    `serial-number-rule_${new Date().getTime()}.xlsx`
+  );
 }
 
 function handleGenerate(row: any) {
   genRuleCode.value = row.ruleCode;
   genResult.value = '';
-  generateSerialNumber(row.ruleCode).then(response => {
+  generateSerialNumber(row.ruleCode).then((response) => {
     genResult.value = response.data;
     genVisible.value = true;
   });
@@ -395,3 +408,18 @@ function handleGenerate(row: any) {
 
 getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

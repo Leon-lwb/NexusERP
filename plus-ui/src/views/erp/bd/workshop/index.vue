@@ -1,27 +1,41 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="车间编码" prop="workshopCode">
-        <el-input v-model="queryParams.workshopCode" placeholder="请输入车间编码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="车间名称" prop="workshopName">
-        <el-input v-model="queryParams.workshopName" placeholder="请输入车间名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="车间主任" prop="managerName">
-        <el-input v-model="queryParams.managerName" placeholder="请输入车间主任" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="产能" prop="capacity">
-        <el-input v-model="queryParams.capacity" placeholder="请输入产能" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
-          <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="车间编码" prop="workshopCode">
+            <el-input v-model="queryParams.workshopCode" placeholder="请输入车间编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="车间名称" prop="workshopName">
+            <el-input v-model="queryParams.workshopName" placeholder="请输入车间名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="车间主任" prop="managerName">
+            <el-input v-model="queryParams.managerName" placeholder="请输入车间主任" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="产能" prop="capacity">
+            <el-input v-model="queryParams.capacity" placeholder="请输入产能" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -29,31 +43,26 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:workshop:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
-          v-hasPermi="['bd:workshop:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['bd:workshop:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
-          v-hasPermi="['bd:workshop:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['bd:workshop:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView"
-          v-hasPermi="['bd:workshop:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['bd:workshop:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport"
-          v-hasPermi="['bd:workshop:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['bd:workshop:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workshopList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="workshopList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="车间ID" align="center" prop="workshopId" />
       <el-table-column label="车间编码" align="center" prop="workshopCode" />
-      <el-table-column label="车间名称" align="center" prop="workshopName" />
-      <el-table-column label="车间描述" align="center" prop="workshopDesc" />
-      <el-table-column label="车间主任" align="center" prop="managerName" />
+      <el-table-column label="车间名称" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="车间描述" align="center" prop="workshopDesc" min-width="120" show-overflow-tooltip />
+      <el-table-column label="车间主任" align="center" prop="managerName" min-width="120" show-overflow-tooltip />
       <el-table-column label="产能" align="center" prop="capacity" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
@@ -61,19 +70,16 @@
         </template>
       </el-table-column>
       <el-table-column label="排序" align="center" prop="sortOrder" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-            v-hasPermi="['bd:workshop:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-            v-hasPermi="['bd:workshop:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bd:workshop:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bd:workshop:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
-      @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改车间设置对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
@@ -82,10 +88,8 @@
           <el-col :span="12">
             <el-form-item label="车间编码" prop="workshopCode">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.workshopCode" placeholder="请输入车间编码" :disabled="autoGenFlag || isViewMode"
-                  style="flex: 1;" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange"
-                  :disabled="isViewMode">
+                <el-input v-model="form.workshopCode" placeholder="请输入车间编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
             </el-form-item>
@@ -129,8 +133,7 @@
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-radio-group v-model="form.status">
-                <el-radio v-for="dict in sys_core_status" :key="dict.value"
-                  :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
+                <el-radio v-for="dict in sys_core_status" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -166,7 +169,7 @@
         </el-form-item>
       </el-form>
 
-      <el-table v-loading="userLoading" :data="userList" @row-dblclick="selectUser">
+      <el-table v-loading="userLoading" :data="userList" @row-dblclick="selectUser" show-overflow-tooltip>
         <el-table-column label="用户编号" align="center" prop="userId" />
         <el-table-column label="用户名称" align="center" prop="userName" />
         <el-table-column label="用户昵称" align="center" prop="nickName" />
@@ -179,8 +182,13 @@
         </el-table-column>
       </el-table>
 
-      <pagination v-show="userList.length > 0" :total="userTotal" v-model:page="userQueryParams.pageNum"
-        v-model:limit="userQueryParams.pageSize" @pagination="getUserList" />
+      <pagination
+        v-show="userList.length > 0"
+        :total="userTotal"
+        v-model:page="userQueryParams.pageNum"
+        v-model:limit="userQueryParams.pageSize"
+        @pagination="getUserList"
+      />
 
       <template #footer>
         <div class="dialog-footer">
@@ -192,36 +200,36 @@
 </template>
 
 <script setup lang="ts" name="Workshop">
-import { listWorkshop, getWorkshop, delWorkshop, addWorkshop, updateWorkshop } from "@/api/erp/bd/workshop"
-import { listUser } from "@/api/system/user"
-import { previewCode } from "@/api/system/autocode/rule"
+import { listWorkshop, getWorkshop, delWorkshop, addWorkshop, updateWorkshop } from '@/api/erp/bd/workshop';
+import { listUser } from '@/api/system/user';
+import { previewCode } from '@/api/system/autocode/rule';
 
-const { proxy } = getCurrentInstance()
-const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'))
-const autoGenFlag = ref(false)
+const { proxy } = getCurrentInstance();
+const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
+const autoGenFlag = ref(false);
 
-const workshopList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const isViewMode = ref(false) // 新增：标识是否为查看模式
+const workshopList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const isViewMode = ref(false); // 新增：标识是否为查看模式
 
 // 添加用户列表相关变量
-const userList = ref([])
-const userLoading = ref(false)
-const userVisible = ref(false)
-const userTotal = ref(0)  // 添加这行
+const userList = ref([]);
+const userLoading = ref(false);
+const userVisible = ref(false);
+const userTotal = ref(0); // 添加这行
 const userQueryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   userName: undefined,
   phonenumber: undefined
-})
+});
 
 const data = reactive({
   form: {},
@@ -237,42 +245,34 @@ const data = reactive({
     autoGenFlag: false
   },
   rules: {
-    workshopCode: [
-      { required: true, message: "车间编码不能为空", trigger: "blur" }
-    ],
-    workshopName: [
-      { required: true, message: "车间名称不能为空", trigger: "blur" }
-    ],
-    managerName: [
-      { required: true, message: "车间主任不能为空", trigger: "blur" }
-    ],
-    status: [
-      { required: true, message: "状态不能为空", trigger: "change" }
-    ],
+    workshopCode: [{ required: true, message: '车间编码不能为空', trigger: 'blur' }],
+    workshopName: [{ required: true, message: '车间名称不能为空', trigger: 'blur' }],
+    managerName: [{ required: true, message: '车间主任不能为空', trigger: 'blur' }],
+    status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
   }
-})
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 /** 查询车间设置列表 */
 function getList() {
-  loading.value = true
-  listWorkshop(queryParams.value).then(response => {
-    workshopList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+  loading.value = true;
+  listWorkshop(queryParams.value).then((response) => {
+    workshopList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 // 取消按钮
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 // 表单重置
 function reset() {
-  autoGenFlag.value = false
+  autoGenFlag.value = false;
   form.value = {
     workshopId: null,
     workshopCode: null,
@@ -292,139 +292,147 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  }
-  proxy.resetForm("workshopRef")
-   data.autoGenFlag = false
+  };
+  proxy.resetForm('workshopRef');
+  data.autoGenFlag = false;
 }
 
 /** 搜索按钮操作 */
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 // 多选框选中数据
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.workshopId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.workshopId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 /** 新增按钮操作 */
 function handleAdd() {
-  reset()
-  isViewMode.value = false // 设置为编辑模式
-  open.value = true
-  title.value = "添加车间设置"
+  reset();
+  isViewMode.value = false; // 设置为编辑模式
+  open.value = true;
+  title.value = '添加车间设置';
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false // 设置为编辑模式
-  const _workshopId = row.workshopId || ids.value
-  getWorkshop(_workshopId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "修改车间设置"
-  })
+  reset();
+  isViewMode.value = false; // 设置为编辑模式
+  const _workshopId = row.workshopId || ids.value;
+  getWorkshop(_workshopId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '修改车间设置';
+  });
 }
 
 /** 查看按钮操作 */
 function handleView(row) {
-  reset()
-  isViewMode.value = true // 设置为查看模式
-  const _workshopId = row.workshopId || ids.value
-  getWorkshop(_workshopId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "查看车间设置"
-  })
+  reset();
+  isViewMode.value = true; // 设置为查看模式
+  const _workshopId = row.workshopId || ids.value;
+  getWorkshop(_workshopId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '查看车间设置';
+  });
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["workshopRef"].validate(valid => {
+  proxy.$refs['workshopRef'].validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
         form.value.workshopCode = undefined;
       }
       if (form.value.workshopId != null) {
-        updateWorkshop(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+        updateWorkshop(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
-        addWorkshop(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+        addWorkshop(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const _workshopIds = row.workshopId || ids.value
-  proxy.$modal.confirm('是否确认删除车间设置编号为"' + _workshopIds + '"的数据项？').then(function () {
-    return delWorkshop(_workshopIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _workshopIds = row.workshopId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除车间设置编号为"' + _workshopIds + '"的数据项？')
+    .then(function () {
+      return delWorkshop(_workshopIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('bd/workshop/export', {
-    ...queryParams.value
-  }, `workshop_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    'bd/workshop/export',
+    {
+      ...queryParams.value
+    },
+    `workshop_${new Date().getTime()}.xlsx`
+  );
 }
 
 // 添加获取用户列表的方法
 function getUserList() {
-  userLoading.value = true
-  listUser(userQueryParams).then(response => {
-    userList.value = response.rows
-    userTotal.value = response.total
-    userLoading.value = false
-  })
+  userLoading.value = true;
+  listUser(userQueryParams).then((response) => {
+    userList.value = response.rows;
+    userTotal.value = response.total;
+    userLoading.value = false;
+  });
 }
 
 // 打开用户选择对话框
 function openUserSelect() {
-  userVisible.value = true
-  getUserList()
+  userVisible.value = true;
+  getUserList();
 }
 
 // 选择用户
 function selectUser(row) {
-  form.value.managerId = row.userId
-  form.value.managerName = row.userName
-  userVisible.value = false
+  form.value.managerId = row.userId;
+  form.value.managerName = row.userName;
+  userVisible.value = false;
 }
 
 // 重置用户查询
 function resetUserQuery() {
-  userQueryParams.userName = undefined
-  userQueryParams.phonenumber = undefined
-  getUserList()
+  userQueryParams.userName = undefined;
+  userQueryParams.phonenumber = undefined;
+  getUserList();
 }
 
 //自动生成编码
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('WORKSHOP_CODE').then(response => {
+    previewCode('WORKSHOP_CODE').then((response) => {
       form.value.workshopCode = response;
     });
   } else {
@@ -432,5 +440,20 @@ function handleAutoGenChange(autoGenFlag) {
   }
 }
 
-getList()
+getList();
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>

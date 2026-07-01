@@ -1,50 +1,44 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="100px">
-      <el-form-item label="销售订单编号" prop="soNo">
-        <el-input v-model="queryParams.soNo" placeholder="请输入销售订单编号" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="来源客户订单" prop="coId">
-        <el-input v-model="queryParams.coId" placeholder="请输入来源客户订单" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="来源客户" prop="clientName">
-        <el-input v-model="queryParams.clientName" placeholder="请输入来源客户" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="销售代表" prop="salesRepName">
-        <el-input v-model="queryParams.salesRepName" placeholder="请输入销售代表" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="订单生成日期" prop="orderDate">
-        <el-date-picker clearable v-model="queryParams.orderDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择订单生成日期">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="承诺交货日" prop="promiseDate">
-        <el-date-picker clearable v-model="queryParams.promiseDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择承诺交货日">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="要求交货日" prop="requestedDate">
-        <el-date-picker clearable v-model="queryParams.requestedDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择客户要求交货日">
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="信用状态" prop="creditStatus">
-        <el-select v-model="queryParams.creditStatus" placeholder="请选择信用状态" clearable style="width: 120px;">
-          <el-option v-for="dict in so_credit_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="信用拦截人" prop="creditBlockedBy">
-        <el-input v-model="queryParams.creditBlockedBy" placeholder="请输入信用拦截人" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="订单状态" prop="orderStatus">
-        <el-select v-model="queryParams.orderStatus" placeholder="请选择订单状态" clearable style="width: 120px;">
-          <el-option v-for="dict in so_order_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="项目ID" prop="projectId">
-        <el-input v-model="queryParams.projectId" placeholder="请输入项目ID" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="销售订单编号" prop="soNo">
+            <el-input v-model="queryParams.soNo" placeholder="请输入销售订单编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="来源客户" prop="clientName">
+            <el-input v-model="queryParams.clientName" placeholder="请输入来源客户" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="订单状态" prop="orderStatus">
+            <el-select v-model="queryParams.orderStatus" placeholder="请选择订单状态" clearable style="width: 100%">
+              <el-option v-for="dict in so_order_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="订单生成日期" prop="orderDate">
+            <el-date-picker
+              clearable
+              v-model="queryParams.orderDate"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="请选择订单生成日期"
+              style="width: 100%"
+            >
+            </el-date-picker>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="18" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -88,39 +82,39 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="orderheaderList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="orderheaderList" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" type="index" width="50" align="center" prop="soId" />
-      <el-table-column label="销售订单编号" align="center" prop="soNo" width="160" />
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="销售订单编号" align="center" prop="soNo" />
       <el-table-column label="来源客户" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="销售代表" align="center" prop="salesRepName" width="100" />
-      <el-table-column label="订单生成日期" align="center" prop="orderDate" width="120">
+      <el-table-column label="销售代表" align="center" prop="salesRepName" />
+      <el-table-column label="订单生成日期" align="center" prop="orderDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="承诺交货日" align="center" prop="promiseDate" width="120">
+      <el-table-column label="承诺交货日" align="center" prop="promiseDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.promiseDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="含税总金额" align="center" prop="totalAmount" width="120" />
-      <el-table-column label="货币" align="center" prop="currency" width="80">
+      <el-table-column label="含税总金额" align="center" prop="totalAmount" />
+      <el-table-column label="货币" align="center" prop="currency">
         <template #default="scope">
           <dict-tag :options="so_currency_type" :value="scope.row.currency" />
         </template>
       </el-table-column>
-      <el-table-column label="信用状态" align="center" prop="creditStatus" width="100">
+      <el-table-column label="信用状态" align="center" prop="creditStatus">
         <template #default="scope">
           <dict-tag :options="so_credit_status" :value="scope.row.creditStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="订单状态" align="center" prop="orderStatus" width="100">
+      <el-table-column label="订单状态" align="center" prop="orderStatus">
         <template #default="scope">
           <dict-tag :options="so_order_status" :value="scope.row.orderStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:orderheader:edit']">修改</el-button>
@@ -192,16 +186,9 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     soNo: null,
-    coId: null,
     clientName: null,
-    salesRepName: null,
     orderDate: null,
-    promiseDate: null,
-    requestedDate: null,
-    creditStatus: null,
-    creditBlockedBy: null,
-    orderStatus: null,
-    projectId: null
+    orderStatus: null
   }
 });
 
@@ -439,3 +426,18 @@ onActivated(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item :deep(.el-input),
+.list-search .el-form-item :deep(.el-select),
+.list-search .el-form-item :deep(.el-date-editor) {
+  width: 100%;
+}
+.list-search .search-actions :deep(.el-form-item__content) {
+  justify-content: flex-end;
+}
+</style>
