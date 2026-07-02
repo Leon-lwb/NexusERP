@@ -39,3 +39,14 @@ export const delWorker = (workerId: string | number | (string | number)[]) => {
     method: 'delete'
   });
 };
+
+/**
+ * 查询已建档工人档案的系统用户ID集合
+ * 用于新建工人时用户选择弹窗排除已建档用户
+ */
+export const listBuiltUserIds = (): AxiosPromise<number[]> => {
+  return request({
+    url: '/erp/sch/worker/built-user-ids',
+    method: 'get'
+  });
+};

@@ -63,4 +63,11 @@ public interface ISchWorkerService {
      * @return 影响行数
      */
     int deleteByIds(Long[] ids);
+
+    /**
+     * 查询已建档工人档案的系统用户ID集合
+     *
+     * @return 已建档的 userId 集合
+     */
+    List<Long> selectBuiltUserIds();
 }

@@ -17,7 +17,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 /**
  * 生产工人档案 Controller
  * <p>
@@ -46,6 +45,18 @@ public class SchWorkerController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo<SchWorkerVo> list(SchWorkerBo bo, PageQuery pageQuery) {
         return schWorkerService.selectPageList(bo, pageQuery);
+    }
+
+    /**
+     * 查询已建档工人档案的系统用户ID集合
+     * <p>用于新建工人时用户选择弹窗排除已建档用户，避免选到已建档用户后被唯一性校验拒绝</p>
+     *
+     * @return 已建档的 userId 集合
+     */
+    @SaCheckPermission("sch:worker:list")
+    @GetMapping("/built-user-ids")
+    public R<List<Long>> listBuiltUserIds() {
+        return R.ok(schWorkerService.selectBuiltUserIds());
     }
 
     /**

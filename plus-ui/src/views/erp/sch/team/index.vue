@@ -367,7 +367,7 @@ const workshopQueryParams = reactive({
   pageSize: 10,
   workshopCode: undefined,
   workshopName: undefined,
-  status: '0'
+  status: '1'
 });
 
 const workerList = ref([]);
@@ -613,7 +613,7 @@ function getWorkshopList() {
 
 function openWorkshopSelect() {
   workshopVisible.value = true;
-  workshopQueryParams.status = '0';
+  workshopQueryParams.status = '1';
   getWorkshopList();
 }
 
@@ -626,7 +626,7 @@ function selectWorkshop(row) {
 function resetWorkshopQuery() {
   workshopQueryParams.workshopCode = undefined;
   workshopQueryParams.workshopName = undefined;
-  workshopQueryParams.status = '0';
+  workshopQueryParams.status = '1';
   getWorkshopList();
 }
 

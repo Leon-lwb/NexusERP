@@ -241,7 +241,7 @@
           <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
         </el-form-item>
       </el-form>
-      <el-table v-loading="userLoading" :data="userList" @row-dblclick="selectUser" show-overflow-tooltip>
+      <el-table v-loading="userLoading" :data="userList" show-overflow-tooltip :row-class-name="userRowClassName">
         <el-table-column label="用户账号" align="center" prop="userName" />
         <el-table-column label="用户昵称" align="center" prop="nickName" />
         <el-table-column label="手机号码" align="center" prop="phonenumber" />
@@ -250,9 +250,15 @@
             <dict-tag :options="sys_user_sex" :value="scope.row.sex" />
           </template>
         </el-table-column>
+        <el-table-column label="状态" align="center">
+          <template #default="scope">
+            <el-tag v-if="isUserBuilt(scope.row.userId)" type="info" size="small">已建档</el-tag>
+            <span v-else>—</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" align="center">
           <template #default="scope">
-            <el-button link type="primary" @click="selectUser(scope.row)">选择</el-button>
+            <el-button link type="primary" :disabled="isUserBuilt(scope.row.userId)" @click="selectUser(scope.row)">选择</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -321,7 +327,7 @@
 </template>
 
 <script setup lang="ts" name="Worker">
-import { listWorker, getWorker, delWorker, addWorker, updateWorker } from '@/api/erp/sch/worker';
+import { listWorker, getWorker, delWorker, addWorker, updateWorker, listBuiltUserIds } from '@/api/erp/sch/worker';
 import { listUser } from '@/api/system/user';
 import { listWorkshop } from '@/api/erp/bd/workshop';
 
@@ -346,6 +352,7 @@ const userList = ref([]);
 const userLoading = ref(false);
 const userVisible = ref(false);
 const userTotal = ref(0);
+const builtUserIds = ref([]); // 已建档工人的 userId 集合，用户选择弹窗中禁用
 const userQueryParams = reactive({
   pageNum: 1,
   pageSize: 10,
@@ -363,7 +370,7 @@ const workshopQueryParams = reactive({
   pageSize: 10,
   workshopCode: undefined,
   workshopName: undefined,
-  status: '0'
+  status: '1'
 });
 
 const data = reactive({
@@ -520,6 +527,16 @@ function handleExport() {
 }
 
 // ============ 系统用户选择 ============
+/** 是否已建档工人档案（编辑当前工人时，自身 userId 不算已建档） */
+function isUserBuilt(userId) {
+  return builtUserIds.value.includes(userId) && userId !== form.value.userId;
+}
+
+/** 已建档用户行高亮灰显 */
+function userRowClassName({ row }) {
+  return isUserBuilt(row.userId) ? 'built-user-row' : '';
+}
+
 function getUserList() {
   userLoading.value = true;
   listUser(userQueryParams).then((response) => {
@@ -531,7 +548,11 @@ function getUserList() {
 
 function openUserSelect() {
   userVisible.value = true;
-  getUserList();
+  // 拉取已建档 userId 列表用于禁用
+  listBuiltUserIds().then((res) => {
+    builtUserIds.value = res.data || [];
+    getUserList();
+  });
 }
 
 function resetUserQuery() {
@@ -565,14 +586,14 @@ function getWorkshopList() {
 
 function openWorkshopSelect() {
   workshopVisible.value = true;
-  workshopQueryParams.status = '0';
+  workshopQueryParams.status = '1';
   getWorkshopList();
 }
 
 function resetWorkshopQuery() {
   workshopQueryParams.workshopCode = undefined;
   workshopQueryParams.workshopName = undefined;
-  workshopQueryParams.status = '0';
+  workshopQueryParams.status = '1';
   getWorkshopList();
 }
 
@@ -597,5 +618,12 @@ getList();
 }
 .list-search .search-actions :deep(.el-form-item__content) {
   justify-content: flex-end;
+}
+:deep(.built-user-row) {
+  color: var(--el-text-color-disabled);
+  background-color: var(--el-fill-color-light);
+}
+:deep(.built-user-row .el-button.is-disabled) {
+  opacity: 0.6;
 }
 </style>
