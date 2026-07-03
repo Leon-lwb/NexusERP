@@ -158,4 +158,16 @@ public class BdClientVo implements Serializable {
      */
     private String addressLng;
 
+    /** 业务员ID（关联sys_user） */
+    private Long salesRepId;
+
+    /** 业务员名称 */
+    private String salesRepName;
+
+    /** 归属部门ID（关联sys_dept） */
+    private Long deptId;
+
+    /** 归属部门名称 */
+    private String deptName;
+
 }

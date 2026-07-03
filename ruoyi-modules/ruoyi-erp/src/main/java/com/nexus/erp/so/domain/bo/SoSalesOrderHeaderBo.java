@@ -88,8 +88,10 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     private Date cancelledTime;
     /** 取消原因 */
     private String cancelledReason;
-    /** 销售组织ID */
-    private Long salesOrgId;
+    /** 销售部门ID（关联sys_dept） */
+    private Long deptId;
+    /** 销售部门名称 */
+    private String deptName;
     /** 分销渠道 */
     private String distributionChannel;
     /** 客户参考号 */

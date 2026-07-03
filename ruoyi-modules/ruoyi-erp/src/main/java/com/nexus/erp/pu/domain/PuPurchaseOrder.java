@@ -40,6 +40,18 @@ public class PuPurchaseOrder extends BaseEntity {
     /** 供应商名称 */
     private String vendorName;
 
+    /** 采购部门ID（关联sys_dept） */
+    private Long deptId;
+
+    /** 采购部门名称 */
+    private String deptName;
+
+    /** 采购员ID（关联sys_user） */
+    private Long buyerId;
+
+    /** 采购员名称 */
+    private String buyerName;
+
     /** 来源请购单ID，关联pu_purchase_requisition表 */
     private Long requisitionId;
 

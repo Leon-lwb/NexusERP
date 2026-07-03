@@ -119,6 +119,12 @@ public class WmWarehouseBo extends BaseEntity {
      */
     private String remark;
 
+    /** 归属部门ID（关联sys_dept） */
+    private Long deptId;
+
+    /** 归属部门名称 */
+    private String deptName;
+
     /**
      * 删除标志
      */

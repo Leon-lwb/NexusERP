@@ -45,6 +45,16 @@
           </el-col>
         </el-row>
 
+        <!-- 采购部门 -->
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="采购部门" prop="deptId">
+              <dept-select v-model="form.deptId" category="PURCHASE" placeholder="请选择采购部门" @change="handleDeptChange" />
+              <el-input v-model="form.deptName" style="display: none" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <!-- 需求信息 -->
         <el-divider content-position="left">需求信息</el-divider>
         <!-- 第二行：需求日期、来源类型、状态 -->
@@ -311,7 +321,9 @@ function reset() {
     sourceType: 'MANUAL',
     status: 'DRAFT',
     selectFlowId: null,
-    remark: null
+    remark: null,
+    deptId: null,
+    deptName: null
   };
   lineList.value = [];
 }
@@ -488,6 +500,11 @@ function handleAutoGenChange(autoGenFlag) {
   } else {
     form.value.requisitionNo = null;
   }
+}
+
+/** 采购部门变更：回填部门名称 */
+function handleDeptChange(dept) {
+  form.value.deptName = dept ? dept.deptName : null;
 }
 
 function cancel() {

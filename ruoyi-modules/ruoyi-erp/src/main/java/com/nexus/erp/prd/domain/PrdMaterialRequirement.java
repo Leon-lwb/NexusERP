@@ -100,13 +100,13 @@ public class PrdMaterialRequirement extends TenantEntity {
      * 部门ID
      */
     @ExcelProperty("部门ID")
-    private Long departmentId;
+    private Long deptId;
 
     /**
      * 部门
      */
     @ExcelProperty("部门")
-    private String departmentName;
+    private String deptName;
 
     /**
      * 确认时间

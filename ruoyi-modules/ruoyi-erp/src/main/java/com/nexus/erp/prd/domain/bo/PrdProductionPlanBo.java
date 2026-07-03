@@ -95,12 +95,12 @@ public class PrdProductionPlanBo extends BaseEntity {
     /**
      * 生产部门ID
      */
-    private Long departmentId;
+    private Long deptId;
 
     /**
      * 生产部门
      */
-    private String departmentName;
+    private String deptName;
 
     /**
      * 计划总数量

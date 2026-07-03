@@ -217,6 +217,29 @@
                 </el-form-item>
               </el-col>
             </el-row>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="采购员" prop="buyerName">
+                  <el-input v-model="form.buyerName" placeholder="请选择采购员" readonly>
+                    <template #append>
+                      <el-button icon="User" @click="openUserSelect" :disabled="isViewMode" />
+                    </template>
+                  </el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="归属部门" prop="deptId">
+                  <dept-select
+                    v-model="form.deptId"
+                    category="PURCHASE"
+                    placeholder="请选择归属部门"
+                    :disabled="isViewMode"
+                    @change="handleDeptChange"
+                  />
+                  <el-input v-model="form.deptName" style="display: none" />
+                </el-form-item>
+              </el-col>
+            </el-row>
           </el-tab-pane>
 
           <el-tab-pane label="分类信息" name="category">
@@ -269,11 +292,45 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 采购员选择 -->
+    <el-dialog title="选择采购员" v-model="userDialog.visible" width="800px" append-to-body>
+      <el-form :inline="true" :model="userDialog.queryParams">
+        <el-form-item label="用户名称" prop="userName">
+          <el-input v-model="userDialog.queryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="searchUser" />
+        </el-form-item>
+        <el-form-item label="手机号码" prop="phonenumber">
+          <el-input v-model="userDialog.queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="searchUser" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="searchUser">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table v-loading="userDialog.loading" :data="userDialog.list" height="400" @row-dblclick="selectUser">
+        <el-table-column label="用户账号" align="center" prop="userName" />
+        <el-table-column label="用户昵称" align="center" prop="nickName" />
+        <el-table-column label="手机号码" align="center" prop="phonenumber" />
+        <el-table-column label="操作" align="center" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectUser(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="userDialog.total > 0"
+        :total="userDialog.total"
+        v-model:page="userDialog.queryParams.pageNum"
+        v-model:limit="userDialog.queryParams.pageSize"
+        @pagination="getUserList"
+      />
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="Vendor">
 import { listVendor, getVendor, delVendor, addVendor, updateVendor } from '@/api/erp/bd/vendor';
+import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
 import { getProvinces, getNextLevel } from '@/api/system/area';
 
@@ -366,7 +423,11 @@ function reset() {
     districtAreaId: null,
     streetId: null,
     addressLat: null,
-    addressLng: null
+    addressLng: null,
+    buyerId: null,
+    buyerName: null,
+    deptId: null,
+    deptName: null
   };
   proxy.resetForm('vendorRef');
   activeTab.value = 'basic';
@@ -643,6 +704,61 @@ function updateAddressField() {
   // 拼接地址
   const addressParts = [provinceName, cityName, districtName, streetName].filter((part) => part !== '');
   form.value.address = addressParts.join('');
+}
+
+// ============ 采购员 / 部门选择 ============
+const userDialog = reactive({
+  visible: false,
+  loading: false,
+  list: [] as any[],
+  total: 0,
+  queryParams: { pageNum: 1, pageSize: 10, userName: undefined, phonenumber: undefined, deptId: undefined as any }
+});
+
+/** 部门变更：回填部门名称并清空采购员（避免采购员与部门不匹配） */
+function handleDeptChange(dept) {
+  form.value.deptName = dept ? dept.deptName : null;
+  form.value.buyerId = null;
+  form.value.buyerName = null;
+}
+
+function openUserSelect() {
+  if (!form.value.deptId) {
+    proxy.$modal.msgWarning('请先选择归属部门');
+    return;
+  }
+  userDialog.visible = true;
+  userDialog.queryParams.deptId = form.value.deptId;
+  userDialog.queryParams.pageNum = 1;
+  getUserList();
+}
+
+function getUserList() {
+  userDialog.loading = true;
+  listUser(userDialog.queryParams).then((response) => {
+    userDialog.list = response.rows;
+    userDialog.total = response.total;
+    userDialog.loading = false;
+  });
+}
+
+function selectUser(row) {
+  form.value.buyerId = row.userId;
+  form.value.buyerName = row.nickName || row.userName;
+  userDialog.visible = false;
+}
+
+function searchUser() {
+  userDialog.queryParams.pageNum = 1;
+  getUserList();
+}
+
+function resetUserQuery() {
+  userDialog.queryParams.userName = undefined;
+  userDialog.queryParams.phonenumber = undefined;
+  userDialog.queryParams.deptId = form.value.deptId;
+  userDialog.queryParams.pageNum = 1;
+  getUserList();
 }
 
 getList();

@@ -78,6 +78,25 @@
           </el-col>
         </el-row>
 
+        <!-- 第三行：采购部门、采购员 -->
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="采购部门" prop="deptId">
+              <dept-select v-model="form.deptId" category="PURCHASE" placeholder="请选择采购部门" @change="handleDeptChange" />
+              <el-input v-model="form.deptName" style="display: none" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="采购员" prop="buyerName">
+              <el-input v-model="form.buyerName" placeholder="请选择采购员" readonly>
+                <template #append>
+                  <el-button icon="Search" @click="openUserSelect" :disabled="!form.deptId" />
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <!-- 财务信息 -->
         <el-divider content-position="left">财务信息</el-divider>
         <!-- 第三行：币别、汇率、备注 -->
@@ -284,6 +303,39 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+
+    <!-- 采购员选择 -->
+    <el-dialog title="选择采购员" v-model="userDialog.visible" width="800px" append-to-body>
+      <el-form :inline="true" :model="userDialog.queryParams">
+        <el-form-item label="用户名称" prop="userName">
+          <el-input v-model="userDialog.queryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="searchUser" />
+        </el-form-item>
+        <el-form-item label="手机号码" prop="phonenumber">
+          <el-input v-model="userDialog.queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="searchUser" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="searchUser">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table v-loading="userDialog.loading" :data="userDialog.list" height="400" @row-dblclick="selectUser">
+        <el-table-column label="用户账号" align="center" prop="userName" />
+        <el-table-column label="用户昵称" align="center" prop="nickName" />
+        <el-table-column label="手机号码" align="center" prop="phonenumber" />
+        <el-table-column label="操作" align="center" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectUser(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="userDialog.total > 0"
+        :total="userDialog.total"
+        v-model:page="userDialog.queryParams.pageNum"
+        v-model:limit="userDialog.queryParams.pageSize"
+        @pagination="getUserList"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -299,6 +351,7 @@ import {
 } from '@/api/erp/pu/order';
 // 导入供应商管理API
 import { listVendor } from '@/api/erp/bd/vendor';
+import { listUser } from '@/api/system/user';
 // 导入物料-供应商关系API
 import { listMaterialVendor } from '@/api/erp/bd/material-vendor';
 // 导入审批流API
@@ -450,7 +503,11 @@ function reset() {
     remark: null,
     vendorId: null,
     vendorCode: null,
-    vendorName: null
+    vendorName: null,
+    deptId: null,
+    deptName: null,
+    buyerId: null,
+    buyerName: null
   };
   lineList.value = [];
 }
@@ -650,6 +707,60 @@ function selectVendor(row: any) {
     }
   }
   vendorDialog.visible = false;
+}
+
+// ============ 采购部门 / 采购员选择 ============
+const userDialog = reactive({
+  visible: false,
+  loading: false,
+  list: [] as any[],
+  total: 0,
+  queryParams: { pageNum: 1, pageSize: 10, userName: undefined, phonenumber: undefined, deptId: undefined as any }
+});
+
+/** 采购部门变更：回填部门名称并清空采购员 */
+function handleDeptChange(dept: any) {
+  form.value.deptName = dept ? dept.deptName : null;
+  form.value.buyerId = null;
+  form.value.buyerName = null;
+}
+
+function openUserSelect() {
+  if (!form.value.deptId) {
+    proxy.$modal.msgWarning('请先选择采购部门');
+    return;
+  }
+  userDialog.visible = true;
+  userDialog.queryParams.deptId = form.value.deptId;
+  getUserList();
+}
+
+function getUserList() {
+  userDialog.loading = true;
+  listUser(userDialog.queryParams).then((res: any) => {
+    userDialog.list = res.rows;
+    userDialog.total = res.total;
+    userDialog.loading = false;
+  });
+}
+
+function searchUser() {
+  userDialog.queryParams.pageNum = 1;
+  getUserList();
+}
+
+function selectUser(row: any) {
+  form.value.buyerId = row.userId;
+  form.value.buyerName = row.nickName || row.userName;
+  userDialog.visible = false;
+}
+
+function resetUserQuery() {
+  userDialog.queryParams.userName = undefined;
+  userDialog.queryParams.phonenumber = undefined;
+  userDialog.queryParams.deptId = form.value.deptId;
+  userDialog.queryParams.pageNum = 1;
+  getUserList();
 }
 
 /**

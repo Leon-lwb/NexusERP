@@ -190,4 +190,14 @@ public class PrdWorkOrderVo implements Serializable {
      * 已选审批流程模板ID
      */
     private Long selectFlowId;
+
+    /**
+     * 生产部门ID（非持久化，通过 workshop → bd_workshop.dept_id JOIN 反查填入）
+     */
+    private Long deptId;
+
+    /**
+     * 生产部门名称（非持久化，同上）
+     */
+    private String deptName;
 }

@@ -13,6 +13,14 @@ export interface PurchaseOrderVO {
   vendorCode?: string;
   /** 供应商名称 */
   vendorName?: string;
+  /** 采购部门ID */
+  deptId?: number;
+  /** 采购部门名称 */
+  deptName?: string;
+  /** 采购员ID */
+  buyerId?: number;
+  /** 采购员名称 */
+  buyerName?: string;
   /** 关联请购单ID */
   requisitionId?: number;
   /** 关联请购单号 */
@@ -48,6 +56,10 @@ export interface PurchaseOrderQuery {
   orderNo?: string;
   /** 供应商名称 */
   vendorName?: string;
+  /** 采购部门ID */
+  deptId?: number;
+  /** 采购员ID */
+  buyerId?: number;
   /** 订单状态 */
   status?: string;
 }

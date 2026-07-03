@@ -70,4 +70,10 @@ public class WmWarehouseVo implements Serializable {
      */
     @ExcelProperty(value = "库区数量")
     private Integer areaCount;
+
+    /** 归属部门ID（关联sys_dept） */
+    private Long deptId;
+
+    @ExcelProperty(value = "归属部门")
+    private String deptName;
 }

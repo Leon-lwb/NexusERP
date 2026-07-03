@@ -43,6 +43,12 @@ public class PuPurchaseRequisition extends TenantEntity {
     /** 申请人姓名 */
     private String applicantName;
 
+    /** 采购部门ID（关联sys_dept） */
+    private Long deptId;
+
+    /** 采购部门名称 */
+    private String deptName;
+
     /** 申请日期 */
     private Date requisitionDate;
 

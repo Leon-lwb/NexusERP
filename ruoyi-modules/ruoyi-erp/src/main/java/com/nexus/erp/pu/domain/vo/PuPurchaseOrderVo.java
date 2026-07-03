@@ -36,6 +36,18 @@ public class PuPurchaseOrderVo extends BaseEntity {
     @ExcelProperty(value = "供应商")
     private String vendorName;
 
+    /** 采购部门ID（关联sys_dept） */
+    private Long deptId;
+
+    @ExcelProperty(value = "采购部门")
+    private String deptName;
+
+    /** 采购员ID（关联sys_user） */
+    private Long buyerId;
+
+    @ExcelProperty(value = "采购员")
+    private String buyerName;
+
     /** 供应商ID */
     private Long vendorId;
 

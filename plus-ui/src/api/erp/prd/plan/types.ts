@@ -20,8 +20,8 @@ export interface PlanVO {
   priority: number;
   plannerId: number;
   plannerName: string;
-  departmentId: number;
-  departmentName: string;
+  deptId: number;
+  deptName: string;
   totalQuantity: number;
   confirmedTime: string;
   releasedTime: string;
@@ -57,8 +57,8 @@ export interface PlanForm {
   priority?: number;
   plannerId?: number;
   plannerName?: string;
-  departmentId?: number;
-  departmentName?: string;
+  deptId?: number;
+  deptName?: string;
   totalQuantity?: number;
   confirmedTime?: string;
   releasedTime?: string;

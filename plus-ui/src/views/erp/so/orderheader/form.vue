@@ -306,8 +306,9 @@
                   </el-form-item>
                 </el-col>
                 <el-col :xs="24" :sm="12" :md="8" :lg="6">
-                  <el-form-item label="销售组织ID" prop="salesOrgId">
-                    <el-input v-model="form.salesOrgId" placeholder="请输入销售组织ID" />
+                  <el-form-item label="销售部门" prop="deptId">
+                    <dept-select v-model="form.deptId" category="SALES" placeholder="请选择销售部门" @change="handleDeptChange" />
+                    <el-input v-model="form.deptName" style="display: none" />
                   </el-form-item>
                 </el-col>
                 <el-col :xs="24" :sm="12" :md="8" :lg="6">
@@ -818,7 +819,8 @@ function reset() {
     closedTime: null,
     cancelledTime: null,
     cancelledReason: null,
-    salesOrgId: null,
+    deptId: null,
+    deptName: null,
     distributionChannel: null,
     customerRefNo: null,
     remark: null,
@@ -913,6 +915,11 @@ function handleAutoGenChange(autoGenFlag) {
   } else {
     form.value.soNo = null;
   }
+}
+
+/** 销售部门变更：回填部门名称 */
+function handleDeptChange(dept) {
+  form.value.deptName = dept ? dept.deptName : null;
 }
 
 function cancel() {

@@ -37,6 +37,12 @@ public class PuPurchaseRequisitionVo extends BaseEntity {
     @ExcelProperty(value = "申请人")
     private String applicantName;
 
+    /** 采购部门ID（关联sys_dept） */
+    private Long deptId;
+
+    @ExcelProperty(value = "采购部门")
+    private String deptName;
+
     @ExcelProperty(value = "申请日期")
     private Date requisitionDate;
 

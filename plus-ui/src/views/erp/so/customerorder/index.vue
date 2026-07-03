@@ -66,6 +66,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="客户订单号" align="center" prop="coNo" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="销售部门" align="center" prop="deptName" min-width="100" show-overflow-tooltip />
       <el-table-column label="客户下单日期" align="center" prop="orderDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
@@ -221,6 +222,18 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="销售部门" prop="deptId">
+              <dept-select
+                v-model="form.deptId"
+                category="SALES"
+                placeholder="请选择销售部门"
+                :disabled="isViewMode"
+                @change="handleDeptChange"
+              />
+              <el-input v-model="form.deptName" style="display: none" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="销售代表" prop="salesRepId">
               <el-input v-model="form.salesRepName" placeholder="请选择负责人" readonly>
                 <template #append>
@@ -291,13 +304,13 @@
     <el-dialog title="选择负责人" v-model="userVisible" width="800px" append-to-body>
       <el-form :model="userQueryParams" ref="userQueryRef" :inline="true">
         <el-form-item label="用户名称" prop="userName">
-          <el-input v-model="userQueryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="getUserList" />
+          <el-input v-model="userQueryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="searchUser" />
         </el-form-item>
         <el-form-item label="手机号码" prop="phonenumber">
-          <el-input v-model="userQueryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="getUserList" />
+          <el-input v-model="userQueryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="searchUser" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="getUserList">搜索</el-button>
+          <el-button type="primary" icon="Search" @click="searchUser">搜索</el-button>
           <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
         </el-form-item>
       </el-form>
@@ -436,6 +449,8 @@ function reset() {
     salesRepId: null,
     salesRepName: null,
     sales_rep_name: null,
+    deptId: null,
+    deptName: null,
     createBy: null,
     createTime: null,
     updateBy: null,
@@ -664,7 +679,8 @@ function getUserList() {
 
 function openUserSelect() {
   userVisible.value = true;
-  userQueryParams.deptId = 115;
+  // 按所选销售部门过滤销售代表；未选部门则展示全部用户
+  userQueryParams.deptId = form.value.deptId || undefined;
   getUserList();
 }
 
@@ -675,10 +691,28 @@ function selectUser(row) {
   userVisible.value = false;
 }
 
+/** 销售部门变更时回填部门名称，并清空已选销售代表（避免代表与部门不匹配） */
+function handleDeptChange(dept) {
+  if (dept) {
+    form.value.deptName = dept.deptName;
+  } else {
+    form.value.deptName = null;
+  }
+  form.value.salesRepId = null;
+  form.value.salesRepName = null;
+  form.value.sales_rep_name = null;
+}
+
 function resetUserQuery() {
   userQueryParams.userName = undefined;
   userQueryParams.phonenumber = undefined;
-  userQueryParams.deptId = 115;
+  userQueryParams.deptId = form.value.deptId || undefined;
+  userQueryParams.pageNum = 1;
+  getUserList();
+}
+
+function searchUser() {
+  userQueryParams.pageNum = 1;
   getUserList();
 }
 

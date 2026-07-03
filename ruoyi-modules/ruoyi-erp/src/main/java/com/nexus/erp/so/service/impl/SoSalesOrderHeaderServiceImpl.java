@@ -486,6 +486,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             .like(StringUtils.isNotBlank(bo.getClientName()), SoSalesOrderHeader::getClientName, bo.getClientName())
             .eq(bo.getSalesRepId() != null, SoSalesOrderHeader::getSalesRepId, bo.getSalesRepId())
             .like(StringUtils.isNotBlank(bo.getSalesRepName()), SoSalesOrderHeader::getSalesRepName, bo.getSalesRepName())
+            .eq(bo.getDeptId() != null, SoSalesOrderHeader::getDeptId, bo.getDeptId())
             .eq(bo.getOrderDate() != null, SoSalesOrderHeader::getOrderDate, bo.getOrderDate())
             .eq(bo.getPromiseDate() != null, SoSalesOrderHeader::getPromiseDate, bo.getPromiseDate())
             .eq(bo.getRequestedDate() != null, SoSalesOrderHeader::getRequestedDate, bo.getRequestedDate())

@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 01/07/2026 18:06:55
+ Date: 03/07/2026 18:28:00
 */
 
 SET NAMES utf8mb4;
@@ -2423,14 +2423,8 @@ INSERT INTO `ai_message` VALUES (2071275778577932289, '000000', 2071275707899715
 INSERT INTO `ai_message` VALUES (2071276315541118978, '000000', 2071276315541118977, 'USER', '帮我在gitee上搜索ktg-mes这个项目是谁开发的', NULL, NULL, NULL, 103, 1, '2026-06-29 00:55:31', 1, '2026-06-29 00:55:31', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `ai_message` VALUES (2071276697856122882, '000000', 2071276315541118977, 'ASSISTANT', '很抱歉，我尝试了多种方式（搜索、直接访问Gitee项目页面等）来查找Gitee上 **ktg-mes** 项目的开发者信息，但目前由于网络限制，无法实时获取到该项目的准确信息。\n\n根据我已有的知识，**ktg-mes** 是一个基于 Spring Cloud 微服务架构的开源制造执行系统（MES）项目。不过关于它的具体开发者信息，我目前无法给出确切答案。\n\n建议你可以通过以下方式自行查找：\n1. **直接访问 Gitee**：在 Gitee 搜索框输入 `ktg-mes`，查看项目主页，通常会在仓库首页的右上角或左侧信息栏显示项目的**作者/所有者**信息。\n2. **查看项目README**：进入项目后，README 文件通常会有作者或维护者的介绍。\n\n如果你能提供更多线索（比如项目的大致功能描述），我也许能帮你进一步定位！😊', 6633, NULL, NULL, -1, -1, '2026-06-29 00:57:02', -1, '2026-06-29 00:57:02', '0', NULL, NULL, NULL, NULL, 1, 6404, 229, NULL);
 INSERT INTO `ai_message` VALUES (2071960256161935361, '000000', 2071960256094826498, 'USER', '各仓库库存总量', NULL, NULL, NULL, 103, 1, '2026-06-30 22:13:15', 1, '2026-06-30 22:13:15', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2071972923714994178, '000000', 2071972923714994177, 'USER', '你是社么模型', NULL, NULL, NULL, 103, 1, '2026-06-30 23:03:35', 1, '2026-06-30 23:03:35', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2071972977364336641, '000000', 2071972923714994177, 'ASSISTANT', '\n我是 **DeepSeek-R1** 模型，由中国的深度求索（DeepSeek）公司研发和训练 🤖✨。\n\n这个模型是一个大型语言模型，擅长处理各种文本相关任务，比如：\n\n- 回答问题、知识查询\n- 写作创意、内容生成\n- 编程辅助、代码纠错与解释\n- 文档总结、资料分析（支持上传 PDF/Word 等文件）\n- 逻辑推理、数学计算\n- 多轮对话和日常交流\n\n我目前是**免费的**，并且可以联网使用，知识更新到 **2024年7月**。虽然还不支持语音或图像功能，但我非常擅长理解和处理文字内容 💬📄.\n\n你可以把我当作一个聪明又温暖的文字助手，随时问我问题或者聊聊天都可以哦～😄\n\n还有什么想了解我的吗？', 433, NULL, NULL, -1, -1, '2026-06-30 23:03:48', -1, '2026-06-30 23:03:48', '0', NULL, NULL, NULL, NULL, 2071188923190738945, 7, 426, NULL);
-INSERT INTO `ai_message` VALUES (2071973439618580482, '000000', 2071972923714994177, 'USER', '你现在是什么模型', NULL, NULL, NULL, 103, 1, '2026-06-30 23:05:38', 1, '2026-06-30 23:05:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2071973476280991745, '000000', 2071972923714994177, 'ASSISTANT', '我是 **DeepSeek-R1** 模型，由**深度求索（DeepSeek）公司**研发的一款大型语言模型 🧠💡。\n\n**我的特点包括：**\n- 🆓 **完全免费**使用\n- 🌐 支持**联网搜索**（需手动开启）\n- 📂 支持**文件上传**（图像、PDF、Word、Excel、PPT、TXT等），可以从中读取文字信息并处理\n- 🎤 支持**语音输入**（App端）\n- 🧠 **上下文1M tokens**，可以一次性处理像《三体》三部曲那么大体量的内容\n- 📅 **知识截止日期**：2024年7月\n- 纯文本模型，不支持多模态识别（如直接识别图片内容），但可以读取上传文件中的文字\n\n无论是回答问题、编程辅助、文案创作、资料分析，还是日常聊天，我都很乐意帮忙！还有什么想了解的吗？😊', 608, NULL, NULL, -1, -1, '2026-06-30 23:05:47', -1, '2026-06-30 23:05:47', '0', NULL, NULL, NULL, NULL, 1, 192, 416, NULL);
-INSERT INTO `ai_message` VALUES (2071976414466424833, '000000', 2071972923714994177, 'USER', '你现在是什么模型', NULL, NULL, NULL, 103, 1, '2026-06-30 23:17:27', 1, '2026-06-30 23:17:27', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2071976435744129025, '000000', 2071972923714994177, 'ASSISTANT', '我是 **DeepSeek-R1** 模型，由**深度求索（DeepSeek）公司**研发。我的核心能力是处理和理解文本，支持文件上传、联网搜索、长上下文（1M tokens），并且完全免费使用。\n\n如果你有任何问题或任务，都可以随时告诉我，我会尽力帮你解决！😊', 689, NULL, NULL, -1, -1, '2026-06-30 23:17:32', -1, '2026-06-30 23:17:32', '0', NULL, NULL, NULL, NULL, 1, 403, 286, NULL);
-INSERT INTO `ai_message` VALUES (2071976701646225409, '000000', 2071972923714994177, 'USER', '你现在是什么大模型', NULL, NULL, NULL, 103, 1, '2026-06-30 23:18:36', 1, '2026-06-30 23:18:36', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `ai_message` VALUES (2071976751017377793, '000000', 2071972923714994177, 'ASSISTANT', '\n我是 **DeepSeek-R1** 大模型，由中国的深度求索（DeepSeek）公司研发的一款大型语言模型 🧠💡。\n\n“大语言模型”指的是我基于海量文本数据进行训练的先进AI系统，具有强大的自然语言理解和生成能力。我的知识来自大量公开语料、百科资料和高质量对话数据，并持续更新到 **2024年7月** 为止 💬🔍📈。\n\n如果你喜欢更轻松一点的说法——  \n你可以把我当作一个超级聪明又乐于助人的“文字大脑”，能聊天、能写代码、能读论文、能帮你总结文件内容，甚至还能陪你头脑风暴出各种奇怪的想法 🤖✨！\n\n有什么任务需要我帮忙的吗？😄', 853, NULL, NULL, -1, -1, '2026-06-30 23:18:48', -1, '2026-06-30 23:18:48', '0', NULL, NULL, NULL, NULL, 2071188923190738945, 495, 358, NULL);
+INSERT INTO `ai_message` VALUES (2072987490471432194, '000000', 2072987490450460673, 'USER', '你是谁', NULL, NULL, NULL, 103, 1, '2026-07-03 18:15:07', 1, '2026-07-03 18:15:07', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2072987596717346817, '000000', 2072987490450460673, 'ASSISTANT', '您好！我是一个由wanghuan老师训练的语言模型，被称为Nexus AI 助手。我的主要功能是理解和生成文本，以回答您的问题、提供信息、进行对话或协助完成各种任务。如果您有任何问题或需要帮助，请随时告诉我！', NULL, 'LIKE', NULL, -1, -1, '2026-07-03 18:15:32', -1, '2026-07-03 18:15:32', '0', NULL, NULL, NULL, NULL, 2072986793864646658, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_model
@@ -2471,6 +2465,7 @@ INSERT INTO `ai_model` VALUES (1, '000000', 1, 'deepseek-v4-flash', 'deepseek-v4
 INSERT INTO `ai_model` VALUES (2, '000000', 2, 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'Qwen3-Embedding-0.6B-Q8', 'EMBEDDING', 2048, 0.00, '1', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-11 23:42:56', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
 INSERT INTO `ai_model` VALUES (2065468422648635394, '000000', 2065468199226449922, 'ark-code-latest', '方舟codingplan', 'CHAT', 4096, 0.70, '0', '1', 103, 1, '2026-06-13 00:17:01', 1, '2026-06-30 22:13:39', '0', NULL, NULL, NULL, NULL, 1.000000, 20.000000, 'CNY');
 INSERT INTO `ai_model` VALUES (2071188923190738945, '000000', 2, 'deepseek-r1:8b', 'deepseek-r1:8b', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-28 19:08:15', 1, '2026-06-28 19:11:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (2072986793864646658, '000000', 2072986564503326721, 'NexusAI', 'NexusAI智能助手', 'CHAT', 500, 0.70, '0', '1', 103, 1, '2026-07-03 18:12:21', 1, '2026-07-03 18:12:21', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
 INSERT INTO `ai_model` VALUES (2195199932153522944, '000000', 4207708950347927552, 'text-embedding-v3', '通义向量 v3', 'EMBEDDING', 2048, 0.00, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000700, NULL, 'CNY');
 INSERT INTO `ai_model` VALUES (3484924229313549312, '000000', 8594416586304471040, 'rerank', '智谱 Rerank', 'RERANK', NULL, 0.00, '1', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000500, NULL, 'CNY');
 INSERT INTO `ai_model` VALUES (3773541947615837696, '000000', 2961532303096290816, 'MiniMax-Text-01', 'MiniMax-Text-01', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.001000, 0.001000, 'CNY');
@@ -2547,6 +2542,7 @@ CREATE TABLE `ai_provider`  (
 INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', '27oxYHWkD/7NiIB6DII2J/YdwcBLZbNCkkvVoADEeWzNIgT63NuT9mYCIkEzH/s602eszrlQy8+NXp8qv3+CkMPsN2d/h6Fi8EVxS6gVIl4=', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-06-30 20:59:01', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', 'YOkXtpT+eKGfwun/j+pGJK4qnWvkTi1xpXmZzzqXfZlYHquXozhFSa2LlW6jOgljXgCiryDMWYjfpcxAZqSLgSnGWiWzRCgmtfFYR4qtf4iTDRc0Fkj0uJwggeb6gguY', 'OLLAMA', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-28 19:09:22', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'WOM7825NEl8sTGf9bZGz09TFJ5dxfJfG7B8fAgTbQw1xJ1yoM0MjoSJQAeClCUmm', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-06-30 01:44:13', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2072986564503326721, '000000', 'huggingface', 'https://wangghuan-nexusai.hf.space/v1', 'hpMicTS2zDK3whqau7VPivxRlqrXyOy0wCSJobntfZF0nYrNb8PFU/cBJxfbYmyn/Ex7B5I1ginh2DW5fc3rrZKTUmCvgnBCW5NUYuO+sLI=', 'OPENAI', '1', 103, 1, '2026-07-03 18:11:26', 1, '2026-07-03 18:14:43', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2348956357081379840, '000000', '小米MiMo', 'https://token-plan-cn.xiaomimimo.com/v1', 'sk-PLEASE_REPLACE_MIMO_KEY', 'XIAOMI', '1', 103, 1, '2026-06-30 23:59:26', 1, '2026-07-01 00:01:30', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2961532303096290816, '000000', 'MiniMax', 'https://api.minimax.io/v1', 'sk-PLEASE_REPLACE_MINIMAX_KEY', 'MINIMAX', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (4207708950347927552, '000000', '通义千问', 'https://dashscope.aliyuncs.com', 'sk-PLEASE_REPLACE_DASHSCOPE_KEY', 'DASHSCOPE', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
@@ -2594,7 +2590,7 @@ INSERT INTO `ai_session` VALUES (2071272112156499970, '000000', 1, '在gitee上�
 INSERT INTO `ai_session` VALUES (2071275707899715585, '000000', 1, '在gitee上帮我搜索NexusERP这个项目的作者是谁', 'deepseek-v4-flash', 103, 1, '2026-06-29 00:53:06', 1, '2026-06-29 00:53:06', '0', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `ai_session` VALUES (2071276315541118977, '000000', 1, '帮我在gitee上搜索ktg-mes这个项目是谁开发的', 'deepseek-v4-flash', 103, 1, '2026-06-29 00:55:31', 1, '2026-06-29 00:55:31', '0', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `ai_session` VALUES (2071960256094826498, '000000', 1, '各仓库库存总量', 'ark-code-latest', 103, 1, '2026-06-30 22:13:15', 1, '2026-06-30 22:13:15', '0', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `ai_session` VALUES (2071972923714994177, '000000', 1, '你是社么模型', 'deepseek-r1:8b', 103, 1, '2026-06-30 23:03:35', 1, '2026-06-30 23:03:35', '0', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `ai_session` VALUES (2072987490450460673, '000000', 1, '你是谁', 'NexusAI', 103, 1, '2026-07-03 18:15:07', 1, '2026-07-03 18:15:07', '0', NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_sql_example
@@ -8110,6 +8106,21 @@ CREATE TABLE `sj_distributed_lock`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of sj_distributed_lock
+-- ----------------------------
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-03 17:36:02.933', '2026-07-03 17:35:02.933', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 17:35:03');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-03 18:28:18.678', '2026-07-03 18:28:13.678', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 18:28:14');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-03 17:36:02.125', '2026-07-03 17:35:02.125', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 17:35:03');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-03 18:29:02.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 18:28:02');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-03 18:28:22.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 18:28:02');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-03 18:28:18.678', '2026-07-03 18:28:13.678', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:28:14');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-03 18:26:03.070', '2026-07-03 18:25:03.070', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:25:03');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-03 17:36:02.948', '2026-07-03 17:35:02.948', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 17:35:03');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-03 18:28:22.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:28:02');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-03 18:26:03.070', '2026-07-03 18:25:03.070', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:25:03');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-03 18:28:22.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:28:02');
+
+-- ----------------------------
 -- Table structure for sj_group_config
 -- ----------------------------
 DROP TABLE IF EXISTS `sj_group_config`;
@@ -8649,12 +8660,13 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 157 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 162 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (156, 'dev', 'ruoyi_group', '2072206374332317696', '192.168.200.1', 28080, '2026-07-01 16:01:51', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-01 14:31:16', '2026-07-01 16:01:20');
+INSERT INTO `sj_server_node` VALUES (160, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2072977392638402560', '192.168.200.1', 17888, '2026-07-03 18:28:32', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-03 17:35:02', '2026-07-03 18:28:02');
+INSERT INTO `sj_server_node` VALUES (161, 'dev', 'ruoyi_group', '2072977653687701504', '192.168.200.1', 28080, '2026-07-03 18:28:44', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-03 17:36:04', '2026-07-03 18:28:13');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -9122,41 +9134,41 @@ CREATE TABLE `sys_dept`  (
 -- ----------------------------
 -- Records of sys_dept
 -- ----------------------------
-INSERT INTO `sys_dept` VALUES (100, '000000', 0, '0', 'NexusERP', NULL, 0, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', 1, '2026-05-13 15:36:14');
-INSERT INTO `sys_dept` VALUES (101, '000000', 100, '0,100', '深圳总公司', NULL, 1, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (102, '000000', 100, '0,100', '长沙分公司', NULL, 2, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (103, '000000', 101, '0,100,101', '研发部门', NULL, 1, 1, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (104, '000000', 101, '0,100,101', '市场部门', NULL, 2, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (105, '000000', 101, '0,100,101', '测试部门', NULL, 3, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', NULL, 4, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', NULL, 5, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', NULL, 1, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', NULL, 2, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (110, '000000', 101, '0,100,101', '采购部门', NULL, 4, NULL, NULL, NULL, '0', '1', NULL, 1, '2025-10-23 16:14:24', 1, '2025-10-23 16:23:50');
-INSERT INTO `sys_dept` VALUES (111, '000000', 101, '0,100,101', '生产中心', NULL, 4, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:23:00', 1, '2025-12-17 15:04:18');
-INSERT INTO `sys_dept` VALUES (112, '000000', 103, '0,100,101,103', 'IT研发部门', NULL, 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:25:35', 1, '2025-10-23 16:29:33');
-INSERT INTO `sys_dept` VALUES (113, '000000', 103, '0,100,101,103', '产品技术部门', NULL, 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:28:23', 1, '2025-12-17 14:59:56');
-INSERT INTO `sys_dept` VALUES (114, '000000', 101, '0,100,101', '采购部门', NULL, 8, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:30:10', 1, '2025-12-17 15:25:32');
-INSERT INTO `sys_dept` VALUES (115, '000000', 101, '0,100,101', '销售部门', NULL, 9, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:30:18', 1, '2025-12-17 15:25:38');
-INSERT INTO `sys_dept` VALUES (116, '000000', 101, '0,100,101', '人力资源部门', NULL, 7, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:31:01', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (117, '000000', 104, '0,100,101,104', '市场调研组', NULL, 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:50:41', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (118, '000000', 104, '0,100,101,104', '品牌推广组', NULL, 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:51:05', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (119, '000000', 104, '0,100,101,104', '客户关系管理组', NULL, 3, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:51:24', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (120, '000000', 104, '0,100,101,104', '广告与公关组', NULL, 4, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:51:44', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (121, '000000', 104, '0,100,101,104', '数字营销组', NULL, 5, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:52:01', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (122, '000000', 101, '0,100,101', '总经办', NULL, 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:52:51', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (123, '000000', 112, '0,100,101,103,112', '开发组', NULL, 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:54:54', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (124, '000000', 112, '0,100,101,103,112', '测试组', NULL, 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:55:04', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (125, '000000', 112, '0,100,101,103,112', '运维组', NULL, 3, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:55:14', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (126, '000000', 113, '0,100,101,103,113', '工艺技术组', NULL, 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:00:39', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (127, '000000', 113, '0,100,101,103,113', '产品设计组', NULL, 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:02:42', 1, '2025-12-17 15:27:40');
-INSERT INTO `sys_dept` VALUES (128, '000000', 111, '0,100,101,111', '生产计划部', NULL, 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:04:32', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (129, '000000', 111, '0,100,101,111', '加工车间', NULL, 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:04:51', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (130, '000000', 111, '0,100,101,111', '装配车间', NULL, 3, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:23:17', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (131, '000000', 111, '0,100,101,111', '包装车间', NULL, 4, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:23:38', NULL, NULL);
-INSERT INTO `sys_dept` VALUES (132, '000000', 111, '0,100,101,111', '仓储运输部', NULL, 5, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:24:10', 1, '2025-12-17 15:24:17');
-INSERT INTO `sys_dept` VALUES (2054472456746233857, '240047', 0, '0', '小米粥公司', NULL, 0, 2054472457098555394, NULL, NULL, '0', '0', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59');
-INSERT INTO `sys_dept` VALUES (2062813928180600833, '000000', 100, '0,100', '临时部门', 'LSBM', 3, NULL, NULL, NULL, '0', '0', 103, 1, '2026-06-05 16:29:00', 1, '2026-06-05 16:29:14');
+INSERT INTO `sys_dept` VALUES (100, '000000', 0, '0', 'NexusERP', 'MANAGEMENT', 0, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', 1, '2026-05-13 15:36:14');
+INSERT INTO `sys_dept` VALUES (101, '000000', 100, '0,100', '深圳总公司', 'MANAGEMENT', 1, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (102, '000000', 100, '0,100', '长沙分公司', 'MANAGEMENT', 2, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (103, '000000', 101, '0,100,101', '研发部门', 'MANAGEMENT', 1, 1, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (104, '000000', 101, '0,100,101', '市场部门', 'SALES', 2, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (105, '000000', 101, '0,100,101', '测试部门', 'MANAGEMENT', 3, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (106, '000000', 101, '0,100,101', '财务部门', 'FINANCE', 4, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (107, '000000', 101, '0,100,101', '运维部门', 'MANAGEMENT', 5, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (108, '000000', 102, '0,100,102', '市场部门', 'SALES', 1, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (109, '000000', 102, '0,100,102', '财务部门', 'FINANCE', 2, NULL, '15888888888', 'xxx@qq.com', '0', '0', 103, 1, '2026-04-15 10:51:23', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (110, '000000', 101, '0,100,101', '采购部门', 'PURCHASE', 4, NULL, NULL, NULL, '0', '1', NULL, 1, '2025-10-23 16:14:24', 1, '2025-10-23 16:23:50');
+INSERT INTO `sys_dept` VALUES (111, '000000', 101, '0,100,101', '生产中心', 'PRODUCTION', 4, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:23:00', 1, '2025-12-17 15:04:18');
+INSERT INTO `sys_dept` VALUES (112, '000000', 103, '0,100,101,103', 'IT研发部门', 'MANAGEMENT', 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:25:35', 1, '2025-10-23 16:29:33');
+INSERT INTO `sys_dept` VALUES (113, '000000', 103, '0,100,101,103', '产品技术部门', 'MANAGEMENT', 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:28:23', 1, '2025-12-17 14:59:56');
+INSERT INTO `sys_dept` VALUES (114, '000000', 101, '0,100,101', '采购部门', 'PURCHASE', 8, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:30:10', 1, '2025-12-17 15:25:32');
+INSERT INTO `sys_dept` VALUES (115, '000000', 101, '0,100,101', '销售部门', 'SALES', 9, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:30:18', 1, '2025-12-17 15:25:38');
+INSERT INTO `sys_dept` VALUES (116, '000000', 101, '0,100,101', '人力资源部门', 'HR', 7, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-10-23 16:31:01', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (117, '000000', 104, '0,100,101,104', '市场调研组', 'SALES', 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:50:41', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (118, '000000', 104, '0,100,101,104', '品牌推广组', 'SALES', 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:51:05', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (119, '000000', 104, '0,100,101,104', '客户关系管理组', 'SALES', 3, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:51:24', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (120, '000000', 104, '0,100,101,104', '广告与公关组', 'SALES', 4, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:51:44', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (121, '000000', 104, '0,100,101,104', '数字营销组', 'SALES', 5, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:52:01', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (122, '000000', 101, '0,100,101', '总经办', 'MANAGEMENT', 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:52:51', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (123, '000000', 112, '0,100,101,103,112', '开发组', 'MANAGEMENT', 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:54:54', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (124, '000000', 112, '0,100,101,103,112', '测试组', 'MANAGEMENT', 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:55:04', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (125, '000000', 112, '0,100,101,103,112', '运维组', 'MANAGEMENT', 3, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 14:55:14', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (126, '000000', 113, '0,100,101,103,113', '工艺技术组', 'PRODUCTION', 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:00:39', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (127, '000000', 113, '0,100,101,103,113', '产品设计组', 'PRODUCTION', 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:02:42', 1, '2025-12-17 15:27:40');
+INSERT INTO `sys_dept` VALUES (128, '000000', 111, '0,100,101,111', '生产计划部', 'PRODUCTION', 1, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:04:32', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (129, '000000', 111, '0,100,101,111', '加工车间', 'PRODUCTION', 2, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:04:51', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (130, '000000', 111, '0,100,101,111', '装配车间', 'PRODUCTION', 3, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:23:17', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (131, '000000', 111, '0,100,101,111', '包装车间', 'PRODUCTION', 4, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:23:38', NULL, NULL);
+INSERT INTO `sys_dept` VALUES (132, '000000', 111, '0,100,101,111', '仓储运输部', 'WAREHOUSE', 5, NULL, NULL, NULL, '0', '0', NULL, 1, '2025-12-17 15:24:10', 1, '2025-12-17 15:24:17');
+INSERT INTO `sys_dept` VALUES (2054472456746233857, '240047', 0, '0', '小米粥公司', 'MANAGEMENT', 0, 2054472457098555394, NULL, NULL, '0', '0', 103, 1, '2026-05-13 16:02:59', 1, '2026-05-13 16:02:59');
+INSERT INTO `sys_dept` VALUES (2062813928180600833, '000000', 100, '0,100', '临时部门', 'MANAGEMENT', 3, NULL, NULL, NULL, '0', '0', 103, 1, '2026-06-05 16:29:00', 1, '2026-06-05 16:29:14');
 
 -- ----------------------------
 -- Table structure for sys_dic_area
@@ -11221,6 +11233,13 @@ INSERT INTO `sys_dict_data` VALUES (2052, '000000', 3, '已完成', 'COMPLETED',
 INSERT INTO `sys_dict_data` VALUES (2060, '000000', 1, '正常工单', 'NORMAL', 'prd_wo_type', '', 'primary', 'Y', 103, 1, '2026-05-28 16:31:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (2061, '000000', 2, '委外工单', 'SUBCONTRACT', 'prd_wo_type', '', 'warning', 'N', 103, 1, '2026-05-28 16:31:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (2062, '000000', 3, '返工工单', 'REWORK', 'prd_wo_type', '', 'danger', 'N', 103, 1, '2026-05-28 16:31:08', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (9101, '000000', 1, '生产', 'PRODUCTION', 'dept_category', NULL, 'primary', 'N', 103, 1, '2026-07-02 10:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (9102, '000000', 2, '销售', 'SALES', 'dept_category', NULL, 'success', 'N', 103, 1, '2026-07-02 10:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (9103, '000000', 3, '采购', 'PURCHASE', 'dept_category', NULL, 'warning', 'N', 103, 1, '2026-07-02 10:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (9104, '000000', 4, '仓储', 'WAREHOUSE', 'dept_category', NULL, 'info', 'N', 103, 1, '2026-07-02 10:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (9105, '000000', 5, '财务', 'FINANCE', 'dept_category', NULL, 'danger', 'N', 103, 1, '2026-07-02 10:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (9106, '000000', 6, '管理', 'MANAGEMENT', 'dept_category', NULL, 'primary', 'N', 103, 1, '2026-07-02 10:00:00', 1, '2026-07-03 17:58:05', NULL);
+INSERT INTO `sys_dict_data` VALUES (9107, '000000', 7, '人力', 'HR', 'dept_category', NULL, 'danger', 'N', 103, 1, '2026-07-02 10:00:00', 1, '2026-07-03 17:58:18', NULL);
 INSERT INTO `sys_dict_data` VALUES (90011, '000000', 1, '草稿', 'DRAFT', 'wm_production_issue_status', '', 'info', 'N', 103, 1, '2026-06-23 10:52:05', NULL, NULL, '草稿（未保存执行前）');
 INSERT INTO `sys_dict_data` VALUES (90012, '000000', 2, '待领料', 'CREATED', 'wm_production_issue_status', '', 'warning', 'Y', 103, 1, '2026-06-23 10:52:05', NULL, NULL, '已生成待领料');
 INSERT INTO `sys_dict_data` VALUES (90013, '000000', 3, '部分领料', 'PARTIAL', 'wm_production_issue_status', '', 'primary', 'N', 103, 1, '2026-06-23 10:52:05', NULL, NULL, '部分领料（仍有欠领）');
@@ -11491,6 +11510,7 @@ INSERT INTO `sys_dict_type` VALUES (2005, '000000', '返工订单状态', 'prd_r
 INSERT INTO `sys_dict_type` VALUES (2006, '000000', '工单类型', 'prd_wo_type', 103, 1, '2026-05-28 16:31:08', NULL, NULL, '工单类型');
 INSERT INTO `sys_dict_type` VALUES (9001, '000000', '生产领料单状态', 'wm_production_issue_status', 103, 1, '2026-06-23 10:52:05', NULL, NULL, '生产领料单状态列表');
 INSERT INTO `sys_dict_type` VALUES (9002, '000000', '生产领料行状态', 'wm_production_issue_line_status', 103, 1, '2026-06-23 10:52:05', NULL, NULL, '生产领料行状态列表');
+INSERT INTO `sys_dict_type` VALUES (9100, '000000', '部门类别', 'dept_category', 103, 1, '2026-07-02 10:00:00', NULL, NULL, '部门类别，用于区分生产/销售/采购/仓储/财务/管理/人力等部门类型');
 INSERT INTO `sys_dict_type` VALUES (300001, '000000', '采购申请状态', 'pu_purchase_requisition_status', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '采购申请状态');
 INSERT INTO `sys_dict_type` VALUES (300002, '000000', '采购订单状态', 'pu_purchase_order_status', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '采购订单状态');
 INSERT INTO `sys_dict_type` VALUES (300003, '000000', '采购退货状态', 'pu_purchase_return_status', 103, 1, '2026-05-23 13:55:38', NULL, NULL, '采购退货状态');
@@ -11718,6 +11738,12 @@ INSERT INTO `sys_logininfor` VALUES (2071936159440863234, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2071959262980108289, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-30 22:09:18');
 INSERT INTO `sys_logininfor` VALUES (2071987100839985153, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-06-30 23:59:55');
 INSERT INTO `sys_logininfor` VALUES (2072209285737136130, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-01 14:42:48');
+INSERT INTO `sys_logininfor` VALUES (2072509485504557058, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-02 10:35:41');
+INSERT INTO `sys_logininfor` VALUES (2072546617396850690, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-02 13:03:14');
+INSERT INTO `sys_logininfor` VALUES (2072581556695756802, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-02 15:22:04');
+INSERT INTO `sys_logininfor` VALUES (2072596663836413954, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-07-02 16:22:06');
+INSERT INTO `sys_logininfor` VALUES (2072596736263655426, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-02 16:22:24');
+INSERT INTO `sys_logininfor` VALUES (2072982834605248513, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-03 17:56:37');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -13659,6 +13685,12 @@ INSERT INTO `sys_oper_log` VALUES (2071993220568600577, '000000', '知识图谱�
 INSERT INTO `sys_oper_log` VALUES (2071993532192804866, '000000', '知识图谱构建', 0, 'com.nexus.ai.controller.AiKnowledgeGraphController.build()', 'POST', 1, 'admin', '研发部门', '/ai/knowledge/graph/build/2065090090526457857', '127.0.0.1', '内网IP', '\"2065090090526457857\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-01 00:25:29', 4);
 INSERT INTO `sys_oper_log` VALUES (2072214148038574081, '000000', '生产计划', 3, 'com.nexus.erp.prd.controller.PrdProductionPlanController.remove()', 'DELETE', 1, 'admin', '研发部门', '/erp/prd/plan/2071858653202145281', '127.0.0.1', '内网IP', '[\"2071858653202145281\"]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-01 15:02:07', 65);
 INSERT INTO `sys_oper_log` VALUES (2072214408374829058, '000000', '生产计划', 2, 'com.nexus.erp.prd.controller.PrdProductionPlanController.updateVersion()', 'PUT', 1, 'admin', '研发部门', '/erp/prd/plan/updateVersion', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"planId\":\"2071821464829349890\",\"planNo\":\"SCJH20260010\",\"planName\":\"销售订单-XSDD20260630001-简易金属工具架\",\"version\":1,\"originalPlanId\":null,\"referenceNo\":\"XSDD20260630001\",\"planType\":\"MPS\",\"planDate\":\"2026-06-30 13:01:44\",\"startDate\":null,\"endDate\":null,\"status\":\"DRAFT\",\"priority\":0,\"plannerId\":null,\"plannerName\":null,\"departmentId\":null,\"departmentName\":null,\"totalQuantity\":\"10.0000\",\"confirmedTime\":null,\"releasedTime\":null,\"closedTime\":null,\"bomName\":\"简易金属工具架标准版BOM\",\"bomVersion\":\"1.0\",\"isCurrent\":0,\"bomId\":20,\"attr4\":null,\"materialRequirementId\":null,\"materialRequirementNo\":null,\"orderLineId\":\"2071821415999262722\",\"orderLineNo\":\"\",\"remark\":null,\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-01 15:03:09', 37);
+INSERT INTO `sys_oper_log` VALUES (2072983204127625217, '000000', '字典数据', 2, 'com.nexus.system.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":\"2026-07-02 10:00:00\",\"updateBy\":null,\"updateTime\":null,\"dictCode\":9106,\"dictSort\":6,\"dictLabel\":\"管理\",\"dictValue\":\"MANAGEMENT\",\"dictType\":\"dept_category\",\"cssClass\":null,\"listClass\":\"primary\",\"isDefault\":\"N\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 17:58:05', 41);
+INSERT INTO `sys_oper_log` VALUES (2072983261849636866, '000000', '字典数据', 2, 'com.nexus.system.controller.system.SysDictDataController.edit()', 'PUT', 1, 'admin', '研发部门', '/system/dict/data', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":\"2026-07-02 10:00:00\",\"updateBy\":null,\"updateTime\":null,\"dictCode\":9107,\"dictSort\":7,\"dictLabel\":\"人力\",\"dictValue\":\"HR\",\"dictType\":\"dept_category\",\"cssClass\":null,\"listClass\":\"danger\",\"isDefault\":\"N\",\"remark\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 17:58:18', 15);
+INSERT INTO `sys_oper_log` VALUES (2072986564570435585, '000000', 'AI厂商管理', 1, 'com.nexus.ai.controller.AiProviderController.add()', 'POST', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":null,\"name\":\"huggingface\",\"apiHost\":\"https://wangghuan-nexusai.hf.space/v1/chat/completions \",\"apiKey\":\"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\",\"providerType\":\"OLLAMA\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 18:11:26', 38);
+INSERT INTO `sys_oper_log` VALUES (2072986793923366914, '000000', 'AI模型管理', 1, 'com.nexus.ai.controller.AiModelController.add()', 'POST', 1, 'admin', '研发部门', '/ai/model', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":null,\"providerId\":\"2072986564503326721\",\"modelName\":\"NexusAI\",\"displayName\":\"NexusAI智能助手\",\"modelType\":\"CHAT\",\"maxTokens\":500,\"temperature\":\"0.7\",\"isDefault\":\"0\",\"status\":\"1\",\"inputPricePerMillion\":null,\"outputPricePerMillion\":null,\"currency\":\"CNY\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 18:12:21', 19);
+INSERT INTO `sys_oper_log` VALUES (2072987150460178434, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2072986564503326721\",\"name\":\"huggingface\",\"apiHost\":\"https://wangghuan-nexusai.hf.space/v1/chat/completions \",\"apiKey\":\"****sLI=\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 18:13:46', 9);
+INSERT INTO `sys_oper_log` VALUES (2072987392970641410, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2072986564503326721\",\"name\":\"huggingface\",\"apiHost\":\"https://wangghuan-nexusai.hf.space/v1\",\"apiKey\":\"****sLI=\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 18:14:43', 6);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -15581,7 +15613,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2070553780042235905, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-01 14:42:48', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-01 14:42:48', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2070553780042235905, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-03 17:56:37', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-03 17:56:37', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-06-13 02:44:41', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-13 02:44:41', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-06-30 13:16:21', NULL, 1, '2025-10-23 17:03:16', -1, '2026-06-30 13:16:21', '耳朵聋');

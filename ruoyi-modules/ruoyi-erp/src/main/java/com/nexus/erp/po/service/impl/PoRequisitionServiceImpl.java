@@ -125,7 +125,9 @@ public class PoRequisitionServiceImpl implements IPoRequisitionService {
     private LambdaQueryWrapper<PoRequisition> buildQueryWrapper(PoRequisitionBo bo) {
         LambdaQueryWrapper<PoRequisition> lqw = Wrappers.lambdaQuery();
         lqw.like(StringUtils.isNotBlank(bo.getRequisitionNo()), PoRequisition::getRequisitionNo, bo.getRequisitionNo());
-        lqw.like(StringUtils.isNotBlank(bo.getDepartmentName()), PoRequisition::getDepartmentName, bo.getDepartmentName());
+        lqw.eq(bo.getDeptId() != null, PoRequisition::getDeptId, bo.getDeptId());
+        lqw.like(StringUtils.isNotBlank(bo.getDeptName()), PoRequisition::getDeptName, bo.getDeptName());
+        lqw.eq(bo.getApplicantId() != null, PoRequisition::getApplicantId, bo.getApplicantId());
         lqw.like(StringUtils.isNotBlank(bo.getApplicantName()), PoRequisition::getApplicantName, bo.getApplicantName());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PoRequisition::getStatus, bo.getStatus());
         lqw.orderByDesc(PoRequisition::getCreateTime);

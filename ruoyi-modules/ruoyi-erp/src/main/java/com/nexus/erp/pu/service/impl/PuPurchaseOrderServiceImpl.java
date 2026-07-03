@@ -554,6 +554,8 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
             .eq(StringUtils.isNotBlank(bo.getOrderNo()), PuPurchaseOrder::getOrderNo, bo.getOrderNo())
             .eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseOrder::getStatus, bo.getStatus())
             .like(StringUtils.isNotBlank(bo.getVendorName()), PuPurchaseOrder::getVendorName, bo.getVendorName())
+            .eq(bo.getDeptId() != null, PuPurchaseOrder::getDeptId, bo.getDeptId())
+            .eq(bo.getBuyerId() != null, PuPurchaseOrder::getBuyerId, bo.getBuyerId())
             .orderByDesc(PuPurchaseOrder::getCreateTime);
         return lqw;
     }

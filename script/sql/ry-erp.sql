@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 01/07/2026 18:08:00
+ Date: 03/07/2026 18:03:50
 */
 
 SET NAMES utf8mb4;
@@ -233,6 +233,10 @@ CREATE TABLE `bd_client`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `sales_rep_id` bigint(20) NULL DEFAULT NULL COMMENT '业务员ID（关联sys_user）',
+  `sales_rep_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '业务员名称',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '归属部门ID（关联sys_dept）',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '归属部门名称',
   PRIMARY KEY (`client_id`) USING BTREE,
   INDEX `idx_province_area`(`province_area_id`) USING BTREE,
   INDEX `idx_city_area`(`city_area_id`) USING BTREE,
@@ -243,17 +247,17 @@ CREATE TABLE `bd_client`  (
 -- ----------------------------
 -- Records of bd_client
 -- ----------------------------
-INSERT INTO `bd_client` VALUES (1, '000000', 'C00001', '测试', '测试', 'cs', '测试测试', 'ENTERPRISE', '/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png', '浙江省杭州市上城区彭埠街道', NULL, '123', '123', '123', '123', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 330000, 330100, 330102, 330102015, NULL, NULL, 103, 1, '2025-09-18 15:45:44', 1, '2025-11-02 16:14:00', '0');
-INSERT INTO `bd_client` VALUES (2, '000000', 'C00003', '小明科技有限公司', '小明科技', 'Xiaoming Tech Co., Ltd', '测试', 'ENTERPRISE', NULL, '深圳市南山区科技园南区W1-A栋', NULL, 'contact@xiaomingtech.com', '0755-88888888', '李明', '13800138001', 'liming@xiaomingtech.com', NULL, NULL, NULL, '91440300MA5FXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-01-15 10:30:00', 1, '2025-10-21 17:46:34', '0');
-INSERT INTO `bd_client` VALUES (3, '000000', 'C00004', '王芳贸易公司', '王芳贸易', 'Wangfang Trading Co., Ltd', '测试', 'ENTERPRISE', NULL, '广州市天河区珠江新城商务区', NULL, 'info@wangfang.com', '020-66666666', '王芳', '13900139002', 'wangfang@wangfang.com', NULL, NULL, NULL, '91440100MA5GXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-02-20 14:15:00', 1, '2025-10-21 17:46:42', '0');
-INSERT INTO `bd_client` VALUES (4, '000000', 'C00005', '张伟实业集团', '张伟集团', 'Zhangwei Industries Group', '测试', 'ENTERPRISE', NULL, '上海市浦东新区陆家嘴金融中心', NULL, 'group@zhangwei.com', '021-77777777', '张伟', '13700137003', 'zhangwei@zhangwei.com', NULL, NULL, NULL, '91310000MA5HXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-03-10 09:45:00', 1, '2025-10-21 17:46:49', '0');
-INSERT INTO `bd_client` VALUES (5, '000000', 'C00006', '陈氏机械制造有限公司', '陈氏机械', 'Chen Machinery Co., Ltd', '测试', 'ENTERPRISE', NULL, '北京市朝阳区经济技术开发区', NULL, 'sales@chenmachinery.com', '010-55555555', '陈总', '13600136004', 'chen@chenmachinery.com', NULL, NULL, NULL, '91110000MA5JXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-04-05 11:20:00', 1, '2025-10-21 17:46:58', '0');
-INSERT INTO `bd_client` VALUES (6, '000000', 'C00007', '刘氏电子科技有限公司', '刘氏电子', 'Liu Electronics Co., Ltd', '测试', 'ENTERPRISE', NULL, '杭州市滨江区物联网小镇', NULL, 'info@liuelectronics.com', '0571-33333333', '刘经理', '13500135005', 'liu@liuelectronics.com', NULL, NULL, NULL, '91330000MA5KXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-05-12 13:40:00', 1, '2025-10-21 17:47:06', '0');
-INSERT INTO `bd_client` VALUES (7, '000000', 'C00008', '赵氏工程公司', '赵氏工程', 'Zhao Engineering Co., Ltd', '测试', 'ENTERPRISE', NULL, '成都市高新区天府软件园', NULL, 'contact@zhaoengineering.com', '028-22222222', '赵主任', '13400134006', 'zhao@zhaoengineering.com', NULL, NULL, NULL, '91510000MA5LXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-06-18 15:30:00', 1, '2025-10-21 17:47:12', '0');
-INSERT INTO `bd_client` VALUES (8, '000000', 'C00009', '沃尔玛（中国）投资有限公司', '沃尔玛', 'Walmart (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '深圳市罗湖区深南东路5016号', NULL, 'procurement@walmart.cn', '0755-11111111', '采购部', '0755-11111112', 'purchase@walmart.cn', NULL, NULL, NULL, '914403007152XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-07-01 08:00:00', 1, '2025-10-21 17:47:19', '0');
-INSERT INTO `bd_client` VALUES (9, '000000', 'C00010', '好市多（中国）投资有限公司', '好市多', 'Costco (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '上海市闵行区吴中路1599号', NULL, 'buying@costco.cn', '021-44444444', '采购经理', '021-44444445', 'buying@costco.cn', NULL, NULL, NULL, '913100008888XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-08-15 09:15:00', 1, '2025-10-21 17:47:25', '0');
-INSERT INTO `bd_client` VALUES (10, '000000', 'C00011', '家乐福（中国）投资有限公司', '家乐福', 'Carrefour (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '北京市朝阳区霄云路甲26号', NULL, 'procurement@carrefour.cn', '010-99999999', '供应链经理', '010-99999998', 'supplychain@carrefour.cn', NULL, NULL, NULL, '911100009999XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-09-20 10:30:00', 1, '2025-10-21 17:47:33', '0');
-INSERT INTO `bd_client` VALUES (11, '000000', 'C00012', '测试五金贸易公司', '五金贸易', 'Test Hardware Trading Co., Ltd', '进货测试客户', 'ENTERPRISE', NULL, '浙江省杭州市滨江区测试路100号', NULL, 'test@hardware.com', '0571-88886666', '张三', '13800138001', 'zhangsan@hardware.com', NULL, NULL, NULL, '91330100MA8TEST001', '工具架销售测试客户', NULL, NULL, NULL, NULL, 330000, 330100, 330108, NULL, NULL, NULL, 103, 1, '2026-06-30 10:12:40', 1, '2026-06-30 10:12:40', '0');
+INSERT INTO `bd_client` VALUES (1, '000000', 'C00001', '测试', '测试', 'cs', '测试测试', 'ENTERPRISE', '/profile/client_logo//2025/09/22/883112fba9d74b63857adfcade752ad6.png', '浙江省杭州市上城区彭埠街道', NULL, '123', '123', '123', '123', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 330000, 330100, 330102, 330102015, NULL, NULL, 103, 1, '2025-09-18 15:45:44', 1, '2025-11-02 16:14:00', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (2, '000000', 'C00003', '小明科技有限公司', '小明科技', 'Xiaoming Tech Co., Ltd', '测试', 'ENTERPRISE', NULL, '深圳市南山区科技园南区W1-A栋', NULL, 'contact@xiaomingtech.com', '0755-88888888', '李明', '13800138001', 'liming@xiaomingtech.com', NULL, NULL, NULL, '91440300MA5FXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-01-15 10:30:00', 1, '2025-10-21 17:46:34', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (3, '000000', 'C00004', '王芳贸易公司', '王芳贸易', 'Wangfang Trading Co., Ltd', '测试', 'ENTERPRISE', NULL, '广州市天河区珠江新城商务区', NULL, 'info@wangfang.com', '020-66666666', '王芳', '13900139002', 'wangfang@wangfang.com', NULL, NULL, NULL, '91440100MA5GXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-02-20 14:15:00', 1, '2025-10-21 17:46:42', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (4, '000000', 'C00005', '张伟实业集团', '张伟集团', 'Zhangwei Industries Group', '测试', 'ENTERPRISE', NULL, '上海市浦东新区陆家嘴金融中心', NULL, 'group@zhangwei.com', '021-77777777', '张伟', '13700137003', 'zhangwei@zhangwei.com', NULL, NULL, NULL, '91310000MA5HXXXXXX', '门户网站客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-03-10 09:45:00', 1, '2025-10-21 17:46:49', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (5, '000000', 'C00006', '陈氏机械制造有限公司', '陈氏机械', 'Chen Machinery Co., Ltd', '测试', 'ENTERPRISE', NULL, '北京市朝阳区经济技术开发区', NULL, 'sales@chenmachinery.com', '010-55555555', '陈总', '13600136004', 'chen@chenmachinery.com', NULL, NULL, NULL, '91110000MA5JXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-04-05 11:20:00', 1, '2025-10-21 17:46:58', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (6, '000000', 'C00007', '刘氏电子科技有限公司', '刘氏电子', 'Liu Electronics Co., Ltd', '测试', 'ENTERPRISE', NULL, '杭州市滨江区物联网小镇', NULL, 'info@liuelectronics.com', '0571-33333333', '刘经理', '13500135005', 'liu@liuelectronics.com', NULL, NULL, NULL, '91330000MA5KXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-05-12 13:40:00', 1, '2025-10-21 17:47:06', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (7, '000000', 'C00008', '赵氏工程公司', '赵氏工程', 'Zhao Engineering Co., Ltd', '测试', 'ENTERPRISE', NULL, '成都市高新区天府软件园', NULL, 'contact@zhaoengineering.com', '028-22222222', '赵主任', '13400134006', 'zhao@zhaoengineering.com', NULL, NULL, NULL, '91510000MA5LXXXXXX', '销售代表客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-06-18 15:30:00', 1, '2025-10-21 17:47:12', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (8, '000000', 'C00009', '沃尔玛（中国）投资有限公司', '沃尔玛', 'Walmart (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '深圳市罗湖区深南东路5016号', NULL, 'procurement@walmart.cn', '0755-11111111', '采购部', '0755-11111112', 'purchase@walmart.cn', NULL, NULL, NULL, '914403007152XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-07-01 08:00:00', 1, '2025-10-21 17:47:19', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (9, '000000', 'C00010', '好市多（中国）投资有限公司', '好市多', 'Costco (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '上海市闵行区吴中路1599号', NULL, 'buying@costco.cn', '021-44444444', '采购经理', '021-44444445', 'buying@costco.cn', NULL, NULL, NULL, '913100008888XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-08-15 09:15:00', 1, '2025-10-21 17:47:25', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (10, '000000', 'C00011', '家乐福（中国）投资有限公司', '家乐福', 'Carrefour (China) Investment Co., Ltd', '测试', 'ENTERPRISE', NULL, '北京市朝阳区霄云路甲26号', NULL, 'procurement@carrefour.cn', '010-99999999', '供应链经理', '010-99999998', 'supplychain@carrefour.cn', NULL, NULL, NULL, '911100009999XXXXXX', 'EDI客户', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2024-09-20 10:30:00', 1, '2025-10-21 17:47:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_client` VALUES (11, '000000', 'C00012', '测试五金贸易公司', '五金贸易', 'Test Hardware Trading Co., Ltd', '进货测试客户', 'ENTERPRISE', NULL, '浙江省杭州市滨江区测试路100号', NULL, 'test@hardware.com', '0571-88886666', '张三', '13800138001', 'zhangsan@hardware.com', NULL, NULL, NULL, '91330100MA8TEST001', '工具架销售测试客户', NULL, NULL, NULL, NULL, 330000, 330100, 330108, NULL, NULL, NULL, 103, 1, '2026-06-30 10:12:40', 1, '2026-06-30 10:12:40', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for bd_client_credit
@@ -802,6 +806,10 @@ CREATE TABLE `bd_vendor`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `buyer_id` bigint(20) NULL DEFAULT NULL COMMENT '采购员ID（关联sys_user）',
+  `buyer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购员名称',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '归属部门ID（关联sys_dept）',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '归属部门名称',
   PRIMARY KEY (`vendor_id`) USING BTREE,
   UNIQUE INDEX `uk_vendor_code`(`vendor_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -810,11 +818,11 @@ CREATE TABLE `bd_vendor`  (
 -- ----------------------------
 -- Records of bd_vendor
 -- ----------------------------
-INSERT INTO `bd_vendor` VALUES (2062098763051089921, '000000', 'V00001', '钢板产出商', 'xxxx', '浙江省宁波市海曙区白云街道', '钢板人', '153xxxxx', 'xxxxx', 'B', '5', '1', 'ACTIVE', NULL, NULL, NULL, NULL, NULL, 330000, 330200, 330203, 330203006, NULL, NULL, 103, 1, '2026-06-03 17:07:12', 1, '2026-06-03 17:07:12', '0');
-INSERT INTO `bd_vendor` VALUES (2062098763051089922, '000000', 'V00002', '华东轴承有限公司', '91310000MA1FL8XQ3B', '上海市浦东新区张江高科技园区', '李经理', '13800002222', '6228480000001234567', '机械制造', '华东', '原材料供应商', 'ACTIVE', '轴承类专业供应商', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:52:46', NULL, '2026-06-21 20:52:46', '0');
-INSERT INTO `bd_vendor` VALUES (2062098763051089923, '000000', 'V00003', '深圳精密电机制造厂', '91440300MA5F3XYZ0A', '深圳市宝安区西乡街道', '王总', '13900003333', '6228480000002345678', '电机制造', '华南', '关键部件供应商', 'ACTIVE', '电机类产品供应商', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:52:46', NULL, '2026-06-21 20:52:46', '0');
-INSERT INTO `bd_vendor` VALUES (2062098763051089924, '000000', 'V00004', '天津化工材料有限公司', '91120000MA06KLMN2D', '天津市滨海新区', '张工', '13700004444', '6228480000003456789', '化工材料', '华北', '辅助材料供应商', 'ACTIVE', '润滑油等辅料供应商', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:52:46', NULL, '2026-06-21 20:52:46', '0');
-INSERT INTO `bd_vendor` VALUES (2062098763051089925, '000000', 'V00005', '宏达五金有限公司', '91330100MA8TEST002', '浙江省杭州市萧山区五金工业园', '李四', '13800138002', '6228480000009876543', '五金制造', '华东', '紧固件供应商', 'ACTIVE', '连接件包供应商', NULL, NULL, NULL, NULL, 330000, 330100, 330109, NULL, NULL, NULL, 103, 1, '2026-06-30 10:12:40', 1, '2026-06-30 10:12:40', '0');
+INSERT INTO `bd_vendor` VALUES (2062098763051089921, '000000', 'V00001', '钢板产出商', 'xxxx', '浙江省宁波市海曙区白云街道', '钢板人', '153xxxxx', 'xxxxx', 'B', '5', '1', 'ACTIVE', NULL, NULL, NULL, NULL, NULL, 330000, 330200, 330203, 330203006, NULL, NULL, 103, 1, '2026-06-03 17:07:12', 1, '2026-06-03 17:07:12', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_vendor` VALUES (2062098763051089922, '000000', 'V00002', '华东轴承有限公司', '91310000MA1FL8XQ3B', '上海市浦东新区张江高科技园区', '李经理', '13800002222', '6228480000001234567', '机械制造', '华东', '原材料供应商', 'ACTIVE', '轴承类专业供应商', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:52:46', NULL, '2026-06-21 20:52:46', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_vendor` VALUES (2062098763051089923, '000000', 'V00003', '深圳精密电机制造厂', '91440300MA5F3XYZ0A', '深圳市宝安区西乡街道', '王总', '13900003333', '6228480000002345678', '电机制造', '华南', '关键部件供应商', 'ACTIVE', '电机类产品供应商', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:52:46', NULL, '2026-06-21 20:52:46', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_vendor` VALUES (2062098763051089924, '000000', 'V00004', '天津化工材料有限公司', '91120000MA06KLMN2D', '天津市滨海新区', '张工', '13700004444', '6228480000003456789', '化工材料', '华北', '辅助材料供应商', 'ACTIVE', '润滑油等辅料供应商', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:52:46', NULL, '2026-06-21 20:52:46', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `bd_vendor` VALUES (2062098763051089925, '000000', 'V00005', '宏达五金有限公司', '91330100MA8TEST002', '浙江省杭州市萧山区五金工业园', '李四', '13800138002', '6228480000009876543', '五金制造', '华东', '紧固件供应商', 'ACTIVE', '连接件包供应商', NULL, NULL, NULL, NULL, 330000, 330100, 330109, NULL, NULL, NULL, 103, 1, '2026-06-30 10:12:40', 1, '2026-06-30 10:12:40', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for bd_workshop
@@ -828,6 +836,8 @@ CREATE TABLE `bd_workshop`  (
   `workshop_desc` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '车间描述',
   `manager_id` bigint(20) NOT NULL COMMENT '车间主任ID',
   `manager_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '车间主任',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '所属部门ID（关联sys_dept，打通行政组织体系）',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '所属部门名称',
   `capacity` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '产能（标准工时/天）',
   `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态：0-停用，1-启用',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序',
@@ -845,14 +855,15 @@ CREATE TABLE `bd_workshop`  (
   PRIMARY KEY (`workshop_id`) USING BTREE,
   UNIQUE INDEX `uk_workshop_code`(`workshop_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_dept_id`(`dept_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '车间表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bd_workshop
 -- ----------------------------
-INSERT INTO `bd_workshop` VALUES (1, '000000', 'CJ007', '注塑车间#1', '注塑', 100, 'xiaowang', 10.00, 1, 1, '注塑车间#1', NULL, NULL, 0, 0, NULL, NULL, '2025-11-19 11:53:35', NULL, '2025-12-24 14:30:49', '0');
-INSERT INTO `bd_workshop` VALUES (2, '000000', 'CJ008', '冲压车间#1', NULL, 106, '李芳华', 100.00, 1, 2, NULL, NULL, NULL, 0, 0, NULL, NULL, '2026-03-30 11:52:29', NULL, NULL, '0');
+INSERT INTO `bd_workshop` VALUES (1, '000000', 'CJ007', '注塑车间#1', '注塑', 100, 'xiaowang', 129, '加工车间', 10.00, 1, 1, '注塑车间#1', NULL, NULL, 0, 0, NULL, NULL, '2025-11-19 11:53:35', NULL, '2026-07-02 16:19:26', '0');
+INSERT INTO `bd_workshop` VALUES (2, '000000', 'CJ008', '冲压车间#1', NULL, 106, '李芳华', 130, '装配车间', 100.00, 1, 2, NULL, NULL, NULL, 0, 0, NULL, NULL, '2026-03-30 11:52:29', NULL, '2026-07-02 16:19:26', '0');
 
 -- ----------------------------
 -- Table structure for bd_workstation
@@ -904,7 +915,8 @@ CREATE TABLE `po_requisition`  (
   `requisition_id` bigint(20) NOT NULL COMMENT '请购单ID',
   `requisition_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '请购单号',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'draft' COMMENT '状态',
-  `department_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID（关联sys_dept）',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '部门名称',
   `applicant_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '申请人',
   `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
@@ -915,11 +927,13 @@ CREATE TABLE `po_requisition`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `applicant_id` bigint(20) NULL DEFAULT NULL COMMENT '申请人ID（关联sys_user）',
   PRIMARY KEY (`requisition_id`) USING BTREE,
   UNIQUE INDEX `uk_po_requisition_no`(`requisition_no`) USING BTREE,
   INDEX `idx_po_requisition_status`(`status`) USING BTREE,
-  INDEX `idx_po_requisition_department`(`department_name`) USING BTREE,
-  INDEX `idx_po_requisition_applicant`(`applicant_name`) USING BTREE
+  INDEX `idx_po_requisition_applicant`(`applicant_name`) USING BTREE,
+  INDEX `idx_po_requisition_dept`(`dept_id`) USING BTREE,
+  INDEX `idx_po_requisition_applicant_id`(`applicant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '请购单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1007,8 +1021,8 @@ CREATE TABLE `prd_material_requirement`  (
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '状态',
   `planner_id` bigint(20) NULL DEFAULT NULL COMMENT '计划员ID',
   `planner_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计划员',
-  `department_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID',
-  `department_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '部门',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '部门',
   `confirmed_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
   `issued_time` datetime(0) NULL DEFAULT NULL COMMENT '发料时间',
   `closed_time` datetime(0) NULL DEFAULT NULL COMMENT '关闭时间',
@@ -1128,8 +1142,8 @@ CREATE TABLE `prd_production_plan`  (
   `priority` bigint(20) NULL DEFAULT NULL COMMENT '优先级',
   `planner_id` bigint(20) NULL DEFAULT NULL COMMENT '计划员ID',
   `planner_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计划员',
-  `department_id` bigint(20) NULL DEFAULT NULL COMMENT '生产部门ID',
-  `department_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产部门',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '生产部门ID',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产部门',
   `total_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '计划总数量',
   `confirmed_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
   `released_time` datetime(0) NULL DEFAULT NULL COMMENT '下达时间',
@@ -1603,6 +1617,10 @@ CREATE TABLE `pu_purchase_order`  (
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `contract_id` bigint(20) NULL DEFAULT NULL COMMENT '合同ID，关联pu_contract表（预留字段）',
   `contract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同编号（预留字段）',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
+  `buyer_id` bigint(20) NULL DEFAULT NULL COMMENT '采购员ID（关联sys_user）',
+  `buyer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购员名称',
   PRIMARY KEY (`order_id`) USING BTREE,
   UNIQUE INDEX `uk_order_no`(`order_no`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2062092892921307139 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购订单表' ROW_FORMAT = Dynamic;
@@ -1610,9 +1628,9 @@ CREATE TABLE `pu_purchase_order`  (
 -- ----------------------------
 -- Records of pu_purchase_order
 -- ----------------------------
-INSERT INTO `pu_purchase_order` VALUES (10001, 'PO-TEST-001', 10001, 'PR-TEST-001', 2062098763051089921, 'V00001', '钢板产出商', '2026-06-02 00:00:00', '2026-06-18 00:00:00', 'CNY', 1.000000, 2250000.00, 292500.00, 0.00, 5000.00, 0.00, 'NET30', 'FOB', 'APPROVED', '钢板500吨采购订单', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL, NULL);
-INSERT INTO `pu_purchase_order` VALUES (10002, 'PO-TEST-002', 10002, 'PR-TEST-002', 2062098763051089924, 'V00004', '天津化工材料有限公司', '2026-06-03 00:00:00', '2026-06-12 00:00:00', 'CNY', 1.000000, 17000.00, 2210.00, 0.00, 500.00, 0.00, 'NET15', 'FOB', 'RECEIVED', '润滑油200升采购订单(已收货)', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL, NULL);
-INSERT INTO `pu_purchase_order` VALUES (2062092892921307138, 'CGDD202606030001', 2062086009753870338, 'CGSQ202606030002', 2062098763051089921, 'V00001', '钢板产出商', '2026-06-03 16:43:52', '2026-06-05 00:00:00', 'CNY', 1.000000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202606030002】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:43:52', -1, '2026-06-07 22:13:52', '0', NULL, NULL, NULL);
+INSERT INTO `pu_purchase_order` VALUES (10001, 'PO-TEST-001', 10001, 'PR-TEST-001', 2062098763051089921, 'V00001', '钢板产出商', '2026-06-02 00:00:00', '2026-06-18 00:00:00', 'CNY', 1.000000, 2250000.00, 292500.00, 0.00, 5000.00, 0.00, 'NET30', 'FOB', 'APPROVED', '钢板500吨采购订单', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `pu_purchase_order` VALUES (10002, 'PO-TEST-002', 10002, 'PR-TEST-002', 2062098763051089924, 'V00004', '天津化工材料有限公司', '2026-06-03 00:00:00', '2026-06-12 00:00:00', 'CNY', 1.000000, 17000.00, 2210.00, 0.00, 500.00, 0.00, 'NET15', 'FOB', 'RECEIVED', '润滑油200升采购订单(已收货)', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `pu_purchase_order` VALUES (2062092892921307138, 'CGDD202606030001', 2062086009753870338, 'CGSQ202606030002', 2062098763051089921, 'V00001', '钢板产出商', '2026-06-03 16:43:52', '2026-06-05 00:00:00', 'CNY', 1.000000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202606030002】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:43:52', -1, '2026-06-07 22:13:52', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for pu_purchase_order_line
@@ -1682,6 +1700,8 @@ CREATE TABLE `pu_purchase_requisition`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   PRIMARY KEY (`requisition_id`) USING BTREE,
   UNIQUE INDEX `uk_requisition_no`(`requisition_no`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2071442348321062914 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
@@ -1689,15 +1709,15 @@ CREATE TABLE `pu_purchase_requisition`  (
 -- ----------------------------
 -- Records of pu_purchase_requisition
 -- ----------------------------
-INSERT INTO `pu_purchase_requisition` VALUES (10001, 'PR-TEST-001', '钢板采购申请-2026Q3', 1, '管理员', '2026-06-01 00:00:00', '2026-06-20 00:00:00', 'MANUAL', 'APPROVED', NULL, '生产用钢板补充采购', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0');
-INSERT INTO `pu_purchase_requisition` VALUES (10002, 'PR-TEST-002', '润滑油采购申请-2026Q3', 1, '管理员', '2026-06-02 00:00:00', '2026-06-15 00:00:00', 'LOW_STOCK', 'APPROVED', NULL, '库存低于安全库存触发', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0');
-INSERT INTO `pu_purchase_requisition` VALUES (2058434206744338434, '123123', '测试', NULL, NULL, '2026-05-24 00:00:00', '2026-05-31 00:00:00', 'MANUAL', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 14:25:33', 1, '2026-06-03 16:15:49', '1');
-INSERT INTO `pu_purchase_requisition` VALUES (2058439491252805634, 'PU2026052401', 'cs2', NULL, NULL, '2026-05-24 00:00:00', '2026-05-31 00:00:00', 'MANUAL', 'DRAFT', 2058435612079448066, 'cs', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 14:46:33', 1, '2026-06-03 16:15:49', '1');
-INSERT INTO `pu_purchase_requisition` VALUES (2058451208582094850, 'PU20260524002', '测试3', NULL, NULL, '2026-05-24 00:00:00', '2026-05-25 00:00:00', 'MANUAL', 'APPROVED', 2058435612079448066, '测试', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 15:33:07', 1, '2026-06-03 16:15:49', '1');
-INSERT INTO `pu_purchase_requisition` VALUES (2058493299811049473, 'CGSQ202605240001', '采购', NULL, NULL, '2026-05-24 18:20:22', NULL, 'MANUAL', 'DRAFT', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 18:20:22', 1, '2026-06-03 16:15:49', '1');
-INSERT INTO `pu_purchase_requisition` VALUES (2062085313994334209, 'CGSQ202606030001', NULL, NULL, NULL, '2026-06-03 16:13:45', NULL, 'MANUAL', 'DRAFT', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:13:45', 1, '2026-06-03 16:15:41', '1');
-INSERT INTO `pu_purchase_requisition` VALUES (2062086009753870338, 'CGSQ202606030002', '钢板采购', NULL, NULL, '2026-06-03 00:00:00', '2026-06-04 00:00:00', 'MANUAL', 'ORDERED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:16:31', 1, '2026-06-03 16:43:52', '0');
-INSERT INTO `pu_purchase_requisition` VALUES (2071442348321062913, 'CGSQ202606290001', '测试', NULL, NULL, '2026-06-29 00:00:00', '2026-06-30 00:00:00', 'MANUAL', 'APPROVED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-29 11:55:16', 1, '2026-06-29 11:57:37', '0');
+INSERT INTO `pu_purchase_requisition` VALUES (10001, 'PR-TEST-001', '钢板采购申请-2026Q3', 1, '管理员', '2026-06-01 00:00:00', '2026-06-20 00:00:00', 'MANUAL', 'APPROVED', NULL, '生产用钢板补充采购', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (10002, 'PR-TEST-002', '润滑油采购申请-2026Q3', 1, '管理员', '2026-06-02 00:00:00', '2026-06-15 00:00:00', 'LOW_STOCK', 'APPROVED', NULL, '库存低于安全库存触发', NULL, NULL, NULL, NULL, '000000', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (2058434206744338434, '123123', '测试', NULL, NULL, '2026-05-24 00:00:00', '2026-05-31 00:00:00', 'MANUAL', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 14:25:33', 1, '2026-06-03 16:15:49', '1', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (2058439491252805634, 'PU2026052401', 'cs2', NULL, NULL, '2026-05-24 00:00:00', '2026-05-31 00:00:00', 'MANUAL', 'DRAFT', 2058435612079448066, 'cs', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 14:46:33', 1, '2026-06-03 16:15:49', '1', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (2058451208582094850, 'PU20260524002', '测试3', NULL, NULL, '2026-05-24 00:00:00', '2026-05-25 00:00:00', 'MANUAL', 'APPROVED', 2058435612079448066, '测试', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 15:33:07', 1, '2026-06-03 16:15:49', '1', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (2058493299811049473, 'CGSQ202605240001', '采购', NULL, NULL, '2026-05-24 18:20:22', NULL, 'MANUAL', 'DRAFT', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-05-24 18:20:22', 1, '2026-06-03 16:15:49', '1', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (2062085313994334209, 'CGSQ202606030001', NULL, NULL, NULL, '2026-06-03 16:13:45', NULL, 'MANUAL', 'DRAFT', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:13:45', 1, '2026-06-03 16:15:41', '1', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (2062086009753870338, 'CGSQ202606030002', '钢板采购', NULL, NULL, '2026-06-03 00:00:00', '2026-06-04 00:00:00', 'MANUAL', 'ORDERED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:16:31', 1, '2026-06-03 16:43:52', '0', NULL, NULL);
+INSERT INTO `pu_purchase_requisition` VALUES (2071442348321062913, 'CGSQ202606290001', '测试', NULL, NULL, '2026-06-29 00:00:00', '2026-06-30 00:00:00', 'MANUAL', 'APPROVED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-29 11:55:16', 1, '2026-06-29 11:57:37', '0', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for pu_purchase_requisition_line
@@ -2683,6 +2703,8 @@ CREATE TABLE `sch_worker`  (
   `worker_id` bigint(20) NOT NULL COMMENT '工人档案ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `user_id` bigint(20) NULL DEFAULT NULL COMMENT '关联的系统用户ID',
+  `workshop_id` bigint(20) NULL DEFAULT NULL COMMENT '所属车间ID（关联bd_workshop）',
+  `workshop_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '所属车间名称',
   `user_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '员工姓名',
   `employee_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '员工工号',
   `phonenumber` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号码',
@@ -2703,28 +2725,29 @@ CREATE TABLE `sch_worker`  (
   UNIQUE INDEX `uk_employee_id`(`employee_id`) USING BTREE,
   INDEX `idx_user_id`(`user_id`) USING BTREE,
   INDEX `idx_work_status`(`work_status`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_workshop_id`(`workshop_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工人档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sch_worker
 -- ----------------------------
-INSERT INTO `sch_worker` VALUES (12, '000000', 105, '张明', 'SCZX20251222017', '13812345678', '0', 'welder', '1', 'active', '2025-12-01 00:00:00', '2025-12-08 00:00:00', '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-23 16:34:57', '0');
-INSERT INTO `sch_worker` VALUES (13, '000000', 106, '李芳华', 'SCZX20251222018', '15687654321', '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:39', '0');
-INSERT INTO `sch_worker` VALUES (14, '000000', 107, '王思远', 'SCZX20251222019', '18855551234', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:39', '0');
-INSERT INTO `sch_worker` VALUES (15, '000000', 108, '刘薇薇', 'SCZX20251222020', '13922334455', '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:39', '0');
-INSERT INTO `sch_worker` VALUES (16, '000000', 109, '陈志强', 'SCZX20251222021', '15199887766', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
-INSERT INTO `sch_worker` VALUES (17, '000000', 110, '赵琳', 'SCZX20251222022', '13711223344', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
-INSERT INTO `sch_worker` VALUES (18, '000000', 111, '周涛', 'SCZX20251222023', '15800998877', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
-INSERT INTO `sch_worker` VALUES (19, '000000', 112, '吴静', 'SCZX20251222024', '18255443322', '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
-INSERT INTO `sch_worker` VALUES (20, '000000', 113, '黄俊杰', 'SCZX20251222025', '13366778899', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
-INSERT INTO `sch_worker` VALUES (21, '000000', 114, '林小雨', 'SCZX20251222026', NULL, '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
-INSERT INTO `sch_worker` VALUES (30001, '000000', NULL, '张三', 'EMP20260001', '13800001001', '0', 'ASSEMBLY', 'SENIOR', 'ACTIVE', '2024-03-15 00:00:00', '2024-06-15 00:00:00', '装配工，高级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
-INSERT INTO `sch_worker` VALUES (30002, '000000', NULL, '李四', 'EMP20260002', '13800001002', '0', 'WELDING', 'SENIOR', 'ACTIVE', '2023-08-01 00:00:00', '2023-11-01 00:00:00', '焊工，高级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
-INSERT INTO `sch_worker` VALUES (30003, '000000', NULL, '王五', 'EMP20260003', '13800001003', '0', 'MACHINING', 'INTERMEDIATE', 'ACTIVE', '2025-01-10 00:00:00', '2025-04-10 00:00:00', '机加工，中级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
-INSERT INTO `sch_worker` VALUES (30004, '000000', NULL, '赵六', 'EMP20260004', '13800001004', '0', 'ASSEMBLY', 'INTERMEDIATE', 'ACTIVE', '2024-06-01 00:00:00', '2024-09-01 00:00:00', '装配工，中级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
-INSERT INTO `sch_worker` VALUES (30005, '000000', NULL, '钱七', 'EMP20260005', '13800001005', '0', 'QC', 'SENIOR', 'ACTIVE', '2022-05-20 00:00:00', '2022-08-20 00:00:00', '质检员，高级检验师', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
-INSERT INTO `sch_worker` VALUES (30006, '000000', NULL, '孙八', 'EMP20260006', '13800001006', '0', 'PACKAGING', 'JUNIOR', 'ACTIVE', '2025-09-01 00:00:00', '2025-12-01 00:00:00', '包装工，初级', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
+INSERT INTO `sch_worker` VALUES (12, '000000', 105, NULL, NULL, '张明', 'SCZX20251222017', '13812345678', '0', 'welder', '1', 'active', '2025-12-01 00:00:00', '2025-12-08 00:00:00', '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-23 16:34:57', '0');
+INSERT INTO `sch_worker` VALUES (13, '000000', 106, NULL, NULL, '李芳华', 'SCZX20251222018', '15687654321', '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:39', '0');
+INSERT INTO `sch_worker` VALUES (14, '000000', 107, NULL, NULL, '王思远', 'SCZX20251222019', '18855551234', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:39', '0');
+INSERT INTO `sch_worker` VALUES (15, '000000', 108, NULL, NULL, '刘薇薇', 'SCZX20251222020', '13922334455', '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:39', '0');
+INSERT INTO `sch_worker` VALUES (16, '000000', 109, NULL, NULL, '陈志强', 'SCZX20251222021', '15199887766', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
+INSERT INTO `sch_worker` VALUES (17, '000000', 110, NULL, NULL, '赵琳', 'SCZX20251222022', '13711223344', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
+INSERT INTO `sch_worker` VALUES (18, '000000', 111, NULL, NULL, '周涛', 'SCZX20251222023', '15800998877', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
+INSERT INTO `sch_worker` VALUES (19, '000000', 112, NULL, NULL, '吴静', 'SCZX20251222024', '18255443322', '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
+INSERT INTO `sch_worker` VALUES (20, '000000', 113, NULL, NULL, '黄俊杰', 'SCZX20251222025', '13366778899', '0', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
+INSERT INTO `sch_worker` VALUES (21, '000000', 114, NULL, NULL, '林小雨', 'SCZX20251222026', NULL, '1', NULL, NULL, 'active', NULL, NULL, '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2025-12-22 14:21:40', '0');
+INSERT INTO `sch_worker` VALUES (30001, '000000', NULL, NULL, NULL, '张三', 'EMP20260001', '13800001001', '0', 'ASSEMBLY', 'SENIOR', 'ACTIVE', '2024-03-15 00:00:00', '2024-06-15 00:00:00', '装配工，高级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
+INSERT INTO `sch_worker` VALUES (30002, '000000', NULL, NULL, NULL, '李四', 'EMP20260002', '13800001002', '0', 'WELDING', 'SENIOR', 'ACTIVE', '2023-08-01 00:00:00', '2023-11-01 00:00:00', '焊工，高级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
+INSERT INTO `sch_worker` VALUES (30003, '000000', NULL, NULL, NULL, '王五', 'EMP20260003', '13800001003', '0', 'MACHINING', 'INTERMEDIATE', 'ACTIVE', '2025-01-10 00:00:00', '2025-04-10 00:00:00', '机加工，中级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
+INSERT INTO `sch_worker` VALUES (30004, '000000', NULL, NULL, NULL, '赵六', 'EMP20260004', '13800001004', '0', 'ASSEMBLY', 'INTERMEDIATE', 'ACTIVE', '2024-06-01 00:00:00', '2024-09-01 00:00:00', '装配工，中级技工', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
+INSERT INTO `sch_worker` VALUES (30005, '000000', NULL, NULL, NULL, '钱七', 'EMP20260005', '13800001005', '0', 'QC', 'SENIOR', 'ACTIVE', '2022-05-20 00:00:00', '2022-08-20 00:00:00', '质检员，高级检验师', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
+INSERT INTO `sch_worker` VALUES (30006, '000000', NULL, NULL, NULL, '孙八', 'EMP20260006', '13800001006', '0', 'PACKAGING', 'JUNIOR', 'ACTIVE', '2025-09-01 00:00:00', '2025-12-01 00:00:00', '包装工，初级', 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
 
 -- ----------------------------
 -- Table structure for so_contract
@@ -3227,7 +3250,7 @@ CREATE TABLE `so_sales_order_header`  (
   `closed_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
   `cancelled_time` datetime(0) NULL DEFAULT NULL COMMENT '取消时间',
   `cancelled_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '取消原因',
-  `sales_org_id` bigint(20) NULL DEFAULT NULL COMMENT '销售组织ID',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '销售部门ID（关联sys_dept）',
   `distribution_channel` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分销渠道',
   `customer_ref_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户参考号',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
@@ -3242,6 +3265,7 @@ CREATE TABLE `so_sales_order_header`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售部门名称',
   PRIMARY KEY (`so_id`) USING BTREE,
   UNIQUE INDEX `uk_so_no`(`so_no`) USING BTREE,
   INDEX `idx_co_id`(`co_id`) USING BTREE,
@@ -3254,15 +3278,15 @@ CREATE TABLE `so_sales_order_header`  (
 -- ----------------------------
 -- Records of so_sales_order_header
 -- ----------------------------
-INSERT INTO `so_sales_order_header` VALUES (13, '000000', 'CO20251029001', 1, 2, '小明科技有限公司', 101, '麦得朶', '2024-12-01 00:00:00', '2025-12-30 00:00:00', '2025-12-31 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 25000.00, NULL, NULL, NULL, 'CHECKED_OK', '2025-11-12 00:00:00', NULL, 'CONFIRMED', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2026-05-13 14:55:15', '0', NULL);
-INSERT INTO `so_sales_order_header` VALUES (14, '000000', 'WEB20241202001', 3, 4, NULL, NULL, NULL, '2024-12-02 00:00:00', NULL, '2024-12-18 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 8000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL);
-INSERT INTO `so_sales_order_header` VALUES (15, '000000', 'CO20241201001', 4, 5, NULL, NULL, NULL, '2024-12-01 00:00:00', NULL, '2024-12-25 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 150000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL);
-INSERT INTO `so_sales_order_header` VALUES (16, '000000', 'EDI20241201001', 7, 8, NULL, NULL, NULL, '2024-12-01 00:00:00', NULL, '2024-12-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 500000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL);
-INSERT INTO `so_sales_order_header` VALUES (17, '000000', 'EDI20241202001', 8, 9, NULL, NULL, NULL, '2024-12-02 00:00:00', NULL, '2024-12-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 320000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL);
-INSERT INTO `so_sales_order_header` VALUES (10001, '000000', 'SO-TEST-001', 10001, 2, '小明科技有限公司', 1, '管理员', '2026-06-01 00:00:00', '2026-07-10 00:00:00', '2026-07-15 00:00:00', NULL, NULL, '上海市浦东新区XX路100号', NULL, 'NET30', 'CNY', 1.000000, 150000.00, 19500.00, 0.00, 0.000000, 'PASSED', NULL, NULL, 'CONFIRMED', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '小明科技自行车订单', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL);
-INSERT INTO `so_sales_order_header` VALUES (2058015273746894850, '000000', 'XSDD20260523001', NULL, 2, '小明科技有限公司', NULL, NULL, '2026-05-23 10:40:52', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, NULL, NULL, NULL, 95.000000, NULL, NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'BJ202605230002', NULL, NULL, NULL, '从报价单【BJ202605230002】转换', 103, 1, '2026-05-23 10:40:52', 1, '2026-05-23 10:40:52', '0', NULL);
-INSERT INTO `so_sales_order_header` VALUES (2068918578570125314, '000000', 'XSDD20260622004', 2068918064298123265, 3, '王芳贸易公司', 101, '麦得朶', '2026-06-22 00:00:00', NULL, '2026-06-30 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 20000.00, NULL, 100.00, 0.950000, 'PASSED', '2026-06-22 12:48:59', NULL, 'FULFILLED', NULL, 1, '2026-06-22 12:48:59', '2026-06-22 12:49:14', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-06-22 12:46:42', 1, '2026-06-22 12:49:14', '0', 2058473342767357953);
-INSERT INTO `so_sales_order_header` VALUES (2071797189309288450, '000000', 'XSDD20260630001', 2071788981538705410, 11, '测试五金贸易公司', 101, '麦得朶', '2026-06-30 00:00:00', '2026-07-03 00:00:00', '2026-07-03 00:00:00', 12332, 123, '四川省', '成都市', '111', 'CNY', 1.000000, 1859.15, 57.00, 97.85, 5.000000, 'PASSED', '2026-06-30 15:29:31', NULL, 'CONFIRMED', NULL, 0, '2026-06-30 15:29:31', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-06-30 11:25:17', 1, '2026-06-30 15:29:31', '0', 2058473342767357953);
+INSERT INTO `so_sales_order_header` VALUES (13, '000000', 'CO20251029001', 1, 2, '小明科技有限公司', 101, '麦得朶', '2024-12-01 00:00:00', '2025-12-30 00:00:00', '2025-12-31 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 25000.00, NULL, NULL, NULL, 'CHECKED_OK', '2025-11-12 00:00:00', NULL, 'CONFIRMED', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2026-05-13 14:55:15', '0', NULL, NULL);
+INSERT INTO `so_sales_order_header` VALUES (14, '000000', 'WEB20241202001', 3, 4, NULL, NULL, NULL, '2024-12-02 00:00:00', NULL, '2024-12-18 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 8000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL, NULL);
+INSERT INTO `so_sales_order_header` VALUES (15, '000000', 'CO20241201001', 4, 5, NULL, NULL, NULL, '2024-12-01 00:00:00', NULL, '2024-12-25 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 150000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL, NULL);
+INSERT INTO `so_sales_order_header` VALUES (16, '000000', 'EDI20241201001', 7, 8, NULL, NULL, NULL, '2024-12-01 00:00:00', NULL, '2024-12-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 500000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL, NULL);
+INSERT INTO `so_sales_order_header` VALUES (17, '000000', 'EDI20241202001', 8, 9, NULL, NULL, NULL, '2024-12-02 00:00:00', NULL, '2024-12-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 320000.00, NULL, NULL, NULL, 'NOT_CHECKED', NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '从客户订单同步', 103, 1, '2025-11-07 17:39:02', 1, '2025-11-07 17:39:01', '0', NULL, NULL);
+INSERT INTO `so_sales_order_header` VALUES (10001, '000000', 'SO-TEST-001', 10001, 2, '小明科技有限公司', 1, '管理员', '2026-06-01 00:00:00', '2026-07-10 00:00:00', '2026-07-15 00:00:00', NULL, NULL, '上海市浦东新区XX路100号', NULL, 'NET30', 'CNY', 1.000000, 150000.00, 19500.00, 0.00, 0.000000, 'PASSED', NULL, NULL, 'CONFIRMED', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '小明科技自行车订单', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL);
+INSERT INTO `so_sales_order_header` VALUES (2058015273746894850, '000000', 'XSDD20260523001', NULL, 2, '小明科技有限公司', NULL, NULL, '2026-05-23 10:40:52', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, NULL, NULL, NULL, 95.000000, NULL, NULL, NULL, 'DRAFT', NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'BJ202605230002', NULL, NULL, NULL, '从报价单【BJ202605230002】转换', 103, 1, '2026-05-23 10:40:52', 1, '2026-05-23 10:40:52', '0', NULL, NULL);
+INSERT INTO `so_sales_order_header` VALUES (2068918578570125314, '000000', 'XSDD20260622004', 2068918064298123265, 3, '王芳贸易公司', 101, '麦得朶', '2026-06-22 00:00:00', NULL, '2026-06-30 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 20000.00, NULL, 100.00, 0.950000, 'PASSED', '2026-06-22 12:48:59', NULL, 'FULFILLED', NULL, 1, '2026-06-22 12:48:59', '2026-06-22 12:49:14', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-06-22 12:46:42', 1, '2026-06-22 12:49:14', '0', 2058473342767357953, NULL);
+INSERT INTO `so_sales_order_header` VALUES (2071797189309288450, '000000', 'XSDD20260630001', 2071788981538705410, 11, '测试五金贸易公司', 101, '麦得朶', '2026-06-30 00:00:00', '2026-07-03 00:00:00', '2026-07-03 00:00:00', 12332, 123, '四川省', '成都市', '111', 'CNY', 1.000000, 1859.15, 57.00, 97.85, 5.000000, 'PASSED', '2026-06-30 15:29:31', NULL, 'CONFIRMED', NULL, 0, '2026-06-30 15:29:31', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-06-30 11:25:17', 1, '2026-06-30 15:29:31', '0', 2058473342767357953, NULL);
 
 -- ----------------------------
 -- Table structure for so_sales_order_line
@@ -4989,6 +5013,8 @@ CREATE TABLE `wm_warehouse`  (
   `street_id` bigint(20) NULL DEFAULT NULL COMMENT '街道行政区划id',
   `address_lat` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址纬度',
   `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址经度',
+  `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '归属部门ID（关联sys_dept）',
+  `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '归属部门名称',
   PRIMARY KEY (`warehouse_id`) USING BTREE,
   UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -4997,9 +5023,9 @@ CREATE TABLE `wm_warehouse`  (
 -- ----------------------------
 -- Records of wm_warehouse
 -- ----------------------------
-INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '成品仓库', '浙江省杭州市上城区小营街道', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2025-09-30 12:04:16', 1, '2025-12-03 17:06:02', 330000, 330100, 330102, 330102004, NULL, NULL);
-INSERT INTO `wm_warehouse` VALUES (2, 'WH004', '原料仓库', '浙江省杭州市上城区清波街道', 300.00, 'admin', 1, '成品仓库', 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2025-12-02 10:55:51', 1, '2025-12-03 17:19:14', 330000, 330100, 330102, 330102001, NULL, NULL);
-INSERT INTO `wm_warehouse` VALUES (3, 'WH005', '半成品仓库', '厂区东侧B栋', 2000.00, '王五', NULL, '存放半成品及在制品', 1, NULL, NULL, NULL, NULL, '000000', 100, '0', 1, '2026-06-21 20:52:46', 1, '2026-06-21 20:52:46', NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `wm_warehouse` VALUES (9900000001, 'WH-3D-DEMO', '3D演示仓库', '厂区3D可视化演示仓', 500.00, 'admin', NULL, NULL, 1, NULL, NULL, NULL, NULL, '000000', NULL, '0', 1, '2026-06-30 17:06:21', 1, '2026-06-30 17:06:21', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_warehouse` VALUES (1, 'WH003', '成品仓库', '浙江省杭州市上城区小营街道', 400.30, 'ry', 2, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2025-09-30 12:04:16', 1, '2025-12-03 17:06:02', 330000, 330100, 330102, 330102004, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_warehouse` VALUES (2, 'WH004', '原料仓库', '浙江省杭州市上城区清波街道', 300.00, 'admin', 1, '成品仓库', 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2025-12-02 10:55:51', 1, '2025-12-03 17:19:14', 330000, 330100, 330102, 330102001, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_warehouse` VALUES (3, 'WH005', '半成品仓库', '厂区东侧B栋', 2000.00, '王五', NULL, '存放半成品及在制品', 1, NULL, NULL, NULL, NULL, '000000', 100, '0', 1, '2026-06-21 20:52:46', 1, '2026-06-21 20:52:46', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `wm_warehouse` VALUES (9900000001, 'WH-3D-DEMO', '3D演示仓库', '厂区3D可视化演示仓', 500.00, 'admin', NULL, NULL, 1, NULL, NULL, NULL, NULL, '000000', NULL, '0', 1, '2026-06-30 17:06:21', 1, '2026-06-30 17:06:21', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

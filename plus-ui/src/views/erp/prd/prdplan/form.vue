@@ -131,14 +131,10 @@
               <el-input v-model="form.plannerName" placeholder="请输入计划员" />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
-            <el-form-item label="生产部门ID" prop="departmentId">
-              <el-input v-model="form.departmentId" placeholder="请输入生产部门ID" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="生产部门" prop="departmentName">
-              <el-input v-model="form.departmentName" placeholder="请输入生产部门" />
+          <el-col :span="16">
+            <el-form-item label="生产部门" prop="deptId">
+              <dept-select v-model="form.deptId" category="PRODUCTION" placeholder="请选择生产部门" @change="handleDeptChange" />
+              <el-input v-model="form.deptName" style="display: none" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -676,8 +672,8 @@ function reset() {
     priority: null,
     plannerId: null,
     plannerName: null,
-    departmentId: null,
-    departmentName: null,
+    deptId: null,
+    deptName: null,
     totalQuantity: null,
     confirmedTime: null,
     releasedTime: null,
@@ -733,6 +729,11 @@ function submitForm() {
       }
     }
   })
+}
+
+/** 部门变更：回填部门名称 */
+function handleDeptChange(dept) {
+  form.value.deptName = dept ? dept.deptName : null;
 }
 
 // 取消按钮

@@ -4,8 +4,12 @@
 export interface RequisitionQuery extends PageQuery {
   /** 请购单号 */
   requisitionNo?: string;
+  /** 部门ID */
+  deptId?: number;
   /** 部门 */
-  departmentName?: string;
+  deptName?: string;
+  /** 申请人ID */
+  applicantId?: number;
   /** 申请人 */
   applicantName?: string;
   /** 状态 */
@@ -22,8 +26,12 @@ export interface RequisitionVO {
   requisitionNo: string;
   /** 状态 */
   status: string;
+  /** 部门ID */
+  deptId: number;
   /** 部门 */
-  departmentName: string;
+  deptName: string;
+  /** 申请人ID */
+  applicantId: number;
   /** 申请人 */
   applicantName: string;
   /** 需求日期 */
@@ -84,8 +92,12 @@ export interface RequisitionForm {
   requisitionNo: string;
   /** 状态 */
   status?: string;
+  /** 部门ID */
+  deptId?: number;
   /** 部门 */
-  departmentName?: string;
+  deptName?: string;
+  /** 申请人ID */
+  applicantId?: number;
   /** 申请人 */
   applicantName?: string;
   /** 需求日期 */

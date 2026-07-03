@@ -113,6 +113,7 @@
         </template>
       </el-table-column>
       <el-table-column label="车间名称" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="生产部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
       <el-table-column label="负责人" align="center" prop="responsibleName" />
       <el-table-column label="优先级" align="center" prop="priority">
         <template #default="scope">

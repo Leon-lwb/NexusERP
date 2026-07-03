@@ -79,6 +79,7 @@ public class BdClientServiceImpl implements IBdClientService {
         lqw.like(StringUtils.isNotBlank(bo.getClientName()), BdClient::getClientName, bo.getClientName());
         lqw.eq(StringUtils.isNotBlank(bo.getClientType()), BdClient::getClientType, bo.getClientType());
         lqw.like(StringUtils.isNotBlank(bo.getTel()), BdClient::getTel, bo.getTel());
+        lqw.eq(bo.getDeptId() != null, BdClient::getDeptId, bo.getDeptId());
         return lqw;
     }
 }

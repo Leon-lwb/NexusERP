@@ -55,6 +55,7 @@
       <el-table-column label="位置" align="center" prop="location" min-width="120" show-overflow-tooltip />
       <el-table-column label="面积" align="center" prop="area" />
       <el-table-column label="负责人" align="center" prop="manager" />
+      <el-table-column label="归属部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
       <el-table-column label="仓库状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="wm_warehouse_status" :value="scope.row.status" />
@@ -219,6 +220,14 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="归属部门" prop="deptId">
+              <dept-select v-model="form.deptId" category="WAREHOUSE" placeholder="请选择归属部门" :disabled="isViewMode" @change="handleDeptChange" />
+              <el-input v-model="form.deptName" style="display: none" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="20">
           <el-col :span="24">
@@ -344,6 +353,11 @@ function getList() {
   });
 }
 
+/** 部门变更：回填部门名称 */
+function handleDeptChange(dept) {
+  form.value.deptName = dept ? dept.deptName : null;
+}
+
 function cancel() {
   open.value = false;
   reset();
@@ -373,7 +387,9 @@ function reset() {
     districtAreaId: null,
     streetId: null,
     addressLat: null,
-    addressLng: null
+    addressLng: null,
+    deptId: null,
+    deptName: null
   };
   proxy.resetForm('warehouseRef');
   cityOptions.value = [];

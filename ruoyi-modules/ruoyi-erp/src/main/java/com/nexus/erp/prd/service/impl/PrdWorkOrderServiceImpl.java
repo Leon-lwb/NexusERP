@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdWorkshop;
 import com.nexus.erp.bd.domain.vo.IndentedBomLineVo;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdWorkshopMapper;
 import com.nexus.erp.bd.service.IBdBomService;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
@@ -87,6 +89,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final IBdBomService bomService;
     private final IWmStockReservationService stockReservationService;
     private final BdMaterialMapper bdMaterialMapper;
+    private final BdWorkshopMapper bdWorkshopMapper;
 
     /**
      * 分页查询生产工单列表
@@ -99,6 +102,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     public TableDataInfo<PrdWorkOrderVo> selectPageList(PrdWorkOrderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdWorkOrder> lqw = buildQueryWrapper(bo);
         Page<PrdWorkOrderVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        fillDeptInfo(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -110,7 +114,9 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
      */
     @Override
     public List<PrdWorkOrderVo> selectList(PrdWorkOrderBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<PrdWorkOrderVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        fillDeptInfo(list);
+        return list;
     }
 
     /**
@@ -121,7 +127,11 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
      */
     @Override
     public PrdWorkOrderVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        PrdWorkOrderVo vo = baseMapper.selectVoById(id);
+        if (vo != null) {
+            fillDeptInfo(List.of(vo));
+        }
+        return vo;
     }
 
     /**
@@ -635,6 +645,42 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
+    }
+
+    /**
+     * 批量填充工单 VO 中的部门信息（通过 workshop_id → bd_workshop.dept_id 反查）
+     * <p>deptId/deptName 为非持久化字段，无需落库，仅在查询时即时填充</p>
+     */
+    private void fillDeptInfo(List<PrdWorkOrderVo> vos) {
+        if (vos == null || vos.isEmpty()) {
+            return;
+        }
+        // 收集所有唯一的 workshopId
+        Map<Long, Long> workshopToDept = new HashMap<>();
+        Map<Long, String> workshopToDeptName = new HashMap<>();
+        for (PrdWorkOrderVo vo : vos) {
+            if (vo.getWorkshopId() != null) {
+                workshopToDept.putIfAbsent(vo.getWorkshopId(), null);
+            }
+        }
+        if (workshopToDept.isEmpty()) {
+            return;
+        }
+        // 批量查询 bd_workshop 的 dept_id/dept_name
+        List<BdWorkshop> workshops = bdWorkshopMapper.selectBatchIds(workshopToDept.keySet());
+        for (BdWorkshop ws : workshops) {
+            if (ws.getDeptId() != null) {
+                workshopToDept.put(ws.getWorkshopId(), ws.getDeptId());
+                workshopToDeptName.put(ws.getWorkshopId(), ws.getDeptName());
+            }
+        }
+        // 回填 VO
+        for (PrdWorkOrderVo vo : vos) {
+            if (vo.getWorkshopId() != null) {
+                vo.setDeptId(workshopToDept.get(vo.getWorkshopId()));
+                vo.setDeptName(workshopToDeptName.get(vo.getWorkshopId()));
+            }
+        }
     }
 
     private LambdaQueryWrapper<PrdWorkOrder> buildQueryWrapper(PrdWorkOrderBo bo) {

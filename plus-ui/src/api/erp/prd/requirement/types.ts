@@ -16,8 +16,8 @@ export interface RequirementVO {
   status: string;
   plannerId: number;
   plannerName: string;
-  departmentId: number;
-  departmentName: string;
+  deptId: number;
+  deptName: string;
   confirmedTime: string;
   issuedTime: string;
   closedTime: string;
@@ -45,8 +45,8 @@ export interface RequirementForm {
   status?: string;
   plannerId?: number;
   plannerName?: string;
-  departmentId?: number;
-  departmentName?: string;
+  deptId?: number;
+  deptName?: string;
   confirmedTime?: string;
   issuedTime?: string;
   closedTime?: string;

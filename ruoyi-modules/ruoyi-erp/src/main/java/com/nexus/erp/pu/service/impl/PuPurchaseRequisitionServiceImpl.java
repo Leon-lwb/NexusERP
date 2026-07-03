@@ -544,6 +544,7 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         LambdaQueryWrapper<PuPurchaseRequisition> lqw = Wrappers.<PuPurchaseRequisition>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getRequisitionNo()), PuPurchaseRequisition::getRequisitionNo, bo.getRequisitionNo())
             .like(StringUtils.isNotBlank(bo.getRequisitionName()), PuPurchaseRequisition::getRequisitionName, bo.getRequisitionName())
+            .eq(bo.getDeptId() != null, PuPurchaseRequisition::getDeptId, bo.getDeptId())
             .eq(StringUtils.isNotBlank(bo.getStatus()), PuPurchaseRequisition::getStatus, bo.getStatus())
             .orderByDesc(PuPurchaseRequisition::getCreateTime);
         return lqw;

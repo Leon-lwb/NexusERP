@@ -100,10 +100,16 @@ public class PrdProductionPlanVo implements Serializable {
     private String plannerName;
 
     /**
+     * 生产部门ID
+     */
+    @ExcelProperty("生产部门ID")
+    private Long deptId;
+
+    /**
      * 生产部门
      */
     @ExcelProperty("生产部门")
-    private String departmentName;
+    private String deptName;
 
     /**
      * 计划总数量

@@ -101,7 +101,7 @@
         </template>
       </el-table-column>
       <el-table-column label="计划员" align="center" prop="plannerName" width="90" />
-      <el-table-column label="生产部门" align="center" prop="departmentName" width="140" show-overflow-tooltip />
+      <el-table-column label="生产部门" align="center" prop="deptName" width="140" show-overflow-tooltip />
       <el-table-column label="计划总数量" align="center" prop="totalQuantity" width="110" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">

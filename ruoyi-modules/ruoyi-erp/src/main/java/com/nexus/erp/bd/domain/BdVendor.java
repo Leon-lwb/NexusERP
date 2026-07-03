@@ -135,6 +135,18 @@ public class BdVendor extends TenantEntity {
      */
     private String addressLng;
 
+    /** 采购员ID（关联sys_user） */
+    private Long buyerId;
+
+    /** 采购员名称 */
+    private String buyerName;
+
+    /** 归属部门ID（关联sys_dept） */
+    private Long deptId;
+
+    /** 归属部门名称 */
+    private String deptName;
+
     /**
      * 删除标志
      */

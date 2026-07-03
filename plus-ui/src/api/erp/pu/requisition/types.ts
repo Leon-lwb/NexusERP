@@ -13,6 +13,10 @@ export interface PurchaseRequisitionVO {
   applicantId?: number;
   /** 申请人姓名 */
   applicantName?: string;
+  /** 采购部门ID */
+  deptId?: number;
+  /** 采购部门名称 */
+  deptName?: string;
   /** 请购日期 */
   requisitionDate?: string;
   /** 要求到货日期 */

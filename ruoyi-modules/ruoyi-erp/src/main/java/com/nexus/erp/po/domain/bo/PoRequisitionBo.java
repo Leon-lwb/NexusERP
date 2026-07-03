@@ -41,9 +41,19 @@ public class PoRequisitionBo extends BaseEntity {
     private String status;
 
     /**
-     * 部门
+     * 部门ID（关联sys_dept）
      */
-    private String departmentName;
+    private Long deptId;
+
+    /**
+     * 部门名称
+     */
+    private String deptName;
+
+    /**
+     * 申请人ID（关联sys_user）
+     */
+    private Long applicantId;
 
     /**
      * 申请人

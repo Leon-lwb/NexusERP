@@ -495,8 +495,8 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PrdMaterialRequirement::getStatus, bo.getStatus());
         lqw.eq(bo.getPlannerId() != null, PrdMaterialRequirement::getPlannerId, bo.getPlannerId());
         lqw.like(StringUtils.isNotBlank(bo.getPlannerName()), PrdMaterialRequirement::getPlannerName, bo.getPlannerName());
-        lqw.eq(bo.getDepartmentId() != null, PrdMaterialRequirement::getDepartmentId, bo.getDepartmentId());
-        lqw.like(StringUtils.isNotBlank(bo.getDepartmentName()), PrdMaterialRequirement::getDepartmentName, bo.getDepartmentName());
+        lqw.eq(bo.getDeptId() != null, PrdMaterialRequirement::getDeptId, bo.getDeptId());
+        lqw.like(StringUtils.isNotBlank(bo.getDeptName()), PrdMaterialRequirement::getDeptName, bo.getDeptName());
         return lqw;
     }
 
@@ -509,8 +509,8 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         lqw.eq(StringUtils.isNotBlank(entity.getStatus()), PrdMaterialRequirement::getStatus, entity.getStatus());
         lqw.eq(entity.getPlannerId() != null, PrdMaterialRequirement::getPlannerId, entity.getPlannerId());
         lqw.like(StringUtils.isNotBlank(entity.getPlannerName()), PrdMaterialRequirement::getPlannerName, entity.getPlannerName());
-        lqw.eq(entity.getDepartmentId() != null, PrdMaterialRequirement::getDepartmentId, entity.getDepartmentId());
-        lqw.like(StringUtils.isNotBlank(entity.getDepartmentName()), PrdMaterialRequirement::getDepartmentName, entity.getDepartmentName());
+        lqw.eq(entity.getDeptId() != null, PrdMaterialRequirement::getDeptId, entity.getDeptId());
+        lqw.like(StringUtils.isNotBlank(entity.getDeptName()), PrdMaterialRequirement::getDeptName, entity.getDeptName());
         return lqw;
     }
 }

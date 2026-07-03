@@ -39,7 +39,8 @@ export interface OrderheaderVO {
   closedTime: string;
   cancelledTime: string;
   cancelledReason: string;
-  salesOrgId: number;
+  deptId: number;
+  deptName: string;
   distributionChannel: string;
   customerRefNo: string;
   attr1: string;
@@ -86,7 +87,8 @@ export interface OrderheaderForm {
   closedTime?: string;
   cancelledTime?: string;
   cancelledReason?: string;
-  salesOrgId?: number;
+  deptId?: number;
+  deptName?: string;
   distributionChannel?: string;
   customerRefNo?: string;
   attr1?: string;

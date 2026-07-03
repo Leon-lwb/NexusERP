@@ -696,8 +696,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         // 设置相关人员信息
         mainRequirement.setPlannerId(plan.getPlannerId());
         mainRequirement.setPlannerName(plan.getPlannerName());
-        mainRequirement.setDepartmentId(plan.getDepartmentId());
-        mainRequirement.setDepartmentName(plan.getDepartmentName());
+        mainRequirement.setDeptId(plan.getDeptId());
+        mainRequirement.setDeptName(plan.getDeptName());
 
         // 设置物料信息
         BdBom bom = bdBomMapper.selectById(bomId);
@@ -794,7 +794,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), PrdProductionPlan::getStatus, bo.getStatus());
         lqw.eq(bo.getPriority() != null, PrdProductionPlan::getPriority, bo.getPriority());
         lqw.like(StringUtils.isNotBlank(bo.getPlannerName()), PrdProductionPlan::getPlannerName, bo.getPlannerName());
-        lqw.like(StringUtils.isNotBlank(bo.getDepartmentName()), PrdProductionPlan::getDepartmentName, bo.getDepartmentName());
+        lqw.like(StringUtils.isNotBlank(bo.getDeptName()), PrdProductionPlan::getDeptName, bo.getDeptName());
         lqw.eq(bo.getIsCurrent() != null, PrdProductionPlan::getIsCurrent, bo.getIsCurrent());
         return lqw;
     }
@@ -808,7 +808,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         lqw.eq(StringUtils.isNotBlank(entity.getStatus()), PrdProductionPlan::getStatus, entity.getStatus());
         lqw.eq(entity.getPriority() != null, PrdProductionPlan::getPriority, entity.getPriority());
         lqw.like(StringUtils.isNotBlank(entity.getPlannerName()), PrdProductionPlan::getPlannerName, entity.getPlannerName());
-        lqw.like(StringUtils.isNotBlank(entity.getDepartmentName()), PrdProductionPlan::getDepartmentName, entity.getDepartmentName());
+        lqw.like(StringUtils.isNotBlank(entity.getDeptName()), PrdProductionPlan::getDeptName, entity.getDeptName());
         lqw.eq(entity.getIsCurrent() != null, PrdProductionPlan::getIsCurrent, entity.getIsCurrent());
         return lqw;
     }

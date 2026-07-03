@@ -9,8 +9,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <el-form-item label="部门" prop="departmentName">
-            <el-input v-model="queryParams.departmentName" placeholder="请输入部门" clearable @keyup.enter="handleQuery" />
+          <el-form-item label="部门" prop="deptName">
+            <el-input v-model="queryParams.deptName" placeholder="请输入部门" clearable @keyup.enter="handleQuery" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -63,7 +63,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="请购单号" align="center" prop="requisitionNo" />
-      <el-table-column label="部门" align="center" prop="departmentName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="部门" align="center" prop="deptName" min-width="120" show-overflow-tooltip />
       <el-table-column label="申请人" align="center" prop="applicantName" />
       <el-table-column label="需求日期" align="center" prop="requiredDate" />
       <!-- 技术债:状态为硬编码 el-tag,暂无对应字典,待补字典后改 dict-tag -->
@@ -96,13 +96,18 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="部门" prop="departmentName">
-              <el-input v-model="form.departmentName" placeholder="请输入部门" />
+            <el-form-item label="部门" prop="deptId">
+              <dept-select v-model="form.deptId" placeholder="请选择部门" @change="handleDeptChange" />
+              <el-input v-model="form.deptName" style="display: none" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="申请人" prop="applicantName">
-              <el-input v-model="form.applicantName" placeholder="请输入申请人" />
+              <el-input v-model="form.applicantName" placeholder="请选择申请人" readonly>
+                <template #append>
+                  <el-button icon="Search" @click="openUserSelect" :disabled="!form.deptId" />
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
         </el-row>
@@ -190,12 +195,46 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 申请人选择 -->
+    <el-dialog title="选择申请人" v-model="userDialog.visible" width="800px" append-to-body>
+      <el-form :inline="true" :model="userDialog.queryParams">
+        <el-form-item label="用户名称" prop="userName">
+          <el-input v-model="userDialog.queryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="searchUser" />
+        </el-form-item>
+        <el-form-item label="手机号码" prop="phonenumber">
+          <el-input v-model="userDialog.queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="searchUser" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="searchUser">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table v-loading="userDialog.loading" :data="userDialog.list" height="400" @row-dblclick="selectUser">
+        <el-table-column label="用户账号" align="center" prop="userName" />
+        <el-table-column label="用户昵称" align="center" prop="nickName" />
+        <el-table-column label="手机号码" align="center" prop="phonenumber" />
+        <el-table-column label="操作" align="center" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectUser(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="userDialog.total > 0"
+        :total="userDialog.total"
+        v-model:page="userDialog.queryParams.pageNum"
+        v-model:limit="userDialog.queryParams.pageSize"
+        @pagination="getUserList"
+      />
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="PoRequisition">
 import { listRequisition, getRequisition, delRequisition, addRequisition, updateRequisition } from '@/api/erp/po/requisition';
 import { listMaterial } from '@/api/erp/bd/material';
+import { listUser } from '@/api/system/user';
 import { RequisitionVO, RequisitionForm, RequisitionDetailForm } from '@/api/erp/po/requisition/types';
 
 const { proxy } = getCurrentInstance();
@@ -228,7 +267,7 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     requisitionNo: undefined,
-    departmentName: undefined,
+    deptName: undefined,
     applicantName: undefined,
     status: undefined
   },
@@ -285,7 +324,9 @@ function reset() {
     requisitionId: undefined,
     requisitionNo: '',
     status: 'draft',
-    departmentName: '',
+    deptId: undefined,
+    deptName: '',
+    applicantId: undefined,
     applicantName: '',
     requiredDate: undefined,
     remark: '',
@@ -438,6 +479,60 @@ function selectMaterial(row: any) {
     target.unit = row.baseUomName || '';
   }
   materialDialogVisible.value = false;
+}
+
+// ============ 部门 / 申请人选择 ============
+const userDialog = reactive({
+  visible: false,
+  loading: false,
+  list: [] as any[],
+  total: 0,
+  queryParams: { pageNum: 1, pageSize: 10, userName: undefined, phonenumber: undefined, deptId: undefined as any }
+});
+
+/** 部门变更：回填部门名称并清空申请人 */
+function handleDeptChange(dept: any) {
+  form.value.deptName = dept ? dept.deptName : '';
+  form.value.applicantId = undefined;
+  form.value.applicantName = '';
+}
+
+function openUserSelect() {
+  if (!form.value.deptId) {
+    proxy.$modal.msgWarning('请先选择部门');
+    return;
+  }
+  userDialog.visible = true;
+  userDialog.queryParams.deptId = form.value.deptId;
+  getUserList();
+}
+
+function getUserList() {
+  userDialog.loading = true;
+  listUser(userDialog.queryParams).then((response) => {
+    userDialog.list = response.rows;
+    userDialog.total = response.total;
+    userDialog.loading = false;
+  });
+}
+
+function searchUser() {
+  userDialog.queryParams.pageNum = 1;
+  getUserList();
+}
+
+function selectUser(row: any) {
+  form.value.applicantId = row.userId;
+  form.value.applicantName = row.nickName || row.userName;
+  userDialog.visible = false;
+}
+
+function resetUserQuery() {
+  userDialog.queryParams.userName = undefined;
+  userDialog.queryParams.phonenumber = undefined;
+  userDialog.queryParams.deptId = form.value.deptId;
+  userDialog.queryParams.pageNum = 1;
+  getUserList();
 }
 
 getList();

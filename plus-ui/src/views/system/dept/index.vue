@@ -7,8 +7,10 @@
             <el-form-item label="部门名称" prop="deptName">
               <el-input v-model="queryParams.deptName" placeholder="请输入部门名称" clearable @keyup.enter="handleQuery" />
             </el-form-item>
-            <el-form-item label="类别编码" prop="deptCategory">
-              <el-input v-model="queryParams.deptCategory" placeholder="请输入类别编码" clearable style="width: 240px" @keyup.enter="handleQuery" />
+            <el-form-item label="部门类别" prop="deptCategory">
+              <el-select v-model="queryParams.deptCategory" placeholder="请选择部门类别" clearable style="width: 240px">
+                <el-option v-for="dict in dept_category" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
             </el-form-item>
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="部门状态" clearable>
@@ -47,7 +49,11 @@
         :default-expand-all="isExpandAll"
       >
         <el-table-column prop="deptName" label="部门名称" width="260"></el-table-column>
-        <el-table-column prop="deptCategory" align="center" label="类别编码" width="200"></el-table-column>
+        <el-table-column prop="deptCategory" align="center" label="部门类别" width="200">
+          <template #default="scope">
+            <dict-tag :options="dept_category" :value="scope.row.deptCategory" />
+          </template>
+        </el-table-column>
         <el-table-column prop="orderNum" align="center" label="排序" width="200"></el-table-column>
         <el-table-column prop="status" align="center" label="状态" width="100">
           <template #default="scope">
@@ -96,8 +102,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="类别编码" prop="deptCategory">
-              <el-input v-model="form.deptCategory" placeholder="请输入类别编码" />
+            <el-form-item label="部门类别" prop="deptCategory">
+              <el-select v-model="form.deptCategory" placeholder="请选择部门类别" clearable style="width: 100%">
+                <el-option v-for="dict in dept_category" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -154,7 +162,7 @@ interface DeptOptionsType {
 }
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_normal_disable'));
+const { sys_normal_disable, dept_category } = toRefs<any>(proxy?.useDict('sys_normal_disable', 'dept_category'));
 
 const deptList = ref<DeptVO[]>([]);
 const loading = ref(true);

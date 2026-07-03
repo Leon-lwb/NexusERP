@@ -252,6 +252,7 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
         lqw.eq(bo.getStatus() != null, WmWarehouse::getStatus, bo.getStatus());
         lqw.like(StringUtils.isNotBlank(bo.getManager()), WmWarehouse::getManager, bo.getManager());
         lqw.like(StringUtils.isNotBlank(bo.getLocation()), WmWarehouse::getLocation, bo.getLocation());
+        lqw.eq(bo.getDeptId() != null, WmWarehouse::getDeptId, bo.getDeptId());
         return lqw;
     }
 

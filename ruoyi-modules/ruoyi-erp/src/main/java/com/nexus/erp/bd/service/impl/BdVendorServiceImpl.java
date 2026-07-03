@@ -79,6 +79,7 @@ public class BdVendorServiceImpl implements IBdVendorService {
         lqw.like(StringUtils.isNotBlank(bo.getVendorName()), BdVendor::getVendorName, bo.getVendorName());
         lqw.eq(StringUtils.isNotBlank(bo.getIndustry()), BdVendor::getIndustry, bo.getIndustry());
         lqw.eq(StringUtils.isNotBlank(bo.getRegion()), BdVendor::getRegion, bo.getRegion());
+        lqw.eq(bo.getDeptId() != null, BdVendor::getDeptId, bo.getDeptId());
         return lqw;
     }
 }
