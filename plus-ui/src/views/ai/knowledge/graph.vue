@@ -12,6 +12,7 @@
       <el-button v-if="!building && graph" type="warning" size="small" icon="RefreshRight" @click="handleRebuild">重建</el-button>
       <el-button v-if="!building && graph" type="danger" size="small" icon="Delete" @click="handleDelete">删除</el-button>
       <el-button v-if="!building" size="small" icon="Refresh" @click="loadAll">刷新</el-button>
+      <el-button v-if="graph && entities.length" size="small" :icon="isFullscreen ? 'Aim' : 'FullScreen'" @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏' }}</el-button>
     </div>
 
     <!-- 进度条 -->
@@ -30,7 +31,9 @@
         <template #image><el-icon size="60"><Share /></el-icon></template>
       </el-empty>
     </div>
-    <div v-else ref="chartRef" class="kg-chart"></div>
+    <div v-else ref="chartWrapper" class="kg-chart-wrapper" :class="{ 'is-fullscreen': isFullscreen }">
+      <div ref="chartRef" class="kg-chart" :class="{ 'kg-chart--fullscreen': isFullscreen }"></div>
+    </div>
 
     <!-- 详情面板 -->
     <el-tabs v-model="activeTab" class="kg-tabs">
@@ -120,6 +123,9 @@ const globalQuery = ref('')
 const globalResult = ref<any>(null)
 const globalLoading = ref(false)
 
+const isFullscreen = ref(false)
+const chartWrapper = ref<HTMLElement>()
+
 const chartRef = ref<HTMLElement>()
 let chartInstance: echarts.ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
@@ -170,9 +176,14 @@ const progressTip = computed(() => {
 
 onMounted(() => {
   loadAll()
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
 })
 
 onUnmounted(() => {
+  if (isFullscreen.value) exitFullscreen()
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
   stopPolling()
   resizeObserver?.disconnect()
   intersectionObserver?.disconnect()
@@ -181,6 +192,7 @@ onUnmounted(() => {
 })
 
 watch(() => props.knowledgeId, () => {
+  if (isFullscreen.value) exitFullscreen()
   // 切换知识库：先销毁旧 echarts 实例与 observer，避免 setOption 作用于脱离 DOM 的旧实例导致新容器无图
   chartInstance?.dispose()
   chartInstance = null
@@ -296,6 +308,46 @@ function stopPolling() {
   }
 }
 
+/** 全屏切换 */
+function toggleFullscreen() {
+  if (isFullscreen.value) exitFullscreen()
+  else enterFullscreen()
+}
+
+/** 进入全屏：优先使用浏览器原生 Fullscreen API */
+function enterFullscreen() {
+  const el = chartWrapper.value
+  if (!el) return
+  const req = el.requestFullscreen || (el as any).webkitRequestFullscreen || (el as any).msRequestFullscreen
+  if (req) {
+    req.call(el)
+  } else {
+    // 回退老旧浏览器不支持 Fullscreen API，使用 CSS 全屏类名（.is-fullscreen 已处理）
+    isFullscreen.value = true
+    nextTick(() => chartInstance?.resize())
+  }
+}
+
+/** 退出全屏。同时监听 fullscreenchange 与元素/按键 ESC 退出时统一兜底 */
+function exitFullscreen() {
+  const exit = document.exitFullscreen || (document as any).webkitExitFullscreen || (document as any).msExitFullscreen
+  if (exit && document.fullscreenElement) {
+    exit.call(document)
+  } else {
+    isFullscreen.value = false
+    nextTick(() => chartInstance?.resize())
+  }
+}
+
+/** 监听原生全屏状态变化，保持 isFullscreen 与浏览器同步，并触发 resize */
+function handleFullscreenChange() {
+  const wasFullscreen = isFullscreen.value
+  isFullscreen.value = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
+  if (wasFullscreen !== isFullscreen.value) {
+    nextTick(() => chartInstance?.resize())
+  }
+}
+
 /**
  * 挂载 echarts 容器尺寸/可见性监听（仅创建一次）
  * <p>ResizeObserver 处理容器尺寸变化；IntersectionObserver 处理容器由隐藏转可见
@@ -325,6 +377,18 @@ function renderChart() {
     chartInstance.on('click', (params: any) => {
       if (params.dataType === 'node' && params.data?.id) {
         handleNodeClick(String(params.data.id))
+      }
+    })
+    // 节点拖拽联动：拖动开始时聚焦邻接节点（高亮 + 关联节点跟随）
+    chartInstance.on('dragstart', (params: any) => {
+      if (params.dataType === 'node') {
+        chartInstance?.dispatchAction({ type: 'focusNodeAdjacency', seriesIndex: 0, dataIndex: params.dataIndex })
+      }
+    })
+    // 拖拽结束时解除邻接聚焦，恢复整体视图
+    chartInstance.on('dragend', (params: any) => {
+      if (params.dataType === 'node') {
+        chartInstance?.dispatchAction({ type: 'unfocusNodeAdjacency', seriesIndex: 0, dataIndex: params.dataIndex })
       }
     })
     // init 后挂载 observer：此处 chartRef 必然存在（onMounted 时数据未加载、chartRef 尚不存在，旧逻辑里 observer 永不创建）
@@ -358,10 +422,18 @@ function renderChart() {
       categories,
       data: nodes,
       links,
-      force: { repulsion: 120, edgeLength: 80, gravity: 0.1 },
+      force: { repulsion: 140, edgeLength: [60, 120], gravity: 0.08, layoutAnimation: true },
+      draggable: true,
+      // 拖拽节点时关联节点跟随移动的联动特效
       label: { show: true, position: 'right', fontSize: 10 },
       lineStyle: { color: 'source', opacity: 0.5, curveness: 0.1 },
-      emphasis: { focus: 'adjacency', lineStyle: { width: 3 } }
+      emphasis: {
+        focus: 'adjacency',
+        lineStyle: { width: 3, opacity: 1 },
+        label: { fontSize: 12, fontWeight: 'bold' }
+      },
+      // 选中节点拖动时，邻接节点同步高亮联动
+      select: { disabled: true }
     }]
   }
   chartInstance.setOption(option, true)
@@ -409,8 +481,21 @@ function summaryStatusType(s?: string): any {
 .kg-container { display: flex; flex-direction: column; gap: 8px; }
 .kg-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .kg-stats { font-size: 12px; color: var(--el-text-color-secondary); }
+.kg-chart-wrapper { position: relative; }
 .kg-chart { width: 100%; height: 380px; border: 1px solid var(--el-border-color-lighter); border-radius: 4px; }
 .kg-empty { height: 380px; display: flex; align-items: center; justify-content: center; }
+.kg-chart--fullscreen { height: 100%; border: none; border-radius: 0; }
+/* 全屏：优先由浏览器原生 Fullscreen API 接管；此规则作为老旧浏览器回退与内容兜底 */
+.kg-chart-wrapper.is-fullscreen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  width: 100vw; height: 100vh;
+  background: var(--el-bg-color, #fff);
+}
+:fullscreen .kg-chart { height: 100%; border: none; border-radius: 0; }
+:-webkit-full-screen .kg-chart { height: 100%; border: none; border-radius: 0; }
+:fullscreen .kg-chart-wrapper.is-fullscreen { width: 100%; height: 100%; }
 .kg-tabs { margin-top: 4px; }
 .kg-global-result { margin-top: 12px; padding: 10px; border: 1px solid var(--el-border-color-lighter); border-radius: 4px; background: var(--el-fill-color-lighter); }
 .kg-global-answer { font-size: 13px; line-height: 1.7; white-space: pre-wrap; }

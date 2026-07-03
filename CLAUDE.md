@@ -27,10 +27,20 @@ Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，涵�
 
 ### 数据库
 
-初始化 SQL 脚本位于 `script/sql/` 目录:
-- `ry_vue.sql` — 基础系统表
+初始化 SQL 脚本位于 `script/sql/` 目录 (按依赖顺序导入，均落到 `ry-vue` 系统库 / `ry-erp` 业务库):
+- `ry-vue.sql` — 基础系统表 (系统库 `ry-vue`)
 - `ry-erp.sql` — ERP 业务表
-- 同时包含 Oracle、PostgreSQL 和 SQLServer 版本
+- `ry-mes.sql` — MES 业务表
+- `ry-iot.sql` — IoT 业务表
+- `app.sql` — 移动端 App 相关表
+- `update/` — 增量升级脚本；`oracle/`、`postgres/`、`sqlserver/` — 其他数据库版本
+
+### Docker 部署 (双机)
+
+仓库提供双机 Docker Compose 编排 (生产环境):
+- `docker-compose-main.yml` — 主服务器: MySQL 8.0、Redis、RabbitMQ、MinIO、Nginx+前端、NexusServer (均为 `network_mode: host`)
+- `docker-compose-assist.yml` — 辅助服务器: 应用服务、监控等
+- 凭证与主机 IP 内嵌于文件中，部署前需核对替换
 
 ## 架构
 
@@ -62,6 +72,8 @@ ruoyi-modules/            — 业务模块
   ruoyi-job/              —    分布式任务调度 (SnailJob)
   ruoyi-demo/             —    演示/示例代码
   ruoyi-online/           —    在线低代码表单构建器
+  ruoyi-report/           —    报表 (JimuReport 积木报表，独立数据源 + Token 鉴权)
+  ruoyi-pay/              —    支付 (支付订单、发票、对账)
 ruoyi-extend/             — 独立服务
   ruoyi-monitor-admin/    —    Spring Boot Admin 监控服务端
   ruoyi-snailjob-server/  —    SnailJob 管理控制台
@@ -194,7 +206,7 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 | 多数据源 | dynamic-datasource |
 | 分布式锁 | Lock4j (基于 Redisson) |
 | 任务调度 | SnailJob |
-| 消息队列 | RocketMQ (MES 工单下发、数据采集消息) |
+| 消息队列 | RabbitMQ (`spring-boot-starter-amqp`，队列名统一定义在 `ruoyi-common-mq` 的 `QueueConstants`) |
 | MQTT | 内置 MQTT Broker (IoT 设备接入，基于 Vert.x MQTT Server) |
 | 工作流 | Flowable 7.0 |
 | 对象映射 | MapStruct Plus |
@@ -242,9 +254,21 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 ### MES 模块配置与约束
 
 - MES 通过 `MesErpBridgeService` 与 `ruoyi-erp` 模块交互，获取 BOM、工艺路线(Routing)、物料、车间、工位等基础数据
-- MES 工单下发通过 RocketMQ 消息队列异步处理 (`WorkOrderReleaseConsumer`)
+- MES 工单下发通过 RabbitMQ 消息队列异步处理 (`WorkOrderReleaseConsumer`，`@RabbitListener` 监听 `QueueConstants.MES_WORKORDER_QUEUE`)
 - MES 与 IoT 通过数据采集模块(`dc`)对接，IoT 采集的数据可回写到 MES 生产数据记录中
+
+### ERP 模块配置与约束
+
+- ERP 同样通过 RabbitMQ 异步消费跨模块回写: `ruoyi-erp/.../mq/consumer/` 下含入库(`StockInConsumer`)、生产倒冲(`ProductionBackflushConsumer`)、采购收货回写(`PurchaseReceiveWritebackConsumer`)、工单完工(`ErpWorkOrderCompletedConsumer`)、IQC 完成(`ErpIqcCompletedConsumer`)、返工入库(`ReworkStockConsumer`)、委外入库(`SubcontractStockConsumer`) 等
+- 队列/交换机常量集中在 `com.nexus.common.mq.constant.QueueConstants`，新增 MQ 通道时在此声明
 
 ### 国际化 (i18n)
 
 资源文件位于 `ruoyi-admin/src/main/resources/i18n/messages*.properties`。通过请求头进行语言切换。
+
+### 常见陷阱 (Gotchas)
+
+- **雪花 ID 在前端的精度丢失**: ID 策略为 `ASSIGN_ID` (雪花算法)，64 位 long 超出 JS 安全整数会被截断。项目已通过全局 `JacksonConfig` 注册 `BigNumberSerializer` 将 long 序列化为字符串根治此问题 —— 新增返回雪花 ID 的接口无需额外处理，但**切勿**在局部 `ObjectMapper` 或 fastjson2 配置中绕过该序列化器。
+- **AI 异步线程的租户上下文丢失**: Sa-Token 的 ThreadLocal 不会传播到 `aiExecutor` 异步线程，导致异步写库时 `tenant_id` 落 0。任何 AI 异步写库都必须通过 `AiRequestContext.set(tenantId, userId)` 手动传播，并在 `TenantHelper.dynamic` 中执行写库，任务结束时调用 `AiRequestContext.clear()`。其他自定义异步线程(如 `@Async`、MQ 消费者)写多租户表时同理。
+- **多数据源切换**: AI 数据查询走 `@DS("erp")` (ry-erp 库)，系统配置走默认 master (ry-vue 库)；跨库调用注意 `@DS` 注解必须放在被实际调用的 Service 方法上，同类内部方法调用不会触发 AOP 切换。
+- **API 加密默认开启**: 前后端必须同时启用或同时禁用，否则请求无法解密。本地调试若遇到 400/解密失败，先确认两端 `api-decrypt` 配置一致。
