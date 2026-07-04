@@ -12,14 +12,19 @@
           </span>
         </div>
         <div class="wm3d-toolbar-center">
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background:#909399"></i>空置 {{ viewData.emptyLocations ?? 0 }}</span>
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background:#409eff"></i>占用 {{ viewData.occupiedLocations ?? 0 }}</span>
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background:#e6a23c"></i>预警 {{ viewData.warningLocations ?? 0 }}</span>
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background:#f56c6c"></i>锁定 {{ viewData.lockedLocations ?? 0 }}</span>
+          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #909399"></i>空置 {{ viewData.emptyLocations ?? 0 }}</span>
+          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #409eff"></i>占用 {{ viewData.occupiedLocations ?? 0 }}</span>
+          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #e6a23c"></i>预警 {{ viewData.warningLocations ?? 0 }}</span>
+          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #f56c6c"></i>锁定 {{ viewData.lockedLocations ?? 0 }}</span>
           <el-divider direction="vertical" />
           <span class="wm3d-total">共 {{ viewData.totalLocations ?? 0 }} 个库位</span>
         </div>
         <div class="wm3d-toolbar-right">
+          <el-select v-model="colorMode" style="width: 120px" @change="recolorLocations" title="着色模式">
+            <el-option label="按状态" value="status" />
+            <el-option label="按库区" value="area" />
+            <el-option label="按占用率" value="occupancy" />
+          </el-select>
           <el-button type="primary" plain icon="Refresh" @click="resetView" :disabled="!ready">重置视角</el-button>
         </div>
       </div>
@@ -49,6 +54,9 @@
         </div>
       </div>
     </el-card>
+
+    <!-- 库位库存明细弹窗 -->
+    <WmLocationStockDialog v-model="stockDialog.visible" :location-id="stockDialog.locationId" :location-name="stockDialog.locationName" />
   </div>
 </template>
 
@@ -57,6 +65,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { getWarehouse3d } from '@/api/erp/wm/warehouse';
 import type { Warehouse3dVO, WarehouseArea3dVO, WarehouseLocation3dVO } from '@/api/erp/wm/warehouse/types';
+import WmLocationStockDialog from '../components/WmLocationStockDialog.vue';
+import { autoLayoutRack } from '../components/rackLayout';
 
 const { proxy } = getCurrentInstance() as any;
 const route = useRoute();
@@ -80,6 +90,16 @@ const tooltip = reactive({
   stockCount: 0
 });
 
+// 着色模式：status 按状态 / area 按库区 / occupancy 按占用率
+const colorMode = ref<'status' | 'area' | 'occupancy'>('status');
+const maxStockQuantity = ref(0);
+// 库位库存明细弹窗
+const stockDialog = reactive({
+  visible: false,
+  locationId: undefined as number | string | undefined,
+  locationName: ''
+});
+
 // three.js 资源（模块级，非响应式）
 let scene: THREE.Scene | null = null;
 let camera: THREE.PerspectiveCamera | null = null;
@@ -88,6 +108,9 @@ let controls: OrbitControls | null = null;
 let raycaster: THREE.Raycaster | null = null;
 let pointer: THREE.Vector2 | null = null;
 let rafId = 0;
+let cameraAnimId = 0;
+let singleClickTimer: ReturnType<typeof setTimeout> | null = null;
+let pointerDownPos: { x: number; y: number } | null = null;
 let hoveredMesh: THREE.Mesh | null = null;
 const locationMeshes: THREE.Mesh[] = [];
 // 缓存初始视角用于重置
@@ -171,10 +194,12 @@ const initScene = () => {
   const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
   const areas = viewData.value.areas || [];
   for (const area of areas) {
+    // 货架自动排版：手填坐标优先，缺省才按 layer/col/row 计算（建 mesh 前补全坐标）
+    autoLayoutRack(area.locations || [], area);
     addAreaMesh(area, bounds);
     const locs = area.locations || [];
     for (const loc of locs) {
-      addLocationMesh(loc, area.areaName, bounds);
+      addLocationMesh(loc, area, bounds);
     }
   }
 
@@ -193,6 +218,10 @@ const initScene = () => {
   // 悬停监听
   container.addEventListener('pointermove', onPointerMove);
   container.addEventListener('pointerleave', onPointerLeave);
+  // 点击钻取（pointerdown/up 区分拖拽）+ 双击聚焦
+  container.addEventListener('pointerdown', onPointerDown);
+  container.addEventListener('pointerup', onPointerUp);
+  container.addEventListener('dblclick', onDblClick);
 
   animate();
 };
@@ -233,7 +262,7 @@ const addAreaMesh = (area: WarehouseArea3dVO, bounds: any) => {
 };
 
 /** 添加库位立方体（按状态着色） */
-const addLocationMesh = (loc: WarehouseLocation3dVO, areaName: string, bounds: any) => {
+const addLocationMesh = (loc: WarehouseLocation3dVO, area: WarehouseArea3dVO, bounds: any) => {
   const w = num(loc.width, 1);
   const h = num(loc.height, 1);
   const d = num(loc.locationDepth, 1);
@@ -257,7 +286,7 @@ const addLocationMesh = (loc: WarehouseLocation3dVO, areaName: string, bounds: a
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(x, y, z);
   applyRotation(mesh, loc.rotationX, loc.rotationY, loc.rotationZ);
-  mesh.userData = { type: 'location', loc, areaName };
+  mesh.userData = { type: 'location', loc, area, areaName: area.areaName };
   scene!.add(mesh);
   locationMeshes.push(mesh);
 
@@ -375,6 +404,124 @@ const clearHover = () => {
   tooltip.visible = false;
 };
 
+/** 计算库位在当前着色模式下的颜色 */
+const computeColor = (loc: WarehouseLocation3dVO, area: WarehouseArea3dVO | undefined): number => {
+  if (colorMode.value === 'area') return areaColorHex(area);
+  if (colorMode.value === 'occupancy') return occupancyGradient(Number(loc.stockQuantity) || 0);
+  return statusColor(loc, loc.status || 'EMPTY');
+};
+
+/** 占用率渐变色：0→绿, 0.5→黄, 1→红（按库存量归一化到仓库最大值） */
+const occupancyGradient = (qty: number): number => {
+  if (qty <= 0) return 0x909399;
+  const max = maxStockQuantity.value || qty;
+  const rate = Math.min(qty / max, 1);
+  const hue = (1 - rate) * 120; // 120(绿)→0(红)
+  return new THREE.Color().setHSL(hue / 360, 0.7, 0.5).getHex();
+};
+
+/** 库区色：优先 area.color，缺省按 areaId 哈希取色 */
+const areaColorHex = (area: WarehouseArea3dVO | undefined): number => {
+  if (area?.color) {
+    try {
+      return new THREE.Color(area.color).getHex();
+    } catch {
+      // 解析失败走哈希
+    }
+  }
+  const hue = ((area?.areaId || 0) * 47) % 360;
+  return new THREE.Color().setHSL(hue / 360, 0.6, 0.55).getHex();
+};
+
+/** 按当前着色模式重绘所有库位颜色（仅改 material.color，不重建几何体） */
+const recolorLocations = () => {
+  if (colorMode.value === 'occupancy') {
+    let max = 0;
+    for (const area of viewData.value.areas || []) {
+      for (const loc of area.locations || []) {
+        const q = Number(loc.stockQuantity) || 0;
+        if (q > max) max = q;
+      }
+    }
+    maxStockQuantity.value = max;
+  }
+  for (const mesh of locationMeshes) {
+    const ud = mesh.userData;
+    (mesh.material as THREE.MeshStandardMaterial).color.setHex(computeColor(ud.loc, ud.area));
+  }
+};
+
+/** 相机位姿平滑过渡（easeOutCubic，500ms） */
+const animateCamera = (fromPos: THREE.Vector3, toPos: THREE.Vector3, toTarget: THREE.Vector3) => {
+  if (!camera || !controls) return;
+  if (cameraAnimId) cancelAnimationFrame(cameraAnimId);
+  const start = performance.now();
+  const dur = 500;
+  const step = (now: number) => {
+    const t = Math.min((now - start) / dur, 1);
+    const e = 1 - Math.pow(1 - t, 3);
+    camera!.position.lerpVectors(fromPos, toPos, e);
+    controls!.target.lerp(toTarget, e);
+    controls!.update();
+    cameraAnimId = t < 1 ? requestAnimationFrame(step) : 0;
+  };
+  cameraAnimId = requestAnimationFrame(step);
+};
+
+/** 双击聚焦：相机沿当前视线方向退到距库位 6 单位处，target 移到库位中心 */
+const focusLocation = (loc: WarehouseLocation3dVO) => {
+  const mesh = locationMeshes.find((m) => m.userData.loc === loc);
+  if (!mesh || !camera || !controls) return;
+  const center = mesh.position.clone();
+  const dir = camera.position.clone().sub(controls.target);
+  dir.normalize().multiplyScalar(Math.min(dir.length() || 6, 6));
+  animateCamera(camera.position.clone(), center.clone().add(dir), center);
+};
+
+/** pointerdown 记录起点，用于区分点击与拖拽 */
+const onPointerDown = (e: PointerEvent) => {
+  pointerDownPos = { x: e.clientX, y: e.clientY };
+};
+
+/** pointerup：位移 < 5px 判定为点击（避开 OrbitControls 拖拽），延迟 250ms 触发以避让双击 */
+const onPointerUp = (e: PointerEvent) => {
+  if (!pointerDownPos || !renderer || !camera || !raycaster || !pointer) return;
+  const dx = e.clientX - pointerDownPos.x;
+  const dy = e.clientY - pointerDownPos.y;
+  pointerDownPos = null;
+  if (Math.hypot(dx, dy) >= 5) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(locationMeshes, false);
+  if (hits.length === 0) return;
+  const loc = hits[0].object.userData.loc as WarehouseLocation3dVO;
+  if (singleClickTimer) clearTimeout(singleClickTimer);
+  singleClickTimer = setTimeout(() => {
+    stockDialog.locationId = loc.locationId;
+    stockDialog.locationName = loc.locationName || loc.locationCode;
+    stockDialog.visible = true;
+    singleClickTimer = null;
+  }, 250);
+};
+
+/** 双击库位：取消待执行的点击钻取，相机平滑聚焦 */
+const onDblClick = (e: MouseEvent) => {
+  if (singleClickTimer) {
+    clearTimeout(singleClickTimer);
+    singleClickTimer = null;
+  }
+  if (!renderer || !camera || !raycaster || !pointer) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(locationMeshes, false);
+  if (hits.length === 0) return;
+  focusLocation(hits[0].object.userData.loc as WarehouseLocation3dVO);
+};
+
 /** 渲染循环 */
 const animate = () => {
   rafId = requestAnimationFrame(animate);
@@ -401,6 +548,17 @@ const disposeScene = () => {
   if (containerRef.value && renderer) {
     containerRef.value.removeEventListener('pointermove', onPointerMove);
     containerRef.value.removeEventListener('pointerleave', onPointerLeave);
+    containerRef.value.removeEventListener('pointerdown', onPointerDown);
+    containerRef.value.removeEventListener('pointerup', onPointerUp);
+    containerRef.value.removeEventListener('dblclick', onDblClick);
+  }
+  if (singleClickTimer) {
+    clearTimeout(singleClickTimer);
+    singleClickTimer = null;
+  }
+  if (cameraAnimId) {
+    cancelAnimationFrame(cameraAnimId);
+    cameraAnimId = 0;
   }
   hoveredMesh = null;
   locationMeshes.length = 0;
@@ -552,9 +710,17 @@ onBeforeUnmount(() => {
     font-size: 12px;
   }
 
-  .wm3d-status-empty { background: #909399; }
-  .wm3d-status-occupied { background: #409eff; }
-  .wm3d-status-warning { background: #e6a23c; }
-  .wm3d-status-locked { background: #f56c6c; }
+  .wm3d-status-empty {
+    background: #909399;
+  }
+  .wm3d-status-occupied {
+    background: #409eff;
+  }
+  .wm3d-status-warning {
+    background: #e6a23c;
+  }
+  .wm3d-status-locked {
+    background: #f56c6c;
+  }
 }
 </style>
