@@ -1,48 +1,41 @@
 # AI 模块知识库文档
 
-本目录存放供 RAG 检索和知识图谱构建使用的知识内容源文档。
+本目录存放 AI 模块的开发文档、RAG 知识源文档及数据库脚本。
 
 ## 目录结构
 
 ```
 /doc/ai/
 ├── README.md
-├── knowledge-base-01-erp-master-data/
-│   ├── 01-物料主数据.txt
-│   └── 01-物料主数据.annotated.txt
-├── knowledge-base-02-erp-supplier/
-│   ├── 02-供应商档案.txt
-│   └── 02-供应商档案.annotated.txt
-├── knowledge-base-03-erp-procurement/
-│   ├── 03-采购订单流程.txt
-│   └── 03-采购订单流程.annotated.txt
-├── knowledge-base-04-erp-sales/
-│   ├── 04-销售订单流程.txt
-│   └── 04-销售订单流程.annotated.txt
-├── knowledge-base-05-erp-inventory/
-│   ├── 05-库存管理规则.txt
-│   └── 05-库存管理规则.annotated.txt
-├── knowledge-base-06-erp-production/
-│   ├── 06-生产计划与工单.txt
-│   └── 06-生产计划与工单.annotated.txt
-├── knowledge-base-07-mes-workshop/
-│   ├── 07-车间派工与报工.txt
-│   └── 07-车间派工与报工.annotated.txt
-├── knowledge-base-08-mes-quality/
-│   ├── 08-质量检验规范.txt
-│   └── 08-质量检验规范.annotated.txt
-├── knowledge-base-09-system-deploy/
-│   ├── 09-系统部署架构.txt
-│   └── 09-系统部署架构.annotated.txt
-├── knowledge-base-10-system-troubleshoot/
-│   ├── 10-故障排查手册.txt
-│   └── 10-故障排查手册.annotated.txt
-└── knowledge-base-11-system-integration/
-    ├── 11-系统集成接口.txt
-    └── 11-系统集成接口.annotated.txt
+├── plans/                          # 开发计划与阶段文档
+│   ├── NexusERP_AI开发计划.md
+│   ├── NexusERP_AI_QuickStart_Phase0.md
+│   ├── NexusERP_AI_Week*_Plan.md   # 各周计划
+│   ├── NexusERP_AI_S2D_验证报告.md
+│   ├── NexusERP_AI二阶段实施计划_S2A.md
+│   ├── NexusERP_AI二阶段实施计划_S2B_S2C.md
+│   └── NexusERP_AI二阶段开发计划_AI平台能力深化.md
+├── knowledge-base/                 # RAG 知识源文档
+│   ├── knowledge-base-01-erp-master-data/
+│   ├── knowledge-base-02-erp-supplier/
+│   ├── knowledge-base-03-erp-procurement/
+│   ├── knowledge-base-04-erp-sales/
+│   ├── knowledge-base-05-erp-inventory/
+│   ├── knowledge-base-06-erp-production/
+│   ├── knowledge-base-07-mes-workshop/
+│   ├── knowledge-base-08-mes-quality/
+│   ├── knowledge-base-09-system-deploy/
+│   ├── knowledge-base-10-system-troubleshoot/
+│   └── knowledge-base-11-system-integration/
+└── sql/                            # 数据库脚本
+    ├── ai-providers-models.sql
+    ├── ai-stage2-a.sql
+    ├── ai-stage2-b.sql
+    ├── ai-stage2-c.sql
+    └── ai-stage2-image.sql
 ```
 
-## 使用方式
+## 知识源文档使用方式
 
 ### RAG 知识库
 1. 在系统前端创建知识库，名称对应各文件夹标题
@@ -78,7 +71,7 @@
 
 ## 内容说明
 
-每份文档均包含：
+每份知识源文档均包含：
 - **原始版**（无标注）：纯结构化文本，含表格、流程描述、规则条款，适合 Apache Tika 解析后直接进入 RAG 管线
 - **标注版**（`.annotated`）：在原始版基础上叠加实体/关系标注，用于验证知识图谱抽取准确率
 
