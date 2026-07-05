@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : whbuild
+ Source Server         : 本地5.7
  Source Server Type    : MySQL
- Source Server Version : 50720
+ Source Server Version : 50714 (5.7.14)
  Source Host           : localhost:3306
  Source Schema         : ry-vue
 
  Target Server Type    : MySQL
- Target Server Version : 50720
+ Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 03/07/2026 18:28:00
+ Date: 05/07/2026 22:51:20
 */
 
 SET NAMES utf8mb4;
@@ -35,7 +35,11 @@ CREATE TABLE `act_evt_log`  (
   `LOCK_TIME_` timestamp(3) NULL DEFAULT NULL,
   `IS_PROCESSED_` tinyint(4) NULL DEFAULT 0,
   PRIMARY KEY (`LOG_NR_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_evt_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ge_bytearray
@@ -51,7 +55,7 @@ CREATE TABLE `act_ge_bytearray`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `ACT_FK_BYTEARR_DEPL`(`DEPLOYMENT_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_BYTEARR_DEPL` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_bytearray
@@ -144,7 +148,7 @@ CREATE TABLE `act_ge_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ge_property
@@ -190,7 +194,7 @@ CREATE TABLE `act_hi_actinst`  (
   INDEX `ACT_IDX_HI_ACT_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_PROCINST`(`PROC_INST_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_ACT_INST_EXEC`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_actinst
@@ -340,7 +344,11 @@ CREATE TABLE `act_hi_attachment`  (
   `CONTENT_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TIME_` datetime(3) NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_attachment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_comment
@@ -357,7 +365,7 @@ CREATE TABLE `act_hi_comment`  (
   `MESSAGE_` varchar(4000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `FULL_MSG_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_comment
@@ -428,7 +436,11 @@ CREATE TABLE `act_hi_detail`  (
   INDEX `ACT_IDX_HI_DETAIL_TIME`(`TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_NAME`(`NAME_`) USING BTREE,
   INDEX `ACT_IDX_HI_DETAIL_TASK_ID`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_detail
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_entitylink
@@ -454,7 +466,11 @@ CREATE TABLE `act_hi_entitylink`  (
   INDEX `ACT_IDX_HI_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_identitylink
@@ -479,7 +495,7 @@ CREATE TABLE `act_hi_identitylink`  (
   INDEX `ACT_IDX_HI_IDENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_TASK`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_IDENT_LNK_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_identitylink
@@ -614,7 +630,7 @@ CREATE TABLE `act_hi_procinst`  (
   INDEX `ACT_IDX_HI_PRO_INST_END`(`END_TIME_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_I_BUSKEY`(`BUSINESS_KEY_`) USING BTREE,
   INDEX `ACT_IDX_HI_PRO_SUPER_PROCINST`(`SUPER_PROCESS_INSTANCE_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_procinst
@@ -677,7 +693,7 @@ CREATE TABLE `act_hi_taskinst`  (
   INDEX `ACT_IDX_HI_TASK_SUB_SCOPE`(`SUB_SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_HI_TASK_INST_PROCINST`(`PROC_INST_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_taskinst
@@ -741,7 +757,11 @@ CREATE TABLE `act_hi_tsk_log`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_hi_tsk_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_hi_varinst
@@ -773,7 +793,7 @@ CREATE TABLE `act_hi_varinst`  (
   INDEX `ACT_IDX_HI_PROCVAR_PROC_INST`(`PROC_INST_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_TASK_ID`(`TASK_ID_`) USING BTREE,
   INDEX `ACT_IDX_HI_PROCVAR_EXE`(`EXECUTION_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_hi_varinst
@@ -995,7 +1015,11 @@ CREATE TABLE `act_id_bytearray`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_bytearray
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_group
@@ -1007,7 +1031,11 @@ CREATE TABLE `act_id_group`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_group
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_info
@@ -1023,7 +1051,11 @@ CREATE TABLE `act_id_info`  (
   `PASSWORD_` longblob NULL,
   `PARENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_membership
@@ -1036,7 +1068,11 @@ CREATE TABLE `act_id_membership`  (
   INDEX `ACT_FK_MEMB_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_MEMB_GROUP` FOREIGN KEY (`GROUP_ID_`) REFERENCES `act_id_group` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MEMB_USER` FOREIGN KEY (`USER_ID_`) REFERENCES `act_id_user` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_membership
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv
@@ -1047,7 +1083,11 @@ CREATE TABLE `act_id_priv`  (
   `NAME_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PRIV_NAME`(`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_priv_mapping
@@ -1063,7 +1103,11 @@ CREATE TABLE `act_id_priv_mapping`  (
   INDEX `ACT_IDX_PRIV_USER`(`USER_ID_`) USING BTREE,
   INDEX `ACT_IDX_PRIV_GROUP`(`GROUP_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_PRIV_MAPPING` FOREIGN KEY (`PRIV_ID_`) REFERENCES `act_id_priv` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_priv_mapping
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_property
@@ -1074,7 +1118,7 @@ CREATE TABLE `act_id_property`  (
   `VALUE_` varchar(300) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `REV_` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`NAME_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_id_property
@@ -1095,7 +1139,11 @@ CREATE TABLE `act_id_token`  (
   `USER_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TOKEN_DATA_` varchar(2000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_token
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_id_user
@@ -1112,7 +1160,11 @@ CREATE TABLE `act_id_user`  (
   `PICTURE_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_id_user
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_procdef_info
@@ -1129,7 +1181,11 @@ CREATE TABLE `act_procdef_info`  (
   INDEX `ACT_FK_INFO_JSON_BA`(`INFO_JSON_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_INFO_JSON_BA` FOREIGN KEY (`INFO_JSON_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_INFO_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_procdef_info
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_re_deployment
@@ -1147,7 +1203,7 @@ CREATE TABLE `act_re_deployment`  (
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `ENGINE_VERSION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_deployment
@@ -1195,7 +1251,7 @@ CREATE TABLE `act_re_model`  (
   CONSTRAINT `ACT_FK_MODEL_DEPLOYMENT` FOREIGN KEY (`DEPLOYMENT_ID_`) REFERENCES `act_re_deployment` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE` FOREIGN KEY (`EDITOR_SOURCE_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_MODEL_SOURCE_EXTRA` FOREIGN KEY (`EDITOR_SOURCE_EXTRA_VALUE_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_model
@@ -1258,7 +1314,7 @@ CREATE TABLE `act_re_procdef`  (
   `DERIVED_VERSION_` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_UNIQ_PROCDEF`(`KEY_`, `VERSION_`, `DERIVED_VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_re_procdef
@@ -1310,7 +1366,7 @@ CREATE TABLE `act_ru_actinst`  (
   INDEX `ACT_IDX_RU_ACTI_EXEC`(`EXECUTION_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_EXEC_ACT`(`EXECUTION_ID_`, `ACT_ID_`) USING BTREE,
   INDEX `ACT_IDX_RU_ACTI_TASK`(`TASK_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_actinst
@@ -1375,7 +1431,11 @@ CREATE TABLE `act_ru_deadletter_job`  (
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_DEADLETTER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_deadletter_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_entitylink
@@ -1402,7 +1462,11 @@ CREATE TABLE `act_ru_entitylink`  (
   INDEX `ACT_IDX_ENT_LNK_REF_SCOPE`(`REF_SCOPE_ID_`, `REF_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_ROOT_SCOPE`(`ROOT_SCOPE_ID_`, `ROOT_SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE,
   INDEX `ACT_IDX_ENT_LNK_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`, `LINK_TYPE_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_entitylink
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_event_subscr
@@ -1431,7 +1495,11 @@ CREATE TABLE `act_ru_event_subscr`  (
   INDEX `ACT_IDX_EVENT_SUBSCR_SCOPEREF_`(`SCOPE_ID_`, `SCOPE_TYPE_`) USING BTREE,
   INDEX `ACT_FK_EVENT_EXEC`(`EXECUTION_ID_`) USING BTREE,
   CONSTRAINT `ACT_FK_EVENT_EXEC` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_event_subscr
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_execution
@@ -1489,7 +1557,7 @@ CREATE TABLE `act_ru_execution`  (
   CONSTRAINT `ACT_FK_EXE_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXE_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `ACT_FK_EXE_SUPER` FOREIGN KEY (`SUPER_EXEC_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_execution
@@ -1542,7 +1610,11 @@ CREATE TABLE `act_ru_external_job`  (
   INDEX `ACT_IDX_EJOB_SCOPE_DEF`(`SCOPE_DEFINITION_ID_`, `SCOPE_TYPE_`) USING BTREE,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_CUSTOM_VALUES` FOREIGN KEY (`CUSTOM_VALUES_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_EXTERNAL_JOB_EXCEPTION` FOREIGN KEY (`EXCEPTION_STACK_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_external_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_history_job
@@ -1564,7 +1636,11 @@ CREATE TABLE `act_ru_history_job`  (
   `SCOPE_TYPE_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_history_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_identitylink
@@ -1595,7 +1671,7 @@ CREATE TABLE `act_ru_identitylink`  (
   CONSTRAINT `ACT_FK_ATHRZ_PROCEDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_IDL_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TSKASS_TASK` FOREIGN KEY (`TASK_ID_`) REFERENCES `act_ru_task` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_identitylink
@@ -1657,7 +1733,11 @@ CREATE TABLE `act_ru_job`  (
   CONSTRAINT `ACT_FK_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_suspended_job
@@ -1704,7 +1784,11 @@ CREATE TABLE `act_ru_suspended_job`  (
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_SUSPENDED_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_suspended_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_task
@@ -1752,7 +1836,7 @@ CREATE TABLE `act_ru_task`  (
   CONSTRAINT `ACT_FK_TASK_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCDEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TASK_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_task
@@ -1809,7 +1893,11 @@ CREATE TABLE `act_ru_timer_job`  (
   CONSTRAINT `ACT_FK_TIMER_JOB_EXECUTION` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROCESS_INSTANCE` FOREIGN KEY (`PROCESS_INSTANCE_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_TIMER_JOB_PROC_DEF` FOREIGN KEY (`PROC_DEF_ID_`) REFERENCES `act_re_procdef` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of act_ru_timer_job
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for act_ru_variable
@@ -1842,7 +1930,7 @@ CREATE TABLE `act_ru_variable`  (
   CONSTRAINT `ACT_FK_VAR_BYTEARRAY` FOREIGN KEY (`BYTEARRAY_ID_`) REFERENCES `act_ge_bytearray` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_EXE` FOREIGN KEY (`EXECUTION_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `ACT_FK_VAR_PROCINST` FOREIGN KEY (`PROC_INST_ID_`) REFERENCES `act_ru_execution` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of act_ru_variable
@@ -1897,11 +1985,15 @@ CREATE TABLE `ai_ab_test`  (
   `result_summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '结果摘要（JSON）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_ab_test
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_ab_test_result
@@ -1918,10 +2010,14 @@ CREATE TABLE `ai_ab_test_result`  (
   `token_usage` int(11) NULL DEFAULT NULL COMMENT 'Token 用量',
   `latency_ms` int(11) NULL DEFAULT NULL COMMENT '响应延迟（毫秒）',
   `score` int(11) NULL DEFAULT NULL COMMENT '人工评分（1-5）',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_test_id`(`test_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试结果' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI A/B 测试结果' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_ab_test_result
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_image_record
@@ -1938,14 +2034,18 @@ CREATE TABLE `ai_image_record`  (
   `model_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模型名称',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_id`(`user_id`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 文生图记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 文生图记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_image_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_kg_community
@@ -1966,9 +2066,9 @@ CREATE TABLE `ai_kg_community`  (
   `error_message` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -1977,7 +2077,7 @@ CREATE TABLE `ai_kg_community`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_graph_id`(`graph_id`) USING BTREE,
   INDEX `idx_community_level`(`community_level`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱社区' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱社区' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_kg_community
@@ -2006,9 +2106,9 @@ CREATE TABLE `ai_kg_entity`  (
   `community_id` bigint(20) NULL DEFAULT NULL COMMENT '所属社区ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2020,7 +2120,7 @@ CREATE TABLE `ai_kg_entity`  (
   INDEX `idx_entity_type`(`entity_type`) USING BTREE,
   INDEX `idx_source_chunk`(`source_chunk_id`) USING BTREE,
   INDEX `idx_community`(`community_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱实体' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱实体' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_kg_entity
@@ -2069,9 +2169,9 @@ CREATE TABLE `ai_kg_relation`  (
   `source_chunk_id` bigint(20) NULL DEFAULT NULL COMMENT '来源切片ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2082,7 +2182,7 @@ CREATE TABLE `ai_kg_relation`  (
   INDEX `idx_source`(`source_entity_id`) USING BTREE,
   INDEX `idx_target`(`target_entity_id`) USING BTREE,
   INDEX `idx_source_chunk`(`source_chunk_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱关系' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱关系' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_kg_relation
@@ -2133,16 +2233,16 @@ CREATE TABLE `ai_knowledge`  (
   `system_prompt` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '系统提示词',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_knowledge
@@ -2168,9 +2268,9 @@ CREATE TABLE `ai_knowledge_chunk`  (
   `kg_error_message` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '抽取错误信息',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2180,7 +2280,7 @@ CREATE TABLE `ai_knowledge_chunk`  (
   INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE,
   INDEX `idx_document_id`(`document_id`) USING BTREE,
   FULLTEXT INDEX `ft_content`(`content`) WITH PARSER `ngram`
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档切片' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_knowledge_chunk
@@ -2229,9 +2329,9 @@ CREATE TABLE `ai_knowledge_document`  (
   `error_message` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2239,7 +2339,7 @@ CREATE TABLE `ai_knowledge_document`  (
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识库文档' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_knowledge_document
@@ -2266,9 +2366,9 @@ CREATE TABLE `ai_knowledge_graph`  (
   `error_message` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2276,7 +2376,7 @@ CREATE TABLE `ai_knowledge_graph`  (
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_knowledge_id`(`knowledge_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 知识图谱实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_knowledge_graph
@@ -2297,16 +2397,20 @@ CREATE TABLE `ai_mcp_market`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1启用 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场源' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场源' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_mcp_market
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_mcp_market_tool
@@ -2324,9 +2428,9 @@ CREATE TABLE `ai_mcp_market_tool`  (
   `local_tool_id` bigint(20) NULL DEFAULT NULL COMMENT '关联 ai_tool.id',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2335,7 +2439,11 @@ CREATE TABLE `ai_mcp_market_tool`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_market_id`(`market_id`) USING BTREE,
   INDEX `idx_tool_name`(`tool_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场工具' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI MCP 市场工具' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of ai_mcp_market_tool
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ai_message
@@ -2352,9 +2460,9 @@ CREATE TABLE `ai_message`  (
   `feedback_content` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '反馈内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2366,7 +2474,7 @@ CREATE TABLE `ai_message`  (
   `thinking_content` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '推理过程内容（enableThinking 时存）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_session_id`(`session_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话消息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_message
@@ -2425,6 +2533,12 @@ INSERT INTO `ai_message` VALUES (2071276697856122882, '000000', 2071276315541118
 INSERT INTO `ai_message` VALUES (2071960256161935361, '000000', 2071960256094826498, 'USER', '各仓库库存总量', NULL, NULL, NULL, 103, 1, '2026-06-30 22:13:15', 1, '2026-06-30 22:13:15', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `ai_message` VALUES (2072987490471432194, '000000', 2072987490450460673, 'USER', '你是谁', NULL, NULL, NULL, 103, 1, '2026-07-03 18:15:07', 1, '2026-07-03 18:15:07', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `ai_message` VALUES (2072987596717346817, '000000', 2072987490450460673, 'ASSISTANT', '您好！我是一个由wanghuan老师训练的语言模型，被称为Nexus AI 助手。我的主要功能是理解和生成文本，以回答您的问题、提供信息、进行对话或协助完成各种任务。如果您有任何问题或需要帮助，请随时告诉我！', NULL, 'LIKE', NULL, -1, -1, '2026-07-03 18:15:32', -1, '2026-07-03 18:15:32', '0', NULL, NULL, NULL, NULL, 2072986793864646658, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2073088312960307202, '000000', 2072987490450460673, 'USER', '你可以识别图片吗', NULL, NULL, NULL, 103, 1, '2026-07-04 00:55:45', 1, '2026-07-04 00:55:45', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2073088375702900737, '000000', 2072987490450460673, 'ASSISTANT', '\n目前，我**无法直接识别或分析图片内容**。\n\n我是基于文本进行理解和生成的语言模型。这意味着我可以：\n\n1.  **理解你的问题和描述：** 如果你用文字详细地告诉我一张图片的内容、特征或者你想让我做什么（例如，“这张图上有什么？”），我会尽力根据这些信息来回答。\n2.  **处理图像链接或文件名（如果提供相关信息）：** 虽然我自己不能“看”，但如果你向我提供了图片的链接，我可以尝试访问该网页，并从中提取文字信息。或者，如果只是告诉我文件名和一些基本描述，我也能更好地理解你的意图。\n3.  **生成图像文本或简单绘图（部分模型）：** 在某些情况下，特别是更先进的多模态模型中，可能会结合视觉输入来完成任务。但当前这个版本的我主要是纯文本交互。\n\n所以，请告诉我图片的相关信息或者你想通过图片提问的具体内容，我会基于收到的文字信息来协助你！', 539, NULL, NULL, -1, -1, '2026-07-04 00:56:00', -1, '2026-07-04 00:56:00', '0', NULL, NULL, NULL, NULL, 2071188923190738945, 67, 472, NULL);
+INSERT INTO `ai_message` VALUES (2073088711792480258, '000000', 2072987490450460673, 'USER', '帮我查看这个项目：https://gitee.com/NexusERP/nexus-erp 有多少颗星星了', NULL, NULL, NULL, 103, 1, '2026-07-04 00:57:20', 1, '2026-07-04 00:57:20', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2073089541933322242, '000000', 2072987490450460673, 'USER', '你可以识别图片吗', NULL, NULL, NULL, 103, 1, '2026-07-04 01:00:38', 1, '2026-07-04 01:00:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2073091310121816066, '000000', 2073091310121816065, 'USER', '你是谁', NULL, NULL, NULL, 103, 1, '2026-07-04 01:07:39', 1, '2026-07-04 01:07:39', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `ai_message` VALUES (2073091369571880961, '000000', 2073091310121816065, 'USER', '你是谁', NULL, NULL, NULL, 103, 1, '2026-07-04 01:07:53', 1, '2026-07-04 01:07:53', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_model
@@ -2443,9 +2557,9 @@ CREATE TABLE `ai_model`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2456,7 +2570,7 @@ CREATE TABLE `ai_model`  (
   `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种：CNY/USD',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_provider_id`(`provider_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 模型配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_model
@@ -2496,13 +2610,13 @@ CREATE TABLE `ai_prompt_template`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_template_key`(`template_key`, `tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Prompt 模板' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Prompt 模板' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_prompt_template
@@ -2525,16 +2639,16 @@ CREATE TABLE `ai_provider`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 厂商配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_provider
@@ -2560,9 +2674,9 @@ CREATE TABLE `ai_session`  (
   `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的模型名称',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2571,7 +2685,7 @@ CREATE TABLE `ai_session`  (
   `enabled_tool_ids` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '会话启用的工具ID列表（逗号分隔，null=全部）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 对话会话' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_session
@@ -2591,6 +2705,7 @@ INSERT INTO `ai_session` VALUES (2071275707899715585, '000000', 1, '在gitee上�
 INSERT INTO `ai_session` VALUES (2071276315541118977, '000000', 1, '帮我在gitee上搜索ktg-mes这个项目是谁开发的', 'deepseek-v4-flash', 103, 1, '2026-06-29 00:55:31', 1, '2026-06-29 00:55:31', '0', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `ai_session` VALUES (2071960256094826498, '000000', 1, '各仓库库存总量', 'ark-code-latest', 103, 1, '2026-06-30 22:13:15', 1, '2026-06-30 22:13:15', '0', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `ai_session` VALUES (2072987490450460673, '000000', 1, '你是谁', 'NexusAI', 103, 1, '2026-07-03 18:15:07', 1, '2026-07-03 18:15:07', '0', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `ai_session` VALUES (2073091310121816065, '000000', 1, '你是谁', 'mimo-v2.5-pro', 103, 1, '2026-07-04 01:07:39', 1, '2026-07-04 01:07:39', '0', NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_sql_example
@@ -2607,14 +2722,14 @@ CREATE TABLE `ai_sql_example`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI SQL Few-Shot 示例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI SQL Few-Shot 示例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_sql_example
@@ -2645,14 +2760,14 @@ CREATE TABLE `ai_token_usage`  (
   `total_tokens` bigint(20) NULL DEFAULT 0 COMMENT '当日 Token 总量（input+output）',
   `request_count` int(11) NULL DEFAULT 0 COMMENT '当日请求次数',
   `total_cost` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '当日总成本（元）',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_model_date`(`tenant_id`, `user_id`, `model_id`, `usage_date`) USING BTREE,
   INDEX `idx_user_date`(`tenant_id`, `user_id`, `usage_date`) USING BTREE,
   INDEX `idx_model_date`(`tenant_id`, `model_id`, `usage_date`) USING BTREE,
   INDEX `idx_date`(`usage_date`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Token 用量日统计' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI Token 用量日统计' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_token_usage
@@ -2666,6 +2781,7 @@ INSERT INTO `ai_token_usage` VALUES (2071638492034764801, 0, 1, 'admin', 2065468
 INSERT INTO `ai_token_usage` VALUES (2071641038199701506, 0, 1, 'admin', 2071188923190738945, 'deepseek-r1:8b', '2026-06-30', 3579, 6852, 10431, 7, 0.0000, '2026-06-30 01:04:47', '2026-06-30 23:18:47');
 INSERT INTO `ai_token_usage` VALUES (2071644493534343169, 0, 1, 'admin', 1, 'deepseek-v4-flash', '2026-06-30', 13334, 9684, 23018, 29, 0.0000, '2026-06-30 01:18:31', '2026-06-30 23:17:32');
 INSERT INTO `ai_token_usage` VALUES (2071993226323185666, 0, 1, 'admin', 1, 'deepseek-v4-flash', '2026-07-01', 8713, 10125, 18838, 18, 0.0000, '2026-07-01 00:24:15', '2026-07-01 00:25:48');
+INSERT INTO `ai_token_usage` VALUES (2073088375723872258, 0, 1, 'admin', 2071188923190738945, 'deepseek-r1:8b', '2026-07-04', 67, 472, 539, 1, 0.0000, '2026-07-04 00:55:59', '2026-07-04 00:55:59');
 
 -- ----------------------------
 -- Table structure for ai_tool
@@ -2682,9 +2798,9 @@ CREATE TABLE `ai_tool`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ENABLED' COMMENT '状态: ENABLED/DISABLED',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -2692,7 +2808,7 @@ CREATE TABLE `ai_tool`  (
   `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_tool_name`(`tool_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 工具配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 工具配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of ai_tool
@@ -2725,7 +2841,11 @@ CREATE TABLE `flw_channel_definition`  (
   `IMPLEMENTATION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_CHANNEL_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_channel_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ev_databasechangelog
@@ -2735,7 +2855,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `ID` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `AUTHOR` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `FILENAME` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `DATEEXECUTED` datetime(0) NULL DEFAULT NULL,
+  `DATEEXECUTED` datetime NULL DEFAULT NULL,
   `ORDEREXECUTED` int(11) NOT NULL,
   `EXECTYPE` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `MD5SUM` varchar(35) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
@@ -2746,7 +2866,7 @@ CREATE TABLE `flw_ev_databasechangelog`  (
   `CONTEXTS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `LABELS` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `DEPLOYMENT_ID` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangelog
@@ -2762,10 +2882,10 @@ DROP TABLE IF EXISTS `flw_ev_databasechangeloglock`;
 CREATE TABLE `flw_ev_databasechangeloglock`  (
   `ID` int(11) NOT NULL,
   `LOCKED` tinyint(4) NOT NULL,
-  `LOCKGRANTED` datetime(0) NULL DEFAULT NULL,
+  `LOCKGRANTED` datetime NULL DEFAULT NULL,
   `LOCKEDBY` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flw_ev_databasechangeloglock
@@ -2788,7 +2908,11 @@ CREATE TABLE `flw_event_definition`  (
   `DESCRIPTION_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE,
   UNIQUE INDEX `ACT_IDX_EVENT_DEF_UNIQ`(`KEY_`, `VERSION_`, `TENANT_ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_definition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_deployment
@@ -2802,7 +2926,11 @@ CREATE TABLE `flw_event_deployment`  (
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `PARENT_DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_deployment
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_event_resource
@@ -2814,7 +2942,11 @@ CREATE TABLE `flw_event_resource`  (
   `DEPLOYMENT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `RESOURCE_BYTES_` longblob NULL,
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_event_resource
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch
@@ -2832,7 +2964,11 @@ CREATE TABLE `flw_ru_batch`  (
   `BATCH_DOC_ID_` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `TENANT_ID_` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT '',
   PRIMARY KEY (`ID_`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for flw_ru_batch_part
@@ -2856,7 +2992,11 @@ CREATE TABLE `flw_ru_batch_part`  (
   PRIMARY KEY (`ID_`) USING BTREE,
   INDEX `FLW_IDX_BATCH_PART`(`BATCH_ID_`) USING BTREE,
   CONSTRAINT `FLW_FK_BATCH_PART_PARENT` FOREIGN KEY (`BATCH_ID_`) REFERENCES `flw_ru_batch` (`ID_`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of flw_ru_batch_part
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for gen_table
@@ -2885,14 +3025,14 @@ CREATE TABLE `gen_table`  (
   `options` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '其它生成选项',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`table_id`) USING BTREE,
   INDEX `idx_gen_table_design_id`(`design_id`) USING BTREE,
   INDEX `idx_gen_table_source_type`(`source_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table
@@ -2942,11 +3082,11 @@ CREATE TABLE `gen_table_column`  (
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`column_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成业务表字段' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of gen_table_column
@@ -3362,11 +3502,15 @@ CREATE TABLE `gen_table_design_history`  (
   `design_content` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设计JSON内容',
   `version` int(11) NULL DEFAULT 1 COMMENT '版本号',
   `create_by` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`history_id`) USING BTREE,
   INDEX `idx_design_history_table_id`(`table_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '代码生成表设计历史记录' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of gen_table_design_history
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for im_friend
@@ -3379,14 +3523,14 @@ CREATE TABLE `im_friend`  (
   `friend_user_id` bigint(20) NOT NULL COMMENT '好友用户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_im_friend`(`tenant_id`, `user_id`, `friend_user_id`) USING BTREE,
   INDEX `idx_im_friend_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM好友关系' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM好友关系' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_friend
@@ -3407,13 +3551,13 @@ CREATE TABLE `im_group`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态（0正常 1解散）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`group_id`) USING BTREE,
   INDEX `idx_im_group_tenant`(`tenant_id`, `status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群组' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group
@@ -3430,16 +3574,16 @@ CREATE TABLE `im_group_member`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `group_id` bigint(20) NOT NULL COMMENT '群ID',
   `user_id` bigint(20) NOT NULL COMMENT '成员用户ID',
-  `join_time` datetime(0) NULL DEFAULT NULL COMMENT '加入时间',
+  `join_time` datetime NULL DEFAULT NULL COMMENT '加入时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_group_user`(`group_id`, `user_id`) USING BTREE,
   INDEX `idx_igm_user`(`tenant_id`, `user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'IM群成员' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_group_member
@@ -3468,14 +3612,14 @@ CREATE TABLE `im_message`  (
   `forward_from` bigint(20) NULL DEFAULT NULL COMMENT '杞?彂鏉ユ簮娑堟伅ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`message_id`) USING BTREE,
   INDEX `idx_im_msg_private`(`tenant_id`, `from_user_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_to`(`tenant_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_group`(`tenant_id`, `group_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_message
@@ -3514,14 +3658,14 @@ CREATE TABLE `jimu_dict`  (
   `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '描述',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `type` int(1) UNSIGNED ZEROFILL NULL DEFAULT 0 COMMENT '字典类型0为string,1为number',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_sd_dict_code`(`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict
@@ -3600,15 +3744,15 @@ CREATE TABLE `jimu_dict_item`  (
   `sort_order` int(10) NULL DEFAULT NULL COMMENT '排序',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态（1启用 0不启用）',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_sdi_role_dict_id`(`dict_id`) USING BTREE,
   INDEX `idx_sdi_role_sort_order`(`sort_order`) USING BTREE,
   INDEX `idx_sdi_status`(`status`) USING BTREE,
   INDEX `idx_sdi_dict_val`(`dict_id`, `item_value`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_dict_item
@@ -3847,9 +3991,9 @@ CREATE TABLE `jimu_report`  (
   `api_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求地址',
   `thumb` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '缩略图',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   `api_method` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求方法0-get,1-post',
   `api_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请求编码',
@@ -3866,7 +4010,7 @@ CREATE TABLE `jimu_report`  (
   UNIQUE INDEX `uniq_jmreport_code`(`code`) USING BTREE,
   INDEX `uniq_jmreport_createby`(`create_by`) USING BTREE,
   INDEX `uniq_jmreport_delflag`(`del_flag`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '在线excel设计器' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report
@@ -3957,14 +4101,14 @@ CREATE TABLE `jimu_report_category`  (
   `iz_leaf` int(1) NULL DEFAULT NULL COMMENT '是否为叶子节点(0 否 1是)',
   `source_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型( report 积木报表 screen 大屏  drag 仪表盘)',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` timestamp(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` timestamp(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '租户id',
   `del_flag` int(1) NULL DEFAULT NULL COMMENT '删除状态(0未删除，1已删除，2临时删除)',
   `sort_no` int(11) NULL DEFAULT NULL COMMENT '排序',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '分类' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_category
@@ -3993,16 +4137,16 @@ CREATE TABLE `jimu_report_data_source`  (
   `db_username` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户名',
   `db_password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `connect_times` int(11) NULL DEFAULT 0 COMMENT '连接失败次数',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   `type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类型(report:报表;drag:仪表盘)',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jmdatasource_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jmdatasource_code`(`code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_data_source
@@ -4029,8 +4173,8 @@ CREATE TABLE `jimu_report_db`  (
   `jimu_report_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '主键字段',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `db_code` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集编码',
   `db_ch_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据集名字',
   `db_type` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源类型',
@@ -4055,7 +4199,7 @@ CREATE TABLE `jimu_report_db`  (
   INDEX `idx_jmreportdb_db_key`(`db_key`) USING BTREE,
   INDEX `idx_jimu_report_id`(`jimu_report_id`) USING BTREE,
   INDEX `idx_db_source_id`(`db_source`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db
@@ -4204,9 +4348,9 @@ DROP TABLE IF EXISTS `jimu_report_db_field`;
 CREATE TABLE `jimu_report_db_field`  (
   `id` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `jimu_report_db_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据源ID',
   `field_name` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字段名',
   `field_name_physics` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '物理字段名（文件数据集使用，存的是excel的字段标题）',
@@ -4223,7 +4367,7 @@ CREATE TABLE `jimu_report_db_field`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdf_jimu_report_db_id`(`jimu_report_db_id`) USING BTREE,
   INDEX `idx_dbfield_order_num`(`order_num`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_field
@@ -5147,9 +5291,9 @@ CREATE TABLE `jimu_report_db_param`  (
   `param_value` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '参数默认值',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `search_flag` int(1) NULL DEFAULT NULL COMMENT '查询标识0否1是 默认0',
   `widget_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询控件类型',
   `search_mode` int(1) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
@@ -5158,7 +5302,7 @@ CREATE TABLE `jimu_report_db_param`  (
   `ext_json` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '参数配置',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_jrdp_jimu_report_head_id`(`jimu_report_head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_db_param
@@ -5200,21 +5344,21 @@ DROP TABLE IF EXISTS `jimu_report_export_job`;
 CREATE TABLE `jimu_report_export_job`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务名称',
-  `begin_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
-  `end_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `begin_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
   `exec_interval` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '执行频率',
   `report_conf` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '导出报表配置',
-  `last_run_time` datetime(0) NULL DEFAULT NULL COMMENT '最后执行时间',
+  `last_run_time` datetime NULL DEFAULT NULL COMMENT '最后执行时间',
   `receiver_email` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '接收通知的邮件',
   `file_sync_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件同步路径',
   `status` int(11) NULL DEFAULT NULL COMMENT '状态(0:停止;1:启动)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '积木报表导出计划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_job
@@ -5238,11 +5382,11 @@ CREATE TABLE `jimu_report_export_log`  (
   `status` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '状态',
   `err_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误消息',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '多租户标识',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表自动导出记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_export_log
@@ -5535,12 +5679,12 @@ CREATE TABLE `jimu_report_ext_data`  (
   `metadata` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '元数据，用于存储补充信息',
   `status` tinyint(4) NULL DEFAULT 1 COMMENT '状态标识：1正常 0禁用',
   `create_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_biz`(`biz_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通用扩展数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_ext_data
@@ -5557,12 +5701,12 @@ CREATE TABLE `jimu_report_icon_lib`  (
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图片类型',
   `image_url` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '图片地址',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户id',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木图库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_icon_lib
@@ -5798,7 +5942,7 @@ CREATE TABLE `jimu_report_link`  (
   `requirement` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '条件',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `uniq_link_reportid`(`report_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '超链接配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_link
@@ -5819,14 +5963,14 @@ CREATE TABLE `jimu_report_map`  (
   `name` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '地图编码',
   `data` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '地图数据',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '0表示未删除,1表示删除',
   `sys_org_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '所属部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_jmreport_map_name`(`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '地图配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_map
@@ -5852,7 +5996,7 @@ CREATE TABLE `jimu_report_share`  (
   `report_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线excel设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，2:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁状态(0不存在密码锁，1存在密码锁)',
@@ -5860,7 +6004,7 @@ CREATE TABLE `jimu_report_share`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_report_id`(`report_id`) USING BTREE,
   INDEX `idx_jrs_share_token`(`share_token`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '积木报表预览权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_share
@@ -5885,14 +6029,14 @@ CREATE TABLE `jimu_report_sheet`  (
   `sheet_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Sheet名称',
   `sheet_order` int(11) NOT NULL COMMENT '排序（可以为负数，负数表示在默认sheet前面）',
   `json_str` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '该sheet的完整jsonStr',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_report_id`(`report_id`) USING BTREE,
   INDEX `idx_sheet_order`(`report_id`, `sheet_order`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '报表Sheet表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jimu_report_sheet
@@ -5920,13 +6064,17 @@ CREATE TABLE `mq_compensation_record`  (
   `compensation_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '补偿参数JSON',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 5 COMMENT '最大重试次数',
-  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_compensation_status`(`compensation_status`, `next_retry_time`) USING BTREE,
   INDEX `idx_business`(`business_type`, `business_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '补偿记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mq_compensation_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for mq_dead_letter_record
@@ -5941,11 +6089,15 @@ CREATE TABLE `mq_dead_letter_record`  (
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/RESOLVED/RESENT',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_create_time`(`create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mq_dead_letter_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for mq_message_record
@@ -5960,14 +6112,14 @@ CREATE TABLE `mq_message_record`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'SENDING' COMMENT '状态: SENDING/SENT/CONSUMED/FAILED',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 3 COMMENT '最大重试次数',
-  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间',
-  `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_message_id`(`message_id`) USING BTREE,
   INDEX `idx_status_create`(`status`, `create_time`) USING BTREE,
   INDEX `idx_next_retry`(`next_retry_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '消息记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of mq_message_record
@@ -5990,11 +6142,11 @@ CREATE TABLE `onl_drag_comp`  (
   `comp_config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `status` varchar(2) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '状态0:无效 1:有效',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组件库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_comp
@@ -6138,14 +6290,14 @@ CREATE TABLE `onl_drag_dataset_head`  (
   `iz_agent` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT 'iz_agent',
   `data_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '数据类型',
   `api_method` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'api方法：get/post',
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `low_app_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_head
@@ -6262,12 +6414,12 @@ CREATE TABLE `onl_drag_dataset_item`  (
   `search_mode` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '查询模式',
   `order_num` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddi_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_item
@@ -6543,12 +6695,12 @@ CREATE TABLE `onl_drag_dataset_param`  (
   `search_mode` int(11) NULL DEFAULT NULL COMMENT '查询模式1简单2范围',
   `dict_code` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字典',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_oddp_head_id`(`head_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_dataset_param
@@ -6579,16 +6731,16 @@ CREATE TABLE `onl_drag_page`  (
   `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件夹类',
   `iz_template` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否模板(1:是；0不是)',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(10) NULL DEFAULT NULL COMMENT '租户ID',
   `update_count` int(10) NULL DEFAULT 1,
   `visits_num` int(11) NULL DEFAULT NULL COMMENT '访问次数',
   `del_flag` int(11) NULL DEFAULT NULL COMMENT '删除状态( 0未删除 1已删除)',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽界面' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page
@@ -6656,11 +6808,11 @@ CREATE TABLE `onl_drag_page_comp`  (
   `component` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件名称',
   `config` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '组件配置',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '可视化拖拽页面组件' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_page_comp
@@ -7637,14 +7789,14 @@ CREATE TABLE `onl_drag_share`  (
   `drag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '在线仪表盘设计器id',
   `preview_url` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预览地址',
   `preview_lock` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码锁',
-  `last_update_time` datetime(0) NULL DEFAULT NULL COMMENT '最后更新时间',
+  `last_update_time` datetime NULL DEFAULT NULL COMMENT '最后更新时间',
   `term_of_validity` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '有效期(0:永久有效，1:1天，7:7天)',
   `status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否过期(0未过期，1已过期)',
   `preview_lock_status` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否为密码锁(0 否,1是)',
   `share_token` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分享token',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uniq_ods_drag_id`(`drag_id`) USING BTREE COMMENT '仪表盘id唯一索引'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘预览分享表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of onl_drag_share
@@ -7668,15 +7820,19 @@ CREATE TABLE `onl_drag_table_relation`  (
   `low_app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用ID',
   `tenant_id` int(11) NULL DEFAULT NULL COMMENT '租户ID',
   `create_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人登录名称',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建日期',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建日期',
   `update_by` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '更新人登录名称',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新日期',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新日期',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_aggregation_name`(`aggregation_name`) USING BTREE,
   INDEX `idx_del_flag`(`del_flag`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_create_by`(`create_by`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '仪表盘聚合表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of onl_drag_table_relation
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pay_invoice
@@ -7694,12 +7850,12 @@ CREATE TABLE `pay_invoice`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`invoice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '发票表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_invoice
@@ -7720,18 +7876,18 @@ CREATE TABLE `pay_order`  (
   `order_content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '订单内容',
   `order_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负载信息',
   `pay_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '支付方式',
-  `pay_time` datetime(0) NULL DEFAULT NULL COMMENT '支付时间',
+  `pay_time` datetime NULL DEFAULT NULL COMMENT '支付时间',
   `pay_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '支付人',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`order_id`) USING BTREE,
   INDEX `idx_order_number`(`order_number`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '订单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pay_order
@@ -7771,9 +7927,9 @@ CREATE TABLE `pu_contract`  (
   `vendor_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
   `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `contract_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同类型',
-  `sign_date` datetime(0) NULL DEFAULT NULL COMMENT '签订日期',
-  `effective_date` datetime(0) NULL DEFAULT NULL COMMENT '生效日期',
-  `expiry_date` datetime(0) NULL DEFAULT NULL COMMENT '失效日期',
+  `sign_date` datetime NULL DEFAULT NULL COMMENT '签订日期',
+  `effective_date` datetime NULL DEFAULT NULL COMMENT '生效日期',
+  `expiry_date` datetime NULL DEFAULT NULL COMMENT '失效日期',
   `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '合同总金额',
   `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY' COMMENT '币种',
   `payment_terms` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '付款条款',
@@ -7787,12 +7943,16 @@ CREATE TABLE `pu_contract`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同头表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_contract
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pu_contract_line
@@ -7809,7 +7969,7 @@ CREATE TABLE `pu_contract_line`  (
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '数量',
   `line_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '行金额',
-  `delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '交货日期',
+  `delivery_date` datetime NULL DEFAULT NULL COMMENT '交货日期',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
@@ -7819,13 +7979,17 @@ CREATE TABLE `pu_contract_line`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_contract_id`(`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_contract_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for rep_demo_dxtj
@@ -7834,16 +7998,16 @@ DROP TABLE IF EXISTS `rep_demo_dxtj`;
 CREATE TABLE `rep_demo_dxtj`  (
   `id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '姓名',
-  `gtime` datetime(0) NULL DEFAULT NULL COMMENT '雇佣日期',
+  `gtime` datetime NULL DEFAULT NULL COMMENT '雇佣日期',
   `update_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '职务',
   `jphone` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '家庭电话',
-  `birth` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birth` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `hukou` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '户口所在地',
   `laddress` varchar(125) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系地址',
   `jperson` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '紧急联系人',
   `sex` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'xingbie',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_dxtj
@@ -7883,7 +8047,7 @@ CREATE TABLE `rep_demo_employee`  (
   `num` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '编号',
   `name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
   `sex` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '性别',
-  `birthday` datetime(0) NULL DEFAULT NULL COMMENT '出生日期',
+  `birthday` datetime NULL DEFAULT NULL COMMENT '出生日期',
   `nation` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '民族',
   `political` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '政治面貌',
   `native_place` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '籍贯',
@@ -7901,18 +8065,18 @@ CREATE TABLE `rep_demo_employee`  (
   `foreign_language` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语语种',
   `foreign_language_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外语水平',
   `computer_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '计算机水平',
-  `graduation_time` datetime(0) NULL DEFAULT NULL COMMENT '毕业时间',
-  `arrival_time` datetime(0) NULL DEFAULT NULL COMMENT '到职时间',
+  `graduation_time` datetime NULL DEFAULT NULL COMMENT '毕业时间',
+  `arrival_time` datetime NULL DEFAULT NULL COMMENT '到职时间',
   `positional_titles` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '职称',
   `education_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '教育经历',
   `work_experience` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '工作经历',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `del_flag` tinyint(1) NULL DEFAULT NULL COMMENT '删除标识0-正常,1-已删除',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_employee
@@ -7933,7 +8097,7 @@ CREATE TABLE `rep_demo_gongsi`  (
   `zhaiyao` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `num` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_gongsi
@@ -7957,7 +8121,7 @@ CREATE TABLE `rep_demo_jianpiao`  (
   `shihelv` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `s_id` int(11) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 87 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_jianpiao
@@ -8067,7 +8231,7 @@ CREATE TABLE `rep_demo_xiaoshou`  (
   `beizhu` varchar(125) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `s_id` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of rep_demo_xiaoshou
@@ -8100,25 +8264,25 @@ CREATE TABLE `sj_distributed_lock`  (
   `lock_until` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '锁定时长',
   `locked_at` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '锁定时间',
   `locked_by` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '锁定者',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '锁定表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_distributed_lock
 -- ----------------------------
-INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-03 17:36:02.933', '2026-07-03 17:35:02.933', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 17:35:03');
-INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-03 18:28:18.678', '2026-07-03 18:28:13.678', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 18:28:14');
-INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-03 17:36:02.125', '2026-07-03 17:35:02.125', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 17:35:03');
-INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-03 18:29:02.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 18:28:02');
-INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-03 18:28:22.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:02', '2026-07-03 18:28:02');
-INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-03 18:28:18.678', '2026-07-03 18:28:13.678', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:28:14');
-INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-03 18:26:03.070', '2026-07-03 18:25:03.070', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:25:03');
-INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-03 17:36:02.948', '2026-07-03 17:35:02.948', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 17:35:03');
-INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-03 18:28:22.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:28:02');
-INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-03 18:26:03.070', '2026-07-03 18:25:03.070', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:25:03');
-INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-03 18:28:22.133', '2026-07-03 18:28:02.133', '2072977392638402560', '2026-07-03 17:35:03', '2026-07-03 18:28:02');
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-05 19:27:22.165', '2026-07-05 19:26:22.165', '2073609393315921920', '2026-07-05 11:26:23', '2026-07-05 19:26:22');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-05 22:51:26.085', '2026-07-05 22:51:21.085', '2073609393315921920', '2026-07-05 11:26:22', '2026-07-05 22:51:21');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-05 19:27:22.164', '2026-07-05 19:26:22.164', '2073609393315921920', '2026-07-05 11:26:22', '2026-07-05 19:26:22');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-05 22:51:19.928', '2026-07-05 22:50:19.928', '2073609393315921920', '2026-07-05 11:26:22', '2026-07-05 22:50:20');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-05 22:51:39.923', '2026-07-05 22:51:19.923', '2073609393315921920', '2026-07-05 11:26:22', '2026-07-05 22:51:20');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-05 22:51:24.299', '2026-07-05 22:51:19.299', '2073609393315921920', '2026-07-05 11:26:23', '2026-07-05 22:51:19');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-05 22:47:21.241', '2026-07-05 22:46:21.241', '2073609393315921920', '2026-07-05 11:26:23', '2026-07-05 22:46:21');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-05 22:27:19.920', '2026-07-05 22:26:19.920', '2073609393315921920', '2026-07-05 11:26:23', '2026-07-05 22:26:20');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-05 22:51:39.923', '2026-07-05 22:51:19.923', '2073609393315921920', '2026-07-05 11:26:23', '2026-07-05 22:51:20');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-05 22:47:21.241', '2026-07-05 22:46:21.241', '2073609393315921920', '2026-07-05 11:26:23', '2026-07-05 22:46:21');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-05 22:51:39.923', '2026-07-05 22:51:19.923', '2073609393315921920', '2026-07-05 11:26:23', '2026-07-05 22:51:20');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -8135,11 +8299,11 @@ CREATE TABLE `sj_group_config`  (
   `group_partition` int(11) NOT NULL COMMENT '分区',
   `id_generator_mode` tinyint(4) NOT NULL DEFAULT 1 COMMENT '唯一id生成模式 默认号段模式',
   `init_scene` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否初始化场景 0:否 1:是',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组配置' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_group_config
@@ -8179,13 +8343,13 @@ CREATE TABLE `sj_job`  (
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_job_status_bucket_index`(`job_status`, `bucket_index`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job
@@ -8209,12 +8373,12 @@ CREATE TABLE `sj_job_executor`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `executor_info` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '任务执行器名称',
   `executor_type` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '1:java 2:python 3:go',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务执行器信息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_executor
@@ -8255,12 +8419,12 @@ CREATE TABLE `sj_job_log_message`  (
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_id`(`task_batch_id`, `task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1744 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1739 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '调度日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_log_message
@@ -8277,7 +8441,6 @@ INSERT INTO `sj_job_log_message` VALUES (1583, 'dev', 'ruoyi_group', 1, 1492, 13
 INSERT INTO `sj_job_log_message` VALUES (1584, 'dev', 'ruoyi_group', 1, 1549, 1437, '[{\"time_stamp\":\"1778136438798\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[1]. \"},{\"time_stamp\":\"1778136439803\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[2]. \"},{\"time_stamp\":\"1778136440812\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1549] retryCount:[3]. \"},{\"time_stamp\":\"1778136436761\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1174\",\"message\":\"Task ID:[1437] Task scheduling failed. \"}]', 4, 1778136438798, '', '2026-05-07 14:47:19');
 INSERT INTO `sj_job_log_message` VALUES (1585, 'dev', 'ruoyi_group', 1, 1550, 1438, '[{\"time_stamp\":\"1778136498808\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[1]. \"},{\"time_stamp\":\"1778136499821\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[2]. \"},{\"time_stamp\":\"1778136500830\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1550] retryCount:[3]. \"},{\"time_stamp\":\"1778136496758\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1575)\",\"host\":\"192.168.200.1\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-1178\",\"message\":\"Task ID:[1438] Task scheduling failed. \"}]', 4, 1778136498808, '', '2026-05-07 14:48:19');
 INSERT INTO `sj_job_log_message` VALUES (1738, 'dev', 'ruoyi_group', 1, 1762, 1624, '[{\"time_stamp\":\"1780073317000\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[1]. \"},{\"time_stamp\":\"1780073318012\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[2]. \"},{\"time_stamp\":\"1780073319015\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor$JobExecutorRetryListener.onRetry(RequestClientActor.java:173)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task scheduling failed attempt retry. Task instance ID:[1762] retryCount:[3]. \"},{\"time_stamp\":\"1780073314961\",\"level\":\"ERROR\",\"port\":\"17888\",\"throwable\":\"java.util.concurrent.ExecutionException: io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture$Failure.newExecutionException(AbstractFuture.java:168)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.getDoneValue(AbstractFuture.java:298)\\r\\n\\tat com.google.common.util.concurrent.AbstractFutureState.blockingGet(AbstractFutureState.java:158)\\r\\n\\tat com.google.common.util.concurrent.Platform.get(Platform.java:59)\\r\\n\\tat com.google.common.util.concurrent.AbstractFuture.get(AbstractFuture.java:248)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.lambda$requestRemote$3(GrpcClientInvokeHandlerV2.java:137)\\r\\n\\tat com.github.rholder.retry.AttemptTimeLimiters$NoAttemptTimeLimit.call(AttemptTimeLimiters.java:78)\\r\\n\\tat com.github.rholder.retry.Retryer.call(Retryer.java:160)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.requestRemote(GrpcClientInvokeHandlerV2.java:115)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:93)\\r\\n\\tat com.aizuda.snailjob.server.common.rpc.client.grpc.GrpcClientInvokeHandlerV2.invoke(GrpcClientInvokeHandlerV2.java:52)\\r\\n\\tat jdk.proxy2/jdk.proxy2.$Proxy173.dispatch(Unknown Source)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:104)\\r\\n\\tat com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.lambda$createReceive$0(RequestClientActor.java:65)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:37)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.apply(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction.applyOrElse(PartialFunction.scala:214)\\r\\n\\tat scala.PartialFunction.applyOrElse$(PartialFunction.scala:213)\\r\\n\\tat org.apache.pekko.japi.pf.UnitCaseStatement.applyOrElse(CaseStatements.scala:33)\\r\\n\\tat scala.PartialFunction$OrElse.applyOrElse(PartialFunction.scala:269)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive(Actor.scala:547)\\r\\n\\tat org.apache.pekko.actor.Actor.aroundReceive$(Actor.scala:545)\\r\\n\\tat org.apache.pekko.actor.AbstractActor.aroundReceive(AbstractActor.scala:229)\\r\\n\\tat org.apache.pekko.actor.ActorCell.receiveMessage(ActorCell.scala:590)\\r\\n\\tat org.apache.pekko.actor.ActorCell.invoke(ActorCell.scala:557)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.processMailbox(Mailbox.scala:273)\\r\\n\\tat org.apache.pekko.dispatch.Mailbox.run(Mailbox.scala:234)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\\r\\n\\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\\r\\n\\tat java.base/java.lang.Thread.run(Thread.java:1583)\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.server.job.task.support.executor.job.RequestClientActor.doExecute(RequestClientActor.java:134)\",\"thread\":\"JOB_ACTOR_SYSTEM-pekko.actor.job-task-executor-call-client-dispatcher-16\",\"message\":\"Task ID:[1624] Task scheduling failed. \"}]', 4, 1780073317000, '', '2026-05-30 00:48:37');
-INSERT INTO `sj_job_log_message` VALUES (1743, 'dev', 'ruoyi_group', 7, 1, 1, '[{\"time_stamp\":\"1782483102664\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-1\",\"message\":\" Task scheduler:[job] Task ID:[7] Task batch:[1] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1782483102675\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:53)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 开始执行\"},{\"time_stamp\":\"1782483102749\",\"level\":\"ERROR\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:61)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 失败: \\r\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\r\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\r\\n### The error may involve defaultParameterMap\\r\\n### The error occurred while setting parameters\\r\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\r\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\n; bad SQL grammar []\"},{\"time_stamp\":\"1782483102750\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"Task executed successfully taskBatchId:[1] [{\\\"status\\\":0,\\\"result\\\":\\\"归档失败: \\\\r\\\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\r\\\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\\\r\\\\n### The error may involve defaultParameterMap\\\\r\\\\n### The error occurred while setting parameters\\\\r\\\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\\\r\\\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\n; bad SQL grammar []\\\",\\\"message\\\":\\\"Task execution failed\\\"}]\"},{\"time_stamp\":\"1782483162832\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:53)\",\"thread\":\"snail-grpc-server-2\",\"message\":\"Task execution/scheduling failed, executing retry. Retry count:[1]\"},{\"time_stamp\":\"1782483162832\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-2\",\"message\":\" Task scheduler:[job] Task ID:[7] Task batch:[1] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1782483162833\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:53)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 开始执行\"},{\"time_stamp\":\"1782483162836\",\"level\":\"ERROR\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:61)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 失败: \\r\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\r\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\r\\n### The error may involve defaultParameterMap\\r\\n### The error occurred while setting parameters\\r\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\r\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\n; bad SQL grammar []\"},{\"time_stamp\":\"1782483162837\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"Task executed successfully taskBatchId:[1] [{\\\"status\\\":0,\\\"result\\\":\\\"归档失败: \\\\r\\\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\r\\\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\\\r\\\\n### The error may involve defaultParameterMap\\\\r\\\\n### The error occurred while setting parameters\\\\r\\\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\\\r\\\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\n; bad SQL grammar []\\\",\\\"message\\\":\\\"Task execution failed\\\"}]\"},{\"time_stamp\":\"1782483222942\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:53)\",\"thread\":\"snail-grpc-server-3\",\"message\":\"Task execution/scheduling failed, executing retry. Retry count:[2]\"},{\"time_stamp\":\"1782483222943\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-3\",\"message\":\" Task scheduler:[job] Task ID:[7] Task batch:[1] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1782483222943\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:53)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 开始执行\"},{\"time_stamp\":\"1782483222946\",\"level\":\"ERROR\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:61)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 失败: \\r\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\r\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\r\\n### The error may involve defaultParameterMap\\r\\n### The error occurred while setting parameters\\r\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\r\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\n; bad SQL grammar []\"},{\"time_stamp\":\"1782483222947\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"Task executed successfully taskBatchId:[1] [{\\\"status\\\":0,\\\"result\\\":\\\"归档失败: \\\\r\\\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\r\\\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\\\r\\\\n### The error may involve defaultParameterMap\\\\r\\\\n### The error occurred while setting parameters\\\\r\\\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\\\r\\\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\n; bad SQL grammar []\\\",\\\"message\\\":\\\"Task execution failed\\\"}]\"},{\"time_stamp\":\"1782483283044\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:53)\",\"thread\":\"snail-grpc-server-4\",\"message\":\"Task execution/scheduling failed, executing retry. Retry count:[3]\"},{\"time_stamp\":\"1782483283044\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.client.JobEndPoint.dispatchJob(JobEndPoint.java:89)\",\"thread\":\"snail-grpc-server-4\",\"message\":\" Task scheduler:[job] Task ID:[7] Task batch:[1] Workflow batch:[null] Task scheduled successfully.\"},{\"time_stamp\":\"1782483283046\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:53)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 开始执行\"},{\"time_stamp\":\"1782483283048\",\"level\":\"ERROR\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.nexus.mes.dc.task.IotDataArchiveTask.jobExecute(IotDataArchiveTask.java:61)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"[IoT归档任务] 失败: \\r\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\r\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\r\\n### The error may involve defaultParameterMap\\r\\n### The error occurred while setting parameters\\r\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\r\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\n; bad SQL grammar []\"},{\"time_stamp\":\"1782483283048\",\"level\":\"INFO\",\"port\":\"28080\",\"host\":\"192.168.1.103\",\"location\":\"com.aizuda.snailjob.client.job.core.executor.JobExecutorFutureCallback.onSuccess(JobExecutorFutureCallback.java:81)\",\"thread\":\"snail-job-job-1-1\",\"message\":\"Task executed successfully taskBatchId:[1] [{\\\"status\\\":0,\\\"result\\\":\\\"归档失败: \\\\r\\\\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\r\\\\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\\\\r\\\\n### The error may involve defaultParameterMap\\\\r\\\\n### The error occurred while setting parameters\\\\r\\\\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\\\\r\\\\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\\\\n; bad SQL grammar []\\\",\\\"message\\\":\\\"Task execution failed\\\"}]\"}]', 19, 1782483102664, '', '2026-06-26 22:11:48');
 
 -- ----------------------------
 -- Table structure for sj_job_summary
@@ -8289,7 +8452,7 @@ CREATE TABLE `sj_job_summary`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `business_id` bigint(20) NOT NULL COMMENT '业务id (job_id或workflow_id)',
   `system_task_type` tinyint(4) NOT NULL DEFAULT 3 COMMENT '任务类型 3、JOB任务 4、WORKFLOW任务',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `success_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行成功-日志数量',
   `fail_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `fail_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
@@ -8297,12 +8460,12 @@ CREATE TABLE `sj_job_summary`  (
   `stop_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
   `cancel_num` int(11) NOT NULL DEFAULT 0 COMMENT '执行失败-日志数量',
   `cancel_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '失败原因',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_trigger_at_system_task_type_business_id`(`trigger_at`, `system_task_type`, `business_id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_business_id`(`namespace_id`, `group_name`, `business_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 46 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 46 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Job' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_summary
@@ -8375,18 +8538,17 @@ CREATE TABLE `sj_job_task`  (
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '执行方法参数',
   `args_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '参数类型 ',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_batch_id_task_status`(`task_batch_id`, `task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task
 -- ----------------------------
-INSERT INTO `sj_job_task` VALUES (1, 'dev', 'ruoyi_group', 7, 1, 0, 4, 3, NULL, 1, 'CLUSTER_TASK', '2070505867501031424@192.168.1.103:28080', NULL, '归档失败: \r\n### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\r\n### The error may exist in com/nexus/mes/dc/mapper/DcCollectionPointMapper.java (best guess)\r\n### The error may involve defaultParameterMap\r\n### The error occurred while setting parameters\r\n### SQL: SELECT point_id, point_code, point_name, point_type, equipment_id, iot_device_id, iot_property_code, process_id, data_type, unit, frequency, status, remark, del_flag, tenant_id, create_dept, create_by, create_time, update_by, update_time FROM dc_collection_point WHERE del_flag = \'0\' AND (point_type = ? AND iot_device_id IS NOT NULL AND status = ?)\r\n### Cause: java.sql.SQLSyntaxErrorException: Table \'ry-vue.dc_collection_point\' doesn\'t exist\n; bad SQL grammar []', '{}', 2, '', '2026-06-26 22:11:43', '2026-06-26 22:14:43');
 
 -- ----------------------------
 -- Table structure for sj_job_task_batch
@@ -8407,19 +8569,18 @@ CREATE TABLE `sj_job_task_batch`  (
   `parent_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '父节点',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`job_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_workflow_task_batch_id_workflow_node_id`(`workflow_task_batch_id`, `workflow_node_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务批次' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_job_task_batch
 -- ----------------------------
-INSERT INTO `sj_job_task_batch` VALUES (1, 'dev', 'ruoyi_group', 7, 0, 0, 0, 4, 0, 1782483102532, 3, '', '', 0, '2026-06-26 22:11:42', '2026-06-26 22:14:43');
 
 -- ----------------------------
 -- Table structure for sj_namespace
@@ -8431,12 +8592,12 @@ CREATE TABLE `sj_namespace`  (
   `unique_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '唯一id',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_unique_id`(`unique_id`) USING BTREE,
   INDEX `idx_name`(`name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '命名空间' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_namespace
@@ -8461,11 +8622,15 @@ CREATE TABLE `sj_notify_config`  (
   `rate_limiter_status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '限流状态 0、未启用 1、启用',
   `rate_limiter_threshold` int(11) NOT NULL DEFAULT 0 COMMENT '每秒限流阈值',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_notify_recipient
@@ -8478,11 +8643,15 @@ CREATE TABLE `sj_notify_recipient`  (
   `notify_type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '通知类型 1、钉钉 2、邮件 3、企业微信 4 飞书 5 webhook',
   `notify_attribute` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置属性',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id`(`namespace_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '告警通知接收人' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_notify_recipient
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry
@@ -8508,8 +8677,8 @@ CREATE TABLE `sj_retry`  (
   `bucket_index` int(11) NOT NULL DEFAULT 0 COMMENT 'bucket',
   `parent_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '父节点id',
   `deleted` bigint(20) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_tasktype_idempotentid_deleted`(`scene_id`, `task_type`, `idempotent_id`, `deleted`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
@@ -8517,7 +8686,11 @@ CREATE TABLE `sj_retry`  (
   INDEX `idx_retry_status_bucket_index`(`retry_status`, `bucket_index`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_dead_letter
@@ -8536,13 +8709,17 @@ CREATE TABLE `sj_retry_dead_letter`  (
   `serializer_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'jackson' COMMENT '执行方法参数序列化器名称',
   `args_str` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '执行方法参数',
   `ext_attrs` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '扩展字段',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `idx_idempotent_id`(`idempotent_id`) USING BTREE,
   INDEX `idx_biz_no`(`biz_no`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '死信队列表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_dead_letter
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_scene_config
@@ -8569,11 +8746,15 @@ CREATE TABLE `sj_retry_scene_config`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
   `description` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '描述',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '场景配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_scene_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_summary
@@ -8584,17 +8765,21 @@ CREATE TABLE `sj_retry_summary`  (
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '组名称',
   `scene_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '场景名称',
-  `trigger_at` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
+  `trigger_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '统计时间',
   `running_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试中-日志数量',
   `finish_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试完成-日志数量',
   `max_count_num` int(11) NOT NULL DEFAULT 0 COMMENT '重试到达最大次数-日志数量',
   `suspend_num` int(11) NOT NULL DEFAULT 0 COMMENT '暂停重试-日志数量',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_scene_name_trigger_at`(`namespace_id`, `group_name`, `scene_name`, `trigger_at`) USING BTREE,
   INDEX `idx_trigger_at`(`trigger_at`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DashBoard_Retry' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_summary
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task
@@ -8611,14 +8796,18 @@ CREATE TABLE `sj_retry_task`  (
   `task_type` tinyint(4) NOT NULL DEFAULT 1 COMMENT '任务类型 1、重试数据 2、回调数据',
   `operation_reason` tinyint(4) NOT NULL DEFAULT 0 COMMENT '操作原因',
   `client_info` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '客户端地址 clientId#ip:port',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_group_name_scene_name`(`namespace_id`, `group_name`, `scene_name`) USING BTREE,
   INDEX `task_status`(`task_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_retry_id`(`retry_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '重试任务表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_retry_task_log_message
@@ -8633,11 +8822,15 @@ CREATE TABLE `sj_retry_task_log_message`  (
   `message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '异常信息',
   `log_num` int(11) NOT NULL DEFAULT 1 COMMENT '日志数量',
   `real_time` bigint(13) NOT NULL DEFAULT 0 COMMENT '上报时间',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_namespace_id_group_name_retry_task_id`(`namespace_id`, `group_name`, `retry_task_id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '任务调度日志信息记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_retry_task_log_message
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_server_node
@@ -8650,23 +8843,23 @@ CREATE TABLE `sj_server_node`  (
   `host_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主机id',
   `host_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '机器ip',
   `host_port` int(16) NOT NULL COMMENT '机器端口',
-  `expire_at` datetime(0) NOT NULL COMMENT '过期时间',
+  `expire_at` datetime NOT NULL COMMENT '过期时间',
   `node_type` tinyint(4) NOT NULL COMMENT '节点类型 1、客户端 2、是服务端',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `labels` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '标签',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 162 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 171 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (160, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2072977392638402560', '192.168.200.1', 17888, '2026-07-03 18:28:32', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-03 17:35:02', '2026-07-03 18:28:02');
-INSERT INTO `sj_server_node` VALUES (161, 'dev', 'ruoyi_group', '2072977653687701504', '192.168.200.1', 28080, '2026-07-03 18:28:44', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-03 17:36:04', '2026-07-03 18:28:13');
+INSERT INTO `sj_server_node` VALUES (167, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2073609393315921920', '192.168.1.104', 17888, '2026-07-05 22:51:50', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-05 11:26:22', '2026-07-05 22:51:20');
+INSERT INTO `sj_server_node` VALUES (170, 'dev', 'ruoyi_group', '2073655438225870848', '192.168.1.104', 28080, '2026-07-05 22:51:49', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-05 14:29:19', '2026-07-05 22:51:19');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -8677,11 +8870,11 @@ CREATE TABLE `sj_system_user`  (
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '账号',
   `password` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '密码',
   `role` tinyint(4) NOT NULL DEFAULT 0 COMMENT '角色：1-普通用户、2-管理员',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_system_user
@@ -8697,11 +8890,15 @@ CREATE TABLE `sj_system_user_permission`  (
   `group_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组名称',
   `namespace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '764d604ec6fc45f68cd92514c40e9e1a' COMMENT '命名空间id',
   `system_user_id` bigint(20) NOT NULL COMMENT '系统用户id',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_namespace_id_group_name_system_user_id`(`namespace_id`, `group_name`, `system_user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统用户权限表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_system_user_permission
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow
@@ -8727,12 +8924,16 @@ CREATE TABLE `sj_workflow`  (
   `owner_id` bigint(20) NULL DEFAULT NULL COMMENT '负责人id',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_node
@@ -8754,12 +8955,16 @@ CREATE TABLE `sj_workflow_node`  (
   `version` int(11) NOT NULL COMMENT '版本号',
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流节点' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_node
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sj_workflow_task_batch
@@ -8778,13 +8983,17 @@ CREATE TABLE `sj_workflow_task_batch`  (
   `ext_attrs` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `version` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
   `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 1、删除',
-  `create_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_dt` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+  `create_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_dt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_job_id_task_batch_status`(`workflow_id`, `task_batch_status`) USING BTREE,
   INDEX `idx_create_dt`(`create_dt`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工作流批次' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sj_workflow_task_batch
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_auto_code_part
@@ -8814,14 +9023,14 @@ CREATE TABLE `sys_auto_code_part`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`part_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则组成表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_part
@@ -8929,15 +9138,15 @@ CREATE TABLE `sys_auto_code_result`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`code_id`) USING BTREE,
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_gen_date`(`gen_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码结果记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_result
@@ -8974,6 +9183,7 @@ INSERT INTO `sys_auto_code_result` VALUES (2070077189690306561, '000000', 272, '
 INSERT INTO `sys_auto_code_result` VALUES (2071442348300091394, '000000', 279, '20260629115516', 1, 'CGSQ202606290001', 1, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-06-29 11:55:16', 1, '2026-06-29 11:55:16', '0');
 INSERT INTO `sys_auto_code_result` VALUES (2071788981484179457, '000000', 266, '20260630105632', 2, 'CO20260630002', 2, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-06-30 10:52:40', 1, '2026-06-30 10:56:33', '0');
 INSERT INTO `sys_auto_code_result` VALUES (2071797189271539714, '000000', 277, '20260630112516', 1, 'XSDD20260630001', 1, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-06-30 11:25:17', 1, '2026-06-30 11:25:17', '0');
+INSERT INTO `sys_auto_code_result` VALUES (2073655856075018242, '000000', 268, '20260705143057', 2, 'MBOM260705002', 2, NULL, '', NULL, NULL, 0, 0, 103, 1, '2026-07-05 14:30:57', 1, '2026-07-05 14:30:57', '0');
 
 -- ----------------------------
 -- Table structure for sys_auto_code_rule
@@ -8997,14 +9207,14 @@ CREATE TABLE `sys_auto_code_rule`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '编码规则主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_auto_code_rule
@@ -9057,13 +9267,13 @@ CREATE TABLE `sys_client`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `appid` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appid',
   `app_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '微信小程序appSecret',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统授权表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_client
@@ -9085,12 +9295,12 @@ CREATE TABLE `sys_config`  (
   `config_type` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '参数配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_config
@@ -9125,11 +9335,11 @@ CREATE TABLE `sys_dept`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '部门表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dept
@@ -9186,16 +9396,16 @@ CREATE TABLE `sys_dic_area`  (
   `address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`pkid`) USING BTREE,
   INDEX `idx_layered`(`layered`) USING BTREE,
   INDEX `idx_area_id`(`area_id`) USING BTREE,
   INDEX `idx_parent_area_id`(`parent_area_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2951 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '行政区划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dic_area
@@ -10878,12 +11088,12 @@ CREATE TABLE `sys_dict_data`  (
   `is_default` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典数据表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_data
@@ -11129,14 +11339,6 @@ INSERT INTO `sys_dict_data` VALUES (270, '000000', 1, '在岗', 'active', 'sch_w
 INSERT INTO `sys_dict_data` VALUES (271, '000000', 2, '已离职', 'departure', 'sch_work_status', NULL, 'warning', 'N', 103, 1, '2025-12-19 11:37:23', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (272, '000000', 1, '班组长', 'leader', 'sch_worker_role', NULL, 'primary', 'N', 103, 1, '2025-12-23 16:53:21', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (273, '000000', 2, '成员', 'member', 'sch_worker_role', NULL, 'success', 'N', 103, 1, '2025-12-23 16:53:35', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (274, '000000', 1, '表面贴装班组', 'SMT Production Team', 'sch_team_category', NULL, 'primary', 'N', 103, 1, '2025-12-23 17:08:56', NULL, '2025-12-23 17:13:52', '负责产线运作，进行印刷、贴片、回流焊接等');
-INSERT INTO `sys_dict_data` VALUES (275, '000000', 2, '组装班组', 'Assembly Team', 'sch_team_category', NULL, 'primary', 'N', 103, 1, '2025-12-23 17:09:46', NULL, '2025-12-23 17:14:07', '进行电路板或整机的插件、组装、锁螺丝等工序');
-INSERT INTO `sys_dict_data` VALUES (276, '000000', 3, '成品组装测试班组	', 'FATP Team', 'sch_team_category', NULL, 'primary', 'N', 103, 1, '2025-12-23 17:10:32', NULL, '2025-12-23 17:14:26', 'Final Assembly and Test of Products Team(负责产品的最终组装、功能测试与包装)');
-INSERT INTO `sys_dict_data` VALUES (277, '000000', 4, '注塑班组', 'Plastic Molding Team', 'sch_team_category', NULL, 'primary', 'N', 103, 1, '2025-12-23 17:11:19', NULL, '2025-12-23 17:14:40', '生产塑料外壳或金属结构件');
-INSERT INTO `sys_dict_data` VALUES (278, '000000', 5, '冲压班组', 'Metal Stamping Team', 'sch_team_category', NULL, 'primary', 'N', 103, 1, '2025-12-23 17:12:15', NULL, '2025-12-23 17:14:43', '生产塑料外壳或金属结构件');
-INSERT INTO `sys_dict_data` VALUES (279, '000000', 6, '设备维护班组', 'Equipment Maintenance Team', 'sch_team_category', NULL, 'success', 'N', 103, 1, '2025-12-23 17:12:59', NULL, '2025-12-23 17:13:13', '负责生产设备的日常维护、校准和应急维修');
-INSERT INTO `sys_dict_data` VALUES (280, '000000', 7, '质量管控班组', 'IQC Team', 'sch_team_category', NULL, 'success', 'N', 103, 1, '2025-12-23 17:18:00', NULL, '2025-12-23 17:20:12', 'IQC (Incoming Quality Control) Team 对入库的原材料、零部件、生产线上进行巡检、成品进行抽检，进行质量检验');
-INSERT INTO `sys_dict_data` VALUES (281, '000000', 8, '仓库物料班组', 'Warehouse Material Team', 'sch_team_category', NULL, 'success', 'N', 103, 1, '2025-12-23 17:22:02', NULL, NULL, '负责产品出入库存储、产线物料的配送、盘点与管理工作');
 INSERT INTO `sys_dict_data` VALUES (282, '000000', 1, '周', 'week', 'sch_plan_period_type', NULL, 'primary', 'N', 103, 1, '2025-12-25 15:23:37', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (283, '000000', 2, '月', 'month', 'sch_plan_period_type', NULL, 'primary', 'N', 103, 1, '2025-12-25 15:23:53', NULL, '2025-12-25 15:24:36', NULL);
 INSERT INTO `sys_dict_data` VALUES (284, '000000', 3, '季度', 'quarter', 'sch_plan_period_type', NULL, 'success', 'N', 103, 1, '2025-12-25 15:24:30', NULL, NULL, NULL);
@@ -11155,22 +11357,24 @@ INSERT INTO `sys_dict_data` VALUES (296, '000000', 2, '调班', 'swapped', 'sch_
 INSERT INTO `sys_dict_data` VALUES (297, '000000', 3, '请假', 'leave', 'sch_schedule_status', NULL, 'danger', 'N', 103, 1, '2025-12-30 14:32:49', NULL, '2025-12-30 14:33:52', NULL);
 INSERT INTO `sys_dict_data` VALUES (298, '000000', 4, '缺勤', 'absent', 'sch_schedule_status', NULL, 'warning', 'N', 103, 1, '2025-12-30 14:33:05', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (299, '000000', 5, '休息', 'rest', 'sch_schedule_status', NULL, 'info', 'N', 103, 1, '2025-12-30 14:33:21', NULL, '2025-12-30 14:33:36', NULL);
-INSERT INTO `sys_dict_data` VALUES (300, '000000', 1, '正常', 'normal', 'sch_attendance_status', NULL, 'primary', 'N', 103, 1, '2026-01-06 15:50:32', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (301, '000000', 2, '迟到', 'late', 'sch_attendance_status', NULL, 'warning', 'N', 103, 1, '2026-01-06 15:50:51', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (302, '000000', 3, '早退', 'early', 'sch_attendance_status', NULL, 'warning', 'N', 103, 1, '2026-01-06 15:51:10', NULL, '2026-01-06 15:52:02', NULL);
-INSERT INTO `sys_dict_data` VALUES (303, '000000', 4, '旷工', 'absent', 'sch_attendance_status', NULL, 'danger', 'N', 103, 1, '2026-01-06 15:51:33', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (304, '000000', 5, '请假', 'leave', 'sch_attendance_status', NULL, 'success', 'N', 103, 1, '2026-01-06 15:51:48', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (305, '000000', 1, '手动', 'manual', 'sch_source_type', NULL, 'primary', 'N', 103, 1, '2026-01-06 15:52:53', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (306, '000000', 2, '设备同步', 'device', 'sch_source_type', NULL, 'success', 'N', 103, 1, '2026-01-06 15:53:07', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (307, '000000', 6, '迟到早退', 'late_early_leave', 'sch_attendance_status', NULL, 'danger', 'N', 103, 1, '2026-01-22 11:27:50', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (311, '000000', 1, '正常报工', 'NORMAL', 'prd_report_type', NULL, 'primary', 'N', 103, 1, '2026-03-26 17:56:26', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (312, '000000', 2, '返工', 'REWORK', 'prd_report_type', NULL, 'success', 'N', 103, 1, '2026-03-26 17:56:45', NULL, '2026-03-26 17:57:42', NULL);
-INSERT INTO `sys_dict_data` VALUES (313, '000000', 3, '返修', 'REPAIR', 'prd_report_type', NULL, 'warning', 'N', 103, 1, '2026-03-26 17:57:20', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (314, '000000', 4, '加班', 'OVERTIME', 'prd_report_type', NULL, 'danger', 'N', 103, 1, '2026-03-26 17:57:33', NULL, '2026-03-26 17:57:49', NULL);
-INSERT INTO `sys_dict_data` VALUES (315, '000000', 1, '草稿', 'DRAFT', 'prd_report_status', NULL, 'info', 'N', 103, 1, '2026-03-26 17:59:30', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (316, '000000', 1, '已提交', 'SUBMITTED', 'prd_report_status', NULL, 'success', 'N', 103, 1, '2026-03-26 18:01:23', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (317, '000000', 2, '已审核', 'APPROVED', 'prd_report_status', NULL, 'primary', 'N', 103, 1, '2026-03-26 18:01:37', NULL, NULL, NULL);
-INSERT INTO `sys_dict_data` VALUES (318, '000000', 4, '已驳回', 'REJECTED', 'prd_report_status', NULL, 'danger', 'N', 103, 1, '2026-03-26 18:01:54', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (300, '000000', 1, '装配班组', 'normal', 'sch_attendance_status', 'primary', 'primary', 'N', 103, 1, '2026-01-06 15:50:32', NULL, NULL, '产品组装、装配作业');
+INSERT INTO `sys_dict_data` VALUES (301, '000000', 2, '焊接班组', 'late', 'sch_attendance_status', 'primary', 'warning', 'N', 103, 1, '2026-01-06 15:50:51', NULL, NULL, '金属焊接加工');
+INSERT INTO `sys_dict_data` VALUES (302, '000000', 3, '注塑班组', 'early', 'sch_attendance_status', 'primary', 'warning', 'N', 103, 1, '2026-01-06 15:51:10', NULL, '2026-01-06 15:52:02', '塑料件注塑成型');
+INSERT INTO `sys_dict_data` VALUES (303, '000000', 4, '冲压班组', 'absent', 'sch_attendance_status', 'primary', 'danger', 'N', 103, 1, '2026-01-06 15:51:33', NULL, NULL, '金属板材冲压');
+INSERT INTO `sys_dict_data` VALUES (304, '000000', 5, '喷涂班组', 'leave', 'sch_attendance_status', 'primary', 'success', 'N', 103, 1, '2026-01-06 15:51:48', NULL, NULL, '表面喷涂处理');
+INSERT INTO `sys_dict_data` VALUES (305, '000000', 6, '包装班组', 'manual', 'sch_source_type', 'primary', 'primary', 'N', 103, 1, '2026-01-06 15:52:53', NULL, NULL, '成品包装作业');
+INSERT INTO `sys_dict_data` VALUES (306, '000000', 7, '调试班组', 'device', 'sch_source_type', 'warning', 'success', 'N', 103, 1, '2026-01-06 15:53:07', NULL, NULL, '产品调试测试');
+INSERT INTO `sys_dict_data` VALUES (307, '000000', 8, '切割班组', 'late_early_leave', 'sch_attendance_status', 'primary', 'danger', 'N', 103, 1, '2026-01-22 11:27:50', NULL, NULL, '材料切割加工');
+INSERT INTO `sys_dict_data` VALUES (308, '000000', 9, '质检班组', 'QC', 'sch_team_category', 'success', NULL, 'N', 103, 1, '2026-07-04 23:23:32', NULL, NULL, '质量检验管控');
+INSERT INTO `sys_dict_data` VALUES (309, '000000', 10, '设备维护班组', 'MAINTENANCE', 'sch_team_category', 'info', NULL, 'N', 103, 1, '2026-07-04 23:23:32', NULL, NULL, '设备维护保养');
+INSERT INTO `sys_dict_data` VALUES (311, '000000', 1, '装配班组', 'NORMAL', 'prd_report_type', 'primary', 'primary', 'N', 103, 1, '2026-03-26 17:56:26', NULL, NULL, '产品组装、装配作业');
+INSERT INTO `sys_dict_data` VALUES (312, '000000', 2, '焊接班组', 'REWORK', 'prd_report_type', 'primary', 'success', 'N', 103, 1, '2026-03-26 17:56:45', NULL, '2026-03-26 17:57:42', '金属焊接加工');
+INSERT INTO `sys_dict_data` VALUES (313, '000000', 3, '注塑班组', 'REPAIR', 'prd_report_type', 'primary', 'warning', 'N', 103, 1, '2026-03-26 17:57:20', NULL, NULL, '塑料件注塑成型');
+INSERT INTO `sys_dict_data` VALUES (314, '000000', 4, '冲压班组', 'OVERTIME', 'prd_report_type', 'primary', 'danger', 'N', 103, 1, '2026-03-26 17:57:33', NULL, '2026-03-26 17:57:49', '金属板材冲压');
+INSERT INTO `sys_dict_data` VALUES (315, '000000', 5, '喷涂班组', 'DRAFT', 'prd_report_status', 'primary', 'info', 'N', 103, 1, '2026-03-26 17:59:30', NULL, NULL, '表面喷涂处理');
+INSERT INTO `sys_dict_data` VALUES (316, '000000', 6, '包装班组', 'SUBMITTED', 'prd_report_status', 'primary', 'success', 'N', 103, 1, '2026-03-26 18:01:23', NULL, NULL, '成品包装作业');
+INSERT INTO `sys_dict_data` VALUES (317, '000000', 7, '调试班组', 'APPROVED', 'prd_report_status', 'warning', 'primary', 'N', 103, 1, '2026-03-26 18:01:37', NULL, NULL, '产品调试测试');
+INSERT INTO `sys_dict_data` VALUES (318, '000000', 8, '切割班组', 'REJECTED', 'prd_report_status', 'primary', 'danger', 'N', 103, 1, '2026-03-26 18:01:54', NULL, NULL, '材料切割加工');
 INSERT INTO `sys_dict_data` VALUES (319, '000000', 1, '电脑端', 'PC', 'prd_report_channel', NULL, 'primary', 'N', 103, 1, '2026-03-27 10:39:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (320, '000000', 2, '移动端', 'APP', 'prd_report_channel', NULL, 'success', 'N', 103, 1, '2026-03-27 10:40:14', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (321, '000000', 3, '手持设备', 'PDA', 'prd_report_channel', NULL, 'warning', 'N', 103, 1, '2026-03-27 10:40:32', NULL, '2026-03-27 10:41:06', NULL);
@@ -11397,6 +11601,14 @@ INSERT INTO `sys_dict_data` VALUES (2058466484920934402, '000000', 10, '审批�
 INSERT INTO `sys_dict_data` VALUES (2058466672322437121, '000000', 4, '审批中', 'APPROVING', 'so_return_status', '', 'warning', 'N', 103, 1, '2026-05-24 16:34:34', 1, '2026-05-24 16:34:34', '销售退货状态-审批中');
 INSERT INTO `sys_dict_data` VALUES (2062419136925851649, '000000', 3, '待上架', 'APPROVED', 'wm_material_receive_status', '', 'success', 'N', 103, 1, '2026-06-04 14:20:15', 1, '2026-06-04 14:20:15', '');
 INSERT INTO `sys_dict_data` VALUES (2068956987053350913, '000000', 7, '已审批', 'APPROVED', 'prd_wo_status', '', 'success', 'N', 103, 1, '2026-06-22 15:19:20', 1, '2026-06-22 15:19:20', '');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350914, '000000', 1, '装配班组', 'ASSEMBLY', 'sch_team_category', 'primary', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '产品组装、装配作业');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350915, '000000', 2, '焊接班组', 'WELDING', 'sch_team_category', 'primary', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '金属焊接加工');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350916, '000000', 3, '注塑班组', 'MOLDING', 'sch_team_category', 'primary', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '塑料件注塑成型');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350917, '000000', 4, '冲压班组', 'PUNCHING', 'sch_team_category', 'primary', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '金属板材冲压');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350918, '000000', 5, '喷涂班组', 'SPRAYING', 'sch_team_category', 'primary', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '表面喷涂处理');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350919, '000000', 6, '包装班组', 'PACKAGING', 'sch_team_category', 'primary', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '成品包装作业');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350920, '000000', 7, '调试班组', 'DEBUG', 'sch_team_category', 'warning', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '产品调试测试');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350921, '000000', 8, '切割班组', 'CUTTING', 'sch_team_category', 'primary', NULL, 'N', 103, 1, '2026-07-04 23:28:14', NULL, NULL, '材料切割加工');
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -11409,13 +11621,13 @@ CREATE TABLE `sys_dict_type`  (
   `dict_type` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '字典类型',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`dict_id`) USING BTREE,
   UNIQUE INDEX `tenant_id`(`tenant_id`, `dict_type`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '字典类型表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_dict_type
@@ -11565,11 +11777,11 @@ CREATE TABLE `sys_logininfor`  (
   `os` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '操作系统',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '登录状态（0成功 1失败）',
   `msg` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '提示消息',
-  `login_time` datetime(0) NULL DEFAULT NULL COMMENT '访问时间',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '访问时间',
   PRIMARY KEY (`info_id`) USING BTREE,
   INDEX `idx_sys_logininfor_s`(`status`) USING BTREE,
   INDEX `idx_sys_logininfor_lt`(`login_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统访问记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_logininfor
@@ -11744,6 +11956,14 @@ INSERT INTO `sys_logininfor` VALUES (2072581556695756802, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2072596663836413954, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-07-02 16:22:06');
 INSERT INTO `sys_logininfor` VALUES (2072596736263655426, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-02 16:22:24');
 INSERT INTO `sys_logininfor` VALUES (2072982834605248513, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-03 17:56:37');
+INSERT INTO `sys_logininfor` VALUES (2073091211866050561, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-04 01:07:16');
+INSERT INTO `sys_logininfor` VALUES (2073280257431080962, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '1', '验证码已失效', '2026-07-04 13:38:28');
+INSERT INTO `sys_logininfor` VALUES (2073280275252678658, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-04 13:38:32');
+INSERT INTO `sys_logininfor` VALUES (2073361890549075970, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-04 19:02:51');
+INSERT INTO `sys_logininfor` VALUES (2073426117724901378, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-04 23:18:04');
+INSERT INTO `sys_logininfor` VALUES (2073638633939808257, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-05 13:22:31');
+INSERT INTO `sys_logininfor` VALUES (2073771031146958849, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Android', '0', '登录成功', '2026-07-05 22:08:37');
+INSERT INTO `sys_logininfor` VALUES (2073775504917434370, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Android', '0', '登录成功', '2026-07-05 22:26:24');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -11766,12 +11986,12 @@ CREATE TABLE `sys_menu`  (
   `icon` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '备注',
   PRIMARY KEY (`menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '菜单权限表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu
@@ -12561,11 +12781,11 @@ CREATE TABLE `sys_menu_bak_20260629`  (
   `icon` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '#' COMMENT '菜单图标',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '备注'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_menu_bak_20260629
@@ -13322,12 +13542,12 @@ CREATE TABLE `sys_notice`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2070560802330542082 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2070560802330542082 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '通知公告表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -13360,13 +13580,13 @@ CREATE TABLE `sys_oper_log`  (
   `json_result` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '返回参数',
   `status` int(1) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
   `error_msg` varchar(4000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '错误消息',
-  `oper_time` datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
+  `oper_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
   `cost_time` bigint(20) NULL DEFAULT 0 COMMENT '消耗时间',
   PRIMARY KEY (`oper_id`) USING BTREE,
   INDEX `idx_sys_oper_log_bt`(`business_type`) USING BTREE,
   INDEX `idx_sys_oper_log_s`(`status`) USING BTREE,
   INDEX `idx_sys_oper_log_ot`(`oper_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '操作日志记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oper_log
@@ -13691,6 +13911,20 @@ INSERT INTO `sys_oper_log` VALUES (2072986564570435585, '000000', 'AI厂商管�
 INSERT INTO `sys_oper_log` VALUES (2072986793923366914, '000000', 'AI模型管理', 1, 'com.nexus.ai.controller.AiModelController.add()', 'POST', 1, 'admin', '研发部门', '/ai/model', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":null,\"providerId\":\"2072986564503326721\",\"modelName\":\"NexusAI\",\"displayName\":\"NexusAI智能助手\",\"modelType\":\"CHAT\",\"maxTokens\":500,\"temperature\":\"0.7\",\"isDefault\":\"0\",\"status\":\"1\",\"inputPricePerMillion\":null,\"outputPricePerMillion\":null,\"currency\":\"CNY\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 18:12:21', 19);
 INSERT INTO `sys_oper_log` VALUES (2072987150460178434, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2072986564503326721\",\"name\":\"huggingface\",\"apiHost\":\"https://wangghuan-nexusai.hf.space/v1/chat/completions \",\"apiKey\":\"****sLI=\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 18:13:46', 9);
 INSERT INTO `sys_oper_log` VALUES (2072987392970641410, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2072986564503326721\",\"name\":\"huggingface\",\"apiHost\":\"https://wangghuan-nexusai.hf.space/v1\",\"apiKey\":\"****sLI=\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-03 18:14:43', 6);
+INSERT INTO `sys_oper_log` VALUES (2073365722662342657, '000000', '生产工人档案', 3, 'com.nexus.erp.sch.controller.SchWorkerController.remove()', 'DELETE', 1, 'admin', '研发部门', '/erp/sch/worker/30001,30002,30003,30004,30005,30006', '127.0.0.1', '内网IP', '[30001,30002,30003,30004,30005,30006]', '', 1, '存在作为班组成员的工人，不能删除（请先从班组移除）', '2026-07-04 19:18:04', 22);
+INSERT INTO `sys_oper_log` VALUES (2073365858272579586, '000000', '班组设置', 3, 'com.nexus.erp.sch.controller.SchTeamController.remove()', 'DELETE', 1, 'admin', '研发部门', '/erp/sch/team/8,9,10,11,30001,30002', '127.0.0.1', '内网IP', '[8,9,10,11,30001,30002]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-04 19:18:37', 16);
+INSERT INTO `sys_oper_log` VALUES (2073365919878516737, '000000', '班次定义', 3, 'com.nexus.erp.sch.controller.SchShiftController.remove()', 'DELETE', 1, 'admin', '研发部门', '/erp/sch/shift/30001', '127.0.0.1', '内网IP', '[30001]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-04 19:18:51', 6);
+INSERT INTO `sys_oper_log` VALUES (2073365930997616641, '000000', '班次定义', 3, 'com.nexus.erp.sch.controller.SchShiftController.remove()', 'DELETE', 1, 'admin', '研发部门', '/erp/sch/shift/30002', '127.0.0.1', '内网IP', '[30002]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-04 19:18:54', 5);
+INSERT INTO `sys_oper_log` VALUES (2073365944155148289, '000000', '班次定义', 3, 'com.nexus.erp.sch.controller.SchShiftController.remove()', 'DELETE', 1, 'admin', '研发部门', '/erp/sch/shift/30003', '127.0.0.1', '内网IP', '[30003]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-04 19:18:57', 5);
+INSERT INTO `sys_oper_log` VALUES (2073428055170387970, '000000', '字典类型', 9, 'com.nexus.system.controller.system.SysDictTypeController.refreshCache()', 'DELETE', 1, 'admin', '研发部门', '/system/dict/type/refreshCache', '127.0.0.1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-04 23:25:45', 6);
+INSERT INTO `sys_oper_log` VALUES (2073431090172956674, '000000', '字典类型', 9, 'com.nexus.system.controller.system.SysDictTypeController.refreshCache()', 'DELETE', 1, 'admin', '研发部门', '/system/dict/type/refreshCache', '127.0.0.1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-04 23:37:49', 2);
+INSERT INTO `sys_oper_log` VALUES (2073431341751504897, '000000', '排班计划', 3, 'com.nexus.erp.sch.controller.SchPlanController.remove()', 'DELETE', 1, 'admin', '研发部门', '/erp/sch/plan/30001', '127.0.0.1', '内网IP', '[30001]', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-04 23:38:49', 9);
+INSERT INTO `sys_oper_log` VALUES (2073651170546724866, '000000', '生产计划', 2, 'com.nexus.erp.prd.controller.PrdProductionPlanController.updateVersion()', 'PUT', 1, 'admin', '研发部门', '/erp/prd/plan/updateVersion', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"planId\":\"2071821464829349890\",\"planNo\":\"SCJH20260010\",\"planName\":\"销售订单-XSDD20260630001-简易金属工具架\",\"version\":1,\"originalPlanId\":null,\"referenceNo\":\"XSDD20260630001\",\"planType\":\"MPS\",\"planDate\":\"2026-06-30 13:01:44\",\"startDate\":null,\"endDate\":null,\"status\":\"DRAFT\",\"priority\":0,\"plannerId\":101,\"plannerName\":\"麦得朶\",\"deptId\":111,\"deptName\":\"生产中心\",\"totalQuantity\":\"10.0000\",\"confirmedTime\":null,\"releasedTime\":null,\"closedTime\":null,\"bomName\":\"简易金属工具架标准版BOM\",\"bomVersion\":\"1.0\",\"isCurrent\":1,\"bomId\":20,\"attr4\":null,\"materialRequirementId\":null,\"materialRequirementNo\":null,\"orderLineId\":\"2071821415999262722\",\"orderLineNo\":\"\",\"remark\":null,\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-05 14:12:20', 40);
+INSERT INTO `sys_oper_log` VALUES (2073651192914948098, '000000', '生产计划', 2, 'com.nexus.erp.prd.controller.PrdProductionPlanController.confirm()', 'PUT', 1, 'admin', '研发部门', '/erp/prd/plan/confirm/2071821464829349890', '127.0.0.1', '内网IP', '\"2071821464829349890\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-05 14:12:26', 11);
+INSERT INTO `sys_oper_log` VALUES (2073651215195090945, '000000', '生产计划', 2, 'com.nexus.erp.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/erp/prd/plan/generateMaterialRequirementsWithDetails/2071821464829349890', '127.0.0.1', '内网IP', '\"2071821464829349890\"', '{\"code\":500,\"msg\":\"物料需求清单及明细生成失败：订单行信息不存在\",\"data\":null}', 0, '', '2026-07-05 14:12:31', 10);
+INSERT INTO `sys_oper_log` VALUES (2073651320832831489, '000000', '生产计划', 2, 'com.nexus.erp.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/erp/prd/plan/generateMaterialRequirementsWithDetails/2071821464829349890', '127.0.0.1', '内网IP', '\"2071821464829349890\"', '{\"code\":500,\"msg\":\"物料需求清单及明细生成失败：订单行信息不存在\",\"data\":null}', 0, '', '2026-07-05 14:12:56', 9);
+INSERT INTO `sys_oper_log` VALUES (2073655856473477122, '000000', '生产计划', 2, 'com.nexus.erp.prd.controller.PrdProductionPlanController.generateMaterialRequirementsWithDetails()', 'POST', 1, 'admin', '研发部门', '/erp/prd/plan/generateMaterialRequirementsWithDetails/2071821464829349890', '127.0.0.1', '内网IP', '\"2071821464829349890\"', '{\"code\":200,\"msg\":\"物料需求清单及明细生成成功，共生成2条记录\",\"data\":null}', 0, '', '2026-07-05 14:30:58', 198);
+INSERT INTO `sys_oper_log` VALUES (2073655901310586881, '000000', '生产计划', 2, 'com.nexus.erp.prd.controller.PrdProductionPlanController.updateVersion()', 'PUT', 1, 'admin', '研发部门', '/erp/prd/plan/updateVersion', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"planId\":\"2071821464829349890\",\"planNo\":\"SCJH20260010\",\"planName\":\"销售订单-XSDD20260630001-简易金属工具架\",\"version\":1,\"originalPlanId\":null,\"referenceNo\":\"XSDD20260630001\",\"planType\":\"MPS\",\"planDate\":\"2026-06-30 13:01:44\",\"startDate\":null,\"endDate\":null,\"status\":\"CONFIRMED\",\"priority\":0,\"plannerId\":null,\"plannerName\":\"麦得朶\",\"deptId\":111,\"deptName\":\"生产中心\",\"totalQuantity\":\"10.0000\",\"confirmedTime\":\"2026-07-05 14:12:26\",\"releasedTime\":null,\"closedTime\":null,\"bomName\":\"简易金属工具架标准版BOM\",\"bomVersion\":\"1.0\",\"isCurrent\":1,\"bomId\":20,\"attr4\":null,\"materialRequirementId\":null,\"materialRequirementNo\":null,\"orderLineId\":\"2071821415999262722\",\"orderLineNo\":\"\",\"remark\":null,\"ids\":null}', '', 1, '该生产计划不为草稿，无法保存！', '2026-07-05 14:31:08', 21);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -13705,13 +13939,13 @@ CREATE TABLE `sys_oss`  (
   `url` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'URL地址',
   `ext1` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '上传人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `service` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'minio' COMMENT '服务商',
   PRIMARY KEY (`oss_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'OSS对象存储表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss
@@ -13741,12 +13975,12 @@ CREATE TABLE `sys_oss_config`  (
   `ext1` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '扩展字段',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`oss_config_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '对象存储配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_oss_config
@@ -13772,12 +14006,12 @@ CREATE TABLE `sys_post`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '岗位信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_post
@@ -13804,12 +14038,12 @@ CREATE TABLE `sys_role`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role
@@ -13827,7 +14061,7 @@ CREATE TABLE `sys_role_dept`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `dept_id` bigint(20) NOT NULL COMMENT '部门ID',
   PRIMARY KEY (`role_id`, `dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和部门关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_dept
@@ -13842,7 +14076,7 @@ CREATE TABLE `sys_role_menu`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID',
   PRIMARY KEY (`role_id`, `menu_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '角色和菜单关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_menu
@@ -14682,7 +14916,7 @@ DROP TABLE IF EXISTS `sys_role_menu_bak_20260629`;
 CREATE TABLE `sys_role_menu_bak_20260629`  (
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_menu_bak_20260629
@@ -15510,12 +15744,12 @@ CREATE TABLE `sys_social`  (
   `oauth_token_secret` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'Twitter平台用户的附带属性，部分平台可能没有',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '社会化关系表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_social
@@ -15538,17 +15772,17 @@ CREATE TABLE `sys_tenant`  (
   `domain` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '域名',
   `remark` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   `package_id` bigint(20) NULL DEFAULT NULL COMMENT '租户套餐编号',
-  `expire_time` datetime(0) NULL DEFAULT NULL COMMENT '过期时间',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '过期时间',
   `account_count` int(11) NULL DEFAULT -1 COMMENT '用户数量（-1不限制）',
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '租户状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_tenant
@@ -15570,11 +15804,11 @@ CREATE TABLE `sys_tenant_package`  (
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`package_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '租户套餐表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_tenant_package
@@ -15600,20 +15834,20 @@ CREATE TABLE `sys_user`  (
   `status` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '账号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 1代表删除）',
   `login_ip` varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' COMMENT '最后登录IP',
-  `login_date` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
+  `login_date` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户信息表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2070553780042235905, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-03 17:56:37', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-03 17:56:37', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', 2070553780042235905, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2026-07-05 22:26:24', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-05 22:26:24', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', 2053013456951406593, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-06-13 02:44:41', 103, 1, '2026-04-15 10:51:23', -1, '2026-06-13 02:44:41', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-06-30 13:16:21', NULL, 1, '2025-10-23 17:03:16', -1, '2026-06-30 13:16:21', '耳朵聋');
@@ -15652,14 +15886,14 @@ CREATE TABLE `sys_user_notification`  (
   `ext_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '扩展JSON',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`notification_id`) USING BTREE,
   INDEX `idx_sun_user_read`(`tenant_id`, `user_id`, `read_flag`, `create_time`) USING BTREE,
   INDEX `idx_sun_category`(`tenant_id`, `user_id`, `category`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户站内通知' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_notification
@@ -15713,7 +15947,7 @@ CREATE TABLE `sys_user_post`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `post_id` bigint(20) NOT NULL COMMENT '岗位ID',
   PRIMARY KEY (`user_id`, `post_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户与岗位关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_post
@@ -15728,7 +15962,7 @@ CREATE TABLE `sys_user_role`  (
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `role_id` bigint(20) NOT NULL COMMENT '角色ID',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户和角色关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -15762,7 +15996,7 @@ CREATE TABLE `test_customer`  (
   `tbr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '填表人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_customer
@@ -15787,13 +16021,13 @@ CREATE TABLE `test_demo`  (
   `value` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_demo
@@ -15821,18 +16055,18 @@ CREATE TABLE `test_leave`  (
   `tenant_id` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `apply_code` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '申请编号',
   `leave_type` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '请假类型',
-  `start_date` datetime(0) NOT NULL COMMENT '开始时间',
-  `end_date` datetime(0) NOT NULL COMMENT '结束时间',
+  `start_date` datetime NOT NULL COMMENT '开始时间',
+  `end_date` datetime NOT NULL COMMENT '结束时间',
   `leave_days` int(10) NOT NULL COMMENT '请假天数',
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '请假原因',
   `status` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '请假申请表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_leave
@@ -15882,7 +16116,11 @@ CREATE TABLE `test_monthly_report`  (
   `by_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '本月-弃水天数',
   `lj_qsts` double(11, 2) NULL DEFAULT NULL COMMENT '累计-弃水天数',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '北京市水电厂调度运行月报表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_monthly_report
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order
@@ -15892,15 +16130,19 @@ CREATE TABLE `test_order`  (
   `id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `order_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单名称',
   `order_no` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单编号',
-  `order_sign_date` datetime(0) NULL DEFAULT NULL COMMENT '订单签订日期',
-  `order_delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '订单交付日期',
+  `order_sign_date` datetime NULL DEFAULT NULL COMMENT '订单签订日期',
+  `order_delivery_date` datetime NULL DEFAULT NULL COMMENT '订单交付日期',
   `order_coms` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户名称',
   `order_pers` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系人',
   `order_phone` varchar(15) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '客户联系方式',
   `fzr` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人',
   `depts` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_order_pros
@@ -15916,7 +16158,11 @@ CREATE TABLE `test_order_pros`  (
   `pro_model` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '型号',
   `main_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '外键',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of test_order_pros
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for test_resume
@@ -15940,7 +16186,7 @@ CREATE TABLE `test_resume`  (
   `edu_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '教育经历',
   `work_experience` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '工作经历',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_resume
@@ -15961,13 +16207,13 @@ CREATE TABLE `test_tree`  (
   `tree_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '值',
   `version` int(11) NULL DEFAULT 0 COMMENT '版本',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `del_flag` int(11) NULL DEFAULT 0 COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '测试树表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of test_tree
@@ -15997,7 +16243,7 @@ CREATE TABLE `tmp_report_data_1`  (
   `his_lowest` decimal(10, 2) NULL DEFAULT NULL,
   `his_average` decimal(10, 2) NULL DEFAULT NULL,
   `his_highest` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_1
@@ -16028,7 +16274,7 @@ CREATE TABLE `tmp_report_data_income`  (
   `tb_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `neikong_zx_money` decimal(10, 2) NULL DEFAULT NULL,
   `total` decimal(10, 2) NULL DEFAULT NULL
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of tmp_report_data_income
@@ -16051,14 +16297,14 @@ CREATE TABLE `wf_category`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   PRIMARY KEY (`category_id`) USING BTREE,
   UNIQUE INDEX `codeIndex`(`code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1807395125103874051 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_category
@@ -16088,12 +16334,16 @@ CREATE TABLE `wf_copy`  (
   `state` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`copy_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程抄送表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_copy
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_custom_form
@@ -16109,13 +16359,13 @@ CREATE TABLE `wf_custom_form`  (
   `component` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件注入方法',
   `table_id` bigint(20) NULL DEFAULT NULL COMMENT '业务主表ID',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062368011052814338 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程业务表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_custom_form
@@ -16149,11 +16399,15 @@ CREATE TABLE `wf_custom_rule`  (
   `attribute` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1' COMMENT '属性0-隐藏1-只读默认2-可编辑',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程自定义业务规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_custom_rule
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_dd_flow
@@ -16164,11 +16418,15 @@ CREATE TABLE `wf_dd_flow`  (
   `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '流程名称',
   `flow_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '流程JSON数据',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '钉钉流程表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_dd_flow
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_default_operate
@@ -16181,11 +16439,15 @@ CREATE TABLE `wf_default_operate`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程默认操作表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_default_operate
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_demo
@@ -16200,14 +16462,14 @@ CREATE TABLE `wf_demo`  (
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`demo_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1969956905195986946 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'DEMO表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_demo
@@ -16227,7 +16489,7 @@ CREATE TABLE `wf_deploy_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`deploy_id`, `form_key`, `node_key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程实例关联表单' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_deploy_form
@@ -16250,11 +16512,15 @@ CREATE TABLE `wf_flow_config`  (
   `form_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '表单Key',
   `app_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '应用类型',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程配置主表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_flow_config
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_form
@@ -16266,16 +16532,20 @@ CREATE TABLE `wf_form`  (
   `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `db` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否保存数据库',
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `table_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成的数据库表名',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程表单信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_form
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wf_my_business
@@ -16284,9 +16554,9 @@ DROP TABLE IF EXISTS `wf_my_business`;
 CREATE TABLE `wf_my_business`  (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '修改时间',
   `process_definition_key` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义key 一个key会有多个版本的id',
   `process_definition_id` varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程定义id 一个流程定义唯一',
   `process_instance_id` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '流程业务实例id 一个流程业务唯一，本表中也唯一',
@@ -16307,7 +16577,7 @@ CREATE TABLE `wf_my_business`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `dataid`(`data_id`) USING BTREE COMMENT '业务数据Id索引'
-) ENGINE = InnoDB AUTO_INCREMENT = 2071824849615900675 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2071824849615900675 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '流程业务扩展表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_my_business
@@ -16353,12 +16623,12 @@ CREATE TABLE `wf_nform`  (
   `form_content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '表单内容',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   PRIMARY KEY (`form_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2046876648069931011 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '设计器表单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wf_nform
@@ -16383,10 +16653,14 @@ CREATE TABLE `wf_operate_rule`  (
   `is_enable` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否启用1-启用0-关闭默认',
   `sort` int(11) NULL DEFAULT NULL COMMENT '排序',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '流程操作规则' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wf_operate_rule
+-- ----------------------------
 
 SET FOREIGN_KEY_CHECKS = 1;
