@@ -73,6 +73,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
     // 状态常量（从 NexusConstants 迁移）
     private static final String STATUS_DRAFT = "DRAFT";
+    private static final String STATUS_CONFIRMED = "CONFIRMED";
+    private static final String STATUS_RELEASED = "RELEASED";
     private static final Long VERSION_INIT = 1L;
     private static final Long VERSION_NOT_CURRENT = 0L;
 
@@ -237,6 +239,50 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     }
 
     /**
+     * 确认生产计划
+     * <p>
+     * 仅草稿（DRAFT）状态可确认，确认后状态变为已确认（CONFIRMED）并记录确认时间。
+     *
+     * @param planId 生产计划 ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirm(Long planId) {
+        PrdProductionPlan plan = baseMapper.selectById(planId);
+        if (plan == null) {
+            throw new RuntimeException("生产计划不存在");
+        }
+        if (!STATUS_DRAFT.equals(plan.getStatus())) {
+            throw new RuntimeException("仅草稿状态的生产计划可确认，当前状态：" + plan.getStatus());
+        }
+        plan.setStatus(STATUS_CONFIRMED);
+        plan.setConfirmedTime(new Date());
+        baseMapper.updateById(plan);
+    }
+
+    /**
+     * 下达生产计划
+     * <p>
+     * 仅已确认（CONFIRMED）状态可下达，下达后状态变为已下达（RELEASED）并记录下达时间。
+     *
+     * @param planId 生产计划 ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void release(Long planId) {
+        PrdProductionPlan plan = baseMapper.selectById(planId);
+        if (plan == null) {
+            throw new RuntimeException("生产计划不存在");
+        }
+        if (!STATUS_CONFIRMED.equals(plan.getStatus())) {
+            throw new RuntimeException("仅已确认状态的生产计划可下达，当前状态：" + plan.getStatus());
+        }
+        plan.setStatus(STATUS_RELEASED);
+        plan.setReleasedTime(new Date());
+        baseMapper.updateById(plan);
+    }
+
+    /**
      * BOM计算 - 根据生产计划中的订单行物料计算BOM树
      */
     /**
@@ -318,17 +364,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("生产计划不存在");
         }
 
-        // 2. 检查是否有关联订单行
-        if (plan.getOrderLineId() == null) {
-            throw new RuntimeException("该生产计划未关联订单行信息");
+        // 2. 物料需求生成依赖生产计划上选定的 BOM（plan.getBomId），与订单行无直接关系
+        if (plan.getBomId() == null) {
+            throw new RuntimeException("该生产计划未选择BOM，请先在表单选择BOM后再计算");
         }
 
-        SoSalesOrderLineVo orderLine = soSalesOrderLineService.selectById(plan.getOrderLineId());
-        if (orderLine == null) {
-            throw new RuntimeException("订单行信息不存在");
-        }
-
-        // 4. 按节点拆分生成：顶层与每个子节点BOM分别生成主表与底层物料子表
+        // 3. 按节点拆分生成：顶层与每个子节点BOM分别生成主表与底层物料子表
         List<PrdMaterialRequirement> createdMainRequirements = processBomNode(
                 plan.getBomId(),
                 plan.getBomId(),
@@ -340,7 +381,7 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
         log.info("成功生成物料需求，共生成 {} 条主表记录", createdMainRequirements.size());
 
-        // 5. 返回所有生成的主表记录
+        // 4. 返回所有生成的主表记录
         return createdMainRequirements;
     }
 

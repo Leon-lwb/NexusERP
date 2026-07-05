@@ -6,6 +6,8 @@
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <el-button type="success" @click="handleConfirm" v-if="form.planId && form.status === 'DRAFT'" v-hasPermi="['prd:plan:edit']">确认</el-button>
+            <el-button type="warning" @click="handleRelease" v-if="form.planId && form.status === 'CONFIRMED'" v-hasPermi="['prd:plan:edit']">下达</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
@@ -50,18 +52,6 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="原始计划ID" prop="originalPlanId">
-              <el-input v-model="form.originalPlanId" placeholder="请输入原始计划ID" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="物料需求单ID" prop="materialRequirementId">
-              <el-input v-model="form.materialRequirementId" placeholder="请输入物料需求单ID" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="8">
             <el-form-item label="物料需求单编号" prop="materialRequirementNo">
               <el-input v-model="form.materialRequirementNo" placeholder="请输入物料需求单编号" />
             </el-form-item>
@@ -100,15 +90,17 @@
               </el-date-picker>
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="计划总数量" prop="totalQuantity">
+              <el-input v-model="form.totalQuantity" placeholder="请输入计划总数量" />
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-divider content-position="left">状态信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="状态" prop="status">
-              <el-radio-group v-model="form.status">
-                <el-radio v-for="dict in prd_plan_status" :key="dict.value" :label="dict.value">{{ dict.label
-                  }}</el-radio>
-              </el-radio-group>
+              <dict-tag :options="prd_plan_status" :value="form.status" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -120,28 +112,25 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="计划员ID" prop="plannerId">
-              <el-input v-model="form.plannerId" placeholder="请输入计划员ID" />
+            <el-form-item label="计划员" prop="plannerName">
+              <el-input v-model="form.plannerName" placeholder="请选择计划员" readonly>
+                <template #append>
+                  <el-button icon="Search" @click="openUserSelect" :disabled="isViewMode" />
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="计划员" prop="plannerName">
-              <el-input v-model="form.plannerName" placeholder="请输入计划员" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="16">
             <el-form-item label="生产部门" prop="deptId">
               <dept-select v-model="form.deptId" category="PRODUCTION" placeholder="请选择生产部门" @change="handleDeptChange" />
               <el-input v-model="form.deptName" style="display: none" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item label="计划总数量" prop="totalQuantity">
-              <el-input v-model="form.totalQuantity" placeholder="请输入计划总数量" />
+          <el-col :span="16">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -181,25 +170,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="bomVersion" prop="bomVersion">
-              <el-input v-model="form.bomVersion" placeholder="请输入bomVersion" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="BOM ID" prop="bomId">
-              <el-input v-model="form.bomId" placeholder="BOM ID" readonly />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item label="预留字段4" prop="attr4">
-              <el-input v-model="form.attr4" placeholder="请输入预留字段4" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+            <el-form-item label="BOM版本号" prop="bomVersion">
+              <el-input v-model="form.bomVersion" placeholder="请输入BOM版本号" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -419,20 +391,64 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 计划员选择对话框 -->
+    <el-dialog title="选择计划员" v-model="userSelectOpen" width="800px" append-to-body>
+      <el-form :model="userQueryParams" :inline="true" label-width="80px">
+        <el-form-item label="用户编码" prop="userName">
+          <el-input v-model="userQueryParams.userName" placeholder="请输入用户编码" clearable @keyup.enter="handleUserQuery" />
+        </el-form-item>
+        <el-form-item label="用户名称" prop="nickName">
+          <el-input v-model="userQueryParams.nickName" placeholder="请输入用户名称" clearable @keyup.enter="handleUserQuery" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="handleUserQuery">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table v-loading="userLoading" :data="userList" @row-dblclick="selectUser" style="width: 100%">
+        <el-table-column label="用户编码" align="center" prop="userName" />
+        <el-table-column label="用户名称" align="center" prop="nickName" />
+        <el-table-column label="部门" align="center" prop="deptName" />
+        <el-table-column label="手机号" align="center" prop="phonenumber" />
+        <el-table-column label="状态" align="center" prop="status" width="80">
+          <template #default="scope">
+            <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="100">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectUser(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <pagination
+        v-show="userTotal > 0"
+        :total="userTotal"
+        v-model:page="userQueryParams.pageNum"
+        v-model:limit="userQueryParams.pageSize"
+        @pagination="getUserList"
+      />
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="PrdPlanForm">
-import { getPlan, addPlan, updatePlan, updatePlanVersion, generateMaterialRequirementsWithDetails, listDetailsByPlanNo } from "@/api/erp/prd/plan"
+import { getPlan, addPlan, updatePlan, updatePlanVersion, generateMaterialRequirementsWithDetails, listDetailsByPlanNo, confirmPlan, releasePlan } from "@/api/erp/prd/plan"
 import { listOrderheader, getOrderLine } from "@/api/erp/so/orderheader"
 import { listBom } from "@/api/erp/bd/bom"
 import { listTreeByPlanNo } from "@/api/erp/prd/requirement"
+import { listUser } from "@/api/system/user"
 import { getAutoCode } from "@/api/system/autocode"
 import { previewCode } from "@/api/system/autocode/rule"
+import { useUserStore } from "@/store/modules/user"
 import type { PlanForm } from "@/api/erp/prd/plan/types"
 
 const { proxy } = getCurrentInstance() as any
-const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'so_order_line_status', 'sys_true_or_false', 'sys_core_status'))
+const userStore = useUserStore()
+const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status, sys_normal_disable } = toRefs<any>(proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'so_order_line_status', 'sys_true_or_false', 'sys_core_status', 'sys_normal_disable'))
 const route = useRoute()
 const router = useRouter()
 
@@ -478,6 +494,18 @@ const materialListTitle = ref("")
 
 const orderLineList = ref([])
 const orderLineLoading = ref(false)
+
+// 计划员选择相关变量
+const userSelectOpen = ref(false)
+const userList = ref([])
+const userLoading = ref(false)
+const userTotal = ref(0)
+const userQueryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  userName: null,
+  nickName: null
+})
 
 onMounted(() => {
   const id = route.query.id
@@ -670,8 +698,8 @@ function reset() {
     endDate: null,
     status: null,
     priority: null,
-    plannerId: null,
-    plannerName: null,
+    plannerId: userStore.userId,
+    plannerName: userStore.nickname,
     deptId: null,
     deptName: null,
     totalQuantity: null,
@@ -740,6 +768,86 @@ function handleDeptChange(dept) {
 function cancel() {
   const obj = { path: '/erp/prd/plan' }
   proxy.$tab.closeOpenPage(obj)
+}
+
+/** 确认生产计划：DRAFT → CONFIRMED */
+function handleConfirm() {
+  if (!form.value.planId) {
+    proxy.$modal.msgWarning("生产计划未保存，无法确认")
+    return
+  }
+  proxy.$modal.confirm('确认该生产计划吗？确认后状态将变为"已确认"。').then(() => {
+    return confirmPlan(form.value.planId)
+  }).then(() => {
+    proxy.$modal.msgSuccess("确认成功")
+    getInfo(form.value.planId)
+  }).catch(error => {
+    if (error !== 'cancel') {
+      proxy.$modal.msgError("确认失败: " + (error.message || "未知错误"))
+    }
+  })
+}
+
+/** 下达生产计划：CONFIRMED → RELEASED */
+function handleRelease() {
+  if (!form.value.planId) {
+    proxy.$modal.msgWarning("生产计划未保存，无法下达")
+    return
+  }
+  proxy.$modal.confirm('下达该生产计划吗？下达后状态将变为"已下达"。').then(() => {
+    return releasePlan(form.value.planId)
+  }).then(() => {
+    proxy.$modal.msgSuccess("下达成功")
+    getInfo(form.value.planId)
+  }).catch(error => {
+    if (error !== 'cancel') {
+      proxy.$modal.msgError("下达失败: " + (error.message || "未知错误"))
+    }
+  })
+}
+
+// 打开计划员选择对话框
+function openUserSelect() {
+  userSelectOpen.value = true
+  resetUserQuery()
+  getUserList()
+}
+
+// 查询 sys_user 列表
+function getUserList() {
+  userLoading.value = true
+  listUser(userQueryParams.value).then(response => {
+    userList.value = response.rows || []
+    userTotal.value = response.total || 0
+    userLoading.value = false
+  }).catch(error => {
+    console.error("获取用户列表失败:", error)
+    proxy.$modal.msgError("获取用户列表失败: " + error.message)
+    userLoading.value = false
+  })
+}
+
+function handleUserQuery() {
+  userQueryParams.value.pageNum = 1
+  getUserList()
+}
+
+function resetUserQuery() {
+  userQueryParams.value.pageNum = 1
+  userQueryParams.value.pageSize = 10
+  userQueryParams.value.userName = null
+  userQueryParams.value.nickName = null
+}
+
+// 选择计划员
+function selectUser(row) {
+  if (!row) {
+    return
+  }
+  form.value.plannerId = row.userId
+  form.value.plannerName = row.nickName
+  userSelectOpen.value = false
+  proxy.$modal.msgSuccess(`已选择计划员：${row.nickName}`)
 }
 
 /** 获取字典标签 */

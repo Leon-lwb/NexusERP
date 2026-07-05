@@ -48,6 +48,22 @@ export const updatePlanVersion = (data: PlanForm) => {
   });
 };
 
+/** 确认生产计划（DRAFT → CONFIRMED） */
+export const confirmPlan = (planId: string | number) => {
+  return request({
+    url: '/erp/prd/plan/confirm/' + planId,
+    method: 'put'
+  });
+};
+
+/** 下达生产计划（CONFIRMED → RELEASED） */
+export const releasePlan = (planId: string | number) => {
+  return request({
+    url: '/erp/prd/plan/release/' + planId,
+    method: 'put'
+  });
+};
+
 export const calculateBom = (planId: string | number): AxiosPromise<PlanVO> => {
   return request({
     url: '/erp/prd/plan/calculateBom/' + planId,

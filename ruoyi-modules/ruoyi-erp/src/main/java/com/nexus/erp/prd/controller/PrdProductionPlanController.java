@@ -153,6 +153,40 @@ public class PrdProductionPlanController extends BaseController {
     }
 
     /**
+     * 确认生产计划
+     * <p>状态流转：草稿（DRAFT） → 已确认（CONFIRMED），并记录确认时间</p>
+     * <p>权限标识：{@code prd:plan:edit}</p>
+     * <p>日志记录：title="生产计划"，businessType=UPDATE</p>
+     *
+     * @param planId 生产计划 ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:plan:edit")
+    @Log(title = "生产计划", businessType = BusinessType.UPDATE)
+    @PutMapping("/confirm/{planId}")
+    public R<Void> confirm(@PathVariable Long planId) {
+        prdProductionPlanService.confirm(planId);
+        return R.ok();
+    }
+
+    /**
+     * 下达生产计划
+     * <p>状态流转：已确认（CONFIRMED） → 已下达（RELEASED），并记录下达时间</p>
+     * <p>权限标识：{@code prd:plan:edit}</p>
+     * <p>日志记录：title="生产计划"，businessType=UPDATE</p>
+     *
+     * @param planId 生产计划 ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:plan:edit")
+    @Log(title = "生产计划", businessType = BusinessType.UPDATE)
+    @PutMapping("/release/{planId}")
+    public R<Void> release(@PathVariable Long planId) {
+        prdProductionPlanService.release(planId);
+        return R.ok();
+    }
+
+    /**
      * BOM 树计算子节点
      * <p>权限标识：{@code prd:plan:edit}</p>
      * <p>日志记录：title="生产计划"，businessType=UPDATE</p>

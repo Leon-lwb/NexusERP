@@ -127,6 +127,24 @@ public interface IPrdProductionPlanService {
     int updatePrdProductionPlanVersion(PrdProductionPlan prdProductionPlan);
 
     /**
+     * 确认生产计划
+     * <p>
+     * 仅草稿（DRAFT）状态的生产计划可确认，确认后状态变为已确认（CONFIRMED）并记录确认时间。
+     *
+     * @param planId 生产计划 ID
+     */
+    void confirm(Long planId);
+
+    /**
+     * 下达生产计划
+     * <p>
+     * 仅已确认（CONFIRMED）状态的生产计划可下达，下达后状态变为已下达（RELEASED）并记录下达时间。
+     *
+     * @param planId 生产计划 ID
+     */
+    void release(Long planId);
+
+    /**
      * 根据生产计划计算 BOM 树
      * <p>
      * 查询生产计划关联订单行的物料对应的有效 BOM，并返回 BOM 明细树。
