@@ -62,7 +62,7 @@
             <el-form-item label="销售员" prop="salesRepName">
               <el-input v-model="form.salesRepName" placeholder="请选择销售员" readonly>
                 <template #append>
-                  <el-button v-if="!isViewMode" icon="Search" @click="userSelectOpen = true" />
+                  <el-button v-if="!isViewMode" icon="Search" @click="openUserSelect" />
                 </template>
               </el-input>
             </el-form-item>
@@ -79,12 +79,20 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="汇率" prop="exchangeRate">
-              <el-input v-model="form.exchangeRate" placeholder="请输入汇率" />
+              <el-input-number v-model="form.exchangeRate" :min="0" :precision="4" :step="0.0001" placeholder="请输入汇率" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="折扣率(%)" prop="discountRate">
-              <el-input v-model="form.discountRate" placeholder="请输入折扣率" />
+              <el-input-number
+                v-model="form.discountRate"
+                :min="0"
+                :max="100"
+                :precision="2"
+                :step="1"
+                placeholder="请输入折扣率"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -138,15 +146,33 @@
               ><span>{{ scope.row.materialSpec }}</span></template
             >
           </el-table-column>
-          <el-table-column label="数量" prop="quantity" width="100">
+          <el-table-column label="数量" prop="quantity" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.quantity" placeholder="数量" v-if="!isViewMode" />
+              <el-input-number
+                v-model="scope.row.quantity"
+                :min="0"
+                :precision="2"
+                :step="1"
+                :controls="false"
+                placeholder="数量"
+                v-if="!isViewMode"
+                @change="calcLine(scope.row)"
+              />
               <span v-else>{{ scope.row.quantity }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="单价" prop="unitPrice" width="100">
+          <el-table-column label="单价" prop="unitPrice" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.unitPrice" placeholder="单价" v-if="!isViewMode" />
+              <el-input-number
+                v-model="scope.row.unitPrice"
+                :min="0"
+                :precision="2"
+                :step="0.01"
+                :controls="false"
+                placeholder="单价"
+                v-if="!isViewMode"
+                @change="calcLine(scope.row)"
+              />
               <span v-else>{{ scope.row.unitPrice }}</span>
             </template>
           </el-table-column>
@@ -155,9 +181,18 @@
               ><span>{{ scope.row.amount }}</span></template
             >
           </el-table-column>
-          <el-table-column label="税率(%)" prop="taxRate" width="80">
+          <el-table-column label="税率(%)" prop="taxRate" width="100">
             <template #default="scope">
-              <el-input v-model="scope.row.taxRate" placeholder="税率" v-if="!isViewMode" />
+              <el-input-number
+                v-model="scope.row.taxRate"
+                :min="0"
+                :max="100"
+                :precision="2"
+                :step="1"
+                :controls="false"
+                placeholder="税率"
+                v-if="!isViewMode"
+              />
               <span v-else>{{ scope.row.taxRate }}</span>
             </template>
           </el-table-column>
@@ -209,6 +244,36 @@
       />
     </el-dialog>
 
+    <el-dialog title="选择销售员" v-model="userSelectOpen" width="800px" append-to-body>
+      <el-form :model="userQueryParams" :inline="true">
+        <el-form-item label="用户编码"
+          ><el-input v-model="userQueryParams.userName" placeholder="请输入用户编码" clearable @keyup.enter="getUserList"
+        /></el-form-item>
+        <el-form-item label="用户名称"
+          ><el-input v-model="userQueryParams.nickName" placeholder="请输入用户名称" clearable @keyup.enter="getUserList"
+        /></el-form-item>
+        <el-form-item
+          ><el-button type="primary" icon="Search" @click="getUserList">搜索</el-button
+          ><el-button icon="Refresh" @click="resetUserQuery">重置</el-button></el-form-item
+        >
+      </el-form>
+      <el-table v-loading="userLoading" :data="userList" highlight-current-row @current-change="handleUserSelect">
+        <el-table-column label="用户编码" align="center" prop="userName" />
+        <el-table-column label="用户名称" align="center" prop="nickName" />
+        <el-table-column label="部门" align="center" prop="deptName" />
+        <el-table-column label="操作" align="center"
+          ><template #default="scope"><el-button link type="primary" @click="handleUserSelect(scope.row)">选择</el-button></template></el-table-column
+        >
+      </el-table>
+      <pagination
+        v-show="userTotal > 0"
+        :total="userTotal"
+        v-model:page="userQueryParams.pageNum"
+        v-model:limit="userQueryParams.pageSize"
+        @pagination="getUserList"
+      />
+    </el-dialog>
+
     <MaterialSelectDialog ref="materialSelectDialogRef" :title="materialDialogTitle" @select="handleMaterialSelected" />
   </div>
 </template>
@@ -217,7 +282,7 @@
 import { getQuotation, addQuotation, updateQuotation } from '@/api/erp/so/quotation';
 import { listClient } from '@/api/erp/bd/client';
 import { getMeasure } from '@/api/erp/bd/measure';
-import { listUserByPostId } from '@/api/system/user';
+import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useRoute, useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
@@ -245,6 +310,10 @@ const clientTotal = ref(0);
 const clientQueryParams = ref({ pageNum: 1, pageSize: 10, clientCode: null, clientName: null });
 
 const userSelectOpen = ref(false);
+const userList = ref([]);
+const userLoading = ref(false);
+const userTotal = ref(0);
+const userQueryParams = ref({ pageNum: 1, pageSize: 10, userName: null, nickName: null });
 
 const rules = {
   quotationNo: [{ required: true, message: '报价单编号不能为空', trigger: 'blur' }]
@@ -358,6 +427,13 @@ function handleAddLine() {
   });
 }
 
+/** 计算行金额 = 数量 × 单价（保留两位小数） */
+function calcLine(line: any) {
+  const qty = Number(line.quantity) || 0;
+  const price = Number(line.unitPrice) || 0;
+  line.amount = Math.round(qty * price * 100) / 100;
+}
+
 function handleDeleteLine() {
   if (checkedLines.value.length == 0) {
     proxy.$modal.msgError('请先选择要删除的行');
@@ -410,6 +486,32 @@ function handleClientSelect(row: any) {
   form.value.clientId = row.clientId;
   form.value.clientName = row.clientName;
   clientSelectOpen.value = false;
+}
+
+function openUserSelect() {
+  userSelectOpen.value = true;
+  userQueryParams.value = { pageNum: 1, pageSize: 10, userName: null, nickName: null };
+  getUserList();
+}
+
+function getUserList() {
+  userLoading.value = true;
+  listUser(userQueryParams.value).then((response: any) => {
+    userList.value = response.rows;
+    userTotal.value = response.total;
+    userLoading.value = false;
+  });
+}
+
+function resetUserQuery() {
+  userQueryParams.value = { pageNum: 1, pageSize: 10, userName: null, nickName: null };
+  getUserList();
+}
+
+function handleUserSelect(row: any) {
+  form.value.salesRepId = row.userId;
+  form.value.salesRepName = row.nickName;
+  userSelectOpen.value = false;
 }
 </script>
 

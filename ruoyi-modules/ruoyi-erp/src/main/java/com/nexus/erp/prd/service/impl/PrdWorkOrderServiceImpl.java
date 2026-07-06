@@ -20,10 +20,12 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdWorkOrderBo;
 import com.nexus.erp.prd.domain.enums.WoStatusEnum;
 import com.nexus.erp.prd.domain.vo.PrdWorkOrderVo;
+import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.IPrdWorkOrderService;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
@@ -73,7 +75,13 @@ import java.util.Map;
 @Service("prdWorkOrderService")
 public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
 
+    /** 生产计划状态：已确认（工单审批通过后据此自动下达） */
+    private static final String PLAN_STATUS_CONFIRMED = "CONFIRMED";
+    /** 生产计划状态：已下达 */
+    private static final String PLAN_STATUS_RELEASED = "RELEASED";
+
     private final PrdWorkOrderMapper baseMapper;
+    private final PrdProductionPlanMapper prdProductionPlanMapper;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
@@ -189,8 +197,14 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             }
         }
         PrdWorkOrder entity = MapstructUtils.convert(bo, PrdWorkOrder.class);
+        if (StringUtils.isBlank(entity.getWoNo())) {
+            entity.setWoNo(autoCodeUtil.genSerialCode("PRD_WORK_ORDER_CODE", null));
+        }
         entity.setWoStatus(STATUS_CREATED);
-        return baseMapper.insert(entity);
+        int rows = baseMapper.insert(entity);
+        // 回填主键，供控制器 selectById(bo.getWoId()) 取回保存结果
+        bo.setWoId(entity.getWoId());
+        return rows;
     }
 
     /**
@@ -523,7 +537,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean submit(String woIdStr, String selectFlowId) {
+public boolean submit(String woIdStr, String selectFlowId) {
         Long woId = Long.parseLong(woIdStr);
         PrdWorkOrder entity = baseMapper.selectById(woId);
         if (entity == null) {
@@ -590,6 +604,8 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             entity.setWoStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
             entity.setWoStatus(STATUS_APPROVED);
+            // 审批通过后自动下达来源生产计划（CONFIRMED → RELEASED，幂等）
+            autoReleaseProductionPlan(entity.getPlanId());
             // 审批通过后，事务提交后再发送工单下达消息到MES（确保ERP状态已持久化）
             final PrdWorkOrder msgEntity = entity;
             org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
@@ -605,6 +621,29 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             entity.setWoStatus(STATUS_CREATED);
         }
         baseMapper.updateById(entity);
+    }
+
+    /**
+     * 工单审批通过后自动下达来源生产计划
+     * <p>
+     * 幂等：仅将 CONFIRMED 状态的计划更新为 RELEASED 并记录下达时间；
+     * 已下达或其他状态不做处理，避免重复审批或多工单场景下抛错影响工单状态流转。
+     *
+     * @param planId 来源生产计划 ID（为空则跳过）
+     */
+    private void autoReleaseProductionPlan(Long planId) {
+        if (planId == null) {
+            return;
+        }
+        LambdaUpdateWrapper<PrdProductionPlan> uw = Wrappers.<PrdProductionPlan>lambdaUpdate()
+            .eq(PrdProductionPlan::getPlanId, planId)
+            .eq(PrdProductionPlan::getStatus, PLAN_STATUS_CONFIRMED)
+            .set(PrdProductionPlan::getStatus, PLAN_STATUS_RELEASED)
+            .set(PrdProductionPlan::getReleasedTime, new Date());
+        int rows = prdProductionPlanMapper.update(null, uw);
+        if (rows > 0) {
+            log.info("工单审批通过，自动下达生产计划: planId={}", planId);
+        }
     }
 
     /**

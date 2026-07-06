@@ -24,7 +24,6 @@ public class WmMaterialReceiveBo extends BaseEntity {
 
     private Long receiveId;
 
-    @NotBlank(message = "入库单编号不能为空")
     private String receiveCode;
 
     @NotBlank(message = "入库单名称不能为空")

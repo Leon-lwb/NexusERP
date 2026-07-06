@@ -1,7 +1,6 @@
 package com.nexus.erp.wm.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -21,7 +20,6 @@ public class WmTransferBo extends BaseEntity {
 
     private Long transferId;
 
-    @NotBlank(message = "调拨单编号不能为空")
     private String transferNo;
 
     private Long fromWarehouseId;

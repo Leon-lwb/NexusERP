@@ -24,7 +24,6 @@ public class WmArrivalNoticeBo extends BaseEntity {
 
     private Long noticeId;
 
-    @NotBlank(message = "通知单编号不能为空")
     private String noticeCode;
 
     @NotBlank(message = "通知单名称不能为空")

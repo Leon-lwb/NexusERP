@@ -1,7 +1,6 @@
 package com.nexus.erp.prd.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
@@ -30,7 +29,6 @@ public class PrdMaterialRequirementBo extends BaseEntity {
     /**
      * 物料需求单编号
      */
-    @NotBlank(message = "物料需求单编号不能为空")
     private String requirementNo;
 
     /**

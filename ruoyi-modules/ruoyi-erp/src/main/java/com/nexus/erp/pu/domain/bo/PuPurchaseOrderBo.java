@@ -1,7 +1,6 @@
 package com.nexus.erp.pu.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,7 +29,6 @@ public class PuPurchaseOrderBo extends BaseEntity {
     @NotNull(message = "采购订单ID不能为空")
     private Long orderId;
 
-    @NotBlank(message = "采购订单号不能为空")
     private String orderNo;
 
     /** 供应商ID */

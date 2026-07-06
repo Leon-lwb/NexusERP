@@ -209,19 +209,6 @@ export const deptTreeSelect = (): AxiosPromise<DeptTreeVO[]> => {
   });
 };
 
-/**
- * 通过岗位ID查询用户列表
- * @param postId 岗位ID
- * @param query 查询参数
- */
-export const listUserByPostId = (postId: string | number, query?: UserQuery): AxiosPromise<UserVO[]> => {
-  return request({
-    url: '/system/user/list/post/' + postId,
-    method: 'get',
-    params: query
-  });
-};
-
 export default {
   listUser,
   getUser,
@@ -238,6 +225,5 @@ export default {
   getAuthRole,
   updateAuthRole,
   deptTreeSelect,
-  listUserByDeptId,
-  listUserByPostId
+  listUserByDeptId
 };

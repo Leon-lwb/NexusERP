@@ -28,7 +28,6 @@ public class PrdProductionPlanBo extends BaseEntity {
     /**
      * 生产计划编号
      */
-    @NotBlank(message = "生产计划编号不能为空")
     private String planNo;
 
     /**

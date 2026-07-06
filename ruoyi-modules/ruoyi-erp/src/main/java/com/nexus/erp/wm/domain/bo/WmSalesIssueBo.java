@@ -1,7 +1,6 @@
 package com.nexus.erp.wm.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -32,7 +31,6 @@ public class WmSalesIssueBo extends BaseEntity {
     /**
      * 出库单编号
      */
-    @NotBlank(message = "出库单编号不能为空")
     private String issueCode;
 
     /**

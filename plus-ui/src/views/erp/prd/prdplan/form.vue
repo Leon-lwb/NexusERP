@@ -7,7 +7,6 @@
           <div class="card-actions">
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button type="success" @click="handleConfirm" v-if="form.planId && form.status === 'DRAFT'" v-hasPermi="['prd:plan:edit']">确认</el-button>
-            <el-button type="warning" @click="handleRelease" v-if="form.planId && form.status === 'CONFIRMED'" v-hasPermi="['prd:plan:edit']">下达</el-button>
             <el-button @click="cancel">取消</el-button>
           </div>
         </div>
@@ -146,7 +145,7 @@
           <el-col :span="8">
             <el-form-item label="下达时间" prop="releasedTime">
               <el-date-picker clearable v-model="form.releasedTime" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择下达时间">
+                placeholder="工单审批通过后自动写入" disabled>
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -436,7 +435,7 @@
 </template>
 
 <script setup lang="ts" name="PrdPlanForm">
-import { getPlan, addPlan, updatePlan, updatePlanVersion, generateMaterialRequirementsWithDetails, listDetailsByPlanNo, confirmPlan, releasePlan } from "@/api/erp/prd/plan"
+import { getPlan, addPlan, updatePlan, updatePlanVersion, generateMaterialRequirementsWithDetails, listDetailsByPlanNo, confirmPlan } from "@/api/erp/prd/plan"
 import { listOrderheader, getOrderLine } from "@/api/erp/so/orderheader"
 import { listBom } from "@/api/erp/bd/bom"
 import { listTreeByPlanNo } from "@/api/erp/prd/requirement"
@@ -784,24 +783,6 @@ function handleConfirm() {
   }).catch(error => {
     if (error !== 'cancel') {
       proxy.$modal.msgError("确认失败: " + (error.message || "未知错误"))
-    }
-  })
-}
-
-/** 下达生产计划：CONFIRMED → RELEASED */
-function handleRelease() {
-  if (!form.value.planId) {
-    proxy.$modal.msgWarning("生产计划未保存，无法下达")
-    return
-  }
-  proxy.$modal.confirm('下达该生产计划吗？下达后状态将变为"已下达"。').then(() => {
-    return releasePlan(form.value.planId)
-  }).then(() => {
-    proxy.$modal.msgSuccess("下达成功")
-    getInfo(form.value.planId)
-  }).catch(error => {
-    if (error !== 'cancel') {
-      proxy.$modal.msgError("下达失败: " + (error.message || "未知错误"))
     }
   })
 }

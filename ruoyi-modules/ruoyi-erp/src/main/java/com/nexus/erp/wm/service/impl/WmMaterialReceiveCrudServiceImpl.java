@@ -15,6 +15,7 @@ import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.erp.mq.message.StockInMessage;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
@@ -73,6 +74,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     private final IWmMaterialReceiveExecutorService executorService;
     private final ReliableMessageProducer messageProducer;
     private final ISysUserService sysUserService;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * 分页查询物料入库单列表
@@ -141,6 +143,9 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialReceiveBo bo) {
         WmMaterialReceive entity = MapstructUtils.convert(bo, WmMaterialReceive.class);
+        if (StringUtils.isBlank(entity.getReceiveCode())) {
+            entity.setReceiveCode(autoCodeUtil.genSerialCode("WM_MATERIAL_RECEIVE_CODE", null));
+        }
         if (StringUtils.isBlank(entity.getStatus())) {
             entity.setStatus(STATUS_DRAFT);
         }

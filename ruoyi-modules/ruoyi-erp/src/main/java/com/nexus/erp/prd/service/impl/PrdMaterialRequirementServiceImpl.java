@@ -9,6 +9,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.bo.PrdMaterialRequirementBo;
@@ -60,6 +61,7 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     private final BdMaterialMapper materialMapper;
     private final BdBomMapper bdBomMapper;
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     /**
      * 分页查询物料需求清单列表
@@ -148,6 +150,9 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdMaterialRequirementBo bo) {
         PrdMaterialRequirement entity = MapstructUtils.convert(bo, PrdMaterialRequirement.class);
+        if (StringUtils.isBlank(entity.getRequirementNo())) {
+            entity.setRequirementNo(autoCodeUtil.genSerialCode("PRD_MATERIAL_MBOM", null));
+        }
         int rows = baseMapper.insert(entity);
         if (bo.getPrdMaterialRequirementDetailList() != null && !bo.getPrdMaterialRequirementDetailList().isEmpty()) {
             for (PrdMaterialRequirementDetail detail : bo.getPrdMaterialRequirementDetailList()) {
