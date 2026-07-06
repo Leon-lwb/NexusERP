@@ -30,7 +30,7 @@ import java.util.Map;
  * 调 IotDeviceDataQueryService.getHistoryData 拉取 IoT 历史数据，
  * 写入 dc_data_record（source=IoT），通过唯一索引 uk_point_collect_time 去重。
  * <p>
- * 建议频率：5 分钟一次（在 SnailJob 控制台配置 cron: 0 *&#47;5 * * * ?）
+ * 建议频率：5 分钟一次（在 SnailJob 控制台配置 cron: 0 * 5 * * * ?）
  *
  * @author nexus
  */

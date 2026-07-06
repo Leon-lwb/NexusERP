@@ -187,9 +187,62 @@ public class PrdWorkOrderVo implements Serializable {
     private Long priority;
 
     /**
+     * 来源计划ID
+     */
+    private Long planId;
+
+    /**
+     * BOMid
+     */
+    private Long bomId;
+
+    /**
+     * BOM版本
+     */
+    private String bomVersion;
+
+    /**
+     * BOM名称
+     */
+    @ExcelProperty("BOM名称")
+    private String bomName;
+
+    /**
+     * attr2
+     */
+    private String attr2;
+
+    /**
+     * attr3
+     */
+    private Long attr3;
+
+    /**
+     * attr4
+     */
+    private Long attr4;
+
+    /**
+     * 备注
+     */
+    private String remark;
+
+    /**
      * 已选审批流程模板ID
      */
     private Long selectFlowId;
+
+    /**
+     * 是否倒冲工单: 0-否, 1-是
+     */
+    @ExcelProperty("是否倒冲")
+    private Integer backflushFlag;
+
+    /**
+     * 累计发料数量
+     */
+    @ExcelProperty("累计发料数量")
+    private BigDecimal issuedQty;
 
     /**
      * 生产部门ID（非持久化，通过 workshop → bd_workshop.dept_id JOIN 反查填入）

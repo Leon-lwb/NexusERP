@@ -844,38 +844,44 @@ function getInfo(id) {
 }
 
 function loadWorkOrderResources(woId) {
-  getWorkOrderResourceByWoId(woId).then((response) => {
-    const resources = response.data || [];
+  getWorkOrderResourceByWoId(woId)
+    .then((response) => {
+      const resources = response.data || [];
 
-    form.value.workshopList = [];
-    form.value.workstationList = [];
-    form.value.teamList = [];
+      form.value.workshopList = [];
+      form.value.workstationList = [];
+      form.value.teamList = [];
 
-    resources.forEach((resource) => {
-      if (resource.resourceType === RESOURCE_TYPE.WORKSHOP) {
-        form.value.workshopList.push(resource.resourceId);
-      } else if (resource.resourceType === RESOURCE_TYPE.WORKSTATION) {
-        form.value.workstationList.push({
-          resourceId: resource.resourceId,
-          resourceCode: resource.resourceCode,
-          resourceName: resource.resourceName,
-          parentId: resource.parentId,
-          parentName: getWorkshopNameById(resource.parentId)
-        });
-      } else if (resource.resourceType === RESOURCE_TYPE.TEAM) {
-        form.value.teamList.push({
-          resourceId: resource.resourceId,
-          resourceCode: resource.resourceCode,
-          resourceName: resource.resourceName,
-          parentId: resource.parentId,
-          parentName: getWorkshopNameById(resource.parentId)
-        });
-      }
+      resources.forEach((resource) => {
+        if (resource.resourceType === RESOURCE_TYPE.WORKSHOP) {
+          form.value.workshopList.push(resource.resourceId);
+        } else if (resource.resourceType === RESOURCE_TYPE.WORKSTATION) {
+          form.value.workstationList.push({
+            resourceId: resource.resourceId,
+            resourceCode: resource.resourceCode,
+            resourceName: resource.resourceName,
+            parentId: resource.parentId,
+            parentName: getWorkshopNameById(resource.parentId)
+          });
+        } else if (resource.resourceType === RESOURCE_TYPE.TEAM) {
+          form.value.teamList.push({
+            resourceId: resource.resourceId,
+            resourceCode: resource.resourceCode,
+            resourceName: resource.resourceName,
+            parentId: resource.parentId,
+            parentName: getWorkshopNameById(resource.parentId)
+          });
+        }
+      });
+
+      form.value.workstationList.sort((a, b) => a.seq - b.seq);
+      form.value.teamList.sort((a, b) => a.seq - b.seq);
+    })
+    .catch((error) => {
+      // 资源接口失败（权限/网络/异常）此前被静默吞掉，导致车间/工作站/班组列表空白
+      console.error('加载工单资源分配失败 woId=' + woId, error);
+      proxy.$modal.msgWarning('加载车间/工作站/班组分配失败，请检查接口权限或网络');
     });
-
-    form.value.workstationList.sort((a, b) => a.seq - b.seq);
-    form.value.teamList.sort((a, b) => a.seq - b.seq);
-  });
 }
 
 function getWorkshopNameById(workshopId) {
@@ -954,10 +960,17 @@ function submitForm() {
 
       if (form.value.woId != null) {
         updateWork(form.value).then((response) => {
-          saveWorkOrderResourceBatch(form.value.woId, resourceList).then(() => {
-            proxy.$modal.msgSuccess('修改成功');
-            router.push('/erp/prdExec/work');
-          });
+          saveWorkOrderResourceBatch(form.value.woId, resourceList)
+            .then(() => {
+              proxy.$modal.msgSuccess('修改成功');
+              router.push('/erp/prdExec/work');
+            })
+            .catch((error) => {
+              // 资源分配保存失败此前被静默吞掉（工单已更新但资源未落库）
+              console.error('保存资源分配失败:', error);
+              proxy.$modal.msgWarning('工单已保存，但资源分配保存失败，请编辑后重新保存');
+              router.push('/erp/prdExec/work');
+            });
         });
       } else {
         addWork(form.value)

@@ -161,19 +161,21 @@ public class PrdWorkOrderResourceServiceImpl implements IPrdWorkOrderResourceSer
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean saveBatch(Long woId, List<PrdWorkOrderResource> resourceList) {
+        // 空列表不执行删除，避免前端资源加载失败（列表为空）时误清空已有资源分配
+        if (resourceList == null || resourceList.isEmpty()) {
+            return true;
+        }
         // 先删除该工单的所有资源分配
         deleteByWoId(woId);
 
         // 保存新的资源分配
-        if (resourceList != null && !resourceList.isEmpty()) {
-            for (int i = 0; i < resourceList.size(); i++) {
-                PrdWorkOrderResource resource = resourceList.get(i);
-                resource.setId(null);
-                resource.setWoId(woId);
-                resource.setSeq(i + 1);
-                resource.setStatus(PrdWorkOrderResource.STATUS_PENDING);
-                baseMapper.insert(resource);
-            }
+        for (int i = 0; i < resourceList.size(); i++) {
+            PrdWorkOrderResource resource = resourceList.get(i);
+            resource.setId(null);
+            resource.setWoId(woId);
+            resource.setSeq(i + 1);
+            resource.setStatus(PrdWorkOrderResource.STATUS_PENDING);
+            baseMapper.insert(resource);
         }
         return true;
     }
