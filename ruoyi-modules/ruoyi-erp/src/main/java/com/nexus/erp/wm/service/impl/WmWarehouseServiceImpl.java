@@ -83,11 +83,13 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmWarehouseBo bo) {
-        validateWarehouseCodeUnique(bo.getWarehouseCode(), null);
         WmWarehouse entity = MapstructUtils.convert(bo, WmWarehouse.class);
+        // 自动生成开关打开时编码为空，由后端兜底生成（避免前端预览消耗流水号）
         if (StringUtils.isBlank(entity.getWarehouseCode())) {
             entity.setWarehouseCode(autoCodeUtil.genSerialCode("WAREHOUSE_CODE", null));
         }
+        // 校验仓库编码唯一性（在生成之后，用真实编码校验）
+        validateWarehouseCodeUnique(entity.getWarehouseCode(), null);
         return baseMapper.insert(entity);
     }
 

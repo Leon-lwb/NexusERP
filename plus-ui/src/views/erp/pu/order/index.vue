@@ -46,12 +46,16 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:order:export']"> 导出 </el-button>
       </el-col>
+      <!--
       <el-col :span="1.5">
         <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit" v-hasPermi="['pu:order:edit']"> 提交 </el-button>
       </el-col>
+      -->
+      <!--
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Check" :disabled="single" @click="handleApprove" v-hasPermi="['pu:order:edit']"> 审批 </el-button>
       </el-col>
+      -->
       <el-col :span="1.5">
         <el-button type="success" plain icon="Goods" :disabled="single" @click="handleReceive" v-hasPermi="['pu:order:edit']"> 收货联动 </el-button>
       </el-col>
@@ -125,8 +129,6 @@
 import {
   listPurchaseOrder,
   delPurchaseOrder,
-  submitPurchaseOrder,
-  approvePurchaseOrder,
   receivePurchaseOrder,
   getDiffReport,
   listOrderLines
@@ -286,25 +288,25 @@ function handleExport() {
   proxy.download('/erp/pu/order/export', { ...queryParams.value }, `pu_order_${Date.now()}.xlsx`);
 }
 
-/**
- * 提交按钮操作
- */
-function handleSubmit() {
-  submitPurchaseOrder(ids.value[0]).then(() => {
-    proxy.$modal.msgSuccess('提交成功');
-    getList();
-  });
-}
+// /**
+//  * 提交按钮操作（已废弃，请使用表单内的「提交审批」走 Flowable 工作流）
+//  */
+// function handleSubmit() {
+//   submitPurchaseOrder(ids.value[0]).then(() => {
+//     proxy.$modal.msgSuccess('提交成功');
+//     getList();
+//   });
+// }
 
-/**
- * 审批按钮操作
- */
-function handleApprove() {
-  approvePurchaseOrder(ids.value[0]).then(() => {
-    proxy.$modal.msgSuccess('审批成功');
-    getList();
-  });
-}
+// /**
+//  * 审批按钮操作（已废弃，请使用表单内的「提交审批」走 Flowable 工作流）
+//  */
+// function handleApprove() {
+//   approvePurchaseOrder(ids.value[0]).then(() => {
+//     proxy.$modal.msgSuccess('审批成功');
+//     getList();
+//   });
+// }
 
 /**
  * 收货联动按钮操作

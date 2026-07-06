@@ -8,8 +8,6 @@ import org.springframework.amqp.core.Message;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 消息消费者基类，提供幂等消费、手动ACK和重试机制
@@ -22,6 +20,8 @@ public abstract class BaseMessageConsumer<T extends BaseMessage> {
 
     /** 消费幂等键前缀 */
     private static final String CONSUMED_KEY_PREFIX = "mq:consumed:";
+    /** 消费重试计数键前缀 */
+    private static final String RETRY_KEY_PREFIX = "mq:retry:";
 
     /**
      * 处理业务逻辑，子类实现
@@ -57,16 +57,20 @@ public abstract class BaseMessageConsumer<T extends BaseMessage> {
             log.info("开始消费消息: messageId={}, sourceModule={}", messageId, message.getSourceModule());
             doProcess(message);
             markConsumed(messageId);
+            clearRetryCount(messageId);
             channel.basicAck(deliveryTag, false);
             log.info("消息消费成功: messageId={}", messageId);
         } catch (Exception e) {
             log.error("消息消费失败: messageId={}, error={}", messageId, e.getMessage(), e);
-            int retryCount = getRetryCountFromHeaders(amqpMessage);
             int maxRetry = message.getMaxRetry() != null ? message.getMaxRetry() : 3;
+            // 基于Redis计数器统计连续失败次数: basicNack(requeue=true) 不经过死信交换机,
+            // x-death 头永远不会被Broker填充, 故无法据此判断重试次数(原实现恒为0导致无限循环)
+            long retryCount = incrementRetryCount(messageId);
             if (retryCount >= maxRetry) {
-                log.warn("消息超过最大重试次数，进入死信: messageId={}, retryCount={}", messageId, retryCount);
+                log.warn("消息连续失败达到最大重试次数，进入死信: messageId={}, retryCount={}", messageId, retryCount);
                 channel.basicNack(deliveryTag, false, false);
             } else {
+                log.warn("消息将重新入队重试: messageId={}, retryCount={}/{}", messageId, retryCount, maxRetry);
                 channel.basicNack(deliveryTag, false, true);
             }
         }
@@ -94,25 +98,27 @@ public abstract class BaseMessageConsumer<T extends BaseMessage> {
     }
 
     /**
-     * 从AMQP消息头中获取x-death重试次数
+     * 递增消息重试次数(基于Redis原子计数器)
+     * <p>
+     * 替代 x-death 头方案: {@code basicNack(requeue=true)} 重新入队不经过死信交换机,
+     * x-death 头不会被Broker填充, 无法据此统计重试次数。改用 Redis 计数器按 messageId 累计失败次数。
      *
-     * @param amqpMessage AMQP消息
-     * @return 重试次数
+     * @param messageId 消息ID
+     * @return 当前累计失败次数(含本次)
      */
-    private int getRetryCountFromHeaders(Message amqpMessage) {
-        List<Map<String, ?>> xDeath = amqpMessage.getMessageProperties().getXDeathHeader();
-        if (xDeath == null || xDeath.isEmpty()) {
-            return 0;
-        }
-        int count = 0;
-        for (Map<String, ?> death : xDeath) {
-            Object countObj = death.get("count");
-            if (countObj instanceof Long) {
-                count += ((Long) countObj).intValue();
-            } else if (countObj instanceof Integer) {
-                count += (Integer) countObj;
-            }
-        }
+    private long incrementRetryCount(String messageId) {
+        String key = RETRY_KEY_PREFIX + messageId;
+        long count = RedisUtils.incrAtomicValue(key);
+        RedisUtils.expire(key, Duration.ofHours(24));
         return count;
+    }
+
+    /**
+     * 清除消息重试计数(消费成功后调用)
+     *
+     * @param messageId 消息ID
+     */
+    private void clearRetryCount(String messageId) {
+        RedisUtils.deleteObject(RETRY_KEY_PREFIX + messageId);
     }
 }

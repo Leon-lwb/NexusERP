@@ -98,12 +98,10 @@ public interface IPuPurchaseOrderService extends WfCallBackServiceI {
      */
     int deleteByIds(Long[] ids);
 
-    /**
-     * 提交采购订单（草稿 → 已提交）
-     *
-     * @param orderId 订单ID
-     */
-    void submit(Long orderId);
+    // /**
+    //  * 提交采购订单（草稿 → 已提交，已废弃，请使用 Flowable 工作流）
+    //  */
+    // void submit(Long orderId);
 
     /**
      * 提交流程审批（启动 Flowable 审批流）
@@ -122,12 +120,10 @@ public interface IPuPurchaseOrderService extends WfCallBackServiceI {
      */
     String getProcInsId(String orderIdStr);
 
-    /**
-     * 审批通过采购订单（已提交 → 已批准）
-     *
-     * @param orderId 订单ID
-     */
-    void approve(Long orderId);
+    // /**
+    //  * 审批通过采购订单（已废弃，请使用 Flowable 工作流审批）
+    //  */
+    // void approve(Long orderId);
 
     /**
      * 关闭采购订单

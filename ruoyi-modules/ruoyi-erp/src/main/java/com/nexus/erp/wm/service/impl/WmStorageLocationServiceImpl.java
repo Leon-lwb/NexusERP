@@ -23,6 +23,7 @@ import com.nexus.erp.wm.mapper.WmStorageAreaMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmStorageLocationService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
     private final WmStorageAreaMapper wmStorageAreaMapper;
     private final WmWarehouseMapper wmWarehouseMapper;
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmStorageLocationVo> selectPageList(WmStorageLocationBo bo, PageQuery pageQuery) {
@@ -81,9 +83,13 @@ public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
         if (!Long.valueOf(1L).equals(area.getLocationFlag())) {
             throw new ServiceException("所属库区未开启库位管理，无法新增库位");
         }
-        // 校验库位编码唯一性
-        validateLocationCodeUnique(bo.getLocationCode(), null);
         WmStorageLocation entity = MapstructUtils.convert(bo, WmStorageLocation.class);
+        // 自动生成开关打开时编码为空，由后端兜底生成（避免前端预览消耗流水号）
+        if (StringUtils.isBlank(entity.getLocationCode())) {
+            entity.setLocationCode(autoCodeUtil.genSerialCode("WM_LOCATION_CODE", null));
+        }
+        // 校验库位编码唯一性
+        validateLocationCodeUnique(entity.getLocationCode(), null);
         // 自动填充仓库ID（从库区获取）
         entity.setWarehouseId(area.getWarehouseId());
         return baseMapper.insert(entity);

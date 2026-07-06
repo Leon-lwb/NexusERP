@@ -145,6 +145,7 @@ public class TransferStrategy extends BaseStockOperationStrategy {
             toStock.setStockQuantity(line.getQuantity());
             toStock.setRecptDate(now);
             toStock.setFrozenFlag(0L);
+            toStock.setVersion(0);
             stockMapper.insert(toStock);
         } else {
             toStock = toStocks.get(0);

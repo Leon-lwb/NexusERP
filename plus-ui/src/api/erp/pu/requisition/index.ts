@@ -78,27 +78,27 @@ export const exportPurchaseRequisition = (query: PurchaseRequisitionQuery) =>
     params: query 
   });
 
-/**
- * 提交采购请购单
- * @param id 采购请购单ID
- * @returns 请求结果
- */
-export const submitPurchaseRequisition = (id: number) =>
-  request({ 
-    url: BASE + '/submit/' + id, 
-    method: 'put' 
-  });
+// /**
+//  * 提交采购请购单（已废弃，请使用 submitRequisitionFlow 走 Flowable 工作流）
+//  * @param id 采购请购单ID
+//  * @returns 请求结果
+//  */
+// export const submitPurchaseRequisition = (id: number) =>
+//   request({
+//     url: BASE + '/submit/' + id,
+//     method: 'put'
+//   });
 
-/**
- * 审核采购请购单
- * @param id 采购请购单ID
- * @returns 请求结果
- */
-export const approvePurchaseRequisition = (id: number) =>
-  request({ 
-    url: BASE + '/approve/' + id, 
-    method: 'put' 
-  });
+// /**
+//  * 审核采购请购单（已废弃，请使用 Flowable 工作流审批）
+//  * @param id 采购请购单ID
+//  * @returns 请求结果
+//  */
+// export const approvePurchaseRequisition = (id: number) =>
+//   request({
+//     url: BASE + '/approve/' + id,
+//     method: 'put'
+//   });
 
 /**
  * 将请购单转换为采购订单

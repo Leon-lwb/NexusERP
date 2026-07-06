@@ -121,21 +121,17 @@ public class PuPurchaseOrderController extends BaseController {
         return toAjax(purchaseOrderService.updateByBo(bo));
     }
 
-    /**
-     * 提交采购订单（草稿 → 已提交，旧版无审批流）
-     * <p>权限标识：{@code pu:order:submit}</p>
-     * <p>日志记录：title="采购订单"，businessType=UPDATE</p>
-     *
-     * @param orderId 采购订单 ID
-     * @return 操作结果
-     */
-    @SaCheckPermission("pu:order:submit")
-    @Log(title = "采购订单", businessType = BusinessType.UPDATE)
-    @PutMapping("/submit/{orderId}")
-    public R<Void> submit(@PathVariable Long orderId) {
-        purchaseOrderService.submit(orderId);
-        return R.ok();
-    }
+    // /**
+    //  * 提交采购订单（草稿 → 已提交，旧版无审批流）
+    //  * <p>已废弃，请使用 {@link #submitWithFlow} 走 Flowable 工作流。</p>
+    //  */
+    // @SaCheckPermission("pu:order:submit")
+    // @Log(title = "采购订单", businessType = BusinessType.UPDATE)
+    // @PutMapping("/submit/{orderId}")
+    // public R<Void> submit(@PathVariable Long orderId) {
+    //     purchaseOrderService.submit(orderId);
+    //     return R.ok();
+    // }
 
     /**
      * 提交流程审批（启动 Flowable 审批流）
@@ -173,21 +169,17 @@ public class PuPurchaseOrderController extends BaseController {
         return R.ok("查询成功", purchaseOrderService.getProcInsId(String.valueOf(orderId)));
     }
 
-    /**
-     * 审批通过采购订单（已提交 → 已批准）
-     * <p>权限标识：{@code pu:order:approve}</p>
-     * <p>日志记录：title="采购订单"，businessType=UPDATE</p>
-     *
-     * @param orderId 采购订单 ID
-     * @return 操作结果
-     */
-    @SaCheckPermission("pu:order:approve")
-    @Log(title = "采购订单", businessType = BusinessType.UPDATE)
-    @PutMapping("/approve/{orderId}")
-    public R<Void> approve(@PathVariable Long orderId) {
-        purchaseOrderService.approve(orderId);
-        return R.ok();
-    }
+    // /**
+    //  * 审批通过采购订单（已提交 → 已批准，旧版无审批流）
+    //  * <p>已废弃，请使用 Flowable 工作流审批。</p>
+    //  */
+    // @SaCheckPermission("pu:order:approve")
+    // @Log(title = "采购订单", businessType = BusinessType.UPDATE)
+    // @PutMapping("/approve/{orderId}")
+    // public R<Void> approve(@PathVariable Long orderId) {
+    //     purchaseOrderService.approve(orderId);
+    //     return R.ok();
+    // }
 
     /**
      * 关闭采购订单

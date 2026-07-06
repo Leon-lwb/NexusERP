@@ -29,8 +29,9 @@ public class WmWarehouseBo extends BaseEntity {
 
     /**
      * 仓库编码
+     * <p>
+     * 自动生成开关打开时由前端清空、后端兜底生成（避免预览消耗流水号），故不强制非空。
      */
-    @NotBlank(message = "仓库编码不能为空")
     private String warehouseCode;
 
     /**

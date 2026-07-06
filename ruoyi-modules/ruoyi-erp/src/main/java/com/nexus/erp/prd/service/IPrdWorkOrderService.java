@@ -153,6 +153,17 @@ public interface IPrdWorkOrderService extends WfCallBackServiceI {
     void startProduction(Long woId);
 
     /**
+     * 标记工单为生产中(轻量状态流转)
+     * <p>
+     * 仅将 RELEASED 状态工单置为 IN_PROGRESS 并记录实际开工时间，不校验领料单。
+     * 供 MES 完工回写等权威外部信号触发完工时前置调用，使状态机合法
+     * (RELEASED → IN_PROGRESS → COMPLETED)。对已处于 IN_PROGRESS 的工单幂等。
+     *
+     * @param woId 工单 ID
+     */
+    void markInProgress(Long woId);
+
+    /**
      * 完工
      * <p>
      * 将工单状态从 IN_PROGRESS 更新为 COMPLETED（已完工），

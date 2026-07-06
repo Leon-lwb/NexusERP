@@ -78,12 +78,13 @@ public class WmStorageAreaServiceImpl implements IWmStorageAreaService {
     public int insertByBo(WmStorageAreaBo bo) {
         // 校验仓库存在且启用
         validateWarehouseExistsAndEnabled(bo.getWarehouseId());
-        // 校验库区编码唯一性
-        validateAreaCodeUnique(bo.getAreaCode(), null);
         WmStorageArea entity = MapstructUtils.convert(bo, WmStorageArea.class);
+        // 自动生成开关打开时编码为空，由后端兜底生成（避免前端预览消耗流水号）
         if (StringUtils.isBlank(entity.getAreaCode())) {
             entity.setAreaCode(autoCodeUtil.genSerialCode("WM_AREA_CODE", null));
         }
+        // 校验库区编码唯一性（在生成之后，用真实编码校验）
+        validateAreaCodeUnique(entity.getAreaCode(), null);
         return baseMapper.insert(entity);
     }
 

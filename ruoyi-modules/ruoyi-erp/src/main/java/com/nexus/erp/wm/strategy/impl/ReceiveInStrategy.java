@@ -167,6 +167,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
         stock.setStockQuantity(stockQuantity);
         stock.setRecptDate(recptDate);
         stock.setFrozenFlag(0L);
+        stock.setVersion(0);
         return stock;
     }
 

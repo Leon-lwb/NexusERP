@@ -194,19 +194,19 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
-    /**
-     * 提交采购申请：仅草稿状态允许提交，将状态改为已提交
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void submit(Long requisitionId) {
-        PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
-        if (!STATUS_DRAFT.equals(requisition.getStatus())) {
-            throw new ServiceException("只有草稿状态的采购申请才能提交");
-        }
-        requisition.setStatus(STATUS_SUBMITTED);
-        baseMapper.updateById(requisition);
-    }
+    // /**
+    //  * 提交采购申请（已废弃，请使用 Flowable 工作流提交审批）
+    //  */
+    // @Override
+    // @Transactional(rollbackFor = Exception.class)
+    // public void submit(Long requisitionId) {
+    //     PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+    //     if (!STATUS_DRAFT.equals(requisition.getStatus())) {
+    //         throw new ServiceException("只有草稿状态的采购申请才能提交");
+    //     }
+    //     requisition.setStatus(STATUS_SUBMITTED);
+    //     baseMapper.updateById(requisition);
+    // }
 
     // ==================== Flowable 工作流集成 ====================
 
@@ -308,17 +308,19 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         return null;
     }
 
-    // ==================== 原有审批流（保留兼容） ====================
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void approve(Long requisitionId) {
-        PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
-        if (!STATUS_SUBMITTED.equals(requisition.getStatus()) && !STATUS_APPROVING.equals(requisition.getStatus())) {
-            throw new ServiceException("当前状态不允许审批采购申请");
-        }
-        requisition.setStatus(STATUS_APPROVED);
-        baseMapper.updateById(requisition);
-    }
+    // /**
+    //  * 审批采购申请（已废弃，请使用 Flowable 工作流审批）
+    //  */
+    // @Override
+    // @Transactional(rollbackFor = Exception.class)
+    // public void approve(Long requisitionId) {
+    //     PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+    //     if (!STATUS_SUBMITTED.equals(requisition.getStatus()) && !STATUS_APPROVING.equals(requisition.getStatus())) {
+    //         throw new ServiceException("当前状态不允许审批采购申请");
+    //     }
+    //     requisition.setStatus(STATUS_APPROVED);
+    //     baseMapper.updateById(requisition);
+    // }
 
     /**
      * 关闭采购申请：直接设为已关闭状态

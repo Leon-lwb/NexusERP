@@ -295,6 +295,16 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
 
         // ★ 新增：工单下达时自动生成生产领料单（排除倒冲物料）
         createProductionIssueOnRelease(wo);
+
+        // 事务提交后发送工单下达消息到MES队列
+        final PrdWorkOrder msgEntity = wo;
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendWorkOrderReleaseMessage(msgEntity);
+                }
+            });
     }
 
     /**
@@ -414,6 +424,33 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             }
         }
 
+        wo.setWoStatus(STATUS_IN_PROGRESS);
+        wo.setActualStartDate(new Date());
+        baseMapper.updateById(wo);
+    }
+
+    /**
+     * 标记工单为生产中(轻量状态流转)
+     * <p>
+     * 仅将 RELEASED 状态工单置为 IN_PROGRESS 并记录实际开工时间，不校验领料单。
+     * 供 MES 完工回写等权威外部信号触发完工时前置调用，使状态机合法
+     * (RELEASED → IN_PROGRESS → COMPLETED)。对已处于 IN_PROGRESS 的工单幂等。
+     *
+     * @param woId 工单 ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void markInProgress(Long woId) {
+        PrdWorkOrder wo = baseMapper.selectById(woId);
+        if (wo == null) {
+            throw new RuntimeException("工单不存在: " + woId);
+        }
+        if (STATUS_IN_PROGRESS.equals(wo.getWoStatus())) {
+            return;
+        }
+        if (!STATUS_RELEASED.equals(wo.getWoStatus())) {
+            throw new RuntimeException("仅已下达状态工单可标记生产中,当前状态:" + wo.getWoStatus());
+        }
         wo.setWoStatus(STATUS_IN_PROGRESS);
         wo.setActualStartDate(new Date());
         baseMapper.updateById(wo);

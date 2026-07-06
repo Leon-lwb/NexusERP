@@ -130,6 +130,7 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
             stock.setStockQuantity(quantity);
             stock.setRecptDate(now);
             stock.setFrozenFlag(0L);
+            stock.setVersion(0);
             stockMapper.insert(stock);
         }
 

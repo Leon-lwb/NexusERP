@@ -86,12 +86,10 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      */
     int deleteByIds(Long[] ids);
 
-    /**
-     * 提交采购申请（草稿 → 已提交）
-     *
-     * @param requisitionId 申请ID
-     */
-    void submit(Long requisitionId);
+    // /**
+    //  * 提交采购申请（草稿 → 已提交，已废弃，请使用 Flowable 工作流）
+    //  */
+    // void submit(Long requisitionId);
 
     /**
      * 提交流程审批（启动 Flowable 审批流）
@@ -110,12 +108,10 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      */
     String getProcInsId(String requisitionIdStr);
 
-    /**
-     * 审批通过采购申请（已提交 → 已批准）
-     *
-     * @param requisitionId 申请ID
-     */
-    void approve(Long requisitionId);
+    // /**
+    //  * 审批通过采购申请（已废弃，请使用 Flowable 工作流审批）
+    //  */
+    // void approve(Long requisitionId);
 
     /**
      * 关闭采购申请

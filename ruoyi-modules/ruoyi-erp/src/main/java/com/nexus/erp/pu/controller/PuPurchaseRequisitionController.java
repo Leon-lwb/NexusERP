@@ -117,21 +117,17 @@ public class PuPurchaseRequisitionController extends BaseController {
         return toAjax(purchaseRequisitionService.updateByBo(bo));
     }
 
-    /**
-     * 提交采购申请（草稿 → 已提交，旧版无审批流）
-     * <p>权限标识：{@code pu:requisition:submit}</p>
-     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
-     *
-     * @param requisitionId 采购申请 ID
-     * @return 操作结果
-     */
-    @SaCheckPermission("pu:requisition:submit")
-    @Log(title = "采购申请", businessType = BusinessType.UPDATE)
-    @PutMapping("/submit/{requisitionId}")
-    public R<Void> submit(@PathVariable Long requisitionId) {
-        purchaseRequisitionService.submit(requisitionId);
-        return R.ok();
-    }
+    // /**
+    //  * 提交采购申请（草稿 → 已提交，旧版无审批流）
+    //  * <p>已废弃，请使用 {@link #submitWithFlow} 走 Flowable 工作流。</p>
+    //  */
+    // @SaCheckPermission("pu:requisition:submit")
+    // @Log(title = "采购申请", businessType = BusinessType.UPDATE)
+    // @PutMapping("/submit/{requisitionId}")
+    // public R<Void> submit(@PathVariable Long requisitionId) {
+    //     purchaseRequisitionService.submit(requisitionId);
+    //     return R.ok();
+    // }
 
     /**
      * 提交流程审批（启动 Flowable 审批流）
@@ -169,21 +165,17 @@ public class PuPurchaseRequisitionController extends BaseController {
         return R.ok("查询成功", purchaseRequisitionService.getProcInsId(String.valueOf(requisitionId)));
     }
 
-    /**
-     * 审批通过采购申请（已提交 → 已批准）
-     * <p>权限标识：{@code pu:requisition:approve}</p>
-     * <p>日志记录：title="采购申请"，businessType=UPDATE</p>
-     *
-     * @param requisitionId 采购申请 ID
-     * @return 操作结果
-     */
-    @SaCheckPermission("pu:requisition:approve")
-    @Log(title = "采购申请", businessType = BusinessType.UPDATE)
-    @PutMapping("/approve/{requisitionId}")
-    public R<Void> approve(@PathVariable Long requisitionId) {
-        purchaseRequisitionService.approve(requisitionId);
-        return R.ok();
-    }
+    // /**
+    //  * 审批通过采购申请（已提交 → 已批准，旧版无审批流）
+    //  * <p>已废弃，请使用 Flowable 工作流审批。</p>
+    //  */
+    // @SaCheckPermission("pu:requisition:approve")
+    // @Log(title = "采购申请", businessType = BusinessType.UPDATE)
+    // @PutMapping("/approve/{requisitionId}")
+    // public R<Void> approve(@PathVariable Long requisitionId) {
+    //     purchaseRequisitionService.approve(requisitionId);
+    //     return R.ok();
+    // }
 
     /**
      * 将已批准的采购申请转换为采购订单

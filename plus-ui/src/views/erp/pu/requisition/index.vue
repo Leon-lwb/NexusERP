@@ -48,14 +48,18 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:requisition:export']"> 导出 </el-button>
       </el-col>
+      <!--
       <el-col :span="1.5">
         <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit" v-hasPermi="['pu:requisition:edit']">
           提交
         </el-button>
       </el-col>
+      -->
+      <!--
       <el-col :span="1.5">
         <el-button type="primary" plain icon="Check" :disabled="single" @click="handleApprove" v-hasPermi="['pu:requisition:edit']"> 审批 </el-button>
       </el-col>
+      -->
       <el-col :span="1.5">
         <el-button type="success" plain icon="Position" :disabled="single" @click="handleConvert" v-hasPermi="['pu:requisition:edit']">
           转单
@@ -103,8 +107,6 @@
 import {
   listPurchaseRequisition,
   delPurchaseRequisition,
-  submitPurchaseRequisition,
-  approvePurchaseRequisition,
   convertPurchaseRequisition,
   generateFromLowStock
 } from '@/api/erp/pu/requisition';
@@ -212,25 +214,25 @@ function handleExport() {
   proxy.download('/erp/pu/requisition/export', { ...queryParams.value }, `pu_requisition_${Date.now()}.xlsx`);
 }
 
-/**
- * 提交按钮操作
- */
-function handleSubmit() {
-  submitPurchaseRequisition(ids.value[0]).then(() => {
-    proxy.$modal.msgSuccess('提交成功');
-    getList();
-  });
-}
+// /**
+//  * 提交按钮操作（已废弃，请使用表单内的「提交审批」走 Flowable 工作流）
+//  */
+// function handleSubmit() {
+//   submitPurchaseRequisition(ids.value[0]).then(() => {
+//     proxy.$modal.msgSuccess('提交成功');
+//     getList();
+//   });
+// }
 
-/**
- * 审批按钮操作
- */
-function handleApprove() {
-  approvePurchaseRequisition(ids.value[0]).then(() => {
-    proxy.$modal.msgSuccess('审批成功');
-    getList();
-  });
-}
+// /**
+//  * 审批按钮操作（已废弃，请使用表单内的「提交审批」走 Flowable 工作流）
+//  */
+// function handleApprove() {
+//   approvePurchaseRequisition(ids.value[0]).then(() => {
+//     proxy.$modal.msgSuccess('审批成功');
+//     getList();
+//   });
+// }
 
 /**
  * 转单按钮操作 - 将请购单转换为采购订单

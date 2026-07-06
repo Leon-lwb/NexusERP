@@ -111,6 +111,7 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
             stock.setStockQuantity(afterQuantity);
             stock.setRecptDate(now);
             stock.setFrozenFlag(0L);
+            stock.setVersion(0);
             stockMapper.insert(stock);
         } else {
             stock.setRecptDate(now);

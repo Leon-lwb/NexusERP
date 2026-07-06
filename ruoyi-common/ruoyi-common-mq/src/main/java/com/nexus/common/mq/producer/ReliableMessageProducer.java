@@ -1,5 +1,6 @@
 package com.nexus.common.mq.producer;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.mq.domain.BaseMessage;
 import com.nexus.common.mq.domain.MessageRecord;
@@ -19,6 +20,7 @@ import java.util.UUID;
  */
 @Slf4j
 @RequiredArgsConstructor
+@DS("master")
 public class ReliableMessageProducer {
 
     private final RabbitTemplate rabbitTemplate;

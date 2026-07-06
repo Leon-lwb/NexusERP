@@ -123,6 +123,7 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
             stock.setWarehouseId(warehouseId);
             stock.setLocationId(locationId);
             stock.setStockQuantity(BigDecimal.ZERO);
+            stock.setVersion(0);
             //stock.setIsQualityInspected("N");
             stockMapper.insert(stock);
         }

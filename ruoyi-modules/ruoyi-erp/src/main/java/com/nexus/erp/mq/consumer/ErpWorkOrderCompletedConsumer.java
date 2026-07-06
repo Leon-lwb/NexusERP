@@ -89,6 +89,13 @@ public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOr
             return;
         }
 
+        // MES完工是权威信号: 若ERP工单尚在"已下达"(未开工), 先置为生产中, 使状态机合法
+        // (RELEASED → IN_PROGRESS → COMPLETED), 避免因状态偏差导致回写永久失败
+        if (currentStatus == WoStatusEnum.RELEASED) {
+            log.info("ERP工单尚在已下达, 先标记生产中再完工回写: woNo={}", wo.getWoNo());
+            workOrderService.markInProgress(erpWoId);
+        }
+
         // 使用消息中的实际完工数量, 调用service原子更新(内部触发完工倒冲入库链路)
         BigDecimal completedQty = message.getCompletedQty() != null ? message.getCompletedQty() : BigDecimal.ZERO;
         BigDecimal scrappedQty = message.getScrappedQty() != null ? message.getScrappedQty() : BigDecimal.ZERO;
