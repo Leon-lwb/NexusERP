@@ -755,6 +755,18 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .includeProcessVariables()
             .singleResult();
 
+        // 查看流程时前端只传 procInsId、未透传 dataId，此处从流程变量回查 dataId，
+        // 确保 processFormList 能命中自定义业务表单（routeName），「表单信息」Tab 才能渲染业务表单
+        if (StringUtils.isBlank(dataId) && historicProcIns != null) {
+            Map<String, Object> procVars = historicProcIns.getProcessVariables();
+            if (procVars != null) {
+                Object vid = procVars.get("dataId");
+                if (vid != null) {
+                    dataId = vid.toString();
+                }
+            }
+        }
+
         // 提前加载 BPMN 模型，以便 currTaskFormData 获取自定义表单的 formKey
         InputStream inputStream = repositoryService.getProcessModel(historicProcIns.getProcessDefinitionId());
         String bpmnXmlStr = StrUtil.utf8Str(IoUtil.readBytes(inputStream, false));

@@ -14,7 +14,7 @@
               style="margin-right: 8px"
               >创建流转卡</el-button
             >
-            <el-button type="primary" plain @click="goBack">返回</el-button>
+            <el-button type="primary" plain @click="goBack" v-if="!props.disabled">返回</el-button>
           </div>
         </div>
       </template>
@@ -116,14 +116,23 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
 const router = useRouter();
 
+/** 流程详情嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+});
+
 const workOrder = ref<ProWorkOrderVO>({} as ProWorkOrderVO);
 const selectFlowId = ref<string>('');
 const procInsId = ref<string>('');
 const flowOptions = ref<any[]>([]);
 const activeTab = ref('info');
 
-const loadDetail = async () => {
-  const mesWoId = route.params.mesWoId as string;
+const loadDetail = async (mesWoIdParam?: string) => {
+  const mesWoId = mesWoIdParam || (route.params.mesWoId as string);
+  if (!mesWoId) return;
   const res = await getWorkOrder(mesWoId);
   workOrder.value = res.data;
   // 仅 CREATED 状态需要加载审批流程选项
@@ -234,6 +243,19 @@ const stepStatusTagType = (status: string) => {
   };
   return map[status] || 'info';
 };
+
+/**
+ * 流程详情嵌入时：父组件注入 customFormData（含 mesWoId），据此加载工单详情。
+ */
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).mesWoId != null) {
+      loadDetail(String((val as any).mesWoId));
+    }
+  },
+  { deep: true, immediate: true }
+);
 
 onMounted(() => {
   loadDetail();

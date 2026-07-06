@@ -8,12 +8,12 @@
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT'">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
-            <el-button @click="cancel">取消</el-button>
+            <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
       </template>
 
-      <el-form ref="arrivalnoticeRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+      <el-form ref="arrivalnoticeRef" :model="form" :rules="rules" label-width="100px" :disabled="formDisabled">
         <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="8">
@@ -292,6 +292,14 @@ const { sys_true_or_false, wm_notice_status, bd_material_type } = toRefs<any>(
 const route = useRoute();
 const router = useRouter();
 
+/** 流程详情 / HistoricDetail 嵌入时传入 */
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  model: { type: Object, default: () => ({}) },
+  customFormData: { type: Object, default: () => ({}) },
+  isNew: { type: Boolean, default: false }
+});
+
 // 添加物料查询引用
 const materialQueryRef = ref();
 
@@ -299,6 +307,9 @@ const form = ref<ArrivalnoticeForm>({});
 const autoGenFlag = ref(false);
 const isViewMode = ref(false);
 const title = ref('');
+
+// 表单禁用状态（考虑 workflow 嵌入和查看模式）
+const formDisabled = computed(() => isViewMode.value || props.disabled);
 
 // 添加缺失的响应式变量定义
 const wmArrivalNoticeLineList = ref([]);
@@ -330,6 +341,22 @@ const flowOptions = ref([]);
 
 // 计量单位下拉选项
 const uomOptions = ref([]);
+
+/**
+ * 流程详情嵌入时：父组件注入 customFormData（含 noticeId）。
+ * getBusinessDataById 仅返回主表，这里按 noticeId 拉全量（含子表行）。
+ */
+watch(
+  () => props.customFormData,
+  (val) => {
+    if (val && typeof val === 'object' && (val as any).noticeId != null) {
+      isViewMode.value = props.disabled;
+      title.value = props.disabled ? '到货通知（流程）' : '到货通知';
+      getInfo(String((val as any).noticeId));
+    }
+  },
+  { deep: true, immediate: true }
+);
 
 onMounted(() => {
   const id = route.query.id;

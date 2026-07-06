@@ -13,7 +13,7 @@
             <!-- 查看流程按钮 -->
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <!-- 取消按钮 -->
-            <el-button @click="cancel">取消</el-button>
+            <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
       </template>

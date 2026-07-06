@@ -8,7 +8,7 @@
             <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
             <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.returnId">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'CONFIRMED'">查看流程</el-button>
-            <el-button @click="cancel">取消</el-button>
+            <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
       </template>

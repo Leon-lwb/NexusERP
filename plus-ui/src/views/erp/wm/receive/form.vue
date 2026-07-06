@@ -9,7 +9,7 @@
             <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && (form.status === 'DRAFT' || form.status === 'REJECTED')">提交审批</el-button>
             <el-button type="warning" @click="handleConfirmShelf" v-if="pageType === 'shelf' && form.status === 'APPROVED' && !isViewMode">确认上架</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
-            <el-button @click="cancel">取消</el-button>
+            <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
       </template>

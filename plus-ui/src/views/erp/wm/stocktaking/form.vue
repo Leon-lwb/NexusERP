@@ -10,7 +10,7 @@
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button type="success" @click="handleGenerateLines" v-if="!isViewMode && form.planId">生成盘点行</el-button>
             <el-button type="warning" @click="handlePostAdjustment" v-if="!isViewMode && form.planId">过账调整</el-button>
-            <el-button @click="cancel">取消</el-button>
+            <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
       </template>
