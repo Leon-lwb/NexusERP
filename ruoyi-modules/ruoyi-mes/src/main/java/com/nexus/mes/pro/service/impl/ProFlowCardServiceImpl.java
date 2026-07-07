@@ -76,6 +76,21 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 统计工单下所有流转卡计划数量之和(含已完工/已关闭,逻辑删除已自动过滤)
+     */
+    private BigDecimal sumPlannedQtyByWoId(Long mesWoId) {
+        List<ProFlowCard> cards = baseMapper.selectList(Wrappers.<ProFlowCard>lambdaQuery()
+            .eq(ProFlowCard::getMesWoId, mesWoId));
+        BigDecimal sum = BigDecimal.ZERO;
+        for (ProFlowCard card : cards) {
+            if (card.getPlannedQty() != null) {
+                sum = sum.add(card.getPlannedQty());
+            }
+        }
+        return sum;
+    }
+
     private List<ProFlowCardStepVo> selectStepsByCardId(Long cardId) {
         LambdaQueryWrapper<ProFlowCardStep> lqw = Wrappers.<ProFlowCardStep>lambdaQuery()
             .eq(ProFlowCardStep::getCardId, cardId)
@@ -86,6 +101,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     /**
      * 创建流转卡(从MES工单)
      */
+    @Lock4j(keys = {"#mesWoId"})
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProFlowCardVo createFlowCard(Long mesWoId, BigDecimal quantity) {
@@ -101,7 +117,22 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("仅已下达或生产中的工单可创建流转卡,当前状态:" + workOrder.getWoStatus());
         }
 
-        // 2. 创建流转卡主记录
+        // 2. 校验计划数量: 工单下所有流转卡计划数量之和不得超过工单计划数量(防止重复/超量创建)
+        BigDecimal plannedQty = workOrder.getPlannedQty() == null ? BigDecimal.ZERO : workOrder.getPlannedQty();
+        BigDecimal usedQty = sumPlannedQtyByWoId(mesWoId);
+        BigDecimal remaining = plannedQty.subtract(usedQty);
+        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("流转卡计划数量必须大于0");
+        }
+        if (quantity.compareTo(remaining) > 0) {
+            throw new RuntimeException(String.format(
+                "流转卡计划数量超过剩余可建数量(工单计划数量:%s,已建:%s,剩余可建:%s)",
+                plannedQty.stripTrailingZeros().toPlainString(),
+                usedQty.stripTrailingZeros().toPlainString(),
+                remaining.stripTrailingZeros().toPlainString()));
+        }
+
+        // 3. 创建流转卡主记录
         ProFlowCard flowCard = new ProFlowCard();
         flowCard.setCardNo(generateCardNo(workOrder));
         flowCard.setMesWoId(mesWoId);
@@ -118,7 +149,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         baseMapper.updateById(flowCard);
         log.info("流转卡创建成功: cardId={}, cardNo={}", flowCard.getCardId(), flowCard.getCardNo());
 
-        // 3. 查工单工序步骤，自动生成流转卡工序记录
+        // 4. 查工单工序步骤，自动生成流转卡工序记录
         generateCardStepsFromWorkOrder(flowCard, mesWoId);
 
         return selectById(flowCard.getCardId());

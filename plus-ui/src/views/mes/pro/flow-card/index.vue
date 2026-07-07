@@ -28,6 +28,14 @@
         </el-row>
       </el-form>
 
+      <el-alert v-if="woSummary" :closable="false" show-icon type="info" class="mb-2">
+        <template #title>
+          工单 <b>{{ woSummary.woNo }}</b> 计划数量 <b>{{ woSummary.plannedQty }}</b>，已建流转卡计划数量
+          <b>{{ woSummary.usedQty }}</b>，剩余可建
+          <b :style="{ color: woSummary.remainingQty <= 0 ? '#f56c6c' : '#67c23a' }">{{ woSummary.remainingQty }}</b>
+        </template>
+      </el-alert>
+
       <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
         <el-table-column label="流转卡编号" prop="cardNo" />
         <el-table-column label="工单编号" prop="woNo" />
@@ -63,8 +71,10 @@
 <script setup lang="ts" name="MesFlowCard">
 // 技术债: 缺 mes_flow_card_status 字典, 流转卡状态暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
 // 注: mesWoId 保留在 queryParams(供路由 query 预过滤), 但不暴露为搜索项(内部 ID)
-import { listFlowCard, releaseFlowCard } from '@/api/mes/pro/flowcardApi';
+import { listFlowCard, listFlowCardByWoId, releaseFlowCard } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO, ProFlowCardQuery } from '@/api/mes/pro/flowcard';
+import { getWorkOrder } from '@/api/mes/pro/workorder';
+import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const router = useRouter();
@@ -74,6 +84,14 @@ const dataList = ref<ProFlowCardVO[]>([]);
 const loading = ref(true);
 const showSearch = ref(true);
 const total = ref(0);
+/** 当前过滤工单的数量汇总(仅按工单过滤时展示,用于核对剩余可建数量) */
+interface WoSummary {
+  woNo: string;
+  plannedQty: number;
+  usedQty: number;
+  remainingQty: number;
+}
+const woSummary = ref<WoSummary | null>(null);
 
 const queryParams = ref<ProFlowCardQuery>({
   pageNum: 1,
@@ -91,6 +109,36 @@ const getList = async () => {
     total.value = res.total;
   } finally {
     loading.value = false;
+  }
+  // 按工单过滤时同步刷新数量汇总(剩余可建数量)
+  if (queryParams.value.mesWoId) {
+    loadWoSummary(queryParams.value.mesWoId);
+  } else {
+    woSummary.value = null;
+  }
+};
+
+/** 加载工单计划数量及已建流转卡数量汇总(用于核对剩余可建数量) */
+const loadWoSummary = async (mesWoId: string | number) => {
+  // 无工单查询权限时跳过(避免 403 错误提示),仅展示流转卡列表本身
+  if (!checkPermi(['mes:pro:work:query'])) {
+    woSummary.value = null;
+    return;
+  }
+  try {
+    const [woRes, cardsRes] = await Promise.all([getWorkOrder(mesWoId), listFlowCardByWoId(mesWoId)]);
+    const wo = woRes?.data;
+    const cards = cardsRes?.data || [];
+    const planned = Number(wo?.plannedQty || 0);
+    const used = cards.reduce((sum, c) => sum + Number(c.plannedQty || 0), 0);
+    woSummary.value = {
+      woNo: wo?.woNo || '',
+      plannedQty: planned,
+      usedQty: used,
+      remainingQty: Math.max(0, planned - used)
+    };
+  } catch (e) {
+    woSummary.value = null;
   }
 };
 

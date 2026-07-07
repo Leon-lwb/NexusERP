@@ -5,15 +5,22 @@
         <div class="clearfix">
           <span>MES工单详情 - {{ workOrder.woNo }}</span>
           <div style="float: right">
-            <el-button
-              type="success"
-              icon="Stamp"
-              @click="handleCreateFlowCard"
-              v-if="workOrder.woStatus === 'RELEASED' || workOrder.woStatus === 'IN_PROGRESS'"
-              v-hasPermi="['mes:pro:flowcard:add']"
-              style="margin-right: 8px"
-              >创建流转卡</el-button
+            <el-tooltip
+              v-if="canCreateFlowCard"
+              :content="`工单计划数量已全部分配（${workOrder.plannedQty}）`"
+              :disabled="remainingQty === undefined || remainingQty > 0"
+              placement="top"
             >
+              <span style="margin-right: 8px; display: inline-block">
+                <el-button
+                  type="success"
+                  icon="Stamp"
+                  @click="handleCreateFlowCard"
+                  :disabled="remainingQty !== undefined && remainingQty <= 0"
+                  >创建流转卡</el-button
+                >
+              </span>
+            </el-tooltip>
             <el-button type="primary" plain @click="goBack" v-if="!props.disabled">返回</el-button>
           </div>
         </div>
@@ -109,8 +116,10 @@
 
 <script setup lang="ts" name="MesWorkOrderDetail">
 import { getWorkOrder, submitWorkOrderFlow, getWorkOrderProcId, getProcessList } from '@/api/mes/pro/workorder';
-import { addFlowCard } from '@/api/mes/pro/flowcardApi';
+import { addFlowCard, listFlowCardByWoId } from '@/api/mes/pro/flowcardApi';
+import type { ProFlowCardVO } from '@/api/mes/pro/flowcard';
 import type { ProWorkOrderVO } from '@/api/mes/pro/types';
+import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
@@ -129,6 +138,16 @@ const selectFlowId = ref<string>('');
 const procInsId = ref<string>('');
 const flowOptions = ref<any[]>([]);
 const activeTab = ref('info');
+/** 工单下已建流转卡及剩余可建数量(用于创建流转卡时数量校验) */
+const existingFlowCards = ref<ProFlowCardVO[]>([]);
+const usedQty = ref<number>(0);
+const remainingQty = ref<number | undefined>(undefined);
+/** 是否可创建流转卡: 工单已下达/生产中 且 拥有创建权限 */
+const canCreateFlowCard = computed(
+  () =>
+    (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') &&
+    checkPermi(['mes:pro:flowcard:add'])
+);
 
 const loadDetail = async (mesWoIdParam?: string) => {
   const mesWoId = mesWoIdParam || (route.params.mesWoId as string);
@@ -142,6 +161,25 @@ const loadDetail = async (mesWoIdParam?: string) => {
   // 非 CREATED 状态才查询流程实例ID（CREATED 状态一定没有流程）
   if (workOrder.value.woStatus && workOrder.value.woStatus !== 'CREATED') {
     loadProcInsId(mesWoId);
+  }
+  // 已下达/生产中可创建流转卡,预加载已建流转卡用于数量校验
+  if (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') {
+    loadFlowCardSummary(mesWoId);
+  }
+};
+
+/** 加载工单下已建流转卡,计算已建/剩余可建数量 */
+const loadFlowCardSummary = async (mesWoId: string | number) => {
+  try {
+    const res = await listFlowCardByWoId(mesWoId);
+    existingFlowCards.value = res?.data || [];
+    usedQty.value = existingFlowCards.value.reduce((sum, c) => sum + Number(c.plannedQty || 0), 0);
+    const planned = Number(workOrder.value.plannedQty || 0);
+    remainingQty.value = Math.max(0, planned - usedQty.value);
+  } catch (e) {
+    existingFlowCards.value = [];
+    usedQty.value = 0;
+    remainingQty.value = undefined;
   }
 };
 
@@ -184,12 +222,23 @@ const handleViewFlow = () => {
 };
 
 const handleCreateFlowCard = async () => {
+  const planned = Number(workOrder.value.plannedQty || 0);
+  const used = usedQty.value;
+  const remaining = remainingQty.value === undefined ? planned - used : remainingQty.value;
+  if (remaining <= 0) {
+    proxy?.$modal.msgWarning(`工单计划数量已全部分配（计划${planned}，已建${used}），无法继续创建流转卡`);
+    return;
+  }
   const { value: qty } = await proxy?.$modal.prompt(
-    `请输入本流转卡计划数量（工单计划数量 ${workOrder.value.plannedQty}）：`,
+    `请输入本流转卡计划数量（工单计划 ${planned}，已建 ${used}，剩余可建 ${remaining}）：`,
     '创建流转卡 - ' + workOrder.value.woNo
   );
   if (!qty || isNaN(Number(qty)) || Number(qty) <= 0) {
     proxy?.$modal.msgWarning('请输入有效数量');
+    return;
+  }
+  if (Number(qty) > remaining) {
+    proxy?.$modal.msgWarning(`数量超过剩余可建数量 ${remaining}，请重新输入`);
     return;
   }
   await addFlowCard(workOrder.value.mesWoId, Number(qty));
