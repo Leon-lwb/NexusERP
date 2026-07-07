@@ -17,6 +17,7 @@ import com.nexus.erp.wm.domain.vo.WmProductionRecptVo;
 import com.nexus.erp.wm.mapper.WmProductionRecptMapper;
 import com.nexus.erp.wm.service.IWmProductionRecptService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,8 +30,12 @@ import java.util.List;
 @Service
 public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
 
+    /** 生产完工入库单编码规则编码（sys_auto_code_rule.rule_code） */
+    private static final String PRODUCTION_RECPT_CODE_RULE = "WM_PRODUCTION_RECPT_CODE";
+
     private final WmProductionRecptMapper baseMapper;
     private final IWmStockOperationService stockOperationService;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<WmProductionRecptVo> selectPageList(WmProductionRecptBo bo, PageQuery pageQuery) {
@@ -53,6 +58,10 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmProductionRecptBo bo) {
         WmProductionRecpt entity = MapstructUtils.convert(bo, WmProductionRecpt.class);
+        // 入库单号为空时按规则自动生成（前缀 SCRK + yyyyMMdd + 4位日循环流水号）
+        if (StringUtils.isBlank(entity.getRecptCode())) {
+            entity.setRecptCode(autoCodeUtil.genSerialCode(PRODUCTION_RECPT_CODE_RULE, null));
+        }
         if (entity.getStatus() == null) {
             entity.setStatus("DRAFT");
         }

@@ -38,7 +38,11 @@ export interface ProductionRecptForm {
   materialSpec?: string;
   quantity?: number;
   warehouseId?: number;
+  warehouseCode?: string;
+  warehouseName?: string;
   locationId?: number;
+  locationCode?: string;
+  locationName?: string;
   status?: string;
   remark?: string;
 }

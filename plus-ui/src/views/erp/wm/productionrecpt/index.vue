@@ -105,7 +105,18 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="入库单号" prop="recptCode">
-              <el-input v-model="form.recptCode" placeholder="请输入入库单号" />
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <el-input v-model="form.recptCode" placeholder="请输入入库单号" :disabled="autoGenFlag || !!form.recptId" style="flex: 1;" />
+                <el-switch
+                  v-model="autoGenFlag"
+                  inline-prompt
+                  active-color="#13ce66"
+                  active-text="自动"
+                  inactive-text="自动生成"
+                  @change="handleAutoGenChange"
+                  :disabled="!!form.recptId"
+                />
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -164,7 +175,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="库位" prop="locationId">
-              <el-select v-model="form.locationId" placeholder="请选择库位" clearable style="width: 100%">
+              <el-select v-model="form.locationId" placeholder="请选择库位" clearable style="width: 100%" @change="handleLocationChange">
                 <el-option v-for="item in locationOptions" :key="item.locationId" :label="item.locationName" :value="item.locationId" />
               </el-select>
             </el-form-item>
@@ -270,6 +281,7 @@ import { listWork } from '@/api/erp/prd/work';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listStoragelocation } from '@/api/erp/wm/storagelocation';
+import { previewCode } from '@/api/system/autocode/rule';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_production_recpt_status } = toRefs<any>(proxy?.useDict('wm_production_recpt_status'));
@@ -283,6 +295,8 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const open = ref(false);
+/** 入库单号自动生成开关：开启时由后端按 WM_PRODUCTION_RECPT_CODE 规则生成 */
+const autoGenFlag = ref(false);
 
 const queryRef = ref<ElFormInstance>();
 const recptRef = ref<ElFormInstance>();
@@ -344,10 +358,35 @@ const handleAdd = () => {
   reset();
   open.value = true;
   title.value = '新增生产完工入库';
+  // 默认自动生成入库单号并预览（不消耗流水号）
+  autoGenFlag.value = true;
+  fetchPreviewCode();
+};
+
+/** 预览入库单号（不落库，不消耗流水号），失败时回退为手动输入 */
+const fetchPreviewCode = async () => {
+  try {
+    const code = await previewCode('WM_PRODUCTION_RECPT_CODE');
+    form.value.recptCode = code as string;
+  } catch {
+    autoGenFlag.value = false;
+    form.value.recptCode = '';
+  }
+};
+
+/** 自动生成开关切换：开启时预览下一个编码，关闭时清空等待手动输入 */
+const handleAutoGenChange = (val: boolean) => {
+  if (val) {
+    fetchPreviewCode();
+  } else {
+    form.value.recptCode = '';
+  }
 };
 
 const handleUpdate = async (row?: ProductionRecptVO) => {
   reset();
+  // 修改时编号不可变更，关闭自动生成开关
+  autoGenFlag.value = false;
   const recptId = row?.recptId || ids.value[0];
   const res = await getProductionRecpt(recptId);
   form.value = res.data;
@@ -364,6 +403,10 @@ const handleUpdate = async (row?: ProductionRecptVO) => {
 const submitForm = () => {
   recptRef.value?.validate(async (valid: boolean) => {
     if (valid) {
+      // 自动生成开启时清空编号，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.recptCode = undefined;
+      }
       if (form.value.recptId) {
         await updateProductionRecpt(form.value);
         proxy?.$modal.msgSuccess('修改成功');
@@ -449,19 +492,37 @@ const resetWarehouseQuery = () => {
 const handleWarehouseSelect = async (row: any) => {
   if (!row) return;
   form.value.warehouseId = row.warehouseId;
+  form.value.warehouseCode = row.warehouseCode;
+  form.value.warehouseName = row.warehouseName;
+  // 仓库变更后原库位可能不属于新仓库，清空已选库位
+  form.value.locationId = undefined;
+  form.value.locationCode = undefined;
+  form.value.locationName = undefined;
   warehouseDisplay.value = row.warehouseName;
   warehouseSelectOpen.value = false;
   await loadLocations(row.warehouseId);
 };
 
-const loadLocations = async (warehouseId: number) => {
+const loadLocations = async (warehouseId?: number) => {
   try {
     const res = await listStoragelocation({ pageNum: 1, pageSize: 999, enableFlag: 1 } as any);
-    locationOptions.value = (res.rows || []).filter((item: any) => {
-      return true;
-    });
+    const rows = res.rows || [];
+    // 后端 buildQueryWrapper 未支持 warehouseId 过滤，按 VO 已填充的 warehouseId 前端过滤
+    locationOptions.value = warehouseId ? rows.filter((item: any) => item.warehouseId === warehouseId) : rows;
   } catch {
     locationOptions.value = [];
+  }
+};
+
+/** 库位切换时回填编码/名称，清空时一并清除 */
+const handleLocationChange = (locationId: any) => {
+  const loc = locationOptions.value.find((item: any) => item.locationId === locationId);
+  if (loc) {
+    form.value.locationCode = loc.locationCode;
+    form.value.locationName = loc.locationName;
+  } else {
+    form.value.locationCode = undefined;
+    form.value.locationName = undefined;
   }
 };
 
