@@ -161,12 +161,12 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("工序状态已变更或不存在，仅待开始状态可开工");
         }
 
-        // 2. 若流转卡为RELEASED，更新为IN_PROGRESS
+        // 2. 若流转卡为CREATED/RELEASED，更新为IN_PROGRESS(首次开工自动推进,避免卡停留在CREATED导致后续完工聚合断链)
         baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
             .set(ProFlowCard::getCardStatus, STATUS_IN_PROGRESS)
             .set(ProFlowCard::getCurrentStepId, stepRecordId)
             .eq(ProFlowCard::getCardId, cardId)
-            .eq(ProFlowCard::getCardStatus, STATUS_RELEASED));
+            .in(ProFlowCard::getCardStatus, STATUS_CREATED, STATUS_RELEASED));
 
         // 3. 工单状态若为RELEASED，更新为IN_PROGRESS
         ProFlowCard card = baseMapper.selectById(cardId);
@@ -228,11 +228,11 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void completeCard(Long cardId) {
-        // 1. CAS更新流转卡状态 -> COMPLETED
+        // 1. CAS更新流转卡状态 -> COMPLETED(兼容CREATED: 经派工聚合完工或手动完工的卡可能尚未推进到IN_PROGRESS)
         int rows = baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
             .set(ProFlowCard::getCardStatus, STATUS_COMPLETED)
             .eq(ProFlowCard::getCardId, cardId)
-            .in(ProFlowCard::getCardStatus, STATUS_IN_PROGRESS, STATUS_RELEASED));
+            .in(ProFlowCard::getCardStatus, STATUS_CREATED, STATUS_RELEASED, STATUS_IN_PROGRESS));
         if (rows == 0) {
             log.warn("流转卡状态不满足完工条件，跳过: cardId={}", cardId);
             return;

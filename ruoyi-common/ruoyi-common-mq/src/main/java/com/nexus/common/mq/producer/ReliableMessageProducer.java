@@ -4,7 +4,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.mq.domain.BaseMessage;
 import com.nexus.common.mq.domain.MessageRecord;
-import com.nexus.common.mq.domain.MessageRecordMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -24,7 +23,7 @@ import java.util.UUID;
 public class ReliableMessageProducer {
 
     private final RabbitTemplate rabbitTemplate;
-    private final MessageRecordMapper messageRecordMapper;
+    private final MessageRecordService messageRecordService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -107,7 +106,7 @@ public class ReliableMessageProducer {
             record.setRetryCount(0);
             record.setMaxRetry(message.getMaxRetry() != null ? message.getMaxRetry() : 3);
             record.setCreateTime(new Date());
-            messageRecordMapper.insert(record);
+            messageRecordService.saveSending(record);
         } catch (Exception e) {
             log.error("消息记录保存失败: messageId={}, error={}", message.getMessageId(), e.getMessage());
         }
@@ -115,9 +114,7 @@ public class ReliableMessageProducer {
 
     private void updateMessageStatus(String messageId, String status) {
         try {
-            messageRecordMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<MessageRecord>()
-                .eq(MessageRecord::getMessageId, messageId)
-                .set(MessageRecord::getStatus, status));
+            messageRecordService.updateStatus(messageId, status);
         } catch (Exception e) {
             log.error("消息状态更新失败: messageId={}, status={}, error={}", messageId, status, e.getMessage());
         }

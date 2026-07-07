@@ -41,6 +41,7 @@ import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.erp.wm.service.IWmStockReservationService;
+import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -98,6 +99,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final IWmStockReservationService stockReservationService;
     private final BdMaterialMapper bdMaterialMapper;
     private final BdWorkshopMapper bdWorkshopMapper;
+    private final ISoFulfillmentWritebackService fulfillmentWritebackService;
 
     /**
      * 分页查询生产工单列表
@@ -518,6 +520,16 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (rows == 0) {
             throw new RuntimeException("工单完工更新失败, 可能已被其他操作修改");
         }
+
+        // 回写销售订单行已投产数量：wo.planId → plan.orderLineId → SO 行
+        // 仅当工单关联生产计划、且计划关联销售订单行时回写（覆盖 MQ 完工与手动完工两条路径）
+        if (wo.getPlanId() != null && completeQty != null && completeQty.compareTo(BigDecimal.ZERO) > 0) {
+            PrdProductionPlan plan = prdProductionPlanMapper.selectById(wo.getPlanId());
+            if (plan != null && plan.getOrderLineId() != null) {
+                fulfillmentWritebackService.addProducedQty(plan.getOrderLineId(), completeQty);
+            }
+        }
+
         // 触发完工倒冲入库链路(保留原 complete 副作用)
         BigDecimal done = completeQty != null ? completeQty : BigDecimal.ZERO;
         ProductionCompleteMessage completeMsg = new ProductionCompleteMessage();

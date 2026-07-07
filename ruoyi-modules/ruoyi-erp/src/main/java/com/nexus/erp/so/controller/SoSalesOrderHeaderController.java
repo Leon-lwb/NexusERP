@@ -208,14 +208,16 @@ public class SoSalesOrderHeaderController extends BaseController {
      * <p>权限标识：{@code so:orderheader:edit}</p>
      * <p>日志记录：title="销售订单"，businessType=UPDATE</p>
      *
-     * @param soId 销售订单 ID
+     * @param soId  销售订单 ID
+     * @param force 是否强制履行（跳过发货数量校验，用于尾差/客诉场景）
      * @return 操作结果
      */
     @SaCheckPermission("so:orderheader:edit")
     @Log(title = "销售订单", businessType = BusinessType.UPDATE)
     @PutMapping("/fulfill/{soId}")
-    public R<Void> fulfill(@PathVariable Long soId) {
-        soSalesOrderHeaderService.fulfill(soId);
+    public R<Void> fulfill(@PathVariable Long soId,
+                           @RequestParam(value = "force", defaultValue = "false") boolean force) {
+        soSalesOrderHeaderService.fulfill(soId, force);
         return R.ok();
     }
 

@@ -2,6 +2,7 @@ package com.nexus.common.mq.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.mq.domain.MessageRecordMapper;
+import com.nexus.common.mq.producer.MessageRecordService;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.ReturnedMessage;
@@ -51,18 +52,33 @@ public class RabbitMqAutoConfiguration {
     }
 
     /**
+     * 消息记录持久化服务
+     * <p>
+     * 通过 @DS("master") + REQUIRES_NEW 在 master 库独立事务中写入 mq_message_record，
+     * 避免在 ERP/MES 业务事务内发送 MQ 时，因连接已绑定业务库而报"表不存在"。
+     *
+     * @param messageRecordMapper 消息记录Mapper
+     * @return 消息记录服务实例
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public MessageRecordService messageRecordService(MessageRecordMapper messageRecordMapper) {
+        return new MessageRecordService(messageRecordMapper);
+    }
+
+    /**
      * 可靠消息生产者
      *
-     * @param rabbitTemplate      Rabbit模板
-     * @param messageRecordMapper 消息记录Mapper
-     * @param objectMapper        JSON对象映射器
+     * @param rabbitTemplate       Rabbit模板
+     * @param messageRecordService 消息记录持久化服务
+     * @param objectMapper         JSON对象映射器
      * @return 可靠消息生产者实例
      */
     @Bean
     @ConditionalOnMissingBean
     public ReliableMessageProducer reliableMessageProducer(RabbitTemplate rabbitTemplate,
-            MessageRecordMapper messageRecordMapper, ObjectMapper objectMapper) {
-        return new ReliableMessageProducer(rabbitTemplate, messageRecordMapper, objectMapper);
+            MessageRecordService messageRecordService, ObjectMapper objectMapper) {
+        return new ReliableMessageProducer(rabbitTemplate, messageRecordService, objectMapper);
     }
 
     /**

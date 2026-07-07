@@ -79,7 +79,8 @@ public class CreditCheckServiceImpl implements ICreditCheckService {
     }
 
     /**
-     * 释放已冻结的信用额度
+     * 释放已冻结/已用的信用额度（close/cancel 调用）。
+     * <p>FROZEN（未交付承诺）与 USED（已交付应收）一并释放回 RELEASED。</p>
      *
      * @param soId 销售订单ID
      */
@@ -88,7 +89,7 @@ public class CreditCheckServiceImpl implements ICreditCheckService {
     public void release(Long soId) {
         LambdaQueryWrapper<SoCreditUsage> lqw = Wrappers.lambdaQuery();
         lqw.eq(SoCreditUsage::getSoId, soId);
-        lqw.eq(SoCreditUsage::getStatus, "FROZEN");
+        lqw.in(SoCreditUsage::getStatus, "FROZEN", "USED");
         List<SoCreditUsage> usageList = creditUsageMapper.selectList(lqw);
 
         for (SoCreditUsage usage : usageList) {
@@ -103,16 +104,43 @@ public class CreditCheckServiceImpl implements ICreditCheckService {
     }
 
     /**
-     * 获取客户已冻结的信用额度总额
+     * 将已冻结的信用额度转为已用（fulfill 调用）。
+     * <p>订单已交付形成应收：FROZEN → USED，记录 usedTime。信用额度仍占用，
+     * 待 close/cancel 时才释放。</p>
+     *
+     * @param soId 销售订单ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void convertToUsed(Long soId) {
+        LambdaQueryWrapper<SoCreditUsage> lqw = Wrappers.lambdaQuery();
+        lqw.eq(SoCreditUsage::getSoId, soId);
+        lqw.eq(SoCreditUsage::getStatus, "FROZEN");
+        List<SoCreditUsage> usageList = creditUsageMapper.selectList(lqw);
+
+        for (SoCreditUsage usage : usageList) {
+            usage.setStatus("USED");
+            usage.setUsedTime(new Date());
+            creditUsageMapper.updateById(usage);
+        }
+
+        if (!usageList.isEmpty()) {
+            log.info("信用额度转为已用, soId={}, 记录数={}", soId, usageList.size());
+        }
+    }
+
+    /**
+     * 获取客户已占用的信用额度总额（FROZEN + USED）。
+     * <p>未交付承诺(FROZEN)与已交付应收(USED)均占用信用额度。</p>
      *
      * @param clientId 客户ID
-     * @return 已冻结额度
+     * @return 已占用额度
      */
     @Override
     public BigDecimal getUsedAmount(Long clientId) {
         LambdaQueryWrapper<SoCreditUsage> lqw = Wrappers.lambdaQuery();
         lqw.eq(SoCreditUsage::getClientId, clientId);
-        lqw.eq(SoCreditUsage::getStatus, "FROZEN");
+        lqw.in(SoCreditUsage::getStatus, "FROZEN", "USED");
         List<SoCreditUsage> usageList = creditUsageMapper.selectList(lqw);
 
         BigDecimal total = BigDecimal.ZERO;

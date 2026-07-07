@@ -23,6 +23,7 @@ import com.nexus.erp.so.domain.bo.SoSalesOrderHeaderBo;
 import com.nexus.erp.so.domain.bo.SoSalesOrderLineBo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
+import com.nexus.erp.so.event.SalesOrderFulfilledEvent;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ICreditCheckService;
@@ -36,6 +37,7 @@ import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.runtime.ProcessInstance;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -72,6 +75,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final HistoryService historyService;
     private final ICreditCheckService creditCheckService;
     private final IWmStockReservationService stockReservationService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 分页查询销售订单列表
@@ -213,21 +217,109 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     /**
-     * 履行销售订单
+     * 履行销售订单（不强制，等价于 fulfill(soId, false)）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void fulfill(Long soId) {
+        fulfill(soId, false);
+    }
+
+    /**
+     * 履行销售订单
+     * <p>严格门禁 + 收尾联动：
+     * <ol>
+     *   <li>校验所有行 delivered_qty >= ordered_qty（force=true 可跳过）</li>
+     *   <li>清理残余库存预留（兜底，正常出库已消耗至 0）</li>
+     *   <li>行状态→FULFILLED，fulfilled_qty 兜齐 ordered_qty（消除尾差）</li>
+     *   <li>自制行关联的生产计划→CLOSED</li>
+     *   <li>信用 FROZEN→USED（已交付形成应收，仍占额度，待 close 释放）</li>
+     *   <li>头状态→FULFILLED + fulfilledTime</li>
+     *   <li>发布 SalesOrderFulfilledEvent（供开票/通知等订阅）</li>
+     * </ol>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void fulfill(Long soId, boolean force) {
         SoSalesOrderHeader header = baseMapper.selectById(soId);
         if (header == null) {
             throw new RuntimeException("销售订单不存在");
         }
         if (!STATUS_CONFIRMED.equals(header.getOrderStatus())) {
-            throw new RuntimeException("只有已确认状态的订单才能执行");
+            throw new RuntimeException("只有已确认状态的订单才能履行");
         }
+
+        List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
+            new LambdaQueryWrapper<SoSalesOrderLine>().eq(SoSalesOrderLine::getSoId, soId));
+        if (lines == null || lines.isEmpty()) {
+            throw new RuntimeException("订单无明细，无法履行");
+        }
+
+        // ① 严格门禁：所有行 delivered_qty >= ordered_qty
+        BigDecimal tolerance = new BigDecimal("0.0001");
+        List<String> shortLines = new ArrayList<>();
+        for (SoSalesOrderLine line : lines) {
+            BigDecimal need = line.getOrderedQty() == null ? BigDecimal.ZERO : line.getOrderedQty();
+            BigDecimal done = line.getDeliveredQty() == null ? BigDecimal.ZERO : line.getDeliveredQty();
+            if (need.subtract(done).compareTo(tolerance) > 0) {
+                shortLines.add("行" + line.getLineNo() + "(" + line.getMaterialName()
+                    + "):需" + need + "已发" + done);
+            }
+        }
+        if (!shortLines.isEmpty() && !force) {
+            throw new RuntimeException("存在未完全发货的行，无法履行：\n" + String.join("\n", shortLines)
+                + "\n如需强制履行，请确认后重试。");
+        }
+
+        // ② 残余预留清理（兜底：正常出库已把 reserved_qty 消耗至 0）
+        stockReservationService.unreserve("SALES_ORDER", soId, null);
+
+        // ③ 行状态固化 + fulfilled_qty 兜齐 ordered_qty（消除浮点尾差）
+        List<Long> lineIds = new ArrayList<>();
+        for (SoSalesOrderLine line : lines) {
+            lineIds.add(line.getLineId());
+            soSalesOrderLineMapper.update(null,
+                Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getLineId, line.getLineId())
+                    .set(SoSalesOrderLine::getLineStatus, "FULFILLED")
+                    .set(SoSalesOrderLine::getFulfilledQty, line.getOrderedQty()));
+        }
+
+        // ④ 生产计划收尾：自制行关联的 PrdProductionPlan → CLOSED
+        closeLinkedProductionPlans(lineIds);
+
+        // ⑤ 信用转结 FROZEN → USED（已交付形成应收，仍占用额度）
+        creditCheckService.convertToUsed(soId);
+
+        // ⑥ 头状态
         header.setOrderStatus(STATUS_FULFILLED);
         header.setFulfilledTime(new Date());
         baseMapper.updateById(header);
+
+        // ⑦ 发布事件（为未来开票/通知预留）
+        applicationEventPublisher.publishEvent(new SalesOrderFulfilledEvent(this, soId, header.getSoNo()));
+        log.info("销售订单履行完成, soId={}, soNo={}, force={}", soId, header.getSoNo(), force);
+    }
+
+    /**
+     * 关闭销售订单行关联的生产计划（自制物料行）。
+     * 仅将非 CLOSED 终态的计划置为 CLOSED；计划不存在或已终态则跳过。
+     */
+    private void closeLinkedProductionPlans(List<Long> orderLineIds) {
+        if (orderLineIds == null || orderLineIds.isEmpty()) {
+            return;
+        }
+        List<PrdProductionPlan> plans = prdProductionPlanMapper.selectList(
+            new LambdaQueryWrapper<PrdProductionPlan>()
+                .in(PrdProductionPlan::getOrderLineId, orderLineIds));
+        for (PrdProductionPlan plan : plans) {
+            if (plan.getStatus() == null || !"CLOSED".equals(plan.getStatus())) {
+                plan.setStatus("CLOSED");
+                prdProductionPlanMapper.updateById(plan);
+                log.info("销售订单履行后关闭生产计划, planNo={}, orderLineId={}",
+                    plan.getPlanNo(), plan.getOrderLineId());
+            }
+        }
     }
 
     /**
@@ -263,6 +355,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         }
         if (STATUS_CLOSED.equals(header.getOrderStatus())) {
             throw new RuntimeException("已关闭的订单不能取消");
+        }
+        if (STATUS_FULFILLED.equals(header.getOrderStatus())) {
+            throw new RuntimeException("已履行的订单不能取消，请改用关闭");
         }
         header.setOrderStatus(STATUS_CANCELLED);
         header.setCancelledTime(new Date());

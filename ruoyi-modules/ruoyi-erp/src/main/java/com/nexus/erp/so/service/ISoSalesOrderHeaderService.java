@@ -98,11 +98,22 @@ public interface ISoSalesOrderHeaderService extends WfCallBackServiceI {
     void confirm(Long soId);
 
     /**
-     * 履行销售订单
+     * 履行销售订单（不强制，等价于 fulfill(soId, false)）
      *
      * @param soId 销售订单ID
      */
     void fulfill(Long soId);
+
+    /**
+     * 履行销售订单
+     * <p>严格门禁：所有行 delivered_qty >= ordered_qty 才允许履行；force=true 可跳过门禁
+     * （用于尾差/客诉场景）。履行时执行收尾：清理残余预留、行状态固化、生产计划关闭、
+     * 信用 FROZEN→USED、发布履行事件。</p>
+     *
+     * @param soId  销售订单ID
+     * @param force 是否强制履行（跳过发货数量校验）
+     */
+    void fulfill(Long soId, boolean force);
 
     /**
      * 关闭销售订单

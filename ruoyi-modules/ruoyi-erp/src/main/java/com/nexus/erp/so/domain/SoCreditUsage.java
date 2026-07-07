@@ -38,11 +38,14 @@ public class SoCreditUsage extends TenantEntity {
     /** 占用金额 */
     private BigDecimal amount;
 
-    /** 占用状态: FROZEN/RELEASED */
+    /** 占用状态: FROZEN(已冻结)/USED(已交付占用)/RELEASED(已释放) */
     private String status;
 
     /** 冻结时间 */
     private Date freezeTime;
+
+    /** 转为已用(已交付)时间 */
+    private Date usedTime;
 
     /** 释放时间 */
     private Date releaseTime;

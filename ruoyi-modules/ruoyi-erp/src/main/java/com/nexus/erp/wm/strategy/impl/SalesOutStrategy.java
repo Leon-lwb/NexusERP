@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
+import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmSalesIssue;
 import com.nexus.erp.wm.domain.WmSalesIssueLine;
@@ -47,26 +48,30 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
     private final WmSalesIssueLineMapper salesIssueLineMapper;
     private final WmMaterialStockMapper stockMapper;
     private final SoSalesOrderLineMapper salesOrderLineMapper;
+    private final ISoFulfillmentWritebackService fulfillmentWritebackService;
 
     /**
      * 构造销售出库策略实例
      *
-     * @param stockTxMapper        库存事务Mapper
-     * @param salesIssueMapper     销售出库单Mapper
-     * @param salesIssueLineMapper 销售出库单行Mapper
-     * @param stockMapper          库存Mapper
-     * @param salesOrderLineMapper 销售订单行Mapper
+     * @param stockTxMapper              库存事务Mapper
+     * @param salesIssueMapper           销售出库单Mapper
+     * @param salesIssueLineMapper       销售出库单行Mapper
+     * @param stockMapper                库存Mapper
+     * @param salesOrderLineMapper       销售订单行Mapper
+     * @param fulfillmentWritebackService 销售订单履行回写Service
      */
     public SalesOutStrategy(WmMaterialStockTxMapper stockTxMapper,
                             WmSalesIssueMapper salesIssueMapper,
                             WmSalesIssueLineMapper salesIssueLineMapper,
                             WmMaterialStockMapper stockMapper,
-                            SoSalesOrderLineMapper salesOrderLineMapper) {
+                            SoSalesOrderLineMapper salesOrderLineMapper,
+                            ISoFulfillmentWritebackService fulfillmentWritebackService) {
         super(stockTxMapper);
         this.salesIssueMapper = salesIssueMapper;
         this.salesIssueLineMapper = salesIssueLineMapper;
         this.stockMapper = stockMapper;
         this.salesOrderLineMapper = salesOrderLineMapper;
+        this.fulfillmentWritebackService = fulfillmentWritebackService;
     }
 
     /**
@@ -163,6 +168,11 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                 if (updateRows == 0) {
                     throw new ServiceException("SO行预留数量更新失败(并发冲突或预留不足), soLineId=" + soLine.getLineId());
                 }
+            }
+
+            // 回写 SO 行已发货/已履行数量（销售出库即对该行的履行交付）
+            if (soLine != null) {
+                fulfillmentWritebackService.addShippedQty(soLine.getLineId(), line.getQuantityIssue());
             }
         }
     }

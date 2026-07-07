@@ -54,14 +54,12 @@ export const getOrderLineById = (soLineId: string | number): AxiosPromise<OrderL
   });
 };
 
-export const confirmOrder = (soId: number) =>
-  request({ url: '/erp/so/orderheader/confirm/' + soId, method: 'put' });
+export const confirmOrder = (soId: number) => request({ url: '/erp/so/orderheader/confirm/' + soId, method: 'put' });
 
-export const fulfillOrder = (soId: number) =>
-  request({ url: '/erp/so/orderheader/fulfill/' + soId, method: 'put' });
+export const fulfillOrder = (soId: number, force = false) =>
+  request({ url: '/erp/so/orderheader/fulfill/' + soId, method: 'put', params: { force } });
 
-export const closeOrder = (soId: number) =>
-  request({ url: '/erp/so/orderheader/close/' + soId, method: 'put' });
+export const closeOrder = (soId: number) => request({ url: '/erp/so/orderheader/close/' + soId, method: 'put' });
 
 export const cancelOrder = (soId: number, reason: string) =>
   request({ url: '/erp/so/orderheader/cancel/' + soId, method: 'put', params: { reason } });

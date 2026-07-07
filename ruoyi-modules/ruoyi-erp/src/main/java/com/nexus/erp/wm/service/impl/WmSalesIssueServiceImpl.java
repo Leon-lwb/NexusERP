@@ -24,6 +24,7 @@ import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
+import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
@@ -64,6 +65,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
     private final AutoCodeUtil autoCodeUtil;
+    private final ISoFulfillmentWritebackService fulfillmentWritebackService;
 
     @Override
     public TableDataInfo<WmSalesIssueVo> selectPageList(WmSalesIssueBo bo, PageQuery pageQuery) {
@@ -238,6 +240,11 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 stockTxMapper.insert(tx);
 
                 remaining = remaining.subtract(consumeQty);
+            }
+
+            // 回写 SO 行已发货/已履行数量（销售出库即对该行的履行交付）
+            if (line.getSourceDocLineId() != null && issueQty.compareTo(BigDecimal.ZERO) > 0) {
+                fulfillmentWritebackService.addShippedQty(line.getSourceDocLineId(), issueQty);
             }
         }
 

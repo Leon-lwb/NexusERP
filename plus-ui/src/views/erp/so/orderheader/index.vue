@@ -383,13 +383,27 @@ function handleFulfill(row: any) {
   if (!soId) return;
   proxy.$modal
     .confirm('确认履行订单编号为"' + soId + '"的吗？')
-    .then(() => {
-      fulfillOrder(soId).then(() => {
-        proxy.$modal.msgSuccess('履行成功');
-        getList();
-      });
-    })
+    .then(() => doFulfill(soId, false))
     .catch(() => {});
+}
+
+/** 执行履行：首次严格校验，未通过时提示是否强制履行 */
+function doFulfill(soId: any, force: boolean) {
+  fulfillOrder(soId, force)
+    .then(() => {
+      proxy.$modal.msgSuccess('履行成功');
+      getList();
+    })
+    .catch((err: any) => {
+      const msg = (err && err.message) || String(err);
+      // 严格门禁未通过：提示是否强制履行（force=true 跳过发货数量校验）
+      if (!force && msg.includes('强制履行')) {
+        proxy.$modal
+          .confirm(msg + '\n\n是否立即强制履行？')
+          .then(() => doFulfill(soId, true))
+          .catch(() => {});
+      }
+    });
 }
 
 /** 关闭订单 */
