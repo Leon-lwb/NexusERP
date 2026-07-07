@@ -6,35 +6,38 @@
           <template #header>
             <div class="panel-header">
               <span>即时通讯</span>
-              <el-tag size="small" type="info">Beta</el-tag>
+              <el-badge v-if="imStore.unreadTotal > 0" :value="imStore.unreadTotal" :max="99" class="unread-badge">
+                <el-tag size="small" type="info">Beta</el-tag>
+              </el-badge>
+              <el-tag v-else size="small" type="info">Beta</el-tag>
             </div>
           </template>
 
           <el-tabs v-model="leftTab" class="left-tabs">
             <el-tab-pane label="聊天" name="chat">
               <div class="toolbar between">
-                <el-input v-model="keyword" size="small" placeholder="搜索会话" clearable class="w-60" />
-                <el-button size="small" @click="loadConversations">刷新</el-button>
+                <el-input v-model="keyword" size="small" placeholder="搜索会话/内容" clearable class="w-60" />
+                <el-button size="small" @click="imStore.loadConversations">刷新</el-button>
               </div>
 
-              <el-scrollbar max-height="560px">
+              <el-scrollbar class="conv-scroll">
                 <el-empty v-if="!filteredConversations.length" description="暂无会话" />
                 <div
                   v-for="c in filteredConversations"
                   :key="c.chatType + '-' + c.targetId"
                   class="conv-item"
-                  :class="{ active: activeMenuIndex === c.chatType + '|' + c.targetId }"
+                  :class="{ active: imStore.activeKey === c.chatType + '|' + c.targetId }"
                   @click="onSelectConv(c.chatType + '|' + c.targetId)"
                 >
-                  <el-avatar :size="36">{{ getAvatarText(c.title) }}</el-avatar>
+                  <el-avatar :size="36" :src="convAvatar(c) || undefined">{{ getAvatarText(c.title) }}</el-avatar>
                   <div class="conv-main">
                     <div class="conv-main-top">
                       <span class="conv-title">{{ c.title || '未命名会话' }}</span>
-                      <span class="conv-time">{{ formatTime(c.lastTime || c.lastMessageTime || c.updateTime) }}</span>
+                      <span class="conv-time">{{ formatTime(c.lastTime) }}</span>
                     </div>
                     <div class="conv-main-bottom">
-                      <span class="conv-preview">{{ c.lastContent || c.lastMessage || '暂无消息，快发第一条吧' }}</span>
-                      <el-badge v-if="c.unreadCount > 0" :value="c.unreadCount" :max="99" />
+                      <span class="conv-preview">{{ previewText(c) }}</span>
+                      <el-badge v-if="(c.unreadCount || 0) > 0" :value="c.unreadCount" :max="99" />
                     </div>
                   </div>
                 </div>
@@ -42,17 +45,16 @@
             </el-tab-pane>
 
             <el-tab-pane label="联系人" name="contacts">
-              <div class="toolbar contact-add">
-                <el-input-number v-model="manualPeerId" :min="1" controls-position="right" />
-                <el-button type="primary" @click="openPrivateChat">发起私聊</el-button>
+              <div class="toolbar">
+                <el-button type="primary" size="small" @click="contactSelectRef?.open()">选择联系人发起私聊</el-button>
               </div>
-
-              <el-divider content-position="left">常用联系人</el-divider>
+              <el-divider content-position="left">最近私聊</el-divider>
               <div class="quick-list">
-                <el-tag v-for="uid in recentPeers" :key="uid" class="quick-item" @click="openPeer(uid)"> 用户 {{ uid }} </el-tag>
+                <el-tag v-for="c in recentPrivate" :key="c.targetId" class="quick-item" @click="onSelectConv('PRIVATE|' + c.targetId)">
+                  {{ c.title || c.targetId }}
+                </el-tag>
+                <el-text v-if="!recentPrivate.length" type="info" size="small">暂无</el-text>
               </div>
-
-              <el-alert title="联系人接口待接入，当前以最近私聊对象与手动输入为主。" type="info" :closable="false" />
             </el-tab-pane>
 
             <el-tab-pane label="群聊" name="groups">
@@ -60,8 +62,13 @@
                 <el-form-item label="群名称">
                   <el-input v-model="newGroupName" placeholder="请输入群名称" />
                 </el-form-item>
-                <el-form-item label="成员用户ID（逗号分隔）">
-                  <el-input v-model="memberIdsText" type="textarea" :rows="3" placeholder="例如：100,101,102" />
+                <el-form-item label="群成员">
+                  <el-button size="small" @click="openMemberSelect('create')">选择成员</el-button>
+                  <div class="member-tags">
+                    <el-tag v-for="u in selectedMembers" :key="u.userId" class="mt-1 mr-1" closable @close="removeSelectedMember(u)">
+                      {{ u.nickName || u.userName }}
+                    </el-tag>
+                  </div>
                 </el-form-item>
                 <el-button type="primary" @click="onCreateGroup">创建群聊</el-button>
               </el-form>
@@ -75,9 +82,6 @@
                     <el-radio value="ctrlEnter">Ctrl + Enter</el-radio>
                   </el-radio-group>
                 </el-form-item>
-                <el-form-item label="会话自动刷新">
-                  <el-switch v-model="autoRefresh" />
-                </el-form-item>
               </el-form>
             </el-tab-pane>
           </el-tabs>
@@ -89,116 +93,185 @@
           <template #header>
             <div class="chat-header">
               <div class="chat-title-wrap">
-                <el-avatar :size="34">{{ getAvatarText(active?.title) }}</el-avatar>
+                <el-avatar :size="34" :src="active?.avatar || undefined">{{ getAvatarText(active?.title) }}</el-avatar>
                 <div>
-                  <div class="chat-title">{{ chatTitle }}</div>
+                  <div class="chat-title">{{ active?.title || '聊天窗口' }}</div>
                   <div class="chat-sub">{{ active?.chatType === 'GROUP' ? '群会话' : '私聊会话' }}</div>
                 </div>
               </div>
               <div class="chat-actions">
                 <el-button v-if="active?.chatType === 'PRIVATE'" size="small" @click="onMarkRead">标已读</el-button>
-                <el-button v-if="active?.chatType === 'GROUP'" size="small" @click="memberDrawer = true">群成员</el-button>
-                <el-button size="small" @click="loadMessages" :disabled="!active">刷新</el-button>
+                <el-button v-if="active?.chatType === 'GROUP'" size="small" @click="onOpenMembers">群成员</el-button>
+                <el-button size="small" :disabled="!active" @click="reloadMessages">刷新</el-button>
               </div>
             </div>
           </template>
 
           <template v-if="active">
-            <el-scrollbar max-height="460px" class="msg-scroll">
-              <div v-if="!messages.length" class="msg-empty">暂无消息</div>
+            <div class="chat-body">
+              <el-scrollbar ref="msgScrollbar" class="msg-scroll" @scroll="onMsgScroll">
+                <div v-if="activePageInfo.loading && !messages.length" class="msg-empty">加载中…</div>
+                <div v-else-if="!messages.length" class="msg-empty">暂无消息</div>
 
-              <div v-for="m in messages" :key="m.messageId" class="msg-row" :class="{ mine: isMine(m) }">
-                <div class="msg-bubble">
-                  <div class="msg-meta">
-                    <span class="msg-user">{{ isMine(m) ? '我' : m.fromUserId }}</span>
-                    <span class="msg-time">{{ m.createTime || '' }}</span>
+                <div v-for="m in messages" :key="m.clientTempId || m.messageId" class="msg-row" :class="{ mine: imStore.isMine(m) }">
+                  <el-avatar :size="34" :src="imStore.isMine(m) ? imStore.myAvatar : m.senderAvatar || undefined">
+                    {{ getAvatarText(imStore.isMine(m) ? imStore.myName : m.senderName) }}
+                  </el-avatar>
+                  <div class="msg-bubble">
+                    <div class="msg-meta">
+                      <span class="msg-user">{{ imStore.isMine(m) ? '我' : m.senderName || `用户 ${m.fromUserId}` }}</span>
+                      <span class="msg-time">{{ formatTime(m.createTime) }}</span>
+                    </div>
+                    <div v-if="m.revoked" class="msg-content revoked">该消息已被撤回</div>
+                    <template v-else>
+                      <div v-if="m.forwardFrom" class="msg-fwd">转发消息</div>
+                      <div v-if="m.msgType === 'image'" class="msg-image">
+                        <el-image :src="m.content" :preview-src-list="[m.content]" fit="cover" hide-on-click-modal class="img-thumb" />
+                      </div>
+                      <div v-else-if="m.msgType === 'file'" class="msg-file">
+                        <el-link :href="m.content" target="_blank" type="primary" :underline="false">
+                          <el-icon class="mr-1"><Document /></el-icon>{{ fileName(m.content) }}
+                        </el-link>
+                      </div>
+                      <div v-else class="msg-content">{{ m.content }}</div>
+                    </template>
+                    <div v-if="!m.revoked" class="msg-actions">
+                      <span v-if="imStore.canRevoke(m)" class="msg-act" @click="onRevoke(m)">撤回</span>
+                      <span class="msg-act" @click="openForward(m)">转发</span>
+                    </div>
+                    <div v-if="showRead(m)" class="msg-read">{{ m.isRead ? '已读' : '未读' }}</div>
+                    <div v-if="m.status === 'sending'" class="msg-status sending">发送中…</div>
+                    <div v-else-if="m.status === 'failed'" class="msg-status failed" @click="onRetry(m)">发送失败，点击重试</div>
                   </div>
-                  <div class="msg-content">{{ m.content }}</div>
                 </div>
-              </div>
-            </el-scrollbar>
+              </el-scrollbar>
 
-            <div class="editor">
-              <el-input v-model="draft" type="textarea" :rows="4" placeholder="输入消息..." @keydown="onEditorKeydown" />
-              <div class="editor-actions">
-                <el-text type="info" size="small">{{ sendTip }}</el-text>
-                <el-button type="primary" @click="onSend">发送</el-button>
+              <div class="editor">
+                <div class="editor-tools">
+                  <el-upload :show-file-list="false" :before-upload="onImageUpload" accept="image/*" action="#">
+                    <el-button :icon="Picture" size="small" circle title="发送图片" />
+                  </el-upload>
+                  <el-upload :show-file-list="false" :before-upload="onFileUpload" action="#">
+                    <el-button :icon="Paperclip" size="small" circle title="发送文件" />
+                  </el-upload>
+                </div>
+                <el-input v-model="draft" type="textarea" :rows="3" placeholder="输入消息..." @keydown="onEditorKeydown" />
+                <div class="editor-actions">
+                  <el-text type="info" size="small">{{ sendTip }}</el-text>
+                  <el-button type="primary" @click="onSend">发送</el-button>
+                </div>
               </div>
             </div>
           </template>
 
-          <el-empty v-else description="请选择会话或先发起私聊" />
+          <div v-else class="chat-empty-wrap">
+            <el-empty description="请选择会话或先发起私聊" />
+          </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-drawer v-model="memberDrawer" title="群成员" size="360px" :with-header="true">
-      <el-empty description="群成员接口待接入" />
-      <el-divider />
-      <el-form label-position="top">
-        <el-form-item label="新增成员ID（逗号分隔）">
-          <el-input v-model="addMemberIdsText" type="textarea" :rows="3" placeholder="例如：201,202" />
-        </el-form-item>
-        <el-button type="primary" :disabled="active?.chatType !== 'GROUP'" @click="onAddMembers">添加成员</el-button>
-      </el-form>
+    <el-drawer v-model="memberDrawer" title="群成员" size="360px">
+      <el-empty v-if="!activeMembers.length" description="暂无成员" />
+      <div v-for="m in activeMembers" :key="m.userId" class="member-row">
+        <el-avatar :size="32" :src="m.avatar || undefined">{{ getAvatarText(m.userName) }}</el-avatar>
+        <span class="member-name">{{ m.userName }}</span>
+        <el-tag v-if="m.owner" size="small" type="warning">群主</el-tag>
+        <el-button v-if="isGroupOwner && !m.owner" size="small" type="danger" link @click="onRemoveMember(m)">移除</el-button>
+      </div>
+      <template #footer>
+        <el-button v-if="isGroupOwner" type="primary" @click="openMemberSelect('add')">添加成员</el-button>
+      </template>
     </el-drawer>
+
+    <el-dialog v-model="forwardVisible" title="转发到" width="360px" append-to-body>
+      <el-scrollbar max-height="400px">
+        <div
+          v-for="c in conversations"
+          :key="c.chatType + '-' + c.targetId"
+          class="fwd-item"
+          :class="{ active: forwardTargetKey === c.chatType + '|' + c.targetId }"
+          @click="forwardTargetKey = c.chatType + '|' + c.targetId"
+        >
+          <el-avatar :size="30" :src="convAvatar(c) || undefined">{{ getAvatarText(c.title) }}</el-avatar>
+          <span class="fwd-name">{{ c.title || '未命名会话' }}</span>
+        </div>
+      </el-scrollbar>
+      <template #footer>
+        <el-button @click="forwardVisible = false">取消</el-button>
+        <el-button type="primary" :disabled="!forwardTargetKey" @click="confirmForward">转发</el-button>
+      </template>
+    </el-dialog>
+
+    <UserSelect ref="contactSelectRef" :multiple="false" @confirm-call-back="onPickContact" />
+    <UserSelect ref="memberSelectRef" :multiple="true" @confirm-call-back="onPickMembers" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { Document, Paperclip, Picture } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useUserStore } from '@/store/modules/user';
-import {
-  addGroupMembers,
-  createGroup,
-  groupHistory,
-  listConversations,
-  markPrivateRead,
-  privateHistory,
-  sendGroupMessage,
-  sendPrivateMessage
-} from '@/api/im/chat';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import UserSelect from '@/components/UserSelect/index.vue';
+import { uploadOss } from '@/api/im/chat';
+import { useImStore } from '@/store/modules/im';
 
-const userStore = useUserStore();
+const imStore = useImStore();
 
 const leftTab = ref<'chat' | 'contacts' | 'groups' | 'settings'>('chat');
 const sendMode = ref<'enter' | 'ctrlEnter'>('enter');
-const autoRefresh = ref(true);
-
 const keyword = ref('');
 const memberDrawer = ref(false);
-const addMemberIdsText = ref('');
+const msgScrollbar = ref<any>(null);
 
-const conversations = ref<any[]>([]);
-const messages = ref<any[]>([]);
-const active = ref<{ chatType: string; targetId: string; title: string } | null>(null);
-const draft = ref('');
+// 建群
 const newGroupName = ref('');
-const memberIdsText = ref('');
-const manualPeerId = ref<number>(1);
-const myUserId = computed(() => Number(userStore.userId) || null);
+const selectedMembers = ref<any[]>([]);
+const memberSelectMode = ref<'create' | 'add'>('create');
+const contactSelectRef = ref<any>(null);
+const memberSelectRef = ref<any>(null);
 
-const chatTitle = computed(() => (active.value ? active.value.title || '未命名会话' : '聊天窗口'));
-const activeMenuIndex = computed(() => (active.value ? `${active.value.chatType}|${active.value.targetId}` : ''));
+// 转发
+const forwardVisible = ref(false);
+const forwardMessage = ref<any>(null);
+const forwardTargetKey = ref('');
+
 const sendTip = computed(() => (sendMode.value === 'enter' ? 'Enter 发送，Shift+Enter 换行' : 'Ctrl+Enter 发送'));
+
+const conversations = computed(() => imStore.conversations);
+const active = computed(() => imStore.active);
+const messages = computed(() => imStore.activeMessages);
+const activePageInfo = computed(() => imStore.activePageInfo);
+
+const recentPrivate = computed(() => conversations.value.filter((c) => c.chatType === 'PRIVATE').slice(0, 12));
+
+const activeMembers = computed(() => {
+  if (!active.value || active.value.chatType !== 'GROUP') return [];
+  return imStore.groupMembers[active.value.targetId] || [];
+});
+
+const isGroupOwner = computed(() => activeMembers.value.some((m: any) => String(m.userId) === imStore.myUserId && m.owner));
 
 const filteredConversations = computed(() => {
   const list = conversations.value || [];
-  if (!keyword.value.trim()) return list;
-  return list.filter((c) =>
-    String(c.title || '')
-      .toLowerCase()
-      .includes(keyword.value.toLowerCase())
+  const kw = keyword.value.trim().toLowerCase();
+  if (!kw) return list;
+  return list.filter(
+    (c) =>
+      String(c.title || '')
+        .toLowerCase()
+        .includes(kw) ||
+      String(c.lastContent || '')
+        .toLowerCase()
+        .includes(kw)
   );
 });
 
-const recentPeers = computed(() => {
-  return (conversations.value || [])
-    .filter((c) => c.chatType === 'PRIVATE')
-    .map((c) => Number(c.targetId))
-    .filter((n, i, arr) => !Number.isNaN(n) && n > 0 && arr.indexOf(n) === i)
-    .slice(0, 12);
+const draft = computed<string>({
+  get: () => imStore.draft,
+  set: (v) => {
+    imStore.draft = v;
+  }
 });
 
 const getAvatarText = (name?: string) => {
@@ -206,79 +279,138 @@ const getAvatarText = (name?: string) => {
   return n.substring(0, 1).toUpperCase();
 };
 
-const formatTime = (v?: string) => {
-  if (!v) return '';
-  if (v.length <= 16) return v;
-  return v.substring(0, 16);
+const convAvatar = (c: any) => c.avatar || (c.chatType === 'GROUP' && c.memberAvatars && c.memberAvatars[0]) || '';
+
+const previewText = (c: any) => c.lastContent || '暂无消息，快发第一条吧';
+
+const parseDate = (v?: string | number | Date): Date | null => {
+  if (v == null || v === '') return null;
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+  if (typeof v === 'number') {
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  let d = new Date(v);
+  if (isNaN(d.getTime())) d = new Date(String(v).replace(' ', 'T'));
+  return isNaN(d.getTime()) ? null : d;
 };
 
-const loadConversations = async () => {
-  const res: any = await listConversations();
-  if (res?.code === 200) {
-    conversations.value = res.data || [];
+const formatTime = (v?: string | number | Date) => {
+  const d = parseDate(v);
+  if (!d) return typeof v === 'string' ? v.substring(0, 16) : '';
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const hhmm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const sameDay = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  if (sameDay) return hhmm;
+  if (isYesterday) return `昨天 ${hhmm}`;
+  if (d.getFullYear() === now.getFullYear()) return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hhmm}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const fileName = (url: string) => {
+  try {
+    return decodeURIComponent(url.split('/').pop()?.split('?')[0] || '文件');
+  } catch {
+    return '文件';
   }
 };
 
-const loadMessages = async () => {
-  if (!active.value) return;
-  const page = { pageNum: 1, pageSize: 50 };
-  let res: any;
-  if (active.value.chatType === 'PRIVATE') {
-    res = await privateHistory({ peerUserId: Number(active.value.targetId), ...page });
-  } else {
-    res = await groupHistory({ groupId: active.value.targetId, ...page });
-  }
-  if (res && (res.code === 200 || res.rows)) {
-    messages.value = (res.rows || []).slice().reverse();
-  }
+const scrollToBottom = (force = false) => {
+  nextTick(() => {
+    const sb = msgScrollbar.value;
+    if (!sb) return;
+    const wrap = sb.wrapRef as HTMLElement | undefined;
+    if (!force && wrap) {
+      const distance = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight;
+      if (distance > 80) return;
+    }
+    sb.setScrollTop(Number.MAX_SAFE_INTEGER);
+  });
 };
+
+const showRead = (m: any) => imStore.isMine(m) && active.value?.chatType === 'PRIVATE' && m.status === 'sent' && !m.revoked;
+
+// 实时新增消息（非加载更多、非切会话）时按需滚底
+const loadMoreActive = ref(false);
+watch(
+  () => messages.value.length,
+  () => {
+    if (loadMoreActive.value) return;
+    scrollToBottom(false);
+  }
+);
 
 const onSelectConv = async (index: string) => {
-  const [chatType, targetId] = index.split('|');
-  const c = conversations.value.find((x) => x.chatType === chatType && x.targetId === targetId);
-  active.value = c ? { chatType: c.chatType, targetId: c.targetId, title: c.title } : { chatType, targetId, title: '' };
-  await loadMessages();
+  leftTab.value = 'chat';
+  await imStore.selectConv(index);
+  scrollToBottom(true);
 };
 
-const openPrivateChat = async () => {
-  if (!manualPeerId.value || manualPeerId.value < 1) {
-    ElMessage.warning('请输入有效的用户ID');
+const reloadMessages = async () => {
+  await imStore.loadMessages(true);
+  scrollToBottom(true);
+};
+
+const onPickContact = async (users: any[]) => {
+  if (!users || !users.length) return;
+  const u = users[0];
+  leftTab.value = 'chat';
+  await imStore.openPrivateChat(u.userId, u.nickName || u.userName);
+  scrollToBottom(true);
+};
+
+const openMemberSelect = (mode: 'create' | 'add') => {
+  memberSelectMode.value = mode;
+  memberSelectRef.value?.open();
+};
+
+const onPickMembers = async (users: any[]) => {
+  if (memberSelectMode.value === 'create') {
+    selectedMembers.value = users || [];
     return;
   }
-  active.value = { chatType: 'PRIVATE', targetId: String(manualPeerId.value), title: `用户 ${manualPeerId.value}` };
-  leftTab.value = 'chat';
-  await loadMessages();
+  if (active.value && active.value.chatType === 'GROUP' && users?.length) {
+    const ids = users.map((u: any) => u.userId);
+    const ok = await imStore.addGroupMembers(active.value.targetId, ids);
+    if (ok) await imStore.loadGroupMembers(active.value.targetId);
+  }
 };
 
-const openPeer = async (uid: number) => {
-  manualPeerId.value = uid;
-  await openPrivateChat();
+const removeSelectedMember = (u: any) => {
+  selectedMembers.value = selectedMembers.value.filter((x: any) => x.userId !== u.userId);
 };
 
-const onSend = async () => {
-  if (!active.value || !draft.value.trim()) return;
+const onCreateGroup = async () => {
+  if (!newGroupName.value.trim()) {
+    ElMessage.warning('请输入群名称');
+    return;
+  }
+  if (selectedMembers.value.length < 1) {
+    ElMessage.warning('请至少选择一名成员');
+    return;
+  }
+  const ids = selectedMembers.value.map((u: any) => u.userId);
+  const ok = await imStore.createGroup(newGroupName.value.trim(), ids);
+  if (ok) {
+    newGroupName.value = '';
+    selectedMembers.value = [];
+    leftTab.value = 'chat';
+  }
+};
+
+const onSend = () => {
   const content = draft.value.trim();
+  if (!content) return;
   if (content.length > 2000) {
     ElMessage.warning('消息内容不能超过 2000 个字符');
     return;
   }
-  draft.value = '';
-  try {
-    let res: any;
-    if (active.value.chatType === 'PRIVATE') {
-      res = await sendPrivateMessage({ toUserId: Number(active.value.targetId), content });
-    } else {
-      res = await sendGroupMessage({ groupId: active.value.targetId, content });
-    }
-    if (res?.code === 200) {
-      await loadMessages();
-      if (autoRefresh.value) await loadConversations();
-    } else {
-      ElMessage.error(res?.msg || '发送失败');
-    }
-  } catch (e: any) {
-    ElMessage.error(e?.message || '发送失败');
-  }
+  void imStore.send(content, 'text');
+  scrollToBottom(true);
 };
 
 const onEditorKeydown = (e: KeyboardEvent) => {
@@ -293,95 +425,101 @@ const onEditorKeydown = (e: KeyboardEvent) => {
   }
 };
 
-const onMarkRead = async () => {
-  if (!active.value || active.value.chatType !== 'PRIVATE') return;
-  const res: any = await markPrivateRead(Number(active.value.targetId));
-  if (res?.code === 200) {
-    ElMessage.success('已标记已读');
-    await loadConversations();
+const onImageUpload = async (file: any) => {
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.warning('图片不能超过 10MB');
+    return false;
   }
-};
-
-const onCreateGroup = async () => {
-  const ids = parseUserIds(memberIdsText.value);
-
-  if (!newGroupName.value.trim() || ids.length < 1) {
-    ElMessage.warning('请输入群名和至少一个成员ID');
-    return;
-  }
-
-  const res: any = await createGroup({ groupName: newGroupName.value.trim(), memberUserIds: ids });
-  if (res?.code === 200) {
-    ElMessage.success('建群成功');
-    newGroupName.value = '';
-    memberIdsText.value = '';
-    leftTab.value = 'chat';
-    await loadConversations();
-  } else {
-    ElMessage.error(res?.msg || '建群失败');
-  }
-};
-
-const parseUserIds = (text: string) => {
-  return Array.from(
-    new Set(
-      text
-        .split(/[,，\s]+/)
-        .map((s) => Number(s.trim()))
-        .filter((n) => Number.isSafeInteger(n) && n > 0)
-    )
-  );
-};
-
-const onAddMembers = async () => {
-  if (!active.value || active.value.chatType !== 'GROUP') return;
-  const ids = parseUserIds(addMemberIdsText.value);
-  if (!ids.length) {
-    ElMessage.warning('请输入至少一个成员ID');
-    return;
-  }
-  const res: any = await addGroupMembers(active.value.targetId, { memberUserIds: ids });
-  if (res?.code === 200) {
-    ElMessage.success('添加成员成功');
-    addMemberIdsText.value = '';
-  } else {
-    ElMessage.error(res?.msg || '添加成员失败');
-  }
-};
-
-const isMine = (m: any) => {
-  if (myUserId.value == null) return false;
-  return Number(m.fromUserId) === myUserId.value;
-};
-
-const handleRealtime = (ev: Event) => {
-  const ce = ev as CustomEvent;
-  const p = ce.detail;
-  if (!p || !active.value) return;
-
-  if (p.chatType === 'PRIVATE' && active.value.chatType === 'PRIVATE') {
-    const peer = Number(active.value.targetId);
-    if (p.fromUserId === peer || p.toUserId === peer) {
-      loadMessages();
+  try {
+    const res: any = await uploadOss(file);
+    if (res?.code === 200 && res.data?.url) {
+      await imStore.send(res.data.url, 'image');
+      scrollToBottom(true);
+    } else {
+      ElMessage.error('上传失败');
     }
+  } catch {
+    ElMessage.error('上传失败');
   }
+  return false;
+};
 
-  if (p.chatType === 'GROUP' && active.value.chatType === 'GROUP' && String(p.groupId) === active.value.targetId) {
-    loadMessages();
+const onFileUpload = async (file: any) => {
+  if (file.size > 20 * 1024 * 1024) {
+    ElMessage.warning('文件不能超过 20MB');
+    return false;
   }
+  try {
+    const res: any = await uploadOss(file);
+    if (res?.code === 200 && res.data?.url) {
+      await imStore.send(res.data.url, 'file');
+      scrollToBottom(true);
+    } else {
+      ElMessage.error('上传失败');
+    }
+  } catch {
+    ElMessage.error('上传失败');
+  }
+  return false;
+};
 
-  if (autoRefresh.value) {
-    loadConversations();
+const onRetry = (m: any) => imStore.retry(m);
+const onRevoke = (m: any) => imStore.revoke(m);
+
+const openForward = (m: any) => {
+  forwardMessage.value = m;
+  forwardTargetKey.value = '';
+  forwardVisible.value = true;
+};
+
+const confirmForward = async () => {
+  if (!forwardMessage.value || !forwardTargetKey.value) return;
+  await imStore.forward(forwardMessage.value, forwardTargetKey.value);
+  forwardVisible.value = false;
+};
+
+const onMarkRead = () => imStore.markActiveRead();
+
+const onOpenMembers = () => {
+  if (active.value) imStore.loadGroupMembers(active.value.targetId);
+  memberDrawer.value = true;
+};
+
+const onRemoveMember = async (m: any) => {
+  if (!active.value) return;
+  const ok = await imStore.removeMember(active.value.targetId, String(m.userId));
+  if (ok) await imStore.loadGroupMembers(active.value.targetId);
+};
+
+const onMsgScroll = ({ scrollTop }: { scrollTop: number }) => {
+  if (scrollTop < 30 && !activePageInfo.value.loading && activePageInfo.value.hasMore) {
+    onLoadMore();
   }
+};
+
+const onLoadMore = async () => {
+  if (loadMoreActive.value) return;
+  loadMoreActive.value = true;
+  const wrap = msgScrollbar.value?.wrapRef as HTMLElement | undefined;
+  const oldHeight = wrap?.scrollHeight ?? 0;
+  await imStore.loadMore();
+  await nextTick();
+  if (wrap) wrap.scrollTop = wrap.scrollHeight - oldHeight;
+  loadMoreActive.value = false;
 };
 
 onMounted(() => {
-  loadConversations();
-  window.addEventListener('im-realtime', handleRealtime as EventListener);
+  imStore.init();
+  imStore.setFocus(imStore.activeKey || null);
 });
 
+watch(
+  () => imStore.activeKey,
+  (n) => imStore.setFocus(n || null)
+);
+
 onUnmounted(() => {
-  window.removeEventListener('im-realtime', handleRealtime as EventListener);
+  imStore.setFocus(null);
 });
 </script>
 
@@ -397,6 +535,21 @@ onUnmounted(() => {
 
 .im-card {
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.im-card :deep(.el-card__header) {
+  flex-shrink: 0;
+}
+
+.im-card :deep(.el-card__body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .panel-header {
@@ -406,8 +559,38 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
+.unread-badge :deep(.el-badge__content) {
+  z-index: 1;
+}
+
+.left-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.left-tabs :deep(.el-tabs__header) {
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.left-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.left-tabs :deep(.el-tab-pane) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .toolbar {
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .between {
@@ -419,6 +602,11 @@ onUnmounted(() => {
 
 .w-60 {
   width: 60%;
+}
+
+.conv-scroll {
+  flex: 1;
+  min-height: 0;
 }
 
 .conv-item {
@@ -472,11 +660,6 @@ onUnmounted(() => {
   max-width: 180px;
 }
 
-.contact-add {
-  display: flex;
-  gap: 8px;
-}
-
 .quick-list {
   margin-bottom: 12px;
 }
@@ -485,6 +668,10 @@ onUnmounted(() => {
   margin-right: 8px;
   margin-bottom: 8px;
   cursor: pointer;
+}
+
+.member-tags {
+  margin-top: 6px;
 }
 
 .chat-header {
@@ -513,6 +700,25 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+.chat-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-empty-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.msg-scroll {
+  flex: 1;
+  min-height: 0;
+}
+
 .msg-empty {
   color: var(--el-text-color-secondary);
   text-align: center;
@@ -521,11 +727,12 @@ onUnmounted(() => {
 
 .msg-row {
   display: flex;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
 .msg-row.mine {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
 }
 
 .msg-bubble {
@@ -534,6 +741,7 @@ onUnmounted(() => {
   border-radius: 10px;
   padding: 8px 10px;
   background: #fff;
+  position: relative;
 }
 
 .msg-row.mine .msg-bubble {
@@ -563,8 +771,76 @@ onUnmounted(() => {
   word-break: break-word;
 }
 
+.msg-content.revoked {
+  color: var(--el-text-color-secondary);
+  font-style: italic;
+}
+
+.msg-fwd {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 4px;
+}
+
+.msg-image .img-thumb {
+  width: 180px;
+  max-width: 100%;
+  border-radius: 8px;
+  display: block;
+}
+
+.msg-file {
+  display: flex;
+  align-items: center;
+}
+
+.msg-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.msg-row:hover .msg-actions {
+  opacity: 1;
+}
+
+.msg-act {
+  font-size: 12px;
+  color: var(--el-color-primary);
+  cursor: pointer;
+}
+
+.msg-read {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+}
+
+.msg-status {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.msg-status.sending {
+  color: var(--el-text-color-secondary);
+}
+
+.msg-status.failed {
+  color: var(--el-color-danger);
+  cursor: pointer;
+}
+
 .editor {
+  flex-shrink: 0;
   margin-top: 12px;
+}
+
+.editor-tools {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .editor-actions {
@@ -572,5 +848,44 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+}
+
+.member-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fwd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.fwd-item:hover {
+  background: var(--el-fill-color-light);
+}
+
+.fwd-item.active {
+  background: var(--el-color-primary-light-9);
+}
+
+.fwd-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

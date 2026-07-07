@@ -9,6 +9,7 @@ import com.nexus.im.domain.bo.ImGroupMemberAddBo;
 import com.nexus.im.domain.bo.ImGroupSendBo;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
 import com.nexus.im.domain.vo.ImConversationVo;
+import com.nexus.im.domain.vo.ImGroupMemberVo;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,21 @@ public interface IImChatService {
     int markPrivateRead(Long peerUserId);
 
     int markGroupRead(Long groupId);
+
+    /**
+     * 群成员列表（含用户名称/头像/是否群主）
+     */
+    List<ImGroupMemberVo> listGroupMembers(Long groupId);
+
+    /**
+     * 群主移除群成员
+     */
+    R<Void> removeMember(Long groupId, Long userId);
+
+    /**
+     * 撤回自己的消息（仅限发送者，2 分钟内）
+     */
+    R<Void> revokeMessage(Long messageId);
 
     /**
      * 将用户头像 OSS ID 解析为可直接访问的 URL（与消息历史中的 senderAvatar 保持一致）。

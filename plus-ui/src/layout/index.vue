@@ -22,6 +22,7 @@ import { useThemeStore } from '@/store/modules/theme';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import { initWebSocket } from '@/utils/websocket';
 import { initSSE } from '@/utils/sse';
+import { useImStore } from '@/store/modules/im';
 
 const themeStore = useThemeStore();
 const theme = computed(() => themeStore.brandColor);
@@ -89,6 +90,11 @@ onMounted(() => {
 
 onMounted(() => {
   initSSE(import.meta.env.VITE_APP_BASE_API + '/resource/sse');
+});
+
+onMounted(() => {
+  // IM 全局实时监听（会话/未读/通知/标题闪烁），应用级单例
+  useImStore().init();
 });
 
 const handleClickOutside = () => {

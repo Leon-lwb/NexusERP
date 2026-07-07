@@ -55,14 +55,8 @@ export const initWebSocket = (url: any) => {
               return;
             }
             if (obj.type === 'IM_MESSAGE') {
+              // 通知与未读由 IM store 统一处理（含活跃会话抑制与标题闪烁）
               window.dispatchEvent(new CustomEvent('im-realtime', { detail: obj.payload }));
-              const c = obj.payload?.content || '';
-              ElNotification({
-                title: '即时消息',
-                message: c.length > 120 ? c.slice(0, 120) + '…' : c,
-                type: 'success',
-                duration: 3500
-              });
               return;
             }
           }

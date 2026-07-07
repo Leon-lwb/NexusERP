@@ -21,6 +21,7 @@ import com.nexus.im.domain.bo.ImGroupMemberAddBo;
 import com.nexus.im.domain.bo.ImGroupSendBo;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
 import com.nexus.im.domain.vo.ImConversationVo;
+import com.nexus.im.domain.vo.ImGroupMemberVo;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
@@ -56,6 +57,8 @@ public class ImChatServiceImpl implements IImChatService {
     private static final Set<String> SUPPORTED_MSG_TYPES = Set.of("text", "image", "file");
     private static final int MAX_TEXT_CONTENT_LENGTH = 2000;
     private static final int MAX_GROUP_NAME_LENGTH = 50;
+    /** 消息撤回时间窗（毫秒），超过则不允许撤回 */
+    private static final long REVOKE_WINDOW_MS = 2 * 60 * 1000L;
 
     private final ImMessageMapper imMessageMapper;
     private final ImGroupMapper imGroupMapper;
@@ -224,7 +227,7 @@ public class ImChatServiceImpl implements IImChatService {
             vo.setMemberAvatars(loadGroupMemberAvatars(g.getGroupId()));
             vo.setLastContent(last != null ? last.getContent() : "");
             vo.setLastTime(last != null ? last.getCreateTime() : g.getCreateTime());
-            vo.setUnreadCount(0L);
+            vo.setUnreadCount(countUnreadGroup(me, g.getGroupId()));
             list.add(vo);
         }
 
@@ -345,6 +348,114 @@ public class ImChatServiceImpl implements IImChatService {
         ImMessage patch = new ImMessage();
         patch.setIsRead("1");
         return imMessageMapper.update(patch, new LambdaUpdateWrapper<ImMessage>()
+            .eq(ImMessage::getGroupId, groupId)
+            .ne(ImMessage::getFromUserId, me)
+            .eq(ImMessage::getIsRead, "0"));
+    }
+
+    @Override
+    public List<ImGroupMemberVo> listGroupMembers(Long groupId) {
+        Long me = LoginHelper.getUserId();
+        ImGroup group = imGroupMapper.selectById(groupId);
+        if (group == null || !"0".equals(group.getStatus())) {
+            throw new ServiceException("群组不存在或已解散");
+        }
+        if (!isGroupMember(groupId, me)) {
+            throw new ServiceException("无权查看该群成员");
+        }
+        List<ImGroupMember> members = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getGroupId, groupId)
+            .orderByAsc(ImGroupMember::getJoinTime));
+        List<ImGroupMemberVo> list = new ArrayList<>();
+        for (ImGroupMember m : members) {
+            SysUserVo u = sysUserService.selectUserById(m.getUserId());
+            ImGroupMemberVo vo = new ImGroupMemberVo();
+            vo.setUserId(m.getUserId());
+            vo.setUserName(u != null ? StrUtil.blankToDefault(u.getNickName(), u.getUserName()) : String.valueOf(m.getUserId()));
+            vo.setAvatar(resolveAvatarUrl(u != null ? u.getAvatar() : null));
+            vo.setJoinTime(m.getJoinTime());
+            vo.setOwner(group.getOwnerUserId() != null && group.getOwnerUserId().equals(m.getUserId()));
+            list.add(vo);
+        }
+        return list;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public R<Void> removeMember(Long groupId, Long userId) {
+        Long operator = LoginHelper.getUserId();
+        ImGroup g = imGroupMapper.selectById(groupId);
+        if (g == null || !"0".equals(g.getStatus())) {
+            return R.fail("群组不存在或已解散");
+        }
+        if (!g.getOwnerUserId().equals(operator)) {
+            return R.fail("仅群主可移除成员");
+        }
+        if (userId.equals(operator)) {
+            return R.fail("群主不可移除自己");
+        }
+        int deleted = imGroupMemberMapper.delete(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getGroupId, groupId)
+            .eq(ImGroupMember::getUserId, userId));
+        if (deleted <= 0) {
+            return R.fail("成员不存在");
+        }
+        return R.ok();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public R<Void> revokeMessage(Long messageId) {
+        Long me = LoginHelper.getUserId();
+        ImMessage msg = imMessageMapper.selectById(messageId);
+        if (msg == null) {
+            return R.fail("消息不存在");
+        }
+        if (!me.equals(msg.getFromUserId())) {
+            return R.fail("只能撤回自己的消息");
+        }
+        if (msg.getCreateTime() == null || System.currentTimeMillis() - msg.getCreateTime().getTime() > REVOKE_WINDOW_MS) {
+            return R.fail("超过2分钟，无法撤回");
+        }
+        ImMessage patch = new ImMessage();
+        patch.setMessageId(messageId);
+        patch.setRevoked("1");
+        imMessageMapper.updateById(patch);
+
+        // 推送撤回事件给接收方（复用 IM_MESSAGE 信封，payload 带 action=revoke，前端按 action 处理）
+        if (msg.getGroupId() == null) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("chatType", "PRIVATE");
+            payload.put("messageId", messageId);
+            payload.put("fromUserId", msg.getFromUserId());
+            payload.put("toUserId", msg.getToUserId());
+            payload.put("action", "revoke");
+            imRealtimePush.publishToUser(msg.getToUserId(), ImEnvelopeHelper.imMessage(payload));
+        } else {
+            ImGroup group = imGroupMapper.selectById(msg.getGroupId());
+            List<ImGroupMember> members = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+                .eq(ImGroupMember::getGroupId, msg.getGroupId()));
+            for (ImGroupMember m : members) {
+                if (m.getUserId().equals(me)) {
+                    continue;
+                }
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("chatType", "GROUP");
+                payload.put("messageId", messageId);
+                payload.put("groupId", msg.getGroupId());
+                payload.put("fromUserId", msg.getFromUserId());
+                payload.put("action", "revoke");
+                if (group != null) {
+                    payload.put("groupName", group.getGroupName());
+                }
+                imRealtimePush.publishToUser(m.getUserId(), ImEnvelopeHelper.imMessage(payload));
+            }
+        }
+        return R.ok();
+    }
+
+    private long countUnreadGroup(Long me, Long groupId) {
+        return imMessageMapper.selectCount(new LambdaQueryWrapper<ImMessage>()
             .eq(ImMessage::getGroupId, groupId)
             .ne(ImMessage::getFromUserId, me)
             .eq(ImMessage::getIsRead, "0"));
