@@ -19,7 +19,7 @@ export default defineConfig(({ mode, command }) => {
     // https://cn.vitejs.dev/config/#resolve-extensions
     plugins: createPlugins(env, command === 'build'),
     server: {
-      host: '0.0.0.0',
+      host: true,
       port: Number(env.VITE_APP_PORT),
       open: true,
       proxy: {

@@ -9,6 +9,8 @@ import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.erp.prd.service.impl.PrdBackflushServiceImpl;
+import com.nexus.erp.wm.domain.vo.PutawayLocation;
+import com.nexus.erp.wm.service.IPutawayStrategyService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class ProductionBackflushConsumer extends BaseMessageConsumer<ProductionC
     private final PrdBackflushServiceImpl backflushService;
     private final ReliableMessageProducer messageProducer;
     private final IWmStockOperationService stockOperationService;
+    private final IPutawayStrategyService putawayStrategyService;
 
     /**
      * 获取消息类型
@@ -53,10 +56,12 @@ public class ProductionBackflushConsumer extends BaseMessageConsumer<ProductionC
     protected void doProcess(ProductionCompleteMessage message) {
         log.info("处理完工倒冲消息: woId={}, completionQty={}", message.getWoId(), message.getCompletionQty());
         backflushService.backflushOnCompletion(message.getWoId(), message.getCompletionQty());
+        // 规则驱动解析成品入库仓库与库位（替换原车间ID当仓库的写法）
+        PutawayLocation putaway = putawayStrategyService.resolvePutaway(message.getMaterialId(), message.getCompletionQty());
         stockOperationService.postProductionCompletion(
             message.getWoId(), message.getMaterialId(), message.getMaterialCode(), message.getMaterialName(),
-            message.getCompletionQty(), message.getWorkshopId(), null, new Date());
-        log.info("完工入库过账完成: woId={}", message.getWoId());
+            message.getCompletionQty(), putaway.getWarehouseId(), putaway.getLocationId(), new Date());
+        log.info("完工入库过账完成: woId={}, 仓库={}, 库位={}", message.getWoId(), putaway.getWarehouseCode(), putaway.getLocationCode());
     }
 
     /**

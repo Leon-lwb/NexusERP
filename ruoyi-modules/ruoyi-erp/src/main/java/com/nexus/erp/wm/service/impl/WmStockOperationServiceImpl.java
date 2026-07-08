@@ -8,14 +8,17 @@ import com.nexus.erp.wm.domain.WmMiscRecptLine;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.WmStockTakingLine;
 import com.nexus.erp.wm.domain.WmTransferLine;
+import com.nexus.erp.wm.domain.vo.AllocatedStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.erp.wm.strategy.StockOperationStrategyFactory;
+import com.nexus.erp.wm.strategy.impl.ProductionIssueStrategy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 库存过账服务实现
@@ -30,6 +33,7 @@ import java.util.Date;
 public class WmStockOperationServiceImpl implements IWmStockOperationService {
 
     private final StockOperationStrategyFactory strategyFactory;
+    private final ProductionIssueStrategy productionIssueStrategy;
 
     /**
      * 物料入库过账
@@ -116,6 +120,20 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
     @Transactional(rollbackFor = Exception.class)
     public void postProductionIssue(WmProductionIssueLine line, Date now) {
         strategyFactory.getStrategy(StockOperationTypeEnum.PRODUCTION_ISSUE).execute(line, now);
+    }
+
+    /**
+     * 生产领料过账（按拣货策略已分配库存明细扣减）
+     *
+     * @param issueId 领料单头ID
+     * @param lineId  领料单行ID
+     * @param stocks  拣货分配明细
+     * @param now     操作时间
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void postProductionIssueAllocated(Long issueId, Long lineId, List<AllocatedStock> stocks, Date now) {
+        productionIssueStrategy.executeAllocated(issueId, lineId, stocks, now);
     }
 
     /**

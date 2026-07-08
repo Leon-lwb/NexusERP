@@ -41,6 +41,15 @@ public class WmPickingRuleVo implements Serializable {
     @ExcelProperty(value = "状态")
     private String status;
 
+    @ExcelProperty(value = "仓库名称")
+    private String warehouseName;
+
+    @ExcelProperty(value = "仓库编码")
+    private String warehouseCode;
+
+    @ExcelProperty(value = "物料分类名称")
+    private String categoryName;
+
     @ExcelProperty(value = "备注")
     private String remark;
 }

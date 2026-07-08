@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
+import com.nexus.erp.wm.domain.vo.AllocatedStock;
 import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
@@ -97,24 +98,64 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
             if (stockQty.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             BigDecimal deductQty = stockQty.min(remaining);
-            BigDecimal beforeQuantity = stockQty;
-            BigDecimal afterQuantity = stockQty.subtract(deductQty);
-            int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
-            if (affected == 0) {
-                throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
-            }
-
-            WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_PRODUCTION_ISSUE, TX_FLAG_OUT, deductQty,
-                beforeQuantity, afterQuantity, now);
-            tx.setSourceDocType(SOURCE_DOC_TYPE_PRODUCTION_ISSUE);
-            tx.setSourceDocId(line.getIssueId());
-            tx.setSourceDocLineId(line.getLineId());
-            tx.setRemark("生产领料");
-            stockTxMapper.insert(tx);
+            deductAndLog(stock, deductQty, line.getIssueId(), line.getLineId(), now);
             remaining = remaining.subtract(deductQty);
         }
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
             throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不足");
         }
+    }
+
+    /**
+     * 按已分配库存明细扣减（供倒冲领料使用）
+     * <p>
+     * 拣货策略已选定具体库存与扣减量，此处逐条重新读取最新库存（取最新乐观锁版本）后扣减并写流水。
+     *
+     * @param issueId 领料单头ID
+     * @param lineId  领料单行ID
+     * @param stocks  拣货分配明细
+     * @param now     操作时间
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void executeAllocated(Long issueId, Long lineId, List<AllocatedStock> stocks, Date now) {
+        if (stocks == null || stocks.isEmpty()) {
+            throw new RuntimeException("生产领料分配明细为空");
+        }
+        for (AllocatedStock a : stocks) {
+            WmMaterialStock stock = stockMapper.selectById(a.getStockId());
+            if (stock == null) {
+                throw new ServiceException("库存记录不存在: " + a.getStockId());
+            }
+            BigDecimal stockQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
+            if (stockQty.compareTo(a.getDeductQty()) < 0) {
+                throw new ServiceException("物料【" + stock.getMaterialName() + "】库存不足，无法扣减");
+            }
+            deductAndLog(stock, a.getDeductQty(), issueId, lineId, now);
+        }
+    }
+
+    /**
+     * 扣减单条库存并写入出库流水
+     *
+     * @param stock     库存记录
+     * @param deductQty 本次扣减量
+     * @param issueId   领料单头ID（来源单据ID）
+     * @param lineId    领料单行ID（来源单据行ID）
+     * @param now       操作时间
+     */
+    private void deductAndLog(WmMaterialStock stock, BigDecimal deductQty, Long issueId, Long lineId, Date now) {
+        BigDecimal beforeQuantity = stock.getStockQuantity();
+        BigDecimal afterQuantity = beforeQuantity.subtract(deductQty);
+        int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+        if (affected == 0) {
+            throw new ServiceException("库存并发冲突，请重试: 物料【" + stock.getMaterialName() + "】");
+        }
+        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_PRODUCTION_ISSUE, TX_FLAG_OUT, deductQty,
+            beforeQuantity, afterQuantity, now);
+        tx.setSourceDocType(SOURCE_DOC_TYPE_PRODUCTION_ISSUE);
+        tx.setSourceDocId(issueId);
+        tx.setSourceDocLineId(lineId);
+        tx.setRemark("生产领料");
+        stockTxMapper.insert(tx);
     }
 }

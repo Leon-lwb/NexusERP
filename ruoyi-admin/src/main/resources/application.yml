@@ -146,6 +146,10 @@ tenant:
   enable: true
   # 排除表
   excludes:
+    # MQ 消息记录表（实体无 tenant_id 字段，全局共享；多租户插件注入 tenant_id 会导致 Unknown column 报错）
+    - mq_message_record
+    - mq_compensation_record
+    - mq_dead_letter_record
     - sys_menu
     - sys_tenant
     - sys_tenant_package

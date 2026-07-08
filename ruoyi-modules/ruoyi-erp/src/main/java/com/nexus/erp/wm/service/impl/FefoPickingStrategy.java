@@ -53,7 +53,11 @@ public class FefoPickingStrategy implements IPickingStrategyService {
             if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
                 break;
             }
-            BigDecimal available = stock.getStockQuantity();
+            // 基于可用量（在库 - 已预留）分配，避免选到已预留库存导致超扣预留
+            BigDecimal available = stock.getAvailableQuantity();
+            if (available.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
             BigDecimal allocated = available.min(remaining);
             stock.setStockQuantity(allocated);
             result.add(stock);

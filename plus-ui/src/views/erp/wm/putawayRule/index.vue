@@ -59,10 +59,9 @@
         </template>
       </el-table-column>
       <el-table-column label="优先级" align="center" prop="priority" />
-      <!-- 技术债：状态暂无对应字典，使用本地 el-tag 渲染，待补字典后改为 dict-tag -->
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
-          <el-tag :type="scope.row.status === 0 ? 'success' : 'danger'">{{ scope.row.status === 0 ? '启用' : '禁用' }}</el-tag>
+          <dict-tag :options="wm_rule_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -88,11 +87,11 @@
             <el-option v-for="item in warehouseOptions" :key="item.warehouseId" :label="item.warehouseName" :value="item.warehouseId" />
           </el-select>
         </el-form-item>
-        <el-form-item label="物料类别" prop="categoryId">
+        <el-form-item label="物料类别" prop="materialCategoryId">
           <el-tree-select
-            v-model="form.categoryId"
+            v-model="form.materialCategoryId"
             :data="categoryOptions"
-            :props="{ value: 'id', label: 'label', children: 'children' }"
+            :props="{ value: 'categoryId', label: 'categoryName', children: 'children' }"
             placeholder="请选择物料类别"
             check-strictly
             style="width: 100%"
@@ -108,8 +107,7 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :value="0">启用</el-radio>
-            <el-radio :value="1">禁用</el-radio>
+            <el-radio v-for="dict in wm_rule_status" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
@@ -129,9 +127,10 @@
 <script setup lang="ts" name="Putawayrule">
 import { listPutawayRule, getPutawayRule, delPutawayRule, addPutawayRule, updatePutawayRule } from '@/api/erp/wm/putawayrule';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
+import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 
 const { proxy } = getCurrentInstance() as any;
-const { wm_putaway_strategy_type } = toRefs<any>(proxy.useDict('wm_putaway_strategy_type'));
+const { wm_putaway_strategy_type, wm_rule_status } = toRefs<any>(proxy.useDict('wm_putaway_strategy_type', 'wm_rule_status'));
 
 const putawayRuleList = ref([]);
 const open = ref(false);
@@ -143,7 +142,7 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const warehouseOptions = ref([]);
-const categoryOptions = ref([]);
+const { categoryTree: categoryOptions, getCategoryTree } = useCategoryTree(proxy);
 
 const data = reactive({
   form: {},
@@ -186,10 +185,10 @@ function reset() {
     ruleCode: null,
     ruleName: null,
     warehouseId: null,
-    categoryId: null,
+    materialCategoryId: null,
     strategyType: null,
     priority: 1,
-    status: 0,
+    status: '0',
     remark: null
   };
   proxy.resetForm('putawayRuleRef');
@@ -216,6 +215,7 @@ function handleAdd() {
   open.value = true;
   title.value = '添加上架规则';
   getWarehouseOptions();
+  getCategoryTree();
 }
 
 function handleUpdate(row: any) {
@@ -226,6 +226,7 @@ function handleUpdate(row: any) {
     open.value = true;
     title.value = '修改上架规则';
     getWarehouseOptions();
+    getCategoryTree();
   });
 }
 

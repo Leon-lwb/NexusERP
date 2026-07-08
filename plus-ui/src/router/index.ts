@@ -556,34 +556,6 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
-    path: '/erp/wm/putawayrule/form',
-    component: Layout,
-    hidden: true,
-    permissions: ['wm:putawayRule:query'],
-    children: [
-      {
-        path: '',
-        component: () => import('@/views/erp/wm/putawayrule/form.vue'),
-        name: 'PutawayRuleForm',
-        meta: { title: '上架规则表单', activeMenu: '/erp/wmRule/putawayRule' }
-      }
-    ]
-  },
-  {
-    path: '/erp/wm/pickingrule/form',
-    component: Layout,
-    hidden: true,
-    permissions: ['wm:pickingRule:query'],
-    children: [
-      {
-        path: '',
-        component: () => import('@/views/erp/wm/pickingrule/form.vue'),
-        name: 'PickingRuleForm',
-        meta: { title: '拣货规则表单', activeMenu: '/erp/wmRule/pickingRule' }
-      }
-    ]
-  },
-  {
     path: '/erp/wm/valuation/form',
     component: Layout,
     hidden: true,

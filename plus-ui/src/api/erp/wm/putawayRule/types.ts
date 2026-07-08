@@ -2,7 +2,7 @@ export interface PutawayRuleQuery extends PageQuery {
   ruleCode?: string;
   ruleName?: string;
   warehouseId?: number;
-  categoryId?: number;
+  materialCategoryId?: number;
   strategyType?: string;
   status?: number;
 }
@@ -13,7 +13,7 @@ export interface PutawayRuleVO {
   ruleName: string;
   warehouseId: number;
   warehouseName: string;
-  categoryId: number;
+  materialCategoryId: number;
   categoryName: string;
   strategyType: string;
   priority: number;
@@ -30,7 +30,7 @@ export interface PutawayRuleForm {
   ruleCode: string;
   ruleName: string;
   warehouseId: number;
-  categoryId?: number;
+  materialCategoryId?: number;
   strategyType: string;
   priority: number;
   status: number;

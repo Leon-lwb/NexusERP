@@ -10,12 +10,12 @@ import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
-import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
-import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+import com.nexus.erp.wm.domain.vo.PickingAllocation;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
+import com.nexus.erp.wm.service.IPickingResolutionService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,6 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 生产倒冲服务实现
@@ -44,10 +43,10 @@ public class PrdBackflushServiceImpl {
     private final PrdWorkOrderMapper workOrderMapper;
     private final PrdMaterialRequirementMapper requirementMapper;
     private final PrdMaterialRequirementDetailMapper detailMapper;
-    private final WmMaterialStockMapper stockMapper;
     private final WmProductionIssueMapper productionIssueMapper;
     private final WmProductionIssueLineMapper productionIssueLineMapper;
     private final IWmStockOperationService stockOperationService;
+    private final IPickingResolutionService pickingResolutionService;
     private final AutoCodeUtil autoCodeUtil;
 
     /**
@@ -95,17 +94,15 @@ public class PrdBackflushServiceImpl {
                 .multiply(BigDecimal.ONE.add(lossRate.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP)))
                 .setScale(4, RoundingMode.HALF_UP);
 
-            // 校验库存
-            BigDecimal stockQty = queryTotalStock(detail.getMaterialId());
-            if (stockQty.compareTo(consumeQty) < 0) {
-                throw new ServiceException("倒冲物料[" + detail.getMaterialCode() + "]库存不足，需要"
-                    + consumeQty.stripTrailingZeros().toPlainString() + "，现有"
-                    + stockQty.stripTrailingZeros().toPlainString());
-            }
+            // 按拣货规则解析目标仓库与选中库存（不足即抛异常带具体仓库）
+            PickingAllocation alloc = pickingResolutionService.resolvePicking(detail.getMaterialId(), consumeQty);
 
-            // 创建领料行
+            // 创建领料行（回写仓库）
             WmProductionIssueLine line = new WmProductionIssueLine();
             line.setIssueId(issue.getIssueId());
+            line.setWarehouseId(alloc.getWarehouseId());
+            line.setWarehouseCode(alloc.getWarehouseCode());
+            line.setWarehouseName(alloc.getWarehouseName());
             line.setMaterialId(detail.getMaterialId());
             line.setMaterialCode(detail.getMaterialCode());
             line.setMaterialName(detail.getMaterialName());
@@ -115,8 +112,8 @@ public class PrdBackflushServiceImpl {
             productionIssueLineMapper.insert(line);
             lines.add(line);
 
-            // 执行库存扣减
-            stockOperationService.postProductionIssue(line, now);
+            // 按已分配库存逐条扣减
+            stockOperationService.postProductionIssueAllocated(issue.getIssueId(), line.getLineId(), alloc.getStocks(), now);
 
             // 回写实际消耗
             detail.setActualConsumedQty(
@@ -152,7 +149,7 @@ public class PrdBackflushServiceImpl {
         for (PrdMaterialRequirement req : reqs) {
             LambdaQueryWrapper<PrdMaterialRequirementDetail> detailLqw = Wrappers.lambdaQuery();
             detailLqw.eq(PrdMaterialRequirementDetail::getRequirementId, req.getRequirementId());
-            detailLqw.eq(PrdMaterialRequirementDetail::getBackflushFlag, 1);
+            // 工单级倒冲：工单 backflushFlag=1 时倒冲所有 BOM 子件（明细 backflush_flag 不再作为过滤条件）
             List<PrdMaterialRequirementDetail> details = detailMapper.selectList(detailLqw);
             result.addAll(details);
         }
@@ -172,22 +169,5 @@ public class PrdBackflushServiceImpl {
         issue.setRemark("完工倒冲领料，完工数量:" + completionQty.stripTrailingZeros().toPlainString());
         productionIssueMapper.insert(issue);
         return issue;
-    }
-
-    /**
-     * 查询物料总库存量
-     */
-    private BigDecimal queryTotalStock(Long materialId) {
-        if (materialId == null) {
-            return BigDecimal.ZERO;
-        }
-        LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
-        lqw.eq(WmMaterialStock::getMaterialId, materialId);
-        lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
-        List<WmMaterialStock> stocks = stockMapper.selectList(lqw);
-        return stocks.stream()
-            .map(WmMaterialStock::getStockQuantity)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

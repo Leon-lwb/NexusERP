@@ -9,8 +9,11 @@ import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.wm.domain.WmPutawayRule;
 import com.nexus.erp.wm.domain.WmStorageLocation;
+import com.nexus.erp.wm.domain.WmWarehouse;
+import com.nexus.erp.wm.domain.vo.PutawayLocation;
 import com.nexus.erp.wm.mapper.WmPutawayRuleMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
+import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IPutawayStrategyService;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +37,7 @@ public class PutawayStrategyServiceImpl implements IPutawayStrategyService {
     private final WmPutawayRuleMapper putawayRuleMapper;
     private final WmStorageLocationMapper storageLocationMapper;
     private final BdMaterialMapper bdMaterialMapper;
+    private final WmWarehouseMapper wmWarehouseMapper;
 
     /**
      * 推荐上架库位
@@ -65,9 +69,80 @@ public class PutawayStrategyServiceImpl implements IPutawayStrategyService {
         };
     }
 
+    /**
+     * 规则驱动解析上架目标仓库与推荐库位
+     * <p>
+     * 按物料类别全局匹配上架规则，规则绑定的 warehouseId 作为目标仓库，
+     * 再在该仓库内按策略类型推荐具体库位。不依赖外部传入仓库，供完工入库等场景使用。
+     *
+     * @param materialId 物料ID
+     * @param quantity   上架数量
+     * @return 目标仓库 + 推荐库位
+     */
+    @Override
+    public PutawayLocation resolvePutaway(Long materialId, BigDecimal quantity) {
+        BdMaterial material = bdMaterialMapper.selectById(materialId);
+        if (material == null) {
+            throw new ServiceException("物料不存在");
+        }
+
+        WmPutawayRule rule = findMatchingRuleGlobal(material.getCategoryId());
+        if (rule == null) {
+            throw new ServiceException("物料[" + material.getMaterialCode() + "]未配置上架规则");
+        }
+        Long warehouseId = rule.getWarehouseId();
+        if (warehouseId == null) {
+            throw new ServiceException("上架规则[" + rule.getRuleCode() + "]未绑定目标仓库");
+        }
+        WmWarehouse warehouse = wmWarehouseMapper.selectById(warehouseId);
+        if (warehouse == null) {
+            throw new ServiceException("上架规则绑定的仓库不存在: " + warehouseId);
+        }
+
+        List<WmStorageLocation> candidates = getCandidateLocations(warehouseId);
+        WmStorageLocation loc = switch (rule.getStrategyType()) {
+            case "NEAREST_EMPTY" -> nearestEmpty(candidates);
+            case "CLASS_BASED" -> classBased(candidates, material.getCategoryId());
+            case "FIFO_LOCATION" -> fifoLocation(candidates);
+            default -> throw new ServiceException("不支持的策略类型: " + rule.getStrategyType());
+        };
+
+        PutawayLocation result = new PutawayLocation();
+        result.setWarehouseId(warehouseId);
+        result.setWarehouseCode(warehouse.getWarehouseCode());
+        result.setWarehouseName(warehouse.getWarehouseName());
+        result.setLocationId(loc.getLocationId());
+        result.setLocationCode(loc.getLocationCode());
+        result.setLocationName(loc.getLocationName());
+        return result;
+    }
+
     private WmPutawayRule findMatchingRule(Long categoryId, Long warehouseId) {
         LambdaQueryWrapper<WmPutawayRule> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmPutawayRule::getWarehouseId, warehouseId);
+        lqw.eq(WmPutawayRule::getStatus, "0");
+        lqw.orderByAsc(WmPutawayRule::getPriority);
+        List<WmPutawayRule> rules = putawayRuleMapper.selectList(lqw);
+        if (rules.isEmpty()) {
+            return null;
+        }
+        return rules.stream()
+            .filter(r -> r.getMaterialCategoryId() == null || r.getMaterialCategoryId().equals(categoryId))
+            .findFirst()
+            .orElse(rules.get(0));
+    }
+
+    /**
+     * 全局匹配上架规则（不限定仓库）
+     * <p>
+     * 查询所有启用规则按优先级排序，优先匹配物料类别，否则取通用规则（materialCategoryId 为空）。
+     * 规则绑定的 warehouseId 即作为目标仓库。
+     *
+     * @param categoryId 物料类别ID
+     * @return 匹配的规则，无则返回 null
+     */
+    private WmPutawayRule findMatchingRuleGlobal(Long categoryId) {
+        LambdaQueryWrapper<WmPutawayRule> lqw = Wrappers.lambdaQuery();
         lqw.eq(WmPutawayRule::getStatus, "0");
         lqw.orderByAsc(WmPutawayRule::getPriority);
         List<WmPutawayRule> rules = putawayRuleMapper.selectList(lqw);

@@ -18,4 +18,13 @@ public class WmPutawayRuleVo extends WmPutawayRule implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    @ExcelProperty(value = "仓库名称")
+    private String warehouseName;
+
+    @ExcelProperty(value = "仓库编码")
+    private String warehouseCode;
+
+    @ExcelProperty(value = "物料分类名称")
+    private String categoryName;
 }

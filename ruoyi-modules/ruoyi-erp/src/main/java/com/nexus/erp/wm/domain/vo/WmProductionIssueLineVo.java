@@ -14,6 +14,9 @@ public class WmProductionIssueLineVo implements Serializable {
 
     private Long lineId;
     private Long issueId;
+    private Long warehouseId;
+    private String warehouseCode;
+    private String warehouseName;
     private Long materialId;
 
     @ExcelProperty("物料编码")

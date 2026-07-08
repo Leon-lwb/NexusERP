@@ -195,6 +195,11 @@ public class PrdWorkOrderBo extends BaseEntity {
     private String bomName;
 
     /**
+     * 是否倒冲（0=否 1=是）
+     */
+    private Integer backflushFlag;
+
+    /**
      * attr2
      */
     private String attr2;

@@ -337,6 +337,11 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         if (wo.getPlanId() == null) {
             return;
         }
+        // 倒冲工单不在下达时生成预领料单（完工时按BOM倒冲扣料），避免与完工倒冲重复扣料
+        if (Integer.valueOf(1).equals(wo.getBackflushFlag())) {
+            log.info("工单[{}]为倒冲工单，下达时不生成预领料单，完工时倒冲扣料", wo.getWoNo());
+            return;
+        }
         LambdaQueryWrapper<PrdMaterialRequirement> reqLqw = Wrappers.lambdaQuery();
         reqLqw.eq(PrdMaterialRequirement::getPlanId, wo.getPlanId());
         List<PrdMaterialRequirement> reqs = requirementMapper.selectList(reqLqw);

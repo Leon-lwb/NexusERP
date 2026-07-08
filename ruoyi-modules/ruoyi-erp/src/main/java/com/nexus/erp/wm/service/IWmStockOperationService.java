@@ -6,9 +6,11 @@ import com.nexus.erp.wm.domain.WmMiscRecptLine;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.WmStockTakingLine;
 import com.nexus.erp.wm.domain.WmTransferLine;
+import com.nexus.erp.wm.domain.vo.AllocatedStock;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 库存过账服务
@@ -52,6 +54,18 @@ public interface IWmStockOperationService {
      * 生产领料过账（FIFO扣减库存）
      */
     void postProductionIssue(WmProductionIssueLine line, Date now);
+
+    /**
+     * 生产领料过账（按拣货策略已分配库存明细扣减）
+     * <p>
+     * 供倒冲领料使用：拣货规则已选定具体仓库与库存明细，逐条扣减并写流水。
+     *
+     * @param issueId 领料单头ID
+     * @param lineId  领料单行ID
+     * @param stocks  拣货分配明细
+     * @param now     操作时间
+     */
+    void postProductionIssueAllocated(Long issueId, Long lineId, List<AllocatedStock> stocks, Date now);
 
     /**
      * 完工入库：工单完工时将成品/半成品入库

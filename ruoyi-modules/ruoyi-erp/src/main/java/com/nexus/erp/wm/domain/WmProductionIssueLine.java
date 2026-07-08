@@ -20,6 +20,12 @@ public class WmProductionIssueLine extends TenantEntity {
     private Long lineId;
 
     private Long issueId;
+    /** 仓库ID */
+    private Long warehouseId;
+    /** 仓库编码 */
+    private String warehouseCode;
+    /** 仓库名称 */
+    private String warehouseName;
     private Long materialId;
     private String materialCode;
     private String materialName;
