@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
+import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
+import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
@@ -43,6 +45,7 @@ public class PrdBackflushServiceImpl {
     private final PrdWorkOrderMapper workOrderMapper;
     private final PrdMaterialRequirementMapper requirementMapper;
     private final PrdMaterialRequirementDetailMapper detailMapper;
+    private final PrdProductionPlanMapper productionPlanMapper;
     private final WmProductionIssueMapper productionIssueMapper;
     private final WmProductionIssueLineMapper productionIssueLineMapper;
     private final IWmStockOperationService stockOperationService;
@@ -115,20 +118,52 @@ public class PrdBackflushServiceImpl {
             // 按已分配库存逐条扣减
             stockOperationService.postProductionIssueAllocated(issue.getIssueId(), line.getLineId(), alloc.getStocks(), now);
 
-            // 回写实际消耗
-            detail.setActualConsumedQty(
-                detail.getActualConsumedQty() != null
-                    ? detail.getActualConsumedQty().add(consumeQty)
-                    : consumeQty);
-            detailMapper.updateById(detail);
+            // 回写实际消耗与已发料数量（原子累加，避免并发倒冲下读后写丢失更新）
+            String consumeSql = consumeQty.toPlainString();
+            detailMapper.update(null,
+                Wrappers.<PrdMaterialRequirementDetail>lambdaUpdate()
+                    .eq(PrdMaterialRequirementDetail::getDetailId, detail.getDetailId())
+                    .setSql("actual_consumed_qty = actual_consumed_qty + " + consumeSql)
+                    .setSql("issued_quantity = issued_quantity + " + consumeSql));
         }
 
         // 5. 更新领料单状态为已完成
         issue.setStatus("COMPLETED");
         productionIssueMapper.updateById(issue);
 
+        // 6. 计划已完工时，同步完工其下所有物料需求单
+        //    时机说明：complete() 先于 backflush 执行（同 MQ 链），plan 若已 COMPLETED 此刻已提交可见。
+        //    采用"计划完工驱动"而非"actual_consumed_qty >= required_quantity"判定，避免
+        //    required_quantity 生成异常（如历史脏数据 4.0 vs 实际 1.53）导致需求单永不完工。
+        if (wo.getPlanId() != null) {
+            autoCompleteMaterialRequirements(wo.getPlanId());
+        }
+
         log.info("工单[{}]完工倒冲完成，完工数量:{}，倒冲物料:{}种",
             wo.getWoNo(), completionQty.stripTrailingZeros().toPlainString(), lines.size());
+    }
+
+    /**
+     * 计划已完工时，将其下所有未完工的物料需求单标记为 COMPLETED
+     * <p>
+     * 判定依据为计划状态（权威信号：所有工单完工），而非明细数量比对。
+     * 原因：required_quantity 可能因生成逻辑或历史脏数据偏大，按数量比对会导致需求单永不完工。
+     * 计划完工意味着所有工单已完工、物料已消耗（倒冲或正常发料），需求单理应完工。
+     */
+    private void autoCompleteMaterialRequirements(Long planId) {
+        PrdProductionPlan plan = productionPlanMapper.selectById(planId);
+        if (plan == null || !"COMPLETED".equals(plan.getStatus())) {
+            return;
+        }
+        int rows = requirementMapper.update(null,
+            Wrappers.<PrdMaterialRequirement>lambdaUpdate()
+                .eq(PrdMaterialRequirement::getPlanId, planId)
+                .ne(PrdMaterialRequirement::getStatus, "COMPLETED")
+                .set(PrdMaterialRequirement::getStatus, "COMPLETED"));
+        if (rows > 0) {
+            log.info("计划完工同步完工物料需求单: planId={}, planNo={}, 完工需求单数={}",
+                plan.getPlanId(), plan.getPlanNo(), rows);
+        }
     }
 
     /**

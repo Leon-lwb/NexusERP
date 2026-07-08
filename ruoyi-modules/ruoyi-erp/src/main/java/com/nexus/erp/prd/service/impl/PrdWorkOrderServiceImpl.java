@@ -80,6 +80,8 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private static final String PLAN_STATUS_CONFIRMED = "CONFIRMED";
     /** 生产计划状态：已下达 */
     private static final String PLAN_STATUS_RELEASED = "RELEASED";
+    /** 生产计划状态：已完工 */
+    private static final String PLAN_STATUS_COMPLETED = "COMPLETED";
 
     private final PrdWorkOrderMapper baseMapper;
     private final PrdProductionPlanMapper prdProductionPlanMapper;
@@ -532,6 +534,21 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             PrdProductionPlan plan = prdProductionPlanMapper.selectById(wo.getPlanId());
             if (plan != null && plan.getOrderLineId() != null) {
                 fulfillmentWritebackService.addProducedQty(plan.getOrderLineId(), completeQty);
+            }
+            // 计划下所有工单完工时，自动更新计划状态为 COMPLETED
+            if (plan != null && PLAN_STATUS_RELEASED.equals(plan.getStatus())) {
+                Long unfinishedCount = baseMapper.selectCount(
+                    Wrappers.<PrdWorkOrder>lambdaQuery()
+                        .eq(PrdWorkOrder::getPlanId, wo.getPlanId())
+                        .notIn(PrdWorkOrder::getWoStatus, WoStatusEnum.COMPLETED.getCode(), STATUS_CLOSED));
+                if (unfinishedCount == 0) {
+                    LambdaUpdateWrapper<PrdProductionPlan> planUw = Wrappers.<PrdProductionPlan>lambdaUpdate()
+                        .eq(PrdProductionPlan::getPlanId, wo.getPlanId())
+                        .eq(PrdProductionPlan::getStatus, PLAN_STATUS_RELEASED)
+                        .set(PrdProductionPlan::getStatus, PLAN_STATUS_COMPLETED);
+                    prdProductionPlanMapper.update(null, planUw);
+                    log.info("生产计划完工: planId={}, planNo={}", plan.getPlanId(), plan.getPlanNo());
+                }
             }
         }
 
