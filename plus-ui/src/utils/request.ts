@@ -23,6 +23,46 @@ export const globalHeaders = () => {
   };
 };
 
+/**
+ * 判断错误消息是否属于"认证失效"。
+ * 正常情况认证失败返回 401；但当 NotLoginException 被当作未知 RuntimeException 抛出时，
+ * 响应 code=500 且 msg 形如 "token 已被冻结：eyJxxx.yyy.zzz"（含 JWT 明文），
+ * 此时不应把 token 明文弹给用户，需按认证失效处理。
+ */
+const isAuthExpiredError = (msg: string): boolean => {
+  if (!msg) return false;
+  return /NotLoginException|token\s*已被冻结|^eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/.test(msg);
+};
+
+/**
+ * 统一弹出"重新登录"确认框，并发请求时只弹一次。
+ */
+const toReLogin = () => {
+  if (isRelogin.show) return;
+  isRelogin.show = true;
+  ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', {
+    confirmButtonText: '重新登录',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(() => {
+      isRelogin.show = false;
+      useUserStore()
+        .logout()
+        .then(() => {
+          router.replace({
+            path: '/login',
+            query: {
+              redirect: encodeURIComponent(router.currentRoute.value.fullPath || '/')
+            }
+          });
+        });
+    })
+    .catch(() => {
+      isRelogin.show = false;
+    });
+};
+
 axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8';
 axios.defaults.headers['clientid'] = import.meta.env.VITE_APP_CLIENT_ID;
 // 创建 axios 实例
@@ -129,29 +169,14 @@ service.interceptors.response.use(
       return res.data;
     }
     if (code === 401) {
-      // prettier-ignore
-      if (!isRelogin.show) {
-        isRelogin.show = true;
-        ElMessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          isRelogin.show = false;
-          useUserStore().logout().then(() => {
-            router.replace({
-              path: '/login',
-              query: {
-                redirect: encodeURIComponent(router.currentRoute.value.fullPath || '/')
-              }
-            })
-          });
-        }).catch(() => {
-          isRelogin.show = false;
-        });
-      }
+      toReLogin();
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。');
     } else if (code === HttpStatus.SERVER_ERROR) {
+      // 后端误将认证异常当作未知异常抛出时，msg 可能含 token/JWT 明文，按认证失效处理
+      if (isAuthExpiredError(msg)) {
+        toReLogin();
+        return Promise.reject('无效的会话，或者会话已过期，请重新登录。');
+      }
       ElMessage({ message: msg, type: 'error' });
       return Promise.reject(new Error(msg));
     } else if (code === HttpStatus.WARN) {

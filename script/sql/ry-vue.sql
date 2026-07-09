@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 08/07/2026 18:37:19
+ Date: 09/07/2026 17:47:53
 */
 
 SET NAMES utf8mb4;
@@ -8542,17 +8542,17 @@ CREATE TABLE `sj_distributed_lock`  (
 -- ----------------------------
 -- Records of sj_distributed_lock
 -- ----------------------------
-INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-08 17:10:54.221', '2026-07-08 17:09:54.221', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 17:09:54');
-INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-08 18:37:39.338', '2026-07-08 18:37:34.338', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:37:34');
-INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-08 17:10:53.732', '2026-07-08 17:09:53.732', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 17:09:54');
-INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-08 18:37:53.737', '2026-07-08 18:36:53.737', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:36:54');
-INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-08 18:37:13.737', '2026-07-08 18:36:53.737', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:36:54');
-INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-08 18:37:39.343', '2026-07-08 18:37:34.343', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:37:34');
-INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-08 18:30:54.400', '2026-07-08 18:29:54.400', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:29:54');
-INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-08 18:10:53.747', '2026-07-08 18:09:53.747', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:09:54');
-INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-08 18:37:13.737', '2026-07-08 18:36:53.737', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:36:54');
-INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-08 18:30:54.400', '2026-07-08 18:29:54.400', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:29:54');
-INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-08 18:37:13.737', '2026-07-08 18:36:53.737', '2074783006852059136', '2026-07-08 17:09:54', '2026-07-08 18:36:54');
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-09 17:33:55.521', '2026-07-09 17:32:55.521', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:32:56');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-09 17:48:14.680', '2026-07-09 17:48:09.680', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:48:10');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-09 17:33:55.519', '2026-07-09 17:32:55.519', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:32:56');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-09 17:48:55.521', '2026-07-09 17:47:55.521', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:47:56');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-09 17:48:15.521', '2026-07-09 17:47:55.521', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:47:56');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-09 17:48:09.806', '2026-07-09 17:48:04.806', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:48:05');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-09 17:43:57.132', '2026-07-09 17:42:57.132', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:42:57');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-09 17:33:55.538', '2026-07-09 17:32:55.538', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:32:56');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-09 17:48:15.521', '2026-07-09 17:47:55.521', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:47:56');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-09 17:43:57.132', '2026-07-09 17:42:57.132', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:42:57');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-09 17:48:15.521', '2026-07-09 17:47:55.521', '2075030390295126016', '2026-07-09 09:32:56', '2026-07-09 17:47:56');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -9083,13 +9083,13 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 193 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 195 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (191, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2074783006852059136', '192.168.200.1', 17888, '2026-07-08 18:38:04', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-08 17:09:54', '2026-07-08 18:37:33');
-INSERT INTO `sj_server_node` VALUES (192, 'dev', 'ruoyi_group', '2074783240990658560', '192.168.200.1', 28080, '2026-07-08 18:37:59', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-08 17:10:49', '2026-07-08 18:37:29');
+INSERT INTO `sj_server_node` VALUES (193, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2075030390295126016', '192.168.200.1', 17888, '2026-07-09 17:48:26', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-09 09:32:56', '2026-07-09 17:47:55');
+INSERT INTO `sj_server_node` VALUES (194, 'dev', 'ruoyi_group', '2075030777903390720', '192.168.200.1', 28080, '2026-07-09 17:48:40', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-09 09:34:26', '2026-07-09 17:48:09');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -12221,6 +12221,10 @@ INSERT INTO `sys_logininfor` VALUES (2074745279691567105, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2074765740668260353, '000000', '麦得朶', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-08 16:01:15');
 INSERT INTO `sys_logininfor` VALUES (2074784045965676546, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-08 17:13:59');
 INSERT INTO `sys_logininfor` VALUES (2074785198753353729, '000000', '麦得朶', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-08 17:18:34');
+INSERT INTO `sys_logininfor` VALUES (2075036773044396034, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-09 09:58:14');
+INSERT INTO `sys_logininfor` VALUES (2075053799821484033, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-09 11:05:53');
+INSERT INTO `sys_logininfor` VALUES (2075112063414247425, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-09 14:57:24');
+INSERT INTO `sys_logininfor` VALUES (2075133390044995585, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-09 16:22:09');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -16321,7 +16325,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-08 17:13:59', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-08 17:13:59', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-09 16:22:09', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-09 16:22:09', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码123456', 'sys_user', 'test@169.com', '15388888888', '0', 2074678251479801857, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '127.0.0.1', '2026-07-08 10:12:15', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-08 10:12:15', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-07-08 17:18:34', NULL, 1, '2025-10-23 17:03:16', -1, '2026-07-08 17:18:34', '耳朵聋');
