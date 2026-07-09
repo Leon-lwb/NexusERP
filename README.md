@@ -115,47 +115,103 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 |--------|------|
 | ![登录页](doc/system/screenshots/登录页.png) | ![首页](doc/system/screenshots/首页.png) |
 
+### 核心亮点
+
+| 3D 仓库可视化 | AI 知识图谱 |
+|---------------|-------------|
+| ![3D仓库可视化](doc/system/screenshots/3D仓库动图.gif) | ![AI知识图谱](doc/system/screenshots/知识图谱动图.gif) |
+
 ### 系统管理
 
 | 用户管理 | 代码生成 |
 |----------|----------|
 | ![用户管理](doc/system/screenshots/用户管理.png) | ![代码生成](doc/system/screenshots/代码生成.png) |
 
-### 基础数据
+### ERP 系统
+
+#### 基础数据
 
 | 物料管理 |
 |----------|
 | ![物料管理](doc/system/screenshots/物料管理.png) |
 
-### 生产管理
+#### 仓储管理
 
-| 生产计划 |
-|----------|
-| ![生产计划](doc/system/screenshots/生产计划.png) |
+| 物料入库 | 物料入库表单 | 到货通知单表单 |
+|----------|--------------|----------------|
+| ![物料入库](doc/system/screenshots/物料入库.png) | ![物料入库表单](doc/system/screenshots/物料入库表单.png) | ![到货通知单表单](doc/system/screenshots/到货通知单表单.png) |
 
-### 销售管理
+| 库存清单 | 库存预警 |
+|----------|----------|
+| ![库存清单](doc/system/screenshots/库存清单.png) | ![库存预警](doc/system/screenshots/库存预警.png) |
+
+#### 销售管理
 
 | 销售订单 |
 |----------|
 | ![销售订单](doc/system/screenshots/销售订单.png) |
 
-### 采购管理
+#### 生产计划
 
-| 采购订单 |
+| 生产计划 |
 |----------|
-| ![采购订单](doc/system/screenshots/采购订单.png) |
+| ![生产计划](doc/system/screenshots/生产计划.png) |
 
-### 排产调度
+#### 排产调度
 
 | 排班计划 | 考勤记录 |
 |----------|----------|
 | ![排班计划](doc/system/screenshots/排班计划.png) | ![考勤记录](doc/system/screenshots/考勤记录.png) |
 
-### 仓储管理
+#### 采购管理
 
-| 物料入库 | 库存清单 | 库存预警 |
-|----------|----------|----------|
-| ![物料入库](doc/system/screenshots/物料入库.png) | ![库存清单](doc/system/screenshots/库存清单.png) | ![库存预警](doc/system/screenshots/库存预警.png) |
+| 采购订单 | 采购申请表单 | 采购订单表单 |
+|----------|--------------|--------------|
+| ![采购订单](doc/system/screenshots/采购订单.png) | ![采购申请表单](doc/system/screenshots/采购申请表单.png) | ![采购订单表单](doc/system/screenshots/采购订单表单.png) |
+
+### MES 系统
+
+#### 生产订单
+
+| MES 工单 | 流转卡 |
+|----------|--------|
+| ![MES工单](doc/system/screenshots/MES工单.png) | ![流转卡](doc/system/screenshots/流转卡.png) |
+
+#### 生产执行
+
+| 派工管理 |
+|----------|
+| ![派工管理](doc/system/screenshots/派工管理.png) |
+
+#### 质量管理
+
+| 质量管理 |
+|----------|
+| ![质量管理](doc/system/screenshots/质量管理.png) |
+
+#### 设备管理
+
+| 设备台账 |
+|----------|
+| ![设备台账](doc/system/screenshots/设备台账.png) |
+
+#### 数据采集
+
+| 数据采集记录 |
+|--------------|
+| ![数据采集记录](doc/system/screenshots/数据采集记录.png) |
+
+### IoT 平台
+
+| 产品管理 | 设备管理 | IoT 设备模拟 |
+|----------|----------|--------------|
+| ![产品管理](doc/system/screenshots/产品管理.png) | ![设备管理](doc/system/screenshots/设备管理.png) | ![IoT设备模拟](doc/system/screenshots/IOT设备模拟.png) |
+
+### AI 智能助手
+
+| 智能对话 | 知识图谱 |
+|----------|----------|
+| ![智能对话](doc/system/screenshots/智能对话.png) | ![知识图谱](doc/system/screenshots/知识图谱.png) |
 
 ### 工作流引擎
 
@@ -174,18 +230,6 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 | 支付管理 |
 |----------|
 | ![支付管理](doc/system/screenshots/支付管理.png) |
-
-### AI 智能助手
-
-| 智能对话 |
-|----------|
-| ![智能对话](doc/system/screenshots/智能对话.png) |
-
-### 设备与 IoT 管理
-
-| 设备管理 | IoT 监控 |
-|----------|----------|
-| ![设备管理](doc/system/screenshots/设备管理.png) | ![IoT监控](doc/system/screenshots/IoT监控.png) |
 
 ### 即时通讯
 
