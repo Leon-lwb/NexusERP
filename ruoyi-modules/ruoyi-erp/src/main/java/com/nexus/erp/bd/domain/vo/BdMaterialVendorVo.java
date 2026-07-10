@@ -38,6 +38,18 @@ public class BdMaterialVendorVo implements Serializable {
     private Long materialId;
 
     /**
+     * 物料编码（关联 bd_material 查询填充，非持久化字段）
+     */
+    @ExcelProperty(value = "物料编码")
+    private String materialCode;
+
+    /**
+     * 物料名称（关联 bd_material 查询填充，非持久化字段）
+     */
+    @ExcelProperty(value = "物料名称")
+    private String materialName;
+
+    /**
      * 供应商ID
      */
     @ExcelProperty(value = "供应商ID")

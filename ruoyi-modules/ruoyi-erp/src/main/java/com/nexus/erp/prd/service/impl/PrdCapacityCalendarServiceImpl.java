@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
@@ -225,7 +226,16 @@ public class PrdCapacityCalendarServiceImpl implements IPrdCapacityCalendarServi
     @Override
     public List<PrdCapacityCalendarVo> queryAvailableCapacity(String objectType, Long objectId,
                                                                Date startDate, Date endDate) {
-        return baseMapper.selectAvailableCapacity(objectType, objectId, startDate, endDate);
+        LambdaQueryWrapper<PrdCapacityCalendar> lqw = Wrappers.lambdaQuery();
+        lqw.eq(StringUtils.isNotBlank(objectType), PrdCapacityCalendar::getObjectType, objectType);
+        lqw.eq(objectId != null, PrdCapacityCalendar::getObjectId, objectId);
+        lqw.ge(startDate != null, PrdCapacityCalendar::getCalendarDate, startDate);
+        lqw.le(endDate != null, PrdCapacityCalendar::getCalendarDate, endDate);
+        lqw.eq(PrdCapacityCalendar::getStatus, "ACTIVE");
+        lqw.gt(PrdCapacityCalendar::getRemainingHours, BigDecimal.ZERO);
+        lqw.orderByAsc(PrdCapacityCalendar::getCalendarDate);
+        lqw.orderByAsc(PrdCapacityCalendar::getShiftId);
+        return baseMapper.selectVoList(lqw);
     }
 
     /**

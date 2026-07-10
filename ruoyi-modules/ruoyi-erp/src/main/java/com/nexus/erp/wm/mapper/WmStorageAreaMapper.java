@@ -1,13 +1,12 @@
 package com.nexus.erp.wm.mapper;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
 import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.vo.WmStorageArea3dVo;
 import com.nexus.erp.wm.domain.vo.WmStorageAreaTreeVo;
 import com.nexus.erp.wm.domain.vo.WmStorageAreaVo;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -19,27 +18,14 @@ import java.util.List;
 public interface WmStorageAreaMapper extends BaseMapperPlus<WmStorageArea, WmStorageAreaVo> {
 
     /**
-     * 分页查询库区列表（含仓库名称）
-     *
-     * @param page    分页参数
-     * @param wrapper 查询条件
-     * @return 库区分页列表
-     */
-    IPage<WmStorageAreaVo> selectVoPageWithWarehouse(IPage<WmStorageArea> page, @Param("ew") Wrapper<WmStorageArea> wrapper);
-
-    /**
-     * 查询库区列表（含仓库名称）
-     *
-     * @param wrapper 查询条件
-     * @return 库区列表
-     */
-    List<WmStorageAreaVo> selectVoListWithWarehouse(@Param("ew") Wrapper<WmStorageArea> wrapper);
-
-    /**
      * 查询库区树形列表（仅包含树所需字段）
      *
      * @return 库区树形数据列表
      */
+    @Select("SELECT area_id, area_code, area_name, warehouse_id, location_flag, enable_flag, layout_type " +
+            "FROM wm_storage_area " +
+            "WHERE del_flag = '0' " +
+            "ORDER BY warehouse_id, area_id")
     List<WmStorageAreaTreeVo> selectAreaTreeList();
 
     /**
@@ -48,5 +34,12 @@ public interface WmStorageAreaMapper extends BaseMapperPlus<WmStorageArea, WmSto
      * @param warehouseId 仓库ID
      * @return 库区 3D 视图列表
      */
+    @Select("SELECT area_id, area_code, area_name, warehouse_id, layout_type, " +
+            "pos_x, pos_y, pos_z, area_width, area_length, area_height, " +
+            "rotation_x, rotation_y, rotation_z, color, opacity, " +
+            "model_type, model_url, show_walls, show_label, grid_visible, config_json " +
+            "FROM wm_storage_area " +
+            "WHERE warehouse_id = #{warehouseId} AND del_flag = '0' " +
+            "ORDER BY area_id")
     List<WmStorageArea3dVo> selectArea3dByWarehouseId(@Param("warehouseId") Long warehouseId);
 }

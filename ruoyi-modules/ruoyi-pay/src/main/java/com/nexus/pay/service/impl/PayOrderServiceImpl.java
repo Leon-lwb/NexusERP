@@ -84,7 +84,10 @@ public class PayOrderServiceImpl implements IPayOrderService {
 
     @Override
     public int updateStatus(String orderNumber, String orderStatus) {
-        return baseMapper.updateStatus(orderNumber, orderStatus);
+        return baseMapper.update(null,
+                Wrappers.<PayOrder>lambdaUpdate()
+                        .set(PayOrder::getOrderStatus, orderStatus)
+                        .eq(PayOrder::getOrderNumber, orderNumber));
     }
 
     private LambdaQueryWrapper<PayOrder> buildQueryWrapper(PayOrderBo bo) {

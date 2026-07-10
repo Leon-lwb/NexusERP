@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 10/07/2026 15:34:11
+ Date: 10/07/2026 16:37:29
 */
 
 SET NAMES utf8mb4;
@@ -3008,9 +3008,9 @@ CREATE TABLE `ai_provider`  (
 -- ----------------------------
 -- Records of ai_provider
 -- ----------------------------
-INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', '27oxYHWkD/7NiIB6DII2J/YdwcBLZbNCkkvVoADEeWzNIgT63NuT9mYCIkEzH/s602eszrlQy8+NXp8qv3+CkMPsN2d/h6Fi8EVxS6gVIl4=', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-06-30 20:59:01', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'mce6U8lzFfVCAmIN58fns4Gr/MxJQNsF81NyaCk5ZYGuN4doEg+WFCxwjW1+RIy3', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-07-10 16:37:05', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', 'YOkXtpT+eKGfwun/j+pGJK4qnWvkTi1xpXmZzzqXfZlYHquXozhFSa2LlW6jOgljXgCiryDMWYjfpcxAZqSLgSnGWiWzRCgmtfFYR4qtf4iTDRc0Fkj0uJwggeb6gguY', 'OLLAMA', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-28 19:09:22', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'WOM7825NEl8sTGf9bZGz09TFJ5dxfJfG7B8fAgTbQw1xJ1yoM0MjoSJQAeClCUmm', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-06-30 01:44:13', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'DpN1bUgyhGaYvQfJMRNZ5FovopuoAz9AKZXusjmrwQfgPOlJqASgWhEQS5EW+Jnz', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-07-10 16:37:10', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2072986564503326721, '000000', 'huggingface', 'https://wangghuan-nexusai.hf.space/v1', 'hpMicTS2zDK3whqau7VPivxRlqrXyOy0wCSJobntfZF0nYrNb8PFU/cBJxfbYmyn/Ex7B5I1ginh2DW5fc3rrZKTUmCvgnBCW5NUYuO+sLI=', 'OPENAI', '1', 103, 1, '2026-07-03 18:11:26', 1, '2026-07-03 18:14:43', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2348956357081379840, '000000', '小米MiMo', 'https://token-plan-cn.xiaomimimo.com/v1', 'sk-PLEASE_REPLACE_MIMO_KEY', 'XIAOMI', '1', 103, 1, '2026-06-30 23:59:26', 1, '2026-07-01 00:01:30', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2961532303096290816, '000000', 'MiniMax', 'https://api.minimax.io/v1', 'sk-PLEASE_REPLACE_MINIMAX_KEY', 'MINIMAX', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
@@ -8600,16 +8600,16 @@ CREATE TABLE `sj_distributed_lock`  (
 -- Records of sj_distributed_lock
 -- ----------------------------
 INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-10 13:24:36.154', '2026-07-10 13:23:36.154', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 13:23:36');
-INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-10 15:34:31.766', '2026-07-10 15:34:26.766', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:34:27');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-10 16:37:50.506', '2026-07-10 16:37:45.506', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:37:46');
 INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-10 13:24:36.139', '2026-07-10 13:23:36.139', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 13:23:36');
-INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-10 15:33:36.151', '2026-07-10 15:32:36.151', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:32:36');
-INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-10 15:33:56.149', '2026-07-10 15:33:36.149', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:33:36');
-INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-10 15:34:31.766', '2026-07-10 15:34:26.766', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:34:27');
-INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-10 15:34:38.164', '2026-07-10 15:33:38.164', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:33:38');
-INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-10 15:24:36.149', '2026-07-10 15:23:36.149', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:23:36');
-INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-10 15:33:56.149', '2026-07-10 15:33:36.149', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:33:36');
-INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-10 15:34:38.164', '2026-07-10 15:33:38.164', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:33:38');
-INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-10 15:33:56.149', '2026-07-10 15:33:36.149', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 15:33:36');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-10 16:38:36.154', '2026-07-10 16:37:36.154', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:37:36');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-10 16:37:56.154', '2026-07-10 16:37:36.154', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:37:36');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-10 16:37:50.506', '2026-07-10 16:37:45.506', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:37:46');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-10 16:34:38.257', '2026-07-10 16:33:38.257', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:33:38');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-10 16:24:36.152', '2026-07-10 16:23:36.152', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:23:36');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-10 16:37:56.154', '2026-07-10 16:37:36.154', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:37:36');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-10 16:34:38.257', '2026-07-10 16:33:38.257', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:33:38');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-10 16:37:56.154', '2026-07-10 16:37:36.154', '2075390437072232448', '2026-07-09 09:32:56', '2026-07-10 16:37:36');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -9140,13 +9140,13 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 200 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 201 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (198, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2075390437072232448', '192.168.200.1', 17888, '2026-07-10 15:34:46', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-10 11:01:56', '2026-07-10 15:34:16');
-INSERT INTO `sj_server_node` VALUES (199, 'dev', 'ruoyi_group', '2075476084168519680', '192.168.200.1', 28080, '2026-07-10 15:34:57', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-10 15:03:56', '2026-07-10 15:34:26');
+INSERT INTO `sj_server_node` VALUES (198, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2075390437072232448', '192.168.200.1', 17888, '2026-07-10 16:38:06', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-10 11:01:56', '2026-07-10 16:37:36');
+INSERT INTO `sj_server_node` VALUES (200, 'dev', 'ruoyi_group', '2075489372654759936', '192.168.200.1', 28080, '2026-07-10 16:38:16', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-10 15:56:44', '2026-07-10 16:37:45');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -12292,6 +12292,8 @@ INSERT INTO `sys_logininfor` VALUES (2075391331180417026, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2075392110096224257, '000000', '麦得朶', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-10 09:30:13');
 INSERT INTO `sys_logininfor` VALUES (2075448568129196033, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-10 13:14:33');
 INSERT INTO `sys_logininfor` VALUES (2075477427734114305, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-10 15:09:14');
+INSERT INTO `sys_logininfor` VALUES (2075485795420925954, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-10 15:42:29');
+INSERT INTO `sys_logininfor` VALUES (2075499274957713410, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-10 16:36:03');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -14496,6 +14498,8 @@ INSERT INTO `sys_oper_log` VALUES (2075402489492869121, '000000', '派工完工'
 INSERT INTO `sys_oper_log` VALUES (2075402507855532034, '000000', '派工完工', 2, 'com.nexus.mes.pro.controller.ProDispatchController.complete()', 'PUT', 1, 'admin', '研发部门', '/mes/pro/dispatch/complete/2075402316997922817', '127.0.0.1', '内网IP', '{\"defectQty\":\"0\",\"scrapQty\":\"0\",\"goodQty\":\"1\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-10 10:11:32', 27);
 INSERT INTO `sys_oper_log` VALUES (2075402547344904193, '000000', '派工完工', 2, 'com.nexus.mes.pro.controller.ProDispatchController.complete()', 'PUT', 1, 'admin', '研发部门', '/mes/pro/dispatch/complete/2075402304033329154', '127.0.0.1', '内网IP', '{\"defectQty\":\"0\",\"scrapQty\":\"0\",\"goodQty\":\"1\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-10 10:11:41', 90);
 INSERT INTO `sys_oper_log` VALUES (2075410334133194754, '000000', '销售订单', 2, 'com.nexus.erp.so.controller.SoSalesOrderHeaderController.fulfill()', 'PUT', 1, 'admin', '研发部门', '/erp/so/orderheader/fulfill/2075391810035716098', '127.0.0.1', '内网IP', '{\"force\":\"false\"}', '', 1, '存在未完全发货的行，无法履行：\n行101(简易金属工具架):需1.0000已发0.0000\n如需强制履行，请确认后重试。', '2026-07-10 10:42:38', 13);
+INSERT INTO `sys_oper_log` VALUES (2075499537894436865, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":1,\"name\":\"DeepSeek\",\"apiHost\":\"https://api.deepseek.com\",\"apiKey\":\"aaaa\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-10 16:37:05', 46);
+INSERT INTO `sys_oper_log` VALUES (2075499557678968833, '000000', 'AI厂商管理', 2, 'com.nexus.ai.controller.AiProviderController.edit()', 'PUT', 1, 'admin', '研发部门', '/ai/provider', '127.0.0.1', '内网IP', '{\"createDept\":null,\"createBy\":null,\"createTime\":null,\"updateBy\":null,\"updateTime\":null,\"id\":\"2065468199226449922\",\"name\":\"火山方舟\",\"apiHost\":\"https://ark.cn-beijing.volces.com/api/coding/v3\",\"apiKey\":\"aaaa\",\"providerType\":\"OPENAI\",\"status\":\"1\",\"ids\":null}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-10 16:37:10', 9);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -16421,7 +16425,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-10 15:09:14', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-10 15:09:14', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-10 16:36:03', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-10 16:36:03', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码123456', 'sys_user', 'test@169.com', '15388888888', '0', 2074678251479801857, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '127.0.0.1', '2026-07-08 10:12:15', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-08 10:12:15', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-07-10 09:30:13', NULL, 1, '2025-10-23 17:03:16', -1, '2026-07-10 09:30:13', '耳朵聋');

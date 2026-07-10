@@ -6,6 +6,7 @@ import com.nexus.erp.wm.domain.vo.WmWarehouse3dVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseTreeVo;
 import com.nexus.erp.wm.domain.vo.WmWarehouseVo;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -21,6 +22,11 @@ public interface WmWarehouseMapper extends BaseMapperPlus<WmWarehouse, WmWarehou
      *
      * @return 仓库树形数据列表
      */
+    @Select("SELECT w.warehouse_id, w.warehouse_code, w.warehouse_name, w.status, " +
+            "(SELECT COUNT(*) FROM wm_storage_area a WHERE a.warehouse_id = w.warehouse_id AND a.del_flag = '0') AS area_count " +
+            "FROM wm_warehouse w " +
+            "WHERE w.del_flag = '0' " +
+            "ORDER BY w.warehouse_id")
     List<WmWarehouseTreeVo> selectWarehouseTreeList();
 
     /**
@@ -29,5 +35,8 @@ public interface WmWarehouseMapper extends BaseMapperPlus<WmWarehouse, WmWarehou
      * @param warehouseId 仓库ID
      * @return 仓库 3D 视图对象
      */
+    @Select("SELECT warehouse_id, warehouse_code, warehouse_name, status " +
+            "FROM wm_warehouse " +
+            "WHERE warehouse_id = #{warehouseId} AND del_flag = '0'")
     WmWarehouse3dVo selectWarehouse3dById(@Param("warehouseId") Long warehouseId);
 }

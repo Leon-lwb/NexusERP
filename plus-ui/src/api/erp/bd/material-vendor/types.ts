@@ -26,6 +26,10 @@ export interface MaterialVendorVO {
   relationId: number;
   /** 物料ID */
   materialId: number;
+  /** 物料编码（关联查询填充） */
+  materialCode?: string;
+  /** 物料名称（关联查询填充） */
+  materialName?: string;
   /** 供应商ID */
   vendorId: number;
   /** 供应商编码 */
@@ -66,6 +70,10 @@ export interface MaterialVendorForm {
   relationId?: number;
   /** 物料ID */
   materialId: number;
+  /** 物料编码（关联查询填充，非持久化） */
+  materialCode?: string;
+  /** 物料名称（关联查询填充，非持久化） */
+  materialName?: string;
   /** 供应商ID */
   vendorId: number;
   /** 供应商编码 */

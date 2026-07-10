@@ -136,7 +136,10 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
-        List<BdMaterialVo> list = baseMapper.selectByCategoryIds(categoryIds);
+        List<BdMaterialVo> list = baseMapper.selectVoList(
+            Wrappers.lambdaQuery(BdMaterial.class)
+                .in(BdMaterial::getCategoryId, categoryIds)
+        );
         fillBaseUomName(list);
         return list;
     }

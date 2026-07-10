@@ -11,9 +11,4 @@ import com.nexus.pay.domain.vo.PayOrderVo;
  */
 public interface PayOrderMapper extends BaseMapperPlus<PayOrder, PayOrderVo> {
 
-    /**
-     * 更新订单状态
-     */
-    int updateStatus(String orderNumber, String orderStatus);
-
 }

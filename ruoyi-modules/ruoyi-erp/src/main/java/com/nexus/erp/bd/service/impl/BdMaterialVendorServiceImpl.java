@@ -13,12 +13,19 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.BdMaterialVendor;
 import com.nexus.erp.bd.domain.bo.BdMaterialVendorBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVendorVo;
+import com.nexus.erp.bd.domain.vo.BdMaterialVo;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdMaterialVendorMapper;
 import com.nexus.erp.bd.service.IBdMaterialVendorService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 物料-供应商关系Service业务层处理
@@ -32,6 +39,7 @@ import java.util.List;
 public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
 
     private final BdMaterialVendorMapper baseMapper;
+    private final BdMaterialMapper materialMapper;
 
     /**
      * 分页查询物料-供应商关系列表
@@ -40,6 +48,8 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
     public TableDataInfo<BdMaterialVendorVo> selectPageList(BdMaterialVendorBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<BdMaterialVendor> lqw = buildQueryWrapper(bo);
         Page<BdMaterialVendorVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 批量填充物料编码/名称
+        fillMaterialInfo(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -48,7 +58,10 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
      */
     @Override
     public List<BdMaterialVendorVo> selectList(BdMaterialVendorBo bo) {
-        return baseMapper.selectVoList(buildQueryWrapper(bo));
+        List<BdMaterialVendorVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        // 批量填充物料编码/名称
+        fillMaterialInfo(list);
+        return list;
     }
 
     /**
@@ -56,7 +69,11 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
      */
     @Override
     public BdMaterialVendorVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        BdMaterialVendorVo vo = baseMapper.selectVoById(id);
+        if (vo != null) {
+            fillMaterialInfo(Collections.singletonList(vo));
+        }
+        return vo;
     }
 
     /**
@@ -128,5 +145,37 @@ public class BdMaterialVendorServiceImpl implements IBdMaterialVendorService {
         lqw.eq(bo.getStatus() != null, BdMaterialVendor::getStatus, bo.getStatus());
         lqw.orderByAsc(BdMaterialVendor::getPriority);
         return lqw;
+    }
+
+    /**
+     * 批量填充物料编码/名称
+     * <p>
+     * 收集所有关系的 materialId，一次性查询对应的物料信息，
+     * 通过 Map 映射填充到每条记录中，避免 N+1 查询问题。
+     * </p>
+     *
+     * @param list 物料-供应商关系Vo列表
+     */
+    private void fillMaterialInfo(List<BdMaterialVendorVo> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        Set<Long> materialIds = list.stream()
+            .map(BdMaterialVendorVo::getMaterialId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        if (materialIds.isEmpty()) {
+            return;
+        }
+        List<BdMaterialVo> materials = materialMapper.selectVoByIds(materialIds);
+        Map<Long, BdMaterialVo> materialMap = materials.stream()
+            .collect(Collectors.toMap(BdMaterialVo::getMaterialId, m -> m));
+        for (BdMaterialVendorVo vo : list) {
+            BdMaterialVo material = materialMap.get(vo.getMaterialId());
+            if (material != null) {
+                vo.setMaterialCode(material.getMaterialCode());
+                vo.setMaterialName(material.getMaterialName());
+            }
+        }
     }
 }

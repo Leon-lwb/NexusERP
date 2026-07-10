@@ -132,7 +132,10 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return baseMapper.selectByCategoryIds(categoryIds);
+        return baseMapper.selectVoList(
+            Wrappers.lambdaQuery(WmMaterialStock.class)
+                .in(WmMaterialStock::getCategoryId, categoryIds)
+        );
     }
 
     /**

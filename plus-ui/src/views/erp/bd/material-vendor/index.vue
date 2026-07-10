@@ -402,12 +402,25 @@ function handleUpdate(row?: MaterialVendorVO) {
   const relationId = row?.relationId || ids.value[0];
   getMaterialVendor(relationId).then((response) => {
     form.value = response.data;
-    // 加载对应的物料和供应商选项
+    // 用详情返回的物料/供应商信息回填下拉选项，确保修改时显示正确标签
+    // （searchMaterial/searchVendor 是按名称远程搜索，不能用 ID 当搜索词）
     if (form.value.materialId) {
-      searchMaterial(form.value.materialId.toString());
+      materialOptions.value = [
+        {
+          materialId: form.value.materialId,
+          materialCode: form.value.materialCode,
+          materialName: form.value.materialName
+        }
+      ];
     }
     if (form.value.vendorId) {
-      searchVendor(form.value.vendorId.toString());
+      vendorOptions.value = [
+        {
+          vendorId: form.value.vendorId,
+          vendorCode: form.value.vendorCode,
+          vendorName: form.value.vendorName
+        }
+      ];
     }
     open.value = true;
     title.value = '修改物料-供应商关系';

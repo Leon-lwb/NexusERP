@@ -1,6 +1,7 @@
 package com.nexus.erp.wm.mapper;
 
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -19,19 +20,19 @@ import java.util.List;
 public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, WmMaterialStockVo> {
 
     /**
-     * 根据分类ID列表查询库存清单
-     *
-     * @param categoryIds 分类ID列表
-     * @return 库存清单集合
-     */
-    List<WmMaterialStockVo> selectByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
-
-    /**
      * 按库位聚合查询指定仓库的库存汇总（供 3D 可视化库位状态计算）
      *
      * @param warehouseId 仓库ID
      * @return 库位库存聚合列表
      */
+    @Select("SELECT location_id              AS locationId, " +
+            "COUNT(*)                        AS stockCount, " +
+            "COALESCE(SUM(stock_quantity), 0)     AS stockQuantity, " +
+            "COALESCE(SUM(reserved_quantity), 0)  AS reservedQuantity, " +
+            "MAX(frozen_flag)                AS frozenFlag " +
+            "FROM wm_material_stock " +
+            "WHERE warehouse_id = #{warehouseId} AND del_flag = '0' " +
+            "GROUP BY location_id")
     List<WmLocationStockAggVo> aggregateStockByWarehouse(@Param("warehouseId") Long warehouseId);
 
     /**
