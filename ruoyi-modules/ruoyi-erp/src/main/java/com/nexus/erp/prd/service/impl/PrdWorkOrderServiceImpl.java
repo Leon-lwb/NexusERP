@@ -556,6 +556,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         BigDecimal done = completeQty != null ? completeQty : BigDecimal.ZERO;
         ProductionCompleteMessage completeMsg = new ProductionCompleteMessage();
         completeMsg.setWoId(woId);
+        completeMsg.setWoNo(wo.getWoNo());
         completeMsg.setCompletionQty(done);
         completeMsg.setMaterialId(wo.getMaterialId());
         completeMsg.setMaterialCode(wo.getMaterialCode());

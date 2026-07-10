@@ -21,6 +21,8 @@ public class ProductionCompleteMessage extends BaseMessage {
 
     /** 工单ID */
     private Long woId;
+    /** 工单编号 */
+    private String woNo;
     /** 完工数量 */
     private BigDecimal completionQty;
     /** 产品物料ID */

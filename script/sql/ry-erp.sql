@@ -11,7 +11,7 @@
  Target Server Version : 50720
  File Encoding         : 65001
 
- Date: 08/07/2026 18:36:22
+ Date: 10/07/2026 15:35:25
 */
 
 SET NAMES utf8mb4;
@@ -935,20 +935,20 @@ INSERT INTO `bd_workstation` VALUES (16, '000000', 'GZZ0017', '质检站', 3, 'C
 DROP TABLE IF EXISTS `po_requisition`;
 CREATE TABLE `po_requisition`  (
   `requisition_id` bigint(20) NOT NULL COMMENT '请购单ID',
-  `requisition_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '请购单号',
-  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'draft' COMMENT '状态',
+  `requisition_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请购单号',
+  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft' COMMENT '状态',
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '部门名称',
-  `applicant_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '申请人',
+  `applicant_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请人',
   `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `tenant_id` bigint(20) NULL DEFAULT 0 COMMENT '租户ID',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
   `applicant_id` bigint(20) NULL DEFAULT NULL COMMENT '申请人ID（关联sys_user）',
   PRIMARY KEY (`requisition_id`) USING BTREE,
   UNIQUE INDEX `uk_po_requisition_no`(`requisition_no`) USING BTREE,
@@ -956,7 +956,7 @@ CREATE TABLE `po_requisition`  (
   INDEX `idx_po_requisition_applicant`(`applicant_name`) USING BTREE,
   INDEX `idx_po_requisition_dept`(`dept_id`) USING BTREE,
   INDEX `idx_po_requisition_applicant_id`(`applicant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '请购单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for po_requisition_detail
@@ -966,29 +966,29 @@ CREATE TABLE `po_requisition_detail`  (
   `detail_id` bigint(20) NOT NULL COMMENT '明细ID',
   `requisition_id` bigint(20) NOT NULL COMMENT '请购单ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码',
-  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称',
-  `material_spec` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料规格',
-  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料规格',
+  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `required_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '需求数量',
   `issued_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已发料数量',
   `stock_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '库存数量',
   `shortage_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '缺料数量',
   `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
-  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'draft' COMMENT '状态',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型',
-  `tenant_id` bigint(20) NULL DEFAULT 0 COMMENT '租户ID',
+  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'draft' COMMENT '状态',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`detail_id`) USING BTREE,
   INDEX `idx_po_requisition_detail_req`(`requisition_id`) USING BTREE,
   INDEX `idx_po_requisition_detail_material`(`material_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '请购单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for prd_capacity_calendar
@@ -996,7 +996,7 @@ CREATE TABLE `po_requisition_detail`  (
 DROP TABLE IF EXISTS `prd_capacity_calendar`;
 CREATE TABLE `prd_capacity_calendar`  (
   `calendar_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '日历ID',
-  `tenant_id` bigint(20) NOT NULL COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `calendar_date` date NOT NULL COMMENT '日期',
   `object_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '对象类型: WORKSHOP-车间, WORKSTATION-工位, LINE-生产线',
   `object_id` bigint(20) NOT NULL COMMENT '对象ID',
@@ -1092,6 +1092,8 @@ INSERT INTO `prd_material_requirement` VALUES (2074766194215129090, '000000', 'M
 INSERT INTO `prd_material_requirement` VALUES (2074766194521313281, '000000', 'MBOM260708002', 2074765944117170177, 'SCJH20260013', 21, '2026-07-08 16:03:03', 1, 4.0000, 'PROCESS', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8001, 'RACK-SIDE', '侧板组件', '300mm*200mm*2mm', NULL, 103, 1, '2026-07-08 16:03:03', 1, '2026-07-08 16:03:03', '0', 2074766194215129090);
 INSERT INTO `prd_material_requirement` VALUES (2074785455767719938, '000000', 'MBOM260708003', 2074785290231123970, 'SCJH20260014', 20, '2026-07-08 17:19:35', 1, 1.0000, 'PROCESS', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', NULL, 103, 1, '2026-07-08 17:19:35', 1, '2026-07-08 17:19:35', '0', NULL);
 INSERT INTO `prd_material_requirement` VALUES (2074785456010989570, '000000', 'MBOM260708004', 2074785290231123970, 'SCJH20260014', 21, '2026-07-08 17:19:35', 1, 4.0000, 'PROCESS', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8001, 'RACK-SIDE', '侧板组件', '300mm*200mm*2mm', NULL, 103, 1, '2026-07-08 17:19:35', 1, '2026-07-08 17:19:35', '0', 2074785455767719938);
+INSERT INTO `prd_material_requirement` VALUES (2075392539102220290, '000000', 'MBOM260710001', 2075392307220123649, 'SCJH20260015', 20, '2026-07-10 09:31:55', 1, 1.0000, 'PROCESS', 'COMPLETED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', NULL);
+INSERT INTO `prd_material_requirement` VALUES (2075392539404210178, '000000', 'MBOM260710002', 2075392307220123649, 'SCJH20260015', 21, '2026-07-10 09:31:55', 1, 4.0000, 'PROCESS', 'COMPLETED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8001, 'RACK-SIDE', '侧板组件', '300mm*200mm*2mm', NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', 2075392539102220290);
 
 -- ----------------------------
 -- Table structure for prd_material_requirement_detail
@@ -1159,6 +1161,8 @@ INSERT INTO `prd_material_requirement_detail` VALUES (2074766194294820865, '0000
 INSERT INTO `prd_material_requirement_detail` VALUES (2074766194580033537, '000000', 2074766194521313281, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', 'PROCUREMENT', 1.5000, 2.000000, 4.0000, 0.0000, 1295.2100, 0.0000, 10, NULL, NULL, 2, '2026-07-08 18:03:03', 1, NULL, 103, 1, '2026-07-08 16:03:03', 1, '2026-07-08 16:03:03', '0', 0, 0.0000);
 INSERT INTO `prd_material_requirement_detail` VALUES (2074785455843217410, '000000', 2074785455767719938, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', 'PROCUREMENT', 1.0000, 0.000000, 1.0000, 0.0000, 3.0000, 1.0000, 30, NULL, NULL, 1, '2026-07-08 18:19:35', 1, NULL, 103, 1, '2026-07-08 17:19:35', -1, '2026-07-08 17:35:14', '0', 0, 1.0000);
 INSERT INTO `prd_material_requirement_detail` VALUES (2074785456061321218, '000000', 2074785456010989570, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', 'PROCUREMENT', 1.5000, 2.000000, 4.0000, 0.0000, 1295.2100, 0.0000, 10, NULL, NULL, 2, '2026-07-08 19:19:35', 1, NULL, 103, 1, '2026-07-08 17:19:35', -1, '2026-07-08 17:35:14', '0', 0, 1.5300);
+INSERT INTO `prd_material_requirement_detail` VALUES (2075392539211272193, '000000', 2075392539102220290, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', 'PROCUREMENT', 1.0000, 0.000000, 1.0000, 1.0000, 2.0000, 1.0000, 30, NULL, NULL, 1, '2026-07-10 10:31:55', 1, NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', 0, 1.0000);
+INSERT INTO `prd_material_requirement_detail` VALUES (2075392539454541826, '000000', 2075392539404210178, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', 'PROCUREMENT', 1.5000, 2.000000, 4.0000, 1.5300, 1293.6800, 0.0000, 10, NULL, NULL, 2, '2026-07-10 11:31:55', 1, NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', 0, 1.5300);
 
 -- ----------------------------
 -- Table structure for prd_production_plan
@@ -1224,6 +1228,7 @@ INSERT INTO `prd_production_plan` VALUES (2071858653202145281, '000000', 'SCJH20
 INSERT INTO `prd_production_plan` VALUES (2074393201098014721, '000000', 'SCJH20260012', '销售订单-XSDD20260707001-简易金属工具架', 2, NULL, 'XSDD20260707001', 'MPS', '2026-07-07 15:20:54', '2026-07-07 00:00:00', '2026-07-08 00:00:00', 'RELEASED', 0, 101, '麦得朶', 128, '生产计划部', 1.0000, '2026-07-07 15:22:20', '2026-07-07 15:24:55', NULL, '简易金属工具架标准版BOM', '1.0', 1, 20, NULL, NULL, NULL, 2074392777985015810, '101', NULL, 103, 1, '2026-07-07 15:20:54', 1, '2026-07-07 15:24:55', '0');
 INSERT INTO `prd_production_plan` VALUES (2074765944117170177, '000000', 'SCJH20260013', '销售订单-XSDD20260708001-简易金属工具架', 2, NULL, 'XSDD20260708001', 'MPS', '2026-07-08 16:02:03', '2026-07-08 00:00:00', '2026-07-09 00:00:00', 'RELEASED', 0, 101, '麦得朶', 111, '生产中心', 1.0000, '2026-07-08 16:03:15', '2026-07-08 16:05:17', NULL, '简易金属工具架标准版BOM', '1.0', 1, 20, NULL, NULL, NULL, 2074765442386137089, '101', NULL, 103, 1, '2026-07-08 16:02:03', 1, '2026-07-08 16:05:17', '0');
 INSERT INTO `prd_production_plan` VALUES (2074785290231123970, '000000', 'SCJH20260014', '销售订单-XSDD20260708002-简易金属工具架', 2, NULL, 'XSDD20260708002', 'MPS', '2026-07-08 17:18:55', '2026-07-08 00:00:00', NULL, 'RELEASED', 0, 101, '麦得朶', 111, '生产中心', 1.0000, '2026-07-08 17:21:45', '2026-07-08 17:26:16', NULL, '简易金属工具架标准版BOM', '1.0', 1, 20, NULL, NULL, NULL, 2074785090586447873, '101', NULL, 103, 1, '2026-07-08 17:18:55', 1, '2026-07-08 17:26:15', '0');
+INSERT INTO `prd_production_plan` VALUES (2075392307220123649, '000000', 'SCJH20260015', '销售订单-XSDD20260710001-简易金属工具架', 2, NULL, 'XSDD20260710001', 'MPS', '2026-07-10 09:31:00', '2026-07-10 00:00:00', '2026-07-11 00:00:00', 'COMPLETED', 0, 101, '麦得朶', 111, '生产中心', 1.0000, '2026-07-10 09:45:40', '2026-07-10 09:52:16', NULL, '简易金属工具架标准版BOM', '1.0', 1, 20, NULL, NULL, NULL, 2075391864192569346, '101', NULL, 103, 1, '2026-07-10 09:31:00', 1, '2026-07-10 10:11:41', '0');
 
 -- ----------------------------
 -- Table structure for prd_rework_order
@@ -1231,7 +1236,7 @@ INSERT INTO `prd_production_plan` VALUES (2074785290231123970, '000000', 'SCJH20
 DROP TABLE IF EXISTS `prd_rework_order`;
 CREATE TABLE `prd_rework_order`  (
   `rework_id` bigint(20) NOT NULL COMMENT '返工单ID',
-  `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `rework_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '返工单号',
   `source_wo_id` bigint(20) NULL DEFAULT NULL COMMENT '来源工单ID',
   `source_wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源工单编号',
@@ -1266,7 +1271,7 @@ CREATE TABLE `prd_rework_order`  (
 DROP TABLE IF EXISTS `prd_subcontract`;
 CREATE TABLE `prd_subcontract`  (
   `subcontract_id` bigint(20) NOT NULL COMMENT '委外单ID',
-  `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `subcontract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '委外单号',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
@@ -1375,6 +1380,7 @@ INSERT INTO `prd_work_order` VALUES (2073979191344271361, '000000', 'SCGD2026070
 INSERT INTO `prd_work_order` VALUES (2074393703705657346, '000000', 'SCGD202607070001', 2074393201098014721, '销售订单-XSDD20260707001-简易金属工具架', 'MATERIAL_REQUIREMENT', 2074393473803272194, 'MBOM260707001', NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 2.0000, 0.0000, 27, '套', '2026-07-07 15:22:54', '2026-07-08 00:00:00', '2026-07-07 15:25:20', '2026-07-07 16:15:24', 'COMPLETED', 2, '冲压车间#1', NULL, NULL, NULL, 106, '李芳华', NULL, NULL, 0, 20, '1.0', '简易金属工具架标准版BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-07 15:22:54', 1, '2026-07-07 16:15:23', '0', 'NORMAL', 0, 0.0000);
 INSERT INTO `prd_work_order` VALUES (2074766662588862465, '000000', 'SCGD202607080001', 2074765944117170177, '销售订单-XSDD20260708001-简易金属工具架', 'PLAN', 2074765944117170177, 'XSDD20260708001', NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 1.0000, 0.0000, 27, '套', '2026-07-08 00:00:00', '2026-07-09 00:00:00', '2026-07-08 16:08:52', '2026-07-08 16:08:52', 'COMPLETED', 2, '冲压车间#1', NULL, NULL, NULL, 117, '车间主任', NULL, NULL, 0, 20, '1.0', '简易金属工具架标准版BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-08 16:04:54', 1, '2026-07-08 16:33:52', '0', 'NORMAL', 0, 0.0000);
 INSERT INTO `prd_work_order` VALUES (2074786959987740674, '000000', 'SCGD202607080002', 2074785290231123970, '销售订单-XSDD20260708002-简易金属工具架', 'PLAN', 2074785290231123970, 'XSDD20260708002', NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 1.0000, 0.0000, 27, '套', '2026-07-08 00:00:00', '2026-07-09 00:00:00', '2026-07-08 17:35:13', '2026-07-08 17:35:13', 'COMPLETED', 2, '冲压车间#1', NULL, NULL, NULL, 101, '麦得朶', NULL, NULL, 0, 20, '1.0', '简易金属工具架标准版BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-08 17:25:34', -1, '2026-07-08 17:35:13', '0', 'NORMAL', 1, 0.0000);
+INSERT INTO `prd_work_order` VALUES (2075397566059450369, '000000', 'SCGD202607100001', 2075392307220123649, '销售订单-XSDD20260710001-简易金属工具架', 'PLAN', 2075392307220123649, 'XSDD20260710001', NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 1.0000, 0.0000, 27, '套', '2026-07-10 00:00:00', '2026-07-11 00:00:00', '2026-07-10 10:11:41', '2026-07-10 10:11:41', 'COMPLETED', 2, '冲压车间#1', NULL, NULL, NULL, 117, '车间主任', NULL, NULL, 0, 20, '1.0', '简易金属工具架标准版BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-10 09:51:53', -1, '2026-07-10 10:11:41', '0', 'NORMAL', 1, 0.0000);
 
 -- ----------------------------
 -- Table structure for prd_work_order_resource
@@ -1468,6 +1474,12 @@ INSERT INTO `prd_work_order_resource` VALUES (2074786961036316673, '000000', 207
 INSERT INTO `prd_work_order_resource` VALUES (2074786961048899586, '000000', 2074786959987740674, 'WORKSTATION', 6, 'GZZ0007', '装配线A', 4, 3, 'WORKSHOP', NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-08 17:25:34', 1, '2026-07-08 17:25:34', '0');
 INSERT INTO `prd_work_order_resource` VALUES (2074786961057288193, '000000', 2074786959987740674, 'TEAM', 12, 'ZP0001', '装配一组', 5, 3, 'WORKSHOP', NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-08 17:25:34', 1, '2026-07-08 17:25:34', '0');
 INSERT INTO `prd_work_order_resource` VALUES (2074786961065676801, '000000', 2074786959987740674, 'TEAM', 16, 'HJ0002', '切割组', 6, 5, 'WORKSHOP', NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-08 17:25:34', 1, '2026-07-08 17:25:34', '0');
+INSERT INTO `prd_work_order_resource` VALUES (2075397566357245954, '000000', 2075397566059450369, 'WORKSHOP', 2, 'CJ008', '冲压车间#1', 1, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-10 09:51:53', 1, '2026-07-10 09:51:53', '0');
+INSERT INTO `prd_work_order_resource` VALUES (2075397566369828865, '000000', 2075397566059450369, 'WORKSHOP', 3, 'CJ009', '装配车间#1', 2, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-10 09:51:54', 1, '2026-07-10 09:51:54', '0');
+INSERT INTO `prd_work_order_resource` VALUES (2075397566378217473, '000000', 2075397566059450369, 'WORKSTATION', 6, 'GZZ0007', '装配线A', 3, 3, 'WORKSHOP', NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-10 09:51:54', 1, '2026-07-10 09:51:54', '0');
+INSERT INTO `prd_work_order_resource` VALUES (2075397566386606081, '000000', 2075397566059450369, 'WORKSTATION', 2, 'GZZ0003', '工作站2', 4, 2, 'WORKSHOP', NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-10 09:51:54', 1, '2026-07-10 09:51:54', '0');
+INSERT INTO `prd_work_order_resource` VALUES (2075397566390800386, '000000', 2075397566059450369, 'TEAM', 16, 'HJ0002', '切割组', 5, 5, 'WORKSHOP', NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-10 09:51:54', 1, '2026-07-10 09:51:54', '0');
+INSERT INTO `prd_work_order_resource` VALUES (2075397566399188993, '000000', 2075397566059450369, 'TEAM', 12, 'ZP0001', '装配一组', 6, 3, 'WORKSHOP', NULL, NULL, NULL, NULL, 'PENDING', NULL, 103, 1, '2026-07-10 09:51:54', 1, '2026-07-10 09:51:54', '0');
 
 -- ----------------------------
 -- Table structure for prd_work_report
@@ -1591,34 +1603,34 @@ INSERT INTO `prd_work_report` VALUES (10001, '000000', 'WR-TEST-001', 'NORMAL', 
 DROP TABLE IF EXISTS `pu_contract`;
 CREATE TABLE `pu_contract`  (
   `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
-  `contract_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '合同编号',
-  `contract_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同名称',
+  `contract_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '合同编号',
+  `contract_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '合同名称',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
-  `vendor_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
-  `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
-  `contract_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同类型 FRAMEWORK-框架合同 SPOT-现货合同 SERVICE-服务合同',
+  `vendor_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `contract_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '合同类型 FRAMEWORK-框架合同 SPOT-现货合同 SERVICE-服务合同',
   `sign_date` datetime(0) NULL DEFAULT NULL COMMENT '签订日期',
   `effective_date` datetime(0) NULL DEFAULT NULL COMMENT '生效日期',
   `expiry_date` datetime(0) NULL DEFAULT NULL COMMENT '失效日期',
   `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '合同总金额',
-  `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY' COMMENT '币种',
-  `payment_terms` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '付款条款',
-  `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '合同状态 DRAFT-草稿 APPROVING-审批中 APPROVED-已批准 EXECUTING-执行中 COMPLETED-已完成 TERMINATED-已终止 REJECTED-已驳回',
+  `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种',
+  `payment_terms` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '付款条款',
+  `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '合同状态 DRAFT-草稿 APPROVING-审批中 APPROVED-已批准 EXECUTING-执行中 COMPLETED-已完成 TERMINATED-已终止 REJECTED-已驳回',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
-  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段2',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '扩展字段1',
+  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '扩展字段2',
   `attr3` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段3',
   `attr4` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段4',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
   PRIMARY KEY (`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for pu_contract_line
@@ -1628,30 +1640,30 @@ CREATE TABLE `pu_contract_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
   `contract_id` bigint(20) NOT NULL COMMENT '合同ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
-  `material_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码',
-  `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称',
-  `material_spec` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料规格',
-  `unit` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计量单位',
+  `material_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料规格',
+  `unit` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计量单位',
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '数量',
   `line_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '行金额',
   `delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '交货日期',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段1',
-  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '扩展字段2',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '扩展字段1',
+  `attr2` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '扩展字段2',
   `attr3` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段3',
   `attr4` bigint(20) NULL DEFAULT NULL COMMENT '扩展字段4',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_contract_id`(`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for pu_purchase_order
@@ -1659,46 +1671,46 @@ CREATE TABLE `pu_contract_line`  (
 DROP TABLE IF EXISTS `pu_purchase_order`;
 CREATE TABLE `pu_purchase_order`  (
   `order_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '采购订单ID',
-  `order_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '采购订单号',
+  `order_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '采购订单号',
   `requisition_id` bigint(20) NULL DEFAULT NULL COMMENT '来源申请ID',
-  `requisition_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源申请单号',
+  `requisition_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源申请单号',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
-  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
-  `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `order_date` datetime(0) NULL DEFAULT NULL COMMENT '订单日期',
   `expected_arrival_date` datetime(0) NULL DEFAULT NULL COMMENT '预计到货日期',
-  `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY' COMMENT '币别',
+  `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币别',
   `exchange_rate` decimal(18, 6) NULL DEFAULT 1.000000 COMMENT '汇率',
   `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '含税总金额',
   `tax_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '税额',
   `discount_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '折扣金额',
   `freight_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '运费金额',
   `discount_rate` decimal(10, 2) NULL DEFAULT NULL COMMENT '折扣率',
-  `payment_terms` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '付款条款',
-  `delivery_terms` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '交货条款',
-  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `payment_terms` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '付款条款',
+  `delivery_terms` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '交货条款',
+  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `contract_id` bigint(20) NULL DEFAULT NULL COMMENT '合同ID，关联pu_contract表（预留字段）',
-  `contract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '合同编号（预留字段）',
+  `contract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '合同编号（预留字段）',
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   `buyer_id` bigint(20) NULL DEFAULT NULL COMMENT '采购员ID（关联sys_user）',
   `buyer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购员名称',
   PRIMARY KEY (`order_id`) USING BTREE,
   UNIQUE INDEX `uk_order_no`(`order_no`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074342752626065411 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2074342752626065411 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pu_purchase_order
@@ -1718,30 +1730,30 @@ CREATE TABLE `pu_purchase_order_line`  (
   `order_id` bigint(20) NOT NULL COMMENT '所属采购订单ID',
   `requisition_line_id` bigint(20) NULL DEFAULT NULL COMMENT '来源请购明细行ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码',
-  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称',
-  `material_spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计量单位',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计量单位',
   `order_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '订购数量',
   `received_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '已收货数量',
-  `receive_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'PENDING' COMMENT '收货状态(PENDING/FULL_RECEIVED/PARTIAL_RECEIVED/OVER_RECEIVED/SHORT_RECEIVED)',
+  `receive_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'PENDING' COMMENT '收货状态(PENDING/FULL_RECEIVED/PARTIAL_RECEIVED/OVER_RECEIVED/SHORT_RECEIVED)',
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `tax_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '税率',
   `line_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '行金额（含税）',
   `sort_order` int(11) NULL DEFAULT NULL COMMENT '排序号',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_order_id`(`order_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_pu_order_line_material`(`order_id`, `material_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074343106725986306 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购订单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2074343106725986306 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pu_purchase_order_line
@@ -1758,32 +1770,32 @@ INSERT INTO `pu_purchase_order_line` VALUES (2074343106725986305, 20743427526260
 DROP TABLE IF EXISTS `pu_purchase_requisition`;
 CREATE TABLE `pu_purchase_requisition`  (
   `requisition_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '采购申请ID',
-  `requisition_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '采购申请单号',
-  `requisition_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '采购申请名称',
+  `requisition_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '采购申请单号',
+  `requisition_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购申请名称',
   `applicant_id` bigint(20) NULL DEFAULT NULL COMMENT '申请人ID',
-  `applicant_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '申请人名称',
+  `applicant_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请人名称',
   `requisition_date` datetime(0) NULL DEFAULT NULL COMMENT '申请日期',
   `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
-  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型',
-  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
+  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
+  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '流程ID',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   PRIMARY KEY (`requisition_id`) USING BTREE,
   UNIQUE INDEX `uk_requisition_no`(`requisition_no`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074340986022969347 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2074340986022969347 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pu_purchase_requisition
@@ -1808,32 +1820,32 @@ CREATE TABLE `pu_purchase_requisition_line`  (
   `line_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '明细行ID',
   `requisition_id` bigint(20) NOT NULL COMMENT '所属采购申请ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码',
-  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称',
-  `material_spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '计量单位',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计量单位',
   `apply_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '申请数量',
   `approved_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '已批准数量',
   `shortage_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '短缺数量',
   `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
-  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来源类型',
+  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
   `source_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据ID',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_requisition_id`(`requisition_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074342573579616259 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购申请明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2074342573579616259 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of pu_purchase_requisition_line
@@ -1866,32 +1878,32 @@ INSERT INTO `pu_purchase_requisition_line` VALUES (2074342573579616258, 20743409
 DROP TABLE IF EXISTS `pu_purchase_return`;
 CREATE TABLE `pu_purchase_return`  (
   `return_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '采购退货ID',
-  `return_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '退货单号',
+  `return_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '退货单号',
   `order_id` bigint(20) NULL DEFAULT NULL COMMENT '采购订单ID',
-  `order_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '采购订单号',
+  `order_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购订单号',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
-  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
-  `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `return_date` datetime(0) NULL DEFAULT NULL COMMENT '退货日期',
-  `return_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '退货原因',
+  `return_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退货原因',
   `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '金额',
-  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '已选审批流程模板ID',
-  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`return_id`) USING BTREE,
   UNIQUE INDEX `uk_return_no`(`return_no`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购退货表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for pu_purchase_return_line
@@ -1902,30 +1914,30 @@ CREATE TABLE `pu_purchase_return_line`  (
   `return_id` bigint(20) NOT NULL COMMENT '退货单ID',
   `order_line_id` bigint(20) NULL DEFAULT NULL COMMENT '采购订单行ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码',
-  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称',
-  `material_spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `return_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '退货数量',
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '金额',
-  `return_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '退货原因',
+  `return_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退货原因',
   `sort_order` int(11) NULL DEFAULT NULL COMMENT '排序',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_return_id`(`return_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '采购退货行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for pu_vendor_evaluation
@@ -1933,7 +1945,7 @@ CREATE TABLE `pu_purchase_return_line`  (
 DROP TABLE IF EXISTS `pu_vendor_evaluation`;
 CREATE TABLE `pu_vendor_evaluation`  (
   `evaluation_id` bigint(20) NOT NULL COMMENT '评估ID',
-  `tenant_id` bigint(20) NOT NULL COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `vendor_id` bigint(20) NOT NULL COMMENT '供应商ID',
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
   `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
@@ -2955,11 +2967,11 @@ CREATE TABLE `so_contract_line`  (
 DROP TABLE IF EXISTS `so_credit_usage`;
 CREATE TABLE `so_credit_usage`  (
   `usage_id` bigint(20) NOT NULL,
-  `tenant_id` bigint(20) NOT NULL DEFAULT 0,
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `client_id` bigint(20) NOT NULL,
   `so_id` bigint(20) NOT NULL,
   `amount` decimal(14, 2) NOT NULL,
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'FROZEN',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'FROZEN',
   `freeze_time` datetime(0) NULL DEFAULT NULL,
   `used_time` datetime(0) NULL DEFAULT NULL COMMENT '转为已用(已交付)时间',
   `release_time` datetime(0) NULL DEFAULT NULL,
@@ -2971,17 +2983,18 @@ CREATE TABLE `so_credit_usage`  (
   PRIMARY KEY (`usage_id`) USING BTREE,
   INDEX `idx_client`(`client_id`) USING BTREE,
   INDEX `idx_so`(`so_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '信用占用记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '信用占用记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of so_credit_usage
 -- ----------------------------
-INSERT INTO `so_credit_usage` VALUES (2068919152287997953, 0, 3, 2068918578570125314, 20000.00, 'FROZEN', '2026-06-22 12:48:59', NULL, NULL, 103, 1, '2026-06-22 12:48:59', 1, '2026-06-22 12:48:59');
-INSERT INTO `so_credit_usage` VALUES (2071821464569303041, 0, 11, 2071797189309288450, 1859.15, 'FROZEN', '2026-06-30 13:01:44', NULL, NULL, 103, 1, '2026-06-30 13:01:44', 1, '2026-06-30 13:01:44');
-INSERT INTO `so_credit_usage` VALUES (2071858652526862338, 0, 11, 2071797189309288450, 1859.15, 'FROZEN', '2026-06-30 15:29:31', NULL, NULL, 103, 1, '2026-06-30 15:29:31', 1, '2026-06-30 15:29:31');
-INSERT INTO `so_credit_usage` VALUES (2074393200884105218, 0, 11, 2074392682392633345, 200.00, 'FROZEN', '2026-07-07 15:20:54', NULL, NULL, 103, 1, '2026-07-07 15:20:54', 1, '2026-07-07 15:20:54');
-INSERT INTO `so_credit_usage` VALUES (2074765943861317634, 0, 11, 2074765296298528769, 193.83, 'FROZEN', '2026-07-08 16:02:03', NULL, NULL, 103, 1, '2026-07-08 16:02:03', 1, '2026-07-08 16:02:03');
-INSERT INTO `so_credit_usage` VALUES (2074785290025603073, 0, 11, 2074784622795722753, 197.84, 'FROZEN', '2026-07-08 17:18:55', NULL, NULL, 103, 1, '2026-07-08 17:18:55', 1, '2026-07-08 17:18:55');
+INSERT INTO `so_credit_usage` VALUES (2068919152287997953, '000000', 3, 2068918578570125314, 20000.00, 'FROZEN', '2026-06-22 12:48:59', NULL, NULL, 103, 1, '2026-06-22 12:48:59', 1, '2026-07-10 12:58:22');
+INSERT INTO `so_credit_usage` VALUES (2071821464569303041, '000000', 11, 2071797189309288450, 1859.15, 'FROZEN', '2026-06-30 13:01:44', NULL, NULL, 103, 1, '2026-06-30 13:01:44', 1, '2026-07-10 12:58:22');
+INSERT INTO `so_credit_usage` VALUES (2071858652526862338, '000000', 11, 2071797189309288450, 1859.15, 'FROZEN', '2026-06-30 15:29:31', NULL, NULL, 103, 1, '2026-06-30 15:29:31', 1, '2026-07-10 12:58:22');
+INSERT INTO `so_credit_usage` VALUES (2074393200884105218, '000000', 11, 2074392682392633345, 200.00, 'FROZEN', '2026-07-07 15:20:54', NULL, NULL, 103, 1, '2026-07-07 15:20:54', 1, '2026-07-10 12:58:22');
+INSERT INTO `so_credit_usage` VALUES (2074765943861317634, '000000', 11, 2074765296298528769, 193.83, 'FROZEN', '2026-07-08 16:02:03', NULL, NULL, 103, 1, '2026-07-08 16:02:03', 1, '2026-07-10 12:58:22');
+INSERT INTO `so_credit_usage` VALUES (2074785290025603073, '000000', 11, 2074784622795722753, 197.84, 'FROZEN', '2026-07-08 17:18:55', NULL, NULL, 103, 1, '2026-07-08 17:18:55', 1, '2026-07-10 12:58:22');
+INSERT INTO `so_credit_usage` VALUES (2075392306943299586, '000000', 11, 2075391810035716098, 185.91, 'FROZEN', '2026-07-10 09:31:00', NULL, NULL, 103, 1, '2026-07-10 09:31:00', 1, '2026-07-10 12:58:22');
 
 -- ----------------------------
 -- Table structure for so_customer_order
@@ -3128,16 +3141,16 @@ CREATE TABLE `so_invoice_line`  (
 DROP TABLE IF EXISTS `so_price_list`;
 CREATE TABLE `so_price_list`  (
   `price_list_id` bigint(20) NOT NULL,
-  `tenant_id` bigint(20) NOT NULL DEFAULT 0,
-  `list_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `list_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `list_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'BASE',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `list_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `list_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `list_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'BASE',
   `client_id` bigint(20) NULL DEFAULT NULL,
-  `currency` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'CNY',
+  `currency` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY',
   `priority` int(11) NULL DEFAULT 0,
   `valid_from` date NULL DEFAULT NULL,
   `valid_to` date NULL DEFAULT NULL,
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ACTIVE',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE',
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT NULL,
@@ -3145,7 +3158,7 @@ CREATE TABLE `so_price_list`  (
   `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`price_list_id`) USING BTREE,
   UNIQUE INDEX `uk_code_tenant`(`list_code`, `tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '销售价格表头' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表头' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for so_price_list_line
@@ -3153,7 +3166,7 @@ CREATE TABLE `so_price_list`  (
 DROP TABLE IF EXISTS `so_price_list_line`;
 CREATE TABLE `so_price_list_line`  (
   `line_id` bigint(20) NOT NULL,
-  `tenant_id` bigint(20) NOT NULL DEFAULT 0,
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `price_list_id` bigint(20) NOT NULL,
   `material_id` bigint(20) NOT NULL,
   `unit_price` decimal(14, 4) NOT NULL,
@@ -3168,7 +3181,7 @@ CREATE TABLE `so_price_list_line`  (
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_list_material`(`price_list_id`, `material_id`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '销售价格表行' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表行' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for so_quotation
@@ -3416,6 +3429,7 @@ INSERT INTO `so_sales_order_header` VALUES (2071797189309288450, '000000', 'XSDD
 INSERT INTO `so_sales_order_header` VALUES (2074392682392633345, '000000', 'XSDD20260707001', 2074391908581294081, 11, '测试五金贸易公司', 101, '麦得朶', '2026-07-07 00:00:00', '2026-07-08 00:00:00', '2026-07-08 00:00:00', NULL, NULL, '', '', NULL, 'CNY', 1.000000, 200.00, 0.00, 0.00, 0.000000, 'PASSED', '2026-07-07 15:20:54', NULL, 'CONFIRMED', NULL, 0, '2026-07-07 15:20:54', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-07 15:18:50', 1, '2026-07-07 15:20:54', '0', 2058473342767357953, NULL);
 INSERT INTO `so_sales_order_header` VALUES (2074765296298528769, '000000', 'XSDD20260708001', 2074391908581294081, 11, '测试五金贸易公司', 101, '麦得朶', '2026-07-07 00:00:00', '2026-07-08 00:00:00', '2026-07-08 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 193.83, 5.82, 5.99, 3.000000, 'PASSED', '2026-07-08 16:02:03', NULL, 'CONFIRMED', NULL, 0, '2026-07-08 16:02:03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-08 15:59:29', 1, '2026-07-08 16:02:03', '0', 2058473342767357953, NULL);
 INSERT INTO `so_sales_order_header` VALUES (2074784622795722753, '000000', 'XSDD20260708002', 2074391908581294081, 11, '测试五金贸易公司', 101, '麦得朶', '2026-07-07 00:00:00', NULL, '2026-07-08 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 197.84, 5.88, 4.04, 2.000000, 'PASSED', '2026-07-08 17:18:55', NULL, 'CONFIRMED', NULL, 0, '2026-07-08 17:18:55', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-08 17:16:16', 1, '2026-07-08 17:18:55', '0', 2058473342767357953, NULL);
+INSERT INTO `so_sales_order_header` VALUES (2075391810035716098, '000000', 'XSDD20260710001', 2074391908581294081, 11, '测试五金贸易公司', 101, '麦得朶', '2026-07-07 00:00:00', '2026-07-10 00:00:00', '2026-07-08 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 185.91, 5.70, 9.79, 5.000000, 'PASSED', '2026-07-10 09:31:00', NULL, 'CONFIRMED', NULL, 0, '2026-07-10 09:31:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-10 09:29:01', 1, '2026-07-10 09:31:00', '0', 2058473342767357953, NULL);
 
 -- ----------------------------
 -- Table structure for so_sales_order_line
@@ -3493,6 +3507,8 @@ INSERT INTO `so_sales_order_line` VALUES (2074765296407580673, '000000', 2074765
 INSERT INTO `so_sales_order_line` VALUES (2074765442386137089, '000000', 2074765296298528769, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.82, 3.000000, 6.00, '2026-07-08 00:00:00', '2026-07-08 00:00:00', 0.0000, 1.0000, 0.0000, 0.0000, 'PENDING', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-08 16:00:03', 1, '2026-07-08 16:08:52', '0');
 INSERT INTO `so_sales_order_line` VALUES (2074784622904774658, '000000', 2074784622795722753, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.88, 2.000000, 4.00, '2026-07-08 00:00:00', '2026-07-09 00:00:00', 0.0000, 0.0000, 0.0000, 0.0000, 'PENDING', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-08 17:16:16', 1, '2026-07-08 17:18:07', '1');
 INSERT INTO `so_sales_order_line` VALUES (2074785090586447873, '000000', 2074784622795722753, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.88, 2.000000, 4.00, '2026-07-08 00:00:00', '2026-07-09 00:00:00', 0.0000, 1.0000, 0.0000, 0.0000, 'PENDING', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-08 17:18:08', 1, '2026-07-08 17:35:13', '0');
+INSERT INTO `so_sales_order_line` VALUES (2075391810132185089, '000000', 2075391810035716098, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.70, 5.000000, 10.00, '2026-07-08 00:00:00', '2026-07-10 00:00:00', 0.0000, 0.0000, 0.0000, 0.0000, 'PENDING', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-10 09:29:01', 1, '2026-07-10 09:29:13', '1');
+INSERT INTO `so_sales_order_line` VALUES (2075391864192569346, '000000', 2075391810035716098, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.70, 5.000000, 10.00, '2026-07-08 00:00:00', '2026-07-10 00:00:00', 0.0000, 1.0000, 0.0000, 0.0000, 'PRODUCED', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-10 09:29:14', 1, '2026-07-10 10:11:41', '0');
 
 -- ----------------------------
 -- Table structure for wm_arrival_notice
@@ -3500,21 +3516,21 @@ INSERT INTO `so_sales_order_line` VALUES (2074785090586447873, '000000', 2074784
 DROP TABLE IF EXISTS `wm_arrival_notice`;
 CREATE TABLE `wm_arrival_notice`  (
   `notice_id` bigint(20) NOT NULL COMMENT '通知单ID',
-  `notice_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知单编号',
-  `notice_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知单名称',
-  `pur_order_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '采购订单编号',
+  `notice_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知单编号',
+  `notice_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '通知单名称',
+  `pur_order_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购订单编号',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
-  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
-  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
-  `vendor_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商简称',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `vendor_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商简称',
   `arrival_date` datetime(0) NULL DEFAULT NULL COMMENT '到货日期',
-  `contact` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系人',
-  `phone` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '联系方式',
-  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '单据状态',
+  `contact` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人',
+  `phone` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系方式',
+  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '单据状态',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int(11) NULL DEFAULT 0 COMMENT '预留字段3',
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
@@ -3547,31 +3563,31 @@ CREATE TABLE `wm_arrival_notice_line`  (
   `line_id` bigint(20) NOT NULL COMMENT '行ID',
   `notice_id` bigint(20) NULL DEFAULT NULL COMMENT '通知单ID',
   `material_id` bigint(20) NOT NULL COMMENT '产品物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
-  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
-  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
-  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
   `quantity_arrival` double(12, 2) NOT NULL COMMENT '到货数量',
   `quantity_quanlified` double(12, 2) NULL DEFAULT NULL COMMENT '合格数量',
-  `iqc_check` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '是否来料检验',
+  `iqc_check` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '是否来料检验',
   `iqc_id` bigint(20) NULL DEFAULT NULL COMMENT '来料检验单ID',
-  `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int(11) NULL DEFAULT 0 COMMENT '预留字段3',
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '到货通知单行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_arrival_notice_line
@@ -3600,32 +3616,32 @@ INSERT INTO `wm_arrival_notice_line` VALUES (2074381941170159617, 20743433010313
 DROP TABLE IF EXISTS `wm_barcode`;
 CREATE TABLE `wm_barcode`  (
   `barcode_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '条码ID',
-  `barcode_code` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '条码值',
+  `barcode_code` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '条码值',
   `config_id` bigint(20) NULL DEFAULT NULL COMMENT '配置ID',
-  `config_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '配置编码',
-  `biz_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '业务类型',
+  `config_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '配置编码',
+  `biz_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '业务类型',
   `biz_id` bigint(20) NULL DEFAULT NULL COMMENT '关联业务ID',
   `biz_line_id` bigint(20) NULL DEFAULT NULL COMMENT '关联业务行ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID',
   `stock_id` bigint(20) NULL DEFAULT NULL COMMENT '库存ID',
-  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ACTIVE' COMMENT '状态',
+  `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT '状态',
   `generate_time` datetime(0) NULL DEFAULT NULL COMMENT '生成时间',
   `bind_time` datetime(0) NULL DEFAULT NULL COMMENT '绑定时间',
   `expire_time` datetime(0) NULL DEFAULT NULL COMMENT '失效时间',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0',
-  `batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '批次编码',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  `batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次编码',
   `sn_id` bigint(20) NULL DEFAULT NULL COMMENT '序列号ID',
   PRIMARY KEY (`barcode_id`) USING BTREE,
   UNIQUE INDEX `uk_barcode_code`(`barcode_code`) USING BTREE,
@@ -3635,7 +3651,7 @@ CREATE TABLE `wm_barcode`  (
   INDEX `idx_barcode_material_id`(`material_id`) USING BTREE,
   INDEX `idx_barcode_stock_id`(`stock_id`) USING BTREE,
   INDEX `idx_barcode_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074389221408161795 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '条码实例表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2074389221408161795 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码实例表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_barcode
@@ -3661,34 +3677,34 @@ INSERT INTO `wm_barcode` VALUES (2074389221408161794, 'RC20260707000014', 900001
 DROP TABLE IF EXISTS `wm_barcode_config`;
 CREATE TABLE `wm_barcode_config`  (
   `config_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '条码配置ID',
-  `config_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则编码',
-  `config_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '规则名称',
-  `prefix` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '条码前缀',
-  `date_pattern` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'yyyyMMdd' COMMENT '日期格式',
+  `config_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则编码',
+  `config_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则名称',
+  `prefix` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '条码前缀',
+  `date_pattern` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'yyyyMMdd' COMMENT '日期格式',
   `sequence_length` int(11) NOT NULL DEFAULT 6 COMMENT '流水号长度',
   `with_check_digit` bigint(20) NULL DEFAULT 0 COMMENT '是否包含校验位(0否 1是)',
-  `biz_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '适用业务类型',
+  `biz_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '适用业务类型',
   `category_id` bigint(20) NULL DEFAULT NULL COMMENT '适用物料类别',
   `enable_flag` bigint(20) NULL DEFAULT 1 COMMENT '是否启用(0否 1是)',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
-  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   `current_sequence` bigint(20) NULL DEFAULT 0 COMMENT '当前序列号',
   PRIMARY KEY (`config_id`) USING BTREE,
   UNIQUE INDEX `uk_barcode_config_code`(`config_code`) USING BTREE,
   INDEX `idx_barcode_config_biz_type`(`biz_type`) USING BTREE,
   INDEX `idx_barcode_config_category_id`(`category_id`) USING BTREE,
   INDEX `idx_barcode_config_enable_flag`(`enable_flag`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2062021060516102147 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '条码配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062021060516102147 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_barcode_config
@@ -3768,33 +3784,33 @@ INSERT INTO `wm_batch` VALUES (2074389151019352066, '000000', 'B202607070002', 8
 DROP TABLE IF EXISTS `wm_material_receive`;
 CREATE TABLE `wm_material_receive`  (
   `receive_id` bigint(20) NOT NULL COMMENT '入库单ID',
-  `receive_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '入库单编号',
-  `receive_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '入库单名称',
+  `receive_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '入库单编号',
+  `receive_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '入库单名称',
   `iqc_id` bigint(20) NULL DEFAULT NULL COMMENT '来料检验单ID',
-  `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
+  `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
   `notice_id` bigint(20) NULL DEFAULT NULL COMMENT '到货通知单ID',
-  `notice_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '到货通知单编号',
+  `notice_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '到货通知单编号',
   `pur_id` bigint(20) NULL DEFAULT NULL COMMENT '采购订单ID',
-  `pur_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '采购订单编号',
+  `pur_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购订单编号',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
-  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编码',
-  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
-  `vendor_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商简称',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
+  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `vendor_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商简称',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
-  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
-  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
   `area_id` bigint(20) NULL DEFAULT NULL COMMENT '库区ID',
-  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区编码',
-  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区名称',
   `location_id` bigint(20) NULL DEFAULT NULL COMMENT '库位ID',
-  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位编码',
-  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位名称',
   `receive_date` datetime(0) NULL DEFAULT NULL COMMENT '入库日期',
-  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '单据状态',
+  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '单据状态',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '已选审批流程模板（wf_custom_form.id）',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int(11) NULL DEFAULT 0 COMMENT '预留字段3',
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
@@ -3848,26 +3864,26 @@ CREATE TABLE `wm_material_receive_detail`  (
   `line_id` bigint(20) NULL DEFAULT NULL COMMENT '行ID',
   `receive_id` bigint(20) NULL DEFAULT NULL COMMENT '入库单ID',
   `material_id` bigint(20) NOT NULL COMMENT '产品物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
-  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
-  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
-  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
   `quantity` double(12, 2) NOT NULL COMMENT '入库数量',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID',
-  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '批次号',
+  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
-  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
-  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
   `area_id` bigint(20) NULL DEFAULT NULL COMMENT '库区ID',
-  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区编码',
-  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区名称',
   `location_id` bigint(20) NULL DEFAULT NULL COMMENT '库位ID',
-  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位编码',
-  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位名称',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int(11) NULL DEFAULT 0 COMMENT '预留字段3',
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
@@ -3917,26 +3933,26 @@ CREATE TABLE `wm_material_receive_line`  (
   `source_doc_line_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据行ID',
   `purchase_line_id` bigint(20) NULL DEFAULT NULL COMMENT '关联采购订单行ID(pu_purchase_order_line.line_id)',
   `material_id` bigint(20) NOT NULL COMMENT '产品物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
-  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
-  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位',
-  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
   `quantity_received` double(12, 2) NOT NULL COMMENT '入库数量',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID',
-  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '批次号',
+  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
-  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
-  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
   `area_id` bigint(20) NULL DEFAULT NULL COMMENT '库区ID',
-  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区编码',
-  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区名称',
   `location_id` bigint(20) NULL DEFAULT NULL COMMENT '库位ID',
-  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位编码',
-  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位名称',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '备注',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int(11) NULL DEFAULT 0 COMMENT '预留字段3',
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
@@ -4030,42 +4046,42 @@ CREATE TABLE `wm_material_stock`  (
   `stock_id` bigint(20) NOT NULL COMMENT '库存ID',
   `category_id` bigint(20) NULL DEFAULT NULL COMMENT '物料类型ID',
   `material_id` bigint(20) NOT NULL COMMENT '产品物料ID',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料编码',
-  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品物料名称',
-  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位id',
-  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '单位名称',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料编码',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `base_uom_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位id',
+  `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID',
-  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '入库批次号',
+  `batch_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '入库批次号',
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
-  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库编码',
-  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库名称',
+  `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
+  `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
   `area_id` bigint(20) NULL DEFAULT NULL COMMENT '库区ID',
-  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区编码',
-  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库区名称',
+  `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区编码',
+  `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区名称',
   `location_id` bigint(20) NULL DEFAULT NULL COMMENT '库位ID',
-  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位编码',
-  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '库位名称',
+  `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位编码',
+  `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位名称',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
-  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商编号',
-  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称',
-  `vendor_nick` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商简称',
+  `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编号',
+  `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
+  `vendor_nick` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商简称',
   `stock_quantity` double(12, 2) NULL DEFAULT NULL COMMENT '在库数量',
   `reserved_quantity` double(12, 2) NOT NULL DEFAULT 0.00 COMMENT '已预留数量(销售订单/工单锁定)',
   `wo_id` bigint(20) NULL DEFAULT NULL COMMENT '生产工单ID',
-  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生产工单编号',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产工单编号',
   `production_date` datetime(0) NULL DEFAULT NULL COMMENT '生产日期',
   `recpt_date` datetime(0) NULL DEFAULT NULL COMMENT '入库时间',
   `expire_date` datetime(0) NULL DEFAULT NULL COMMENT '库存有效期',
   `frozen_flag` tinyint(4) NOT NULL DEFAULT 1 COMMENT '冻结标志',
-  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段1',
-  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` int(11) NULL DEFAULT 0 COMMENT '预留字段3',
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
-  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `version` int(11) NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
@@ -4074,7 +4090,7 @@ CREATE TABLE `wm_material_stock`  (
   `unit_cost` decimal(14, 6) NULL DEFAULT 0.000000 COMMENT '单位成本(移动加权平均)',
   `total_cost` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '库存总金额',
   `sn_id` bigint(20) NULL DEFAULT NULL COMMENT '序列号ID（序列号管理物料的唯一标识）',
-  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '序列号编码（序列号管理物料的唯一编码）',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '序列号编码（序列号管理物料的唯一编码）',
   PRIMARY KEY (`stock_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_wm_material_stock_material`(`material_id`, `frozen_flag`, `recpt_date`) USING BTREE,
@@ -4082,7 +4098,7 @@ CREATE TABLE `wm_material_stock`  (
   INDEX `idx_wm_material_stock_sn_id`(`sn_id`) USING BTREE,
   INDEX `idx_wm_material_stock_sn_code`(`sn_code`) USING BTREE,
   INDEX `idx_wm_material_stock_location`(`location_id`, `del_flag`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_material_stock
@@ -4095,7 +4111,7 @@ INSERT INTO `wm_material_stock` VALUES (59, 1, 3002, 'IF20251203005', '轮胎', 
 INSERT INTO `wm_material_stock` VALUES (60, 1, 3003, 'IF20251203006', '辐条', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', 1, 'V00005', '北京五道口', '五2', 10000.00, 0.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '1', NULL, 1, 1, '2025-12-16 10:26:25', 1, '2026-06-03 15:56:24', 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (61, 1, 3004, 'IF20251203007', '把管', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 10, 'L014', '把管库位', 1, 'V00005', '北京五道口', '五2', 120.00, 0.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '1', NULL, 1, 1, '2025-12-16 10:26:25', 1, '2026-06-03 15:56:24', 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (62, 1, 3005, 'IF20251203008', '把套', NULL, '1', '克', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 11, 'L015', '把套库位', 1, 'V00005', '北京五道口', '五2', 250.00, 0.00, NULL, NULL, NULL, '2025-12-16 10:26:25', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '1', NULL, 1, 1, '2025-12-16 10:26:25', 1, '2026-06-03 15:56:24', 0.000000, 0.0000, NULL, NULL);
-INSERT INTO `wm_material_stock` VALUES (1001, 5, 1, 'IF20251016004', '钢板', NULL, '3', '吨', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 498.47, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '钢板初始库存', 2, 1, '2026-06-21 20:52:46', 1, '2026-07-08 17:35:13', 4500.000000, 2250000.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (1001, 5, 1, 'IF20251016004', '钢板', NULL, '3', '吨', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 496.94, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '钢板初始库存', 3, 1, '2026-06-21 20:52:46', 1, '2026-07-10 10:11:41', 4500.000000, 2250000.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (1002, 1, 3001, 'IF20251203004', '轮圈', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 7, 'L011', '轮圈库位', NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '轮圈初始库存', 2, 1, '2026-06-21 20:52:46', 1, '2026-06-24 11:30:43', 35.000000, 7000.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (1003, 1, 3002, 'IF20251203005', '轮胎', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 8, 'L012', '轮胎库位', NULL, NULL, NULL, NULL, 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '轮胎初始库存', 2, 1, '2026-06-21 20:52:46', 1, '2026-06-24 11:30:44', 15.000000, 3000.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (1004, 1, 3003, 'IF20251203006', '辐条', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 9, 'L013', '辐条库位', NULL, NULL, NULL, NULL, 10000.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '辐条初始库存', 1, 1, '2026-06-21 20:52:46', 1, '2026-06-21 20:52:46', 2.000000, 20000.0000, NULL, NULL);
@@ -4122,9 +4138,9 @@ INSERT INTO `wm_material_stock` VALUES (2074152062618431489, 10, 8002, 'RACK-FIT
 INSERT INTO `wm_material_stock` VALUES (2074152062656180226, 10, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', NULL, '套', 2074149637295607809, 'B202607060002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, 0.00, 0.00, NULL, NULL, NULL, '2026-07-06 23:22:42', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '0', '', 2, 1, '2026-07-06 23:22:42', 1, '2026-07-06 23:24:38', 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (2074160243641847809, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 10.00, 0.00, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 1, 1, '2026-07-06 23:55:13', 1, '2026-07-06 23:55:12', 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (2074389220997120001, 10, 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 0, 'A0007', '加工区', 0, 'VIRTUAL', '虚拟库位', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, 0.00, 0.00, NULL, NULL, NULL, '2026-07-07 15:05:05', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', '', 1, 1, '2026-07-07 15:05:05', 1, '2026-07-07 15:05:05', 0.000000, 0.0000, NULL, NULL);
-INSERT INTO `wm_material_stock` VALUES (2074389221097783297, 10, 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, 2.00, 0.00, NULL, NULL, NULL, '2026-07-07 15:05:05', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '0', '', 3, 1, '2026-07-07 15:05:05', 1, '2026-07-08 17:35:13', 0.000000, 0.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (2074389221097783297, 10, 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, 1.00, 0.00, NULL, NULL, NULL, '2026-07-07 15:05:05', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '0', '', 4, 1, '2026-07-07 15:05:05', 1, '2026-07-10 10:11:41', 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (2074406916719603714, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2.00, 0.00, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, '000000', -1, '0', NULL, 1, -1, '2026-07-07 16:15:24', -1, '2026-07-07 16:15:24', 0.000000, 0.0000, NULL, NULL);
-INSERT INTO `wm_material_stock` VALUES (2074767659994353665, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, 200001, NULL, NULL, NULL, NULL, NULL, NULL, 2.00, 0.00, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, '000000', -1, '0', NULL, 2, -1, '2026-07-08 16:08:52', -1, '2026-07-08 17:35:13', 0.000000, 0.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (2074767659994353665, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, 200001, NULL, NULL, NULL, NULL, NULL, NULL, 3.00, 0.00, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, '000000', -1, '0', NULL, 3, -1, '2026-07-08 16:08:52', -1, '2026-07-10 10:11:41', 0.000000, 0.0000, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_material_stock_tx
@@ -4222,6 +4238,9 @@ INSERT INTO `wm_material_stock_tx` VALUES (2074767660036296705, 'PRODUCTION_IN',
 INSERT INTO `wm_material_stock_tx` VALUES (2074789392528871426, 'PRODUCTION_ISSUE', 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2074789392361099265, NULL, 2074789392457568257, 2074389221097783297, -1, 1.00, 3.00, 2.00, '2026-07-08 17:35:14', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', 0.000000, 0.0000);
 INSERT INTO `wm_material_stock_tx` VALUES (2074789392663089153, 'PRODUCTION_ISSUE', 1, 'IF20251016004', '钢板', NULL, '3', '吨', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2074789392361099265, NULL, 2074789392621146114, 1001, -1, 1.53, 500.00, 498.47, '2026-07-08 17:35:14', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', 0.000000, 0.0000);
 INSERT INTO `wm_material_stock_tx` VALUES (2074789392843444225, 'PRODUCTION_IN', 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, 200001, NULL, NULL, NULL, NULL, 'PRD_WORK_ORDER', 2074786959987740674, NULL, NULL, 2074767659994353665, 1, 1.00, 1.00, 2.00, '2026-07-08 17:35:14', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '工单完工入库', '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2075402548108267521, 'PRODUCTION_ISSUE', 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2075402547844026369, NULL, 2075402548011798529, 2074389221097783297, -1, 1.00, 2.00, 1.00, '2026-07-10 10:11:41', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2075402548334759937, 'PRODUCTION_ISSUE', 1, 'IF20251016004', '钢板', NULL, '3', '吨', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2075402547844026369, NULL, 2075402548234096641, 1001, -1, 1.53, 498.47, 496.94, '2026-07-10 10:11:41', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2075402548900990977, 'PRODUCTION_IN', 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, 200001, NULL, NULL, NULL, NULL, 'PRD_WORK_ORDER', 2075397566059450369, NULL, NULL, 2074767659994353665, 1, 1.00, 2.00, 3.00, '2026-07-10 10:11:41', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '工单完工入库', '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 0.000000, 0.0000);
 
 -- ----------------------------
 -- Table structure for wm_misc_issue
@@ -4368,7 +4387,7 @@ CREATE TABLE `wm_misc_recpt_line`  (
 DROP TABLE IF EXISTS `wm_picking_rule`;
 CREATE TABLE `wm_picking_rule`  (
   `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
-  `tenant_id` bigint(20) NOT NULL COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `rule_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则编码',
   `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则名称',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID(空=全局)',
@@ -4391,9 +4410,9 @@ CREATE TABLE `wm_picking_rule`  (
 -- ----------------------------
 -- Records of wm_picking_rule
 -- ----------------------------
-INSERT INTO `wm_picking_rule` VALUES (1, 0, 'PICKING_RAW', '原材料拣货-原料仓', 2, 1, 'FIFO', 1, '0', '原材料倒冲从原料仓FIFO拣货', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
-INSERT INTO `wm_picking_rule` VALUES (2, 0, 'PICKING_DEFAULT', '默认拣货-原料仓', 2, NULL, 'FIFO', 99, '0', '通用兜底:倒冲领料从原料仓FIFO', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
-INSERT INTO `wm_picking_rule` VALUES (3, 0, 'PICKING_FASTENER', '紧固件拣货-半成品仓', 3, 10, 'FIFO', 1, '0', '紧固件库存半成品仓,FIFO拣货', NULL, NULL, '2026-07-08 14:37:54', NULL, '2026-07-08 14:37:54', '0');
+INSERT INTO `wm_picking_rule` VALUES (1, '000000', 'PICKING_RAW', '原材料拣货-原料仓', 2, 1, 'FIFO', 1, '0', '原材料倒冲从原料仓FIFO拣货', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
+INSERT INTO `wm_picking_rule` VALUES (2, '000000', 'PICKING_DEFAULT', '默认拣货-原料仓', 2, NULL, 'FIFO', 99, '0', '通用兜底:倒冲领料从原料仓FIFO', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
+INSERT INTO `wm_picking_rule` VALUES (3, '000000', 'PICKING_FASTENER', '紧固件拣货-半成品仓', 3, 10, 'FIFO', 1, '0', '紧固件库存半成品仓,FIFO拣货', NULL, NULL, '2026-07-08 14:37:54', NULL, '2026-07-08 14:37:54', '0');
 
 -- ----------------------------
 -- Table structure for wm_production_issue
@@ -4443,6 +4462,7 @@ INSERT INTO `wm_production_issue` VALUES (2074134799278313474, 'SCLL202607060003
 INSERT INTO `wm_production_issue` VALUES (2074394242308816898, 'SCLL202607070001', 2074393703705657346, 'SCGD202607070001', 2, 'WH004', '原料仓库', '2026-07-07 15:25:02', 'COMPLETED', '工单下达自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-07 15:25:02', 1, '2026-07-07 15:28:34', 'NORMAL', NULL, 'wwww', 5.0000, 29.0000);
 INSERT INTO `wm_production_issue` VALUES (2074766846383263746, 'SCLL202607080001', 2074766662588862465, 'SCGD202607080001', 2, NULL, NULL, '2026-07-08 16:05:38', 'CREATED', '工单下达自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-08 16:05:38', 1, '2026-07-08 16:05:38', 'NORMAL', NULL, NULL, NULL, NULL);
 INSERT INTO `wm_production_issue` VALUES (2074789392361099265, 'SCLL202607080002', 2074786959987740674, 'SCGD202607080002', NULL, NULL, NULL, '2026-07-08 17:35:14', 'COMPLETED', '完工倒冲领料，完工数量:1', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', 'NORMAL', NULL, NULL, NULL, NULL);
+INSERT INTO `wm_production_issue` VALUES (2075402547844026369, 'SCLL202607100001', 2075397566059450369, 'SCGD202607100001', NULL, NULL, NULL, '2026-07-10 10:11:41', 'COMPLETED', '完工倒冲领料，完工数量:1', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 'NORMAL', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_production_issue_line
@@ -4526,6 +4546,8 @@ INSERT INTO `wm_production_issue_line` VALUES (2074766846458761217, 207476684638
 INSERT INTO `wm_production_issue_line` VALUES (2074766846483927042, 2074766846383263746, NULL, NULL, NULL, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', NULL, NULL, NULL, NULL, NULL, NULL, 4.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-08 16:05:38', 1, '2026-07-08 16:05:38', 1.5000, 2.0000, 4.0000, 0.0000, 4.0000, 4.0000, 2074766194580033537, 'PENDING');
 INSERT INTO `wm_production_issue_line` VALUES (2074789392457568257, 2074789392361099265, 3, 'WH005', '半成品仓库', 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', NULL, NULL, NULL, NULL, NULL, NULL, 1.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
 INSERT INTO `wm_production_issue_line` VALUES (2074789392621146114, 2074789392361099265, 2, 'WH004', '原料仓库', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', NULL, NULL, NULL, NULL, NULL, NULL, 1.5300, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2075402548011798529, 2075402547844026369, 3, 'WH005', '半成品仓库', 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', NULL, NULL, NULL, NULL, NULL, NULL, 1.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2075402548234096641, 2075402547844026369, 2, 'WH004', '原料仓库', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', NULL, NULL, NULL, NULL, NULL, NULL, 1.5300, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
 
 -- ----------------------------
 -- Table structure for wm_production_recpt
@@ -4533,7 +4555,7 @@ INSERT INTO `wm_production_issue_line` VALUES (2074789392621146114, 207478939236
 DROP TABLE IF EXISTS `wm_production_recpt`;
 CREATE TABLE `wm_production_recpt`  (
   `recpt_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '入库ID',
-  `tenant_id` bigint(20) NOT NULL COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `recpt_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '入库单号',
   `wo_id` bigint(20) NULL DEFAULT NULL COMMENT '工单ID',
   `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单编号',
@@ -4565,14 +4587,15 @@ CREATE TABLE `wm_production_recpt`  (
   INDEX `idx_material`(`material_id`) USING BTREE,
   INDEX `idx_warehouse`(`warehouse_id`) USING BTREE,
   INDEX `idx_wm_production_recpt_batch_id`(`batch_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074153963774799874 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2075402548787744771 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of wm_production_recpt
 -- ----------------------------
-INSERT INTO `wm_production_recpt` VALUES (10001, 0, 'PR-TEST-001', 10001, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', NULL, 50.0000, 1, 'WH003', '成品仓库', 1, 'L001', '自行车库位', '2026-06-25', 'EXECUTED', '第一批50辆自行车入库', 100, 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', '0', NULL, NULL);
-INSERT INTO `wm_production_recpt` VALUES (2069684019362971650, 0, 'SCRK20260624', 2068920326621814786, 'SCGD202606220001', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', 50.0000, 1, NULL, NULL, 1, NULL, NULL, NULL, 'EXECUTED', NULL, 103, 1, '2026-06-24 15:28:18', 1, '2026-06-25 17:07:03', '0', NULL, NULL);
-INSERT INTO `wm_production_recpt` VALUES (2074153963774799873, 0, 'SCRK20260706001', 2073979191344271361, 'SCGD202607060001', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 10.0000, 1, NULL, NULL, 1, NULL, NULL, NULL, 'EXECUTED', NULL, 103, 1, '2026-07-06 23:30:16', 1, '2026-07-06 23:55:13', '0', NULL, NULL);
+INSERT INTO `wm_production_recpt` VALUES (10001, '000000', 'PR-TEST-001', 10001, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', NULL, 50.0000, 1, 'WH003', '成品仓库', 1, 'L001', '自行车库位', '2026-06-25', 'EXECUTED', '第一批50辆自行车入库', 100, 1, '2026-06-21 20:59:14', 1, '2026-07-10 12:58:22', '0', NULL, NULL);
+INSERT INTO `wm_production_recpt` VALUES (2069684019362971650, '000000', 'SCRK20260624', 2068920326621814786, 'SCGD202606220001', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', 50.0000, 1, NULL, NULL, 1, NULL, NULL, NULL, 'EXECUTED', NULL, 103, 1, '2026-06-24 15:28:18', 1, '2026-07-10 12:58:22', '0', NULL, NULL);
+INSERT INTO `wm_production_recpt` VALUES (2074153963774799873, '000000', 'SCRK20260706001', 2073979191344271361, 'SCGD202607060001', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 10.0000, 1, NULL, NULL, 1, NULL, NULL, NULL, 'EXECUTED', NULL, 103, 1, '2026-07-06 23:30:16', 1, '2026-07-10 12:58:22', '0', NULL, NULL);
+INSERT INTO `wm_production_recpt` VALUES (2075402548787744770, '000000', 'SCRK202607100001', 2075397566059450369, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, 1.0000, 1, 'WH003', '成品仓库', 200001, 'FIN-L01', '成品库位1', '2026-07-10', 'EXECUTED', '工单完工自动入库', -1, -1, '2026-07-10 10:11:41', -1, '2026-07-10 12:58:22', '0', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_putaway_rule
@@ -4580,7 +4603,7 @@ INSERT INTO `wm_production_recpt` VALUES (2074153963774799873, 0, 'SCRK202607060
 DROP TABLE IF EXISTS `wm_putaway_rule`;
 CREATE TABLE `wm_putaway_rule`  (
   `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
-  `tenant_id` bigint(20) NOT NULL COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `rule_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则编码',
   `rule_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则名称',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID(空=全局)',
@@ -4604,9 +4627,9 @@ CREATE TABLE `wm_putaway_rule`  (
 -- ----------------------------
 -- Records of wm_putaway_rule
 -- ----------------------------
-INSERT INTO `wm_putaway_rule` VALUES (1, 0, 'PUTAWAY_FINISH', '产成品上架-成品仓', 1, 3, 'NEAREST_EMPTY', 1, '0', '产成品完工入库到成品仓,就近空库位', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
-INSERT INTO `wm_putaway_rule` VALUES (2, 0, 'PUTAWAY_SEMI', '半成品上架-半成品仓', 3, 2, 'NEAREST_EMPTY', 2, '0', '半成品完工入库到半成品仓,就近空库位', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
-INSERT INTO `wm_putaway_rule` VALUES (3, 0, 'PUTAWAY_DEFAULT', '默认上架-成品仓', 1, NULL, 'NEAREST_EMPTY', 99, '0', '通用兜底:未匹配类别的成品入库到成品仓', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
+INSERT INTO `wm_putaway_rule` VALUES (1, '000000', 'PUTAWAY_FINISH', '产成品上架-成品仓', 1, 3, 'NEAREST_EMPTY', 1, '0', '产成品完工入库到成品仓,就近空库位', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
+INSERT INTO `wm_putaway_rule` VALUES (2, '000000', 'PUTAWAY_SEMI', '半成品上架-半成品仓', 3, 2, 'NEAREST_EMPTY', 2, '0', '半成品完工入库到半成品仓,就近空库位', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
+INSERT INTO `wm_putaway_rule` VALUES (3, '000000', 'PUTAWAY_DEFAULT', '默认上架-成品仓', 1, NULL, 'NEAREST_EMPTY', 99, '0', '通用兜底:未匹配类别的成品入库到成品仓', NULL, NULL, '2026-07-08 14:33:32', NULL, '2026-07-08 14:33:32', '0');
 
 -- ----------------------------
 -- Table structure for wm_sales_issue
@@ -4756,7 +4779,7 @@ CREATE TABLE `wm_sn`  (
 DROP TABLE IF EXISTS `wm_stock_alert`;
 CREATE TABLE `wm_stock_alert`  (
   `alert_id` bigint(20) NOT NULL COMMENT '预警ID',
-  `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
   `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
@@ -4790,14 +4813,14 @@ CREATE TABLE `wm_stock_alert`  (
 -- ----------------------------
 -- Records of wm_stock_alert
 -- ----------------------------
-INSERT INTO `wm_stock_alert` VALUES (2059923485663133698, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 0.0000, 10.0000, 15.0000, 45.0000, 'BELOW_MIN', 'CRITICAL', 1, '2026-05-28 17:04:12', NULL, '采购钢板', '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2059923485772185602, 0, 2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', '千克', NULL, NULL, NULL, 0.0000, 2.0000, 3.0000, 9.0000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2059923485839294466, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 0.0000, 3.0000, 4.5000, 13.5000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2063647119193014274, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 0.0000, 10.0000, 15.0000, 45.0000, 'BELOW_MIN', 'CRITICAL', 1, '2026-06-08 00:04:02', NULL, '库存状态变更，自动关闭', '0', 103, 1, '2026-06-07 23:39:49', 1, '2026-06-08 00:04:02', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2063647119255928834, 0, 2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', '千克', NULL, NULL, NULL, 0.0000, 2.0000, 3.0000, 9.0000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:39:49', 1, '2026-06-24 15:23:58', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2063647119255928835, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 0.0000, 3.0000, 4.5000, 13.5000, 'BELOW_MIN', 'CRITICAL', 1, '2026-06-24 15:23:58', NULL, '库存状态变更，自动关闭', '0', 103, 1, '2026-06-07 23:39:49', 1, '2026-06-24 15:23:58', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2063651383273455617, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 1392.2100, 10.0000, 15.0000, 45.0000, 'ABOVE_MAX', 'INFO', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:56:45', 1, '2026-06-24 15:23:58', NULL);
-INSERT INTO `wm_stock_alert` VALUES (2069682931637338114, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 50.0000, 3.0000, 4.5000, 13.5000, 'ABOVE_MAX', 'INFO', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-24 15:23:58', 1, '2026-06-24 15:23:58', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2059923485663133698, '000000', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 0.0000, 10.0000, 15.0000, 45.0000, 'BELOW_MIN', 'CRITICAL', 1, '2026-05-28 17:04:12', NULL, '采购钢板', '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2059923485772185602, '000000', 2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', '千克', NULL, NULL, NULL, 0.0000, 2.0000, 3.0000, 9.0000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2059923485839294466, '000000', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 0.0000, 3.0000, 4.5000, 13.5000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '1', 103, 1, '2026-05-28 17:03:25', 1, '2026-06-03 15:56:31', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2063647119193014274, '000000', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 0.0000, 10.0000, 15.0000, 45.0000, 'BELOW_MIN', 'CRITICAL', 1, '2026-06-08 00:04:02', NULL, '库存状态变更，自动关闭', '0', 103, 1, '2026-06-07 23:39:49', 1, '2026-06-08 00:04:02', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2063647119255928834, '000000', 2, 'IF20251018001', '电机Y132M-4 7.5KW', '7.5KW 380V', '千克', NULL, NULL, NULL, 0.0000, 2.0000, 3.0000, 9.0000, 'BELOW_MIN', 'CRITICAL', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:39:49', 1, '2026-06-24 15:23:58', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2063647119255928835, '000000', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 0.0000, 3.0000, 4.5000, 13.5000, 'BELOW_MIN', 'CRITICAL', 1, '2026-06-24 15:23:58', NULL, '库存状态变更，自动关闭', '0', 103, 1, '2026-06-07 23:39:49', 1, '2026-06-24 15:23:58', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2063651383273455617, '000000', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', NULL, NULL, NULL, 1392.2100, 10.0000, 15.0000, 45.0000, 'ABOVE_MAX', 'INFO', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-07 23:56:45', 1, '2026-06-24 15:23:58', NULL);
+INSERT INTO `wm_stock_alert` VALUES (2069682931637338114, '000000', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', NULL, NULL, NULL, 50.0000, 3.0000, 4.5000, 13.5000, 'ABOVE_MAX', 'INFO', 0, NULL, NULL, NULL, '0', 103, 1, '2026-06-24 15:23:58', 1, '2026-06-24 15:23:58', NULL);
 
 -- ----------------------------
 -- Table structure for wm_stock_reconciliation
@@ -4805,7 +4828,7 @@ INSERT INTO `wm_stock_alert` VALUES (2069682931637338114, 0, 1001, 'IF2025111000
 DROP TABLE IF EXISTS `wm_stock_reconciliation`;
 CREATE TABLE `wm_stock_reconciliation`  (
   `recon_id` bigint(20) NOT NULL COMMENT '校验ID',
-  `tenant_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
   `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
@@ -4831,46 +4854,46 @@ CREATE TABLE `wm_stock_reconciliation`  (
 -- ----------------------------
 -- Records of wm_stock_reconciliation
 -- ----------------------------
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733977276417, 0, 1, NULL, NULL, NULL, NULL, 1500.0000, 0.0000, 1500.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859329, 0, 7, NULL, NULL, NULL, NULL, 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859330, 0, 10, NULL, NULL, NULL, NULL, 500.0000, 110.0000, 390.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859331, 0, 1001, NULL, NULL, NULL, NULL, 50.0000, 0.0000, 50.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859332, 0, 3001, NULL, NULL, NULL, NULL, 200.0000, 250.0000, -50.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859333, 0, 3002, NULL, NULL, NULL, NULL, 200.0000, 250.0000, -50.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859334, 0, 3004, NULL, NULL, NULL, NULL, 200.0000, 120.0000, 80.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069345733998247938, 0, 3005, NULL, NULL, NULL, NULL, 500.0000, 250.0000, 250.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532463697922, 0, 1, NULL, NULL, NULL, NULL, 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532472086530, 0, 7, NULL, NULL, NULL, NULL, 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280834, 0, 10, NULL, NULL, NULL, NULL, 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280835, 0, 1001, NULL, NULL, NULL, NULL, 50.0000, 0.0000, 50.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280836, 0, 3001, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280837, 0, 3002, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532480475138, 0, 3004, NULL, NULL, NULL, NULL, 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2069624532480475139, 0, 3005, NULL, NULL, NULL, NULL, 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680475746305, 0, 1, NULL, NULL, NULL, NULL, 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523521, 0, 7, NULL, NULL, NULL, NULL, 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523522, 0, 10, NULL, NULL, NULL, NULL, 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523523, 0, 1001, NULL, NULL, NULL, NULL, 100.0000, 249.0000, -149.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523524, 0, 3001, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523525, 0, 3002, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680500912129, 0, 3004, NULL, NULL, NULL, NULL, 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070066680505106434, 0, 3005, NULL, NULL, NULL, NULL, 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095807660034, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095837020161, 0, 7, 'BOLT_M12', '螺栓M12', '8.8级', '克', 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095845408769, 0, 10, 'LUBRICANT', '润滑油', 'ISO VG46', '打', 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095849603074, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', 100.0000, 249.0000, -149.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095853797378, 0, 3001, 'IF20251203004', '轮圈', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095862185986, 0, 3002, 'IF20251203005', '轮胎', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095862185987, 0, 3004, 'IF20251203007', '把管', NULL, '克', 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069095862185988, 0, 3005, 'IF20251203008', '把套', NULL, '克', 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363500724226, 0, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363513307137, 0, 7, 'BOLT_M12', '螺栓M12', '8.8级', '克', 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363517501442, 0, 10, 'LUBRICANT', '润滑油', 'ISO VG46', '打', 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363517501443, 0, 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', 100.0000, 50.0000, 50.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363517501444, 0, 3001, 'IF20251203004', '轮圈', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363525890049, 0, 3002, 'IF20251203005', '轮胎', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363525890050, 0, 3004, 'IF20251203007', '把管', NULL, '克', 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
-INSERT INTO `wm_stock_reconciliation` VALUES (2070069363525890051, 0, 3005, 'IF20251203008', '把套', NULL, '克', 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733977276417, '000000', 1, NULL, NULL, NULL, NULL, 1500.0000, 0.0000, 1500.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859329, '000000', 7, NULL, NULL, NULL, NULL, 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859330, '000000', 10, NULL, NULL, NULL, NULL, 500.0000, 110.0000, 390.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859331, '000000', 1001, NULL, NULL, NULL, NULL, 50.0000, 0.0000, 50.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859332, '000000', 3001, NULL, NULL, NULL, NULL, 200.0000, 250.0000, -50.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859333, '000000', 3002, NULL, NULL, NULL, NULL, 200.0000, 250.0000, -50.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733989859334, '000000', 3004, NULL, NULL, NULL, NULL, 200.0000, 120.0000, 80.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069345733998247938, '000000', 3005, NULL, NULL, NULL, NULL, 500.0000, 250.0000, 250.0000, 'DIFF', '2026-06-23 17:04:04', '1', 103, 1, '2026-06-23 17:04:04', 1, '2026-06-24 11:32:10', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532463697922, '000000', 1, NULL, NULL, NULL, NULL, 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532472086530, '000000', 7, NULL, NULL, NULL, NULL, 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280834, '000000', 10, NULL, NULL, NULL, NULL, 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280835, '000000', 1001, NULL, NULL, NULL, NULL, 50.0000, 0.0000, 50.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280836, '000000', 3001, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532476280837, '000000', 3002, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532480475138, '000000', 3004, NULL, NULL, NULL, NULL, 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2069624532480475139, '000000', 3005, NULL, NULL, NULL, NULL, 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-24 11:31:55', '1', 103, 1, '2026-06-24 11:31:55', 1, '2026-06-24 11:32:03', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680475746305, '000000', 1, NULL, NULL, NULL, NULL, 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523521, '000000', 7, NULL, NULL, NULL, NULL, 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523522, '000000', 10, NULL, NULL, NULL, NULL, 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523523, '000000', 1001, NULL, NULL, NULL, NULL, 100.0000, 249.0000, -149.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523524, '000000', 3001, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680492523525, '000000', 3002, NULL, NULL, NULL, NULL, 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680500912129, '000000', 3004, NULL, NULL, NULL, NULL, 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070066680505106434, '000000', 3005, NULL, NULL, NULL, NULL, 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-25 16:48:51', '1', 103, 1, '2026-06-25 16:48:51', 1, '2026-06-25 16:59:30', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095807660034, '000000', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095837020161, '000000', 7, 'BOLT_M12', '螺栓M12', '8.8级', '克', 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095845408769, '000000', 10, 'LUBRICANT', '润滑油', 'ISO VG46', '打', 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095849603074, '000000', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', 100.0000, 249.0000, -149.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095853797378, '000000', 3001, 'IF20251203004', '轮圈', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095862185986, '000000', 3002, 'IF20251203005', '轮胎', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095862185987, '000000', 3004, 'IF20251203007', '把管', NULL, '克', 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069095862185988, '000000', 3005, 'IF20251203008', '把套', NULL, '克', 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-25 16:58:27', '1', 103, 1, '2026-06-25 16:58:27', 1, '2026-06-25 16:59:27', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363500724226, '000000', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', 1392.2100, -107.7900, 1500.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363513307137, '000000', 7, 'BOLT_M12', '螺栓M12', '8.8级', '克', 5000.0000, 0.0000, 5000.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363517501442, '000000', 10, 'LUBRICANT', '润滑油', 'ISO VG46', '打', 400.0000, 10.0000, 390.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363517501443, '000000', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', '件', 100.0000, 50.0000, 50.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363517501444, '000000', 3001, 'IF20251203004', '轮圈', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363525890049, '000000', 3002, 'IF20251203005', '轮胎', NULL, '克', 0.0000, 50.0000, -50.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363525890050, '000000', 3004, 'IF20251203007', '把管', NULL, '克', 98.5000, 18.4900, 80.0100, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
+INSERT INTO `wm_stock_reconciliation` VALUES (2070069363525890051, '000000', 3005, 'IF20251203008', '把套', NULL, '克', 298.0000, 48.0000, 250.0000, 'DIFF', '2026-06-25 16:59:31', '0', 103, 1, '2026-06-25 16:59:31', 1, '2026-06-25 16:59:31', NULL);
 
 -- ----------------------------
 -- Table structure for wm_stock_taking_line

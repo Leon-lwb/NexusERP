@@ -220,7 +220,7 @@
           <el-col :span="12">
             <el-form-item label="是否冻结" prop="frozenFlag">
               <el-radio-group v-model="form.frozenFlag">
-                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
+                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :value="Number(dict.value)">{{ dict.label }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>

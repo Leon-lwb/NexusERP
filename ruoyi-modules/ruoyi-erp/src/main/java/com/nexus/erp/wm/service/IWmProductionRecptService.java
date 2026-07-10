@@ -31,8 +31,11 @@ public interface IWmProductionRecptService {
      * 在一次调用内完成"生成单据 + 过账入库"，既保留流程单据痕迹（wm_production_recpt），
      * 又执行库存增加与流水记录。完工入库的幂等由底层 ProductionCompletionStrategy 的
      * hasPosted(woId) 保证，重复调用同一工单会被跳过。
+     * <p>
+     * 单据填充：工单编号 woNo、为成品自动生成批次（batch_id/batch_code），与库存记录共用同一批次。
      *
      * @param woId          工单ID
+     * @param woNo          工单编号
      * @param materialId    物料ID
      * @param materialCode  物料编码
      * @param materialName  物料名称
@@ -47,7 +50,7 @@ public interface IWmProductionRecptService {
      * @param recptDate     入库日期
      * @return 入库单ID
      */
-    Long createAndExecute(Long woId, Long materialId, String materialCode, String materialName,
+    Long createAndExecute(Long woId, String woNo, Long materialId, String materialCode, String materialName,
                           String materialSpec, BigDecimal quantity,
                           Long warehouseId, String warehouseCode, String warehouseName,
                           Long locationId, String locationCode, String locationName,

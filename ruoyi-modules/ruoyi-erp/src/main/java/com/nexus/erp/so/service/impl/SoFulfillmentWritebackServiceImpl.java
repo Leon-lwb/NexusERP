@@ -21,12 +21,14 @@ import java.math.BigDecimal;
  * <p>
  * 采用 setSql 原子累加，规避读后写并发冲突；soLineId 为空或 qty<=0 时跳过。
  * <p>
- * 状态机驱动：累加后检查是否达到阈值，自动推进 SO 行状态：
+ * 状态机驱动（有效枚举 so_order_line_status：PENDING/SCHEDULED/PARTIALLY_FULFILLED/FULFILLED/CANCELLED）：
+ * 累加后按阈值推进 SO 行状态（状态只前进不回退）：
  * <ul>
- *   <li>production_qty >= ordered_qty -> PRODUCED（已生产）</li>
- *   <li>delivered_qty >= ordered_qty -> DELIVERED（已发货）</li>
+ *   <li>production_qty >= ordered_qty -> SCHEDULED（已排产：已投产完工，待发货）</li>
+ *   <li>0 &lt; delivered_qty &lt; ordered_qty -> PARTIALLY_FULFILLED（部分履行）</li>
+ *   <li>delivered_qty >= ordered_qty -> FULFILLED（已履行，行已发齐；与 fulfill() 按钮幂等）</li>
  * </ul>
- * PRODUCED 时发布 {@link SoLineProducedEvent}，供下游订阅（如自动创建销售出库单）。
+ * 达 SCHEDULED 时发布 {@link SoLineProducedEvent}，供下游订阅（如自动创建销售出库单）。
  *
  * @author nexus
  */
@@ -36,11 +38,11 @@ import java.math.BigDecimal;
 @Service
 public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebackService {
 
-    /** SO 行状态：已生产 */
-    private static final String LINE_STATUS_PRODUCED = "PRODUCED";
-    /** SO 行状态：已发货 */
-    private static final String LINE_STATUS_DELIVERED = "DELIVERED";
-    /** SO 行状态：已履行（终态，不可回退） */
+    /** SO 行状态：已排产/已采购（投产完工，待发货） */
+    private static final String LINE_STATUS_SCHEDULED = "SCHEDULED";
+    /** SO 行状态：部分履行（部分发货） */
+    private static final String LINE_STATUS_PARTIALLY_FULFILLED = "PARTIALLY_FULFILLED";
+    /** SO 行状态：已履行（终态，全额发货或履行按钮） */
     private static final String LINE_STATUS_FULFILLED = "FULFILLED";
 
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
@@ -60,8 +62,8 @@ public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebac
         soSalesOrderLineMapper.update(null, wrapper);
         log.info("销售出库回写SO行, soLineId={}, qty={}", soLineId, qtyStr);
 
-        // 发货数量达到订单数量时，推进行状态为 DELIVERED
-        promoteToDelivered(soLineId);
+        // 发货数量达到订单数量时，推进行状态为 FULFILLED（部分发则 PARTIALLY_FULFILLED）
+        promoteOnShipped(soLineId);
     }
 
     @Override
@@ -77,28 +79,28 @@ public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebac
         soSalesOrderLineMapper.update(null, wrapper);
         log.info("生产完工回写SO行, soLineId={}, qty={}", soLineId, qtyStr);
 
-        // 投产数量达到订单数量时，推进行状态为 PRODUCED 并发布事件
-        promoteToProduced(soLineId);
+        // 投产数量达到订单数量时，推进行状态为 SCHEDULED 并发布事件
+        promoteToScheduled(soLineId);
     }
 
     /**
-     * 投产数量达到订单数量时，推进 SO 行状态为 PRODUCED（已生产）
+     * 投产数量达到订单数量时，推进 SO 行状态为 SCHEDULED（已排产：已投产完工，待发货）
      * <p>
-     * 仅当当前状态早于 PRODUCED（null 或其他非终态）时更新，避免覆盖 DELIVERED/FULFILLED。
+     * 仅当当前状态早于 SCHEDULED（null 或其他非终态）时更新，避免覆盖 PARTIALLY_FULFILLED/FULFILLED。
      * <p>
      * 注意：不基于内存中的 productionQty 做提前返回——并发累加下 SELECT 可能为快照旧值，
      * 误判为未达阈值而跳过。改为始终执行条件 UPDATE，由 DB 级 ge(production_qty, ordered_qty)
      * 权威判定，确保并发场景下状态推进不丢失。UPDATE 返回 >0 才发布事件，保证事件恰好一次。
      */
-    private void promoteToProduced(Long soLineId) {
+    private void promoteToScheduled(Long soLineId) {
         SoSalesOrderLine line = soSalesOrderLineMapper.selectOne(
             new LambdaQueryWrapper<SoSalesOrderLine>().eq(SoSalesOrderLine::getLineId, soLineId));
         if (line == null || line.getOrderedQty() == null) {
             return;
         }
-        // 已达 PRODUCED/DELIVERED/FULFILLED 则不重复推进（状态只前进不回退）
-        if (LINE_STATUS_PRODUCED.equals(line.getLineStatus())
-            || LINE_STATUS_DELIVERED.equals(line.getLineStatus())
+        // 已达 SCHEDULED/PARTIALLY_FULFILLED/FULFILLED 则不重复推进（状态只前进不回退）
+        if (LINE_STATUS_SCHEDULED.equals(line.getLineStatus())
+            || LINE_STATUS_PARTIALLY_FULFILLED.equals(line.getLineStatus())
             || LINE_STATUS_FULFILLED.equals(line.getLineStatus())) {
             return;
         }
@@ -110,44 +112,56 @@ public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebac
                 .ge(SoSalesOrderLine::getProductionQty, line.getOrderedQty())
                 .and(w -> w.isNull(SoSalesOrderLine::getLineStatus)
                     .or().notIn(SoSalesOrderLine::getLineStatus,
-                        LINE_STATUS_PRODUCED, LINE_STATUS_DELIVERED, LINE_STATUS_FULFILLED))
-                .set(SoSalesOrderLine::getLineStatus, LINE_STATUS_PRODUCED));
+                        LINE_STATUS_SCHEDULED, LINE_STATUS_PARTIALLY_FULFILLED, LINE_STATUS_FULFILLED))
+                .set(SoSalesOrderLine::getLineStatus, LINE_STATUS_SCHEDULED));
         if (rows > 0) {
             applicationEventPublisher.publishEvent(
                 new SoLineProducedEvent(this, line.getSoId(), soLineId,
                     line.getMaterialCode(), line.getProductionQty()));
-            log.info("SO行已生产完成, soLineId={}, soId={}, productionQty={}",
+            log.info("SO行已投产完工, soLineId={}, soId={}, productionQty={}",
                 soLineId, line.getSoId(), line.getProductionQty());
         }
     }
 
     /**
-     * 发货数量达到订单数量时，推进 SO 行状态为 DELIVERED（已发货）
+     * 发货数量推进 SO 行状态：全额发货 -> FULFILLED，部分发货 -> PARTIALLY_FULFILLED
      * <p>
-     * 仅当当前状态非 DELIVERED/FULFILLED 时更新，避免覆盖终态。
-     * 与 promoteToProduced 同理：不基于内存 deliveredQty 提前返回，由 DB 级 ge() 权威判定。
+     * 仅当当前状态非 FULFILLED 时更新，避免覆盖终态。与 promoteToScheduled 同理：
+     * 不基于内存 deliveredQty 提前返回，由 DB 级 ge/gt/lt 权威判定。
+     * 先判全额（FULFILLED），未命中再判部分（PARTIALLY_FULFILLED），保证全额发货直达 FULFILLED。
      */
-    private void promoteToDelivered(Long soLineId) {
+    private void promoteOnShipped(Long soLineId) {
         SoSalesOrderLine line = soSalesOrderLineMapper.selectOne(
             new LambdaQueryWrapper<SoSalesOrderLine>().eq(SoSalesOrderLine::getLineId, soLineId));
         if (line == null || line.getOrderedQty() == null) {
             return;
         }
-        if (LINE_STATUS_DELIVERED.equals(line.getLineStatus())
-            || LINE_STATUS_FULFILLED.equals(line.getLineStatus())) {
+        if (LINE_STATUS_FULFILLED.equals(line.getLineStatus())) {
             return;
         }
+        BigDecimal orderedQty = line.getOrderedQty();
+        // 全额发货 -> FULFILLED（允许 SCHEDULED/PARTIALLY_FULFILLED 前进到 FULFILLED，已 FULFILLED 不重复）
         int rows = soSalesOrderLineMapper.update(null,
             Wrappers.<SoSalesOrderLine>lambdaUpdate()
                 .eq(SoSalesOrderLine::getLineId, soLineId)
-                .ge(SoSalesOrderLine::getDeliveredQty, line.getOrderedQty())
+                .ge(SoSalesOrderLine::getDeliveredQty, orderedQty)
+                .and(w -> w.isNull(SoSalesOrderLine::getLineStatus)
+                    .or().ne(SoSalesOrderLine::getLineStatus, LINE_STATUS_FULFILLED))
+                .set(SoSalesOrderLine::getLineStatus, LINE_STATUS_FULFILLED));
+        if (rows > 0) {
+            log.info("SO行已全额发货完成, soLineId={}, soId={}, deliveredQty={}",
+                soLineId, line.getSoId(), line.getDeliveredQty());
+            return;
+        }
+        // 部分发货 -> PARTIALLY_FULFILLED（已有发货但未达全额；已 PARTIALLY_FULFILLED/FULFILLED 不重复）
+        soSalesOrderLineMapper.update(null,
+            Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                .eq(SoSalesOrderLine::getLineId, soLineId)
+                .gt(SoSalesOrderLine::getDeliveredQty, BigDecimal.ZERO)
+                .lt(SoSalesOrderLine::getDeliveredQty, orderedQty)
                 .and(w -> w.isNull(SoSalesOrderLine::getLineStatus)
                     .or().notIn(SoSalesOrderLine::getLineStatus,
-                        LINE_STATUS_DELIVERED, LINE_STATUS_FULFILLED))
-                .set(SoSalesOrderLine::getLineStatus, LINE_STATUS_DELIVERED));
-        if (rows > 0) {
-            log.info("SO行已发货完成, soLineId={}, soId={}, deliveredQty={}",
-                soLineId, line.getSoId(), line.getDeliveredQty());
-        }
+                        LINE_STATUS_PARTIALLY_FULFILLED, LINE_STATUS_FULFILLED))
+                .set(SoSalesOrderLine::getLineStatus, LINE_STATUS_PARTIALLY_FULFILLED));
     }
 }

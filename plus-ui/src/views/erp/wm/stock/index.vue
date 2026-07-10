@@ -86,7 +86,7 @@
             <el-col :span="6">
               <el-form-item label="冻结标志" prop="frozenFlag">
                 <el-select v-model="queryParams.frozenFlag" placeholder="请选择冻结标志" clearable style="width: 100%">
-                  <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  <el-option v-for="dict in sys_true_or_false" :key="dict.value" :label="dict.label" :value="Number(dict.value)" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -117,6 +117,20 @@
           </el-col>
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
+
+        <!-- 分类筛选模式提示条 -->
+        <el-alert
+          v-if="isCategoryMode"
+          type="info"
+          show-icon
+          :closable="false"
+          :title="`按分类筛选中，共 ${total} 条（分类模式不参与分页）`"
+          style="margin-bottom: 8px"
+        >
+          <template #default>
+            <el-button link type="primary" @click="clearCategoryFilter">清除分类筛选</el-button>
+          </template>
+        </el-alert>
 
         <el-table v-loading="loading" :data="stockList" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
@@ -166,102 +180,149 @@
           </el-table-column>
         </el-table>
 
-        <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+        <pagination
+          v-show="total > 0 && !isCategoryMode"
+          :total="total"
+          v-model:page="queryParams.pageNum"
+          v-model:limit="queryParams.pageSize"
+          @pagination="getList"
+        />
 
         <!-- 添加或修改库存清单对话框 -->
         <el-dialog :title="title" v-model="open" width="960px" append-to-body>
-          <el-form ref="stockRef" :model="form" :rules="rules" label-width="80px" :disabled="isViewMode">
-            <el-form-item label="物料类型ID" prop="categoryId">
-              <el-input v-model="form.categoryId" placeholder="请输入物料类型ID" />
-            </el-form-item>
-            <el-form-item label="产品物料ID" prop="materialId">
-              <el-input v-model="form.materialId" placeholder="请输入产品物料ID" />
-            </el-form-item>
-            <el-form-item label="产品物料编码" prop="materialCode">
-              <el-input v-model="form.materialCode" placeholder="请输入产品物料编码" />
-            </el-form-item>
-            <el-form-item label="产品物料名称" prop="materialName">
-              <el-input v-model="form.materialName" placeholder="请输入产品物料名称" />
-            </el-form-item>
-            <el-form-item label="规格型号" prop="materialSpec">
-              <el-input v-model="form.materialSpec" type="textarea" placeholder="请输入内容" />
-            </el-form-item>
-            <el-form-item label="单位id" prop="baseUomId">
-              <el-input v-model="form.baseUomId" placeholder="请输入单位id" />
-            </el-form-item>
-            <el-form-item label="单位名称" prop="baseUomName">
-              <el-input v-model="form.baseUomName" placeholder="请输入单位名称" />
-            </el-form-item>
-            <el-form-item label="批次ID" prop="batchId">
-              <el-input v-model="form.batchId" placeholder="请输入批次ID" />
-            </el-form-item>
-            <el-form-item label="入库批次号" prop="batchCode">
-              <el-input v-model="form.batchCode" placeholder="请输入入库批次号" />
-            </el-form-item>
-            <el-form-item label="仓库ID" prop="warehouseId">
-              <el-input v-model="form.warehouseId" placeholder="请输入仓库ID" />
-            </el-form-item>
-            <el-form-item label="仓库编码" prop="warehouseCode">
-              <el-input v-model="form.warehouseCode" placeholder="请输入仓库编码" />
-            </el-form-item>
-            <el-form-item label="仓库名称" prop="warehouseName">
-              <el-input v-model="form.warehouseName" placeholder="请输入仓库名称" />
-            </el-form-item>
-            <el-form-item label="库区ID" prop="areaId">
-              <el-input v-model="form.areaId" placeholder="请输入库区ID" />
-            </el-form-item>
-            <el-form-item label="库区编码" prop="areaCode">
-              <el-input v-model="form.areaCode" placeholder="请输入库区编码" />
-            </el-form-item>
-            <el-form-item label="库区名称" prop="areaName">
-              <el-input v-model="form.areaName" placeholder="请输入库区名称" />
-            </el-form-item>
-            <el-form-item label="库位ID" prop="locationId">
-              <el-input v-model="form.locationId" placeholder="请输入库位ID" />
-            </el-form-item>
-            <el-form-item label="库位编码" prop="locationCode">
-              <el-input v-model="form.locationCode" placeholder="请输入库位编码" />
-            </el-form-item>
-            <el-form-item label="库位名称" prop="locationName">
-              <el-input v-model="form.locationName" placeholder="请输入库位名称" />
-            </el-form-item>
-            <el-form-item label="供应商ID" prop="vendorId">
-              <el-input v-model="form.vendorId" placeholder="请输入供应商ID" />
-            </el-form-item>
-            <el-form-item label="供应商编号" prop="vendorCode">
-              <el-input v-model="form.vendorCode" placeholder="请输入供应商编号" />
-            </el-form-item>
-            <el-form-item label="供应商名称" prop="vendorName">
-              <el-input v-model="form.vendorName" placeholder="请输入供应商名称" />
-            </el-form-item>
-            <el-form-item label="供应商简称" prop="vendorNick">
-              <el-input v-model="form.vendorNick" placeholder="请输入供应商简称" />
-            </el-form-item>
-            <el-form-item label="在库数量" prop="stockQuantity">
-              <el-input v-model="form.stockQuantity" placeholder="请输入在库数量" />
-            </el-form-item>
-            <el-form-item label="生产工单ID" prop="woId">
-              <el-input v-model="form.woId" placeholder="请输入生产工单ID" />
-            </el-form-item>
-            <el-form-item label="生产工单编号" prop="woNo">
-              <el-input v-model="form.woNo" placeholder="请输入生产工单编号" />
-            </el-form-item>
-            <el-form-item label="生产日期" prop="productionDate">
-              <el-date-picker clearable v-model="form.productionDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择生产日期">
-              </el-date-picker>
-            </el-form-item>
-            <el-form-item label="入库时间" prop="recptDate">
-              <el-date-picker clearable v-model="form.recptDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择入库时间"> </el-date-picker>
-            </el-form-item>
-            <el-form-item label="库存有效期" prop="expireDate">
-              <el-date-picker clearable v-model="form.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择库存有效期">
-              </el-date-picker>
-            </el-form-item>
-            <el-form-item label="冻结标志" prop="frozenFlag">
-              <el-radio-group v-model="form.frozenFlag">
-                <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
-              </el-radio-group>
-            </el-form-item>
+          <el-form ref="stockRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
+            <el-divider content-position="left">物料信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="产品物料" prop="materialId">
+                  <el-input v-model="form.materialCode" placeholder="请选择物料" readonly>
+                    <template #append>
+                      <el-button icon="Search" :disabled="isViewMode" @click="openMaterialSelect" />
+                    </template>
+                  </el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="物料名称">
+                  <el-input v-model="form.materialName" placeholder="选择物料后自动带出" disabled />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="规格型号">
+                  <el-input v-model="form.materialSpec" placeholder="选择物料后自动带出" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="基本单位">
+                  <el-input v-model="form.baseUomName" placeholder="选择物料后自动带出" disabled />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-divider content-position="left">库位信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="24">
+                <el-form-item label="仓库/库区/库位" prop="warehouseId">
+                  <el-cascader
+                    v-model="selectedWarehouse"
+                    :options="normalizedWarehouseTree"
+                    :props="cascaderProps"
+                    placeholder="请选择仓库 / 库区 / 库位"
+                    style="width: 100%"
+                    clearable
+                    @change="handleWarehouseChange"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-divider content-position="left">批次与供应商</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="入库批次号" prop="batchCode">
+                  <el-input v-model="form.batchCode" placeholder="请输入入库批次号" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="生产工单号" prop="woNo">
+                  <el-input v-model="form.woNo" placeholder="请输入生产工单号" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="供应商" prop="vendorId">
+                  <el-select
+                    v-model="form.vendorId"
+                    filterable
+                    remote
+                    reserve-option
+                    :remote-method="searchVendor"
+                    :loading="vendorLoading"
+                    placeholder="请输入供应商名称搜索"
+                    clearable
+                    style="width: 100%"
+                    @change="handleVendorChange"
+                  >
+                    <el-option v-for="v in vendorOptions" :key="v.vendorId" :label="v.vendorName" :value="v.vendorId" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="供应商简称" prop="vendorNick">
+                  <el-input v-model="form.vendorNick" placeholder="请输入供应商简称" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-divider content-position="left">数量与日期</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="在库数量" prop="stockQuantity">
+                  <el-input-number v-model="form.stockQuantity" :min="0" controls-position="right" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="冻结标志" prop="frozenFlag">
+                  <el-radio-group v-model="form.frozenFlag">
+                    <el-radio v-for="dict in sys_true_or_false" :key="dict.value" :value="Number(dict.value)">{{ dict.label }}</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="生产日期" prop="productionDate">
+                  <el-date-picker
+                    clearable
+                    v-model="form.productionDate"
+                    type="date"
+                    value-format="YYYY-MM-DD"
+                    placeholder="请选择"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="入库时间" prop="recptDate">
+                  <el-date-picker clearable v-model="form.recptDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择" style="width: 100%" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="库存有效期" prop="expireDate">
+                  <el-date-picker
+                    clearable
+                    v-model="form.expireDate"
+                    type="date"
+                    value-format="YYYY-MM-DD"
+                    placeholder="请选择"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
           </el-form>
           <template #footer>
             <div class="dialog-footer">
@@ -270,6 +331,9 @@
             </div>
           </template>
         </el-dialog>
+
+        <!-- 物料选择对话框 -->
+        <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelected" />
       </el-col>
     </el-row>
   </div>
@@ -277,8 +341,10 @@
 
 <script setup lang="ts" name="Stock">
 import { listStock, getStock, delStock, addStock, updateStock, getCategoryStocks } from '@/api/erp/wm/stock';
-import { getAllChildrenIds } from '@/api/erp/bd/category';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
+import { getWareHouseTree } from '@/api/erp/wm/warehouse';
+import { listVendor, getVendor } from '@/api/erp/bd/vendor';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false } = toRefs<any>(proxy.useDict('sys_true_or_false'));
@@ -293,106 +359,132 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
+
 // 分类树（共享 composable）
 const { categoryTree, categoryTreeRef, categoryFilterText, getCategoryTree, filterCategoryNode, debouncedFilter } = useCategoryTree(proxy);
+
+// 分类筛选模式：点击分类树后进入，绕过分页一次性载入该分类（含子分类）库存
+const activeCategoryId = ref<any>(null);
+const isCategoryMode = ref(false);
+
+// 物料选择弹窗
+const materialSelectRef = ref<any>(null);
+
+// 仓库树 + 级联选择
+const warehouseTree = ref<any[]>([]);
+const selectedWarehouse = ref<any>(null);
+const cascaderProps = {
+  label: 'label',
+  value: 'value',
+  children: 'children',
+  emitPath: false,
+  expandTrigger: 'hover' as const,
+  checkStrictly: true
+};
+
+// 供应商远程搜索
+const vendorOptions = ref<any[]>([]);
+const vendorLoading = ref(false);
 
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    categoryId: null,
-    materialId: null,
     materialCode: null,
     materialName: null,
-    materialSpec: null,
-    baseUomId: null,
-    baseUomName: null,
-    batchId: null,
     batchCode: null,
-    warehouseId: null,
-    warehouseCode: null,
     warehouseName: null,
-    areaId: null,
-    areaCode: null,
-    locationId: null,
-    locationCode: null,
-    vendorId: null,
-    vendorCode: null,
-    vendorNick: null,
-    stockQuantity: null,
-    woId: null,
-    productionDate: null,
     recptDate: null,
     expireDate: null,
     frozenFlag: null
   },
   rules: {
-    materialId: [{ required: true, message: '产品物料ID不能为空', trigger: 'blur' }],
-    warehouseId: [{ required: true, message: '仓库ID不能为空', trigger: 'blur' }],
+    materialId: [{ required: true, message: '产品物料不能为空', trigger: 'change' }],
+    warehouseId: [{ required: true, message: '仓库/库区/库位不能为空', trigger: 'change' }],
     frozenFlag: [{ required: true, message: '冻结标志不能为空', trigger: 'change' }]
   }
 });
 
 const { queryParams, form, rules } = toRefs(data);
 
+/** 标准化仓库树：统一 label/value 字段供 el-cascader 使用 */
+const normalizedWarehouseTree = computed(() => {
+  const convert = (nodes: any[]): any[] => {
+    if (!nodes || !Array.isArray(nodes)) return [];
+    return nodes.map((node: any) => {
+      const newNode: any = { ...node };
+      if (node.warehouseName !== undefined) {
+        newNode.label = node.warehouseName;
+        newNode.value = node.warehouseId;
+      } else if (node.areaName !== undefined) {
+        newNode.label = node.areaName;
+        newNode.value = node.areaId;
+      } else if (node.locationName !== undefined) {
+        newNode.label = node.locationName;
+        newNode.value = node.locationId;
+      } else {
+        newNode.label = node.name || node.label || node.warehouseCode || node.areaCode || node.locationCode || '未知节点';
+        newNode.value = node.id || null;
+      }
+      if (node.children && node.children.length > 0) {
+        newNode.children = convert(node.children);
+      }
+      return newNode;
+    });
+  };
+  return convert(warehouseTree.value);
+});
+
 /** 查询库存清单列表 */
 function getList() {
   loading.value = true;
-  listStock(queryParams.value).then((response: any) => {
-    stockList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+  listStock(queryParams.value)
+    .then((response: any) => {
+      stockList.value = response.rows;
+      total.value = response.total;
+    })
+    .catch(() => {
+      proxy.$modal.msgError('查询库存列表失败');
+    })
+    .finally(() => {
+      loading.value = false;
+    });
 }
 
-/** 树节点点击事件 */
-function handleNodeClick(data: any) {
-  // 传递 data.categoryId 而不是整个 data 对象
-  getAllChildrenIds(data.categoryId)
-    .then((response: any) => {
-      if (response.code === 200) {
-        // 提取所有分类的ID
-        const categoryIds = [data.categoryId];
-
-        if (response.data && Array.isArray(response.data)) {
-          response.data.forEach((id: any) => {
-            const childId = Number(id);
-            if (!isNaN(childId) && childId > 0 && !categoryIds.includes(childId)) {
-              categoryIds.push(childId);
-            }
-          });
-        }
-
-        // 使用新接口获取分类及其子分类的库存数据
-        loading.value = true;
-        getCategoryStocks(categoryIds)
-          .then((res: any) => {
-            if (res.code === 200) {
-              stockList.value = res.data.stocks || [];
-              total.value = stockList.value.length;
-            } else {
-              stockList.value = [];
-              total.value = 0;
-              proxy.$modal.msgError('获取库存数据失败');
-            }
-            loading.value = false;
-          })
-          .catch((err: any) => {
-            stockList.value = [];
-            total.value = 0;
-            loading.value = false;
-            proxy.$modal.msgError('请求出现异常');
-            console.error(err);
-          });
+/** 树节点点击事件：进入分类筛选模式，载入该分类（含子分类）全部库存 */
+function handleNodeClick(nodeData: any) {
+  activeCategoryId.value = nodeData.categoryId;
+  isCategoryMode.value = true;
+  loading.value = true;
+  // 后端 getCategoryStocks 会自动展开子分类，无需前端再调 getAllChildrenIds
+  getCategoryStocks([nodeData.categoryId])
+    .then((res: any) => {
+      if (res && res.code === 200) {
+        stockList.value = res.data?.stocks || [];
+        total.value = stockList.value.length;
       } else {
-        proxy.$modal.msgError('获取分类信息失败');
+        stockList.value = [];
+        total.value = 0;
+        proxy.$modal.msgError('获取库存数据失败');
       }
     })
-    .catch((error: any) => {
+    .catch(() => {
+      stockList.value = [];
+      total.value = 0;
       proxy.$modal.msgError('请求出现异常');
-      console.error(error);
+    })
+    .finally(() => {
+      loading.value = false;
     });
+}
+
+/** 清除分类筛选，回到分页列表 */
+function clearCategoryFilter() {
+  activeCategoryId.value = null;
+  isCategoryMode.value = false;
+  categoryTreeRef.value?.setCurrentKey(undefined);
+  handleQuery();
 }
 
 // 取消按钮
@@ -433,21 +525,18 @@ function reset() {
     productionDate: null,
     recptDate: null,
     expireDate: null,
-    frozenFlag: null,
-    attr1: null,
-    attr2: null,
-    attr3: null,
-    attr4: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null
+    frozenFlag: null
   };
+  selectedWarehouse.value = null;
+  vendorOptions.value = [];
   proxy.resetForm('stockRef');
 }
 
-/** 搜索按钮操作 */
+/** 搜索按钮操作（退出分类模式） */
 function handleQuery() {
+  isCategoryMode.value = false;
+  activeCategoryId.value = null;
+  categoryTreeRef.value?.setCurrentKey(undefined);
   queryParams.value.pageNum = 1;
   getList();
 }
@@ -455,8 +544,6 @@ function handleQuery() {
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
-  // 重置分类相关查询参数
-  queryParams.value.categoryId = null;
   handleQuery();
 }
 
@@ -467,10 +554,130 @@ function handleSelectionChange(selection: any[]) {
   multiple.value = !selection.length;
 }
 
+/** 加载仓库树（弹窗打开时调用，已加载则跳过）。返回 Promise 以便编辑回显时等待树就绪 */
+function loadWarehouseTree(): Promise<void> {
+  if (warehouseTree.value.length > 0) return Promise.resolve();
+  return getWareHouseTree()
+    .then((res: any) => {
+      warehouseTree.value = res.data || [];
+    })
+    .catch(() => {
+      proxy.$modal.msgError('加载仓库数据失败');
+    });
+}
+
+/** 在标准化仓库树中按 value 查找从根到命中节点的路径 */
+function findWarehousePath(nodes: any[], value: any): any[] {
+  for (const node of nodes || []) {
+    if (node.value === value) return [node];
+    if (node.children && node.children.length > 0) {
+      const sub = findWarehousePath(node.children, value);
+      if (sub.length) return [node, ...sub];
+    }
+  }
+  return [];
+}
+
+/** 仓库级联选择变更：按选中节点层级回填仓库/库区/库位 */
+function handleWarehouseChange(val: any) {
+  // 先清空仓库/库区/库位相关字段
+  form.value.warehouseId = null;
+  form.value.warehouseCode = null;
+  form.value.warehouseName = null;
+  form.value.areaId = null;
+  form.value.areaCode = null;
+  form.value.areaName = null;
+  form.value.locationId = null;
+  form.value.locationCode = null;
+  form.value.locationName = null;
+  if (!val) return;
+  const path = findWarehousePath(normalizedWarehouseTree.value, val);
+  const [wh, area, loc] = path;
+  if (wh) {
+    form.value.warehouseId = wh.warehouseId;
+    form.value.warehouseCode = wh.warehouseCode;
+    form.value.warehouseName = wh.warehouseName;
+  }
+  if (area) {
+    form.value.areaId = area.areaId;
+    form.value.areaCode = area.areaCode;
+    form.value.areaName = area.areaName;
+  }
+  if (loc) {
+    form.value.locationId = loc.locationId;
+    form.value.locationCode = loc.locationCode;
+    form.value.locationName = loc.locationName;
+  }
+}
+
+/** 打开物料选择对话框 */
+function openMaterialSelect() {
+  materialSelectRef.value?.open();
+}
+
+/** 物料选择回调：一次性回填物料相关字段 */
+function handleMaterialSelected(row: any) {
+  form.value.materialId = row.materialId;
+  form.value.materialCode = row.materialCode;
+  form.value.materialName = row.materialName;
+  form.value.materialSpec = row.materialSpec;
+  form.value.categoryId = row.categoryId;
+  form.value.baseUomId = row.baseUomId;
+  form.value.baseUomName = row.baseUomName;
+}
+
+/** 供应商远程搜索 */
+function searchVendor(query: string) {
+  if (!query) {
+    vendorOptions.value = [];
+    return;
+  }
+  vendorLoading.value = true;
+  listVendor({ vendorName: query, pageNum: 1, pageSize: 20 })
+    .then((r: any) => {
+      vendorOptions.value = r.rows || [];
+    })
+    .catch(() => {
+      vendorOptions.value = [];
+    })
+    .finally(() => {
+      vendorLoading.value = false;
+    });
+}
+
+/** 供应商选择变更：同步回填编码/名称 */
+function handleVendorChange(vendorId: any) {
+  const v = vendorOptions.value.find((x: any) => x.vendorId === vendorId);
+  if (v) {
+    form.value.vendorCode = v.vendorCode;
+    form.value.vendorName = v.vendorName;
+  } else {
+    form.value.vendorCode = null;
+    form.value.vendorName = null;
+  }
+}
+
+/** 编辑/查看回显：按 vendorId 预载供应商选项 */
+function loadVendorOption(vendorId: any) {
+  if (!vendorId) return;
+  getVendor(vendorId)
+    .then((r: any) => {
+      if (r.data) vendorOptions.value = [r.data];
+    })
+    .catch(() => {});
+}
+
+/** 编辑/查看回显：根据已有仓库/库区/库位还原级联选中值 */
+function restoreWarehouseSelection() {
+  const f = form.value;
+  selectedWarehouse.value = f.locationId || f.areaId || f.warehouseId || null;
+}
+
 /** 新增按钮操作 */
 function handleAdd() {
   reset();
   isViewMode.value = false;
+  loadWarehouseTree();
   open.value = true;
   title.value = '添加库存清单';
 }
@@ -480,11 +687,21 @@ function handleUpdate(row: any) {
   reset();
   isViewMode.value = false;
   const _stockId = row.stockId || ids.value;
-  getStock(_stockId).then((response: any) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改库存清单';
-  });
+  getStock(_stockId)
+    .then((response: any) => {
+      form.value = response.data;
+      loadVendorOption(form.value.vendorId);
+      // 等仓库树就绪后再还原级联选中值，确保回显正确
+      return loadWarehouseTree();
+    })
+    .then(() => {
+      restoreWarehouseSelection();
+      open.value = true;
+      title.value = '修改库存清单';
+    })
+    .catch(() => {
+      proxy.$modal.msgError('获取库存详情失败');
+    });
 }
 
 /** 查看按钮操作 */
@@ -492,11 +709,20 @@ function handleView(row: any) {
   reset();
   isViewMode.value = true;
   const _stockId = row.stockId || ids.value;
-  getStock(_stockId).then((response: any) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看库存清单';
-  });
+  getStock(_stockId)
+    .then((response: any) => {
+      form.value = response.data;
+      loadVendorOption(form.value.vendorId);
+      return loadWarehouseTree();
+    })
+    .then(() => {
+      restoreWarehouseSelection();
+      open.value = true;
+      title.value = '查看库存清单';
+    })
+    .catch(() => {
+      proxy.$modal.msgError('获取库存详情失败');
+    });
 }
 
 /** 提交按钮 */

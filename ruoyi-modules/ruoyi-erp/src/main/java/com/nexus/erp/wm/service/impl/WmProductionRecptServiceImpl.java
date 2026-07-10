@@ -13,8 +13,10 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.domain.WmProductionRecpt;
 import com.nexus.erp.wm.domain.bo.WmProductionRecptBo;
+import com.nexus.erp.wm.domain.vo.WmBatchVo;
 import com.nexus.erp.wm.domain.vo.WmProductionRecptVo;
 import com.nexus.erp.wm.mapper.WmProductionRecptMapper;
+import com.nexus.erp.wm.service.IWmBatchService;
 import com.nexus.erp.wm.service.IWmProductionRecptService;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -33,10 +35,13 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
 
     /** 生产完工入库单编码规则编码（sys_auto_code_rule.rule_code） */
     private static final String PRODUCTION_RECPT_CODE_RULE = "WM_PRODUCTION_RECPT_CODE";
+    /** 完工入库为成品自动生成批次的来源单据类型 */
+    private static final String BATCH_SOURCE_DOC_TYPE = "PRD_WORK_ORDER";
 
     private final WmProductionRecptMapper baseMapper;
     private final IWmStockOperationService stockOperationService;
     private final AutoCodeUtil autoCodeUtil;
+    private final IWmBatchService batchService;
 
     @Override
     public TableDataInfo<WmProductionRecptVo> selectPageList(WmProductionRecptBo bo, PageQuery pageQuery) {
@@ -96,17 +101,36 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
             throw new ServiceException("入库数量必须大于0");
         }
 
+        // 为成品补生成批次（若单据未携带），与库存记录共用同一批次
+        Long batchId = recpt.getBatchId();
+        String batchCode = recpt.getBatchCode();
+        if (batchId == null) {
+            WmBatchVo batch = batchService.createBatchByMaterial(recpt.getMaterialId(),
+                BATCH_SOURCE_DOC_TYPE, recpt.getWoId(), recpt.getWoNo(), recpt.getWarehouseId(), null);
+            batchId = batch.getBatchId();
+            batchCode = batch.getBatchCode();
+        }
+
+        Date now = new Date();
         stockOperationService.postProductionCompletion(
             recpt.getWoId(),
+            recpt.getWoNo(),
             recpt.getMaterialId(),
             recpt.getMaterialCode(),
             recpt.getMaterialName(),
             recpt.getQuantity(),
             recpt.getWarehouseId(),
             recpt.getLocationId(),
-            new Date()
+            batchId,
+            batchCode,
+            now
         );
 
+        // 回写单据上的批次（若本次补生成）
+        if (recpt.getBatchId() == null) {
+            recpt.setBatchId(batchId);
+            recpt.setBatchCode(batchCode);
+        }
         recpt.setStatus("EXECUTED");
         baseMapper.updateById(recpt);
         log.info("生产入库单执行完成, recptId={}", recptId);
@@ -126,7 +150,7 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long createAndExecute(Long woId, Long materialId, String materialCode, String materialName,
+    public Long createAndExecute(Long woId, String woNo, Long materialId, String materialCode, String materialName,
                                   String materialSpec, BigDecimal quantity,
                                   Long warehouseId, String warehouseCode, String warehouseName,
                                   Long locationId, String locationCode, String locationName,
@@ -143,14 +167,21 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
             return existing.get(0).getRecptId();
         }
 
+        // 为成品自动生成批次（生产入库单据留痕 + 库存记录共用同一批次）
+        WmBatchVo batch = batchService.createBatchByMaterial(materialId,
+            BATCH_SOURCE_DOC_TYPE, woId, woNo, warehouseId, null);
+
         WmProductionRecpt recpt = new WmProductionRecpt();
         recpt.setRecptCode(autoCodeUtil.genSerialCode(PRODUCTION_RECPT_CODE_RULE, null));
         recpt.setWoId(woId);
+        recpt.setWoNo(woNo);
         recpt.setMaterialId(materialId);
         recpt.setMaterialCode(materialCode);
         recpt.setMaterialName(materialName);
         recpt.setMaterialSpec(materialSpec);
         recpt.setQuantity(quantity);
+        recpt.setBatchId(batch.getBatchId());
+        recpt.setBatchCode(batch.getBatchCode());
         recpt.setWarehouseId(warehouseId);
         recpt.setWarehouseCode(warehouseCode);
         recpt.setWarehouseName(warehouseName);
@@ -165,16 +196,17 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
         // 立即过账：底层 hasPosted(woId) 保证同工单不重复入库
         try {
             stockOperationService.postProductionCompletion(
-                woId, materialId, materialCode, materialName,
-                quantity, warehouseId, locationId, recpt.getRecptDate());
+                woId, woNo, materialId, materialCode, materialName,
+                quantity, warehouseId, locationId,
+                batch.getBatchId(), batch.getBatchCode(), recpt.getRecptDate());
         } catch (Exception e) {
             log.error("生产入库单过账失败, recptId={}, woId={}", recpt.getRecptId(), woId, e);
             throw e;
         }
         recpt.setStatus("EXECUTED");
         baseMapper.updateById(recpt);
-        log.info("生产入库单自动创建并执行完成, recptId={}, recptCode={}, woId={}",
-            recpt.getRecptId(), recpt.getRecptCode(), woId);
+        log.info("生产入库单自动创建并执行完成, recptId={}, recptCode={}, woId={}, woNo={}, batchCode={}",
+            recpt.getRecptId(), recpt.getRecptCode(), woId, woNo, batch.getBatchCode());
         return recpt.getRecptId();
     }
 

@@ -60,7 +60,7 @@ public class ProductionBackflushConsumer extends BaseMessageConsumer<ProductionC
         PutawayLocation putaway = putawayStrategyService.resolvePutaway(message.getMaterialId(), message.getCompletionQty());
         // 生成生产入库单据并过账（保留流程单据痕迹，避免直接改库存导致单据缺失）
         productionRecptService.createAndExecute(
-            message.getWoId(), message.getMaterialId(), message.getMaterialCode(), message.getMaterialName(),
+            message.getWoId(), message.getWoNo(), message.getMaterialId(), message.getMaterialCode(), message.getMaterialName(),
             null, message.getCompletionQty(),
             putaway.getWarehouseId(), putaway.getWarehouseCode(), putaway.getWarehouseName(),
             putaway.getLocationId(), putaway.getLocationCode(), putaway.getLocationName(),
