@@ -13,18 +13,18 @@
 | 文档 | Week | 类型 | 主题 |
 |------|------|------|------|
 | [2026-06-16-mes-iot-phase-plan.md](./plans/2026-06-16-mes-iot-phase-plan.md) | — | 总计划 | MES Phase 1-3 + IoT 阶段一总规划 |
-| [2026-06-16-mes-week17-implementation-report.md](./plans/2026-06-16-mes-week17-implementation-report.md) | 17 | report | 模块骨架 |
-| [2026-06-17-mes-week18-implementation-plan.md](./plans/2026-06-17-mes-week18-implementation-plan.md) | 18 | plan | ERP 桥接 + 工单全链路 |
-| [2026-06-17-mes-week19-implementation-plan.md](./plans/2026-06-17-mes-week19-implementation-plan.md) | 19 | plan | 主数据前端 + Flowable 审批 |
-| [2026-06-18-mes-week20-implementation-plan.md](./plans/2026-06-18-mes-week20-implementation-plan.md) | 20 | plan | 流转卡引擎 + Phase 1 收尾 |
-| [2026-06-19-mes-week21-implementation-plan.md](./plans/2026-06-19-mes-week21-implementation-plan.md) | 21 | plan | 前端补全 + 菜单清理 |
+| [2026-06-16-mes-week17-implementation-report.md](./plans/archive/2026-06-16-mes-week17-implementation-report.md) | 17 | report | 模块骨架 |
+| [2026-06-17-mes-week18-implementation-plan.md](./plans/archive/2026-06-17-mes-week18-implementation-plan.md) | 18 | plan | ERP 桥接 + 工单全链路 |
+| [2026-06-17-mes-week19-implementation-plan.md](./plans/archive/2026-06-17-mes-week19-implementation-plan.md) | 19 | plan | 主数据前端 + Flowable 审批 |
+| [2026-06-18-mes-week20-implementation-plan.md](./plans/archive/2026-06-18-mes-week20-implementation-plan.md) | 20 | plan | 流转卡引擎 + Phase 1 收尾 |
+| [2026-06-19-mes-week21-implementation-plan.md](./plans/archive/2026-06-19-mes-week21-implementation-plan.md) | 21 | plan | 前端补全 + 菜单清理 |
 | [2026-06-19-mes-week21-verification-report.md](./plans/2026-06-19-mes-week21-verification-report.md) | 21 | report | Phase 1 静态验证 |
-| [2026-06-20-mes-week22-implementation-plan.md](./plans/2026-06-20-mes-week22-implementation-plan.md) | 22 | plan | 派工引擎 |
-| [2026-06-21-mes-week23-implementation-plan.md](./plans/2026-06-21-mes-week23-implementation-plan.md) | 23 | plan | 安灯系统 |
-| [2026-06-22-mes-week24-implementation-plan.md](./plans/2026-06-22-mes-week24-implementation-plan.md) | 24 | plan | SN 追溯 |
-| [2026-06-23-mes-week25-implementation-plan.md](./plans/2026-06-23-mes-week25-implementation-plan.md) | 25 | plan | 质量管理 |
-| [2026-06-24-mes-week26-implementation-plan.md](./plans/2026-06-24-mes-week26-implementation-plan.md) | 26 | plan | 设备管理 |
-| [2026-06-25-mes-week27-implementation-plan.md](./plans/2026-06-25-mes-week27-implementation-plan.md) | 27 | plan | 数据采集 + SPC（Phase 3 收尾） |
+| [2026-06-20-mes-week22-implementation-plan.md](./plans/archive/2026-06-20-mes-week22-implementation-plan.md) | 22 | plan | 派工引擎 |
+| [2026-06-21-mes-week23-implementation-plan.md](./plans/archive/2026-06-21-mes-week23-implementation-plan.md) | 23 | plan | 安灯系统 |
+| [2026-06-22-mes-week24-implementation-plan.md](./plans/archive/2026-06-22-mes-week24-implementation-plan.md) | 24 | plan | SN 追溯 |
+| [2026-06-23-mes-week25-implementation-plan.md](./plans/archive/2026-06-23-mes-week25-implementation-plan.md) | 25 | plan | 质量管理 |
+| [2026-06-24-mes-week26-implementation-plan.md](./plans/archive/2026-06-24-mes-week26-implementation-plan.md) | 26 | plan | 设备管理 |
+| [2026-06-25-mes-week27-implementation-plan.md](./plans/archive/2026-06-25-mes-week27-implementation-plan.md) | 27 | plan | 数据采集 + SPC（Phase 3 收尾） |
 
 ### SQL 脚本（sql/）
 命名规范：`mes-weekNN-<序号>-<名称>.sql`，序号 01-09 业务表 DDL，10+ 菜单/流程配置。

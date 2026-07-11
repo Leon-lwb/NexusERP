@@ -7,7 +7,7 @@
 > **MES↔IoT 未打通**: IoT→MES REST 查询（契约就绪，MES 侧未调用）、设备双向软关联查询、IoT 自动采集归档到 dc_data_record。详见 §二十一。
 > 后续升级方案：[NexusERP 三模块共同升级方案](NexusERP_三模块共同升级方案.md)
 >
-> 参考实施计划：[IoT 阶段一 Week 33 开发计划](./plans/2026-06-12-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](./plans/2026-06-13-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](./plans/2026-06-14-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](./plans/2026-06-15-iot-week36-plan.md)
+> 参考实施计划：[IoT 阶段一 Week 33 开发计划](./plans/archive/2026-06-12-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](./plans/archive/2026-06-13-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](./plans/archive/2026-06-14-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](./plans/archive/2026-06-15-iot-week36-plan.md)
 >
 > **数据采集归属**: IoT负责自动设备采集（MQTT/传感器数据），MES负责手工/业务采集（质检、工序录入）。
 > IoT采集的数据写入 `iot_device_data`，MES的 `dc_collection_point` 通过 `point_type=AUTO` 关联IoT设备。

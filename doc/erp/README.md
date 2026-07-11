@@ -16,7 +16,7 @@
 ### 实施计划（plans/）
 | 文档 | 编号 | 主题 | 日期 |
 |------|------|------|------|
-| [2026-06-30-erp-wm-3d-warehouse-plan.md](./plans/2026-06-30-erp-wm-3d-warehouse-plan.md) | NexusERP-PLAN-2026-003 | 仓储管理（wm）3D 可视化仓库实施计划 | 2026-06-30 |
+| [2026-06-30-erp-wm-3d-warehouse-plan.md](./plans/archive/2026-06-30-erp-wm-3d-warehouse-plan.md) | NexusERP-PLAN-2026-003 | 仓储管理（wm）3D 可视化仓库实施计划 | 2026-06-30 |
 
 ### SQL 脚本（sql/）
 | 脚本 | 用途 | 幂等 | 执行顺序 |

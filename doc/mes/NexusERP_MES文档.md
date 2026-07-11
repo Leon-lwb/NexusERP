@@ -1527,18 +1527,18 @@ TransactionSynchronizationManager.registerSynchronization(new TransactionSynchro
 | 文件 | 内容 |
 |------|------|
 | `doc/mes/plans/2026-06-16-mes-iot-phase-plan.md` | Phase 1~3 + IoT 总计划 |
-| `doc/mes/plans/2026-06-16-mes-week17-implementation-report.md` | Week17 模块骨架 |
-| `doc/mes/plans/2026-06-17-mes-week18-implementation-plan.md` | Week18 主数据桥接 |
-| `doc/mes/plans/2026-06-17-mes-week19-implementation-plan.md` | Week19 MES工单+MQ |
-| `doc/mes/plans/2026-06-18-mes-week20-implementation-plan.md` | Week20 流转卡引擎 |
-| `doc/mes/plans/2026-06-19-mes-week21-implementation-plan.md` | Week21 Phase1前端收尾 |
+| `doc/mes/plans/archive/2026-06-16-mes-week17-implementation-report.md` | Week17 模块骨架 |
+| `doc/mes/plans/archive/2026-06-17-mes-week18-implementation-plan.md` | Week18 主数据桥接 |
+| `doc/mes/plans/archive/2026-06-17-mes-week19-implementation-plan.md` | Week19 MES工单+MQ |
+| `doc/mes/plans/archive/2026-06-18-mes-week20-implementation-plan.md` | Week20 流转卡引擎 |
+| `doc/mes/plans/archive/2026-06-19-mes-week21-implementation-plan.md` | Week21 Phase1前端收尾 |
 | `doc/mes/plans/2026-06-19-mes-week21-verification-report.md` | Week21 验证报告 |
-| `doc/mes/plans/2026-06-20-mes-week22-implementation-plan.md` | Week22 派工引擎 |
-| `doc/mes/plans/2026-06-21-mes-week23-implementation-plan.md` | Week23 安灯系统 |
-| `doc/mes/plans/2026-06-22-mes-week24-implementation-plan.md` | Week24 SN追溯 |
-| `doc/mes/plans/2026-06-23-mes-week25-implementation-plan.md` | Week25 质量管理+MQ贯通 |
-| `doc/mes/plans/2026-06-24-mes-week26-implementation-plan.md` | Week26 设备管理 |
-| `doc/mes/plans/2026-06-25-mes-week27-implementation-plan.md` | Week27 数据采集+SPC |
+| `doc/mes/plans/archive/2026-06-20-mes-week22-implementation-plan.md` | Week22 派工引擎 |
+| `doc/mes/plans/archive/2026-06-21-mes-week23-implementation-plan.md` | Week23 安灯系统 |
+| `doc/mes/plans/archive/2026-06-22-mes-week24-implementation-plan.md` | Week24 SN追溯 |
+| `doc/mes/plans/archive/2026-06-23-mes-week25-implementation-plan.md` | Week25 质量管理+MQ贯通 |
+| `doc/mes/plans/archive/2026-06-24-mes-week26-implementation-plan.md` | Week26 设备管理 |
+| `doc/mes/plans/archive/2026-06-25-mes-week27-implementation-plan.md` | Week27 数据采集+SPC |
 
 ---
 

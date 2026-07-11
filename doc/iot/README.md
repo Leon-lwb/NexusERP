@@ -14,10 +14,10 @@
 ### 周计划（plans/）
 | 文档 | Week | 主题 |
 |------|------|------|
-| [2026-06-12-iot-week33-plan.md](./plans/2026-06-12-iot-week33-plan.md) | Week 33 | 模块可编译 + 3 表 DDL + Moquette Broker + 产品/设备 CRUD |
-| [2026-06-13-iot-week34-plan.md](./plans/2026-06-13-iot-week34-plan.md) | Week 34 | 数据管道（MQTT→Redis Stream→MySQL+缓存+告警） |
-| [2026-06-14-iot-week35-plan.md](./plans/2026-06-14-iot-week35-plan.md) | Week 35 | REST 端点 + SSE + 前端 CRUD + 4 字典 |
-| [2026-06-15-iot-week36-plan.md](./plans/2026-06-15-iot-week36-plan.md) | Week 36 | ECharts 仪表盘 + SnailJob + 真实设备联调 |
+| [2026-06-12-iot-week33-plan.md](./plans/archive/2026-06-12-iot-week33-plan.md) | Week 33 | 模块可编译 + 3 表 DDL + Moquette Broker + 产品/设备 CRUD |
+| [2026-06-13-iot-week34-plan.md](./plans/archive/2026-06-13-iot-week34-plan.md) | Week 34 | 数据管道（MQTT→Redis Stream→MySQL+缓存+告警） |
+| [2026-06-14-iot-week35-plan.md](./plans/archive/2026-06-14-iot-week35-plan.md) | Week 35 | REST 端点 + SSE + 前端 CRUD + 4 字典 |
+| [2026-06-15-iot-week36-plan.md](./plans/archive/2026-06-15-iot-week36-plan.md) | Week 36 | ECharts 仪表盘 + SnailJob + 真实设备联调 |
 
 ### SQL 脚本（sql/）
 | 脚本 | 用途 |
