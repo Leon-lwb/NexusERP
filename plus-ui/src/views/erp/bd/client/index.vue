@@ -71,9 +71,9 @@
       <el-table-column label="客户LOGO" align="center" prop="clientLogo">
         <template #default="scope">
           <el-image
-            v-if="scope.row.clientLogo"
-            :src="getFullImageUrl(scope.row.clientLogo)"
-            :preview-src-list="[getFullImageUrl(scope.row.clientLogo)]"
+            v-if="scope.row.clientLogoUrl"
+            :src="scope.row.clientLogoUrl"
+            :preview-src-list="[scope.row.clientLogoUrl]"
             preview-teleported
             fit="cover"
             class="logo-image"
@@ -100,8 +100,8 @@
             <el-row>
               <el-col :span="8">
                 <el-form-item label="客户编码" prop="clientCode">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <el-input v-model="form.clientCode" placeholder="请输入客户编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                  <div style="display: flex; align-items: center; gap: 10px">
+                    <el-input v-model="form.clientCode" placeholder="请输入客户编码" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                     <el-switch
                       v-model="autoGenFlag"
                       active-color="#13ce66"
@@ -272,57 +272,7 @@
               </el-col>
               <el-col :span="12">
                 <el-form-item label="客户LOGO" prop="clientLogo">
-                  <div class="logo-upload-container">
-                    <!-- 查看模式下显示静态图片 -->
-                    <div v-if="isViewMode" class="logo-preview-view">
-                      <el-image
-                        v-if="form.clientLogo"
-                        :src="getFullImageUrl(form.clientLogo)"
-                        :preview-src-list="[getFullImageUrl(form.clientLogo)]"
-                        preview-teleported
-                        fit="cover"
-                        class="logo-image-preview"
-                      />
-                      <div v-else class="no-logo">暂无LOGO</div>
-                    </div>
-                    <!-- 编辑模式下显示上传组件 -->
-                    <div v-else class="logo-upload-edit">
-                      <!-- 优化后的单图片上传组件 -->
-                      <div class="single-logo-upload">
-                        <!-- 如果已有图片，显示图片预览 -->
-                        <div v-if="form.clientLogo" class="logo-preview-existing">
-                          <el-image
-                            :src="getFullImageUrl(form.clientLogo)"
-                            :preview-src-list="[getFullImageUrl(form.clientLogo)]"
-                            preview-teleported
-                            fit="cover"
-                            class="logo-image-preview"
-                          />
-                          <el-button type="danger" icon="Delete" size="small" @click="removeLogo" circle class="remove-btn" />
-                        </div>
-                        <!-- 如果没有图片，显示上传区域 -->
-                        <div v-else class="logo-upload-area">
-                          <el-upload
-                            class="logo-uploader"
-                            :action="uploadUrl"
-                            :http-request="handleLogoUpload"
-                            :before-upload="beforeLogoUpload"
-                            :on-success="handleLogoSuccess"
-                            :on-error="handleLogoError"
-                            :show-file-list="false"
-                            accept="image/jpeg,image/png"
-                            drag
-                          >
-                            <i class="el-icon-upload"></i>
-                            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-                            <template v-slot:tip>
-                              <div class="el-upload__tip">只能上传jpg/png文件，且不超过5MB</div>
-                            </template>
-                          </el-upload>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <client-logo-upload v-model="form.clientLogo" :url="form.clientLogoUrl" :disabled="isViewMode" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -417,9 +367,8 @@
 import { listClient, getClient, addClient, updateClient, delClient } from '@/api/erp/bd/client';
 import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
-import request from '@/utils/request';
-import { getToken } from '@/utils/auth';
 import { getProvinces, getNextLevel } from '@/api/system/area';
+import ClientLogoUpload from './ClientLogoUpload.vue';
 
 const { proxy } = getCurrentInstance();
 const { bd_client_type } = toRefs<any>(proxy.useDict('bd_client_type'));
@@ -436,12 +385,6 @@ const title = ref('');
 const autoGenFlag = ref(false);
 const activeTab = ref('basic');
 const isViewMode = ref(false); // 标识是否为查看模式
-
-// 添加logo上传相关数据
-const uploadUrl = ref('/erp/bd/client/uploadLogo');
-
-// 添加 baseURL
-const baseURL = 'http://localhost';
 
 const data = reactive({
   form: {},
@@ -476,9 +419,6 @@ const streetOptions = ref([]);
 
 const { queryParams, form, rules } = toRefs(data);
 
-const dialogImageUrl = ref('');
-const dialogVisible = ref(false);
-
 /** 查询客户信息列表 */
 function getList() {
   loading.value = true;
@@ -506,6 +446,7 @@ function reset() {
     clientDesc: null,
     clientType: null,
     clientLogo: null,
+    clientLogoUrl: null,
     address: null,
     webSite: null,
     email: null,
@@ -654,94 +595,6 @@ function handleView(row) {
     open.value = true;
     title.value = '查看客户信息';
   });
-}
-
-// 添加图片路径处理方法
-function getFullImageUrl(url) {
-  if (!url) return '';
-  // 如果已经是完整URL，直接返回
-  if (url.startsWith('http')) {
-    return url;
-  }
-  // 如果是相对路径，拼接基础URL
-  if (url.startsWith('/')) {
-    return baseURL + '/dev-api' + url;
-  }
-  // 如果是profile开头的路径，拼接基础URL
-  if (url.startsWith('profile')) {
-    return baseURL + '/dev-api/' + url;
-  }
-  return baseURL + '/dev-api/' + url;
-}
-
-// 优化后的logo上传相关方法 - 修改为5MB限制
-function beforeLogoUpload(file) {
-  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
-  const isLt5M = file.size / 1024 / 1024 < 5;
-
-  if (!isJPG) {
-    proxy.$modal.msgError('上传头像图片只能是 JPG/PNG 格式!');
-    return false;
-  }
-  if (!isLt5M) {
-    proxy.$modal.msgError('上传头像图片大小不能超过 5MB!');
-    return false;
-  }
-  return true;
-}
-
-// 自定义上传方法
-function handleLogoUpload(option) {
-  const formData = new FormData();
-  formData.append('file', option.file);
-  formData.append('clientId', form.value.clientId || 0);
-
-  const headers = {
-    'Authorization': 'Bearer ' + getToken()
-  };
-
-  request({
-    method: 'post',
-    url: '/erp/bd/client/uploadLogo',
-    data: formData,
-    headers: {
-      ...headers,
-      'Content-Type': 'multipart/form-data'
-    }
-  })
-    .then((response) => {
-      option.onSuccess(response);
-    })
-    .catch((error) => {
-      option.onError(error);
-    });
-}
-
-// 处理上传成功回调
-function handleLogoSuccess(response, file) {
-  if (response.code === 200) {
-    if (response.filePath) {
-      // 处理返回的文件路径
-      if (response.filePath.startsWith('http')) {
-        const url = new URL(response.filePath);
-        form.value.clientLogo = url.pathname;
-      } else {
-        form.value.clientLogo = response.filePath;
-      }
-    }
-    proxy.$modal.msgSuccess('上传成功');
-  } else {
-    proxy.$modal.msgError(response.msg || '上传失败');
-  }
-}
-
-function handleLogoError(error) {
-  proxy.$modal.msgError('上传失败: ' + (error.message || '未知错误'));
-}
-
-// 移除logo
-function removeLogo() {
-  form.value.clientLogo = null;
 }
 
 /** 提交按钮 */
@@ -979,99 +832,5 @@ getList();
   width: 40px;
   height: 40px;
   border-radius: 4px;
-}
-
-/* 优化后的单图片上传样式 */
-.single-logo-upload {
-  width: 100%;
-}
-
-.logo-preview-existing {
-  position: relative;
-  display: inline-block;
-  width: 120px;
-  height: 120px;
-}
-
-.logo-preview-existing .logo-image-preview {
-  width: 120px;
-  height: 120px;
-  border-radius: 6px;
-}
-
-.remove-btn {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-}
-
-.logo-upload-area {
-  width: 120px;
-  height: 120px;
-}
-
-.logo-uploader :deep(.el-upload) {
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  width: 120px;
-  height: 120px;
-}
-
-.logo-uploader :deep(.el-upload:hover) {
-  border-color: #409EFF;
-}
-
-.logo-uploader :deep(.el-upload-dragger) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  background-color: #fff;
-}
-
-.logo-uploader :deep(.el-upload-dragger .el-icon-upload) {
-  font-size: 28px;
-  color: #8c939d;
-  margin-bottom: 8px;
-}
-
-.logo-uploader :deep(.el-upload__text) {
-  font-size: 12px;
-  color: #606266;
-}
-
-.logo-uploader :deep(.el-upload__text em) {
-  color: #409EFF;
-  font-style: normal;
-}
-
-.logo-uploader :deep(.el-upload__tip) {
-  font-size: 12px;
-  color: #606266;
-  margin-top: 7px;
-  text-align: center;
-}
-
-.logo-preview-view {
-  min-height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
-  background-color: #f5f7fa;
-}
-
-.no-logo {
-  color: #909399;
-  font-size: 14px;
-}
-
-.logo-upload-edit {
-  position: relative;
 }
 </style>

@@ -4,6 +4,8 @@ import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import com.nexus.common.translation.annotation.Translation;
+import com.nexus.common.translation.constant.TransConstant;
 import com.nexus.erp.bd.domain.BdClient;
 
 import java.io.Serial;
@@ -66,10 +68,15 @@ public class BdClientVo implements Serializable {
     private String clientType;
 
     /**
-     * 客户LOGO
+     * 客户LOGO（OSS对象ID）
      */
-    @ExcelProperty(value = "客户LOGO")
     private String clientLogo;
+
+    /**
+     * 客户LOGO访问地址（由 clientLogo 翻译；私有桶返回临时签名URL）
+     */
+    @Translation(type = TransConstant.OSS_ID_TO_URL, mapper = "clientLogo")
+    private String clientLogoUrl;
 
     /**
      * 客户默认送货地点
