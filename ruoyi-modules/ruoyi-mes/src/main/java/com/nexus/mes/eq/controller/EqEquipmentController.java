@@ -12,11 +12,17 @@ import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
+import com.nexus.mes.common.bridge.IMesErpBridgeService;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.nexus.common.excel.utils.ExcelUtil;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * MES设备台账 Controller
@@ -30,6 +36,7 @@ import java.util.Map;
 public class EqEquipmentController extends BaseController {
 
     private final IEqEquipmentService eqEquipmentService;
+    private final IMesErpBridgeService mesErpBridgeService;
 
     /**
      * 分页查询设备台账列表
@@ -118,6 +125,40 @@ public class EqEquipmentController extends BaseController {
     public R<Void> submitInspection(@PathVariable Long equipmentId,
                                     @Validated @RequestBody InspectionResultBo bo) {
         return toAjax(eqEquipmentService.submitInspection(equipmentId, bo));
+    }
+
+    /**
+     * 批量查询设备 IoT 在线状态(消除前端逐行 N+1 HTTP 请求)
+     */
+    @SaCheckPermission("mes:eq:equipment:query")
+    @GetMapping("/batchIotStatus")
+    public R<Map<Long, String>> batchIotStatus(@RequestParam String equipmentIds) {
+        List<Long> ids = Arrays.stream(equipmentIds.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(Long::valueOf)
+            .collect(Collectors.toList());
+        return R.ok(eqEquipmentService.batchIotStatus(ids));
+    }
+
+    /**
+     * 查询 ERP 工作中心列表(供设备表单工作中心选择器使用)
+     */
+    @SaCheckPermission("mes:eq:equipment:query")
+    @GetMapping("/workcenters")
+    public R<List<Map<String, Object>>> listWorkcenters(@RequestParam(required = false) String keyword) {
+        return R.ok(mesErpBridgeService.listWorkstations(keyword));
+    }
+
+    /**
+     * 导出设备台账数据
+     */
+    @SaCheckPermission("mes:eq:equipment:export")
+    @Log(title = "设备台账", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(EqEquipmentBo bo, HttpServletResponse response) {
+        List<EqEquipmentVo> list = eqEquipmentService.selectList(bo);
+        ExcelUtil.exportExcel(list, "设备台账", EqEquipmentVo.class, response);
     }
 
     @Data

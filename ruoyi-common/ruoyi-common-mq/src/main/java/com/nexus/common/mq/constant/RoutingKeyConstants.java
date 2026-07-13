@@ -25,4 +25,6 @@ public interface RoutingKeyConstants {
     /** ERP 收货审批通过 -> MES 自动创建 IQC */
     String MES_IQC_CREATE = "mes.iqc.create";
     String DELAY_ORDER_TIMEOUT = "delay.order.timeout";
+    /** MES 设备状态变更路由键 */
+    String MES_EQUIPMENT_STATUS = "mes.equipment.status";
 }

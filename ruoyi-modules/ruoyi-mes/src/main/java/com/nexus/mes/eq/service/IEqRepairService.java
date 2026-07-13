@@ -6,6 +6,7 @@ import com.nexus.mes.eq.domain.bo.EqRepairBo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * MES设备维修记录 Service 业务层接口
@@ -33,6 +34,11 @@ public interface IEqRepairService {
      * 根据ID获取维修详情
      */
     EqRepairVo selectById(Long repairId);
+
+    /**
+     * 不分页查询维修记录(导出用)
+     */
+    List<EqRepairVo> selectList(EqRepairBo bo);
 
     /**
      * 报修(新增维修单 REPORTED), 联动置设备FAULT

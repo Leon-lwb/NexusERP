@@ -14,20 +14,24 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="正常" value="NORMAL" />
-                <el-option label="保养中" value="MAINTENANCE" />
-                <el-option label="故障" value="FAULT" />
-                <el-option label="已报废" value="SCRAPPED" />
+            <el-form-item label="设备类型" prop="equipmentType">
+              <el-select v-model="queryParams.equipmentType" placeholder="请选择类型" clearable style="width: 100%">
+                <el-option v-for="d in mes_equipment_type" :key="d.value" :label="d.label" :value="d.value" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          <el-col :span="6">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option v-for="d in mes_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
+              </el-select>
             </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24" class="search-actions" style="text-align: right">
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           </el-col>
         </el-row>
       </el-form>
@@ -36,14 +40,20 @@
         <el-col :span="1.5">
           <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:eq:equipment:add']">新增设备</el-button>
         </el-col>
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:equipment:export']">导出</el-button>
+        </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
       <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
         <el-table-column label="设备编码" prop="equipmentCode" />
         <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="类型" prop="equipmentType">
-          <template #default="scope">{{ scope.row.equipmentType || '-' }}</template>
+        <el-table-column label="类型" prop="equipmentType" align="center">
+          <template #default="scope">
+            <dict-tag v-if="scope.row.equipmentType" :options="mes_equipment_type" :value="scope.row.equipmentType" />
+            <span v-else>-</span>
+          </template>
         </el-table-column>
         <el-table-column label="型号" prop="model">
           <template #default="scope">{{ scope.row.model || '-' }}</template>
@@ -54,13 +64,11 @@
         <el-table-column label="安装位置" prop="location" min-width="120" show-overflow-tooltip>
           <template #default="scope">{{ scope.row.location || '-' }}</template>
         </el-table-column>
-        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
+            <dict-tag :options="mes_equipment_status" :value="scope.row.status" />
           </template>
         </el-table-column>
-        <!-- 技术债:IoT在线状态暂无对应字典,使用硬编码 el-tag -->
         <el-table-column label="IoT 在线" align="center">
           <template #default="scope">
             <el-tag v-if="scope.row.iotStatus === 'ONLINE'" type="success" size="small">在线</el-tag>
@@ -69,7 +77,7 @@
             <el-tag v-else type="danger" size="small">未知</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button link type="primary" icon="Edit" @click="handleOpenEdit(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">编辑</el-button>
             <el-button v-if="scope.row.iotDeviceId" link type="primary" icon="View" @click="handleViewIotLatest(scope.row)">IoT数据</el-button>
@@ -83,22 +91,24 @@
     </el-card>
 
     <!-- 新增/编辑设备对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.equipmentId ? '编辑设备' : '新增设备'" width="640px" append-to-body>
-      <el-form :model="form" label-width="100px">
+    <el-dialog v-model="dialog.visible" :title="form.equipmentId ? '编辑设备' : '新增设备'" width="720px" append-to-body>
+      <el-form :model="form" label-width="100px" ref="formRef" :rules="formRules">
         <el-row :gutter="12">
           <el-col :span="12">
-            <el-form-item label="设备编码" required>
+            <el-form-item label="设备编码" prop="equipmentCode">
               <el-input v-model="form.equipmentCode" placeholder="设备编码" clearable />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="设备名称" required>
+            <el-form-item label="设备名称" prop="equipmentName">
               <el-input v-model="form.equipmentName" placeholder="设备名称" clearable />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="设备类型">
-              <el-input v-model="form.equipmentType" placeholder="设备类型" clearable />
+              <el-select v-model="form.equipmentType" placeholder="请选择类型" clearable style="width: 100%">
+                <el-option v-for="d in mes_equipment_type" :key="d.value" :label="d.label" :value="d.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -117,13 +127,32 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="工作中心ID">
-              <el-input v-model.number="form.workcenterId" placeholder="ERP bd_workstation ID" clearable />
+            <el-form-item label="工作中心">
+              <el-select
+                v-model="form.workcenterId"
+                filterable
+                remote
+                reserve-keyword
+                clearable
+                :remote-method="handleWorkcenterSearch"
+                placeholder="搜索工作中心(编码/名称)"
+                style="width: 100%"
+                @change="onWorkcenterChange"
+              >
+                <el-option
+                  v-for="w in workcenterOptions"
+                  :key="w.workstation_id"
+                  :label="w.workstation_code + ' - ' + w.workstation_name"
+                  :value="w.workstation_id"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="工作中心编码">
-              <el-input v-model="form.workcenterCode" placeholder="工作中心编码(冗余)" clearable />
+            <el-form-item label="状态">
+              <el-select v-model="form.status" placeholder="状态" style="width: 100%">
+                <el-option v-for="d in mes_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -141,34 +170,30 @@
               <el-date-picker v-model="form.warrantyDate" type="date" value-format="YYYY-MM-DD" placeholder="保修到期" style="width: 100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-select v-model="form.status" placeholder="状态" style="width: 100%">
-                <el-option label="正常" value="NORMAL" />
-                <el-option label="保养中" value="MAINTENANCE" />
-                <el-option label="故障" value="FAULT" />
-                <el-option label="已报废" value="SCRAPPED" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="IoT设备ID">
-              <el-input v-model.number="form.iotDeviceId" placeholder="预留关联IoT设备" clearable />
-            </el-form-item>
-          </el-col>
+          <!-- 点检项结构化编辑(替代 textarea JSON) -->
           <el-col :span="24">
             <el-form-item label="点检项目">
-              <el-input
-                v-model="form.inspectionItems"
-                type="textarea"
-                :rows="2"
-                placeholder='点检项目及标准JSON, 如: [{"item":"油位","standard":"正常"}]'
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="最近点检">
-              <el-input v-model="form.lastInspection" type="textarea" :rows="2" placeholder="最近一次点检结果JSON(可选)" />
+              <el-table :data="inspectionItemRows" border size="small" style="width: 100%">
+                <el-table-column label="序号" type="index" width="60" align="center" />
+                <el-table-column label="点检项目" min-width="180">
+                  <template #default="{ row }">
+                    <el-input v-model="row.item" placeholder="如:油位" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="标准" min-width="180">
+                  <template #default="{ row }">
+                    <el-input v-model="row.standard" placeholder="如:正常" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="80" align="center">
+                  <template #default="scope">
+                    <el-button link type="danger" @click="inspectionItemRows.splice(scope.$index, 1)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <el-button size="small" icon="Plus" style="margin-top: 8px" @click="inspectionItemRows.push({ item: '', standard: '' })"
+                >添加点检项</el-button
+              >
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -221,15 +246,18 @@ import {
   addEquipment,
   updateEquipment,
   delEquipment,
-  getIotStatus,
   getIotLatest,
-  updateIotDeviceLink
+  updateIotDeviceLink,
+  batchIotStatus,
+  listWorkcenters,
+  exportEquipment
 } from '@/api/mes/eq/equipment';
 import { listIotDeviceForBind } from '@/api/iot/device';
 import type { EqEquipmentVO, EqEquipmentQuery, EqEquipmentForm } from '@/api/mes/eq/equipment';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
+const { mes_equipment_status, mes_equipment_type } = toRefs<any>(proxy?.useDict('mes_equipment_status', 'mes_equipment_type'));
 
 const dataList = ref<EqEquipmentVO[]>([]);
 const loading = ref(true);
@@ -241,11 +269,23 @@ const queryParams = ref<EqEquipmentQuery>({
   pageSize: 10,
   equipmentCode: undefined,
   equipmentName: undefined,
+  equipmentType: undefined,
   status: undefined
 });
 
 const dialog = reactive({ visible: false });
+const formRef = ref();
+const formRules = {
+  equipmentCode: [{ required: true, message: '请输入设备编码', trigger: 'blur' }],
+  equipmentName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }]
+};
 const form = ref<EqEquipmentForm>({} as EqEquipmentForm);
+
+/** 点检项结构化编辑(替代 textarea JSON) */
+const inspectionItemRows = ref<{ item: string; standard: string }[]>([]);
+
+/** 工作中心选择器选项 */
+const workcenterOptions = ref<any[]>([]);
 
 const getList = async () => {
   loading.value = true;
@@ -253,7 +293,7 @@ const getList = async () => {
     const res = await listEquipment(queryParams.value);
     dataList.value = res.rows;
     total.value = res.total;
-    // 列表加载后批量查 IoT 在线状态（仅当前页）
+    // 批量查 IoT 在线状态(单次请求, 消除 N+1)
     await loadIotStatus(dataList.value);
   } finally {
     loading.value = false;
@@ -262,18 +302,35 @@ const getList = async () => {
 
 /** 批量查询当前页设备的 IoT 在线状态 */
 async function loadIotStatus(rows: EqEquipmentVO[]) {
-  for (const row of rows) {
-    if (row.iotDeviceId) {
-      try {
-        const res = await getIotStatus(row.equipmentId);
-        row.iotStatus = res.data;
-      } catch {
-        row.iotStatus = 'UNKNOWN';
+  const ids = rows.filter((r) => r.iotDeviceId).map((r) => r.equipmentId);
+  rows.forEach((r) => {
+    if (!r.iotDeviceId) r.iotStatus = 'UNBOUND';
+  });
+  if (ids.length === 0) return;
+  try {
+    const res = await batchIotStatus(ids);
+    const map = res.data || {};
+    rows.forEach((r) => {
+      if (r.iotDeviceId) {
+        r.iotStatus = map[r.equipmentId] || 'UNKNOWN';
       }
-    } else {
-      row.iotStatus = 'UNBOUND';
-    }
+    });
+  } catch {
+    rows.forEach((r) => {
+      if (r.iotDeviceId) r.iotStatus = 'UNKNOWN';
+    });
   }
+}
+
+/** 工作中心远程搜索 */
+async function handleWorkcenterSearch(query: string) {
+  const res = await listWorkcenters(query);
+  workcenterOptions.value = res.data || [];
+}
+
+function onWorkcenterChange(val: number) {
+  const w = workcenterOptions.value.find((w) => w.workstation_id === val);
+  form.value.workcenterCode = w ? w.workstation_code : '';
 }
 
 /** IoT 最新数据对话框 */
@@ -282,7 +339,6 @@ const iotLatestDialog = reactive<{ visible: boolean; data: Record<string, string
   data: {}
 });
 
-/** 查看 IoT 最新数据 */
 async function handleViewIotLatest(row: EqEquipmentVO) {
   try {
     const res = await getIotLatest(row.equipmentId);
@@ -310,7 +366,6 @@ const iotBindDialog = reactive<{
   iotDeviceList: []
 });
 
-/** 打开关联 IoT 设备对话框 */
 async function handleBindIot(row: EqEquipmentVO) {
   iotBindDialog.equipmentId = row.equipmentId;
   iotBindDialog.equipmentCode = row.equipmentCode;
@@ -326,7 +381,6 @@ async function handleBindIot(row: EqEquipmentVO) {
   iotBindDialog.visible = true;
 }
 
-/** 提交关联 IoT 设备 */
 async function submitIotBind() {
   if (!iotBindDialog.equipmentId) return;
   try {
@@ -365,10 +419,11 @@ const resetForm = () => {
     warrantyDate: undefined,
     status: 'NORMAL',
     inspectionItems: '',
-    lastInspection: '',
     iotDeviceId: undefined,
     remark: ''
   };
+  inspectionItemRows.value = [];
+  workcenterOptions.value = [];
 };
 
 const handleOpenAdd = () => {
@@ -379,14 +434,25 @@ const handleOpenAdd = () => {
 const handleOpenEdit = async (row: EqEquipmentVO) => {
   const res = await getEquipment(row.equipmentId);
   form.value = { ...res.data };
+  // 解析点检项 JSON 为结构化行
+  if (form.value.workcenterId) {
+    handleWorkcenterSearch('');
+  }
+  inspectionItemRows.value = [];
+  if (form.value.inspectionItems) {
+    try {
+      inspectionItemRows.value = JSON.parse(form.value.inspectionItems);
+    } catch {
+      inspectionItemRows.value = [];
+    }
+  }
   dialog.visible = true;
 };
 
 const submitForm = async () => {
-  if (!form.value.equipmentCode || !form.value.equipmentName) {
-    proxy?.$modal.msgWarning('设备编码和名称不能为空');
-    return;
-  }
+  await formRef.value?.validate();
+  // 序列化点检项为 JSON
+  form.value.inspectionItems = inspectionItemRows.value.length > 0 ? JSON.stringify(inspectionItemRows.value) : '';
   if (form.value.equipmentId) {
     await updateEquipment(form.value);
     proxy?.$modal.msgSuccess('编辑成功');
@@ -405,8 +471,9 @@ const handleDelete = async (row: EqEquipmentVO) => {
   getList();
 };
 
-const statusLabel = (s: string) => ({ NORMAL: '正常', MAINTENANCE: '保养中', FAULT: '故障', SCRAPPED: '已报废' })[s] || s;
-const statusTagType = (s: string) => ({ NORMAL: 'success', MAINTENANCE: 'warning', FAULT: 'danger', SCRAPPED: 'info' })[s] || 'info';
+const handleExport = () => {
+  exportEquipment(queryParams.value);
+};
 
 onMounted(() => {
   getList();
@@ -428,7 +495,7 @@ onMounted(() => {
 .list-search .el-form-item :deep(.el-date-editor) {
   width: 100%;
 }
-.list-search .search-actions :deep(.el-form-item__content) {
-  justify-content: flex-end;
+.list-search .search-actions {
+  text-align: right;
 }
 </style>

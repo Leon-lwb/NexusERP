@@ -6,6 +6,7 @@ import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,13 +54,36 @@ public interface IEqEquipmentService {
     Boolean deleteByIds(Long[] ids);
 
     /**
-     * 更新设备状态(供维修Service联动调用)
+     * 更新设备状态(供维修Service联动调用), 不改 SCRAPPED 终态
      *
      * @param equipmentId 设备ID
      * @param status      目标状态
      * @return 是否更新成功
      */
     Boolean updateStatus(Long equipmentId, String status);
+
+    /**
+     * 更新设备状态并携带变更原因, 状态实际变更时发布 MQ 事件
+     *
+     * @param equipmentId 设备ID
+     * @param status      目标状态
+     * @param reason      变更原因(可空)
+     * @return 是否更新成功
+     */
+    Boolean updateStatus(Long equipmentId, String status, String reason);
+
+    /**
+     * 批量查询设备关联的 IoT 在线状态(消除前端逐行 N+1 HTTP 请求)
+     *
+     * @param equipmentIds 设备ID列表
+     * @return equipmentId -> 在线状态(ONLINE/OFFLINE/UNKNOWN/UNBOUND)
+     */
+    Map<Long, String> batchIotStatus(List<Long> equipmentIds);
+
+    /**
+     * 不分页查询设备列表(导出用)
+     */
+    List<EqEquipmentVo> selectList(EqEquipmentBo bo);
 
     /**
      * 查询设备关联的 IoT 在线状态

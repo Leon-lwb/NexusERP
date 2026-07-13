@@ -1,4 +1,4 @@
-import request from '@/utils/request';
+import request, { download } from '@/utils/request';
 import { AxiosPromise } from 'axios';
 
 /** 保养计划视图对象 */
@@ -57,3 +57,12 @@ export const updateMaintenancePlan = (data: EqMaintenancePlanForm): AxiosPromise
 
 /** 批量删除保养计划 */
 export const delMaintenancePlan = (ids: (string | number)[]) => request({ url: `/mes/eq/maintenance-plan/${ids.join(',')}`, method: 'delete' });
+
+/** 完成保养(写入执行记录 + 推进下次保养日期) */
+export const completeMaintenancePlan = (planId: string | number, data: { content?: string; result?: string; remark?: string }): AxiosPromise<any> =>
+  request({ url: `/mes/eq/maintenance-plan/${planId}/complete`, method: 'post', data });
+
+/** 导出保养计划 */
+export const exportMaintenancePlan = (query?: EqMaintenancePlanQuery) => {
+  download('/mes/eq/maintenance-plan/export', { ...query }, `maintenance_plan_${new Date().getTime()}.xlsx`);
+};

@@ -2,8 +2,12 @@ package com.nexus.mes.eq.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.eq.domain.bo.EqMaintenanceRecordBo;
 import com.nexus.mes.eq.domain.bo.EqMaintenancePlanBo;
+import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
 import com.nexus.mes.eq.domain.vo.EqMaintenancePlanVo;
+
+import java.util.List;
 
 /**
  * MES设备保养计划 Service 业务层接口
@@ -42,6 +46,11 @@ public interface IEqMaintenancePlanService {
     EqMaintenancePlanVo selectById(Long planId);
 
     /**
+     * 不分页查询保养计划(导出用)
+     */
+    List<EqMaintenancePlanVo> selectList(EqMaintenancePlanBo bo);
+
+    /**
      * 新增保养计划(自动计算下次保养日期)
      */
     EqMaintenancePlanVo insertByBo(EqMaintenancePlanBo bo);
@@ -57,8 +66,12 @@ public interface IEqMaintenancePlanService {
     Boolean deleteByIds(Long[] ids);
 
     /**
-     * 完成保养计划: 推进 nextDate = today + cycleDays
+     * 完成保养计划: 写入保养执行记录 + 推进 nextDate = today + cycleDays,
+     * 若保养结果异常则置设备 MAINTENANCE
+     *
      * @param planId 计划ID
+     * @param bo     保养执行情况(内容/结果/备注)
+     * @return 保养执行记录
      */
-    void completePlan(Long planId);
+    EqMaintenanceRecordVo completePlan(Long planId, EqMaintenanceRecordBo bo);
 }

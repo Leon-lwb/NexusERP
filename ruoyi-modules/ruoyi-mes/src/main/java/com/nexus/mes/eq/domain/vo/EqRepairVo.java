@@ -35,6 +35,14 @@ public class EqRepairVo implements Serializable {
     /** 设备ID */
     private Long equipmentId;
 
+    /** 设备编码(联表查询填充) */
+    @ExcelProperty("设备编码")
+    private String equipmentCode;
+
+    /** 设备名称(联表查询填充) */
+    @ExcelProperty("设备名称")
+    private String equipmentName;
+
     /** 故障类型 */
     @ExcelProperty("故障类型")
     private String faultType;

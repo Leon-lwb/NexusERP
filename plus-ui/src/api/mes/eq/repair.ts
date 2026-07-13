@@ -1,4 +1,4 @@
-import request from '@/utils/request';
+import request, { download } from '@/utils/request';
 import { AxiosPromise } from 'axios';
 
 /** 维修记录视图对象 */
@@ -6,6 +6,8 @@ export interface EqRepairVO {
   repairId: number;
   repairNo: string;
   equipmentId: number;
+  equipmentCode?: string;
+  equipmentName?: string;
   faultType?: string;
   faultDesc?: string;
   reporterId?: number;
@@ -52,3 +54,8 @@ export const startRepair = (repairId: string | number) => request({ url: `/mes/e
 /** 维修完成 */
 export const completeRepair = (repairId: string | number, downtimeHours?: number, repairCost?: number, remark?: string) =>
   request({ url: `/mes/eq/repair/complete/${repairId}`, method: 'put', params: { downtimeHours, repairCost, remark } });
+
+/** 导出维修记录 */
+export const exportRepair = (query?: EqRepairQuery) => {
+  download('/mes/eq/repair/export', { ...query }, `repair_${new Date().getTime()}.xlsx`);
+};

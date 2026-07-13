@@ -4,13 +4,17 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.EqRepair;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
+import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
+import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import com.nexus.mes.eq.service.IEqRepairService;
@@ -23,6 +27,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * MES设备维修记录 Service 业务层实现
@@ -41,18 +50,31 @@ import java.util.Date;
 public class EqRepairServiceImpl implements IEqRepairService {
 
     private final EqRepairMapper baseMapper;
+    private final EqEquipmentMapper equipmentMapper;
     private final IEqEquipmentService equipmentService;
 
     @Override
     public TableDataInfo<EqRepairVo> selectPageList(EqRepairBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqRepair> lqw = buildQueryWrapper(bo);
         Page<EqRepairVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        fillEquipmentName(page.getRecords());
         return TableDataInfo.build(page);
     }
 
     @Override
     public EqRepairVo selectById(Long repairId) {
-        return baseMapper.selectVoById(repairId);
+        EqRepairVo vo = baseMapper.selectVoById(repairId);
+        if (vo != null) {
+            fillEquipmentName(List.of(vo));
+        }
+        return vo;
+    }
+
+    @Override
+    public List<EqRepairVo> selectList(EqRepairBo bo) {
+        List<EqRepairVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        fillEquipmentName(list);
+        return list;
     }
 
     /**
@@ -74,8 +96,10 @@ public class EqRepairServiceImpl implements IEqRepairService {
         log.info("新增维修单: repairId={}, repairNo={}, equipmentId={}", repair.getRepairId(), repair.getRepairNo(), repair.getEquipmentId());
 
         // 联动: 设备状态置 FAULT(SCRAPPED 终态由 updateStatus 内部跳过)
-        equipmentService.updateStatus(bo.getEquipmentId(), IEqEquipmentService.STATUS_FAULT);
-        return baseMapper.selectVoById(repair.getRepairId());
+        equipmentService.updateStatus(bo.getEquipmentId(), IEqEquipmentService.STATUS_FAULT, "故障报修");
+        EqRepairVo vo = baseMapper.selectVoById(repair.getRepairId());
+        fillEquipmentName(List.of(vo));
+        return vo;
     }
 
     /**
@@ -92,7 +116,7 @@ public class EqRepairServiceImpl implements IEqRepairService {
             .eq(EqRepair::getRepairId, repairId)
             .eq(EqRepair::getStatus, STATUS_REPORTED));
         if (rows == 0) {
-            throw new RuntimeException("维修单状态已变更, 仅已报修可开工");
+            throw new ServiceException("维修单状态已变更, 仅已报修可开工");
         }
         log.info("维修开工: repairId={}", repairId);
     }
@@ -105,10 +129,10 @@ public class EqRepairServiceImpl implements IEqRepairService {
     public void completeRepair(Long repairId, BigDecimal downtimeHours, BigDecimal repairCost, String remark) {
         EqRepair repair = baseMapper.selectById(repairId);
         if (repair == null) {
-            throw new RuntimeException("维修单不存在: " + repairId);
+            throw new ServiceException("维修单不存在: " + repairId);
         }
         if (!STATUS_REPAIRING.equals(repair.getStatus())) {
-            throw new RuntimeException("维修单状态已变更, 仅维修中可完成");
+            throw new ServiceException("维修单状态已变更, 仅维修中可完成");
         }
         Date repairEnd = new Date();
         int rows = baseMapper.update(null, Wrappers.<EqRepair>lambdaUpdate()
@@ -120,7 +144,7 @@ public class EqRepairServiceImpl implements IEqRepairService {
             .eq(EqRepair::getRepairId, repairId)
             .eq(EqRepair::getStatus, STATUS_REPAIRING));
         if (rows == 0) {
-            throw new RuntimeException("维修单状态已变更, 完成失败");
+            throw new ServiceException("维修单状态已变更, 完成失败");
         }
         log.info("维修完成: repairId={}, downtimeHours={}, repairCost={}", repairId, downtimeHours, repairCost);
 
@@ -130,7 +154,7 @@ public class EqRepairServiceImpl implements IEqRepairService {
             .in(EqRepair::getStatus, STATUS_REPORTED, STATUS_REPAIRING)
             .ne(EqRepair::getRepairId, repairId));
         if (activeCount == null || activeCount == 0) {
-            equipmentService.updateStatus(repair.getEquipmentId(), IEqEquipmentService.STATUS_NORMAL);
+            equipmentService.updateStatus(repair.getEquipmentId(), IEqEquipmentService.STATUS_NORMAL, "维修完成");
             log.info("设备无其他活跃报修, 恢复正常: equipmentId={}", repair.getEquipmentId());
         } else {
             log.info("设备仍有{}条活跃报修, 维持故障状态: equipmentId={}", activeCount, repair.getEquipmentId());
@@ -157,5 +181,30 @@ public class EqRepairServiceImpl implements IEqRepairService {
             .eq(StringUtils.isNotBlank(bo.getStatus()), EqRepair::getStatus, bo.getStatus())
             .eq(StringUtils.isNotBlank(bo.getFaultType()), EqRepair::getFaultType, bo.getFaultType())
             .orderByDesc(EqRepair::getCreateTime);
+    }
+
+    /** 批量补填设备编码/名称 */
+    private void fillEquipmentName(List<EqRepairVo> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        Set<Long> ids = records.stream()
+            .map(EqRepairVo::getEquipmentId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return;
+        }
+        List<EqEquipmentVo> eqs = equipmentMapper.selectVoList(
+            Wrappers.<EqEquipment>lambdaQuery().in(EqEquipment::getEquipmentId, ids));
+        Map<Long, EqEquipmentVo> map = eqs.stream()
+            .collect(Collectors.toMap(EqEquipmentVo::getEquipmentId, e -> e));
+        records.forEach(r -> {
+            EqEquipmentVo e = map.get(r.getEquipmentId());
+            if (e != null) {
+                r.setEquipmentCode(e.getEquipmentCode());
+                r.setEquipmentName(e.getEquipmentName());
+            }
+        });
     }
 }

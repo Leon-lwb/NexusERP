@@ -3,6 +3,7 @@ package com.nexus.mes.common.mq;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.message.EquipmentStatusMessage;
 import com.nexus.common.mq.message.IqcCompletedMessage;
 import com.nexus.common.mq.message.MesWorkOrderCompletedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
@@ -103,6 +104,44 @@ public class MesMqSendService {
         try {
             messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
                 RoutingKeyConstants.ERP_IQC_COMPLETED, msg);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    /**
+     * 异步发送设备状态变更消息(供排产/工单模块异步感知设备故障/恢复)
+     *
+     * @param equipmentId   设备ID
+     * @param equipmentCode 设备编码
+     * @param equipmentName 设备名称
+     * @param oldStatus     变更前状态
+     * @param newStatus     变更后状态
+     * @param reason        变更原因
+     * @param tenantId      租户ID
+     */
+    @Async
+    public void sendEquipmentStatus(Long equipmentId, String equipmentCode, String equipmentName,
+                                    String oldStatus, String newStatus, String reason, String tenantId) {
+        log.info("异步发送设备状态变更消息: equipmentId={}, {}->{}", equipmentId, oldStatus, newStatus);
+        EquipmentStatusMessage msg = new EquipmentStatusMessage();
+        msg.setEquipmentId(equipmentId);
+        msg.setEquipmentCode(equipmentCode);
+        msg.setEquipmentName(equipmentName);
+        msg.setOldStatus(oldStatus);
+        msg.setNewStatus(newStatus);
+        msg.setReason(reason);
+        if (tenantId != null) {
+            try {
+                msg.setTenantId(Long.parseLong(tenantId));
+            } catch (NumberFormatException e) {
+                log.warn("无效的tenantId: {}", tenantId);
+            }
+        }
+        DynamicDataSourceContextHolder.push("master");
+        try {
+            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
+                RoutingKeyConstants.MES_EQUIPMENT_STATUS, msg);
         } finally {
             DynamicDataSourceContextHolder.poll();
         }

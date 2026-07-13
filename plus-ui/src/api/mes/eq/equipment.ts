@@ -1,4 +1,4 @@
-import request from '@/utils/request';
+import request, { download } from '@/utils/request';
 import { AxiosPromise } from 'axios';
 
 /** 设备台账视图对象 */
@@ -91,3 +91,16 @@ export const listMesEquipmentForBind = (query?: any): AxiosPromise<EqEquipmentVO
 /** 更新 IoT 设备关联的 MES 设备（调用 IoT 侧接口，mesEquipmentId 传 null 表示解除关联） */
 export const updateMesEquipmentLink = (deviceId: number | string, mesEquipmentId: number | null) =>
   request({ url: `/iot/device/${deviceId}/mesLink`, method: 'put', data: { mesEquipmentId } });
+
+/** 批量查询设备 IoT 在线状态(消除前端逐行 N+1 请求) */
+export const batchIotStatus = (equipmentIds: (string | number)[]): AxiosPromise<Record<string, string>> =>
+  request({ url: '/mes/eq/equipment/batchIotStatus', method: 'get', params: { equipmentIds: equipmentIds.join(',') } });
+
+/** 查询 ERP 工作中心列表(供设备表单选择器) */
+export const listWorkcenters = (keyword?: string): AxiosPromise<any[]> =>
+  request({ url: '/mes/eq/equipment/workcenters', method: 'get', params: { keyword } });
+
+/** 导出设备台账 */
+export const exportEquipment = (query?: EqEquipmentQuery) => {
+  download('/mes/eq/equipment/export', { ...query }, `equipment_${new Date().getTime()}.xlsx`);
+};

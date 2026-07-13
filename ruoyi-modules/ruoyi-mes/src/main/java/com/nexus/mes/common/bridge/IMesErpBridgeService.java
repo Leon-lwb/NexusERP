@@ -103,4 +103,12 @@ public interface IMesErpBridgeService {
      * @return 单位名称，可能为null
      */
     String getUnitName(Long unitId);
+
+    /**
+     * 查询工作中心列表(从ERP, 供设备表单选择器使用)
+     *
+     * @param keyword 编码/名称关键字(可空)
+     * @return 工作中心列表, 每项含 workstation_id/workstation_code/workstation_name 等
+     */
+    List<Map<String, Object>> listWorkstations(String keyword);
 }

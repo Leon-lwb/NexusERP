@@ -6,11 +6,13 @@ import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.common.mapper.MesSysTenantMapper;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.EqMaintenancePlan;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
@@ -59,17 +61,35 @@ public class MaintenanceDueTask {
     private final EqMaintenancePlanMapper planMapper;
     private final EqEquipmentMapper equipmentMapper;
     private final IProAndonService andonService;
+    private final MesSysTenantMapper mesSysTenantMapper;
 
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.REMOTE.info("[保养到期任务] 开始执行");
         try {
-            // SnailJob 线程无 Sa-Token 上下文, 需注入租户上下文以让 MyBatis-Plus 租户插件正确过滤
-            Integer total = TenantHelper.dynamic(DEFAULT_TENANT_ID, this::scanAndNotify);
-            SnailJobLog.REMOTE.info("[保养到期任务] 完成, 处理 {} 条到期计划", total);
+            // 多租户: 遍历所有有效租户, 逐个注入上下文扫描(SnailJob 线程无 Sa-Token)
+            List<String> tenantIds = queryTenantIds();
+            int total = 0;
+            for (String tenantId : tenantIds) {
+                total += TenantHelper.dynamic(tenantId, this::scanAndNotify);
+            }
+            SnailJobLog.REMOTE.info("[保养到期任务] 完成, 遍历 {} 个租户, 处理 {} 条到期计划", tenantIds.size(), total);
             return ExecuteResult.success("处理 " + total + " 条到期计划");
         } catch (Exception e) {
             SnailJobLog.REMOTE.error("[保养到期任务] 失败: {}", e.getMessage());
             return ExecuteResult.failure("保养到期任务失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询所有有效租户ID(跨库查 master 的 sys_tenant); 为空时回退默认租户
+     */
+    private List<String> queryTenantIds() {
+        try {
+            DynamicDataSourceContextHolder.push("master");
+            List<String> ids = mesSysTenantMapper.selectAllTenantIds();
+            return (ids == null || ids.isEmpty()) ? List.of(DEFAULT_TENANT_ID) : ids;
+        } finally {
+            DynamicDataSourceContextHolder.poll();
         }
     }
 

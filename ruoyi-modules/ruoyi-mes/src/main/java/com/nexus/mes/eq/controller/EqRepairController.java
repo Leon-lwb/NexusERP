@@ -15,6 +15,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import com.nexus.common.excel.utils.ExcelUtil;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * MES设备维修记录 Controller
@@ -80,5 +83,16 @@ public class EqRepairController extends BaseController {
                             @RequestParam(required = false) String remark) {
         eqRepairService.completeRepair(repairId, downtimeHours, repairCost, remark);
         return R.ok();
+    }
+
+    /**
+     * 导出维修记录数据
+     */
+    @SaCheckPermission("mes:eq:repair:export")
+    @Log(title = "维修记录", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(EqRepairBo bo, HttpServletResponse response) {
+        List<EqRepairVo> list = eqRepairService.selectList(bo);
+        ExcelUtil.exportExcel(list, "维修记录", EqRepairVo.class, response);
     }
 }

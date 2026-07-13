@@ -20,6 +20,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.mes.eq.domain.EqMaintenanceRecord;
+import com.nexus.mes.eq.domain.bo.EqMaintenanceRecordBo;
+import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
+import com.nexus.mes.eq.mapper.EqMaintenanceRecordMapper;
+import com.nexus.mes.eq.service.IEqEquipmentService;
+import com.nexus.mes.eq.service.IEqMaintenanceRecordService;
 
 /**
  * MES设备保养计划 Service 业务层实现
@@ -36,6 +47,8 @@ import java.util.Arrays;
 public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
 
     private final EqMaintenancePlanMapper baseMapper;
+    private final EqMaintenanceRecordMapper maintenanceRecordMapper;
+    private final IEqEquipmentService equipmentService;
 
     @Override
     public TableDataInfo<EqMaintenancePlanVo> selectPageList(EqMaintenancePlanBo bo, PageQuery pageQuery) {
@@ -47,6 +60,11 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
     @Override
     public EqMaintenancePlanVo selectById(Long planId) {
         return baseMapper.selectVoById(planId);
+    }
+
+    @Override
+    public List<EqMaintenancePlanVo> selectList(EqMaintenancePlanBo bo) {
+        return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
     @Override
@@ -79,11 +97,11 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
     @Transactional(rollbackFor = Exception.class)
     public EqMaintenancePlanVo updateByBo(EqMaintenancePlanBo bo) {
         if (bo.getPlanId() == null) {
-            throw new RuntimeException("计划ID不能为空");
+            throw new ServiceException("计划ID不能为空");
         }
         EqMaintenancePlan plan = baseMapper.selectById(bo.getPlanId());
         if (plan == null) {
-            throw new RuntimeException("保养计划不存在: " + bo.getPlanId());
+            throw new ServiceException("保养计划不存在: " + bo.getPlanId());
         }
         plan.setPlanName(bo.getPlanName());
         plan.setEquipmentId(bo.getEquipmentId());
@@ -122,12 +140,28 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void completePlan(Long planId) {
+    public EqMaintenanceRecordVo completePlan(Long planId, EqMaintenanceRecordBo bo) {
         EqMaintenancePlan plan = baseMapper.selectById(planId);
         if (plan == null) {
-            throw new RuntimeException("保养计划不存在: " + planId);
+            throw new ServiceException("保养计划不存在: " + planId);
         }
-        // 推进 nextDate = today + cycleDays
+        // 1. 写入保养执行记录(执行人=当前用户, 执行时间=当前时间)
+        EqMaintenanceRecord record = new EqMaintenanceRecord();
+        record.setPlanId(planId);
+        record.setEquipmentId(plan.getEquipmentId());
+        record.setMaintenanceType(plan.getMaintenanceType());
+        record.setExecutorId(LoginHelper.getUserId());
+        record.setExecutorName(LoginHelper.getUsername());
+        record.setExecuteTime(new Date());
+        record.setContent(bo == null ? null : bo.getContent());
+        String result = (bo != null && StringUtils.isNotBlank(bo.getResult())) ? bo.getResult()
+            : IEqMaintenanceRecordService.RESULT_NORMAL;
+        record.setResult(result);
+        record.setRemark(bo == null ? null : bo.getRemark());
+        maintenanceRecordMapper.insert(record);
+        log.info("保养计划 {} 完成执行, recordId={}", planId, record.getRecordId());
+
+        // 2. 推进 nextDate = today + cycleDays
         Integer cycleDays = plan.getCycleDays();
         if (cycleDays == null || cycleDays <= 0) {
             cycleDays = defaultCycleDays(plan.getMaintenanceType());
@@ -142,6 +176,14 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
             .eq(EqMaintenancePlan::getPlanId, planId);
         baseMapper.update(null, wrapper);
         log.info("保养计划 {} 已完成, 推进 nextDate={}", planId, newNextDate);
+
+        // 3. 保养结果异常: 置设备 MAINTENANCE(需后续处理), 触发设备状态变更事件(P0-5)
+        if (IEqMaintenanceRecordService.RESULT_ABNORMAL.equals(result)) {
+            equipmentService.updateStatus(plan.getEquipmentId(), IEqEquipmentService.STATUS_MAINTENANCE);
+            log.info("保养结果异常, 设备置 MAINTENANCE: equipmentId={}", plan.getEquipmentId());
+        }
+
+        return maintenanceRecordMapper.selectVoById(record.getRecordId());
     }
 
     // ==================== 私有辅助方法 ====================

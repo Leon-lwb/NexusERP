@@ -62,6 +62,9 @@ public class RabbitMqInitializer {
 
         declareQueueWithDLX(QueueConstants.STOCK_ALERT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.alert.#");
 
+        // MES 设备状态变更队列(设备状态变更广播, 供排产/工单模块异步感知)
+        declareQueueWithDLX(QueueConstants.MES_EQUIPMENT_STATUS_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "mes.equipment.#");
+
         declareDelayQueue();
         declareDlxQueue();
     }

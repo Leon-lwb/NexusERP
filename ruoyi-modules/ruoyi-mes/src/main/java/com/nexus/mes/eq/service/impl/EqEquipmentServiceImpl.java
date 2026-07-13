@@ -12,6 +12,8 @@ import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
@@ -28,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +38,7 @@ import java.util.Map;
  * <p>
  * 状态: NORMAL/MAINTENANCE/FAULT/SCRAPPED
  * 新增默认 NORMAL; 状态可由维修记录联动或手动维护。
+ * 状态实际变更时通过 MesMqSendService 发布 MQ 事件, 供排产/工单模块异步感知。
  *
  * @author Nexus
  */
@@ -47,6 +51,7 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     private final EqEquipmentMapper baseMapper;
     private final IotDeviceDataQueryService iotDeviceDataQueryService;
     private final IProAndonService proAndonService;
+    private final MesMqSendService mesMqSendService;
 
     @Override
     public TableDataInfo<EqEquipmentVo> selectPageList(EqEquipmentBo bo, PageQuery pageQuery) {
@@ -61,13 +66,18 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     }
 
     @Override
+    public List<EqEquipmentVo> selectList(EqEquipmentBo bo) {
+        return baseMapper.selectVoList(buildQueryWrapper(bo));
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public EqEquipmentVo insertByBo(EqEquipmentBo bo) {
         // 校验编码唯一
         Long existCount = baseMapper.selectCount(Wrappers.<EqEquipment>lambdaQuery()
             .eq(EqEquipment::getEquipmentCode, bo.getEquipmentCode()));
         if (existCount != null && existCount > 0) {
-            throw new RuntimeException("设备编码已存在: " + bo.getEquipmentCode());
+            throw new ServiceException("设备编码已存在: " + bo.getEquipmentCode());
         }
         EqEquipment equipment = new EqEquipment();
         equipment.setEquipmentCode(bo.getEquipmentCode());
@@ -95,11 +105,11 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     @Transactional(rollbackFor = Exception.class)
     public EqEquipmentVo updateByBo(EqEquipmentBo bo) {
         if (bo.getEquipmentId() == null) {
-            throw new RuntimeException("设备ID不能为空");
+            throw new ServiceException("设备ID不能为空");
         }
         EqEquipment equipment = baseMapper.selectById(bo.getEquipmentId());
         if (equipment == null) {
-            throw new RuntimeException("设备不存在: " + bo.getEquipmentId());
+            throw new ServiceException("设备不存在: " + bo.getEquipmentId());
         }
         // 编码变更需校验唯一
         if (StringUtils.isNotBlank(bo.getEquipmentCode())
@@ -108,7 +118,7 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
                 .eq(EqEquipment::getEquipmentCode, bo.getEquipmentCode())
                 .ne(EqEquipment::getEquipmentId, bo.getEquipmentId()));
             if (existCount != null && existCount > 0) {
-                throw new RuntimeException("设备编码已存在: " + bo.getEquipmentCode());
+                throw new ServiceException("设备编码已存在: " + bo.getEquipmentCode());
             }
             equipment.setEquipmentCode(bo.getEquipmentCode());
         }
@@ -144,11 +154,21 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     }
 
     /**
-     * 更新设备状态(供维修Service联动调用), 不改 SCRAPPED 终态
+     * 更新设备状态(无原因), 委托带 reason 的重载方法
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateStatus(Long equipmentId, String status) {
+        return updateStatus(equipmentId, status, null);
+    }
+
+    /**
+     * 更新设备状态(供维修/点检/保养联动调用), 不改 SCRAPPED 终态;
+     * 状态实际变更时发布 EquipmentStatusMessage MQ 事件。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateStatus(Long equipmentId, String status, String reason) {
         if (equipmentId == null || StringUtils.isBlank(status)) {
             return false;
         }
@@ -162,9 +182,24 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             log.info("设备已报废, 跳过状态联动: equipmentId={}, target={}", equipmentId, status);
             return false;
         }
+        String oldStatus = equipment.getStatus();
+        // 状态未变化则不重复发事件
+        if (status.equals(oldStatus)) {
+            return true;
+        }
         equipment.setStatus(status);
         int rows = baseMapper.updateById(equipment);
-        log.info("设备状态联动: equipmentId={}, status={}", equipmentId, status);
+        log.info("设备状态联动: equipmentId={}, {}->{}", equipmentId, oldStatus, status);
+        if (rows > 0) {
+            // 异步发布设备状态变更 MQ 事件(不影响主事务)
+            try {
+                String tenantId = TenantHelper.getTenantId();
+                mesMqSendService.sendEquipmentStatus(equipmentId, equipment.getEquipmentCode(),
+                    equipment.getEquipmentName(), oldStatus, status, reason, tenantId);
+            } catch (Exception e) {
+                log.warn("设备状态变更事件发送失败: equipmentId={}", equipmentId, e);
+            }
+        }
         return rows > 0;
     }
 
@@ -189,6 +224,25 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     @Override
     public String getIotStatus(Long equipmentId) {
         EqEquipment eq = baseMapper.selectById(equipmentId);
+        return resolveIotStatus(eq);
+    }
+
+    @Override
+    public Map<Long, String> batchIotStatus(List<Long> equipmentIds) {
+        if (equipmentIds == null || equipmentIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        // 一次查出设备(含 iotDeviceId), 消除前端逐行 HTTP 请求
+        List<EqEquipment> eqs = baseMapper.selectByIds(equipmentIds);
+        Map<Long, String> result = new HashMap<>();
+        for (EqEquipment eq : eqs) {
+            result.put(eq.getEquipmentId(), resolveIotStatus(eq));
+        }
+        return result;
+    }
+
+    /** 解析单台设备的 IoT 在线状态 */
+    private String resolveIotStatus(EqEquipment eq) {
         if (eq == null || eq.getIotDeviceId() == null) {
             return IOT_STATUS_UNBOUND;
         }
@@ -197,7 +251,7 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             return status == null ? IOT_STATUS_UNKNOWN : status;
         } catch (Exception e) {
             log.warn("查询 IoT 设备在线状态失败: equipmentId={}, iotDeviceId={}",
-                equipmentId, eq.getIotDeviceId(), e);
+                eq.getEquipmentId(), eq.getIotDeviceId(), e);
             return IOT_STATUS_UNKNOWN;
         }
     }
@@ -264,7 +318,7 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
 
         // 3. 点检不合格: 设备状态置为 FAULT + 触发 EQUIPMENT 安灯
         if (Boolean.FALSE.equals(bo.getOverallPass())) {
-            updateStatus(equipmentId, STATUS_FAULT);
+            updateStatus(equipmentId, STATUS_FAULT, "点检不合格");
             String reason = String.format("点检不合格: 设备[%s(%s)] 不合格项[%d]项",
                 equipment.getEquipmentName(),
                 equipment.getEquipmentCode(),

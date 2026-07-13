@@ -148,4 +148,14 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
             DynamicDataSourceContextHolder.poll();
         }
     }
+
+    @Override
+    public List<Map<String, Object>> listWorkstations(String keyword) {
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            return erpWorkstationMapper.selectWorkstationList(keyword);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
 }

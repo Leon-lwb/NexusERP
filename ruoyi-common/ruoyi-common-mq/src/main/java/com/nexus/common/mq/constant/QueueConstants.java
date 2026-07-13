@@ -23,4 +23,6 @@ public interface QueueConstants {
     String MES_IQC_CREATE_QUEUE = "erp.mes.iqc.create.queue";
     String DELAY_QUEUE = "erp.delay.queue";
     String DLX_QUEUE = "erp.dlx.queue";
+    /** MES 设备状态变更队列(设备状态变更广播, 供排产/工单模块感知) */
+    String MES_EQUIPMENT_STATUS_QUEUE = "erp.mes.equipment.status.queue";
 }

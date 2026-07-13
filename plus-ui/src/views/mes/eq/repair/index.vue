@@ -9,15 +9,20 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="已报修" value="REPORTED" />
-                <el-option label="维修中" value="REPAIRING" />
-                <el-option label="已完成" value="COMPLETED" />
+            <el-form-item label="故障类型" prop="faultType">
+              <el-select v-model="queryParams.faultType" placeholder="请选择" clearable style="width: 100%">
+                <el-option v-for="d in mes_fault_type" :key="d.value" :label="d.label" :value="d.value" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6" :offset="6" class="search-actions">
+          <el-col :span="6">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+                <el-option v-for="d in mes_repair_status" :key="d.value" :label="d.label" :value="d.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" class="search-actions">
             <el-form-item>
               <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -30,19 +35,27 @@
         <el-col :span="1.5">
           <el-button type="warning" plain icon="WarnTriangleFilled" @click="handleOpenAdd" v-hasPermi="['mes:eq:repair:add']">故障报修</el-button>
         </el-col>
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:repair:export']">导出</el-button>
+        </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
       <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-        <el-table-column label="维修单号" prop="repairNo" />
-        <el-table-column label="故障类型" prop="faultType">
-          <template #default="scope">{{ scope.row.faultType || '-' }}</template>
+        <el-table-column label="维修单号" prop="repairNo" width="140" />
+        <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.equipmentName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="故障类型" prop="faultType" align="center">
+          <template #default="scope">
+            <dict-tag v-if="scope.row.faultType" :options="mes_fault_type" :value="scope.row.faultType" />
+            <span v-else>-</span>
+          </template>
         </el-table-column>
         <el-table-column label="故障描述" prop="faultDesc" min-width="120" show-overflow-tooltip />
-        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
+            <dict-tag :options="mes_repair_status" :value="scope.row.status" />
           </template>
         </el-table-column>
         <el-table-column label="报修人" prop="reporterName">
@@ -57,7 +70,7 @@
         <el-table-column label="维修成本" prop="repairCost" align="right">
           <template #default="scope">{{ scope.row.repairCost ?? '-' }}</template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
           <template #default="scope">
             <el-button
               link
@@ -72,7 +85,7 @@
               link
               type="success"
               icon="CircleCheck"
-              @click="handleComplete(scope.row)"
+              @click="handleOpenComplete(scope.row)"
               v-if="scope.row.status === 'REPAIRING'"
               v-hasPermi="['mes:eq:repair:complete']"
               >完成</el-button
@@ -86,14 +99,16 @@
 
     <!-- 故障报修对话框 -->
     <el-dialog v-model="addDialog.visible" title="故障报修" width="520px" append-to-body>
-      <el-form :model="addForm" label-width="90px">
-        <el-form-item label="设备ID" required>
-          <el-input v-model.number="addForm.equipmentId" placeholder="设备ID" clearable />
+      <el-form :model="addForm" label-width="90px" ref="addFormRef" :rules="addRules">
+        <el-form-item label="设备" prop="equipmentId">
+          <equipment-select v-model="addForm.equipmentId" />
         </el-form-item>
-        <el-form-item label="故障类型">
-          <el-input v-model="addForm.faultType" placeholder="故障类型, 如: 机械/电气/气动" clearable />
+        <el-form-item label="故障类型" prop="faultType">
+          <el-select v-model="addForm.faultType" placeholder="请选择故障类型" clearable style="width: 100%">
+            <el-option v-for="d in mes_fault_type" :key="d.value" :label="d.label" :value="d.value" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="故障描述">
+        <el-form-item label="故障描述" prop="faultDesc">
           <el-input v-model="addForm.faultDesc" type="textarea" :rows="3" placeholder="故障描述" />
         </el-form-item>
         <el-form-item label="备注">
@@ -105,14 +120,35 @@
         <el-button type="primary" @click="submitAdd">确认报修</el-button>
       </template>
     </el-dialog>
+
+    <!-- 维修完成对话框(替代原3连prompt) -->
+    <el-dialog v-model="completeDialog.visible" :title="`维修完成 - ${completeForm.repairNo}`" width="480px" append-to-body>
+      <el-form :model="completeForm" label-width="120px">
+        <el-form-item label="停机时长(小时)">
+          <el-input-number v-model="completeForm.downtimeHours" :min="0" :precision="2" :step="0.5" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="维修成本(元)">
+          <el-input-number v-model="completeForm.repairCost" :min="0" :precision="2" :step="100" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="completeForm.remark" type="textarea" :rows="3" placeholder="维修说明/备注" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="completeDialog.visible = false">取消</el-button>
+        <el-button type="primary" @click="submitComplete">确认完成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="MesEqRepair">
-import { listRepair, addRepair, startRepair, completeRepair } from '@/api/mes/eq/repair';
+import { listRepair, addRepair, startRepair, completeRepair, exportRepair } from '@/api/mes/eq/repair';
 import type { EqRepairVO, EqRepairQuery, EqRepairForm } from '@/api/mes/eq/repair';
+import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_repair_status, mes_fault_type } = toRefs<any>(proxy?.useDict('mes_repair_status', 'mes_fault_type'));
 
 const dataList = ref<EqRepairVO[]>([]);
 const loading = ref(true);
@@ -123,14 +159,28 @@ const queryParams = ref<EqRepairQuery>({
   pageNum: 1,
   pageSize: 10,
   repairNo: undefined,
-  status: undefined
+  status: undefined,
+  faultType: undefined
 });
 
 const addDialog = reactive({ visible: false });
-const addForm = reactive<EqRepairForm>({
+const addFormRef = ref();
+const addRules = {
+  equipmentId: [{ required: true, message: '请选择设备', trigger: 'change' }]
+};
+const addForm = reactive<EqRepairForm & { remark?: string }>({
   equipmentId: undefined as unknown as number,
   faultType: '',
   faultDesc: '',
+  remark: ''
+});
+
+const completeDialog = reactive({ visible: false });
+const completeForm = reactive<{ repairId: number; repairNo: string; downtimeHours: number; repairCost: number; remark: string }>({
+  repairId: 0,
+  repairNo: '',
+  downtimeHours: 0,
+  repairCost: 0,
   remark: ''
 });
 
@@ -155,6 +205,10 @@ const resetQuery = () => {
   handleQuery();
 };
 
+const handleExport = () => {
+  exportRepair(queryParams.value);
+};
+
 const handleOpenAdd = () => {
   Object.assign(addForm, {
     equipmentId: undefined as unknown as number,
@@ -166,10 +220,7 @@ const handleOpenAdd = () => {
 };
 
 const submitAdd = async () => {
-  if (!addForm.equipmentId) {
-    proxy?.$modal.msgWarning('请输入设备ID');
-    return;
-  }
+  await addFormRef.value?.validate();
   await addRepair(addForm);
   proxy?.$modal.msgSuccess('报修成功, 设备已置故障状态');
   addDialog.visible = false;
@@ -183,21 +234,21 @@ const handleStart = async (row: EqRepairVO) => {
   getList();
 };
 
-const handleComplete = async (row: EqRepairVO) => {
-  const { value: downtimeHours } = await proxy?.$modal.prompt('请输入停机时长(小时):', '维修完成 - ' + row.repairNo);
-  if (!downtimeHours || isNaN(Number(downtimeHours)) || Number(downtimeHours) < 0) {
-    proxy?.$modal.msgWarning('请输入有效的停机时长');
-    return;
-  }
-  const { value: repairCost } = await proxy?.$modal.prompt('请输入维修成本(默认0):', '维修完成 - ' + row.repairNo);
-  const { value: remark } = await proxy?.$modal.prompt('请输入备注(可选):', '维修完成 - ' + row.repairNo);
-  await completeRepair(row.repairId, Number(downtimeHours), Number(repairCost || 0), remark || undefined);
-  proxy?.$modal.msgSuccess('完成成功');
-  getList();
+const handleOpenComplete = (row: EqRepairVO) => {
+  completeForm.repairId = row.repairId;
+  completeForm.repairNo = row.repairNo;
+  completeForm.downtimeHours = 0;
+  completeForm.repairCost = 0;
+  completeForm.remark = '';
+  completeDialog.visible = true;
 };
 
-const statusLabel = (s: string) => ({ REPORTED: '已报修', REPAIRING: '维修中', COMPLETED: '已完成' })[s] || s;
-const statusTagType = (s: string) => ({ REPORTED: 'danger', REPAIRING: 'warning', COMPLETED: 'success' })[s] || 'info';
+const submitComplete = async () => {
+  await completeRepair(completeForm.repairId, completeForm.downtimeHours, completeForm.repairCost, completeForm.remark || undefined);
+  proxy?.$modal.msgSuccess('完成成功');
+  completeDialog.visible = false;
+  getList();
+};
 
 onMounted(() => {
   getList();
