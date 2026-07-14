@@ -8,6 +8,7 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.redis.utils.SequenceUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.EqRepair;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -150,29 +152,27 @@ public class EqRepairServiceImpl implements IEqRepairService {
         }
         log.info("维修完成: repairId={}, downtimeHours={}, repairCost={}", repairId, downtimeHours, repairCost);
 
-        // 联动: 校验该设备是否还有其他活跃报修(REPORTED/REPAIRING), 无则恢复 NORMAL
-        Long activeCount = baseMapper.selectCount(Wrappers.<EqRepair>lambdaQuery()
-            .eq(EqRepair::getEquipmentId, repair.getEquipmentId())
-            .in(EqRepair::getStatus, STATUS_REPORTED, STATUS_REPAIRING)
-            .ne(EqRepair::getRepairId, repairId));
-        if (activeCount == null || activeCount == 0) {
-            equipmentService.updateStatus(repair.getEquipmentId(), IEqEquipmentService.STATUS_NORMAL, "维修完成");
+        // 联动: 原子恢复设备 NORMAL(仅当该设备无其他活跃报修且非 SCRAPPED 时), 避免
+        // "查询活跃报修数 -> 更新设备状态"两步之间的 TOCTOU(完成瞬间插入新报修导致误恢复)。M3。
+        boolean restored = equipmentService.resetToNormalIfNoActiveRepair(repair.getEquipmentId());
+        if (restored) {
             log.info("设备无其他活跃报修, 恢复正常: equipmentId={}", repair.getEquipmentId());
         } else {
-            log.info("设备仍有{}条活跃报修, 维持故障状态: equipmentId={}", activeCount, repair.getEquipmentId());
+            log.info("设备仍有活跃报修或已终态, 维持当前状态: equipmentId={}", repair.getEquipmentId());
         }
     }
 
     // ==================== 私有辅助方法 ====================
 
     /**
-     * 生成维修单号: RP + yyyyMMdd + 3位序号(uk 唯一索引兜底)
+     * 生成维修单号: RP-yyyyMMdd-3位序号
+     * <p>
+     * 序号走 Redisson 原子发号器(按日 key, 次日重置), 消除 selectCount+1 在并发报修下的
+     * 序号碰撞(此前仅靠 uk 唯一索引兜底重试)。M6。
      */
     private String generateNo() {
         String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-        Long count = baseMapper.selectCount(Wrappers.<EqRepair>lambdaQuery()
-            .likeRight(EqRepair::getRepairNo, "RP-" + today));
-        int seq = (count == null ? 0 : count.intValue()) + 1;
+        long seq = SequenceUtils.getNextId("mes:eq:repair:no:" + today, Duration.ofDays(1));
         return "RP-" + today + "-" + String.format("%03d", seq);
     }
 

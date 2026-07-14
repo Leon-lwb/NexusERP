@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -194,16 +196,77 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             .eq(EqEquipment::getStatus, oldStatus));
         log.info("设备状态联动: equipmentId={}, {}->{} (rows={})", equipmentId, oldStatus, status, rows);
         if (rows > 0) {
-            // 异步发布设备状态变更 MQ 事件(不影响主事务)
+            // 事务提交后发布 MQ 事件, 避免回滚产生幻影事件(M1)
+            publishStatusEvent(equipmentId, equipment.getEquipmentCode(), equipment.getEquipmentName(),
+                oldStatus, status, reason);
+        }
+        return rows > 0;
+    }
+
+    /**
+     * 维修完成时联动恢复设备 NORMAL: 原子操作, 仅当该设备无其他活跃报修(REPORTED/REPAIRING)
+     * 且非 SCRAPPED 终态时才置 NORMAL。以单条 UPDATE + NOT EXISTS 消除"查询活跃报修数 ->
+     * 更新设备状态"两步之间的 TOCTOU(完成瞬间插入新报修导致误恢复, M3)。状态实际变更时发布 MQ 事件。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean resetToNormalIfNoActiveRepair(Long equipmentId) {
+        if (equipmentId == null) {
+            return false;
+        }
+        EqEquipment equipment = baseMapper.selectById(equipmentId);
+        if (equipment == null) {
+            log.warn("设备不存在, 跳过状态联动: equipmentId={}", equipmentId);
+            return false;
+        }
+        String oldStatus = equipment.getStatus();
+        // 已是 NORMAL 或 SCRAPPED 终态, 无需联动
+        if (STATUS_NORMAL.equals(oldStatus) || STATUS_SCRAPPED.equals(oldStatus)) {
+            return false;
+        }
+        // 原子 CAS: 仅当无其他活跃报修且非 SCRAPPED 时置 NORMAL
+        int rows = baseMapper.resetToNormalIfNoActiveRepair(equipmentId);
+        log.info("设备维修完成联动恢复: equipmentId={}, {}->NORMAL (rows={})", equipmentId, oldStatus, rows);
+        if (rows > 0) {
+            publishStatusEvent(equipmentId, equipment.getEquipmentCode(), equipment.getEquipmentName(),
+                oldStatus, STATUS_NORMAL, "维修完成");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 发布设备状态变更 MQ 事件: 注册到事务 afterCommit 回调, 仅事务提交后才发送,
+     * 避免事务回滚时已发送的幻影事件(M1)。
+     * <p>
+     * 租户ID必须在注册前捕获: afterCommit 回调与 @Async 发送线程均无法读取
+     * Sa-Token 的 ThreadLocal(WmMaterialReceiveExecutorServiceImpl 同此约束)。
+     */
+    private void publishStatusEvent(Long equipmentId, String equipmentCode, String equipmentName,
+                                   String oldStatus, String newStatus, String reason) {
+        if (equipmentId == null) {
+            return;
+        }
+        final String tenantId = TenantHelper.getTenantId();
+        Runnable send = () -> {
             try {
-                String tenantId = TenantHelper.getTenantId();
-                mesMqSendService.sendEquipmentStatus(equipmentId, equipment.getEquipmentCode(),
-                    equipment.getEquipmentName(), oldStatus, status, reason, tenantId);
+                mesMqSendService.sendEquipmentStatus(equipmentId, equipmentCode, equipmentName,
+                    oldStatus, newStatus, reason, tenantId);
             } catch (Exception e) {
                 log.warn("设备状态变更事件发送失败: equipmentId={}", equipmentId, e);
             }
+        };
+        // 有事务上下文则延迟到提交后发送; 否则直接发送(回退, 兼容无事务调用)
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    send.run();
+                }
+            });
+        } else {
+            send.run();
         }
-        return rows > 0;
     }
 
     // ==================== 私有辅助方法 ====================

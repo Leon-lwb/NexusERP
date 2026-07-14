@@ -121,4 +121,16 @@ public interface IEqEquipmentService {
      * @return 是否成功
      */
     Boolean submitInspection(Long equipmentId, InspectionResultBo bo);
+
+    /**
+     * 维修完成时联动恢复设备 NORMAL: 原子操作, 仅当该设备无其他活跃报修(REPORTED/REPAIRING)
+     * 且非 SCRAPPED 终态时才置 NORMAL。
+     * <p>
+     * 以单条 UPDATE + NOT EXISTS 消除"查询活跃报修数 -> 更新设备状态"两步之间的
+     * TOCTOU(完成瞬间插入新报修导致误恢复)。状态实际变更时发布 MQ 事件(事务提交后)。
+     *
+     * @param equipmentId 设备ID
+     * @return 是否实际恢复了 NORMAL(未恢复表示仍有活跃报修或已终态)
+     */
+    boolean resetToNormalIfNoActiveRepair(Long equipmentId);
 }

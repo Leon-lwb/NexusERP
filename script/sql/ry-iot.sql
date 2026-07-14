@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : whbuild
+ Source Server         : 本地5.7
  Source Server Type    : MySQL
- Source Server Version : 50720
+ Source Server Version : 50714 (5.7.14)
  Source Host           : localhost:3306
  Source Schema         : ry-iot
 
  Target Server Type    : MySQL
- Target Server Version : 50720
+ Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 10/07/2026 15:35:16
+ Date: 15/07/2026 00:26:21
 */
 
 SET NAMES utf8mb4;
@@ -30,7 +30,7 @@ CREATE TABLE `iot_device`  (
   `product_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品名称(冗余)',
   `protocol_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MQTT' COMMENT '协议类型: MQTT/OPC_UA/MODBUS/HTTP',
   `connection_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'OFFLINE' COMMENT '连接状态: ONLINE/OFFLINE',
-  `last_online_time` datetime(0) NULL DEFAULT NULL COMMENT '最后在线时间',
+  `last_online_time` datetime NULL DEFAULT NULL COMMENT '最后在线时间',
   `device_secret` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '设备密钥(MQTT认证)',
   `ip_address` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'IP地址',
   `firmware_version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '固件版本',
@@ -40,21 +40,21 @@ CREATE TABLE `iot_device`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`device_id`) USING BTREE,
   UNIQUE INDEX `uk_code`(`device_code`, `tenant_id`) USING BTREE,
   INDEX `idx_product`(`product_id`) USING BTREE,
   INDEX `idx_status`(`connection_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device
 -- ----------------------------
-INSERT INTO `iot_device` VALUES (1, '000000', 'CNC001-TEMP', 'CNC001温度探头', 1, '温度传感器模组', 'MQTT', 'OFFLINE', '2026-07-09 16:31:44', 'test_secret_cnc001_temp_001', '192.168.1.101', 'v2.1.0', '注塑车间#1-A区 数控车床#1', 1, 'ACTIVE', '绑定MES设备CNC-001，监测主轴温度', 100, 1, '2026-06-21 21:00:35', -1, '2026-07-09 17:03:59', '0');
+INSERT INTO `iot_device` VALUES (1, '000000', 'CNC001-TEMP', 'CNC001温度探头', 1, '温度传感器模组', 'MQTT', 'ONLINE', '2026-07-14 00:24:03', 'test_secret_cnc001_temp_001', '192.168.1.101', 'v2.1.0', '注塑车间#1-A区 数控车床#1', 1, 'ACTIVE', '绑定MES设备CNC-001，监测主轴温度', 100, 1, '2026-06-21 21:00:35', -1, '2026-07-14 00:24:03', '0');
 INSERT INTO `iot_device` VALUES (2, '000000', 'CNC001-VIB', 'CNC001振动探头', 2, '振动传感器模组', 'MQTT', 'OFFLINE', NULL, 'test_secret_cnc001_vib_002', '192.168.1.102', 'v2.0.1', '注塑车间#1-A区 数控车床#1', 1, 'ACTIVE', '绑定MES设备CNC-001，监测振动', 100, 1, '2026-06-21 21:00:35', NULL, '2026-06-21 21:00:35', '0');
 INSERT INTO `iot_device` VALUES (3, '000000', 'WELD001-TEMP', 'WELD001温度探头', 1, '温度传感器模组', 'MQTT', 'OFFLINE', NULL, 'test_secret_weld001_temp_003', '192.168.1.103', 'v2.1.0', '冲压车间#1-C区 自动焊接机#1', 3, 'ACTIVE', '绑定MES设备WELD-001，监测焊接温度', 100, 1, '2026-06-21 21:00:35', NULL, '2026-06-21 21:00:35', '0');
 INSERT INTO `iot_device` VALUES (4, '000000', 'ASM001-DIM', 'ASM001尺寸检测仪', 1, '温度传感器模组', 'MQTT', 'OFFLINE', NULL, 'test_secret_asm001_dim_004', '192.168.1.104', 'v1.5.0', '注塑车间#1-D区 装配流水线#1', 4, 'ACTIVE', '绑定MES设备ASM-001，装配尺寸检测(复用温度传感器产品类型)', 100, 1, '2026-06-21 21:00:35', NULL, '2026-06-21 21:00:35', '0');
@@ -75,16 +75,16 @@ CREATE TABLE `iot_device_data`  (
   `numeric_value` decimal(14, 4) NULL DEFAULT NULL COMMENT '数值型值',
   `text_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文本型值',
   `bool_value` tinyint(1) NULL DEFAULT NULL COMMENT '布尔型值(0/1)',
-  `collect_time` datetime(0) NOT NULL COMMENT '采集时间(设备侧)',
-  `receive_time` datetime(0) NOT NULL COMMENT '接收时间(服务端)',
+  `collect_time` datetime NOT NULL COMMENT '采集时间(设备侧)',
+  `receive_time` datetime NOT NULL COMMENT '接收时间(服务端)',
   `quality` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'GOOD' COMMENT '数据质量: GOOD/BAD/UNCERTAIN',
   `source` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MQTT' COMMENT '数据来源: MQTT/OPC_UA/MODBUS/HTTP',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`data_id`) USING BTREE,
   INDEX `idx_device_time`(`device_id`, `collect_time`) USING BTREE,
   INDEX `idx_property`(`device_id`, `property_code`, `collect_time`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备数据(原始)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备数据(原始)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_data
@@ -292,6 +292,8 @@ INSERT INTO `iot_device_data` VALUES (2075136184806219778, '000000', 1, 'CNC001-
 INSERT INTO `iot_device_data` VALUES (2075136193157079042, '000000', 1, 'CNC001-TEMP', 'temperature', NULL, 'NUMERIC', 28.0000, NULL, NULL, '2026-07-09 16:33:16', '2026-07-09 16:33:17', 'GOOD', 'MQTT', '2026-07-09 16:33:17');
 INSERT INTO `iot_device_data` VALUES (2075136197670150145, '000000', 1, 'CNC001-TEMP', 'temperature', NULL, 'NUMERIC', 28.2000, NULL, NULL, '2026-07-09 16:33:18', '2026-07-09 16:33:18', 'GOOD', 'MQTT', '2026-07-09 16:33:18');
 INSERT INTO `iot_device_data` VALUES (2075136201692487682, '000000', 1, 'CNC001-TEMP', 'temperature', NULL, 'NUMERIC', 20.6600, NULL, NULL, '2026-07-09 16:33:19', '2026-07-09 16:33:19', 'GOOD', 'MQTT', '2026-07-09 16:33:19');
+INSERT INTO `iot_device_data` VALUES (2076610741515038721, '000000', 1, 'CNC001-TEMP', 'temperature', NULL, 'NUMERIC', 25.5000, NULL, NULL, '2026-07-13 18:12:37', '2026-07-13 18:12:37', 'GOOD', 'MQTT', '2026-07-13 18:12:37');
+INSERT INTO `iot_device_data` VALUES (2076615060989554690, '000000', 1, 'CNC001-TEMP', 'temperature', NULL, 'NUMERIC', 25.5000, NULL, NULL, '2026-07-13 18:29:47', '2026-07-13 18:29:47', 'GOOD', 'MQTT', '2026-07-13 18:29:47');
 
 -- ----------------------------
 -- Table structure for iot_product
@@ -309,14 +311,14 @@ CREATE TABLE `iot_product`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`product_id`) USING BTREE,
   UNIQUE INDEX `uk_code`(`product_code`, `tenant_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT产品(设备模板)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT产品(设备模板)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_product
