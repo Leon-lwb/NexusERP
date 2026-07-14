@@ -19,20 +19,30 @@
 import { listEquipment, getEquipment } from '@/api/mes/eq/equipment';
 import type { EqEquipmentVO } from '@/api/mes/eq/equipment';
 
-const props = defineProps<{ modelValue?: number | null }>();
+const props = defineProps<{ modelValue?: string | number | null }>();
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: number | null | undefined): void;
-  (e: 'change', val: number | null | undefined, item?: EqEquipmentVO): void;
+  (e: 'update:modelValue', val: string | number | null | undefined): void;
+  (e: 'change', val: string | number | null | undefined, item?: EqEquipmentVO): void;
 }>();
 
-const selectedId = ref<number | null | undefined>(props.modelValue);
+const selectedId = ref<string | number | null | undefined>(props.modelValue);
 const options = ref<EqEquipmentVO[]>([]);
 const loading = ref(false);
 
+// 外部 modelValue 变化时, 若新值不在当前选项中则回显加载该设备(编辑弹窗复用场景, 防止标签空白)
 watch(
   () => props.modelValue,
   (val) => {
     selectedId.value = val;
+    if (val && !options.value.some((i) => i.equipmentId === val)) {
+      getEquipment(val)
+        .then((res) => {
+          options.value = res.data ? [res.data] : [];
+        })
+        .catch(() => {
+          /* ignore */
+        });
+    }
   }
 );
 

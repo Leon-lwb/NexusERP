@@ -6,6 +6,7 @@ import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.redis.utils.RedisUtils;
@@ -48,6 +49,7 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@DS("mes")
 @JobExecutor(name = "maintenanceDueTask")
 public class MaintenanceDueTask {
 

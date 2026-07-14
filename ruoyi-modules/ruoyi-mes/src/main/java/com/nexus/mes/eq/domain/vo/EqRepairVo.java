@@ -85,6 +85,9 @@ public class EqRepairVo implements Serializable {
     @ExcelProperty("状态")
     private String status;
 
+    /** 创建时间(报修时间) */
+    private Date createTime;
+
     /** 备注 */
     private String remark;
 }

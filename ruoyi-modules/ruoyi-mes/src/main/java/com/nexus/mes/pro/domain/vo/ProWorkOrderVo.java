@@ -91,6 +91,16 @@ public class ProWorkOrderVo implements Serializable {
     /** BOM ID */
     private Long bomId;
 
+    /** 关联设备ID */
+    private Long equipmentId;
+
+    /** 关联设备编码(查询时富集) */
+    @ExcelProperty("关联设备")
+    private String equipmentCode;
+
+    /** 关联设备名称(查询时富集) */
+    private String equipmentName;
+
     /** 工艺路线ID */
     private Long routingId;
 

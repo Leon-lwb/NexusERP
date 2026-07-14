@@ -28,6 +28,8 @@ export interface EqRepairQuery extends PageQuery {
   equipmentId?: number;
   status?: string;
   faultType?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 /** 维修报修表单 */
@@ -59,3 +61,20 @@ export const completeRepair = (repairId: string | number, downtimeHours?: number
 export const exportRepair = (query?: EqRepairQuery) => {
   download('/mes/eq/repair/export', { ...query }, `repair_${new Date().getTime()}.xlsx`);
 };
+
+/** 故障统计分析 */
+export interface EqRepairStatisticsVO {
+  totalFault?: number;
+  completedCount?: number;
+  repairingCount?: number;
+  totalDowntimeHours?: number;
+  totalRepairCost?: number;
+  mttrHours?: number;
+  mtbfHours?: number;
+  trend?: Array<{ statDate: string; faultCount: number; downtimeHours?: number }>;
+  pareto?: Array<{ faultType: string; count: number; ratio?: number }>;
+  topEquipment?: Array<{ equipmentId: number; equipmentCode?: string; equipmentName?: string; faultCount: number; downtimeHours?: number }>;
+}
+
+export const getRepairStatistics = (params?: { startDate?: string; endDate?: string }): AxiosPromise<EqRepairStatisticsVO> =>
+  request({ url: '/mes/eq/repair/statistics', method: 'get', params });

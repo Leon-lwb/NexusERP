@@ -62,7 +62,7 @@ public class EqMaintenanceRecordController extends BaseController {
     @SaCheckPermission("mes:eq:maintenance:complete")
     @Log(title = "手动保养记录", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<EqMaintenanceRecordVo> add(@RequestBody EqMaintenanceRecordBo bo) {
+    public R<EqMaintenanceRecordVo> add(@Validated @RequestBody EqMaintenanceRecordBo bo) {
         return R.ok(eqMaintenanceRecordService.insertByBo(bo));
     }
 

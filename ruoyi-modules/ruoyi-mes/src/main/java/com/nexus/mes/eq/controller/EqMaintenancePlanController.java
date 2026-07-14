@@ -57,7 +57,7 @@ public class EqMaintenancePlanController extends BaseController {
     @SaCheckPermission("mes:eq:maintenance:add")
     @Log(title = "保养计划新增", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<EqMaintenancePlanVo> add(@RequestBody EqMaintenancePlanBo bo) {
+    public R<EqMaintenancePlanVo> add(@Validated @RequestBody EqMaintenancePlanBo bo) {
         return R.ok(eqMaintenancePlanService.insertByBo(bo));
     }
 
@@ -67,7 +67,7 @@ public class EqMaintenancePlanController extends BaseController {
     @SaCheckPermission("mes:eq:maintenance:edit")
     @Log(title = "保养计划编辑", businessType = BusinessType.UPDATE)
     @PutMapping
-    public R<EqMaintenancePlanVo> edit(@RequestBody EqMaintenancePlanBo bo) {
+    public R<EqMaintenancePlanVo> edit(@Validated @RequestBody EqMaintenancePlanBo bo) {
         return R.ok(eqMaintenancePlanService.updateByBo(bo));
     }
 

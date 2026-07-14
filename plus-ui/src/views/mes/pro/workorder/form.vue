@@ -77,6 +77,11 @@
                 </el-select>
               </el-form-item>
             </el-col>
+            <el-col :xs="24" :sm="12" :md="8" :lg="6">
+              <el-form-item label="关联设备">
+                <equipment-select v-model="form.equipmentId" />
+              </el-form-item>
+            </el-col>
           </el-row>
 
           <el-divider content-position="left">计划时间</el-divider>
@@ -124,6 +129,7 @@ import { getWorkOrder, addWorkOrder, updateWorkOrder } from '@/api/mes/pro/worko
 import { listMaterial } from '@/api/erp/bd/material/index';
 import { listBom } from '@/api/erp/bd/bom/index';
 import { listRouting } from '@/api/erp/bd/routing/index';
+import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 import type { ProWorkOrderForm } from '@/api/mes/pro/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -144,6 +150,7 @@ const initForm: ProWorkOrderForm = {
   plannedQty: undefined,
   bomId: undefined,
   routingId: undefined,
+  equipmentId: undefined,
   priority: 0,
   planStartDate: undefined,
   planEndDate: undefined,
@@ -182,6 +189,7 @@ const loadWorkOrder = async (id: string) => {
     plannedQty: data.plannedQty,
     bomId: data.bomId,
     routingId: data.routingId,
+    equipmentId: data.equipmentId,
     priority: data.priority,
     planStartDate: data.planStartDate,
     planEndDate: data.planEndDate,

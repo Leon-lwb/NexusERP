@@ -3,7 +3,8 @@ import { AxiosPromise } from 'axios';
 
 /** 设备台账视图对象 */
 export interface EqEquipmentVO {
-  equipmentId: number;
+  /** 雪花ID: 后端经全局 BigNumberSerializer 序列化为字符串, 切勿 Number() 截断 */
+  equipmentId: string | number;
   equipmentCode: string;
   equipmentName: string;
   equipmentType?: string;

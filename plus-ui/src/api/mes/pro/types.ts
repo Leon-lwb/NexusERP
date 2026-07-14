@@ -31,6 +31,12 @@ export interface ProWorkOrderVO {
   routingName?: string;
   /** BOM版本号(富集) */
   bomVersion?: string;
+  /** 关联设备ID(P1-6) */
+  equipmentId?: number;
+  /** 关联设备编码(富集) */
+  equipmentCode?: string;
+  /** 关联设备名称(富集) */
+  equipmentName?: string;
 }
 
 export interface ProWorkOrderStepVO {
@@ -64,6 +70,7 @@ export interface ProWorkOrderForm {
   workshopName?: string;
   bomId?: number;
   routingId?: number;
+  equipmentId?: number;
   woStatus?: string;
   priority?: number;
   planStartDate?: string;

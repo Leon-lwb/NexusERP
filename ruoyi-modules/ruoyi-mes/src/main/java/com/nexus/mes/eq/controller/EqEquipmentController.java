@@ -62,7 +62,7 @@ public class EqEquipmentController extends BaseController {
     @SaCheckPermission("mes:eq:equipment:add")
     @Log(title = "设备新增", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<EqEquipmentVo> add(@RequestBody EqEquipmentBo bo) {
+    public R<EqEquipmentVo> add(@Validated @RequestBody EqEquipmentBo bo) {
         return R.ok(eqEquipmentService.insertByBo(bo));
     }
 
@@ -72,7 +72,7 @@ public class EqEquipmentController extends BaseController {
     @SaCheckPermission("mes:eq:equipment:edit")
     @Log(title = "设备编辑", businessType = BusinessType.UPDATE)
     @PutMapping
-    public R<EqEquipmentVo> edit(@RequestBody EqEquipmentBo bo) {
+    public R<EqEquipmentVo> edit(@Validated @RequestBody EqEquipmentBo bo) {
         return R.ok(eqEquipmentService.updateByBo(bo));
     }
 

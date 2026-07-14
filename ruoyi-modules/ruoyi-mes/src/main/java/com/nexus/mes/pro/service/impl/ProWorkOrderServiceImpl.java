@@ -13,6 +13,8 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
+import com.nexus.mes.eq.domain.EqEquipment;
+import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
@@ -70,6 +72,7 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
     private final MesMqSendService mesMqSendService;
+    private final EqEquipmentMapper equipmentMapper;
 
     @Override
     public TableDataInfo<ProWorkOrderVo> selectPageList(ProWorkOrderBo bo, PageQuery pageQuery) {
@@ -120,6 +123,14 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             Map<String, Object> bomHeader = mesErpBridgeService.getBomHeader(vo.getBomId());
             if (bomHeader != null) {
                 vo.setBomVersion((String) bomHeader.get("bom_version"));
+            }
+        }
+        // P1-6: 填充关联设备编码/名称
+        if (vo.getEquipmentId() != null) {
+            EqEquipment eq = equipmentMapper.selectById(vo.getEquipmentId());
+            if (eq != null) {
+                vo.setEquipmentCode(eq.getEquipmentCode());
+                vo.setEquipmentName(eq.getEquipmentName());
             }
         }
     }

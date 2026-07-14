@@ -9,14 +9,17 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
+import com.nexus.mes.eq.domain.vo.EqRepairStatisticsVo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
 import com.nexus.mes.eq.service.IEqRepairService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import com.nexus.common.excel.utils.ExcelUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.format.annotation.DateTimeFormat;
 import java.util.List;
 
 /**
@@ -56,7 +59,7 @@ public class EqRepairController extends BaseController {
     @SaCheckPermission("mes:eq:repair:add")
     @Log(title = "维修报修", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<EqRepairVo> add(@RequestBody EqRepairBo bo) {
+    public R<EqRepairVo> add(@Validated @RequestBody EqRepairBo bo) {
         return R.ok(eqRepairService.insertByBo(bo));
     }
 
@@ -94,5 +97,16 @@ public class EqRepairController extends BaseController {
     public void export(EqRepairBo bo, HttpServletResponse response) {
         List<EqRepairVo> list = eqRepairService.selectList(bo);
         ExcelUtil.exportExcel(list, "维修记录", EqRepairVo.class, response);
+    }
+
+    /**
+     * 故障统计分析(KPI + 趋势 + Pareto + 设备TOP)
+     */
+    @SaCheckPermission("mes:eq:repair:query")
+    @GetMapping("/statistics")
+    public R<EqRepairStatisticsVo> statistics(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
+        return R.ok(eqRepairService.statistics(startDate, endDate));
     }
 }

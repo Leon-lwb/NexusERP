@@ -13,6 +13,7 @@ import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.EqRepair;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
+import com.nexus.mes.eq.domain.vo.EqRepairStatisticsVo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -206,5 +208,102 @@ public class EqRepairServiceImpl implements IEqRepairService {
                 r.setEquipmentName(e.getEquipmentName());
             }
         });
+    }
+
+    // ==================== 故障统计分析 ====================
+
+    @Override
+    public EqRepairStatisticsVo statistics(Date startDate, Date endDate) {
+        // 默认最近 30 天
+        if (endDate == null) {
+            endDate = new Date();
+        }
+        if (startDate == null) {
+            startDate = Date.from(endDate.toInstant().atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate().minusDays(29).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+        }
+        Date finalStart = startDate;
+        Date finalEnd = endDate;
+
+        // 用 Wrapper 按 create_time 过滤(避免全表查询后 Java 过滤)
+        List<EqRepairVo> filtered = baseMapper.selectVoList(Wrappers.<EqRepair>lambdaQuery()
+            .ge(EqRepair::getCreateTime, finalStart)
+            .le(EqRepair::getCreateTime, finalEnd)
+            .orderByDesc(EqRepair::getCreateTime));
+        fillEquipmentName(filtered);
+
+        EqRepairStatisticsVo vo = new EqRepairStatisticsVo();
+
+        // ===== KPI 汇总 =====
+        vo.setTotalFault(filtered.size());
+        vo.setCompletedCount((int) filtered.stream().filter(r -> STATUS_COMPLETED.equals(r.getStatus())).count());
+        vo.setRepairingCount((int) filtered.stream().filter(r -> STATUS_REPORTED.equals(r.getStatus()) || STATUS_REPAIRING.equals(r.getStatus())).count());
+        vo.setTotalDowntimeHours(filtered.stream().map(EqRepairVo::getDowntimeHours)
+            .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add));
+        vo.setTotalRepairCost(filtered.stream().map(EqRepairVo::getRepairCost)
+            .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add));
+
+        // MTTR: avg(repair_end - repair_start) 小时
+        BigDecimal totalHours = BigDecimal.ZERO;
+        int mttrCount = 0;
+        for (EqRepairVo r : filtered) {
+            if (r.getRepairStart() != null && r.getRepairEnd() != null && STATUS_COMPLETED.equals(r.getStatus())) {
+                long millis = r.getRepairEnd().getTime() - r.getRepairStart().getTime();
+                if (millis > 0) {
+                    totalHours = totalHours.add(BigDecimal.valueOf(millis).divide(BigDecimal.valueOf(3600000), 2, java.math.RoundingMode.HALF_UP));
+                    mttrCount++;
+                }
+            }
+        }
+        vo.setMttrHours(mttrCount > 0 ? totalHours.divide(new BigDecimal(mttrCount), 2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO);
+
+        // MTBF 近似: 区间总时长(小时) / 故障次数
+        long spanHours = (endDate.getTime() - startDate.getTime()) / 3600000L;
+        vo.setMtbfHours(!filtered.isEmpty() && spanHours > 0
+            ? new BigDecimal(spanHours).divide(new BigDecimal(filtered.size()), 2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO);
+
+        // ===== 趋势(按日) =====
+        Map<LocalDate, List<EqRepairVo>> byDate = filtered.stream()
+            .collect(Collectors.groupingBy(r -> r.getCreateTime().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()));
+        vo.setTrend(byDate.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e -> {
+            EqRepairStatisticsVo.TrendItem t = new EqRepairStatisticsVo.TrendItem();
+            t.setStatDate(Date.from(e.getKey().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()));
+            t.setFaultCount(e.getValue().size());
+            t.setDowntimeHours(e.getValue().stream().map(EqRepairVo::getDowntimeHours).filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+            return t;
+        }).collect(Collectors.toList()));
+
+        // ===== Pareto(按 fault_type) =====
+        Map<String, Long> byType = filtered.stream()
+            .filter(r -> r.getFaultType() != null && !r.getFaultType().isEmpty())
+            .collect(Collectors.groupingBy(EqRepairVo::getFaultType, Collectors.counting()));
+        int typedTotal = byType.values().stream().mapToInt(Long::intValue).sum();
+        vo.setPareto(byType.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed()).map(e -> {
+            EqRepairStatisticsVo.ParetoItem p = new EqRepairStatisticsVo.ParetoItem();
+            p.setFaultType(e.getKey());
+            p.setCount(e.getValue().intValue());
+            p.setRatio(typedTotal > 0 ? new BigDecimal(e.getValue()).divide(new BigDecimal(typedTotal), 4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO);
+            return p;
+        }).collect(Collectors.toList()));
+
+        // ===== 设备 TOP10 =====
+        Map<Long, List<EqRepairVo>> byEquip = filtered.stream()
+            .filter(r -> r.getEquipmentId() != null)
+            .collect(Collectors.groupingBy(EqRepairVo::getEquipmentId));
+        vo.setTopEquipment(byEquip.entrySet().stream().map(e -> {
+            EqRepairStatisticsVo.TopItem t = new EqRepairStatisticsVo.TopItem();
+            t.setEquipmentId(e.getKey());
+            EqRepairVo first = e.getValue().get(0);
+            t.setEquipmentCode(first.getEquipmentCode());
+            t.setEquipmentName(first.getEquipmentName());
+            t.setFaultCount(e.getValue().size());
+            t.setDowntimeHours(e.getValue().stream().map(EqRepairVo::getDowntimeHours).filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+            return t;
+        }).sorted(Comparator.comparingInt(EqRepairStatisticsVo.TopItem::getFaultCount).reversed())
+            .limit(10).collect(Collectors.toList()));
+
+        return vo;
     }
 }

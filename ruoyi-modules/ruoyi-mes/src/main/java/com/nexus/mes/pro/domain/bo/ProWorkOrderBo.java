@@ -68,6 +68,9 @@ public class ProWorkOrderBo extends BaseEntity {
     /** BOM ID */
     private Long bomId;
 
+    /** 关联设备ID(P1-6 工单-设备联动) */
+    private Long equipmentId;
+
     /** 工艺路线ID */
     private Long routingId;
 

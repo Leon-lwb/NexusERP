@@ -28,6 +28,7 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.eq.domain.EqMaintenanceRecord;
 import com.nexus.mes.eq.domain.bo.EqMaintenanceRecordBo;
 import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
+import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.mapper.EqMaintenanceRecordMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import com.nexus.mes.eq.service.IEqMaintenanceRecordService;
@@ -145,6 +146,10 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
         if (plan == null) {
             throw new ServiceException("保养计划不存在: " + planId);
         }
+        // 状态守卫: 仅 ACTIVE 计划可完成, 防止重复完成/已完成/停用计划产生重复记录并跳过保养周期
+        if (!STATUS_ACTIVE.equals(plan.getStatus())) {
+            throw new ServiceException("仅启用状态的保养计划可完成, 当前状态: " + plan.getStatus());
+        }
         // 1. 写入保养执行记录(执行人=当前用户, 执行时间=当前时间)
         EqMaintenanceRecord record = new EqMaintenanceRecord();
         record.setPlanId(planId);
@@ -183,7 +188,16 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
             log.info("保养结果异常, 设备置 MAINTENANCE: equipmentId={}", plan.getEquipmentId());
         }
 
-        return maintenanceRecordMapper.selectVoById(record.getRecordId());
+        // 补填设备编码/名称, 与详情/列表接口响应结构一致(L2)
+        EqMaintenanceRecordVo vo = maintenanceRecordMapper.selectVoById(record.getRecordId());
+        if (vo != null && vo.getEquipmentId() != null) {
+            EqEquipmentVo eq = equipmentService.selectById(vo.getEquipmentId());
+            if (eq != null) {
+                vo.setEquipmentCode(eq.getEquipmentCode());
+                vo.setEquipmentName(eq.getEquipmentName());
+            }
+        }
+        return vo;
     }
 
     // ==================== 私有辅助方法 ====================

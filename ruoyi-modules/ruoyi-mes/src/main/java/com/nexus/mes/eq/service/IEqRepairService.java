@@ -3,9 +3,11 @@ package com.nexus.mes.eq.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
+import com.nexus.mes.eq.domain.vo.EqRepairStatisticsVo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -60,4 +62,13 @@ public interface IEqRepairService {
      * @param remark        备注
      */
     void completeRepair(Long repairId, BigDecimal downtimeHours, BigDecimal repairCost, String remark);
+
+    /**
+     * 故障统计分析(KPI + 趋势 + Pareto + 设备TOP)
+     *
+     * @param startDate 统计开始日期(null 默认最近30天)
+     * @param endDate   统计结束日期(null 默认今天)
+     * @return 统计结果
+     */
+    EqRepairStatisticsVo statistics(Date startDate, Date endDate);
 }

@@ -187,9 +187,12 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         if (status.equals(oldStatus)) {
             return true;
         }
-        equipment.setStatus(status);
-        int rows = baseMapper.updateById(equipment);
-        log.info("设备状态联动: equipmentId={}, {}->{}", equipmentId, oldStatus, status);
+        // CAS: 仅当当前状态仍为 oldStatus 时更新, 避免并发(如点检不合格与报修同时触发)覆盖终态/产生重复 MQ 事件
+        int rows = baseMapper.update(null, Wrappers.<EqEquipment>lambdaUpdate()
+            .set(EqEquipment::getStatus, status)
+            .eq(EqEquipment::getEquipmentId, equipmentId)
+            .eq(EqEquipment::getStatus, oldStatus));
+        log.info("设备状态联动: equipmentId={}, {}->{} (rows={})", equipmentId, oldStatus, status, rows);
         if (rows > 0) {
             // 异步发布设备状态变更 MQ 事件(不影响主事务)
             try {

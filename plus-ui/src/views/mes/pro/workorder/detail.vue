@@ -12,11 +12,7 @@
               placement="top"
             >
               <span style="margin-right: 8px; display: inline-block">
-                <el-button
-                  type="success"
-                  icon="Stamp"
-                  @click="handleCreateFlowCard"
-                  :disabled="remainingQty !== undefined && remainingQty <= 0"
+                <el-button type="success" icon="Stamp" @click="handleCreateFlowCard" :disabled="remainingQty !== undefined && remainingQty <= 0"
                   >创建流转卡</el-button
                 >
               </span>
@@ -37,7 +33,16 @@
             <el-descriptions-item label="计划数量">{{ workOrder.plannedQty }} {{ workOrder.unitName }}</el-descriptions-item>
             <el-descriptions-item label="车间">{{ workOrder.workshopName }}</el-descriptions-item>
             <el-descriptions-item label="BOM版本">{{ workOrder.bomVersion || workOrder.bomId || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="工艺路线">{{ workOrder.routingCode && workOrder.routingName ? (workOrder.routingCode + ' - ' + workOrder.routingName) : (workOrder.routingId || '-') }}</el-descriptions-item>
+            <el-descriptions-item label="工艺路线">{{
+              workOrder.routingCode && workOrder.routingName ? workOrder.routingCode + ' - ' + workOrder.routingName : workOrder.routingId || '-'
+            }}</el-descriptions-item>
+            <el-descriptions-item label="关联设备">{{
+              workOrder.equipmentCode && workOrder.equipmentName
+                ? workOrder.equipmentCode + ' - ' + workOrder.equipmentName
+                : workOrder.equipmentId
+                  ? String(workOrder.equipmentId)
+                  : '-'
+            }}</el-descriptions-item>
             <el-descriptions-item label="状态">
               <el-tag :type="statusTagType(workOrder.woStatus)">{{ statusLabel(workOrder.woStatus) }}</el-tag>
             </el-descriptions-item>
@@ -77,7 +82,7 @@
             <el-table-column label="损耗率(%)" prop="lossRate" width="90" align="right" />
             <el-table-column label="含损耗用量" prop="totalQuantity" width="110" align="right">
               <template #default="scope">
-                <span style="font-weight: bold;">{{ scope.row.totalQuantity }}</span>
+                <span style="font-weight: bold">{{ scope.row.totalQuantity }}</span>
               </template>
             </el-table-column>
             <el-table-column label="工序步骤" prop="sequenceNum" width="80" align="center" />
@@ -144,9 +149,7 @@ const usedQty = ref<number>(0);
 const remainingQty = ref<number | undefined>(undefined);
 /** 是否可创建流转卡: 工单已下达/生产中 且 拥有创建权限 */
 const canCreateFlowCard = computed(
-  () =>
-    (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') &&
-    checkPermi(['mes:pro:flowcard:add'])
+  () => (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') && checkPermi(['mes:pro:flowcard:add'])
 );
 
 const loadDetail = async (mesWoIdParam?: string) => {

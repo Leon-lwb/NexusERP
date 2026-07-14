@@ -478,9 +478,10 @@ const handleExport = () => {
 onMounted(() => {
   getList();
   // IoT「查看MES设备」带 equipmentId 跳转时, 自动弹出该设备编辑框
+  // 注意: route.query 取得的是字符串, 雪花ID 18-19 位超出 JS 安全整数, 严禁 Number() 截断
   const eqId = route.query.equipmentId;
   if (eqId) {
-    handleOpenEdit({ equipmentId: Number(eqId) } as EqEquipmentVO);
+    handleOpenEdit({ equipmentId: eqId } as EqEquipmentVO);
   }
 });
 </script>
