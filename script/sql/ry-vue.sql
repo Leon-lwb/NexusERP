@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 15/07/2026 00:26:38
+ Date: 16/07/2026 00:47:08
 */
 
 SET NAMES utf8mb4;
@@ -8751,17 +8751,6 @@ CREATE TABLE `sj_distributed_lock`  (
 -- ----------------------------
 -- Records of sj_distributed_lock
 -- ----------------------------
-INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-14 21:22:28.293', '2026-07-14 21:21:28.293', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-14 21:21:28');
-INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-15 00:26:42.115', '2026-07-15 00:26:37.115', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:26:37');
-INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-14 21:22:28.292', '2026-07-14 21:21:28.292', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-14 21:21:28');
-INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-15 00:27:28.115', '2026-07-15 00:26:28.115', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:26:28');
-INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-15 00:26:48.115', '2026-07-15 00:26:28.115', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:26:28');
-INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-15 00:26:42.115', '2026-07-15 00:26:37.115', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:26:37');
-INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-15 00:22:29.461', '2026-07-15 00:21:29.461', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:21:29');
-INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-15 00:22:28.118', '2026-07-15 00:21:28.118', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:21:28');
-INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-15 00:26:48.115', '2026-07-15 00:26:28.115', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:26:28');
-INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-15 00:22:29.461', '2026-07-15 00:21:29.461', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:21:29');
-INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-15 00:26:48.115', '2026-07-15 00:26:28.115', '2076839457314709504', '2026-07-14 09:21:29', '2026-07-15 00:26:28');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -9333,13 +9322,11 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 218 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 220 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (215, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2076839457314709504', '192.168.1.106', 17888, '2026-07-15 00:26:58', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-14 09:21:29', '2026-07-15 00:26:28');
-INSERT INTO `sj_server_node` VALUES (217, 'dev', 'ruoyi_group', '2076884595751690240', '192.168.1.106', 28080, '2026-07-15 00:27:02', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-14 12:20:50', '2026-07-15 00:26:32');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -12011,6 +11998,35 @@ INSERT INTO `sys_dict_data` VALUES (600314, '000000', 4, '执行中', 'EXECUTING
 INSERT INTO `sys_dict_data` VALUES (600315, '000000', 5, '已完成', 'COMPLETED', 'pu_contract_status', '', 'success', 'N', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (600316, '000000', 6, '已终止', 'TERMINATED', 'pu_contract_status', '', 'danger', 'N', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (600317, '000000', 7, '已驳回', 'REJECTED', 'pu_contract_status', '', 'danger', 'N', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600411, '000000', 1, '澧炲?绋庝笓鐢ㄥ彂绁', 'VAT_SPECIAL', 'so_invoice_type', '', 'primary', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600412, '000000', 2, '澧炲?绋庢櫘閫氬彂绁', 'VAT_NORMAL', 'so_invoice_type', '', 'success', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600413, '000000', 3, '鍏朵粬', 'OTHER', 'so_invoice_type', '', 'info', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600421, '000000', 1, '鑽夌?', 'DRAFT', 'so_invoice_status', '', 'info', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600422, '000000', 2, '瀹℃壒涓', 'APPROVING', 'so_invoice_status', '', 'warning', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600423, '000000', 3, '宸插紑', 'ISSUED', 'so_invoice_status', '', 'primary', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600424, '000000', 4, '宸叉牳閿', 'VERIFIED', 'so_invoice_status', '', 'success', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600425, '000000', 5, '宸查┏鍥', 'REJECTED', 'so_invoice_status', '', 'danger', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600426, '000000', 6, '宸蹭綔搴', 'CANCELLED', 'so_invoice_status', '', 'danger', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600431, '000000', 1, '澧炲?绋庝笓鐢ㄥ彂绁', 'VAT_SPECIAL', 'pu_invoice_type', '', 'primary', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '鍙?姷鎵ｈ繘椤');
+INSERT INTO `sys_dict_data` VALUES (600432, '000000', 2, '澧炲?绋庢櫘閫氬彂绁', 'VAT_NORMAL', 'pu_invoice_type', '', 'success', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600433, '000000', 3, '鍏朵粬', 'OTHER', 'pu_invoice_type', '', 'info', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600441, '000000', 1, '鑽夌?', 'DRAFT', 'pu_invoice_status', '', 'info', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600442, '000000', 2, '宸叉敹', 'ISSUED', 'pu_invoice_status', '', 'primary', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600443, '000000', 3, '宸叉牳閿', 'VERIFIED', 'pu_invoice_status', '', 'success', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600444, '000000', 4, '宸蹭綔搴', 'CANCELLED', 'pu_invoice_status', '', 'danger', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600451, '000000', 1, '鏈??璇', 'UNCERTIFIED', 'pu_invoice_cert_status', '', 'info', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600452, '000000', 2, '宸茶?璇', 'CERTIFIED', 'pu_invoice_cert_status', '', 'primary', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600453, '000000', 3, '宸叉姷鎵', 'DEDUCTED', 'pu_invoice_cert_status', '', 'success', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600454, '000000', 4, '宸茶浆鍑', 'TRANSFERRED', 'pu_invoice_cert_status', '', 'warning', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '閫?揣杩涢」杞?嚭');
+INSERT INTO `sys_dict_data` VALUES (600461, '000000', 1, '鐜伴噾', 'CASH', 'fin_receipt_type', '', 'info', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600462, '000000', 2, '閾惰?', 'BANK', 'fin_receipt_type', '', 'primary', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600463, '000000', 3, '鏀?粯瀹', 'ALIPAY', 'fin_receipt_type', '', 'success', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600464, '000000', 4, '寰?俊', 'WECHAT', 'fin_receipt_type', '', 'success', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600465, '000000', 5, '鍏朵粬', 'OTHER', 'fin_receipt_type', '', 'info', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600471, '000000', 1, '搴旀敹(鏀舵?)', 'AR', 'fin_receipt_direction', '', 'primary', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600472, '000000', 2, '搴斾粯(浠樻?)', 'AP', 'fin_receipt_direction', '', 'warning', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600481, '000000', 1, '鎵嬪伐', 'MANUAL', 'invoice_issue_channel', '', 'info', 'Y', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600482, '000000', 2, '鐢靛瓙鍙戠エ骞冲彴', 'ELECTRONIC', 'invoice_issue_channel', '', 'primary', 'N', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '鏁扮數绁');
 INSERT INTO `sys_dict_data` VALUES (610110, '000000', 1, '工程BOM', 'EBOM', 'bd_bom_type', '', 'primary', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '工程BOM - 设计部门维护');
 INSERT INTO `sys_dict_data` VALUES (610111, '000000', 2, '制造BOM', 'MBOM', 'bd_bom_type', '', 'success', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '制造BOM - 工艺部门维护');
 INSERT INTO `sys_dict_data` VALUES (610112, '000000', 3, '服务BOM', 'SBOM', 'bd_bom_type', '', 'warning', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '服务BOM - 售后部门维护');
@@ -12316,6 +12332,14 @@ INSERT INTO `sys_dict_type` VALUES (600202, '000000', 'IoT连接状态', 'iot_co
 INSERT INTO `sys_dict_type` VALUES (600203, '000000', 'IoT设备状态', 'iot_device_status', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'IoT设备启用状态: 启用/停用');
 INSERT INTO `sys_dict_type` VALUES (600301, '000000', '合同类型', 'contract_type', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '采购合同类型');
 INSERT INTO `sys_dict_type` VALUES (600302, '000000', '采购合同状态', 'pu_contract_status', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '采购合同状态');
+INSERT INTO `sys_dict_type` VALUES (600401, '000000', '閿?敭鍙戠エ绫诲瀷', 'so_invoice_type', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '閿?敭鍙戠エ绫诲瀷');
+INSERT INTO `sys_dict_type` VALUES (600402, '000000', '閿?敭鍙戠エ鐘舵?', 'so_invoice_status', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '閿?敭鍙戠エ鐘舵?');
+INSERT INTO `sys_dict_type` VALUES (600403, '000000', '閲囪喘杩涢」鍙戠エ绫诲瀷', 'pu_invoice_type', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '閲囪喘杩涢」鍙戠エ绫诲瀷');
+INSERT INTO `sys_dict_type` VALUES (600404, '000000', '閲囪喘杩涢」鍙戠エ鐘舵?', 'pu_invoice_status', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '閲囪喘杩涢」鍙戠エ鐘舵?');
+INSERT INTO `sys_dict_type` VALUES (600405, '000000', '杩涢」鍙戠エ璁よ瘉鐘舵?', 'pu_invoice_cert_status', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '杩涢」鍙戠エ璁よ瘉鐘舵?');
+INSERT INTO `sys_dict_type` VALUES (600406, '000000', '鏀朵粯娆剧被鍨', 'fin_receipt_type', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '鏀朵粯娆剧被鍨');
+INSERT INTO `sys_dict_type` VALUES (600407, '000000', '鏀朵粯娆炬柟鍚', 'fin_receipt_direction', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '鏀朵粯娆炬柟鍚?AR搴旀敹 AP搴斾粯');
+INSERT INTO `sys_dict_type` VALUES (600408, '000000', '寮?エ娓犻亾', 'invoice_issue_channel', 103, 1, '2026-07-16 00:44:19', NULL, NULL, '寮?エ娓犻亾');
 INSERT INTO `sys_dict_type` VALUES (3000097, '000000', '产能日历状态', 'prd_calendar_status', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历记录状态');
 INSERT INTO `sys_dict_type` VALUES (3000100, '000000', '产能对象类型', 'prd_calendar_object_type', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历关联对象类型');
 INSERT INTO `sys_dict_type` VALUES (3000210, '000000', '产能对象类型', 'prd_capacity_object_type', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '产能日历对象类型');
@@ -12573,6 +12597,7 @@ INSERT INTO `sys_logininfor` VALUES (2076559103668469762, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2076597889798459394, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-13 17:21:33');
 INSERT INTO `sys_logininfor` VALUES (2076694555851472898, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-13 23:45:40');
 INSERT INTO `sys_logininfor` VALUES (2076906265879158785, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-14 13:46:55');
+INSERT INTO `sys_logininfor` VALUES (2077406621440565250, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-15 22:55:10');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -16749,7 +16774,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-14 13:46:55', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-14 13:46:55', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-15 22:55:10', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-15 22:55:10', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码123456', 'sys_user', 'test@169.com', '15388888888', '0', 2074678251479801857, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '127.0.0.1', '2026-07-08 10:12:15', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-08 10:12:15', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-07-10 09:30:13', NULL, 1, '2025-10-23 17:03:16', -1, '2026-07-10 09:30:13', '耳朵聋');

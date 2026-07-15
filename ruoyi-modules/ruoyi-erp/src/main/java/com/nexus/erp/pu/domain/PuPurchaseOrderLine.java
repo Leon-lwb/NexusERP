@@ -53,17 +53,29 @@ public class PuPurchaseOrderLine extends BaseEntity {
     /** 已收货数量 */
     private BigDecimal receivedQuantity;
 
+    /** 已开票数量(防重复开票) */
+    private BigDecimal invoicedQty;
+
     /** 收货状态(PENDING/FULL_RECEIVED/PARTIAL_RECEIVED/OVER_RECEIVED/SHORT_RECEIVED) */
     private String receiveStatus;
 
     /** 单价 */
     private BigDecimal unitPrice;
 
+    /** 不含税单价 */
+    private BigDecimal unitPriceExcludingTax;
+
     /** 税率，如 0.13 表示 13% */
     private BigDecimal taxRate;
 
     /** 行金额（含税），通常由数量×单价×（1+税率）计算得出 */
     private BigDecimal lineAmount;
+
+    /** 不含税行金额 */
+    private BigDecimal lineAmountExcludingTax;
+
+    /** 行税额 */
+    private BigDecimal lineTaxAmount;
 
     /** 排序号 */
     private Integer sortOrder;

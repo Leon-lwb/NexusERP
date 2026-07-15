@@ -100,8 +100,8 @@
             <el-row>
               <el-col :span="12">
                 <el-form-item label="供应商编码" prop="vendorCode">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <el-input v-model="form.vendorCode" placeholder="请输入供应商编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+                  <div style="display: flex; align-items: center; gap: 10px">
+                    <el-input v-model="form.vendorCode" placeholder="请输入供应商编码" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                     <el-switch
                       v-model="autoGenFlag"
                       active-color="#13ce66"
@@ -283,6 +283,35 @@
               </el-col>
             </el-row>
           </el-tab-pane>
+
+          <el-tab-pane label="开票信息" name="invoice">
+            <el-row>
+              <el-col :span="12">
+                <el-form-item label="发票抬头" prop="invoiceTitle">
+                  <el-input v-model="form.invoiceTitle" placeholder="请输入发票抬头" :disabled="isViewMode" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="开户行名称" prop="invoiceBankName">
+                  <el-input v-model="form.invoiceBankName" placeholder="请输入开户行名称" :disabled="isViewMode" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="12">
+                <el-form-item label="开票地址电话" prop="invoiceAddressPhone">
+                  <el-input v-model="form.invoiceAddressPhone" placeholder="请输入开票地址、电话" :disabled="isViewMode" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="默认发票类型" prop="defaultInvoiceType">
+                  <el-select v-model="form.defaultInvoiceType" placeholder="请选择默认发票类型" style="width: 100%" :disabled="isViewMode">
+                    <el-option v-for="dict in pu_invoice_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-tab-pane>
         </el-tabs>
       </el-form>
       <template #footer>
@@ -335,8 +364,8 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { getProvinces, getNextLevel } from '@/api/system/area';
 
 const { proxy } = getCurrentInstance();
-const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category } = toRefs<any>(
-  proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category')
+const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice_type } = toRefs<any>(
+  proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category', 'pu_invoice_type')
 );
 
 const vendorList = ref([]);
@@ -404,6 +433,10 @@ function reset() {
     contactPerson: null,
     phone: null,
     bankAccount: null,
+    invoiceTitle: null,
+    invoiceAddressPhone: null,
+    invoiceBankName: null,
+    defaultInvoiceType: null,
     industry: null,
     region: null,
     category: null,

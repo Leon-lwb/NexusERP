@@ -56,8 +56,17 @@ public class PuPurchaseReturnLine extends TenantEntity {
     /** 单价 */
     private BigDecimal unitPrice;
 
+    /** 税率 */
+    private BigDecimal taxRate;
+
     /** 金额 */
     private BigDecimal amount;
+
+    /** 行税额 */
+    private BigDecimal taxAmount;
+
+    /** 不含税行金额 */
+    private BigDecimal amountExcludingTax;
 
     /** 退货原因 */
     private String returnReason;

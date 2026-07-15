@@ -60,6 +60,10 @@ public class PuContract extends TenantEntity {
 
     /** 合同总金额 */
     private BigDecimal totalAmount;
+    /** 税额 */
+    private BigDecimal taxAmount;
+    /** 不含税总金额 */
+    private BigDecimal amountExcludingTax;
 
     /** 币种 */
     private String currency;

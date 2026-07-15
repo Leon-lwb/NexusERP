@@ -42,6 +42,8 @@ public class SoSalesOrderLine extends TenantEntity {
     private BigDecimal orderedQty;
     /** 已发货数量 */
     private BigDecimal deliveredQty;
+    /** 已开票数量(防重复开票) */
+    private BigDecimal invoicedQty;
     /** 单位 */
     private String unit;
     /** 单价 */

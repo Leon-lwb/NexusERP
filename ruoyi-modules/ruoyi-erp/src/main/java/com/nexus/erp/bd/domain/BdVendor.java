@@ -60,6 +60,15 @@ public class BdVendor extends TenantEntity {
      */
     private String bankAccount;
 
+    /** 发票抬头 */
+    private String invoiceTitle;
+    /** 开票地址、电话 */
+    private String invoiceAddressPhone;
+    /** 开户行名称 */
+    private String invoiceBankName;
+    /** 默认发票类型 VAT_SPECIAL/VAT_NORMAL/OTHER */
+    private String defaultInvoiceType;
+
     /**
      * 所属行业
      */

@@ -116,6 +116,19 @@ public class BdClientBo extends BaseEntity {
      */
     private String creditCode;
 
+    /** 纳税人识别号 */
+    private String taxId;
+    /** 发票抬头 */
+    private String invoiceTitle;
+    /** 开户行 */
+    private String invoiceBankName;
+    /** 银行账号 */
+    private String invoiceBankAccount;
+    /** 开票地址、电话 */
+    private String invoiceAddressPhone;
+    /** 默认发票类型 VAT_SPECIAL/VAT_NORMAL/OTHER */
+    private String defaultInvoiceType;
+
     /**
      * 预留字段1
      */

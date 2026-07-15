@@ -57,6 +57,10 @@ public class PuPurchaseReturn extends TenantEntity {
 
     /** 退货总金额 */
     private BigDecimal totalAmount;
+    /** 税额 */
+    private BigDecimal taxAmount;
+    /** 不含税总金额 */
+    private BigDecimal amountExcludingTax;
 
     /**
      * 退货单状态
