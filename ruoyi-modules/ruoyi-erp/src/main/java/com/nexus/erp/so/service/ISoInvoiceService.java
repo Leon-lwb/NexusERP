@@ -6,6 +6,7 @@ import com.nexus.erp.so.domain.bo.SoInvoiceBo;
 import com.nexus.erp.so.domain.vo.SoInvoiceVo;
 import com.nexus.workflow.service.WfCallBackServiceI;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -58,6 +59,44 @@ public interface ISoInvoiceService extends WfCallBackServiceI {
      * 批量删除销售发票
      */
     int deleteByIds(Long[] ids);
+
+    /**
+     * 根据销售订单生成发票草稿（按"已发货未开票"自动汇总）。
+     * <p>由 {@code SalesOrderFulfilledEventListener} 在订单履约后异步触发。
+     * 幂等：按行 {@code invoiced_qty = delivered_qty - invoiced_qty} 计算可开票量，
+     * 全部 ≤0 则不生成；生成后原子累加 {@code so_sales_order_line.invoiced_qty} 防重复开票。</p>
+     *
+     * @param soId 销售订单ID
+     * @return 新建的发票ID；订单不存在/无可开票行则返回 null
+     */
+    Long generateDraftFromOrder(Long soId);
+
+    /**
+     * 核销发票（原子累加 verified_amount，达价税合计则转 VERIFIED）。
+     * <p>P1 仅实现回写原语；fin_settlement 记账由 P3 FinSettlementService.settle() 调用本方法。</p>
+     *
+     * @param invoiceId    发票ID
+     * @param verifyAmount 本次核销金额
+     * @param receiptId    关联收付款单ID（P3 核销记录用，P1 可传 null）
+     */
+    void verifyInvoice(Long invoiceId, BigDecimal verifyAmount, Long receiptId);
+
+    /**
+     * 作废发票（仅 ISSUED 可作废；回退 so_sales_order_line.invoiced_qty）。
+     *
+     * @param invoiceId 发票ID
+     * @param reason    作废原因
+     */
+    void cancelInvoice(Long invoiceId, String reason);
+
+    /**
+     * 红冲发票（生成红字负数发票，冲减原发票 verified_amount 与订单行 invoiced_qty）。
+     *
+     * @param originalInvoiceId 原蓝字发票ID
+     * @param reason            红冲原因
+     * @return 红字发票ID
+     */
+    Long redFlush(Long originalInvoiceId, String reason);
 
     /**
      * 提交流程审批（启动 Flowable 审批流）

@@ -73,11 +73,14 @@
           <dict-tag :options="so_invoice_status" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:invoice:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:invoice:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'" v-hasPermi="['so:invoice:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['so:invoice:remove']">删除</el-button>
+          <el-button link type="success" icon="Check" @click="handleVerify(scope.row)" v-if="scope.row.status === 'ISSUED'" v-hasPermi="['so:invoice:edit']">核销</el-button>
+          <el-button link type="warning" icon="RefreshLeft" @click="handleRedFlush(scope.row)" v-if="scope.row.status === 'ISSUED' || scope.row.status === 'VERIFIED'" v-hasPermi="['so:invoice:edit']">红冲</el-button>
+          <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.status === 'ISSUED' || scope.row.status === 'DRAFT'" v-hasPermi="['so:invoice:edit']">作废</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -110,6 +113,49 @@
                       <el-button icon="Search" @click="openClientDialog" />
                     </template>
                   </el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="发票代码" prop="invoiceCode">
+                  <el-input v-model="form.invoiceCode" placeholder="请输入发票代码" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="开票渠道" prop="issueChannel">
+                  <el-select v-model="form.issueChannel" placeholder="请选择开票渠道" style="width: 100%">
+                    <el-option v-for="dict in invoice_issue_channel" :key="dict.value" :label="dict.label" :value="dict.value" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="购方税号" prop="buyerTaxId">
+                  <el-input v-model="form.buyerTaxId" placeholder="购买方纳税人识别号" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="购方抬头" prop="buyerTitle">
+                  <el-input v-model="form.buyerTitle" placeholder="购买方发票抬头" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="购方开户行" prop="buyerBankName">
+                  <el-input v-model="form.buyerBankName" placeholder="购买方开户行" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="购方账号" prop="buyerBankAccount">
+                  <el-input v-model="form.buyerBankAccount" placeholder="购买方银行账号" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="16">
+                <el-form-item label="购方地址电话" prop="buyerAddressPhone">
+                  <el-input v-model="form.buyerAddressPhone" placeholder="购买方地址、电话" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -263,19 +309,35 @@
       </template>
     </el-dialog>
 
+    <!-- 核销对话框 -->
+    <el-dialog title="发票核销" v-model="verifyOpen" width="420px" append-to-body>
+      <el-form label-width="100px">
+        <el-form-item label="价税合计">{{ verifyForm.totalAmount }}</el-form-item>
+        <el-form-item label="已核销">{{ verifyForm.verifiedAmount }}</el-form-item>
+        <el-form-item label="未核销余额">{{ verifyForm.remaining }}</el-form-item>
+        <el-form-item label="本次核销金额">
+          <el-input-number v-model="verifyForm.verifyAmount" :precision="2" :min="0" controls-position="right" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="verifyOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitVerify">确 定</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 客户选择弹窗 -->
     <ClientSelectDialog ref="clientSelectDialogRef" @confirm="handleClientConfirm" />
   </div>
 </template>
 
 <script setup lang="ts" name="SoInvoice">
-import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice } from '@/api/erp/so/invoice';
+import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice, verifyInvoice, cancelInvoice, redFlushInvoice } from '@/api/erp/so/invoice';
 import { listMaterial } from '@/api/erp/bd/material';
 import { InvoiceVO, InvoiceForm, InvoiceLineForm } from '@/api/erp/so/invoice/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 
 const { proxy } = getCurrentInstance();
-const { so_invoice_type, so_invoice_status } = toRefs<any>(proxy.useDict('so_invoice_type', 'so_invoice_status'));
+const { so_invoice_type, so_invoice_status, invoice_issue_channel } = toRefs<any>(proxy.useDict('so_invoice_type', 'so_invoice_status', 'invoice_issue_channel'));
 
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
@@ -341,9 +403,15 @@ function reset() {
   form.value = {
     invoiceId: undefined,
     invoiceNo: '',
+    invoiceCode: '',
     invoiceType: 'VAT_NORMAL',
     clientId: undefined,
     clientName: '',
+    buyerTaxId: '',
+    buyerTitle: '',
+    buyerBankName: '',
+    buyerBankAccount: '',
+    buyerAddressPhone: '',
     soId: undefined,
     contractId: undefined,
     invoiceDate: undefined,
@@ -354,6 +422,7 @@ function reset() {
     totalAmount: 0,
     verifiedAmount: 0,
     status: 'DRAFT',
+    issueChannel: 'MANUAL',
     remark: '',
     soInvoiceLineList: []
   };
@@ -541,6 +610,57 @@ function openClientDialog() {
 function handleClientConfirm(client: any) {
   form.value.clientId = client.clientId;
   form.value.clientName = client.clientName;
+}
+
+// 核销对话框
+const verifyOpen = ref(false);
+const verifyForm = reactive({ invoiceId: undefined as any, totalAmount: 0, verifiedAmount: 0, remaining: 0, verifyAmount: 0 });
+
+/** 打开核销对话框 */
+function handleVerify(row: InvoiceVO) {
+  verifyForm.invoiceId = row.invoiceId;
+  verifyForm.totalAmount = Number(row.totalAmount) || 0;
+  verifyForm.verifiedAmount = Number(row.verifiedAmount) || 0;
+  verifyForm.remaining = Number((verifyForm.totalAmount - verifyForm.verifiedAmount).toFixed(2));
+  verifyForm.verifyAmount = verifyForm.remaining > 0 ? verifyForm.remaining : 0;
+  verifyOpen.value = true;
+}
+
+/** 提交核销 */
+function submitVerify() {
+  if (!verifyForm.verifyAmount || verifyForm.verifyAmount <= 0) {
+    proxy.$modal.msgError('核销金额必须大于0');
+    return;
+  }
+  verifyInvoice(verifyForm.invoiceId, verifyForm.verifyAmount).then(() => {
+    proxy.$modal.msgSuccess('核销成功');
+    verifyOpen.value = false;
+    getList();
+  });
+}
+
+/** 作废发票 */
+function handleCancel(row: InvoiceVO) {
+  proxy.$modal
+    .confirm('确认作废发票【' + row.invoiceNo + '】?作废将回退订单行已开票数量。')
+    .then(() => cancelInvoice(row.invoiceId))
+    .then(() => {
+      proxy.$modal.msgSuccess('作废成功');
+      getList();
+    })
+    .catch(() => {});
+}
+
+/** 红冲发票 */
+function handleRedFlush(row: InvoiceVO) {
+  proxy.$modal
+    .confirm('确认红冲发票【' + row.invoiceNo + '】?将生成红字负数发票并冲减原发票已核销金额。')
+    .then(() => redFlushInvoice(row.invoiceId))
+    .then(() => {
+      proxy.$modal.msgSuccess('红冲成功');
+      getList();
+    })
+    .catch(() => {});
 }
 
 getList();

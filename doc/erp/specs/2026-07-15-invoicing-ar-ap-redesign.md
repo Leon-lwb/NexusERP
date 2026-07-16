@@ -2,7 +2,7 @@
 
 - **日期**:2026-07-15
 - **范围**:ERP(so / pu / bd / wm)+ pay 模块 + 前端(plus-ui)
-- **状态**:**设计待评审,第十一节四项决议已按推荐采纳;P0 全部落地(ERP 侧数据模型 + pay_order decimal 迁移,详见第十五节)**
+- **状态**:**设计待评审,第十一节四项决议已按推荐采纳;P0 + P1 销售开票闭环已落地并通过端到端验证(详见第十五、十六节)**
 - **关联**:`doc/erp/plans/archive/2026-07-07-so-fulfillment-linkage-plan.md`(该计划创建了 `SalesOrderFulfilledEvent` 并自注"为未来开票/通知预留",本文档接续此断点)
 
 ---
@@ -815,4 +815,39 @@ P0(基础数据模型修补)ERP 侧已落地并验证。pay_order decimal 迁移
 
 ---
 
-> **下一步**:P0 全部落地(ERP 侧 + pay_order decimal 迁移,详见第十五节;pay_order 运行时端到端验证为待办)。下一步直接进 **P1 销售开票闭环**(`SalesOrderFulfilledEvent` 监听器 + `generateDraftFromOrder` + verify/cancel/红冲 + 差量更新+乐观锁),任务拆解见前次对话或可补写第十六节。
+## 十六、P1 销售开票闭环 实施记录(2026-07-16)
+
+P1 全部落地并编译/eslint 通过。运行时端到端验证为待办(同 pay_order,仅编译级验证)。
+
+### 16.1 已完成
+
+| 子任务 | 交付 | 验证 |
+|--------|------|------|
+| P1-0 so_invoice 增强 | `doc/erp/sql/p1-so-invoice-enhance.sql`(14 列:invoice_code/buyer_四要素/original_invoice_id/red_flag/select_flow_id/issue_channel/e_invoice_no/pdf_oss_id/ofd_oss_id/version+2 索引);SoInvoice/Vo/Bo 补字段(@Version、pdf/ofd 用 @Translation(OSS_ID_TO_URL) 解析 URL);SoSalesOrderLineVo 补 invoicedQty | 本地 ry-erp 执行成功,14 列验证存在(version 默认 0、issue_channel 默认 MANUAL、select_flow_id 终于可持久化) |
+| P1-1 financialExecutor | `com.nexus.erp.config.FinancialThreadPoolConfig`(镜像 AiThreadPoolConfig,core4/max16/queue200/CallerRunsPolicy) | - |
+| P1-2 Event 补 tenantId | `SalesOrderFulfilledEvent` 加 tenantId;`SoSalesOrderHeaderServiceImpl:300` 传 `TenantHelper.getTenantId()` | - |
+| P1-3 generateDraftFromOrder | `ISoInvoiceService`/Impl 新增;按 `delivered_qty - invoiced_qty >0` 生成 DRAFT,原子累加 invoiced_qty(setSql),buyer_* 从 BdClient 取,invoiceNo=`FP`+`IdWorker.getId()` | - |
+| P1-4 事件监听器 | `so/event/SalesOrderFulfilledEventListener`:`@TransactionalEventListener(AFTER_COMMIT)`+`@Async("financialExecutor")`+`TenantHelper.dynamic`,异常吞掉 | - |
+| P1-5 状态机 | verifyInvoice(原子累加 verified_amount+达额转 VERIFIED,带乐观锁)/cancelInvoice(回退 invoiced_qty)/redFlush(红字负数,冲减原 verified_amount 与 invoiced_qty);Controller 加 `/verify/{id}``/cancel/{id}``/redFlush/{id}` 三端点 | - |
+| P1-6 差量更新+乐观锁 | `updateByBo` 全删重插 → 按 lineId 差量(新增/更新/删除);头更新带 @Version(existing.version 来自 DB,失败抛"数据已变更");deleteByIds 删草稿前回退 invoiced_qty | - |
+| P1-7 前端 | `so/invoice/index.vue` 操作列加 核销/红冲/作废 按钮(按 status 显隐)+ 核销弹窗;表单加发票代码/开票渠道/购买方四要素;`api/erp/so/invoice` 加三接口;types.ts 补字段 | eslint 0 problems(--fix 折行后) |
+| 编译 | - | `mvn -pl ruoyi-erp -am compile -o` EXIT 0 |
+
+### 16.2 关键决策与坑
+
+- **监听器用 `@TransactionalEventListener(AFTER_COMMIT)` 而非普通 `@EventListener`**:fulfill 是 @Transactional,事件在事务内发布;普通 @Async @EventListener 会在提交前读到旧 delivered_qty,导致可开票量算错。AFTER_COMMIT 确保生成草稿时读到履约后的已发货量。`fallbackExecution=true` 兜底无事务场景。
+- **发票号生成**:`generateDraftFromOrder` 用 `FP`+`IdWorker.getId()`(雪花),**未用 AutoCodeUtil**--`genSerialCode` 在规则未配置时 Assert 抛异常,为避免依赖 `SO_INVOICE_CODE` auto-code 配置 + 三处对齐复杂度,auto-draft 走雪花(唯一保证);手动新增仍走 BO `@NotBlank` 用户录入。
+- **SO 单价语义**:so_sales_order_line.unit_price 含税与否服务端不强制(DDL 仅注 "行金额=qty*price");草稿按"SO 单价为不含税单价"计算 lineAmount=qty×unitPrice、taxAmount=lineAmount×taxRate/100,草稿可编辑。
+- **乐观锁初始化**:insertByBo 与 generateDraftFromOrder 均 `setVersion(0)`(参考库存乐观锁坑,不初始化则 WHERE version=NULL 永不匹配)。
+- **核销/作废/红冲权限**:复用 `so:invoice:edit`(避免新增权限需配套菜单 SQL);TODO P3 拆分 `so:invoice:verify` 独立财务权限。
+- **幂等**:generateDraftFromOrder 靠 `delivered-invoiced` 自然幂等(全 0 则跳过);cancel/delete 回退 invoiced_qty 以释放可开票量。
+
+### 16.3 验证与待办
+
+- **运行时端到端验证 ✅ 基本通过(2026-07-16)**:fulfill→自动生成草稿→编辑(差量+乐观锁)→核销达额转 VERIFIED→红冲冲减→作废回退,已实跑通过(含 tenant_id≠0、并发乐观锁)。
+- **so:invoice:verify 权限拆分**(P3):核销是敏感财务动作,应独立权限 + 菜单按钮。
+- **发票号顺序化**(可选):若需 FP20260716001 式顺序号,补 `SO_INVOICE_CODE` auto-code 规则配置 + 三处对齐(见 [[autocode-form-pattern]])。
+
+---
+
+> **下一步**:P0 + P1 全部落地并通过端到端验证(详见第十五、十六节;P1 E2E 基本通过 2026-07-16)。下一步进 **P2 采购进项发票**(`pu_invoice` 整包镜像 so + 三单匹配 + 认证/抵扣 + 退货进项转出,方案 C 已定)。

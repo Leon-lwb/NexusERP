@@ -63,6 +63,10 @@ public class SoSalesOrderLineVo implements Serializable {
     @ExcelProperty(value = "已发货数量")
     private BigDecimal deliveredQty;
 
+    /** 已开票数量(防重复开票) */
+    @ExcelProperty(value = "已开票数量")
+    private BigDecimal invoicedQty;
+
     /** 单位 */
     @ExcelProperty(value = "单位")
     private String unit;

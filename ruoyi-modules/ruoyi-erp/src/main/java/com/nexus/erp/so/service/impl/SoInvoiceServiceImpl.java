@@ -2,6 +2,7 @@ package com.nexus.erp.so.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -13,13 +14,20 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.bd.domain.vo.BdClientVo;
+import com.nexus.erp.bd.service.IBdClientService;
 import com.nexus.erp.so.domain.SoInvoice;
 import com.nexus.erp.so.domain.SoInvoiceLine;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.bo.SoInvoiceBo;
 import com.nexus.erp.so.domain.vo.SoInvoiceVo;
+import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
+import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
 import com.nexus.erp.so.mapper.SoInvoiceLineMapper;
 import com.nexus.erp.so.mapper.SoInvoiceMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoInvoiceService;
+import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -31,9 +39,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 销售发票Service业务层处理
@@ -53,6 +67,9 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final ISoSalesOrderHeaderService soSalesOrderHeaderService;
+    private final IBdClientService bdClientService;
+    private final SoSalesOrderLineMapper soSalesOrderLineMapper;
 
     /**
      * 分页查询销售发票列表
@@ -97,6 +114,15 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         if (StringUtils.isBlank(entity.getStatus())) {
             entity.setStatus(STATUS_DRAFT);
         }
+        if (StringUtils.isBlank(entity.getIssueChannel())) {
+            entity.setIssueChannel("MANUAL");
+        }
+        if (StringUtils.isBlank(entity.getRedFlag())) {
+            entity.setRedFlag("0");
+        }
+        if (entity.getVersion() == null) {
+            entity.setVersion(0);
+        }
         int rows = baseMapper.insert(entity);
         if (bo.getSoInvoiceLineList() != null && !bo.getSoInvoiceLineList().isEmpty()) {
             for (SoInvoiceLine line : bo.getSoInvoiceLineList()) {
@@ -108,26 +134,195 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     }
 
     /**
-     * 修改销售发票（含明细行），仅草稿和已驳回状态可编辑
+     * 根据销售订单生成发票草稿（按"已发货未开票"自动汇总）。
+     * <p>由 {@code SalesOrderFulfilledEventListener} 在订单履约后异步触发。
+     * 幂等：按行 {@code invoiced_qty = delivered_qty - invoiced_qty} 计算可开票量，
+     * 全部 ≤0 则不生成；生成后原子累加 {@code so_sales_order_line.invoiced_qty} 防重复开票。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long generateDraftFromOrder(Long soId) {
+        SoSalesOrderHeaderVo soHeader = soSalesOrderHeaderService.selectById(soId);
+        if (soHeader == null) {
+            log.warn("生成发票草稿失败:销售订单不存在, soId={}", soId);
+            return null;
+        }
+        List<SoSalesOrderLineVo> soLines = soHeader.getSoSalesOrderLineList();
+        if (soLines == null || soLines.isEmpty()) {
+            log.warn("生成发票草稿跳过:销售订单无行明细, soId={}", soId);
+            return null;
+        }
+
+        // 购买方开票四要素(从客户档案取)
+        BdClientVo client = soHeader.getClientId() != null ? bdClientService.selectById(soHeader.getClientId()) : null;
+
+        // 按行计算可开票量 = 已发货 - 已开票,过滤 >0
+        List<SoInvoiceLine> invoiceLines = new ArrayList<>();
+        int sortOrder = 0;
+        for (SoSalesOrderLineVo soLine : soLines) {
+            BigDecimal delivered = soLine.getDeliveredQty() != null ? soLine.getDeliveredQty() : BigDecimal.ZERO;
+            BigDecimal invoiced = soLine.getInvoicedQty() != null ? soLine.getInvoicedQty() : BigDecimal.ZERO;
+            BigDecimal remaining = delivered.subtract(invoiced);
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            BigDecimal unitPrice = soLine.getUnitPrice() != null ? soLine.getUnitPrice() : BigDecimal.ZERO;
+            BigDecimal taxRate = soLine.getTaxRate() != null ? soLine.getTaxRate() : BigDecimal.ZERO;
+            // 不含税行金额 = 数量 × 单价(按 SO 单价为不含税单价计算;草稿可编辑)
+            BigDecimal lineAmount = remaining.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal lineTax = lineAmount.multiply(taxRate)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal lineTotal = lineAmount.add(lineTax);
+
+            SoInvoiceLine line = new SoInvoiceLine();
+            line.setLineNo(soLine.getLineNo());
+            line.setMaterialId(soLine.getMaterialId());
+            line.setMaterialCode(soLine.getMaterialCode());
+            line.setMaterialName(soLine.getMaterialName());
+            line.setMaterialSpec(soLine.getMaterialSpec());
+            line.setQuantity(remaining);
+            line.setUnit(soLine.getUnit());
+            line.setUnitPrice(unitPrice);
+            line.setLineAmount(lineAmount);
+            line.setTaxRate(taxRate);
+            line.setTaxAmount(lineTax);
+            line.setTotalAmount(lineTotal);
+            line.setSoLineId(soLine.getLineId());
+            line.setSortOrder(sortOrder++);
+            invoiceLines.add(line);
+        }
+        if (invoiceLines.isEmpty()) {
+            log.info("生成发票草稿跳过:销售订单无可开票行(已全部开票), soId={}", soId);
+            return null;
+        }
+
+        // 构建发票头
+        SoInvoice invoice = new SoInvoice();
+        invoice.setInvoiceNo("FP" + IdWorker.getId());
+        invoice.setInvoiceType(client != null && StringUtils.isNotBlank(client.getDefaultInvoiceType())
+            ? client.getDefaultInvoiceType() : "VAT_NORMAL");
+        invoice.setClientId(soHeader.getClientId());
+        invoice.setClientName(soHeader.getClientName());
+        invoice.setSoId(soHeader.getSoId());
+        invoice.setInvoiceDate(new Date());
+        invoice.setCurrency(StringUtils.isNotBlank(soHeader.getCurrency()) ? soHeader.getCurrency() : "CNY");
+        invoice.setExchangeRate(soHeader.getExchangeRate() != null ? soHeader.getExchangeRate() : BigDecimal.ONE);
+        invoice.setStatus(STATUS_DRAFT);
+        invoice.setIssueChannel("MANUAL");
+        invoice.setRedFlag("0");
+        invoice.setVersion(0);
+        invoice.setVerifiedAmount(BigDecimal.ZERO);
+        if (client != null) {
+            invoice.setBuyerTaxId(client.getTaxId());
+            invoice.setBuyerTitle(StringUtils.isNotBlank(client.getInvoiceTitle())
+                ? client.getInvoiceTitle() : soHeader.getClientName());
+            invoice.setBuyerBankName(client.getInvoiceBankName());
+            invoice.setBuyerBankAccount(client.getInvoiceBankAccount());
+            invoice.setBuyerAddressPhone(client.getInvoiceAddressPhone());
+        }
+        // 头金额 = 各行之和
+        invoice.setAmount(invoiceLines.stream().map(SoInvoiceLine::getLineAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
+        invoice.setTaxAmount(invoiceLines.stream().map(SoInvoiceLine::getTaxAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
+        invoice.setTotalAmount(invoiceLines.stream().map(SoInvoiceLine::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
+
+        baseMapper.insert(invoice);
+        for (SoInvoiceLine line : invoiceLines) {
+            line.setInvoiceId(invoice.getInvoiceId());
+            lineMapper.insert(line);
+            // 原子累加已开票数量(防重复开票);数量内部计算,非用户输入,无注入风险
+            soSalesOrderLineMapper.update(null,
+                Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getLineId, line.getSoLineId())
+                    .setSql("invoiced_qty = invoiced_qty + " + line.getQuantity().toPlainString()));
+        }
+        log.info("销售订单自动生成发票草稿, soId={}, invoiceId={}, invoiceNo={}, lineCount={}",
+            soId, invoice.getInvoiceId(), invoice.getInvoiceNo(), invoiceLines.size());
+        return invoice.getInvoiceId();
+    }
+
+    /**
+     * 修改销售发票（含明细行），仅草稿和已驳回状态可编辑。
+     * <p>头更新带 @Version 乐观锁(并发不丢更新);明细行按 lineId 差量更新(新增/更新/删除),
+     * 取代原先全删重插(原实现并发丢行且无锁)。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoInvoiceBo bo) {
         SoInvoice existing = baseMapper.selectById(bo.getInvoiceId());
-        if (existing != null && !STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
+        if (existing == null) {
+            throw new ServiceException("发票不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
             throw new ServiceException("当前状态【{}】不允许修改发票", existing.getStatus());
         }
-        SoInvoice entity = MapstructUtils.convert(bo, SoInvoice.class);
-        int rows = baseMapper.updateById(entity);
+        // 显式拷贝可编辑字段(不覆盖 version/verified_amount/original_invoice_id/red_flag/电票字段/status)
+        existing.setInvoiceNo(bo.getInvoiceNo());
+        existing.setInvoiceCode(bo.getInvoiceCode());
+        existing.setInvoiceType(bo.getInvoiceType());
+        existing.setClientId(bo.getClientId());
+        existing.setClientName(bo.getClientName());
+        existing.setBuyerTaxId(bo.getBuyerTaxId());
+        existing.setBuyerTitle(bo.getBuyerTitle());
+        existing.setBuyerBankName(bo.getBuyerBankName());
+        existing.setBuyerBankAccount(bo.getBuyerBankAccount());
+        existing.setBuyerAddressPhone(bo.getBuyerAddressPhone());
+        existing.setSoId(bo.getSoId());
+        existing.setContractId(bo.getContractId());
+        existing.setInvoiceDate(bo.getInvoiceDate());
+        existing.setCurrency(bo.getCurrency());
+        existing.setExchangeRate(bo.getExchangeRate());
+        existing.setAmount(bo.getAmount());
+        existing.setTaxAmount(bo.getTaxAmount());
+        existing.setTotalAmount(bo.getTotalAmount());
+        if (StringUtils.isNotBlank(bo.getIssueChannel())) {
+            existing.setIssueChannel(bo.getIssueChannel());
+        }
+        existing.setRemark(bo.getRemark());
+        existing.setAttr1(bo.getAttr1());
+        existing.setAttr2(bo.getAttr2());
+        existing.setAttr3(bo.getAttr3());
+        existing.setAttr4(bo.getAttr4());
+        // 头更新:existing.version 来自 DB,@Version 自动 WHERE version=? 并 SET version+1
+        int rows = baseMapper.updateById(existing);
+        if (rows == 0) {
+            throw new ServiceException("发票数据已变更,修改失败,请重试");
+        }
+        // 明细行差量更新(按 lineId 新增/更新/删除)
         if (bo.getSoInvoiceLineList() != null) {
-            lineMapper.delete(Wrappers.lambdaQuery(SoInvoiceLine.class)
-                .eq(SoInvoiceLine::getInvoiceId, entity.getInvoiceId()));
-            for (SoInvoiceLine line : bo.getSoInvoiceLineList()) {
-                line.setInvoiceId(entity.getInvoiceId());
-                lineMapper.insert(line);
-            }
+            diffUpdateLines(existing.getInvoiceId(), bo.getSoInvoiceLineList());
         }
         return rows;
+    }
+
+    /**
+     * 发票明细行差量更新:按 lineId 区分新增/更新/删除,取代全删重插。
+     */
+    private void diffUpdateLines(Long invoiceId, List<SoInvoiceLine> newLines) {
+        List<SoInvoiceLine> existingLines = lineMapper.selectList(
+            Wrappers.<SoInvoiceLine>lambdaQuery().eq(SoInvoiceLine::getInvoiceId, invoiceId));
+        Map<Long, SoInvoiceLine> existingMap = new HashMap<>();
+        for (SoInvoiceLine l : existingLines) {
+            if (l.getLineId() != null) {
+                existingMap.put(l.getLineId(), l);
+            }
+        }
+        Set<Long> keepIds = new HashSet<>();
+        for (SoInvoiceLine line : newLines) {
+            if (line.getLineId() == null) {
+                line.setInvoiceId(invoiceId);
+                lineMapper.insert(line);
+            } else {
+                line.setInvoiceId(invoiceId);
+                lineMapper.updateById(line);
+                keepIds.add(line.getLineId());
+            }
+        }
+        // 删除:现有行中不在保留集合内的
+        for (SoInvoiceLine l : existingLines) {
+            if (l.getLineId() != null && !keepIds.contains(l.getLineId())) {
+                lineMapper.deleteById(l.getLineId());
+            }
+        }
     }
 
     /**
@@ -141,10 +336,202 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
             if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
                 throw new ServiceException("发票【{}】当前状态不允许删除", existing.getInvoiceNo());
             }
+            // 删除草稿前回退订单行已开票数量(防重复开票计数残留)
+            if (existing != null) {
+                rollbackInvoicedQty(existing);
+            }
             lineMapper.delete(Wrappers.lambdaQuery(SoInvoiceLine.class)
                 .eq(SoInvoiceLine::getInvoiceId, id));
         }
         return baseMapper.deleteBatchIds(List.of(ids));
+    }
+
+    /**
+     * 核销发票(原子累加 verified_amount,达价税合计则转 VERIFIED)。
+     * <p>P1 仅实现回写原语;fin_settlement 记账由 P3 FinSettlementService.settle() 调用本方法。
+     * 采用 setSql 原子累加 + @Version 乐观锁,防并发超开。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void verifyInvoice(Long invoiceId, BigDecimal verifyAmount, Long receiptId) {
+        if (verifyAmount == null || verifyAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ServiceException("核销金额必须大于0");
+        }
+        SoInvoice invoice = baseMapper.selectById(invoiceId);
+        if (invoice == null) {
+            throw new ServiceException("发票不存在");
+        }
+        if (!STATUS_ISSUED.equals(invoice.getStatus())) {
+            throw new ServiceException("当前状态【{}】不允许核销,仅已开票发票可核销", invoice.getStatus());
+        }
+        BigDecimal newVerified = invoice.getVerifiedAmount().add(verifyAmount);
+        String newStatus = newVerified.compareTo(invoice.getTotalAmount()) >= 0 ? STATUS_VERIFIED : STATUS_ISSUED;
+        int rows = baseMapper.update(null,
+            Wrappers.<SoInvoice>lambdaUpdate()
+                .eq(SoInvoice::getInvoiceId, invoiceId)
+                .eq(SoInvoice::getVersion, invoice.getVersion())
+                .setSql("verified_amount = verified_amount + " + verifyAmount.toPlainString())
+                .set(SoInvoice::getStatus, newStatus)
+                .set(SoInvoice::getVersion, invoice.getVersion() + 1));
+        if (rows == 0) {
+            throw new ServiceException("发票数据已变更,核销失败,请重试");
+        }
+        log.info("发票核销, invoiceId={}, verifyAmount={}, status={}->{}", invoiceId, verifyAmount, invoice.getStatus(), newStatus);
+    }
+
+    /**
+     * 作废发票(仅 ISSUED/DRAFT 可作废);回退 so_sales_order_line.invoiced_qty 以释放可开票量。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelInvoice(Long invoiceId, String reason) {
+        SoInvoice invoice = baseMapper.selectById(invoiceId);
+        if (invoice == null) {
+            throw new ServiceException("发票不存在");
+        }
+        if (!STATUS_ISSUED.equals(invoice.getStatus()) && !STATUS_DRAFT.equals(invoice.getStatus())) {
+            throw new ServiceException("当前状态【{}】不允许作废", invoice.getStatus());
+        }
+        // 回退订单行已开票数量
+        rollbackInvoicedQty(invoice);
+        int rows = baseMapper.update(null,
+            Wrappers.<SoInvoice>lambdaUpdate()
+                .eq(SoInvoice::getInvoiceId, invoiceId)
+                .eq(SoInvoice::getVersion, invoice.getVersion())
+                .set(SoInvoice::getStatus, STATUS_CANCELLED)
+                .set(SoInvoice::getVersion, invoice.getVersion() + 1));
+        if (rows == 0) {
+            throw new ServiceException("发票数据已变更,作废失败,请重试");
+        }
+        log.info("发票作废, invoiceId={}, invoiceNo={}, reason={}", invoiceId, invoice.getInvoiceNo(),
+            StringUtils.isBlank(reason) ? "作废" : reason);
+    }
+
+    /**
+     * 红冲发票:复制原行取负生成红字发票(red_flag=1),冲减原发票 verified_amount,
+     * 冲减订单行 invoiced_qty。仅 ISSUED/VERIFIED 的蓝字发票可红冲。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long redFlush(Long originalInvoiceId, String reason) {
+        SoInvoice original = baseMapper.selectById(originalInvoiceId);
+        if (original == null) {
+            throw new ServiceException("原发票不存在");
+        }
+        if (!STATUS_ISSUED.equals(original.getStatus()) && !STATUS_VERIFIED.equals(original.getStatus())) {
+            throw new ServiceException("当前状态【{}】不允许红冲,仅已开票/已核销的蓝字发票可红冲", original.getStatus());
+        }
+        if ("1".equals(original.getRedFlag())) {
+            throw new ServiceException("红字发票不允许再次红冲");
+        }
+        List<SoInvoiceLine> origLines = lineMapper.selectList(
+            Wrappers.<SoInvoiceLine>lambdaQuery().eq(SoInvoiceLine::getInvoiceId, originalInvoiceId));
+        if (origLines.isEmpty()) {
+            throw new ServiceException("原发票无明细行,无法红冲");
+        }
+
+        // 复制原行取负生成红字发票头
+        SoInvoice red = new SoInvoice();
+        red.setInvoiceNo("FP" + IdWorker.getId());
+        red.setInvoiceType(original.getInvoiceType());
+        red.setClientId(original.getClientId());
+        red.setClientName(original.getClientName());
+        red.setSoId(original.getSoId());
+        red.setContractId(original.getContractId());
+        red.setOriginalInvoiceId(originalInvoiceId);
+        red.setRedFlag("1");
+        red.setInvoiceDate(new Date());
+        red.setCurrency(original.getCurrency());
+        red.setExchangeRate(original.getExchangeRate());
+        red.setBuyerTaxId(original.getBuyerTaxId());
+        red.setBuyerTitle(original.getBuyerTitle());
+        red.setBuyerBankName(original.getBuyerBankName());
+        red.setBuyerBankAccount(original.getBuyerBankAccount());
+        red.setBuyerAddressPhone(original.getBuyerAddressPhone());
+        red.setStatus(STATUS_ISSUED);
+        red.setIssueChannel("MANUAL");
+        red.setVersion(0);
+        red.setVerifiedAmount(BigDecimal.ZERO);
+        red.setRemark(StringUtils.isBlank(reason) ? "红冲" : reason);
+
+        List<SoInvoiceLine> redLines = new ArrayList<>();
+        BigDecimal redAmount = BigDecimal.ZERO;
+        BigDecimal redTax = BigDecimal.ZERO;
+        BigDecimal redTotal = BigDecimal.ZERO;
+        for (SoInvoiceLine orig : origLines) {
+            SoInvoiceLine rl = new SoInvoiceLine();
+            rl.setLineNo(orig.getLineNo());
+            rl.setMaterialId(orig.getMaterialId());
+            rl.setMaterialCode(orig.getMaterialCode());
+            rl.setMaterialName(orig.getMaterialName());
+            rl.setMaterialSpec(orig.getMaterialSpec());
+            rl.setQuantity(orig.getQuantity() != null ? orig.getQuantity().negate() : BigDecimal.ZERO);
+            rl.setUnit(orig.getUnit());
+            rl.setUnitPrice(orig.getUnitPrice());
+            rl.setLineAmount(orig.getLineAmount() != null ? orig.getLineAmount().negate() : BigDecimal.ZERO);
+            rl.setTaxRate(orig.getTaxRate());
+            rl.setTaxAmount(orig.getTaxAmount() != null ? orig.getTaxAmount().negate() : BigDecimal.ZERO);
+            rl.setTotalAmount(orig.getTotalAmount() != null ? orig.getTotalAmount().negate() : BigDecimal.ZERO);
+            rl.setSoLineId(orig.getSoLineId());
+            rl.setSortOrder(orig.getSortOrder());
+            redLines.add(rl);
+            redAmount = redAmount.add(rl.getLineAmount());
+            redTax = redTax.add(rl.getTaxAmount());
+            redTotal = redTotal.add(rl.getTotalAmount());
+        }
+        red.setAmount(redAmount);
+        red.setTaxAmount(redTax);
+        red.setTotalAmount(redTotal);
+        baseMapper.insert(red);
+        for (SoInvoiceLine rl : redLines) {
+            rl.setInvoiceId(red.getInvoiceId());
+            lineMapper.insert(rl);
+            // 红字数量为负,原子加即冲减订单行已开票数量
+            if (rl.getSoLineId() != null && rl.getQuantity() != null) {
+                soSalesOrderLineMapper.update(null,
+                    Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                        .eq(SoSalesOrderLine::getLineId, rl.getSoLineId())
+                        .setSql("invoiced_qty = invoiced_qty + " + rl.getQuantity().toPlainString()));
+            }
+        }
+
+        // 冲减原发票已核销金额(取红字总额绝对值);若归零且原为 VERIFIED 则回退至 ISSUED
+        BigDecimal offset = redTotal.abs();
+        BigDecimal origVerified = original.getVerifiedAmount() != null ? original.getVerifiedAmount() : BigDecimal.ZERO;
+        BigDecimal newVerified = origVerified.subtract(offset);
+        if (newVerified.compareTo(BigDecimal.ZERO) < 0) {
+            newVerified = BigDecimal.ZERO;
+        }
+        boolean backToIssued = newVerified.compareTo(BigDecimal.ZERO) == 0 && STATUS_VERIFIED.equals(original.getStatus());
+        int rows = baseMapper.update(null,
+            Wrappers.<SoInvoice>lambdaUpdate()
+                .eq(SoInvoice::getInvoiceId, originalInvoiceId)
+                .eq(SoInvoice::getVersion, original.getVersion())
+                .set(SoInvoice::getVerifiedAmount, newVerified)
+                .set(SoInvoice::getStatus, backToIssued ? STATUS_ISSUED : original.getStatus())
+                .set(SoInvoice::getVersion, original.getVersion() + 1));
+        if (rows == 0) {
+            throw new ServiceException("原发票数据已变更,红冲失败,请重试");
+        }
+        log.info("发票红冲, originalInvoiceId={}, redInvoiceId={}, redTotal={}", originalInvoiceId, red.getInvoiceId(), redTotal);
+        return red.getInvoiceId();
+    }
+
+    /**
+     * 回退发票对应订单行的已开票数量(作废/删除草稿时调用)。
+     */
+    private void rollbackInvoicedQty(SoInvoice invoice) {
+        List<SoInvoiceLine> lines = lineMapper.selectList(
+            Wrappers.<SoInvoiceLine>lambdaQuery().eq(SoInvoiceLine::getInvoiceId, invoice.getInvoiceId()));
+        for (SoInvoiceLine line : lines) {
+            if (line.getSoLineId() == null || line.getQuantity() == null) {
+                continue;
+            }
+            soSalesOrderLineMapper.update(null,
+                Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getLineId, line.getSoLineId())
+                    .setSql("invoiced_qty = invoiced_qty - " + line.getQuantity().toPlainString()));
+        }
     }
 
     // ==================== Flowable 工作流集成 ====================

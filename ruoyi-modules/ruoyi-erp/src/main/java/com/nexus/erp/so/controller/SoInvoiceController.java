@@ -16,6 +16,7 @@ import com.nexus.erp.so.service.ISoInvoiceService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -103,6 +104,51 @@ public class SoInvoiceController extends BaseController {
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SoInvoiceBo bo) {
         return toAjax(soInvoiceService.updateByBo(bo));
+    }
+
+    /**
+     * 核销发票（累加已核销金额，达价税合计则转已核销）
+     * <p>权限标识：{@code so:invoice:edit}（TODO P3 拆分为 so:invoice:verify 独立权限）</p>
+     *
+     * @param id           发票ID
+     * @param verifyAmount 本次核销金额
+     */
+    @SaCheckPermission("so:invoice:edit")
+    @Log(title = "销售发票", businessType = BusinessType.UPDATE)
+    @PutMapping("/verify/{id}")
+    public R<Void> verify(@PathVariable Long id, @RequestParam BigDecimal verifyAmount) {
+        soInvoiceService.verifyInvoice(id, verifyAmount, null);
+        return R.ok();
+    }
+
+    /**
+     * 作废发票（回退订单行已开票数量）
+     * <p>权限标识：{@code so:invoice:edit}</p>
+     *
+     * @param id     发票ID
+     * @param reason 作废原因
+     */
+    @SaCheckPermission("so:invoice:edit")
+    @Log(title = "销售发票", businessType = BusinessType.UPDATE)
+    @PutMapping("/cancel/{id}")
+    public R<Void> cancel(@PathVariable Long id, @RequestParam(required = false) String reason) {
+        soInvoiceService.cancelInvoice(id, reason);
+        return R.ok();
+    }
+
+    /**
+     * 红冲发票（生成红字负数发票，冲减原发票已核销金额）
+     * <p>权限标识：{@code so:invoice:edit}</p>
+     *
+     * @param id     原蓝字发票ID
+     * @param reason 红冲原因
+     * @return 红字发票ID
+     */
+    @SaCheckPermission("so:invoice:edit")
+    @Log(title = "销售发票", businessType = BusinessType.INSERT)
+    @PutMapping("/redFlush/{id}")
+    public R<Long> redFlush(@PathVariable Long id, @RequestParam(required = false) String reason) {
+        return R.ok(soInvoiceService.redFlush(id, reason));
     }
 
     /**

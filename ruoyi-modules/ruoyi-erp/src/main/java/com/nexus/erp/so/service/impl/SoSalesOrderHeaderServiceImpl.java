@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -297,7 +298,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         baseMapper.updateById(header);
 
         // ⑦ 发布事件（为未来开票/通知预留）
-        applicationEventPublisher.publishEvent(new SalesOrderFulfilledEvent(this, soId, header.getSoNo()));
+        applicationEventPublisher.publishEvent(new SalesOrderFulfilledEvent(this, soId, header.getSoNo(), TenantHelper.getTenantId()));
         log.info("销售订单履行完成, soId={}, soNo={}, force={}", soId, header.getSoNo(), force);
     }
 

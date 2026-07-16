@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -39,6 +40,11 @@ public class SoInvoice extends TenantEntity {
     private String invoiceNo;
 
     /**
+     * 发票代码（数电票时代可与号码合并）
+     */
+    private String invoiceCode;
+
+    /**
      * 发票类型
      */
     private String invoiceType;
@@ -54,6 +60,31 @@ public class SoInvoice extends TenantEntity {
     private String clientName;
 
     /**
+     * 购买方纳税人识别号
+     */
+    private String buyerTaxId;
+
+    /**
+     * 购买方发票抬头
+     */
+    private String buyerTitle;
+
+    /**
+     * 购买方开户行
+     */
+    private String buyerBankName;
+
+    /**
+     * 购买方银行账号
+     */
+    private String buyerBankAccount;
+
+    /**
+     * 购买方地址、电话
+     */
+    private String buyerAddressPhone;
+
+    /**
      * 销售订单ID
      */
     private Long soId;
@@ -62,6 +93,16 @@ public class SoInvoice extends TenantEntity {
      * 合同ID
      */
     private Long contractId;
+
+    /**
+     * 红冲原发票ID（NULL=蓝字正数）
+     */
+    private Long originalInvoiceId;
+
+    /**
+     * 是否红字发票 0-否 1-是
+     */
+    private String redFlag;
 
     /**
      * 开票日期
@@ -107,6 +148,32 @@ public class SoInvoice extends TenantEntity {
      * 审批流程ID
      */
     private Long selectFlowId;
+
+    /**
+     * 开票渠道 MANUAL-手工 ELECTRONIC-电子发票平台
+     */
+    private String issueChannel;
+
+    /**
+     * 数电票号码（平台返回）
+     */
+    private String eInvoiceNo;
+
+    /**
+     * 发票PDF的OSS对象ID（私有桶存ossId）
+     */
+    private Long pdfOssId;
+
+    /**
+     * 发票OFD的OSS对象ID
+     */
+    private Long ofdOssId;
+
+    /**
+     * 乐观锁版本号
+     */
+    @Version
+    private Integer version;
 
     /**
      * 备注

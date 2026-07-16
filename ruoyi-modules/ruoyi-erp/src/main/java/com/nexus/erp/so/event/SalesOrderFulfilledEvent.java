@@ -16,10 +16,15 @@ public class SalesOrderFulfilledEvent extends ApplicationEvent {
 
     private final Long soId;
     private final String soNo;
+    /**
+     * 租户ID(异步监听线程不传播 Sa-Token ThreadLocal,显式携带以供 TenantHelper.dynamic 恢复)
+     */
+    private final String tenantId;
 
-    public SalesOrderFulfilledEvent(Object source, Long soId, String soNo) {
+    public SalesOrderFulfilledEvent(Object source, Long soId, String soNo, String tenantId) {
         super(source);
         this.soId = soId;
         this.soNo = soNo;
+        this.tenantId = tenantId;
     }
 }

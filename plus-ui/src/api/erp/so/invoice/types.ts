@@ -26,12 +26,24 @@ export interface InvoiceVO {
   invoiceId: number;
   /** 发票号 */
   invoiceNo: string;
+  /** 发票代码 */
+  invoiceCode?: string;
   /** 发票类型 */
   invoiceType: string;
   /** 客户ID */
   clientId: number;
   /** 客户名称 */
   clientName: string;
+  /** 购买方纳税人识别号 */
+  buyerTaxId?: string;
+  /** 购买方发票抬头 */
+  buyerTitle?: string;
+  /** 购买方开户行 */
+  buyerBankName?: string;
+  /** 购买方银行账号 */
+  buyerBankAccount?: string;
+  /** 购买方地址、电话 */
+  buyerAddressPhone?: string;
   /** 销售订单ID */
   soId: number;
   /** 合同ID */
@@ -50,6 +62,8 @@ export interface InvoiceVO {
   verifiedAmount: number;
   /** 发票状态 */
   status: string;
+  /** 开票渠道 MANUAL-手工 ELECTRONIC-电子发票平台 */
+  issueChannel?: string;
   /** 备注 */
   remark: string;
   /** 创建时间 */
@@ -66,12 +80,24 @@ export interface InvoiceForm {
   invoiceId?: number;
   /** 发票号 */
   invoiceNo: string;
+  /** 发票代码 */
+  invoiceCode?: string;
   /** 发票类型 */
   invoiceType?: string;
   /** 客户ID */
   clientId?: number;
   /** 客户名称 */
   clientName?: string;
+  /** 购买方纳税人识别号 */
+  buyerTaxId?: string;
+  /** 购买方发票抬头 */
+  buyerTitle?: string;
+  /** 购买方开户行 */
+  buyerBankName?: string;
+  /** 购买方银行账号 */
+  buyerBankAccount?: string;
+  /** 购买方地址、电话 */
+  buyerAddressPhone?: string;
   /** 销售订单ID */
   soId?: number;
   /** 合同ID */
@@ -92,6 +118,8 @@ export interface InvoiceForm {
   verifiedAmount?: number;
   /** 发票状态 */
   status?: string;
+  /** 开票渠道 MANUAL-手工 ELECTRONIC-电子发票平台 */
+  issueChannel?: string;
   /** 备注 */
   remark?: string;
   /** 发票明细行列表 */

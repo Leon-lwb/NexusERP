@@ -37,6 +37,11 @@ public class SoInvoiceBo extends BaseEntity {
     private String invoiceNo;
 
     /**
+     * 发票代码
+     */
+    private String invoiceCode;
+
+    /**
      * 发票类型
      */
     private String invoiceType;
@@ -50,6 +55,17 @@ public class SoInvoiceBo extends BaseEntity {
      * 客户名称
      */
     private String clientName;
+
+    /** 购买方纳税人识别号 */
+    private String buyerTaxId;
+    /** 购买方发票抬头 */
+    private String buyerTitle;
+    /** 购买方开户行 */
+    private String buyerBankName;
+    /** 购买方银行账号 */
+    private String buyerBankAccount;
+    /** 购买方地址、电话 */
+    private String buyerAddressPhone;
 
     /**
      * 销售订单ID
@@ -100,6 +116,9 @@ public class SoInvoiceBo extends BaseEntity {
      * 发票状态
      */
     private String status;
+
+    /** 开票渠道 MANUAL-手工 ELECTRONIC-电子发票平台 */
+    private String issueChannel;
 
     /**
      * 备注
