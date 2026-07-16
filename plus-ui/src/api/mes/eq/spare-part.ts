@@ -91,5 +91,9 @@ export const stockTransaction = (data: EqSpareStockBo): AxiosPromise<number> => 
 export const listStockLog = (params?: any): AxiosPromise<EqSpareStockLogVO[]> =>
   request({ url: '/mes/eq/spare-part/stock-log', method: 'get', params });
 
+/** 导出库存流水 */
+export const exportStockLog = (params?: any) =>
+  download('/mes/eq/spare-part/stock-log/export', { ...params }, `spare_stock_log_${new Date().getTime()}.xlsx`);
+
 /** 低于安全库存的备件 */
 export const listLowStock = (): AxiosPromise<EqSparePartVO[]> => request({ url: '/mes/eq/spare-part/lowStock', method: 'get' });

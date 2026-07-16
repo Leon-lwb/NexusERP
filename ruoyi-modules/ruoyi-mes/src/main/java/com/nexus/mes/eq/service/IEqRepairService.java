@@ -3,12 +3,13 @@ package com.nexus.mes.eq.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
+import com.nexus.mes.eq.domain.bo.EqRepairCompleteBo;
 import com.nexus.mes.eq.domain.vo.EqRepairStatisticsVo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES设备维修记录 Service 业务层接口
@@ -54,14 +55,13 @@ public interface IEqRepairService {
 
     /**
      * 完成(REPAIRING -> COMPLETED), 置维修结束时间/停机时长/维修成本,
-     * 联动: 该设备无其他活跃报修则恢复NORMAL
+     * 联动: 该设备无其他活跃报修则恢复NORMAL;
+     * 若携带更换备件明细, 事务内写 eq_repair_spare 并扣减备件库存(P1-2 R1)。
      *
-     * @param repairId      维修ID
-     * @param downtimeHours 停机时长(小时)
-     * @param repairCost    维修成本
-     * @param remark        备注
+     * @param repairId 维修ID
+     * @param bo       完成信息(停机时长/维修成本/备注/更换备件明细)
      */
-    void completeRepair(Long repairId, BigDecimal downtimeHours, BigDecimal repairCost, String remark);
+    void completeRepair(Long repairId, EqRepairCompleteBo bo);
 
     /**
      * 故障统计分析(KPI + 趋势 + Pareto + 设备TOP)
@@ -71,4 +71,11 @@ public interface IEqRepairService {
      * @return 统计结果
      */
     EqRepairStatisticsVo statistics(Date startDate, Date endDate);
+
+    /**
+     * 维修状态计数汇总(监控大屏用, 全量 COUNT 不受分页 pageSize 限制)
+     *
+     * @return {reported, repairing, completed, active(=reported+repairing), total}
+     */
+    Map<String, Object> statusSummary();
 }

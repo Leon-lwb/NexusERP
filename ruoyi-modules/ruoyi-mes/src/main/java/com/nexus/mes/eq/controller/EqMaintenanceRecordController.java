@@ -3,6 +3,7 @@ package com.nexus.mes.eq.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -11,6 +12,7 @@ import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.eq.domain.bo.EqMaintenanceRecordBo;
 import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
 import com.nexus.mes.eq.service.IEqMaintenanceRecordService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,6 +66,17 @@ public class EqMaintenanceRecordController extends BaseController {
     @PostMapping
     public R<EqMaintenanceRecordVo> add(@Validated @RequestBody EqMaintenanceRecordBo bo) {
         return R.ok(eqMaintenanceRecordService.insertByBo(bo));
+    }
+
+    /**
+     * 导出保养执行记录列表
+     */
+    @SaCheckPermission("mes:eq:maintenance:record:export")
+    @Log(title = "保养执行记录", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(EqMaintenanceRecordBo bo, HttpServletResponse response) {
+        List<EqMaintenanceRecordVo> list = eqMaintenanceRecordService.selectList(bo);
+        ExcelUtil.exportExcel(list, "保养执行记录", EqMaintenanceRecordVo.class, response);
     }
 
     /**

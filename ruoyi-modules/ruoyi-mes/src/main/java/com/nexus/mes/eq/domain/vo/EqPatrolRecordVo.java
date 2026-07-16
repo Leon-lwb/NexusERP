@@ -2,6 +2,8 @@ package com.nexus.mes.eq.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import com.nexus.common.translation.annotation.Translation;
+import com.nexus.common.translation.constant.TransConstant;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import com.nexus.mes.eq.domain.EqPatrolRecord;
@@ -30,7 +32,11 @@ public class EqPatrolRecordVo implements Serializable {
     private String actualValue;
     @ExcelProperty("结果")
     private String result;
+    /** 巡检照片(OSS对象ID, 私有桶存ID不存URL) */
     private String photoOssId;
+    /** 巡检照片访问地址(由 photoOssId 翻译; 私有桶返回临时签名URL) */
+    @Translation(type = TransConstant.OSS_ID_TO_URL, mapper = "photoOssId")
+    private String photoUrl;
     @ExcelProperty("执行人")
     private String executorName;
     @ExcelProperty("执行时间")

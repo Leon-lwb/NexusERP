@@ -9,18 +9,19 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
+import com.nexus.mes.eq.domain.bo.EqRepairCompleteBo;
 import com.nexus.mes.eq.domain.vo.EqRepairStatisticsVo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
 import com.nexus.mes.eq.service.IEqRepairService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import com.nexus.common.excel.utils.ExcelUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES设备维修记录 Controller
@@ -75,16 +76,13 @@ public class EqRepairController extends BaseController {
     }
 
     /**
-     * 维修完成(REPAIRING -> COMPLETED), 联动恢复设备状态
+     * 维修完成(REPAIRING -> COMPLETED), 联动恢复设备状态; 可携带更换备件明细(P1-2 R1)
      */
     @SaCheckPermission("mes:eq:repair:complete")
     @Log(title = "维修完成", businessType = BusinessType.UPDATE)
     @PutMapping("/complete/{repairId}")
-    public R<Void> complete(@PathVariable Long repairId,
-                            @RequestParam(required = false) BigDecimal downtimeHours,
-                            @RequestParam(required = false) BigDecimal repairCost,
-                            @RequestParam(required = false) String remark) {
-        eqRepairService.completeRepair(repairId, downtimeHours, repairCost, remark);
+    public R<Void> complete(@PathVariable Long repairId, @RequestBody EqRepairCompleteBo bo) {
+        eqRepairService.completeRepair(repairId, bo);
         return R.ok();
     }
 
@@ -108,5 +106,14 @@ public class EqRepairController extends BaseController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date endDate) {
         return R.ok(eqRepairService.statistics(startDate, endDate));
+    }
+
+    /**
+     * 维修状态计数汇总(监控大屏用, 全量 COUNT 不受分页限制)
+     */
+    @SaCheckPermission("mes:eq:repair:list")
+    @GetMapping("/summary")
+    public R<Map<String, Object>> summary() {
+        return R.ok(eqRepairService.statusSummary());
     }
 }

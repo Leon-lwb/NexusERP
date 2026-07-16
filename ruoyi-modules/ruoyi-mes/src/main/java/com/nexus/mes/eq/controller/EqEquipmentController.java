@@ -12,6 +12,7 @@ import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
+import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import org.springframework.validation.annotation.Validated;
@@ -103,6 +104,24 @@ public class EqEquipmentController extends BaseController {
     @GetMapping("/{equipmentId}/iotLatest")
     public R<Map<String, String>> getIotLatest(@PathVariable Long equipmentId) {
         return R.ok(eqEquipmentService.getIotLatest(equipmentId));
+    }
+
+    /**
+     * 查询设备当前关联的进行中工单(P1-6 设备-工单联动)
+     */
+    @SaCheckPermission("mes:eq:equipment:query")
+    @GetMapping("/{equipmentId}/currentWorkOrder")
+    public R<List<ProWorkOrderVo>> currentWorkOrder(@PathVariable Long equipmentId) {
+        return R.ok(eqEquipmentService.currentWorkOrders(equipmentId));
+    }
+
+    /**
+     * 设备状态计数汇总(监控大屏用, 全量 COUNT 不受分页限制)
+     */
+    @SaCheckPermission("mes:eq:equipment:list")
+    @GetMapping("/summary")
+    public R<Map<String, Object>> summary() {
+        return R.ok(eqEquipmentService.statusSummary());
     }
 
     /**

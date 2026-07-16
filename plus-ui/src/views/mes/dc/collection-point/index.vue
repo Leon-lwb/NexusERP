@@ -115,8 +115,8 @@
             placeholder="自动采集频率(秒)"
           />
         </el-form-item>
-        <el-form-item label="关联设备ID">
-          <el-input v-model.number="form.equipmentId" placeholder="可选, 设备ID" clearable />
+        <el-form-item label="关联设备">
+          <equipment-select v-model="form.equipmentId" />
         </el-form-item>
         <el-form-item label="关联工序ID">
           <el-input v-model.number="form.processId" placeholder="可选, 工序ID" clearable />
@@ -148,6 +148,7 @@ import {
   delCollectionPoint
 } from '@/api/mes/dc/collection-point';
 import type { DcCollectionPointVO, DcCollectionPointQuery, DcCollectionPointForm } from '@/api/mes/dc/collection-point';
+import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 

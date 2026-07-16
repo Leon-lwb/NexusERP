@@ -53,9 +53,17 @@ export const addRepair = (data: EqRepairForm): AxiosPromise<EqRepairVO> => reque
 /** 维修开工 */
 export const startRepair = (repairId: string | number) => request({ url: `/mes/eq/repair/start/${repairId}`, method: 'put' });
 
-/** 维修完成 */
-export const completeRepair = (repairId: string | number, downtimeHours?: number, repairCost?: number, remark?: string) =>
-  request({ url: `/mes/eq/repair/complete/${repairId}`, method: 'put', params: { downtimeHours, repairCost, remark } });
+/** 维修完成表单(含更换备件明细, P1-2 R1) */
+export interface EqRepairCompleteForm {
+  downtimeHours?: number;
+  repairCost?: number;
+  remark?: string;
+  spares?: Array<{ spareId: number; quantity: number; remark?: string }>;
+}
+
+/** 维修完成(可携带更换备件明细, 事务内扣减库存) */
+export const completeRepair = (repairId: string | number, data: EqRepairCompleteForm) =>
+  request({ url: `/mes/eq/repair/complete/${repairId}`, method: 'put', data });
 
 /** 导出维修记录 */
 export const exportRepair = (query?: EqRepairQuery) => {
@@ -78,3 +86,6 @@ export interface EqRepairStatisticsVO {
 
 export const getRepairStatistics = (params?: { startDate?: string; endDate?: string }): AxiosPromise<EqRepairStatisticsVO> =>
   request({ url: '/mes/eq/repair/statistics', method: 'get', params });
+
+/** 维修状态计数汇总(监控大屏用, 全量 COUNT) */
+export const getRepairSummary = (): AxiosPromise<Record<string, number>> => request({ url: '/mes/eq/repair/summary', method: 'get' });

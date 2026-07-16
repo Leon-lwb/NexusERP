@@ -72,6 +72,11 @@ public interface IEqSparePartService {
     TableDataInfo<EqSpareStockLogVo> selectStockLogPage(EqSpareStockBo bo, PageQuery pageQuery);
 
     /**
+     * 查询库存流水列表(不分页, 用于导出)
+     */
+    List<EqSpareStockLogVo> selectStockLogList(EqSpareStockBo bo);
+
+    /**
      * 查询低于安全库存的备件(用于监控大屏/告警)
      */
     List<EqSparePartVo> selectLowStock();

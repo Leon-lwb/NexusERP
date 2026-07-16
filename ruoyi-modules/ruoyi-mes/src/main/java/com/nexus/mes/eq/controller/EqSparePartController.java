@@ -120,6 +120,17 @@ public class EqSparePartController extends BaseController {
     }
 
     /**
+     * 导出库存流水
+     */
+    @SaCheckPermission("mes:eq:spare:log:export")
+    @Log(title = "备件库存流水", businessType = BusinessType.EXPORT)
+    @PostMapping("/stock-log/export")
+    public void stockLogExport(EqSpareStockBo bo, HttpServletResponse response) {
+        List<EqSpareStockLogVo> list = eqSparePartService.selectStockLogList(bo);
+        ExcelUtil.exportExcel(list, "备件库存流水", EqSpareStockLogVo.class, response);
+    }
+
+    /**
      * 低于安全库存的备件(监控/告警用)
      */
     @SaCheckPermission("mes:eq:spare:query")

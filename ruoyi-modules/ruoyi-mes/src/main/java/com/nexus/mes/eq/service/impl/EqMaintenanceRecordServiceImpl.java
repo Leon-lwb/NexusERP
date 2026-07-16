@@ -52,6 +52,13 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
     }
 
     @Override
+    public List<EqMaintenanceRecordVo> selectList(EqMaintenanceRecordBo bo) {
+        List<EqMaintenanceRecordVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
+        fillEquipmentName(list);
+        return list;
+    }
+
+    @Override
     public EqMaintenanceRecordVo selectById(Long recordId) {
         EqMaintenanceRecordVo vo = baseMapper.selectVoById(recordId);
         if (vo != null) {

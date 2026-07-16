@@ -183,13 +183,13 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
 
     @Override
     public TableDataInfo<EqSpareStockLogVo> selectStockLogPage(EqSpareStockBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<EqSpareStockLog> lqw = Wrappers.<EqSpareStockLog>lambdaQuery()
-            .eq(bo.getSpareId() != null, EqSpareStockLog::getSpareId, bo.getSpareId())
-            .eq(StringUtils.isNotBlank(bo.getTransactionType()), EqSpareStockLog::getTransactionType, bo.getTransactionType())
-            .eq(StringUtils.isNotBlank(bo.getRefType()), EqSpareStockLog::getRefType, bo.getRefType())
-            .orderByDesc(EqSpareStockLog::getOperateTime);
-        Page<EqSpareStockLogVo> page = stockLogMapper.selectVoPage(pageQuery.build(), lqw);
+        Page<EqSpareStockLogVo> page = stockLogMapper.selectVoPage(pageQuery.build(), buildStockLogQueryWrapper(bo));
         return TableDataInfo.build(page);
+    }
+
+    @Override
+    public List<EqSpareStockLogVo> selectStockLogList(EqSpareStockBo bo) {
+        return stockLogMapper.selectVoList(buildStockLogQueryWrapper(bo));
     }
 
     @Override
@@ -209,6 +209,14 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
             .like(StringUtils.isNotBlank(bo.getSpareName()), EqSparePart::getSpareName, bo.getSpareName())
             .eq(StringUtils.isNotBlank(bo.getCategory()), EqSparePart::getCategory, bo.getCategory())
             .orderByDesc(EqSparePart::getCreateTime);
+    }
+
+    private LambdaQueryWrapper<EqSpareStockLog> buildStockLogQueryWrapper(EqSpareStockBo bo) {
+        return Wrappers.<EqSpareStockLog>lambdaQuery()
+            .eq(bo.getSpareId() != null, EqSpareStockLog::getSpareId, bo.getSpareId())
+            .eq(StringUtils.isNotBlank(bo.getTransactionType()), EqSpareStockLog::getTransactionType, bo.getTransactionType())
+            .eq(StringUtils.isNotBlank(bo.getRefType()), EqSpareStockLog::getRefType, bo.getRefType())
+            .orderByDesc(EqSpareStockLog::getOperateTime);
     }
 
     /** 填充 lowStock 标记: current_stock < safety_stock */

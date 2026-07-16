@@ -1,4 +1,4 @@
-import request from '@/utils/request';
+import request, { download } from '@/utils/request';
 import { AxiosPromise } from 'axios';
 
 /** 保养执行记录视图对象 */
@@ -55,3 +55,7 @@ export const addMaintenanceRecord = (data: EqMaintenanceRecordForm): AxiosPromis
 
 /** 批量删除保养执行记录 */
 export const delMaintenanceRecord = (ids: (string | number)[]) => request({ url: `/mes/eq/maintenance-record/${ids.join(',')}`, method: 'delete' });
+
+/** 导出保养执行记录 */
+export const exportMaintenanceRecord = (query?: EqMaintenanceRecordQuery) =>
+  download('/mes/eq/maintenance-record/export', { ...query }, `maintenance_record_${new Date().getTime()}.xlsx`);

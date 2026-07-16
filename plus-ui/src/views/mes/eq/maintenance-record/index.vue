@@ -30,6 +30,9 @@
         <el-col :span="1.5">
           <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:eq:maintenance:complete']">手动保养</el-button>
         </el-col>
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:maintenance:record:export']">导出</el-button>
+        </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
@@ -96,7 +99,7 @@
 </template>
 
 <script setup lang="ts" name="MesEqMaintenanceRecord">
-import { listMaintenanceRecord, addMaintenanceRecord, delMaintenanceRecord } from '@/api/mes/eq/maintenance-record';
+import { listMaintenanceRecord, addMaintenanceRecord, delMaintenanceRecord, exportMaintenanceRecord } from '@/api/mes/eq/maintenance-record';
 import type { EqMaintenanceRecordVO, EqMaintenanceRecordQuery, EqMaintenanceRecordForm } from '@/api/mes/eq/maintenance-record';
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 
@@ -148,6 +151,10 @@ const handleQuery = () => {
 const resetQuery = () => {
   proxy?.resetForm('queryFormRef');
   handleQuery();
+};
+
+const handleExport = () => {
+  exportMaintenanceRecord(queryParams.value);
 };
 
 const handleOpenAdd = () => {

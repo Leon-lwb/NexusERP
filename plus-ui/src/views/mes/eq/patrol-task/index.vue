@@ -91,18 +91,25 @@
               ><el-select v-model="s.row.result" size="small"
                 ><el-option label="正常" value="NORMAL" /><el-option label="异常" value="ABNORMAL" /></el-select></template
           ></el-table-column>
-          <el-table-column label="备注" width="150"
-            ><template #default="s"><el-input v-model="s.row.remark" size="small" /></template
-          ></el-table-column>
-          <el-table-column label="" width="60"
-            ><template #default="s"><el-button link type="danger" icon="Delete" size="small" @click="execRecords.splice(s.$index, 1)" /></template
-          ></el-table-column>
+          <el-table-column label="备注" width="150">
+            <template #default="s"><el-input v-model="s.row.remark" size="small" /></template>
+          </el-table-column>
+          <el-table-column label="照片" width="120">
+            <template #default="s">
+              <div class="patrol-photo-cell">
+                <ImageUpload v-model="s.row.photoOssId" :limit="1" :file-size="5" :is-show-tip="false" />
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="" width="60">
+            <template #default="s"><el-button link type="danger" icon="Delete" size="small" @click="execRecords.splice(s.$index, 1)" /></template>
+          </el-table-column>
         </el-table>
         <el-button
           size="small"
           icon="Plus"
           style="margin-top: 8px"
-          @click="execRecords.push({ equipmentId: undefined, checkItem: '', actualValue: '', result: 'NORMAL', remark: '' })"
+          @click="execRecords.push({ equipmentId: undefined, checkItem: '', actualValue: '', result: 'NORMAL', remark: '', photoOssId: '' })"
           >添加记录</el-button
         >
       </el-form>
@@ -127,6 +134,7 @@ import {
 } from '@/api/mes/eq/patrol';
 import type { EqPatrolTaskVO, EqPatrolTaskQuery, EqPatrolTaskForm, EqPatrolRouteVO, EqPatrolRecordForm } from '@/api/mes/eq/patrol';
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
+import ImageUpload from '@/components/ImageUpload/index.vue';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_patrol_status } = toRefs<any>(proxy?.useDict('mes_patrol_status'));
 const dataList = ref<EqPatrolTaskVO[]>([]);
@@ -143,7 +151,9 @@ const formRules = {
 };
 const form = ref<EqPatrolTaskForm>({} as EqPatrolTaskForm);
 const execDialog = reactive({ visible: false, taskId: 0, routeId: 0, routeName: '' });
-const execRecords = ref<Array<{ equipmentId?: number; checkItem: string; actualValue: string; result: string; remark: string }>>([]);
+const execRecords = ref<Array<{ equipmentId?: number; checkItem: string; actualValue: string; result: string; remark: string; photoOssId?: string }>>(
+  []
+);
 const execSubmitting = ref(false);
 const getList = async () => {
   loading.value = true;
@@ -196,7 +206,7 @@ const handleExecute = (row: EqPatrolTaskVO) => {
   execDialog.taskId = row.taskId;
   execDialog.routeId = row.routeId;
   execDialog.routeName = row.routeName || '';
-  execRecords.value = [{ equipmentId: undefined as unknown as number, checkItem: '', actualValue: '', result: 'NORMAL', remark: '' }];
+  execRecords.value = [{ equipmentId: undefined as unknown as number, checkItem: '', actualValue: '', result: 'NORMAL', remark: '', photoOssId: '' }];
   execDialog.visible = true;
 };
 const submitExecute = async (complete: boolean) => {
@@ -244,5 +254,14 @@ onMounted(() => {
 }
 .list-search .search-actions :deep(.el-form-item__content) {
   justify-content: flex-end;
+}
+/* 巡检照片上传: 缩小 picture-card 以适应表格行 */
+.patrol-photo-cell :deep(.el-upload--picture-card) {
+  width: 80px;
+  height: 80px;
+}
+.patrol-photo-cell :deep(.el-upload-list--picture-card .el-upload-list__item) {
+  width: 80px;
+  height: 80px;
 }
 </style>

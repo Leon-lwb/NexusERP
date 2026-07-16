@@ -13,6 +13,8 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.EqRepair;
 import com.nexus.mes.eq.domain.bo.EqRepairBo;
+import com.nexus.mes.eq.domain.bo.EqRepairCompleteBo;
+import com.nexus.mes.eq.domain.bo.EqRepairSpareBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.domain.vo.EqRepairStatisticsVo;
 import com.nexus.mes.eq.domain.vo.EqRepairVo;
@@ -20,6 +22,7 @@ import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import com.nexus.mes.eq.service.IEqRepairService;
+import com.nexus.mes.eq.service.IEqRepairSpareService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +60,7 @@ public class EqRepairServiceImpl implements IEqRepairService {
     private final EqRepairMapper baseMapper;
     private final EqEquipmentMapper equipmentMapper;
     private final IEqEquipmentService equipmentService;
+    private final IEqRepairSpareService repairSpareService;
 
     @Override
     public TableDataInfo<EqRepairVo> selectPageList(EqRepairBo bo, PageQuery pageQuery) {
@@ -126,11 +131,12 @@ public class EqRepairServiceImpl implements IEqRepairService {
     }
 
     /**
-     * 完成(REPAIRING -> COMPLETED), 联动: 该设备无其他活跃报修则恢复 NORMAL
+     * 完成(REPAIRING -> COMPLETED), 联动: 该设备无其他活跃报修则恢复 NORMAL;
+     * 若携带更换备件明细, 事务内写 eq_repair_spare + 扣减库存(P1-2 R1)
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void completeRepair(Long repairId, BigDecimal downtimeHours, BigDecimal repairCost, String remark) {
+    public void completeRepair(Long repairId, EqRepairCompleteBo bo) {
         EqRepair repair = baseMapper.selectById(repairId);
         if (repair == null) {
             throw new ServiceException("维修单不存在: " + repairId);
@@ -138,6 +144,9 @@ public class EqRepairServiceImpl implements IEqRepairService {
         if (!STATUS_REPAIRING.equals(repair.getStatus())) {
             throw new ServiceException("维修单状态已变更, 仅维修中可完成");
         }
+        BigDecimal downtimeHours = bo.getDowntimeHours();
+        BigDecimal repairCost = bo.getRepairCost();
+        String remark = bo.getRemark();
         Date repairEnd = new Date();
         int rows = baseMapper.update(null, Wrappers.<EqRepair>lambdaUpdate()
             .set(EqRepair::getRepairEnd, repairEnd)
@@ -159,6 +168,19 @@ public class EqRepairServiceImpl implements IEqRepairService {
             log.info("设备无其他活跃报修, 恢复正常: equipmentId={}", repair.getEquipmentId());
         } else {
             log.info("设备仍有活跃报修或已终态, 维持当前状态: equipmentId={}", repair.getEquipmentId());
+        }
+
+        // 更换备件明细: 事务内写 eq_repair_spare + 扣减库存(REPAIR_USE), 与本次完成原子
+        List<EqRepairSpareBo> spares = bo.getSpares();
+        if (spares != null && !spares.isEmpty()) {
+            for (EqRepairSpareBo s : spares) {
+                if (s.getSpareId() == null || s.getQuantity() == null || s.getQuantity().signum() <= 0) {
+                    throw new ServiceException("备件明细非法: 备件ID/数量必填且数量需大于0");
+                }
+                s.setRepairId(repairId);
+            }
+            repairSpareService.batchAdd(spares);
+            log.info("维修领用备件 {} 项: repairId={}", spares.size(), repairId);
         }
     }
 
@@ -305,5 +327,28 @@ public class EqRepairServiceImpl implements IEqRepairService {
             .limit(10).collect(Collectors.toList()));
 
         return vo;
+    }
+
+    /**
+     * 维修状态计数汇总(全量 COUNT, 不受分页限制, 供监控大屏)
+     */
+    @Override
+    public Map<String, Object> statusSummary() {
+        long reported = countByStatus(STATUS_REPORTED);
+        long repairing = countByStatus(STATUS_REPAIRING);
+        long completed = countByStatus(STATUS_COMPLETED);
+        Map<String, Object> map = new LinkedHashMap<>(8);
+        map.put("reported", reported);
+        map.put("repairing", repairing);
+        map.put("completed", completed);
+        map.put("active", reported + repairing);
+        map.put("total", reported + repairing + completed);
+        return map;
+    }
+
+    private long countByStatus(String status) {
+        Long cnt = baseMapper.selectCount(Wrappers.<EqRepair>lambdaQuery()
+            .eq(StringUtils.isNotBlank(status), EqRepair::getStatus, status));
+        return cnt == null ? 0L : cnt;
     }
 }

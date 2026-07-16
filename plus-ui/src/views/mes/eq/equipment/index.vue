@@ -41,12 +41,24 @@
           <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:eq:equipment:add']">新增设备</el-button>
         </el-col>
         <el-col :span="1.5">
+          <el-button
+            type="danger"
+            plain
+            icon="Delete"
+            :disabled="selectedIds.length === 0"
+            @click="handleBatchDelete"
+            v-hasPermi="['mes:eq:equipment:remove']"
+            >批量删除</el-button
+          >
+        </el-col>
+        <el-col :span="1.5">
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:equipment:export']">导出</el-button>
         </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="设备编码" prop="equipmentCode" />
         <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
         <el-table-column label="类型" prop="equipmentType" align="center">
@@ -77,8 +89,9 @@
             <el-tag v-else type="danger" size="small">未知</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" :show-overflow-tooltip="false">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
           <template #default="scope">
+            <el-button link type="primary" icon="View" @click="handleOpenDetail(scope.row)">详情</el-button>
             <el-button link type="primary" icon="Edit" @click="handleOpenEdit(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">编辑</el-button>
             <el-button v-if="scope.row.iotDeviceId" link type="primary" icon="View" @click="handleViewIotLatest(scope.row)">IoT数据</el-button>
             <el-button link type="primary" icon="Link" @click="handleBindIot(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">关联IoT</el-button>
@@ -128,24 +141,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="工作中心">
-              <el-select
-                v-model="form.workcenterId"
-                filterable
-                remote
-                reserve-keyword
-                clearable
-                :remote-method="handleWorkcenterSearch"
-                placeholder="搜索工作中心(编码/名称)"
-                style="width: 100%"
-                @change="onWorkcenterChange"
-              >
-                <el-option
-                  v-for="w in workcenterOptions"
-                  :key="w.workstation_id"
-                  :label="w.workstation_code + ' - ' + w.workstation_name"
-                  :value="w.workstation_id"
-                />
-              </el-select>
+              <workcenter-select v-model="form.workcenterId" @change="onWorkcenterChange" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -236,6 +232,94 @@
         <el-button type="primary" @click="submitIotBind">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 设备详情抽屉(R5: 基本信息+IoT实时+最近点检+维修/保养历史) -->
+    <el-drawer v-model="detailDrawer" :title="`设备详情 - ${detailData.equipmentCode || ''} ${detailData.equipmentName || ''}`" size="60%">
+      <el-tabs v-model="detailActiveTab">
+        <el-tab-pane label="基本信息" name="basic">
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="设备编码">{{ detailData.equipmentCode }}</el-descriptions-item>
+            <el-descriptions-item label="设备名称">{{ detailData.equipmentName }}</el-descriptions-item>
+            <el-descriptions-item label="设备类型">
+              <dict-tag :options="mes_equipment_type" :value="detailData.equipmentType" />
+            </el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <dict-tag :options="mes_equipment_status" :value="detailData.status" />
+            </el-descriptions-item>
+            <el-descriptions-item label="型号">{{ detailData.model || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="制造商">{{ detailData.manufacturer || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="出厂编号">{{ detailData.serialNo || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="工作中心">{{ detailData.workcenterCode || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="安装位置" :span="2">{{ detailData.location || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="购置日期">{{ detailData.purchaseDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="保修到期">{{ detailData.warrantyDate || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="IoT 设备">{{ detailData.iotDeviceId ? '已关联' : '未关联' }}</el-descriptions-item>
+            <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '-' }}</el-descriptions-item>
+          </el-descriptions>
+        </el-tab-pane>
+
+        <el-tab-pane label="IoT 实时" name="iot">
+          <el-button type="primary" plain icon="Refresh" :loading="detailIotLoading" @click="loadDetailIot">刷新最新数据</el-button>
+          <el-descriptions v-if="Object.keys(detailIotData).length > 0" :column="2" border style="margin-top: 12px">
+            <el-descriptions-item v-for="(val, key) in detailIotData" :key="key" :label="String(key)">{{ val }}</el-descriptions-item>
+          </el-descriptions>
+          <el-empty v-else description="暂无数据, 点击刷新获取" :image-size="60" />
+        </el-tab-pane>
+
+        <el-tab-pane label="最近点检" name="inspection">
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="最近点检时间">{{ parseInspectTime(detailData.lastInspection) }}</el-descriptions-item>
+          </el-descriptions>
+          <div v-if="detailInspectionItems.length > 0" style="margin-top: 12px; font-weight: 600">点检项目配置</div>
+          <el-table v-if="detailInspectionItems.length > 0" :data="detailInspectionItems" border size="small" style="margin-top: 8px">
+            <el-table-column label="序号" type="index" width="60" align="center" />
+            <el-table-column label="点检项目" prop="item" />
+            <el-table-column label="标准" prop="standard" />
+          </el-table>
+          <el-empty v-else description="未配置点检项" :image-size="60" />
+        </el-tab-pane>
+
+        <el-tab-pane label="维修历史" name="repair">
+          <el-table :data="detailRepairs" border size="small" max-height="420">
+            <el-table-column label="维修单号" prop="repairNo" width="150" />
+            <el-table-column label="故障类型" prop="faultType" align="center" width="110">
+              <template #default="scope">
+                <dict-tag v-if="scope.row.faultType" :options="mes_fault_type" :value="scope.row.faultType" size="small" />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" prop="status" align="center" width="90">
+              <template #default="scope">
+                <dict-tag :options="mes_repair_status" :value="scope.row.status" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="停机时长(h)" prop="downtimeHours" align="right" width="100" />
+            <el-table-column label="报修时间" prop="createTime" width="160" />
+          </el-table>
+          <el-empty v-if="detailRepairs.length === 0" description="暂无维修记录" :image-size="60" />
+        </el-tab-pane>
+
+        <el-tab-pane label="保养历史" name="maintenance">
+          <el-table :data="detailMaintenance" border size="small" max-height="420">
+            <el-table-column label="保养类型" prop="maintenanceType" align="center" width="90">
+              <template #default="scope">
+                <dict-tag v-if="scope.row.maintenanceType" :options="mes_maintenance_type" :value="scope.row.maintenanceType" size="small" />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="执行人" prop="executorName" width="100" />
+            <el-table-column label="执行时间" prop="executeTime" width="160" />
+            <el-table-column label="结果" prop="result" align="center" width="80">
+              <template #default="scope">
+                <dict-tag :options="mes_maintenance_result" :value="scope.row.result" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="保养内容" prop="content" show-overflow-tooltip />
+          </el-table>
+          <el-empty v-if="detailMaintenance.length === 0" description="暂无保养记录" :image-size="60" />
+        </el-tab-pane>
+      </el-tabs>
+    </el-drawer>
   </div>
 </template>
 
@@ -249,20 +333,44 @@ import {
   getIotLatest,
   updateIotDeviceLink,
   batchIotStatus,
-  listWorkcenters,
   exportEquipment
 } from '@/api/mes/eq/equipment';
 import { listIotDeviceForBind } from '@/api/iot/device';
 import type { EqEquipmentVO, EqEquipmentQuery, EqEquipmentForm } from '@/api/mes/eq/equipment';
+import WorkcenterSelect from '@/components/WorkcenterSelect/index.vue';
+import { listRepair } from '@/api/mes/eq/repair';
+import type { EqRepairVO } from '@/api/mes/eq/repair';
+import { listMaintenanceRecordByEquipment } from '@/api/mes/eq/maintenance-record';
+import type { EqMaintenanceRecordVO } from '@/api/mes/eq/maintenance-record';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
-const { mes_equipment_status, mes_equipment_type } = toRefs<any>(proxy?.useDict('mes_equipment_status', 'mes_equipment_type'));
+const { mes_equipment_status, mes_equipment_type, mes_fault_type, mes_repair_status, mes_maintenance_type, mes_maintenance_result } = toRefs<any>(
+  proxy?.useDict(
+    'mes_equipment_status',
+    'mes_equipment_type',
+    'mes_fault_type',
+    'mes_repair_status',
+    'mes_maintenance_type',
+    'mes_maintenance_result'
+  )
+);
 
 const dataList = ref<EqEquipmentVO[]>([]);
 const loading = ref(true);
 const showSearch = ref(true);
 const total = ref(0);
+const selectedIds = ref<(string | number)[]>([]);
+
+/** 设备详情抽屉(R5) */
+const detailDrawer = ref(false);
+const detailActiveTab = ref('basic');
+const detailData = ref<EqEquipmentVO>({} as EqEquipmentVO);
+const detailIotData = ref<Record<string, string>>({});
+const detailIotLoading = ref(false);
+const detailInspectionItems = ref<{ item: string; standard: string }[]>([]);
+const detailRepairs = ref<EqRepairVO[]>([]);
+const detailMaintenance = ref<EqMaintenanceRecordVO[]>([]);
 
 const queryParams = ref<EqEquipmentQuery>({
   pageNum: 1,
@@ -283,9 +391,6 @@ const form = ref<EqEquipmentForm>({} as EqEquipmentForm);
 
 /** 点检项结构化编辑(替代 textarea JSON) */
 const inspectionItemRows = ref<{ item: string; standard: string }[]>([]);
-
-/** 工作中心选择器选项 */
-const workcenterOptions = ref<any[]>([]);
 
 const getList = async () => {
   loading.value = true;
@@ -322,15 +427,9 @@ async function loadIotStatus(rows: EqEquipmentVO[]) {
   }
 }
 
-/** 工作中心远程搜索 */
-async function handleWorkcenterSearch(query: string) {
-  const res = await listWorkcenters(query);
-  workcenterOptions.value = res.data || [];
-}
-
-function onWorkcenterChange(val: number) {
-  const w = workcenterOptions.value.find((w) => w.workstation_id === val);
-  form.value.workcenterCode = w ? w.workstation_code : '';
+/** 工作中心选择变更: 同步 workcenterCode 供列表展示 */
+function onWorkcenterChange(_val: number | string | null | undefined, item?: { workstation_code?: string }) {
+  form.value.workcenterCode = item?.workstation_code || '';
 }
 
 /** IoT 最新数据对话框 */
@@ -423,7 +522,6 @@ const resetForm = () => {
     remark: ''
   };
   inspectionItemRows.value = [];
-  workcenterOptions.value = [];
 };
 
 const handleOpenAdd = () => {
@@ -435,9 +533,6 @@ const handleOpenEdit = async (row: EqEquipmentVO) => {
   const res = await getEquipment(row.equipmentId);
   form.value = { ...res.data };
   // 解析点检项 JSON 为结构化行
-  if (form.value.workcenterId) {
-    handleWorkcenterSearch('');
-  }
   inspectionItemRows.value = [];
   if (form.value.inspectionItems) {
     try {
@@ -469,6 +564,77 @@ const handleDelete = async (row: EqEquipmentVO) => {
   await delEquipment([row.equipmentId]);
   proxy?.$modal.msgSuccess('删除成功');
   getList();
+};
+
+const handleSelectionChange = (selection: EqEquipmentVO[]) => {
+  selectedIds.value = selection.map((item) => item.equipmentId);
+};
+
+const handleBatchDelete = async () => {
+  if (selectedIds.value.length === 0) return;
+  await proxy?.$modal.confirm('确认删除选中的 ' + selectedIds.value.length + ' 台设备？');
+  await delEquipment(selectedIds.value);
+  proxy?.$modal.msgSuccess('删除成功');
+  selectedIds.value = [];
+  getList();
+};
+
+/** 打开设备详情抽屉: 加载基本信息 + 并行加载维修/保养历史 */
+const handleOpenDetail = async (row: EqEquipmentVO) => {
+  detailActiveTab.value = 'basic';
+  detailIotData.value = {};
+  detailRepairs.value = [];
+  detailMaintenance.value = [];
+  detailDrawer.value = true;
+  try {
+    const res = await getEquipment(row.equipmentId);
+    detailData.value = res.data;
+    detailInspectionItems.value = [];
+    if (res.data.inspectionItems) {
+      try {
+        detailInspectionItems.value = JSON.parse(res.data.inspectionItems);
+      } catch {
+        detailInspectionItems.value = [];
+      }
+    }
+  } catch {
+    /* 请求拦截器已提示 */
+  }
+  // 并行加载维修/保养历史(不阻塞抽屉打开)
+  Promise.allSettled([
+    listRepair({ equipmentId: row.equipmentId as number, pageNum: 1, pageSize: 50 } as any),
+    listMaintenanceRecordByEquipment(row.equipmentId)
+  ]).then(([repairRes, mtRes]) => {
+    if (repairRes.status === 'fulfilled') detailRepairs.value = repairRes.value.rows || [];
+    if (mtRes.status === 'fulfilled') detailMaintenance.value = (mtRes.value.data || []) as EqMaintenanceRecordVO[];
+  });
+};
+
+/** 加载设备 IoT 最新数据(详情抽屉 IoT Tab) */
+const loadDetailIot = async () => {
+  if (!detailData.value.iotDeviceId) {
+    proxy?.$modal.msgWarning('该设备未关联 IoT 设备');
+    return;
+  }
+  detailIotLoading.value = true;
+  try {
+    const res = await getIotLatest(detailData.value.equipmentId);
+    detailIotData.value = res.data || {};
+  } catch {
+    proxy?.$modal.msgError('查询 IoT 数据失败');
+  } finally {
+    detailIotLoading.value = false;
+  }
+};
+
+/** 解析点检记录 JSON 中的点检时间 */
+const parseInspectTime = (json?: string): string => {
+  if (!json) return '从未点检';
+  try {
+    return JSON.parse(json).inspectTime || '未知时间';
+  } catch {
+    return '解析失败';
+  }
 };
 
 const handleExport = () => {

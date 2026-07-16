@@ -28,6 +28,18 @@
         <el-table-column label="结果" prop="result" align="center" width="80">
           <template #default="s"><dict-tag :options="mes_patrol_result" :value="s.row.result" /></template>
         </el-table-column>
+        <el-table-column label="照片" prop="photoUrl" width="90" align="center">
+          <template #default="s">
+            <el-image
+              v-if="s.row.photoUrl"
+              :src="s.row.photoUrl"
+              :preview-src-list="[s.row.photoUrl]"
+              fit="cover"
+              style="width: 60px; height: 60px"
+            />
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="执行人" prop="executorName" width="90" />
         <el-table-column label="执行时间" prop="executeTime" width="160" />
         <el-table-column label="备注" prop="remark" min-width="120" show-overflow-tooltip />

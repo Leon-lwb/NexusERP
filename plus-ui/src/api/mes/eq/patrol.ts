@@ -64,6 +64,8 @@ export interface EqPatrolRecordVO {
   actualValue?: string;
   result: string;
   photoOssId?: string;
+  /** 巡检照片访问地址(后端 @Translation(OSS_ID_TO_URL) 由 photoOssId 翻译) */
+  photoUrl?: string;
   executorName?: string;
   executeTime?: string;
   remark?: string;

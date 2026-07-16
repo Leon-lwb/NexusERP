@@ -20,6 +20,9 @@ import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
+import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
+import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.service.IProAndonService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +58,7 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     private final IotDeviceDataQueryService iotDeviceDataQueryService;
     private final IProAndonService proAndonService;
     private final MesMqSendService mesMqSendService;
+    private final ProWorkOrderMapper proWorkOrderMapper;
 
     @Override
     public TableDataInfo<EqEquipmentVo> selectPageList(EqEquipmentBo bo, PageQuery pageQuery) {
@@ -70,6 +75,40 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     @Override
     public List<EqEquipmentVo> selectList(EqEquipmentBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
+    }
+
+    /**
+     * 查询设备当前关联的进行中工单(P1-6 设备-工单联动)
+     * <p>
+     * 取 wo_status in (RELEASED, IN_PROGRESS) 的工单, 按创建时间倒序。
+     * 与设备同库(ry-mes), TenantEntity 自动按租户隔离。
+     */
+    @Override
+    public List<ProWorkOrderVo> currentWorkOrders(Long equipmentId) {
+        return proWorkOrderMapper.selectVoList(Wrappers.<ProWorkOrder>lambdaQuery()
+            .eq(ProWorkOrder::getEquipmentId, equipmentId)
+            .in(ProWorkOrder::getWoStatus, List.of("RELEASED", "IN_PROGRESS"))
+            .orderByDesc(ProWorkOrder::getCreateTime));
+    }
+
+    /**
+     * 设备状态计数汇总(全量 COUNT, 不受分页限制, 供监控大屏)
+     */
+    @Override
+    public Map<String, Object> statusSummary() {
+        Map<String, Object> map = new LinkedHashMap<>(8);
+        map.put("total", countByStatus(null));
+        map.put("normal", countByStatus(STATUS_NORMAL));
+        map.put("maintenance", countByStatus(STATUS_MAINTENANCE));
+        map.put("fault", countByStatus(STATUS_FAULT));
+        map.put("scrapped", countByStatus(STATUS_SCRAPPED));
+        return map;
+    }
+
+    private long countByStatus(String status) {
+        Long cnt = baseMapper.selectCount(Wrappers.<EqEquipment>lambdaQuery()
+            .eq(StringUtils.isNotBlank(status), EqEquipment::getStatus, status));
+        return cnt == null ? 0L : cnt;
     }
 
     @Override

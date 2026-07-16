@@ -101,6 +101,13 @@ export const batchIotStatus = (equipmentIds: (string | number)[]): AxiosPromise<
 export const listWorkcenters = (keyword?: string): AxiosPromise<any[]> =>
   request({ url: '/mes/eq/equipment/workcenters', method: 'get', params: { keyword } });
 
+/** 设备状态计数汇总(监控大屏用, 全量 COUNT) */
+export const getEquipmentSummary = (): AxiosPromise<Record<string, number>> => request({ url: '/mes/eq/equipment/summary', method: 'get' });
+
+/** 查询设备当前关联的进行中工单(P1-6 设备-工单联动) */
+export const getCurrentWorkOrders = (equipmentId: string | number): AxiosPromise<any[]> =>
+  request({ url: `/mes/eq/equipment/${equipmentId}/currentWorkOrder`, method: 'get' });
+
 /** 导出设备台账 */
 export const exportEquipment = (query?: EqEquipmentQuery) => {
   download('/mes/eq/equipment/export', { ...query }, `equipment_${new Date().getTime()}.xlsx`);

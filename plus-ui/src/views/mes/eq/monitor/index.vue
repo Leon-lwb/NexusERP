@@ -35,7 +35,7 @@
       <el-col :span="4">
         <el-card shadow="hover" class="status-card danger-bg">
           <div class="stat-label">活跃维修</div>
-          <div class="stat-value danger">{{ activeRepairs.length }}</div>
+          <div class="stat-value danger">{{ activeRepairCount }}</div>
         </el-card>
       </el-col>
     </el-row>
@@ -55,7 +55,7 @@
             <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
             <el-table-column label="状态" prop="status" align="center" width="80">
               <template #default="scope">
-                <el-tag :type="statusTagType(scope.row.status)" size="small">{{ statusLabel(scope.row.status) }}</el-tag>
+                <dict-tag :options="mes_equipment_status" :value="scope.row.status" size="small" />
               </template>
             </el-table-column>
             <el-table-column label="IoT" align="center" width="80">
@@ -130,9 +130,9 @@
 </template>
 
 <script setup lang="ts" name="MesEqMonitor">
-import { listEquipment, batchIotStatus } from '@/api/mes/eq/equipment';
+import { listEquipment, batchIotStatus, getEquipmentSummary } from '@/api/mes/eq/equipment';
 import type { EqEquipmentVO } from '@/api/mes/eq/equipment';
-import { listRepair } from '@/api/mes/eq/repair';
+import { listRepair, getRepairSummary } from '@/api/mes/eq/repair';
 import type { EqRepairVO } from '@/api/mes/eq/repair';
 import { listLowStock } from '@/api/mes/eq/spare-part';
 import type { EqSparePartVO } from '@/api/mes/eq/spare-part';
@@ -149,21 +149,20 @@ const activeRepairs = ref<EqRepairVO[]>([]);
 const lowStockList = ref<EqSparePartVO[]>([]);
 
 const statusSummary = reactive({ total: 0, normal: 0, fault: 0, maintenance: 0, scrapped: 0, iotOnline: 0 });
-
-const statusLabel = (s?: string) =>
-  (({ NORMAL: '正常', MAINTENANCE: '保养中', FAULT: '故障', SCRAPPED: '报废' }) as Record<string, string>)[s || ''] || s || '-';
-const statusTagType = (s?: string) =>
-  (({ NORMAL: 'success', MAINTENANCE: 'warning', FAULT: 'danger', SCRAPPED: 'info' }) as Record<string, string>)[s || ''] || 'info';
+/** 活跃维修计数(来自 summary 全量 COUNT, 不受列表 pageSize 限制) */
+const activeRepairCount = ref(0);
 
 const loadAll = async () => {
   refreshing.value = true;
   try {
-    // 并行加载设备 + 活跃维修(REPORTED/REPAIRING 分别按状态查, 避免全量取后再客户端过滤导致漏算) + 低库存
-    const [eqRes, reportedRes, repairingRes, lowRes] = await Promise.all([
+    // 统计计数走 summary(全量 COUNT, 不受 pageSize 限制); 明细列表仍按状态分页拉取用于展示
+    const [eqRes, reportedRes, repairingRes, lowRes, eqSummaryRes, repairSummaryRes] = await Promise.all([
       listEquipment({ pageNum: 1, pageSize: 500 } as any),
       listRepair({ pageNum: 1, pageSize: 100, status: 'REPORTED' } as any),
       listRepair({ pageNum: 1, pageSize: 100, status: 'REPAIRING' } as any),
-      listLowStock()
+      listLowStock(),
+      getEquipmentSummary(),
+      getRepairSummary()
     ]);
     equipmentList.value = eqRes.rows || [];
     activeRepairs.value = [...(reportedRes.rows || []), ...(repairingRes.rows || [])];
@@ -188,12 +187,14 @@ const loadAll = async () => {
       }
     }
 
-    // 汇总
-    statusSummary.total = equipmentList.value.length;
-    statusSummary.normal = equipmentList.value.filter((r) => r.status === 'NORMAL').length;
-    statusSummary.fault = equipmentList.value.filter((r) => r.status === 'FAULT').length;
-    statusSummary.maintenance = equipmentList.value.filter((r) => r.status === 'MAINTENANCE').length;
-    statusSummary.scrapped = equipmentList.value.filter((r) => r.status === 'SCRAPPED').length;
+    // 设备/维修状态计数用 summary(全量 COUNT, 不受列表 pageSize 限制, 避免 >500 台漏算)
+    const es = eqSummaryRes.data || {};
+    statusSummary.total = es.total || 0;
+    statusSummary.normal = es.normal || 0;
+    statusSummary.fault = es.fault || 0;
+    statusSummary.maintenance = es.maintenance || 0;
+    statusSummary.scrapped = es.scrapped || 0;
+    activeRepairCount.value = (repairSummaryRes.data?.active as number) || 0;
     statusSummary.iotOnline = equipmentList.value.filter((r) => r.iotStatus === 'ONLINE').length;
   } catch {
     // 请求拦截器已弹出错误提示, 此处吞掉异常避免 30s 轮询产生未处理 rejection 并保证 interval 存活

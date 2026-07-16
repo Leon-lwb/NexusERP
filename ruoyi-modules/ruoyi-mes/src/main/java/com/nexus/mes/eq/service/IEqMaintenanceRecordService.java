@@ -28,6 +28,11 @@ public interface IEqMaintenanceRecordService {
     TableDataInfo<EqMaintenanceRecordVo> selectPageList(EqMaintenanceRecordBo bo, PageQuery pageQuery);
 
     /**
+     * 查询保养执行记录列表(不分页, 用于导出)
+     */
+    List<EqMaintenanceRecordVo> selectList(EqMaintenanceRecordBo bo);
+
+    /**
      * 根据ID获取保养执行记录详情
      */
     EqMaintenanceRecordVo selectById(Long recordId);

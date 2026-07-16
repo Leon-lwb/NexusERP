@@ -5,6 +5,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
+import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 
 import java.util.List;
 import java.util.Map;
@@ -109,6 +110,21 @@ public interface IEqEquipmentService {
      * @return 是否更新成功
      */
     Boolean updateIotDeviceLink(Long equipmentId, Long iotDeviceId);
+
+    /**
+     * 查询设备当前关联的进行中工单(P1-6 设备-工单联动)
+     *
+     * @param equipmentId 设备ID
+     * @return 进行中(RELEASED/IN_PROGRESS)的工单列表, 按创建时间倒序
+     */
+    List<ProWorkOrderVo> currentWorkOrders(Long equipmentId);
+
+    /**
+     * 设备状态计数汇总(监控大屏用, 全量 COUNT 不受分页 pageSize 限制)
+     *
+     * @return {total, normal, maintenance, fault, scrapped}
+     */
+    Map<String, Object> statusSummary();
 
     /**
      * 提交设备点检结果

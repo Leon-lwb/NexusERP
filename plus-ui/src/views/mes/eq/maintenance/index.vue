@@ -18,8 +18,7 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="启用" value="ACTIVE" />
-                <el-option label="停用" value="INACTIVE" />
+                <el-option v-for="d in mes_maintenance_status" :key="d.value" :label="d.label" :value="d.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -37,12 +36,24 @@
           <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:eq:maintenance:add']">新增计划</el-button>
         </el-col>
         <el-col :span="1.5">
+          <el-button
+            type="danger"
+            plain
+            icon="Delete"
+            :disabled="selectedIds.length === 0"
+            @click="handleBatchDelete"
+            v-hasPermi="['mes:eq:maintenance:remove']"
+            >批量删除</el-button
+          >
+        </el-col>
+        <el-col :span="1.5">
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:maintenance:export']">导出</el-button>
         </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="计划名称" prop="planName" min-width="120" show-overflow-tooltip />
         <el-table-column label="保养类型" prop="maintenanceType" align="center">
           <template #default="scope">
@@ -61,7 +72,7 @@
         </el-table-column>
         <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 'ACTIVE' ? 'success' : 'info'">{{ scope.row.status === 'ACTIVE' ? '启用' : '停用' }}</el-tag>
+            <dict-tag :options="mes_maintenance_status" :value="scope.row.status" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" :show-overflow-tooltip="false">
@@ -119,8 +130,7 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" placeholder="状态" style="width: 100%">
-            <el-option label="启用" value="ACTIVE" />
-            <el-option label="停用" value="INACTIVE" />
+            <el-option v-for="d in mes_maintenance_status" :key="d.value" :label="d.label" :value="d.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
@@ -170,12 +180,15 @@ import type { EqMaintenancePlanVO, EqMaintenancePlanQuery, EqMaintenancePlanForm
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { mes_maintenance_type, mes_maintenance_result } = toRefs<any>(proxy?.useDict('mes_maintenance_type', 'mes_maintenance_result'));
+const { mes_maintenance_type, mes_maintenance_result, mes_maintenance_status } = toRefs<any>(
+  proxy?.useDict('mes_maintenance_type', 'mes_maintenance_result', 'mes_maintenance_status')
+);
 
 const dataList = ref<EqMaintenancePlanVO[]>([]);
 const loading = ref(true);
 const showSearch = ref(true);
 const total = ref(0);
+const selectedIds = ref<(string | number)[]>([]);
 
 const queryParams = ref<EqMaintenancePlanQuery>({
   pageNum: 1,
@@ -272,6 +285,19 @@ const handleDelete = async (row: EqMaintenancePlanVO) => {
   await proxy?.$modal.confirm('确认删除保养计划"' + row.planName + '"？');
   await delMaintenancePlan([row.planId]);
   proxy?.$modal.msgSuccess('删除成功');
+  getList();
+};
+
+const handleSelectionChange = (selection: EqMaintenancePlanVO[]) => {
+  selectedIds.value = selection.map((item) => item.planId);
+};
+
+const handleBatchDelete = async () => {
+  if (selectedIds.value.length === 0) return;
+  await proxy?.$modal.confirm('确认删除选中的 ' + selectedIds.value.length + ' 条保养计划？');
+  await delMaintenancePlan(selectedIds.value);
+  proxy?.$modal.msgSuccess('删除成功');
+  selectedIds.value = [];
   getList();
 };
 

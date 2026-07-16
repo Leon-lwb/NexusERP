@@ -12172,6 +12172,8 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053350971, '000000', 3, '已完成
 INSERT INTO `sys_dict_data` VALUES (2068956987053350972, '000000', 4, '已取消', 'CANCELLED', 'mes_patrol_status', NULL, 'info', 'N', 103, 1, '2026-07-14 00:16:41', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350973, '000000', 1, '正常', 'NORMAL', 'mes_patrol_result', NULL, 'success', 'Y', 103, 1, '2026-07-14 00:16:41', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350974, '000000', 2, '异常', 'ABNORMAL', 'mes_patrol_result', NULL, 'danger', 'N', 103, 1, '2026-07-14 00:16:41', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2068956987053350975, '000000', 1, '启用', 'ACTIVE', 'mes_maintenance_status', NULL, 'success', 'Y', 103, 1, '2026-07-16 00:00:00', NULL, NULL, '保养计划启用状态');
+INSERT INTO `sys_dict_data` VALUES (2068956987053350976, '000000', 2, '停用', 'INACTIVE', 'mes_maintenance_status', NULL, 'info', 'N', 103, 1, '2026-07-16 00:00:00', NULL, NULL, '保养计划停用状态');
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -12336,6 +12338,7 @@ INSERT INTO `sys_dict_type` VALUES (2055216327650344970, '000000', '备件分类
 INSERT INTO `sys_dict_type` VALUES (2055216327650344971, '000000', '备件流水类型', 'mes_spare_txn_type', 103, 1, '2026-07-14 00:16:41', NULL, NULL, 'MES备件库存流水类型');
 INSERT INTO `sys_dict_type` VALUES (2055216327650344972, '000000', '巡检任务状态', 'mes_patrol_status', 103, 1, '2026-07-14 00:16:41', NULL, NULL, 'MES巡检任务状态');
 INSERT INTO `sys_dict_type` VALUES (2055216327650344973, '000000', '巡检结果', 'mes_patrol_result', 103, 1, '2026-07-14 00:16:41', NULL, NULL, 'MES巡检记录结果');
+INSERT INTO `sys_dict_type` VALUES (2055216327650344974, '000000', '保养计划状态', 'mes_maintenance_status', 103, 1, '2026-07-16 00:00:00', NULL, NULL, 'MES保养计划启用状态');
 
 -- ----------------------------
 -- Table structure for sys_logininfor
@@ -13375,6 +13378,7 @@ INSERT INTO `sys_menu` VALUES (2053846181246812165, '保养完成', 4115, 6, '',
 INSERT INTO `sys_menu` VALUES (2053846181246812166, '保养记录', 4003, 6, 'maintenance-record', 'mes/eq/maintenance-record/index', '', 1, 0, 'C', '0', '0', 'mes:eq:maintenance:record', 'log', 103, 1, '2026-07-13 17:36:54', NULL, NULL, 'MES设备保养执行记录');
 INSERT INTO `sys_menu` VALUES (2053846181246812167, '记录查询', 2053846181246812166, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:record:query', '#', 103, 1, '2026-07-13 17:36:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2053846181246812168, '记录删除', 2053846181246812166, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:record:remove', '#', 103, 1, '2026-07-13 17:36:54', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2053846181246812198, '记录导出', 2053846181246812166, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:record:export', '#', 103, 1, '2026-07-16 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2053846181246812169, 'OEE看板', 4003, 7, 'oee', 'mes/eq/oee/index', '', 1, 0, 'C', '0', '0', 'mes:eq:oee:list', 'chart', 103, 1, '2026-07-13 23:45:09', NULL, NULL, 'MES设备 OEE & 稼动率看板');
 INSERT INTO `sys_menu` VALUES (2053846181246812170, '看板查询', 2053846181246812169, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:oee:query', '#', 103, 1, '2026-07-13 23:45:09', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2053846181246812171, '看板导出', 2053846181246812169, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:oee:export', '#', 103, 1, '2026-07-13 23:45:09', NULL, NULL, '');
@@ -13388,6 +13392,7 @@ INSERT INTO `sys_menu` VALUES (2053846181246812178, '备件导出', 205384618124
 INSERT INTO `sys_menu` VALUES (2053846181246812179, '出入库', 2053846181246812173, 6, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:spare:stock', '#', 103, 1, '2026-07-14 00:16:41', NULL, NULL, '备件入库/出库操作');
 INSERT INTO `sys_menu` VALUES (2053846181246812180, '库存流水', 4003, 9, 'spare-stock-log', 'mes/eq/spare-stock-log/index', '', 1, 0, 'C', '0', '0', 'mes:eq:spare:log:list', 'list', 103, 1, '2026-07-14 00:16:41', NULL, NULL, 'MES备件库存流水查询');
 INSERT INTO `sys_menu` VALUES (2053846181246812181, '流水查询', 2053846181246812180, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:spare:log:query', '#', 103, 1, '2026-07-14 00:16:41', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2053846181246812199, '流水导出', 2053846181246812180, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:spare:log:export', '#', 103, 1, '2026-07-16 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2053846181246812182, '巡检路线', 4003, 10, 'patrol-route', 'mes/eq/patrol-route/index', '', 1, 0, 'C', '0', '0', 'mes:eq:patrol:route:list', 'guide', 103, 1, '2026-07-14 00:16:41', NULL, NULL, 'MES巡检路线配置');
 INSERT INTO `sys_menu` VALUES (2053846181246812183, '路线查询', 2053846181246812182, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:patrol:route:query', '#', 103, 1, '2026-07-14 00:16:41', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2053846181246812184, '路线新增', 2053846181246812182, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:patrol:route:add', '#', 103, 1, '2026-07-14 00:16:41', NULL, NULL, '');
@@ -13402,7 +13407,7 @@ INSERT INTO `sys_menu` VALUES (2053846181246812192, '巡检记录', 4003, 12, 'p
 INSERT INTO `sys_menu` VALUES (2053846181246812193, '记录查询', 2053846181246812192, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:patrol:record:query', '#', 103, 1, '2026-07-14 00:16:41', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2053846181246812194, '记录删除', 2053846181246812192, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:patrol:record:remove', '#', 103, 1, '2026-07-14 00:16:41', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2053846181246812195, '监控大屏', 4003, 13, 'monitor', 'mes/eq/monitor/index', '', 1, 0, 'C', '0', '0', 'mes:eq:monitor:list', 'monitor', 103, 1, '2026-07-14 00:21:03', NULL, NULL, 'MES设备实时监控大屏');
-INSERT INTO `sys_menu` VALUES (2053846181246812196, '故障分析', 4120, 6, 'statistics', 'mes/eq/repair/statistics', '', 1, 0, 'C', '0', '0', 'mes:eq:repair:statistics', 'chart', 103, 1, '2026-07-14 00:21:03', NULL, NULL, 'MES设备故障统计分析');
+INSERT INTO `sys_menu` VALUES (2053846181246812196, '故障分析', 4003, 14, 'statistics', 'mes/eq/repair/statistics', '', 1, 0, 'C', '0', '0', 'mes:eq:repair:statistics', 'chart', 103, 1, '2026-07-14 00:21:03', NULL, NULL, 'MES设备故障统计分析');
 INSERT INTO `sys_menu` VALUES (2053846181246812197, '维修领用备件', 4120, 7, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:spare', '#', 103, 1, '2026-07-14 00:21:03', NULL, NULL, '维修完成时记录更换备件');
 
 -- ----------------------------

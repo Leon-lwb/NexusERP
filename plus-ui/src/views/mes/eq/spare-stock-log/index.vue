@@ -25,6 +25,9 @@
       </el-form>
 
       <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:spare:log:export']">导出</el-button>
+        </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
@@ -58,7 +61,7 @@
 </template>
 
 <script setup lang="ts" name="MesEqSpareStockLog">
-import { listStockLog } from '@/api/mes/eq/spare-part';
+import { listStockLog, exportStockLog } from '@/api/mes/eq/spare-part';
 import type { EqSpareStockLogVO } from '@/api/mes/eq/spare-part';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -96,6 +99,10 @@ const handleQuery = () => {
 const resetQuery = () => {
   proxy?.resetForm('queryFormRef');
   handleQuery();
+};
+
+const handleExport = () => {
+  exportStockLog(queryParams.value);
 };
 
 onMounted(() => {

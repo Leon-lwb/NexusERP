@@ -38,6 +38,9 @@
         <el-col :span="1.5">
           <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:repair:export']">导出</el-button>
         </el-col>
+        <el-col :span="1.5">
+          <el-button type="primary" plain icon="TrendCharts" @click="goStatistics" v-hasPermi="['mes:eq:repair:statistics']">故障分析</el-button>
+        </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
@@ -121,8 +124,8 @@
       </template>
     </el-dialog>
 
-    <!-- 维修完成对话框(替代原3连prompt) -->
-    <el-dialog v-model="completeDialog.visible" :title="`维修完成 - ${completeForm.repairNo}`" width="480px" append-to-body>
+    <!-- 维修完成对话框(替代原3连prompt, 含更换备件明细 P1-2 R1) -->
+    <el-dialog v-model="completeDialog.visible" :title="`维修完成 - ${completeForm.repairNo}`" width="640px" append-to-body>
       <el-form :model="completeForm" label-width="120px">
         <el-form-item label="停机时长(小时)">
           <el-input-number v-model="completeForm.downtimeHours" :min="0" :precision="2" :step="0.5" style="width: 100%" />
@@ -131,7 +134,35 @@
           <el-input-number v-model="completeForm.repairCost" :min="0" :precision="2" :step="100" style="width: 100%" />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="completeForm.remark" type="textarea" :rows="3" placeholder="维修说明/备注" />
+          <el-input v-model="completeForm.remark" type="textarea" :rows="2" placeholder="维修说明/备注" />
+        </el-form-item>
+        <el-form-item label="更换备件">
+          <el-table :data="completeForm.spares" border size="small" style="width: 100%">
+            <el-table-column label="备件" min-width="220">
+              <template #default="{ row }">
+                <el-select v-model="row.spareId" filterable placeholder="选择备件" style="width: 100%">
+                  <el-option v-for="s in spareOptions" :key="s.spareId" :label="s.spareCode + ' - ' + s.spareName" :value="s.spareId" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="数量" width="130">
+              <template #default="{ row }">
+                <el-input-number v-model="row.quantity" :min="1" :precision="2" :step="1" size="small" style="width: 100%" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="70" align="center">
+              <template #default="scope">
+                <el-button link type="danger" @click="completeForm.spares.splice(scope.$index, 1)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-button
+            size="small"
+            icon="Plus"
+            style="margin-top: 8px"
+            @click="completeForm.spares.push({ spareId: undefined as unknown as number, quantity: 1 })"
+            >添加备件</el-button
+          >
         </el-form-item>
       </el-form>
       <template #footer>
@@ -145,10 +176,17 @@
 <script setup lang="ts" name="MesEqRepair">
 import { listRepair, addRepair, startRepair, completeRepair, exportRepair } from '@/api/mes/eq/repair';
 import type { EqRepairVO, EqRepairQuery, EqRepairForm } from '@/api/mes/eq/repair';
+import { listSparePart } from '@/api/mes/eq/spare-part';
+import type { EqSparePartVO } from '@/api/mes/eq/spare-part';
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_repair_status, mes_fault_type } = toRefs<any>(proxy?.useDict('mes_repair_status', 'mes_fault_type'));
+const router = useRouter();
+
+const goStatistics = () => {
+  router.push('/mes/eq/statistics');
+};
 
 const dataList = ref<EqRepairVO[]>([]);
 const loading = ref(true);
@@ -176,13 +214,23 @@ const addForm = reactive<EqRepairForm & { remark?: string }>({
 });
 
 const completeDialog = reactive({ visible: false });
-const completeForm = reactive<{ repairId: number; repairNo: string; downtimeHours: number; repairCost: number; remark: string }>({
+const completeForm = reactive<{
+  repairId: number;
+  repairNo: string;
+  downtimeHours: number;
+  repairCost: number;
+  remark: string;
+  spares: Array<{ spareId: number | undefined; quantity: number }>;
+}>({
   repairId: 0,
   repairNo: '',
   downtimeHours: 0,
   repairCost: 0,
-  remark: ''
+  remark: '',
+  spares: []
 });
+/** 备件下拉选项(完成维修时选择更换备件, 懒加载) */
+const spareOptions = ref<EqSparePartVO[]>([]);
 
 const getList = async () => {
   loading.value = true;
@@ -234,17 +282,33 @@ const handleStart = async (row: EqRepairVO) => {
   getList();
 };
 
-const handleOpenComplete = (row: EqRepairVO) => {
+const handleOpenComplete = async (row: EqRepairVO) => {
   completeForm.repairId = row.repairId;
   completeForm.repairNo = row.repairNo;
   completeForm.downtimeHours = 0;
   completeForm.repairCost = 0;
   completeForm.remark = '';
+  completeForm.spares = [];
+  // 懒加载备件选项(仅首次打开)
+  if (spareOptions.value.length === 0) {
+    try {
+      const res = await listSparePart({ pageNum: 1, pageSize: 200 });
+      spareOptions.value = res.rows || [];
+    } catch {
+      /* ignore */
+    }
+  }
   completeDialog.visible = true;
 };
 
 const submitComplete = async () => {
-  await completeRepair(completeForm.repairId, completeForm.downtimeHours, completeForm.repairCost, completeForm.remark || undefined);
+  const spares = (completeForm.spares || []).filter((s) => s.spareId != null).map((s) => ({ spareId: s.spareId as number, quantity: s.quantity }));
+  await completeRepair(completeForm.repairId, {
+    downtimeHours: completeForm.downtimeHours,
+    repairCost: completeForm.repairCost,
+    remark: completeForm.remark || undefined,
+    spares: spares.length > 0 ? spares : undefined
+  });
   proxy?.$modal.msgSuccess('完成成功');
   completeDialog.visible = false;
   getList();
