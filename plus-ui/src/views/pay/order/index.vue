@@ -52,8 +52,8 @@
           <dict-tag :options="pay_order_status" :value="scope.row.orderStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="订单总金额(分)" align="center" prop="totalAmount" width="120" />
-      <el-table-column label="实际支付(分)" align="center" prop="actualAmount" width="120" />
+      <el-table-column label="订单总金额(元)" align="center" prop="totalAmount" width="120" />
+      <el-table-column label="实际支付(元)" align="center" prop="actualAmount" width="120" />
       <el-table-column label="订单内容" align="center" prop="orderContent" :show-overflow-tooltip="true" />
       <el-table-column label="支付方式" align="center" prop="payType" width="100">
         <template #default="scope">
@@ -92,12 +92,12 @@
         </el-row>
         <el-row>
           <el-col :span="12">
-            <el-form-item label="订单总金额(分)" prop="totalAmount">
+            <el-form-item label="订单总金额(元)" prop="totalAmount">
               <el-input v-model="form.totalAmount" placeholder="请输入订单总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="实际支付金额(分)" prop="actualAmount">
+            <el-form-item label="实际支付金额(元)" prop="actualAmount">
               <el-input v-model="form.actualAmount" placeholder="请输入实际支付金额" />
             </el-form-item>
           </el-col>

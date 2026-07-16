@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.pay.domain.PayOrder;
 import com.nexus.pay.service.IPayOrderService;
+import com.nexus.pay.util.MoneyUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
@@ -134,7 +135,7 @@ public class SQBServiceImpl implements ISqbPayService {
         try {
             params.put("terminal_sn", sqbConfig.getTerminalSn());
             params.put("client_sn", payOrder.getOrderNumber());
-            params.put("refund_amount", payOrder.getTotalAmount());
+            params.put("refund_amount", MoneyUtil.yuanToFen(payOrder.getTotalAmount()));
             params.put("refund_request_no", "1");
             params.put("operator", "kay");
 
@@ -188,7 +189,7 @@ public class SQBServiceImpl implements ISqbPayService {
                 + "&return_url=https://www.shouqianba.com/"
                 + "&subject=" + payOrder.getRemark()
                 + "&terminal_sn=" + sqbConfig.getTerminalSn()
-                + "&total_amount=" + Long.parseLong(payOrder.getTotalAmount());
+                + "&total_amount=" + MoneyUtil.yuanToFen(payOrder.getTotalAmount());
         try {
             String urlParam = "client_sn=" + payOrder.getOrderNumber()
                     + "&notify_url=" + URLEncoder.encode(orderNotifyUrl, StandardCharsets.UTF_8.name())
@@ -196,7 +197,7 @@ public class SQBServiceImpl implements ISqbPayService {
                     + "&return_url=https://www.shouqianba.com/"
                     + "&subject=" + URLEncoder.encode(payOrder.getRemark(), StandardCharsets.UTF_8.name())
                     + "&terminal_sn=" + sqbConfig.getTerminalSn()
-                    + "&total_amount=" + Long.parseLong(payOrder.getTotalAmount());
+                    + "&total_amount=" + MoneyUtil.yuanToFen(payOrder.getTotalAmount());
 
             String sign = getSign(param + "&key=" + sqbConfig.getTerminalKey());
             return "https://qr.shouqianba.com/gateway?" + urlParam + "&sign=" + sign.toUpperCase();
@@ -214,7 +215,7 @@ public class SQBServiceImpl implements ISqbPayService {
         try {
             params.put("terminal_sn", sqbConfig.getTerminalSn());
             params.put("client_sn", payOrder.getOrderNumber());
-            params.put("total_amount", payOrder.getTotalAmount());
+            params.put("total_amount", MoneyUtil.yuanToFen(payOrder.getTotalAmount()));
             params.put("subject", "无简介");
             params.put("operator", "system");
 

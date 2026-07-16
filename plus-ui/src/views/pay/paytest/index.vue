@@ -4,8 +4,8 @@
       <el-form-item label="订单内容" prop="orderContent">
         <el-input v-model="form.orderContent" placeholder="请输入订单内容" />
       </el-form-item>
-      <el-form-item label="订单金额(分)" prop="totalAmount">
-        <el-input v-model="form.totalAmount" placeholder="请输入订单金额(分)，如 1" />
+      <el-form-item label="订单金额(元)" prop="totalAmount">
+        <el-input v-model="form.totalAmount" placeholder="请输入订单金额(元)，如 1.00" />
       </el-form-item>
       <el-form-item label="支付方式" prop="payType">
         <el-select v-model="form.payType" placeholder="请选择支付方式" style="width: 200px">

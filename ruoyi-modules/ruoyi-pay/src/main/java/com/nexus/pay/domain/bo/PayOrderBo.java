@@ -4,6 +4,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 
+import java.math.BigDecimal;
+
 /**
  * 订单业务对象
  *
@@ -25,11 +27,11 @@ public class PayOrderBo extends BaseEntity {
     /** 订单状态 */
     private String orderStatus;
 
-    /** 订单总金额 */
-    private String totalAmount;
+    /** 订单总金额（单位：元） */
+    private BigDecimal totalAmount;
 
-    /** 实际支付金额 */
-    private String actualAmount;
+    /** 实际支付金额（单位：元） */
+    private BigDecimal actualAmount;
 
     /** 订单内容 */
     private String orderContent;

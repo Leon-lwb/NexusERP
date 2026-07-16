@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import com.nexus.common.tenant.core.TenantEntity;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -36,13 +37,13 @@ public class PayOrder extends TenantEntity {
     @ExcelProperty("订单状态")
     private String orderStatus;
 
-    /** 订单总金额（单位：分） */
+    /** 订单总金额（单位：元） */
     @ExcelProperty("订单总金额")
-    private String totalAmount;
+    private BigDecimal totalAmount;
 
-    /** 实际支付金额（单位：分） */
+    /** 实际支付金额（单位：元） */
     @ExcelProperty("实际支付金额")
-    private String actualAmount;
+    private BigDecimal actualAmount;
 
     /** 订单内容 */
     @ExcelProperty("订单内容")

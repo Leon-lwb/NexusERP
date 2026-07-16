@@ -8,6 +8,7 @@ import com.nexus.pay.domain.PayOrder;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -39,13 +40,13 @@ public class PayOrderVo implements Serializable {
     @ExcelProperty(value = "订单状态")
     private String orderStatus;
 
-    /** 订单总金额（单位：分） */
+    /** 订单总金额（单位：元） */
     @ExcelProperty(value = "订单总金额")
-    private String totalAmount;
+    private BigDecimal totalAmount;
 
-    /** 实际支付金额（单位：分） */
+    /** 实际支付金额（单位：元） */
     @ExcelProperty(value = "实际支付金额")
-    private String actualAmount;
+    private BigDecimal actualAmount;
 
     /** 订单内容 */
     @ExcelProperty(value = "订单内容")

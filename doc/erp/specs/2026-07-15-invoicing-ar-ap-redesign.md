@@ -2,7 +2,7 @@
 
 - **日期**:2026-07-15
 - **范围**:ERP(so / pu / bd / wm)+ pay 模块 + 前端(plus-ui)
-- **状态**:**设计待评审,第十一节四项决议已按推荐采纳;P0 ERP 侧已落地(详见第十五节)**
+- **状态**:**设计待评审,第十一节四项决议已按推荐采纳;P0 全部落地(ERP 侧数据模型 + pay_order decimal 迁移,详见第十五节)**
 - **关联**:`doc/erp/plans/archive/2026-07-07-so-fulfillment-linkage-plan.md`(该计划创建了 `SalesOrderFulfilledEvent` 并自注"为未来开票/通知预留",本文档接续此断点)
 
 ---
@@ -305,7 +305,7 @@ ALTER TABLE `pu_purchase_order_line`
 -- pu_purchase_return / pu_purchase_return_line / pu_contract / pu_contract_line 同理补 tax_rate/tax_amount,略
 ```
 
-### 4.5 pay_order 金额类型修正(独立子任务,详细方案)
+### 4.5 pay_order 金额类型修正(独立子任务,✅ 已实施 2026-07-16)
 
 **现状**:`pay_order`(ry-vue 库)`total_amount`/`actual_amount` 为 `varchar(255)`,存**金额的"分"**用字符串表示(`PayOrder.java:41,45` 为 `String`)。P3 核销需与 `fin_receipt.amount`/`so_invoice.total_amount`(decimal 元)做数值匹配,类型+单位均不一致,无法 SUM/比较。
 
@@ -327,6 +327,26 @@ ALTER TABLE `pu_purchase_order_line`
 - 验证:`mvn -pl ruoyi-modules/ruoyi-pay -am compile` + 支付宝沙箱下单->回调跑通
 
 **风险**:碰支付真金白银代码;数据迁移方向错金额放大/缩小 100 倍;跨库(ry-vue)。**可缓做**:真正消费在 P3,离当前隔 P1/P2。
+
+#### 4.5.1 实施记录(2026-07-16)
+
+已落地并验证,实际与原方案的差异:
+
+| 项 | 原方案 | 实际 |
+|----|--------|------|
+| SQL 文件 | `doc/erp/sql/erp-invoicing-p0-pay-order-decimal.sql` | ✅ 同名,本地 ry-vue 执行成功 |
+| 存量数据 | 27 条 | 实际 **22 条**(部分已删),全为数字分值,MODIFY 安全;迁移后校验:1分→0.01元、1100分→11.00元、500000000分→5000000.00元、123213分→1232.13元 ✓ |
+| 列定义 | `decimal(18,2)` | `decimal(18,2) NULL DEFAULT 0.00`(与 so_invoice 金额列约定一致,P3 SUM 友好) |
+| Java 实体 | PayOrder/Vo/Bo String→BigDecimal | ✅ 三处已改,字段注释 分→元 |
+| `PayOrderController:76-77` | 需改 | **无需逻辑改动**:setTotalAmount/setActualAmount 两端同为 BigDecimal,类型直通 |
+| 三 SDK 单位换算 | 各自手算 | ✅ 抽 `com.nexus.pay.util.MoneyUtil`(`yuanToFen`/`fenToYuan`)集中换算,三 SDK 复用,避免重复;支付宝去 `/100` 改 `toPlainString()`,微信/收钱吧 `×100`,微信回调/查询 `分→元` |
+| 微信 `amount.setTotal(Integer)` | - | 用 `Math.toIntExact(yuanToFen(...))` 失败优于负数扣款(超 int 范围抛异常,与原 `Integer.parseInt` 一致) |
+| 前端 | 3 文件(含 types.ts) | 实际改 2 文件:`paytest/index.vue`、`order/index.vue` 标签 分→元;**types.ts 未改**--BigDecimal 经 Jackson 默认序列化为数字(scale=2 无科学计数法,与 so_invoice 同模式),前端 `string` 类型经 JS 强制转换兼容,改类型反增 vue-tsc 噪声 |
+| 编译 | - | `mvn -pl ruoyi-pay -am compile -o` EXIT 0 |
+| eslint | - | 2 文件 eslint 错误数与 HEAD 基线完全一致(paytest 74 / order 78,既有 prettier baseline 噪声),**零新增** |
+| 幂等性 | - | ⚠️ 迁移非幂等(重复执行会再 /100),SQL 文件已标注一次性;无生产数据,本地可重建 |
+
+> **运行时验证待办**:`mvn compile` 仅保证编译;支付宝沙箱下单→回调→查询的端到端金额正确性,需启动应用实跑一次确认(当前环境未跑)。这是支付真金白银代码,合入前建议在沙箱验证。
 
 ### 4.6 so_invoice 前端字典化
 
@@ -786,12 +806,13 @@ P0(基础数据模型修补)ERP 侧已落地并验证。pay_order decimal 迁移
 | VO/BO | BdClientVo/Bo、BdVendorVo/Bo 补开票字段 | 同上(MapStruct @AutoMapper 自动映射新字段) |
 | 前端 | BdClient/BdVendor 表单"开票信息"页签;so_invoice/index.vue 硬编码改 useDict+dict-tag,删 3 个冗余 map 函数 | `npx eslint` 3 文件通过 |
 | 文档/记忆 | Section 4 修正块、4.2/4.6 更正、第十三节文件名对齐;更正 ruoyi-snowflake-dict-menu-id 记忆 | - |
+| pay_order decimal 迁移 | `doc/erp/sql/erp-invoicing-p0-pay-order-decimal.sql`(varchar 分 -> decimal 元);PayOrder/Vo/Bo String->BigDecimal;新增 `MoneyUtil`;AliPay/Wx/SQB 三 SDK 单位换算;前端 2 文件标签(详见 4.5.1) | 本地 ry-vue 迁移成功 22 条校验通过;`mvn -pl ruoyi-pay -am compile -o` EXIT 0;eslint 零新增(运行时端到端验证待办) |
 
 ### 15.2 待办(不阻塞 P1)
 
-- **pay_order decimal 迁移**(独立子任务,详见 4.5):波及 AliPay/Wx/SQB 三 SDK 单位换算 + 27 条数据迁移 + 跨库;P3 前补齐即可
 - **pu 侧新字段 VO/BO 暴露**:invoiced_qty/价税分离字段延后到 P1 开票逻辑消费时一并补;当前 pu 订单/退货/合同表单的价税分离 UI 属 P1+ 范畴
+- **pay_order 运行时端到端验证**:编译已过,但支付宝沙箱下单->回调->查询的金额正确性需启动应用实跑一次确认(支付真金白银代码,见 4.5.1)
 
 ---
 
-> **下一步**:P0 ERP 侧已落地(详见第十五节)。下一步可做 pay_order decimal 迁移(4.5,独立子任务)或直接进 P1 销售开票闭环(`SalesOrderFulfilledEvent` 监听器 + `generateDraftFromOrder` + verify/cancel/红冲)。
+> **下一步**:P0 全部落地(ERP 侧 + pay_order decimal 迁移,详见第十五节;pay_order 运行时端到端验证为待办)。下一步直接进 **P1 销售开票闭环**(`SalesOrderFulfilledEvent` 监听器 + `generateDraftFromOrder` + verify/cancel/红冲 + 差量更新+乐观锁),任务拆解见前次对话或可补写第十六节。

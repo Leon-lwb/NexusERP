@@ -16,6 +16,7 @@ import com.wechat.pay.java.service.refund.model.RefundNotification;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.pay.domain.PayOrder;
 import com.nexus.pay.service.IPayOrderService;
+import com.nexus.pay.util.MoneyUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
@@ -54,7 +55,8 @@ public class WxPayServiceImpl implements IWxPayService {
     public String payUrl(PayOrder payOrder) {
         PrepayRequest request = new PrepayRequest();
         Amount amount = new Amount();
-        amount.setTotal(Integer.parseInt(payOrder.getTotalAmount()));
+        // 微信 API 金额单位为"分"(整数),pay_order 存元,需元->分;超 int 范围抛异常(失败优于负数扣款)
+        amount.setTotal(Math.toIntExact(MoneyUtil.yuanToFen(payOrder.getTotalAmount())));
         request.setAmount(amount);
         request.setAppid(wxPayAppConfig.getAppId());
         request.setMchid(wxPayAppConfig.getMerchantId());
@@ -99,7 +101,8 @@ public class WxPayServiceImpl implements IWxPayService {
                 Transaction transaction = notificationParser.parse(requestParam, Transaction.class);
                 payOrder.setOrderStatus(getTradeState(transaction.getTradeState()));
                 payOrder.setThirdNumber(transaction.getTransactionId());
-                payOrder.setActualAmount(transaction.getAmount().getTotal().toString());
+                // 微信回调金额单位为"分",pay_order 存元,需分->元
+                payOrder.setActualAmount(MoneyUtil.fenToYuan(transaction.getAmount().getTotal()));
                 payOrderService.updatePayOrder(payOrder);
                 return "success";
             } else if ("refund".equals(type)) {
@@ -129,7 +132,8 @@ public class WxPayServiceImpl implements IWxPayService {
         queryRequest.setTransactionId(payOrder.getThirdNumber());
         try {
             Transaction result = nativePayService.queryOrderById(queryRequest);
-            payOrder.setActualAmount(result.getAmount().getTotal().toString());
+            // 微信查询返回金额单位为"分",pay_order 存元,需分->元
+            payOrder.setActualAmount(MoneyUtil.fenToYuan(result.getAmount().getTotal()));
             payOrder.setOrderStatus(getTradeState(result.getTradeState()));
             payOrderService.updatePayOrder(payOrder);
         } catch (com.wechat.pay.java.core.exception.ServiceException e) {
@@ -146,8 +150,9 @@ public class WxPayServiceImpl implements IWxPayService {
         request.setOutTradeNo(payOrder.getOrderNumber());
         AmountReq amount = new AmountReq();
         amount.setCurrency("CNY");
-        amount.setTotal(Long.valueOf(payOrder.getTotalAmount()));
-        amount.setRefund(Long.valueOf(payOrder.getTotalAmount()));
+        // 微信退款金额单位为"分",pay_order 存元,需元->分
+        amount.setTotal(MoneyUtil.yuanToFen(payOrder.getTotalAmount()));
+        amount.setRefund(MoneyUtil.yuanToFen(payOrder.getTotalAmount()));
         request.setAmount(amount);
         String orderNotifyUrl = wxPayAppConfig.getNotifyUrl() + "/" + payOrder.getOrderNumber() + "/refund";
         request.setNotifyUrl(orderNotifyUrl);

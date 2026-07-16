@@ -44,7 +44,8 @@ public class AliPayServiceImpl implements IAliPayService {
     public String payUrl(PayOrder payOrder) {
         try {
             String orderNotifyUrl = config.notifyUrl + "/" + payOrder.getOrderNumber() + "/pay";
-            String totalAmount = String.valueOf(Double.parseDouble(payOrder.getActualAmount()) / 100);
+            // 支付宝 API 金额单位为"元",pay_order 现已存元,直接取即可
+            String totalAmount = payOrder.getActualAmount().toPlainString();
 
             // 当面付预下单 — 生成可供支付宝APP扫码支付的链接
             AlipayTradePrecreateResponse response = Factory.Payment.FaceToFace().preCreate(
@@ -140,7 +141,7 @@ public class AliPayServiceImpl implements IAliPayService {
         try {
             AlipayTradeRefundResponse response = Factory.Payment.Common().refund(
                     payOrder.getOrderNumber(),
-                    String.valueOf(Double.parseDouble(payOrder.getActualAmount()) / 100));
+                    payOrder.getActualAmount().toPlainString());
             if ("10000".equals(response.code)) {
                 payOrderService.updateStatus(payOrder.getOrderNumber(), "已退款");
             } else {
