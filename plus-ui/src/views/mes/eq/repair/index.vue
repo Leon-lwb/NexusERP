@@ -204,7 +204,9 @@ const queryParams = ref<EqRepairQuery>({
 const addDialog = reactive({ visible: false });
 const addFormRef = ref();
 const addRules = {
-  equipmentId: [{ required: true, message: '请选择设备', trigger: 'change' }]
+  equipmentId: [{ required: true, message: '请选择设备', trigger: 'change' }],
+  faultType: [{ required: true, message: '请选择故障类型', trigger: 'change' }],
+  faultDesc: [{ required: true, message: '请输入故障描述', trigger: 'blur' }]
 };
 const addForm = reactive<EqRepairForm & { remark?: string }>({
   equipmentId: undefined as unknown as number,
@@ -318,18 +320,3 @@ onMounted(() => {
   getList();
 });
 </script>
-
-<style scoped lang="scss">
-.list-search .el-form-item {
-  margin-bottom: 12px;
-  width: 100%;
-}
-.list-search .el-form-item :deep(.el-input),
-.list-search .el-form-item :deep(.el-select),
-.list-search .el-form-item :deep(.el-date-editor) {
-  width: 100%;
-}
-.list-search .search-actions :deep(.el-form-item__content) {
-  justify-content: flex-end;
-}
-</style>

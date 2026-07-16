@@ -27,6 +27,9 @@ public class EqSpareStockBo extends BaseEntity {
     @NotNull(message = "备件ID不能为空")
     private Long spareId;
 
+    /** 备件编码(仅流水查询条件, 出入库提交时忽略) */
+    private String spareCode;
+
     /** 流水类型: IN/OUT */
     @NotNull(message = "流水类型不能为空")
     private String transactionType;

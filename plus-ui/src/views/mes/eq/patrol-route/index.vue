@@ -10,7 +10,7 @@
           <el-col :span="6"
             ><el-form-item label="状态" prop="status"
               ><el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 100%"
-                ><el-option label="启用" value="ACTIVE" /><el-option label="停用" value="INACTIVE" /></el-select></el-form-item
+                ><el-option v-for="d in mes_patrol_route_status" :key="d.value" :label="d.label" :value="d.value" /></el-select></el-form-item
           ></el-col>
           <el-col :span="6" class="search-actions"
             ><el-form-item
@@ -31,11 +31,7 @@
         <el-table-column label="描述" prop="description" min-width="120" show-overflow-tooltip />
         <el-table-column label="频率" prop="frequency" align="center" width="80" />
         <el-table-column label="状态" prop="status" align="center" width="80">
-          <template #default="s"
-            ><el-tag :type="s.row.status === 'ACTIVE' ? 'success' : 'info'" size="small">{{
-              s.row.status === 'ACTIVE' ? '启用' : '停用'
-            }}</el-tag></template
-          >
+          <template #default="s"><dict-tag :options="mes_patrol_route_status" :value="s.row.status" /></template>
         </el-table-column>
         <el-table-column label="操作" align="center" width="160" :show-overflow-tooltip="false">
           <template #default="s">
@@ -60,7 +56,7 @@
         ></el-form-item>
         <el-form-item label="状态"
           ><el-select v-model="form.status" style="width: 100%"
-            ><el-option label="启用" value="ACTIVE" /><el-option label="停用" value="INACTIVE" /></el-select
+            ><el-option v-for="d in mes_patrol_route_status" :key="d.value" :label="d.label" :value="d.value" /></el-select
         ></el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
       </el-form>
@@ -74,6 +70,7 @@
 import { listPatrolRoute, getPatrolRoute, addPatrolRoute, updatePatrolRoute, delPatrolRoute } from '@/api/mes/eq/patrol';
 import type { EqPatrolRouteVO, EqPatrolRouteQuery, EqPatrolRouteForm } from '@/api/mes/eq/patrol';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_patrol_route_status } = toRefs<any>(proxy?.useDict('mes_patrol_route_status'));
 const dataList = ref<EqPatrolRouteVO[]>([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -128,17 +125,3 @@ const handleDelete = async (row: EqPatrolRouteVO) => {
 };
 onMounted(() => getList());
 </script>
-<style scoped lang="scss">
-.list-search .el-form-item {
-  margin-bottom: 12px;
-  width: 100%;
-}
-.list-search .el-form-item :deep(.el-input),
-.list-search .el-form-item :deep(.el-select),
-.list-search .el-form-item :deep(.el-date-editor) {
-  width: 100%;
-}
-.list-search .search-actions :deep(.el-form-item__content) {
-  justify-content: flex-end;
-}
-</style>

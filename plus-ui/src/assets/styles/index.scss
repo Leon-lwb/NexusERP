@@ -225,3 +225,17 @@ aside {
     margin-bottom: 10px;
   }
 }
+
+/* 列表查询表单通用样式 (原 eq 各页面 scoped 重复, 提取全局复用) */
+.list-search .el-form-item {
+  margin-bottom: 12px;
+  width: 100%;
+}
+.list-search .el-form-item .el-input,
+.list-search .el-form-item .el-select,
+.list-search .el-form-item .el-date-editor {
+  width: 100%;
+}
+.list-search .search-actions .el-form-item__content {
+  justify-content: flex-end;
+}

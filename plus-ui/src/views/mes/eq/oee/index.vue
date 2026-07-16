@@ -260,7 +260,7 @@ const resetQuery = () => {
 const renderTrend = () => {
   nextTick(() => {
     if (!trendChartRef.value) return;
-    trendChart = trendChart || echarts.init(trendChartRef.value);
+    trendChart = echarts.getInstanceByDom(trendChartRef.value) || echarts.init(trendChartRef.value);
     const dates = trendData.value.map((t) => fmtDate(t.statDate));
     const avail = trendData.value.map((t) => toPct(t.availability));
     const oee = trendData.value.map((t) => toPct(t.oee));
@@ -286,7 +286,7 @@ const renderTrend = () => {
 const renderDist = () => {
   nextTick(() => {
     if (!distChartRef.value) return;
-    distChart = distChart || echarts.init(distChartRef.value);
+    distChart = echarts.getInstanceByDom(distChartRef.value) || echarts.init(distChartRef.value);
     const d = distribution.value;
     distChart.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: {c} 分 ({d}%)' },
@@ -311,7 +311,7 @@ const renderDist = () => {
 const renderTop = () => {
   nextTick(() => {
     if (!topChartRef.value) return;
-    topChart = topChart || echarts.init(topChartRef.value);
+    topChart = echarts.getInstanceByDom(topChartRef.value) || echarts.init(topChartRef.value);
     const names = topData.value.map((t) => t.equipmentName || t.equipmentCode || String(t.equipmentId));
     const mins = topData.value.map((t) => Number(t.downtimeMinutes ?? 0));
     topChart.setOption({

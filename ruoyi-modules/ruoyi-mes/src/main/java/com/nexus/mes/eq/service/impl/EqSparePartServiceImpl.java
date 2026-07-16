@@ -214,6 +214,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     private LambdaQueryWrapper<EqSpareStockLog> buildStockLogQueryWrapper(EqSpareStockBo bo) {
         return Wrappers.<EqSpareStockLog>lambdaQuery()
             .eq(bo.getSpareId() != null, EqSpareStockLog::getSpareId, bo.getSpareId())
+            .eq(StringUtils.isNotBlank(bo.getSpareCode()), EqSpareStockLog::getSpareCode, bo.getSpareCode())
             .eq(StringUtils.isNotBlank(bo.getTransactionType()), EqSpareStockLog::getTransactionType, bo.getTransactionType())
             .eq(StringUtils.isNotBlank(bo.getRefType()), EqSpareStockLog::getRefType, bo.getRefType())
             .orderByDesc(EqSpareStockLog::getOperateTime);
