@@ -2,7 +2,7 @@
 
 - **日期**:2026-07-15
 - **范围**:ERP(so / pu / bd / wm)+ pay 模块 + 前端(plus-ui)
-- **状态**:**设计待评审,第十一节四项决议已按推荐采纳;P0 + P1 销售开票闭环已落地并通过端到端验证(详见第十五、十六节)**
+- **状态**:**设计待评审,第十一节四项决议已按推荐采纳;P0 + P1 销售开票闭环 + P2 采购进项发票已落地并通过编译/造数验证(详见第十五、十六、十七节)**
 - **关联**:`doc/erp/plans/archive/2026-07-07-so-fulfillment-linkage-plan.md`(该计划创建了 `SalesOrderFulfilledEvent` 并自注"为未来开票/通知预留",本文档接续此断点)
 
 ---
@@ -850,4 +850,52 @@ P1 全部落地并编译/eslint 通过。运行时端到端验证为待办(同 p
 
 ---
 
-> **下一步**:P0 + P1 全部落地并通过端到端验证(详见第十五、十六节;P1 E2E 基本通过 2026-07-16)。下一步进 **P2 采购进项发票**(`pu_invoice` 整包镜像 so + 三单匹配 + 认证/抵扣 + 退货进项转出,方案 C 已定)。
+## 十七、P2 采购进项发票 实施记录(2026-07-16)
+
+P2 全部落地并编译/eslint/造数通过。镜像 so 销售开票,新增进项认证子状态机与三单匹配,退货联动进项转出。运行时端到端验证待跑(同 P1 模式,见 17.3 调用序列)。
+
+### 17.1 已完成
+
+| 子任务 | 交付 | 验证 |
+|--------|------|------|
+| P2-0 SQL 建表+菜单 | `doc/erp/sql/p2-pu-invoice-create.sql`(pu_invoice 43 列:镜像 so + 销售方四要素 seller_* + cert_status/cert_date/deductible_tax_amount + version;pu_invoice_line 30 列:po_line_id/gr_line_id/contract_line_id);`doc/erp/sql/erp-pu-invoice-menu.sql`(2550-2558,9 权限,verify/certify/match 一开始即拆分) | ry-erp 建表成功(头 43/行 30 列);ry-vue 9 菜单落库;字典复用 dict-invoicing.sql(pu_invoice_type/status/cert_status 已在 P0 落库) |
+| P2-1 实体/VO/BO/Mapper | `com.nexus.erp.pu.invoice`:PuInvoice(@Version + cert + seller 四要素 + vendorId/poId)、PuInvoiceLine(poLineId/grLineId)、PuInvoiceVo(@Translation pdf/ofd + cert + seller)、PuInvoiceBo(不暴露 cert/verified/version)、PuInvoiceMapper、PuInvoiceLineMapper、MatchResultVo | - |
+| P2-2 Service/Controller | IPuInvoiceService(状态机 + cert 状态机常量)+ PuInvoiceServiceImpl(@DS("erp")):CRUD(差量更新+乐观锁)、generateDraftFromPo(按 received-invoiced,seller_* 从 BdVendor,原子累加 po invoiced_qty)、receiveInvoice(DRAFT->ISSUED)、matchThreeWay(PO+GR+Invoice)、verifyInvoice(前置三单匹配+原子累加)、certifyInvoice/deductInvoice、cancelInvoice、redFlush(全量)、redFlushForReturn(部分)+redFlushForReturnByPoLines;PuInvoiceController(`/erp/pu/invoice`)13 端点 | `mvn -pl ruoyi-modules/ruoyi-erp -am compile -o` EXIT 0;pu.invoice 包 15 个 .class 生成 |
+| P2-3 退货进项转出 | `PuPurchaseReturnServiceImpl.execute()` 增强:扣库存后按退货 PO 行调 `redFlushForReturnByPoLines`,仅 DEDUCTED 触发部分红冲 + 原 cert->TRANSFERRED + 冲减 verified/invoiced_qty | 同上编译 |
+| P2-4 前端 | `api/erp/pu/invoice/{types,index}.ts` + `views/erp/pu/invoice/index.vue`(认证状态列 + 收票/匹配/认证/抵扣/核销/红冲/作废/从订单生成按钮 + 销售方四要素表单 + 供应商内联选择对话框) | `npx eslint --fix` EXIT 0 |
+| P2-5 E2E 造数 | `doc/erp/sql/p2-e2e-test-data.sql`(供应商 8800002 + PO 8800200 + 2 行全额收货未开票 + 库存 8803001 + 退货 8800400) | 本地 ry-erp 执行成功,5 项校验通过(PO 1695/1500/195、2 行 received=ordered/invoiced=0、vendor 四要素、退货 CONFIRMED、库存 frozen=0) |
+
+### 17.2 关键决策与坑
+
+- **销售方四要素**:spec 3.2 草图只有 vendor_id/vendor_name,补 `seller_tax_id/title/bank_name/bank_account/address_phone` 落实"购买方↔销售方"对偶(so 的 buyer_* 对应 pu 的 seller_*),进项认证需核对销售方纳税人识别号。
+- **税率形态不一致**:PO 行 taxRate 存小数(0.13,per `PuPurchaseOrderLine` 注释"0.13 表示 13%"),发票行 taxRate 用百分比(13,与 so 一致、前端 `×taxRate/100`)。抽 `normalizeTaxRateToPercent`(`<1 视为小数 ×100`)归一化,`generateDraftFromPo` 与 `matchThreeWay` 均用此,避免比较错配。
+- **不含税单价**:`generateDraftFromPo` 用 PO 的 `unitPriceExcludingTax`(P0 已加),缺失回退 `unitPrice`(视为不含税);lineAmount=qty×unitPriceExcl,taxAmount=lineAmount×taxRate/100。
+- **无 Flowable**:进项发票收票登记无需内部审批流转,状态机 `DRAFT->ISSUED`(收票确认),省略 so 的 APPROVING/REJECTED;IPuInvoiceService 不继承 WfCallBackServiceI。
+- **权限一开始即拆分**(吸取 so 的 `so:invoice:verify` 待 P3 拆分教训):核销/红冲=`pu:invoice:verify`,认证/抵扣=`pu:invoice:certify`,三单匹配=`pu:invoice:match`,收票/作废/CRUD=`pu:invoice:edit`,从订单生成=`pu:invoice:add`。
+- **三单匹配前置 verify**:`verifyInvoice` 内部调 `matchThreeWay`,带 PO 关联行且失败则抛异常阻止核销;纯手工发票(无 poLineId)跳过匹配(matchThreeWay 返回 passed=true)。匹配维度:物料一致、开票数量≤收货数量、不含税单价(容差 0.01)、税率(归一化后容差 0.01)。
+- **退货进项转出仅 DEDUCTED 触发**:`execute()` 只对 `cert_status=DEDUCTED` 的覆盖发票红冲(未抵扣无进项可转出,spec 6.4);部分红冲按退货数量取负(非全量);`execute` 同事务,红冲失败回滚退货(含库存扣减,原子)。
+- **`redFlushForReturnByPoLines` 封装**:退货 Service 不直连 pu_invoice 表,由 IPuInvoiceService 按 PO 行查覆盖发票(lineMapper.selectList + baseMapper.selectList 过滤蓝字/DEDUCTED/已收已核销)并逐个 `redFlushForReturn`。
+- **`pu_purchase_order` 表有 tenant_id**:实体继承 BaseEntity 但表有 tenant_id 列(租户插件自动填),SQL 造数显式置 `000000`;退货 Service 的 `TenantHelper.dynamic` 由 execute 调用链上下文继承(同步调用,无异步租户坑)。
+- **乐观锁初始化**:insertByBo 与 generateDraftFromPo 均 `setVersion(0)`(同 so,参考库存乐观锁坑)。
+
+### 17.3 验证与待办
+
+- **编译/eslint/造数均通过**;**运行时端到端验证待跑**(同 P1 模式:启动应用按下列调用序列实跑)。
+- **调用序列(主链路)**:造数 `p2-e2e-test-data.sql` 后,
+  1. `POST /erp/pu/invoice/generateFromPo/8800200` -> 返回 invoiceId(草稿,2 行,价税合计 1695,seller_* 已带入)
+  2. `PUT /erp/pu/invoice/receive/{invoiceId}` -> DRAFT->ISSUED
+  3. `GET /erp/pu/invoice/match/{invoiceId}` -> 返回 passed=true(数量/单价/税率均与 PO 一致)
+  4. `PUT /erp/pu/invoice/certify/{invoiceId}` -> UNCERTIFIED->CERTIFIED,可抵扣税额=195
+  5. `PUT /erp/pu/invoice/deduct/{invoiceId}` -> CERTIFIED->DEDUCTED
+  6. `PUT /erp/pu/invoice/verify/{invoiceId}?verifyAmount=1695` -> verified=1695,ISSUED->VERIFIED(前置三单匹配通过)
+  7. `PUT /erp/pu/invoice/redFlush/{invoiceId}` -> 生成红字发票(负数 1695),原发票 verified 1695->0、VERIFIED->ISSUED、cert DEDUCTED->TRANSFERRED
+- **调用序列(退货进项转出)**:主链路执行到第 5 步(deduct,发票 DEDUCTED)后,**勿做 verify/redFlush**,
+  - `PUT /erp/pu/return/execute/8800400` -> 扣库存(100->90)+ 触发 `redFlushForReturnByPoLines({8800301:10})` -> 生成红字发票(负数 113,即 10 个物料A)+ 原发票 cert DEDUCTED->TRANSFERRED + 原发票 verified 冲减 113 + PO 行 8800301 invoiced_qty 100->90
+- **待办**:
+  - **菜单角色授权**:9 个 pu:invoice:* 权限需配角色后前端可见(同所有新菜单)。
+  - **standalone redFlush 与退货红冲互斥**:同一发票二选一(红冲后 cert=TRANSFERRED,退货红冲仅查 DEDUCTED);测试时需 reset 造数切换场景。
+  - **运行时端到端**:启动应用实跑上述序列(当前仅编译+造数级验证)。
+
+---
+
+> **下一步**:P0 + P1 + P2 全部落地并通过编译/造数验证(P1 已端到端基本通过 2026-07-16;P2 运行时端到端待跑,见 17.3)。下一步进 **P3 应收应付与核销**(`fin_receipt`/`fin_settlement` + 核销回写 `verified_amount` + pay 支付回调->收款单->自动核销 + AR/AP 账龄,跨库 MQ,方案 C 已定)。

@@ -17,6 +17,7 @@ import com.nexus.erp.pu.domain.PuPurchaseReturn;
 import com.nexus.erp.pu.domain.PuPurchaseReturnLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseReturnBo;
 import com.nexus.erp.pu.domain.vo.PuPurchaseReturnVo;
+import com.nexus.erp.pu.invoice.service.IPuInvoiceService;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnMapper;
 import com.nexus.erp.pu.service.IPuPurchaseReturnService;
@@ -69,6 +70,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
+    private final IPuInvoiceService puInvoiceService;
 
     /**
      * 分页查询采购退货单列表
@@ -197,6 +199,20 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         }
         for (PuPurchaseReturnLine line : lines) {
             postReturnOut(purchaseReturn, line, new Date());
+        }
+        // 退货进项转出:查找覆盖退货 PO 行的已抵扣蓝字进项发票,部分红冲(仅 cert_status=DEDUCTED 才转出)
+        Map<Long, BigDecimal> poLineReturnQty = new HashMap<>();
+        for (PuPurchaseReturnLine line : lines) {
+            if (line.getOrderLineId() != null && line.getReturnQuantity() != null
+                && line.getReturnQuantity().compareTo(BigDecimal.ZERO) > 0) {
+                poLineReturnQty.merge(line.getOrderLineId(), line.getReturnQuantity(), BigDecimal::add);
+            }
+        }
+        if (!poLineReturnQty.isEmpty()) {
+            int redCount = puInvoiceService.redFlushForReturnByPoLines(poLineReturnQty);
+            if (redCount > 0) {
+                log.info("采购退货[{}]触发进项转出红冲,生成红字发票{}张", purchaseReturn.getReturnNo(), redCount);
+            }
         }
         purchaseReturn.setStatus(STATUS_EXECUTED);
         baseMapper.updateById(purchaseReturn);
