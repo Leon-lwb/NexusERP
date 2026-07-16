@@ -40,11 +40,11 @@ WHERE menu_id = 2053846181246812196 AND menu_name = '故障分析';
 
 -- 4. 新增导出按钮权限 (按 perms 幂等)
 SET @menuId = (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM sys_menu);
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark)
 SELECT @menuId, '记录导出', 2053846181246812166, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:maintenance:record:export', '#', 103, 1, NOW(), NULL, NULL, ''
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'mes:eq:maintenance:record:export');
 
 SET @menuId = (SELECT IFNULL(MAX(menu_id), 0) + 1 FROM sys_menu);
-INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, update_by, update_time, remark)
 SELECT @menuId, '流水导出', 2053846181246812180, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:spare:log:export', '#', 103, 1, NOW(), NULL, NULL, ''
 WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'mes:eq:spare:log:export');
