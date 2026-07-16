@@ -90,6 +90,9 @@ public class PuPurchaseOrder extends BaseEntity {
     /** 订单总金额（含税） */
     private BigDecimal totalAmount;
 
+    /** 不含税总金额 */
+    private BigDecimal amountExcludingTax;
+
     /** 税额 */
     private BigDecimal taxAmount;
 

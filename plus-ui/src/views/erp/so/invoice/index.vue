@@ -14,23 +14,16 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <!-- 技术债:发票类型暂用硬编码 el-option,待补字典后改为 useDict -->
           <el-form-item label="发票类型" prop="invoiceType">
             <el-select v-model="queryParams.invoiceType" placeholder="请选择类型" clearable style="width: 100%">
-              <el-option label="增值税专用发票" value="VAT_SPECIAL" />
-              <el-option label="增值税普通发票" value="VAT_NORMAL" />
-              <el-option label="其他" value="OTHER" />
+              <el-option v-for="dict in so_invoice_type" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <!-- 技术债:发票状态暂用硬编码 el-option,待补字典后改为 useDict + dict-tag -->
           <el-form-item label="发票状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-              <el-option label="草稿" value="DRAFT" />
-              <el-option label="已开" value="ISSUED" />
-              <el-option label="已核销" value="VERIFIED" />
-              <el-option label="已作废" value="CANCELLED" />
+              <el-option v-for="dict in so_invoice_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -65,10 +58,9 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="发票号" align="center" prop="invoiceNo" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <!-- 技术债:发票类型/状态暂用硬编码 map+el-tag,待补字典后改为 dict-tag -->
       <el-table-column label="发票类型" align="center" prop="invoiceType">
         <template #default="scope">
-          {{ getInvoiceTypeLabel(scope.row.invoiceType) }}
+          <dict-tag :options="so_invoice_type" :value="scope.row.invoiceType" />
         </template>
       </el-table-column>
       <el-table-column label="开票日期" align="center" prop="invoiceDate" />
@@ -78,7 +70,7 @@
       <el-table-column label="已核销" align="center" prop="verifiedAmount" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
-          <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
+          <dict-tag :options="so_invoice_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -107,9 +99,7 @@
               <el-col :span="8">
                 <el-form-item label="发票类型" prop="invoiceType">
                   <el-select v-model="form.invoiceType" placeholder="请选择发票类型" style="width: 100%">
-                    <el-option label="增值税专用发票" value="VAT_SPECIAL" />
-                    <el-option label="增值税普通发票" value="VAT_NORMAL" />
-                    <el-option label="其他" value="OTHER" />
+                    <el-option v-for="dict in so_invoice_type" :key="dict.value" :label="dict.label" :value="dict.value" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -141,10 +131,7 @@
               <el-col :span="8">
                 <el-form-item label="状态" prop="status">
                   <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
-                    <el-option label="草稿" value="DRAFT" />
-                    <el-option label="已开" value="ISSUED" />
-                    <el-option label="已核销" value="VERIFIED" />
-                    <el-option label="已作废" value="CANCELLED" />
+                    <el-option v-for="dict in so_invoice_status" :key="dict.value" :label="dict.label" :value="dict.value" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -288,6 +275,7 @@ import { InvoiceVO, InvoiceForm, InvoiceLineForm } from '@/api/erp/so/invoice/ty
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 
 const { proxy } = getCurrentInstance();
+const { so_invoice_type, so_invoice_status } = toRefs<any>(proxy.useDict('so_invoice_type', 'so_invoice_status'));
 
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
@@ -331,38 +319,6 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
-
-/** 获取发票类型标签 */
-function getInvoiceTypeLabel(type: string) {
-  const map: Record<string, string> = {
-    VAT_SPECIAL: '增值税专用发票',
-    VAT_NORMAL: '增值税普通发票',
-    OTHER: '其他'
-  };
-  return map[type] || type;
-}
-
-/** 获取状态标签类型 */
-function getStatusType(status: string) {
-  const map: Record<string, string> = {
-    DRAFT: 'info',
-    ISSUED: 'success',
-    VERIFIED: 'primary',
-    CANCELLED: 'danger'
-  };
-  return map[status] || 'info';
-}
-
-/** 获取状态标签文本 */
-function getStatusLabel(status: string) {
-  const map: Record<string, string> = {
-    DRAFT: '草稿',
-    ISSUED: '已开',
-    VERIFIED: '已核销',
-    CANCELLED: '已作废'
-  };
-  return map[status] || status;
-}
 
 /** 查询列表 */
 function getList() {

@@ -50,11 +50,20 @@ public class PuContractLine extends TenantEntity {
     /** 单价 */
     private BigDecimal unitPrice;
 
+    /** 税率 */
+    private BigDecimal taxRate;
+
     /** 数量 */
     private BigDecimal quantity;
 
     /** 行金额 */
     private BigDecimal lineAmount;
+
+    /** 行税额 */
+    private BigDecimal taxAmount;
+
+    /** 不含税行金额 */
+    private BigDecimal lineAmountExcludingTax;
 
     /** 交货日期 */
     private Date deliveryDate;
