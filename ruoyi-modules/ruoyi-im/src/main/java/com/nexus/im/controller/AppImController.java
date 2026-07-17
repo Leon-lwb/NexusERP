@@ -2,6 +2,7 @@ package com.nexus.im.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
@@ -570,17 +571,19 @@ public class AppImController extends BaseController {
     }
 
     /**
-     * 未读消息列表
+     * 未读消息列表（分页）
+     * P1-3: 原实现返回全部未读，未读 1000+ 条时单次响应过大，改为分页
      */
     @GetMapping("/message/unread")
-    public R<List<ImMessage>> unreadMessages() {
+    public TableDataInfo<ImMessage> unreadMessages(PageQuery pageQuery) {
         Long me = LoginHelper.getUserId();
-        List<ImMessage> list = messageMapper.selectList(new LambdaQueryWrapper<ImMessage>()
+        LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
             .eq(ImMessage::getToUserId, me)
             .eq(ImMessage::getIsRead, "0")
             .isNull(ImMessage::getGroupId)
-            .orderByDesc(ImMessage::getCreateTime));
-        return R.ok(list);
+            .orderByDesc(ImMessage::getCreateTime);
+        Page<ImMessage> page = messageMapper.selectPage(pageQuery.build(), w);
+        return TableDataInfo.build(page);
     }
 
     /**

@@ -25,6 +25,8 @@ import com.nexus.im.domain.vo.ImGroupMemberVo;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
+import com.nexus.im.msgtype.ImMessageTypeHandler;
+import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.IImChatService;
@@ -54,8 +56,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ImChatServiceImpl implements IImChatService {
 
-    private static final Set<String> SUPPORTED_MSG_TYPES = Set.of("text", "image", "file");
-    private static final int MAX_TEXT_CONTENT_LENGTH = 2000;
     private static final int MAX_GROUP_NAME_LENGTH = 50;
     /** 消息撤回时间窗（毫秒），超过则不允许撤回 */
     private static final long REVOKE_WINDOW_MS = 2 * 60 * 1000L;
@@ -67,6 +67,8 @@ public class ImChatServiceImpl implements IImChatService {
     private final ISysOssService sysOssService;
     private final ISysUserNotificationService sysUserNotificationService;
     private final ImRealtimePush imRealtimePush;
+    /** P1-2: 消息类型策略模式注册中心 */
+    private final ImMessageTypeRegistry messageTypeRegistry;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -77,8 +79,10 @@ public class ImChatServiceImpl implements IImChatService {
         }
         requireSameTenantUser(bo.getToUserId());
         SysUserVo from = sysUserService.selectUserById(fromId);
-        String content = normalizeContent(bo.getContent());
-        String msgType = normalizeMsgType(bo.getMsgType());
+        // P1-2: 消息类型策略模式，替代硬编码 SUPPORTED_MSG_TYPES
+        ImMessageTypeHandler handler = messageTypeRegistry.require(bo.getMsgType());
+        String content = handler.normalize(bo.getContent());
+        String msgType = handler.type();
         ImMessage msg = new ImMessage();
         msg.setFromUserId(fromId);
         msg.setToUserId(bo.getToUserId());
@@ -116,8 +120,10 @@ public class ImChatServiceImpl implements IImChatService {
         if (!isGroupMember(bo.getGroupId(), fromId)) {
             return R.fail("您不是该群成员");
         }
-        String content = normalizeContent(bo.getContent());
-        String msgType = normalizeMsgType(bo.getMsgType());
+        // P1-2: 消息类型策略模式，替代硬编码 SUPPORTED_MSG_TYPES
+        ImMessageTypeHandler handler = messageTypeRegistry.require(bo.getMsgType());
+        String content = handler.normalize(bo.getContent());
+        String msgType = handler.type();
         ImMessage msg = new ImMessage();
         msg.setFromUserId(fromId);
         msg.setGroupId(bo.getGroupId());
@@ -549,25 +555,6 @@ public class ImChatServiceImpl implements IImChatService {
             throw new ServiceException("不可跨租户通讯");
         }
         return u;
-    }
-
-    private String normalizeContent(String content) {
-        String value = StrUtil.trim(content);
-        if (StrUtil.isBlank(value)) {
-            throw new ServiceException("消息内容不能为空");
-        }
-        if (value.length() > MAX_TEXT_CONTENT_LENGTH) {
-            throw new ServiceException("消息内容不能超过" + MAX_TEXT_CONTENT_LENGTH + "个字符");
-        }
-        return value;
-    }
-
-    private String normalizeMsgType(String msgType) {
-        String value = StrUtil.blankToDefault(StrUtil.trim(msgType), "text").toLowerCase();
-        if (!SUPPORTED_MSG_TYPES.contains(value)) {
-            throw new ServiceException("不支持的消息类型");
-        }
-        return value;
     }
 
     private String normalizeGroupName(String groupName) {
