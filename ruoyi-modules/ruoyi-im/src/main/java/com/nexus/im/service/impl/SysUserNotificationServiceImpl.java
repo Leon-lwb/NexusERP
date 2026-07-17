@@ -44,7 +44,8 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         notificationMapper.insert(row);
         String preview = StrUtil.maxLength(StrUtil.removeAll(content, "<[^>]+>"), 200);
         String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), category, row.getTitle(), preview, null);
-        imRealtimePush.publishToUser(userId, json);
+        // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵通知"
+        imRealtimePush.publishToUserAfterCommit(userId, json);
         return row.getNotificationId();
     }
 
@@ -69,7 +70,8 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         notificationMapper.insert(row);
         String preview = StrUtil.maxLength(StrUtil.removeAll(event.getContent(), "<[^>]+>"), 200);
         String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), row.getCategory(), row.getTitle(), preview, event.getContentUrl());
-        imRealtimePush.publishToUser(event.getTargetUserId(), json);
+        // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵通知"
+        imRealtimePush.publishToUserAfterCommit(event.getTargetUserId(), json);
     }
 
     @Override

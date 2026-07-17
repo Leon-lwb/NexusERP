@@ -100,7 +100,8 @@ public class ImChatServiceImpl implements IImChatService {
             null);
 
         String json = ImEnvelopeHelper.imMessage(buildPrivatePayload(msg, from));
-        imRealtimePush.publishToUser(bo.getToUserId(), json);
+        // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵消息"
+        imRealtimePush.publishToUserAfterCommit(bo.getToUserId(), json);
         return R.ok(msg.getMessageId());
     }
 
@@ -146,7 +147,8 @@ public class ImChatServiceImpl implements IImChatService {
                 senderName + "：" + StrUtil.maxLength(content, 400),
                 null);
             String json = ImEnvelopeHelper.imMessage(buildGroupPayload(msg, group, from));
-            imRealtimePush.publishToUser(m.getUserId(), json);
+            // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵消息"
+            imRealtimePush.publishToUserAfterCommit(m.getUserId(), json);
         }
         return R.ok(msg.getMessageId());
     }
@@ -430,7 +432,8 @@ public class ImChatServiceImpl implements IImChatService {
             payload.put("fromUserId", msg.getFromUserId());
             payload.put("toUserId", msg.getToUserId());
             payload.put("action", "revoke");
-            imRealtimePush.publishToUser(msg.getToUserId(), ImEnvelopeHelper.imMessage(payload));
+            // P0-2: 推送移到事务提交后，避免回滚时接收方收到撤回通知但实际未撤回
+            imRealtimePush.publishToUserAfterCommit(msg.getToUserId(), ImEnvelopeHelper.imMessage(payload));
         } else {
             ImGroup group = imGroupMapper.selectById(msg.getGroupId());
             List<ImGroupMember> members = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
@@ -448,7 +451,8 @@ public class ImChatServiceImpl implements IImChatService {
                 if (group != null) {
                     payload.put("groupName", group.getGroupName());
                 }
-                imRealtimePush.publishToUser(m.getUserId(), ImEnvelopeHelper.imMessage(payload));
+                // P0-2: 推送移到事务提交后，避免回滚时接收方收到撤回通知但实际未撤回
+                imRealtimePush.publishToUserAfterCommit(m.getUserId(), ImEnvelopeHelper.imMessage(payload));
             }
         }
         return R.ok();
