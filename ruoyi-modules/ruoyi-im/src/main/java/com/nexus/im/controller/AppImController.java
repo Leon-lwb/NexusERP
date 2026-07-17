@@ -184,9 +184,14 @@ public class AppImController extends BaseController {
         String title = senderName + " 请求添加您为好友";
 
         // 原有的通知（用于 toast 弹窗，保持兼容）
+        // P0-3: 原实现手拼 JSON "\"fromUserId\":" + fromUserId，雪花 ID 在 JS 端会精度丢失。
+        // 改为 Map + JsonUtils.toJsonString，由全局 BigNumberSerializer 把超 JS 安全整数范围的 Long 序列化为 String。
+        Map<String, Object> extMap = new LinkedHashMap<>();
+        extMap.put("status", FRIEND_REQUEST_SENT);
+        extMap.put("fromUserId", fromUserId);
         notificationService.addAndPush(toUserId, CATEGORY_FRIEND_REQUEST, "friend_request",
             String.valueOf(fromUserId), title, requestMessage,
-            "{\"status\":\"" + FRIEND_REQUEST_SENT + "\",\"fromUserId\":" + fromUserId + "}");
+            JsonUtils.toJsonString(extMap));
 
         // 插入 IM 消息（让好友请求出现在私聊对话中）
         Map<String, Object> fromInfo = new LinkedHashMap<>();
@@ -250,10 +255,22 @@ public class AppImController extends BaseController {
             .eq(SysUserNotification::getCategory, CATEGORY_FRIEND_REQUEST)
             .orderByDesc(SysUserNotification::getCreateTime));
 
-        // 过滤出发送者是当前用户的请求（通过extJson中的fromUserId判断）
+        // P0-3: 原实现用字符串 contains("\"fromUserId\":" + me) 匹配，
+        // 修复 L189 后雪花 ID 会被序列化为 String，导致旧匹配逻辑失效。
+        // 改为解析 extJson 为 Map，提取 fromUserId 比较字符串值，
+        // 兼容旧格式（number）和新格式（string）两种历史数据。
+        String meStr = String.valueOf(me);
         List<SysUserNotification> sent = new ArrayList<>();
         for (SysUserNotification n : all) {
-            if (n.getExtJson() != null && n.getExtJson().contains("\"fromUserId\":" + me)) {
+            if (StrUtil.isBlank(n.getExtJson())) {
+                continue;
+            }
+            Map<String, Object> ext = JsonUtils.parseMap(n.getExtJson());
+            if (ext == null) {
+                continue;
+            }
+            Object fromUserIdVal = ext.get("fromUserId");
+            if (fromUserIdVal != null && meStr.equals(fromUserIdVal.toString())) {
                 sent.add(n);
             }
         }
