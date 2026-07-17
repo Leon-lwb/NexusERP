@@ -6,7 +6,7 @@
  * @author nexus
  */
 import { ref, onUnmounted, type ComponentInternalInstance } from 'vue';
-import { debounce } from 'lodash-es';
+import { useDebounceFn } from '@vueuse/core';
 import { listCategory } from '@/api/erp/bd/category';
 import type { CategoryVO } from '@/api/erp/bd/category/types';
 
@@ -58,7 +58,7 @@ export function useCategoryTree(proxy: any, options: UseCategoryTreeOptions = {}
   }
 
   /** 防抖过滤函数 */
-  const debouncedFilter = debounce(handleCategoryFilter, debounceMs);
+  const debouncedFilter = useDebounceFn(handleCategoryFilter, debounceMs);
 
   /** 组件卸载时取消防抖 */
   onUnmounted(() => {

@@ -214,26 +214,6 @@ function handleExport() {
   proxy.download('/erp/pu/requisition/export', { ...queryParams.value }, `pu_requisition_${Date.now()}.xlsx`);
 }
 
-// /**
-//  * 提交按钮操作（已废弃，请使用表单内的「提交审批」走 Flowable 工作流）
-//  */
-// function handleSubmit() {
-//   submitPurchaseRequisition(ids.value[0]).then(() => {
-//     proxy.$modal.msgSuccess('提交成功');
-//     getList();
-//   });
-// }
-
-// /**
-//  * 审批按钮操作（已废弃，请使用表单内的「提交审批」走 Flowable 工作流）
-//  */
-// function handleApprove() {
-//   approvePurchaseRequisition(ids.value[0]).then(() => {
-//     proxy.$modal.msgSuccess('审批成功');
-//     getList();
-//   });
-// }
-
 /**
  * 转单按钮操作 - 将请购单转换为采购订单
  */

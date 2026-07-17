@@ -83,14 +83,6 @@
     <el-dialog title="预览" width="60%" v-model="previewModelVisible" append-to-body destroy-on-close>
       <highlightjs :language="previewType" :code="previewResult" style="height: 80vh" />
     </el-dialog>
-    <!--<el-dialog :title="`预览${previewType}`" width="60%" v-model="previewModelVisible" append-to-body destroy-on-close>
-        <Codemirror
-          v-model:value="previewResult"
-          :options="cmOptions"
-          border
-          :height="700"
-        />
-    </el-dialog>-->
   </div>
 </template>
 
@@ -117,11 +109,6 @@ import flowableModdleExtension from './plugins/extension-moddle/flowable';
 // 引入json转换与高亮
 // import X2JS from "x2js";
 import convert from "xml-js";
-
-import Codemirror from 'codemirror-editor-vue3';
-import 'codemirror/theme/monokai.css'
-import 'codemirror/mode/javascript/javascript.js';
-import 'codemirror/mode/xml/xml.js';
 
 defineOptions({ name: 'MyProcessDesigner' })
 
@@ -201,17 +188,6 @@ const previewResult = ref('')
 const previewType = ref('xml')
 const recoverable = ref(false)
 const revocable = ref(false)
-
-const cmOptions = ref({
-	mode: 'xml', // 语言模式
-        theme: 'monokai', // 主题
-        lineNumbers: true, // 显示行号
-        smartIndent: true, // 智能缩进
-        readOnly: true,
-        indentUnit: 2, // 智能缩进单位为4个空格长度
-        foldGutter: true, // 启用行槽中的代码折叠
-        styleActiveLine: true // 显示选中行的样式
-})
 
 const additionalModules = computed(() => {
   const Modules: any[] = []
@@ -498,7 +474,6 @@ const previewProcessXML = () => {
   bpmnModeler.saveXML({ format: true }).then(({ xml }) => {
     previewResult.value = xml
     previewType.value = 'xml'
-    //cmOptions.value['mode'] = 'xml'
     previewModelVisible.value = true
   })
 }
