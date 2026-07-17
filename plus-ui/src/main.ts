@@ -2,6 +2,12 @@ import { createApp } from 'vue';
 // global css
 import 'virtual:uno.css';
 import 'element-plus/theme-chalk/dark/css-vars.css';
+// 编程式组件样式(ElMessage/ElMessageBox/ElNotification/ElLoading)不经 ElementPlusResolver 自动导入,需手动引入
+import 'element-plus/theme-chalk/el-overlay.css';
+import 'element-plus/theme-chalk/el-message.css';
+import 'element-plus/theme-chalk/el-message-box.css';
+import 'element-plus/theme-chalk/el-notification.css';
+import 'element-plus/theme-chalk/el-loading.css';
 import '@/assets/styles/index.scss';
 
 // App、router、store

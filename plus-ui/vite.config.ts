@@ -24,7 +24,7 @@ export default defineConfig(({ mode, command }) => {
       open: true,
       proxy: {
         [env.VITE_APP_BASE_API]: {
-          target: 'http://localhost:8080',
+          target: env.VITE_APP_PROXY_TARGET || 'http://localhost:8080',
           changeOrigin: true,
           ws: true,
           rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), '')
@@ -62,12 +62,42 @@ export default defineConfig(({ mode, command }) => {
         'axios',
         '@vueuse/core',
         'echarts',
-        'vue-i18n',
         '@vueup/vue-quill',
         'image-conversion',
-        'three',
-        'element-plus/es/components/**/css'
+        'three'
       ]
+    },
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          // 分包策略: 将大型第三方库拆为独立 vendor chunk,配合路由懒加载按需加载
+          manualChunks: {
+            'vendor-vue': ['vue', 'vue-router', 'pinia', '@vueuse/core'],
+            'vendor-element': ['element-plus', '@element-plus/icons-vue'],
+            'vendor-echarts': ['echarts'],
+            'vendor-bpmn': [
+              'bpmn-js',
+              'bpmn-js-task-resize',
+              'bpmn-js-token-simulation',
+              'diagram-js',
+              'diagram-js-minimap',
+              'xml-js'
+            ],
+            'vendor-three': ['three'],
+            'vendor-utils': [
+              'axios',
+              'crypto-js',
+              'js-cookie',
+              'jsencrypt',
+              'file-saver',
+              'nprogress',
+              'await-to-js',
+              'image-conversion'
+            ]
+          }
+        }
+      }
     }
   };
 });
