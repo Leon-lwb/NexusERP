@@ -2,6 +2,8 @@ package com.nexus.im.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
@@ -174,6 +176,8 @@ public class AppImController extends BaseController {
         if (fromUserId.equals(toUserId)) {
             return R.fail("不能添加自己为好友");
         }
+        // P0-1: 跨租户好友申请校验，防止越权跨租户发起申请
+        requireSameTenantUser(toUserId);
 
         SysUserVo fromUser = userMapper.selectVoById(fromUserId);
         String senderName = StrUtil.blankToDefault(fromUser != null ? fromUser.getNickName() : "", fromUser != null ? fromUser.getUserName() : "用户");
@@ -431,6 +435,13 @@ public class AppImController extends BaseController {
      */
     @DeleteMapping("/friend/request/{messageId}")
     public R<Void> revokeRequest(@PathVariable Long messageId) {
+        // P0-1: 路径变量名义上为 messageId，实际删除的是 notification 记录（ID 域错配），
+        // 必须先查 notification 并校验归属，防止任意用户删除他人通知
+        Long me = LoginHelper.getUserId();
+        SysUserNotification n = notificationMapper.selectById(messageId);
+        if (n == null || !me.equals(n.getUserId())) {
+            return R.fail("通知不存在或无权操作");
+        }
         notificationMapper.deleteById(messageId);
         return R.ok();
     }
@@ -579,6 +590,15 @@ public class AppImController extends BaseController {
      */
     @DeleteMapping("/message/{messageId}")
     public R<Void> deleteMessage(@PathVariable Long messageId) {
+        // P0-1: 原实现直接 deleteById 无归属校验，任意用户可删任意消息
+        Long me = LoginHelper.getUserId();
+        ImMessage msg = messageMapper.selectById(messageId);
+        if (msg == null) {
+            return R.fail("消息不存在");
+        }
+        if (!canAccessMessage(msg, me)) {
+            return R.fail("无权操作此消息");
+        }
         messageMapper.deleteById(messageId);
         return R.ok();
     }
@@ -598,6 +618,11 @@ public class AppImController extends BaseController {
         }
         if ("1".equals(original.getRevoked())) {
             return R.fail("已被撤回的消息无法转发");
+        }
+        // P0-1: 原实现不校验调用方是否有权读原消息，存在越权转发风险
+        Long me = LoginHelper.getUserId();
+        if (!canAccessMessage(original, me)) {
+            return R.fail("无权转发此消息");
         }
 
         if ("private".equalsIgnoreCase(targetType)) {
@@ -790,5 +815,51 @@ public class AppImController extends BaseController {
         update.setStatus("1");
         groupMapper.updateById(update);
         return R.ok();
+    }
+
+    // ==================== P0-1 安全校验辅助方法 ====================
+
+    /**
+     * 校验目标用户与当前登录用户属于同一租户（多租户开启时生效）。
+     * 校验失败抛出 ServiceException，与 ImChatServiceImpl 中的同名方法保持一致语义。
+     */
+    private void requireSameTenantUser(Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new ServiceException("用户ID无效");
+        }
+        SysUserVo u = userMapper.selectVoById(userId);
+        if (u == null) {
+            throw new ServiceException("用户不存在");
+        }
+        if (TenantHelper.isEnable() && !StringUtils.equals(TenantHelper.getTenantId(), u.getTenantId())) {
+            throw new ServiceException("不可跨租户通讯");
+        }
+    }
+
+    /**
+     * 判断用户是否为指定群组的成员。
+     */
+    private boolean isGroupMember(Long groupId, Long userId) {
+        if (groupId == null || userId == null) {
+            return false;
+        }
+        return groupMemberMapper.selectCount(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getGroupId, groupId)
+            .eq(ImGroupMember::getUserId, userId)) > 0;
+    }
+
+    /**
+     * 判断用户是否有权访问某条消息（用于 delete/forward 等操作的归属校验）。
+     * - 私聊：发送方或接收方
+     * - 群聊：群组成员
+     */
+    private boolean canAccessMessage(ImMessage msg, Long userId) {
+        if (msg == null || userId == null) {
+            return false;
+        }
+        if (msg.getGroupId() != null) {
+            return isGroupMember(msg.getGroupId(), userId);
+        }
+        return userId.equals(msg.getFromUserId()) || userId.equals(msg.getToUserId());
     }
 }
