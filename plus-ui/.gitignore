@@ -20,10 +20,10 @@ selenium-debug.log
 *.sln
 *.local
 
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
 # 编译生成的文件
 auto-imports.d.ts
 components.d.ts
+.eslintrc-auto-import.json
