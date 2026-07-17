@@ -28,6 +28,21 @@ public final class ImEnvelopeHelper {
         return envelope(ImPayloadConstants.TYPE_IM_MESSAGE, payload);
     }
 
+    /**
+     * P1-6: 已读回执信封。payload 字段：
+     * <ul>
+     *   <li>chatType: PRIVATE / GROUP</li>
+     *   <li>peerUserId: 读取消息的用户 ID（即 readBy）</li>
+     *   <li>groupId: 群聊时携带，私聊为 null</li>
+     *   <li>messageIds: 被标记为已读的消息 ID 列表</li>
+     *   <li>readAt: 读取时间戳（毫秒）</li>
+     *   <li>readBy: 读取消息的用户 ID（与 peerUserId 相同，便于客户端统一处理）</li>
+     * </ul>
+     */
+    public static String imMessageRead(Map<String, Object> payload) {
+        return envelope(ImPayloadConstants.TYPE_IM_MESSAGE_READ, payload);
+    }
+
     private static String envelope(String type, Map<String, Object> payload) {
         Map<String, Object> root = MapUtil.<String, Object>builder()
             .put("v", ImPayloadConstants.ENVELOPE_VERSION)

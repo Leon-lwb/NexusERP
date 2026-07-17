@@ -16,4 +16,10 @@ public class ImPrivateSendBo {
     private String msgType = "text";
 
     private Long forwardFrom;
+
+    /**
+     * P1-4: 客户端消息ID，用于重发幂等
+     * <p>客户端生成 UUID，重发复用同一值；为空时不做幂等检查。
+     */
+    private String clientMsgId;
 }
