@@ -17,7 +17,9 @@ import com.nexus.erp.bd.domain.BdBom;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
+import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
+import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.bo.SoSalesOrderHeaderBo;
@@ -29,6 +31,8 @@ import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ICreditCheckService;
 import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
+import com.nexus.erp.wm.domain.WmWarehouse;
+import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmStockReservationService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
@@ -52,6 +56,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 销售订单Service业务层处理
@@ -69,6 +75,8 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final BdMaterialMapper bdMaterialMapper;
     private final BdBomMapper bdBomMapper;
     private final PrdProductionPlanMapper prdProductionPlanMapper;
+    private final PrdWorkOrderMapper prdWorkOrderMapper;
+    private final WmWarehouseMapper wmWarehouseMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
@@ -107,22 +115,113 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 new LambdaQueryWrapper<SoSalesOrderLine>()
                     .eq(SoSalesOrderLine::getSoId, id));
             List<SoSalesOrderLineVo> lineVoList = MapstructUtils.convert(lineList, SoSalesOrderLineVo.class);
-            // Populate linked production plan number for each line
-            for (SoSalesOrderLineVo lineVo : lineVoList) {
-                if (lineVo.getLineId() != null) {
-                    LambdaQueryWrapper<PrdProductionPlan> planQuery = Wrappers.lambdaQuery();
-                    planQuery.eq(PrdProductionPlan::getOrderLineId, lineVo.getLineId());
-                    planQuery.last("LIMIT 1");
-                    PrdProductionPlan plan = prdProductionPlanMapper.selectOne(planQuery);
-                    if (plan != null) {
-                        lineVo.setLinkedPlanNo(plan.getPlanNo());
-                        lineVo.setLinkedPlanId(plan.getPlanId());
-                    }
-                }
-            }
+            // 批量回填关联展示信息：生产计划号、生产工单号(经计划链派生)、仓库名称
+            populateLineLinkage(lineVoList);
             vo.setSoSalesOrderLineList(lineVoList);
         }
         return vo;
+    }
+
+    /**
+     * 批量回填销售订单行的关联展示信息：关联生产计划号、关联生产工单号(经计划链派生)、仓库名称。
+     * <p>批量查询避免 N+1：一次查计划、一次查工单、一次查仓库，内存映射。
+     * 关联工单经 plan.orderLineId -> plan.planId -> PrdWorkOrder 链路派生；
+     * 一个 SO 行可能对应多张工单，工单号逗号拼接，首张工单 ID 写入 linkedMoId 供前端跳转。
+     */
+    private void populateLineLinkage(List<SoSalesOrderLineVo> lineVoList) {
+        if (lineVoList == null || lineVoList.isEmpty()) {
+            return;
+        }
+        List<Long> lineIds = lineVoList.stream()
+            .map(SoSalesOrderLineVo::getLineId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+        if (lineIds.isEmpty()) {
+            resolveWarehouseNames(lineVoList);
+            return;
+        }
+        // 1. 批量查询关联生产计划: orderLineId IN (lineIds)
+        List<PrdProductionPlan> plans = prdProductionPlanMapper.selectList(
+            new LambdaQueryWrapper<PrdProductionPlan>()
+                .in(PrdProductionPlan::getOrderLineId, lineIds));
+        Map<Long, PrdProductionPlan> lineIdToPlan = new HashMap<>();
+        for (PrdProductionPlan p : plans) {
+            if (p.getOrderLineId() != null && !lineIdToPlan.containsKey(p.getOrderLineId())) {
+                lineIdToPlan.put(p.getOrderLineId(), p);
+            }
+        }
+
+        // 2. 批量查询计划下工单: planId IN (planIds)，按 planId 分组
+        List<Long> planIds = plans.stream()
+            .map(PrdProductionPlan::getPlanId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        Map<Long, List<PrdWorkOrder>> planIdToWorkOrders = new HashMap<>();
+        if (!planIds.isEmpty()) {
+            List<PrdWorkOrder> workOrders = prdWorkOrderMapper.selectList(
+                new LambdaQueryWrapper<PrdWorkOrder>()
+                    .in(PrdWorkOrder::getPlanId, planIds));
+            for (PrdWorkOrder w : workOrders) {
+                if (w.getPlanId() != null) {
+                    planIdToWorkOrders.computeIfAbsent(w.getPlanId(), k -> new ArrayList<>()).add(w);
+                }
+            }
+        }
+
+        // 3. 逐行回填计划号 + 工单号
+        for (SoSalesOrderLineVo lineVo : lineVoList) {
+            if (lineVo.getLineId() == null) {
+                continue;
+            }
+            PrdProductionPlan plan = lineIdToPlan.get(lineVo.getLineId());
+            if (plan == null) {
+                continue;
+            }
+            lineVo.setLinkedPlanNo(plan.getPlanNo());
+            lineVo.setLinkedPlanId(plan.getPlanId());
+            List<PrdWorkOrder> wos = planIdToWorkOrders.get(plan.getPlanId());
+            if (wos != null && !wos.isEmpty()) {
+                String woNoJoined = wos.stream()
+                    .map(PrdWorkOrder::getWoNo)
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.joining(","));
+                lineVo.setLinkedWoNo(woNoJoined);
+                // 首张工单ID供前端跳转(多工单时跳首张); 用独立 VO 字段 linkedWoId，避免污染落库的 linkedMoId
+                lineVo.setLinkedWoId(wos.get(0).getWoId());
+            }
+        }
+
+        // 4. 批量解析仓库名
+        resolveWarehouseNames(lineVoList);
+    }
+
+    /**
+     * 批量回填仓库名称: warehouseId IN (line.warehouseIds) -> warehouseName
+     */
+    private void resolveWarehouseNames(List<SoSalesOrderLineVo> lineVoList) {
+        List<Long> warehouseIds = lineVoList.stream()
+            .map(SoSalesOrderLineVo::getWarehouseId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (warehouseIds.isEmpty()) {
+            return;
+        }
+        List<WmWarehouse> warehouses = wmWarehouseMapper.selectList(
+            new LambdaQueryWrapper<WmWarehouse>()
+                .in(WmWarehouse::getWarehouseId, warehouseIds));
+        Map<Long, String> idToName = new HashMap<>();
+        for (WmWarehouse w : warehouses) {
+            if (w.getWarehouseId() != null) {
+                idToName.put(w.getWarehouseId(), w.getWarehouseName());
+            }
+        }
+        for (SoSalesOrderLineVo lineVo : lineVoList) {
+            if (lineVo.getWarehouseId() != null) {
+                lineVo.setWarehouseName(idToName.get(lineVo.getWarehouseId()));
+            }
+        }
     }
 
     /**
@@ -367,6 +466,18 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         creditCheckService.release(soId);
         // 释放库存预留, 避免预留库存泄漏
         stockReservationService.unreserve("SALES_ORDER", soId, null);
+
+        // 行状态 -> CANCELLED（头尾一致），并关闭关联生产计划（与 fulfill 对称，防取消后计划仍待执行）
+        List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
+            new LambdaQueryWrapper<SoSalesOrderLine>().eq(SoSalesOrderLine::getSoId, soId));
+        if (lines != null && !lines.isEmpty()) {
+            soSalesOrderLineMapper.update(null,
+                Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getSoId, soId)
+                    .set(SoSalesOrderLine::getLineStatus, "CANCELLED"));
+            List<Long> lineIds = lines.stream().map(SoSalesOrderLine::getLineId).collect(Collectors.toList());
+            closeLinkedProductionPlans(lineIds);
+        }
     }
 
     // ==================== Flowable 工作流集成 ====================

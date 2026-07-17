@@ -388,7 +388,7 @@
                     <span v-else>{{ scope.row.orderedQty }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="已发货数量" prop="deliveredQty" width="150" v-if="isViewMode">
+                <el-table-column label="已发货数量" prop="deliveredQty" width="150">
                   <template #default="scope">
                     <span>{{ scope.row.deliveredQty }}</span>
                   </template>
@@ -512,11 +512,6 @@
                     <span v-else>{{ scope.row.promiseDate }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="已履行数量" prop="fulfilledQty" width="150" v-if="isViewMode">
-                  <template #default="scope">
-                    <span>{{ scope.row.fulfilledQty }}</span>
-                  </template>
-                </el-table-column>
                 <el-table-column label="已投产数量" prop="productionQty" width="150" v-if="isViewMode">
                   <template #default="scope">
                     <span>{{ scope.row.productionQty }}</span>
@@ -542,15 +537,13 @@
                 </el-table-column>
                 <el-table-column label="订单明细状态" prop="lineStatus" width="150">
                   <template #default="scope">
-                    <el-select v-model="scope.row.lineStatus" placeholder="请选择订单明细状态" v-if="!isViewMode">
-                      <el-option v-for="dict in so_order_line_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
-                    </el-select>
-                    <span v-else>{{ getDictLabel(so_order_line_status, scope.row.lineStatus) }}</span>
+                    <span>{{ getDictLabel(so_order_line_status, scope.row.lineStatus) }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="关联生产工单ID" prop="linkedMoId" width="150" v-if="isViewMode">
+                <el-table-column label="关联生产工单" prop="linkedWoNo" width="160" v-if="isViewMode">
                   <template #default="scope">
-                    <span>{{ scope.row.linkedMoId }}</span>
+                    <el-link v-if="scope.row.linkedWoId" type="primary" @click="viewWorkOrder(scope.row)">{{ scope.row.linkedWoNo || '-' }}</el-link>
+                    <span v-else>-</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="关联采购订单ID" prop="linkedPoId" width="150" v-if="isViewMode">
@@ -568,10 +561,12 @@
                     <span>{{ scope.row.paGroupId }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="默认仓库ID" prop="warehouseId" width="150">
+                <el-table-column label="默认仓库" prop="warehouseId" width="160">
                   <template #default="scope">
-                    <el-input v-model="scope.row.warehouseId" placeholder="请输入默认仓库ID" v-if="!isViewMode" />
-                    <span v-else>{{ scope.row.warehouseId }}</span>
+                    <el-select v-model="scope.row.warehouseId" placeholder="请选择仓库" filterable clearable style="width: 100%" v-if="!isViewMode">
+                      <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
+                    </el-select>
+                    <span v-else>{{ scope.row.warehouseName || '-' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="交付优先级" prop="deliveryPriority" width="150">
@@ -606,6 +601,7 @@
 import { getOrderheader, addOrderheader, updateOrderheader, submitOrderFlow, getOrderProcId } from '@/api/erp/so/orderheader';
 import { getMaterial } from '@/api/erp/bd/material';
 import { listMeasureAll } from '@/api/erp/bd/measure';
+import { listWarehouse } from '@/api/erp/wm/warehouse';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 import { getProcesss } from '@/api/workflow/process';
 
@@ -673,6 +669,18 @@ function loadUomList() {
     });
 }
 
+// 仓库下拉选项（销售行默认发货仓库）
+const warehouseOptions = ref<any[]>([]);
+function loadWarehouseList() {
+  listWarehouse({ pageNum: 1, pageSize: 1000 })
+    .then((response: any) => {
+      warehouseOptions.value = response.rows || response.data || [];
+    })
+    .catch(() => {
+      warehouseOptions.value = [];
+    });
+}
+
 // 客户订单选择相关
 const customerOrderSelectRef = ref<InstanceType<typeof CustomerOrderSelectDialog> | null>(null);
 const customerOrderDisplay = ref('');
@@ -734,6 +742,7 @@ onMounted(() => {
   const action = route.query.action;
   isViewMode.value = action === 'view';
   loadUomList();
+  loadWarehouseList();
 
   if (id) {
     initPage(id);
@@ -990,7 +999,7 @@ function handleAddSoSalesOrderLine() {
     reservedBatchNo: '',
     reservedSerials: '',
     paGroupId: '',
-    warehouseId: '',
+    warehouseId: null,
     deliveryPriority: '',
     customerLineRef: '',
     sortOrder: soSalesOrderLineList.value.length + 1,
@@ -1019,6 +1028,12 @@ function handleSoSalesOrderLineSelectionChange(selection) {
 
 function viewProductionPlan(row) {
   router.push({ path: '/erp/prd/prdplan/form', query: { id: row.linkedPlanId, action: 'view' } });
+}
+
+function viewWorkOrder(row) {
+  if (row.linkedWoId) {
+    router.push({ path: '/erp/prd/prdwork/form', query: { id: row.linkedWoId, action: 'view' } });
+  }
 }
 
 function getDictLabel(dictOptions, value) {

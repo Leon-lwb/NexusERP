@@ -1,145 +1,194 @@
 <template>
   <div class="login">
-    <!-- 动态背景粒子 -->
-    <canvas ref="particleCanvas" class="particle-bg"></canvas>
+    <!-- 背景层：数据网络动画 -->
+    <canvas ref="networkCanvas" class="network-bg"></canvas>
+    <!-- CSS 叠加层：透视网格 + 光晕 + 暗角 -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow glow-blue" aria-hidden="true"></div>
+    <div class="bg-glow glow-violet" aria-hidden="true"></div>
+    <div class="bg-glow glow-cyan" aria-hidden="true"></div>
+    <div class="bg-vignette" aria-hidden="true"></div>
 
-    <div class="login-card">
-      <!-- 左侧品牌面板 -->
-      <div class="login-brand" :data-module="currentModule">
-        <div class="brand-body">
-          <div class="brand-logo">
-            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="64" height="64" rx="16" fill="rgba(255,255,255,0.15)"/>
-              <path d="M20 22h24v4H20zM20 30h24v4H20zM20 38h16v4H20z" fill="rgba(255,255,255,0.9)"/>
-              <circle cx="46" cy="40" r="8" fill="#34d399" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
-              <path d="M44 40l1.5 1.5 3-3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h1 class="brand-name">{{ title }}</h1>
-          <p class="brand-desc">企业资源计划管理系统</p>
+    <!-- 内容层 -->
+    <div class="login-content">
+      <!-- 品牌头 -->
+      <header class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="nx-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#409EFF" />
+                <stop offset="1" stop-color="#8b5cf6" />
+              </linearGradient>
+            </defs>
+            <rect width="64" height="64" rx="16" fill="url(#nx-grad)" />
+            <g stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-linecap="round">
+              <path d="M32 32L20 21M32 32L44 21M32 32L20 43M32 32L44 43" />
+            </g>
+            <circle cx="20" cy="21" r="3.2" fill="#fff" opacity=".95" />
+            <circle cx="44" cy="21" r="3.2" fill="#fff" opacity=".95" />
+            <circle cx="20" cy="43" r="3.2" fill="#fff" opacity=".95" />
+            <circle cx="44" cy="43" r="3.2" fill="#fff" opacity=".95" />
+            <circle cx="32" cy="32" r="5.5" fill="#fff" />
+          </svg>
+        </div>
+        <h1 class="brand-name">{{ logoTitle }}</h1>
+        <p class="brand-tagline">ERP · MES · IoT · AI 一体化智能工业平台</p>
+      </header>
 
-          <!-- 模块切换标签 -->
-          <div class="module-tabs">
-            <div
-              v-for="mod in modules"
-              :key="mod.key"
-              class="module-tab"
-              :class="{ active: currentModule === mod.key }"
-              @click="switchModule(mod.key)"
+      <!-- 玻璃登录卡 -->
+      <div class="login-card">
+        <div class="form-header">
+          <h2 class="form-title">欢迎登录</h2>
+          <p class="form-subtitle">{{ title }}</p>
+        </div>
+
+        <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form" size="large">
+          <el-form-item v-if="tenantEnabled" prop="tenantId">
+            <el-select
+              v-model="loginForm.tenantId"
+              filterable
+              :placeholder="'请选择/输入公司名称'"
+              popper-class="login-select-popper"
+              style="width: 100%"
             >
-              <svg-icon :icon-class="mod.icon" class="module-icon" />
-              <span class="module-label">{{ mod.label }}</span>
+              <el-option v-for="item in tenantList" :key="item.tenantId" :label="item.companyName" :value="item.tenantId" />
+              <template #prefix><svg-icon icon-class="company" class="input-icon" /></template>
+            </el-select>
+          </el-form-item>
+
+          <el-form-item prop="username">
+            <el-input v-model="loginForm.username" auto-complete="off" :placeholder="'用户名 / 手机号'">
+              <template #prefix><svg-icon icon-class="user" class="input-icon" /></template>
+            </el-input>
+          </el-form-item>
+
+          <el-form-item prop="password">
+            <el-input v-model="loginForm.password" type="password" auto-complete="off" show-password :placeholder="'密码'" @keyup.enter="handleLogin">
+              <template #prefix><svg-icon icon-class="password" class="input-icon" /></template>
+            </el-input>
+          </el-form-item>
+
+          <el-form-item v-if="captchaEnabled" prop="code">
+            <el-input v-model="loginForm.code" auto-complete="off" :placeholder="'验证码'" style="flex: 1" @keyup.enter="handleLogin">
+              <template #prefix><svg-icon icon-class="validCode" class="input-icon" /></template>
+            </el-input>
+            <div class="captcha-box" title="点击刷新验证码">
+              <img :src="codeUrl" class="captcha-img" @click="getCode" />
             </div>
-          </div>
+          </el-form-item>
 
-          <div class="brand-features">
-            <div class="brand-feature">
-              <span class="feature-dot"></span>多租户数据隔离
-            </div>
-            <div class="brand-feature">
-              <span class="feature-dot"></span>生产制造全流程
-            </div>
-            <div class="brand-feature">
-              <span class="feature-dot"></span>智能仓储与物流
-            </div>
-            <div class="brand-feature">
-              <span class="feature-dot"></span>销售订单一体化
-            </div>
-          </div>
-        </div>
-        <div class="brand-footer">
-          Copyright © 2025-2026 WangHuan All Rights Reserved.
-        </div>
-      </div>
-
-      <!-- 右侧表单面板 -->
-      <div class="login-form-panel">
-        <div class="form-wrapper">
-          <div class="form-header">
-            <h2 class="form-title">欢迎登录</h2>
-            <p class="form-subtitle">{{ moduleSubtitle }}</p>
-          </div>
-
-          <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form" size="large">
-            <el-form-item v-if="tenantEnabled" prop="tenantId">
-              <el-select v-model="loginForm.tenantId" filterable :placeholder="'请选择/输入公司名称'" style="width: 100%">
-                <el-option v-for="item in tenantList" :key="item.tenantId" :label="item.companyName" :value="item.tenantId" />
-                <template #prefix><svg-icon icon-class="company" class="el-input__icon input-icon" /></template>
-              </el-select>
-            </el-form-item>
-
-            <el-form-item prop="username">
-              <el-input v-model="loginForm.username" auto-complete="off" :placeholder="'用户名 / 手机号'">
-                <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
-              </el-input>
-            </el-form-item>
-
-            <el-form-item prop="password">
-              <el-input
-                v-model="loginForm.password"
-                type="password"
-                auto-complete="off"
-                :placeholder="'密码'"
-                @keyup.enter="handleLogin"
-              >
-                <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
-              </el-input>
-            </el-form-item>
-
-            <el-form-item v-if="captchaEnabled" prop="code">
-              <el-input
-                v-model="loginForm.code"
-                auto-complete="off"
-                :placeholder="'验证码'"
-                style="flex: 1"
-                @keyup.enter="handleLogin"
-              >
-                <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
-              </el-input>
-              <div class="captcha-box">
-                <img :src="codeUrl" class="captcha-img" @click="getCode" />
-              </div>
-            </el-form-item>
-
+          <div class="form-options">
             <el-checkbox v-model="loginForm.rememberMe" class="remember-me">记住我</el-checkbox>
+            <router-link v-if="register" class="link-type" :to="'/register'">立即注册</router-link>
+          </div>
 
-            <el-form-item>
-              <el-button :loading="loading" type="primary" style="width: 100%" @click.prevent="handleLogin">
-                <span v-if="!loading">登 录</span>
-                <span v-else>登 录 中...</span>
-              </el-button>
-            </el-form-item>
+          <el-form-item class="login-btn-item">
+            <el-button :loading="loading" type="primary" class="login-btn" @click.prevent="handleLogin">
+              <span v-if="!loading">登 录</span>
+              <span v-else>登 录 中...</span>
+            </el-button>
+          </el-form-item>
+        </el-form>
 
-            <div v-if="register" class="register-link">
-              <router-link class="link-type" :to="'/register'">立即注册</router-link>
+        <div class="social-section">
+          <div class="social-divider">
+            <span class="social-divider-text">其他登录方式</span>
+          </div>
+          <div class="social-icons">
+            <div class="social-item" :title="'微信登录'" @click="doSocialLogin('wechat_open')">
+              <svg-icon icon-class="wechat" />
             </div>
-          </el-form>
-
-          <div class="social-section">
-            <div class="social-divider">
-              <span class="social-divider-text">其他登录方式</span>
+            <div class="social-item" :title="'MaxKey登录'" @click="doSocialLogin('maxkey')">
+              <svg-icon icon-class="maxkey" />
             </div>
-            <div class="social-icons">
-              <div class="social-item" :title="'微信登录'" @click="doSocialLogin('wechat_open')">
-                <svg-icon icon-class="wechat" />
-              </div>
-              <div class="social-item" :title="'MaxKey登录'" @click="doSocialLogin('maxkey')">
-                <svg-icon icon-class="maxkey" />
-              </div>
-              <div class="social-item" :title="'TopIam登录'" @click="doSocialLogin('topiam')">
-                <svg-icon icon-class="topiam" />
-              </div>
-              <div class="social-item" :title="'Gitee登录'" @click="doSocialLogin('gitee')">
-                <svg-icon icon-class="gitee" />
-              </div>
-              <div class="social-item" :title="'Github登录'" @click="doSocialLogin('github')">
-                <svg-icon icon-class="github" />
-              </div>
+            <div class="social-item" :title="'TopIam登录'" @click="doSocialLogin('topiam')">
+              <svg-icon icon-class="topiam" />
+            </div>
+            <div class="social-item" :title="'Gitee登录'" @click="doSocialLogin('gitee')">
+              <svg-icon icon-class="gitee" />
+            </div>
+            <div class="social-item" :title="'Github登录'" @click="doSocialLogin('github')">
+              <svg-icon icon-class="github" />
             </div>
           </div>
         </div>
       </div>
+
+      <!-- 四大模块融合标签墙（点击查看能力） -->
+      <div class="module-wall">
+        <div
+          v-for="(mod, index) in modules"
+          :key="mod.key"
+          class="module-chip"
+          :class="{ active: activeModule === mod.key }"
+          :style="chipStyle(mod, index)"
+          @click="selectModule(mod.key)"
+        >
+          <span class="module-icon">
+            <!-- ERP：企业资源（立方体） -->
+            <svg
+              v-if="mod.key === 'erp'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <path d="M3.27 6.96L12 12.01l8.73-5.05" />
+              <path d="M12 22.08V12" />
+            </svg>
+            <!-- MES：制造执行（齿轮） -->
+            <svg
+              v-else-if="mod.key === 'mes'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+              />
+            </svg>
+            <!-- IoT：物联网（信号波） -->
+            <svg
+              v-else-if="mod.key === 'iot'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+              <path d="M16.24 7.76a6 6 0 0 1 0 8.49" />
+              <path d="M7.76 16.24a6 6 0 0 1 0-8.49" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+              <path d="M4.93 19.07a10 10 0 0 1 0-14.14" />
+            </svg>
+            <!-- AI：智能助手（星芒） -->
+            <svg v-else-if="mod.key === 'ai'" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.5l1.8 5.7 5.7 1.8-5.7 1.8L12 17.5l-1.8-5.7-5.7-1.8 5.7-1.8L12 2.5z" />
+              <path d="M18.5 14.8l.9 2.8 2.8.9-2.8.9-.9 2.8-.9-2.8-2.8-.9 2.8-.9.9-2.8z" />
+            </svg>
+          </span>
+          <span class="module-label">{{ mod.label }}</span>
+        </div>
+      </div>
+
+      <!-- 模块能力说明 -->
+      <transition name="caption-fade" mode="out-in">
+        <p :key="activeDesc" class="module-caption">{{ activeDesc }}</p>
+      </transition>
     </div>
+
+    <!-- 页脚 -->
+    <footer class="login-footer">Copyright © 2025-2026 WangHuan All Rights Reserved.</footer>
   </div>
 </template>
 
@@ -151,104 +200,224 @@ import { LoginData, TenantVO } from '@/api/types';
 import { to } from 'await-to-js';
 import { HttpStatus } from '@/enums/RespEnum';
 
-const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-
 const title = import.meta.env.VITE_APP_TITLE;
+const logoTitle = import.meta.env.VITE_APP_LOGO_TITLE || 'NexusERP';
 const userStore = useUserStore();
 const router = useRouter();
 
-// ==================== 模块切换 ====================
+// ==================== 四大模块（融合一体化展示） ====================
 interface ModuleItem {
   key: string;
   label: string;
-  icon: string;
-  subtitle: string;
-  theme: string;
+  desc: string;
+  color: string;
+  rgb: string;
 }
 
 const modules = ref<ModuleItem[]>([
-  { key: 'erp', label: 'ERP', icon: 'dashboard', subtitle: '企业资源计划 · 登录', theme: '#2563eb' },
-  { key: 'mes', label: 'MES', icon: 'monitor', subtitle: '制造执行系统 · 登录', theme: '#0891b2' },
-  { key: 'iot', label: 'IOT', icon: 'international', subtitle: '物联网平台 · 登录', theme: '#7c3aed' }
+  { key: 'erp', label: 'ERP', desc: '企业资源计划 · 销售 / 采购 / 仓储 / 排产一体化', color: '#409EFF', rgb: '64,158,255' },
+  { key: 'mes', label: 'MES', desc: '制造执行系统 · 工单 / 报工 / 追溯 / 安灯', color: '#22d3ee', rgb: '34,211,238' },
+  { key: 'iot', label: 'IoT', desc: '物联网平台 · 设备接入 / 数据采集 / 实时告警', color: '#8b5cf6', rgb: '139,92,246' },
+  { key: 'ai', label: 'AI', desc: 'AI 智能助手 · 智能问答 / 数据洞察 / 辅助决策', color: '#34d399', rgb: '52,211,153' }
 ]);
 
-const currentModule = ref('erp');
-const moduleSubtitle = computed(() => modules.value.find(m => m.key === currentModule.value)?.subtitle || '请输入账号信息以继续');
-const currentTheme = computed(() => modules.value.find(m => m.key === currentModule.value)?.theme || '#2563eb');
-
-const switchModule = (key: string) => {
-  currentModule.value = key;
-  // 可扩展：根据模块切换不同的登录接口或跳转路径
+// 当前选中模块（再次点击取消选中）
+const activeModule = ref<string>('');
+const selectModule = (key: string) => {
+  activeModule.value = activeModule.value === key ? '' : key;
 };
+const activeDesc = computed(() => modules.value.find((m) => m.key === activeModule.value)?.desc || '数据贯通 · 智能协同 · 一体化运营');
 
-// ==================== 粒子背景 ====================
-const particleCanvas = ref<HTMLCanvasElement | null>(null);
-let particleAnimId = 0;
+const chipStyle = (mod: ModuleItem, index: number): Record<string, string | number> => ({
+  '--chip-color': mod.color,
+  '--chip-rgb': mod.rgb,
+  '--i': index
+});
 
-const initParticles = () => {
-  const canvas = particleCanvas.value;
+// ==================== 数据网络背景 ====================
+const networkCanvas = ref<HTMLCanvasElement | null>(null);
+const NETWORK_COLORS = ['#409EFF', '#22d3ee', '#8b5cf6', '#34d399'];
+let networkAnimId = 0;
+let resizeHandler: (() => void) | null = null;
+let visibilityHandler: (() => void) | null = null;
+
+const initNetwork = () => {
+  const canvas = networkCanvas.value;
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const resize = () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  };
-  resize();
-  window.addEventListener('resize', resize);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let width = window.innerWidth;
+  let height = window.innerHeight;
 
-  const particles: { x: number; y: number; vx: number; vy: number; radius: number; alpha: number }[] = [];
-  const count = 45;
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4,
-      radius: Math.random() * 2 + 1,
-      alpha: Math.random() * 0.5 + 0.2
+  interface NetNode {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    r: number;
+    color: string;
+  }
+  interface Pulse {
+    a: number;
+    b: number;
+    t: number;
+    speed: number;
+    color: string;
+  }
+
+  const isMobile = width < 768;
+  const NODE_COUNT = isMobile ? 32 : 64;
+  const LINK_DIST = isMobile ? 110 : 150;
+  const nodes: NetNode[] = [];
+  let pulses: Pulse[] = [];
+  const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+  for (let i = 0; i < NODE_COUNT; i++) {
+    nodes.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: rand(-0.35, 0.35),
+      vy: rand(-0.35, 0.35),
+      r: rand(1, 2.6),
+      color: NETWORK_COLORS[i % NETWORK_COLORS.length]
     });
   }
 
-  const animate = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach((p, i) => {
-      p.x += p.vx;
-      p.y += p.vy;
-      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+  const applySize = () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // 视口变化时将节点钳制回画布内
+    nodes.forEach((n) => {
+      n.x = Math.min(Math.max(n.x, 0), width);
+      n.y = Math.min(Math.max(n.y, 0), height);
+    });
+  };
+  applySize();
+  resizeHandler = applySize;
+  window.addEventListener('resize', applySize);
 
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(100, 116, 139, ${p.alpha})`;
-      ctx.fill();
+  const render = () => {
+    ctx.clearRect(0, 0, width, height);
 
-      // 连线
-      for (let j = i + 1; j < particles.length; j++) {
-        const q = particles[j];
+    // 连线
+    for (let i = 0; i < nodes.length; i++) {
+      const p = nodes[i];
+      for (let j = i + 1; j < nodes.length; j++) {
+        const q = nodes[j];
         const dx = p.x - q.x;
         const dy = p.y - q.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 150) {
+        const dist = Math.hypot(dx, dy);
+        if (dist < LINK_DIST) {
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(q.x, q.y);
-          ctx.strokeStyle = `rgba(148, 163, 184, ${0.12 * (1 - dist / 150)})`;
+          ctx.strokeStyle = `rgba(100, 160, 255, ${0.12 * (1 - dist / LINK_DIST)})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
       }
+    }
+
+    // 发光节点
+    nodes.forEach((n) => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = n.color;
+      ctx.shadowColor = n.color;
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
     });
-    particleAnimId = requestAnimationFrame(animate);
+
+    // 数据脉冲（沿活动边流动，位置实时取节点当前坐标）
+    pulses.forEach((pl) => {
+      const a = nodes[pl.a];
+      const b = nodes[pl.b];
+      if (!a || !b) return;
+      const x = a.x + (b.x - a.x) * pl.t;
+      const y = a.y + (b.y - a.y) * pl.t;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = pl.color;
+      ctx.shadowBlur = 12;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+  };
+
+  // 减少动态偏好：只渲染一帧静态网络
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) {
+    render();
+    return;
+  }
+
+  const spawnPulse = () => {
+    if (pulses.length >= 6 || nodes.length < 2) return;
+    const a = Math.floor(Math.random() * nodes.length);
+    let best = -1;
+    let bestDist = LINK_DIST;
+    for (let j = 0; j < nodes.length; j++) {
+      if (j === a) continue;
+      const d = Math.hypot(nodes[a].x - nodes[j].x, nodes[a].y - nodes[j].y);
+      if (d < bestDist) {
+        bestDist = d;
+        best = j;
+      }
+    }
+    if (best === -1) return;
+    pulses.push({ a, b: best, t: 0, speed: rand(0.008, 0.02), color: nodes[a].color });
+  };
+
+  const update = () => {
+    nodes.forEach((n) => {
+      n.x += n.vx;
+      n.y += n.vy;
+      if (n.x <= 0 || n.x >= width) n.vx *= -1;
+      if (n.y <= 0 || n.y >= height) n.vy *= -1;
+    });
+    pulses.forEach((pl) => (pl.t += pl.speed));
+    pulses = pulses.filter((pl) => pl.t < 1);
+    if (Math.random() < 0.04) spawnPulse();
+  };
+
+  let running = true;
+  const animate = () => {
+    if (!running) return;
+    update();
+    render();
+    networkAnimId = requestAnimationFrame(animate);
   };
   animate();
+
+  // 标签页隐藏时暂停，省电
+  visibilityHandler = () => {
+    if (document.hidden) {
+      running = false;
+      cancelAnimationFrame(networkAnimId);
+    } else if (!running) {
+      running = true;
+      animate();
+    }
+  };
+  document.addEventListener('visibilitychange', visibilityHandler);
 };
 
 onUnmounted(() => {
-  if (particleAnimId) cancelAnimationFrame(particleAnimId);
+  if (networkAnimId) cancelAnimationFrame(networkAnimId);
+  if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+  if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler);
 });
 
+// ==================== 登录表单 ====================
 const loginForm = ref<LoginData>({
   tenantId: '000000',
   username: 'admin',
@@ -271,7 +440,6 @@ const loading = ref(false);
 const captchaEnabled = ref(true);
 // 租户开关
 const tenantEnabled = ref(true);
-
 // 注册开关
 const register = ref(false);
 const redirect = ref('/');
@@ -288,7 +456,7 @@ watch(
 );
 
 const handleLogin = () => {
-  loginRef.value?.validate(async (valid: boolean, fields: any) => {
+  loginRef.value?.validate(async (valid: boolean) => {
     if (valid) {
       loading.value = true;
       // 勾选了需要记住密码设置在 localStorage 中设置记住用户名和密码
@@ -317,7 +485,6 @@ const handleLogin = () => {
           await getCode();
         }
       }
-    } else {
     }
   });
 };
@@ -383,44 +550,502 @@ onMounted(() => {
   getCode();
   initTenantList();
   getLoginData();
-  initParticles();
+  initNetwork();
 });
 </script>
 
 <style lang="scss" scoped>
 .login {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 24px;
-  background: linear-gradient(135deg, #f0f4fc 0%, #e2e8f0 50%, #f0f4fc 100%);
   position: relative;
-  overflow: hidden;
+  display: flex;
+  min-height: 100vh;
+  padding: 56px 24px 88px;
+  background: linear-gradient(160deg, #05080f 0%, #0a1120 50%, #05080f 100%);
+  overflow-x: hidden;
 }
 
-.particle-bg {
-  position: absolute;
+/* ========== 背景层 ========== */
+.network-bg {
+  position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
   z-index: 0;
+  pointer-events: none;
 }
 
-.login-card {
-  display: flex;
-  width: min(960px, 100%);
-  min-height: 560px;
-  border-radius: var(--app-radius-lg);
-  box-shadow: var(--app-shadow-lg);
-  overflow: hidden;
-  background: #fff;
-  position: relative;
+.bg-grid {
+  position: fixed;
+  inset: 0;
   z-index: 1;
-  animation: cardEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(64, 158, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(64, 158, 255, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 25%, transparent 78%);
+  mask-image: radial-gradient(ellipse at center, black 25%, transparent 78%);
+  animation: gridDrift 28s linear infinite;
 }
 
+.bg-glow {
+  position: fixed;
+  z-index: 1;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.glow-blue {
+  top: -140px;
+  left: -120px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(64, 158, 255, 0.32), transparent 70%);
+  animation: breathe 9s ease-in-out infinite;
+}
+
+.glow-violet {
+  bottom: -160px;
+  right: -140px;
+  width: 540px;
+  height: 540px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.28), transparent 70%);
+  animation: breathe 11s ease-in-out infinite 1.5s;
+}
+
+.glow-cyan {
+  top: 38%;
+  left: 52%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.2), transparent 70%);
+  animation: breathe 13s ease-in-out infinite 3s;
+}
+
+.bg-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(3, 6, 12, 0.62) 100%);
+}
+
+/* ========== 内容层 ========== */
+.login-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  margin: auto;
+}
+
+/* ========== 品牌头 ========== */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+  text-align: center;
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.brand-logo {
+  margin-bottom: 16px;
+
+  svg {
+    width: 62px;
+    height: 62px;
+    filter: drop-shadow(0 8px 24px rgba(64, 158, 255, 0.45));
+  }
+}
+
+.brand-name {
+  margin: 0 0 10px 0;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #ffffff 0%, #b9d6ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.brand-tagline {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: #8b98ad;
+}
+
+/* ========== 玻璃登录卡 ========== */
+.login-card {
+  width: 100%;
+  padding: 34px 34px 26px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--app-radius-lg);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.5),
+    0 0 80px rgba(64, 158, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  animation: cardEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+.form-header {
+  margin-bottom: 26px;
+  text-align: center;
+}
+
+.form-title {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #e8eef7;
+}
+
+.form-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #5b6678;
+}
+
+/* ========== 表单控件（深色玻璃） ========== */
+.login-form {
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+
+  .input-icon {
+    width: 16px;
+    height: 16px;
+    color: #8b98ad;
+  }
+
+  :deep(.el-input__wrapper) {
+    height: 44px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--app-radius-md);
+    box-shadow: none;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      background 0.2s;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    &.is-focus {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: #409eff;
+      box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.15);
+    }
+  }
+
+  :deep(.el-input__inner) {
+    line-height: 44px;
+    color: #e8eef7;
+
+    &::placeholder {
+      color: #5b6678;
+    }
+  }
+
+  :deep(.el-input__prefix) {
+    color: #8b98ad;
+  }
+
+  :deep(.el-input__suffix) {
+    color: #8b98ad;
+  }
+
+  /* 租户下拉（Element Plus 2.5+ 新结构） */
+  :deep(.el-select__wrapper) {
+    min-height: 44px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--app-radius-md);
+    box-shadow: none;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      background 0.2s;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    &.is-focused {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: #409eff;
+      box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.15);
+    }
+  }
+
+  :deep(.el-select__placeholder),
+  :deep(.el-select__selected-item) {
+    color: #e8eef7;
+  }
+
+  :deep(.el-select__placeholder.is-transparent) {
+    color: #5b6678;
+  }
+
+  :deep(.el-select__caret),
+  :deep(.el-select__icon) {
+    color: #8b98ad;
+  }
+}
+
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+
+  .link-type {
+    font-size: 13px;
+    color: #409eff;
+  }
+}
+
+.remember-me {
+  :deep(.el-checkbox__label) {
+    font-size: 13px;
+    color: #8b98ad;
+  }
+
+  :deep(.el-checkbox__inner) {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+
+  :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+    background: #409eff;
+    border-color: #409eff;
+  }
+
+  :deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+    color: #b9d6ff;
+  }
+}
+
+.login-btn-item {
+  margin-bottom: 0;
+}
+
+.login-btn {
+  width: 100%;
+  height: 46px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: #fff;
+  background: linear-gradient(90deg, #409eff 0%, #2f7df6 100%);
+  border: none;
+  border-radius: var(--app-radius-md);
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.35);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    background 0.2s;
+
+  &:hover {
+    background: linear-gradient(90deg, #54a6ff 0%, #3d86f7 100%);
+    box-shadow: 0 8px 26px rgba(64, 158, 255, 0.5);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* ========== 验证码 ========== */
+.captcha-box {
+  flex-shrink: 0;
+  width: 112px;
+  height: 44px;
+  margin-left: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--app-radius-md);
+  cursor: pointer;
+
+  .captcha-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* ========== 社交登录 ========== */
+.social-section {
+  margin-top: 26px;
+}
+
+.social-divider {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.social-divider-text {
+  padding: 0 12px;
+  font-size: 12.5px;
+  color: #5b6678;
+}
+
+.social-icons {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.social-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  color: #8b98ad;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #409eff;
+    background: rgba(64, 158, 255, 0.1);
+    border-color: rgba(64, 158, 255, 0.5);
+    box-shadow: 0 4px 14px rgba(64, 158, 255, 0.25);
+    transform: translateY(-2px);
+  }
+}
+
+/* ========== 四大模块标签墙 ========== */
+.module-wall {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.module-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 15px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--chip-color);
+  background: rgba(var(--chip-rgb), 0.1);
+  border: 1px solid rgba(var(--chip-rgb), 0.32);
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(var(--chip-rgb), 0.12);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+  animation:
+    chipIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both,
+    chipGlow 3.2s ease-in-out infinite;
+  animation-delay: calc(0.55s + var(--i) * 0.09s), calc(1.1s + var(--i) * 0.35s);
+
+  .module-icon {
+    display: inline-flex;
+    width: 15px;
+    height: 15px;
+    color: var(--chip-color);
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &:hover {
+    background: rgba(var(--chip-rgb), 0.18);
+    border-color: rgba(var(--chip-rgb), 0.55);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  &.active {
+    background: rgba(var(--chip-rgb), 0.24);
+    border-color: rgba(var(--chip-rgb), 0.85);
+    box-shadow: 0 0 24px rgba(var(--chip-rgb), 0.5);
+    transform: translateY(-2px);
+  }
+}
+
+/* 模块能力说明 */
+.module-caption {
+  min-height: 18px;
+  margin: 14px 0 0 0;
+  font-size: 12.5px;
+  letter-spacing: 1px;
+  color: #7c8aa0;
+  text-align: center;
+}
+
+.caption-fade-enter-active,
+.caption-fade-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.caption-fade-enter-from,
+.caption-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+/* ========== 页脚 ========== */
+.login-footer {
+  position: absolute;
+  right: 0;
+  bottom: 20px;
+  left: 0;
+  z-index: 2;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: #4b5563;
+  text-align: center;
+}
+
+/* ========== 动画关键帧 ========== */
 @keyframes cardEnter {
   from {
     opacity: 0;
@@ -432,430 +1057,138 @@ onMounted(() => {
   }
 }
 
-/* ========== 左侧品牌面板 ========== */
-.login-brand {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  flex: 0 0 44%;
-  padding: 48px 40px;
-  background: linear-gradient(160deg, #1e3a8a 0%, #2563eb 40%, #3b82f6 100%);
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  transition: background 0.6s ease;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -60px;
-    right: -60px;
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.04);
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
   }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -40px;
-    left: -40px;
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.04);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* 模块主题色 */
-.login-brand[data-module='mes'] {
-  background: linear-gradient(160deg, #164e63 0%, #0891b2 40%, #06b6d4 100%);
-}
-.login-brand[data-module='iot'] {
-  background: linear-gradient(160deg, #4c1d95 0%, #7c3aed 40%, #8b5cf6 100%);
-}
-
-.brand-body {
-  position: relative;
-  z-index: 1;
-}
-
-.brand-logo {
-  margin-bottom: 24px;
-
-  svg {
-    width: 56px;
-    height: 56px;
+@keyframes chipIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-.brand-name {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  letter-spacing: 1px;
-  color: #fff;
-}
-
-.brand-desc {
-  font-size: 14px;
-  opacity: 0.8;
-  margin: 0 0 24px 0;
-  letter-spacing: 2px;
-}
-
-/* ========== 模块切换标签 ========== */
-.module-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 28px;
-}
-
-.module-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: var(--app-radius-md);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(4px);
-
-  .module-icon {
-    width: 16px;
-    height: 16px;
+@keyframes chipGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(var(--chip-rgb), 0.1);
   }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.18);
-    color: #fff;
-    transform: translateY(-1px);
-  }
-
-  &.active {
-    background: rgba(255, 255, 255, 0.95);
-    color: #1e293b;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
+  50% {
+    box-shadow: 0 0 20px rgba(var(--chip-rgb), 0.3);
   }
 }
 
-.brand-features {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.brand-feature {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13.5px;
-  opacity: 0.88;
-}
-
-.feature-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #34d399;
-  flex-shrink: 0;
-}
-
-.brand-footer {
-  position: relative;
-  z-index: 1;
-  font-size: 12px;
-  opacity: 0.55;
-  letter-spacing: 0.5px;
-}
-
-/* ========== 右侧表单面板 ========== */
-.login-form-panel {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 40px;
-  background: #fff;
-}
-
-.form-wrapper {
-  width: 100%;
-  max-width: 340px;
-}
-
-.form-header {
-  margin-bottom: 32px;
-  position: relative;
-}
-
-.lang-position {
-  position: absolute;
-  top: -4px;
-  right: 0;
-}
-
-.form-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 6px 0;
-  letter-spacing: 0.5px;
-}
-
-.form-subtitle {
-  font-size: 13.5px;
-  color: #94a3b8;
-  margin: 0;
-}
-
-.login-form {
-  .el-form-item {
-    margin-bottom: 20px;
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
   }
-
-  :deep(.el-input__wrapper) {
-    box-shadow: none;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: var(--app-radius-md);
-    padding: 0 12px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    height: 42px;
-
-    &:hover {
-      border-color: #cbd5e1;
-    }
-
-    &.is-focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      background: #fff;
-    }
-  }
-
-  :deep(.el-input__inner) {
-    line-height: 42px;
-  }
-
-  .input-icon {
-    width: 16px;
-    height: 16px;
-  }
-
-  :deep(.el-button--primary) {
-    height: 44px;
-    border-radius: var(--app-radius-md);
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  50% {
+    opacity: 0.68;
+    transform: scale(1.15);
   }
 }
 
-.remember-me {
-  margin-bottom: 24px;
-  :deep(.el-checkbox__label) {
-    font-size: 13px;
-    color: #64748b;
+@keyframes gridDrift {
+  from {
+    background-position:
+      0 0,
+      0 0;
   }
-}
-
-.register-link {
-  text-align: center;
-  margin-top: -8px;
-}
-
-/* ========== 验证码 ========== */
-.captcha-box {
-  width: 110px;
-  height: 42px;
-  margin-left: 10px;
-  flex-shrink: 0;
-  border-radius: var(--app-radius-sm);
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-
-  .captcha-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-}
-
-/* ========== 社交登录 ========== */
-.social-section {
-  margin-top: 28px;
-}
-
-.social-divider {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.social-divider-text {
-  font-size: 12.5px;
-  color: #94a3b8;
-  padding-right: 12px;
-}
-
-.social-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #e2e8f0;
-}
-
-.social-icons {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-}
-
-.social-item {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--app-radius-sm);
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 18px;
-  color: #64748b;
-
-  &:hover {
-    border-color: #3b82f6;
-    background: #eff6ff;
-    color: #3b82f6;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
-  }
-}
-
-/* ========== 深色模式 ========== */
-:global(html.dark) {
-  .login {
-    background: linear-gradient(135deg, #0f1115 0%, #151922 50%, #0f1115 100%);
-  }
-
-  .login-card {
-    background: #1a1d24;
-  }
-
-  .login-brand {
-    background: linear-gradient(160deg, #0c1d4a 0%, #153575 40%, #1d4fa8 100%);
-  }
-  .login-brand[data-module='mes'] {
-    background: linear-gradient(160deg, #083344 0%, #0e5a6e 40%, #115e75 100%);
-  }
-  .login-brand[data-module='iot'] {
-    background: linear-gradient(160deg, #2e1065 0%, #4c1d95 40%, #5b21b6 100%);
-  }
-
-  .login-form-panel {
-    background: #1a1d24;
-  }
-
-  .form-title {
-    color: #e5e7eb;
-  }
-
-  .form-subtitle {
-    color: #6b7280;
-  }
-
-  .login-form :deep(.el-input__wrapper) {
-    background: #1f2229;
-    border-color: #2d3139;
-
-    &:hover {
-      border-color: #3d424d;
-    }
-
-    &.is-focus {
-      border-color: #3b82f6;
-      background: #1a1d24;
-    }
-  }
-
-  .login-form :deep(.el-button--primary) {
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
-  }
-
-  .remember-me :deep(.el-checkbox__label) {
-    color: #9ca3af;
-  }
-
-  .captcha-box {
-    border-color: #2d3139;
-  }
-
-  .social-divider::after {
-    background: #2d3139;
-  }
-
-  .social-item {
-    background: #1f2229;
-    border-color: #2d3139;
-    color: #9ca3af;
-
-    &:hover {
-      border-color: #3b82f6;
-      background: rgba(59, 130, 246, 0.08);
-      color: #60a5fa;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
+  to {
+    background-position:
+      44px 44px,
+      44px 44px;
   }
 }
 
 /* ========== 响应式 ========== */
 @media (max-width: 768px) {
   .login {
-    padding: 16px;
-    align-items: flex-start;
-    padding-top: 40px;
+    padding: 40px 18px 76px;
+  }
+
+  .brand {
+    margin-bottom: 22px;
+  }
+
+  .brand-logo svg {
+    width: 52px;
+    height: 52px;
+  }
+
+  .brand-name {
+    font-size: 26px;
+  }
+
+  .brand-tagline {
+    font-size: 12px;
+    letter-spacing: 2px;
   }
 
   .login-card {
-    flex-direction: column;
+    padding: 26px 22px 22px;
   }
 
-  .login-brand {
-    flex: none;
-    padding: 32px 28px;
+  .bg-grid {
+    display: none;
+  }
+}
 
-    .brand-footer {
-      display: none;
+/* ========== 减少动态偏好 ========== */
+@media (prefers-reduced-motion: reduce) {
+  .bg-grid,
+  .bg-glow,
+  .brand,
+  .login-card,
+  .module-chip {
+    animation: none !important;
+  }
+}
+</style>
+
+<!-- 租户下拉弹层（teleport 到 body，scoped 样式无法命中，需全局） -->
+<style lang="scss">
+.login-select-popper.el-popper.is-light {
+  background: rgba(13, 20, 34, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--app-radius-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+
+  .el-popper__arrow::before {
+    background: rgba(13, 20, 34, 0.94);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .el-select-dropdown__item {
+    color: #c4cddc;
+
+    &.is-hovering {
+      background: rgba(64, 158, 255, 0.16);
+    }
+
+    &.is-selected {
+      font-weight: 600;
+      color: #409eff;
     }
   }
 
-  .brand-features {
-    display: none;
-  }
-
-  .brand-desc {
-    margin-bottom: 0;
-  }
-
-  .login-form-panel {
-    padding: 28px 24px 36px;
-  }
-
-  .form-header {
-    margin-bottom: 24px;
+  .el-select-dropdown__empty,
+  .el-select-dropdown__loading {
+    color: #5b6678;
   }
 }
 </style>

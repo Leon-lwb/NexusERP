@@ -30,6 +30,11 @@
 - [screenshots/](./screenshots/) — 18 张系统截图（登录页、各业务模块界面）
 - [user-manual/](./user-manual/) — 用户操作手册（docx）
 
+### 待开发计划（plans/）
+| 文档 | 主题 | 状态 |
+|------|------|------|
+| [2026-07-17-so-purchase-linkage-plan.md](./plans/2026-07-17-so-purchase-linkage-plan.md) | SO 销售订单->采购联动（补全 so_sales_order_line.purchase_qty / linked_po_id，建销售->采购业务链路） | 📋 待开发 |
+
 ## 阅读顺序
 
 1. 系统全貌：[NexusERP_三模块共同升级方案.md](./NexusERP_三模块共同升级方案.md)

@@ -11804,7 +11804,7 @@ INSERT INTO `sys_dict_data` VALUES (193, '000000', 6, '已关闭', 'CLOSED', 'so
 INSERT INTO `sys_dict_data` VALUES (194, '000000', 7, '已取消', 'CANCELLED', 'so_order_status', NULL, 'danger', 'N', 103, 1, '2025-10-29 14:55:17', NULL, '2025-10-29 14:55:33', NULL);
 INSERT INTO `sys_dict_data` VALUES (195, '000000', 1, '待处理', 'PENDING', 'so_order_line_status', NULL, 'info', 'N', 103, 1, '2025-10-29 15:41:35', NULL, '2025-10-29 15:46:35', NULL);
 INSERT INTO `sys_dict_data` VALUES (196, '000000', 2, '已排产/已采购', 'SCHEDULED', 'so_order_line_status', NULL, 'primary', 'N', 103, 1, '2025-10-29 15:41:56', NULL, '2025-10-29 15:46:39', NULL);
-INSERT INTO `sys_dict_data` VALUES (197, '000000', 4, '部分履行', 'PARTIALLY_FULFILLED', 'so_order_line_status', NULL, 'success', 'N', 103, 1, '2025-10-29 15:46:16', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (197, '000000', 3, '部分履行', 'PARTIALLY_FULFILLED', 'so_order_line_status', NULL, 'success', 'N', 103, 1, '2025-10-29 15:46:16', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (198, '000000', 4, '已履行', 'FULFILLED', 'so_order_line_status', NULL, 'success', 'N', 103, 1, '2025-10-29 15:46:58', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (199, '000000', 5, '已取消', 'CANCELLED', 'so_order_line_status', NULL, 'danger', 'N', 103, 1, '2025-10-29 15:47:13', NULL, '2025-10-29 15:47:23', NULL);
 INSERT INTO `sys_dict_data` VALUES (200, '000000', 1, '省份', '1', 'sys_area_level', NULL, NULL, 'N', 103, 1, '2026-04-30 13:24:34', NULL, NULL, NULL);
