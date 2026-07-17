@@ -33,6 +33,8 @@ export interface Conversation {
 export interface ChatMessage {
   messageId?: string;
   clientTempId?: string;
+  /** P1-4: 客户端幂等键，重发时复用同一值 */
+  clientMsgId?: string;
   fromUserId: string;
   toUserId?: string;
   groupId?: string;
@@ -45,11 +47,17 @@ export interface ChatMessage {
   revoked?: boolean;
   isRead?: boolean;
   forwardFrom?: string;
+  /** P1-5: 被 @ 标记（来自后端 mentioned 字段） */
+  mentioned?: boolean;
+  /** P1-5: 被 @ 的群成员 userId 列表（仅发送时携带） */
+  mentionUserIds?: (number | string)[];
 }
 
 interface ImPayload {
   chatType: ChatType;
   action?: string;
+  /** P1-6: 推送类型（IM_MESSAGE / IM_MESSAGE_READ / IM_NOTIFICATION 等） */
+  type?: string;
   messageId?: string | number;
   fromUserId?: string | number;
   toUserId?: string | number;
@@ -60,6 +68,11 @@ interface ImPayload {
   senderName?: string;
   senderAvatar?: string;
   groupName?: string;
+  mentioned?: boolean;
+  /** P1-6: 已读回执专用字段 */
+  messageIds?: (string | number)[];
+  readAt?: string | number;
+  readBy?: string | number;
 }
 
 interface ActiveConv {
@@ -79,6 +92,22 @@ const PAGE_SIZE = 50;
 const REVOKE_WINDOW_MS = 2 * 60 * 1000;
 
 let tempSeq = 0;
+
+/**
+ * P1-4: 生成客户端幂等键
+ * 优先使用 crypto.randomUUID()（HTTPS 或 localhost 安全上下文），降级到 timestamp+random
+ */
+function generateClientMsgId(): string {
+  const g = globalThis as any;
+  if (g?.crypto?.randomUUID) {
+    try {
+      return g.crypto.randomUUID();
+    } catch {
+      /* fallthrough */
+    }
+  }
+  return `cmsg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export const useImStore = defineStore('im', () => {
   const userStore = useUserStore();
@@ -142,6 +171,10 @@ export const useImStore = defineStore('im', () => {
       revoked: row.revoked === '1',
       isRead: row.isRead === '1',
       forwardFrom: row.forwardFrom != null ? String(row.forwardFrom) : undefined,
+      // P1-5: 被 @ 标记（后端 mentioned 字段为 '1'/1/true）
+      mentioned: row.mentioned === '1' || row.mentioned === 1 || row.mentioned === true,
+      // P1-4: 保留服务端返回的 clientMsgId（若有）
+      clientMsgId: row.clientMsgId != null ? String(row.clientMsgId) : undefined,
       status: 'sent'
     };
   }
@@ -286,13 +319,22 @@ export const useImStore = defineStore('im', () => {
     }
   }
 
-  async function sendCore(conv: ActiveConv, key: string, content: string, msgType: string, clientTempId: string, forwardFrom?: string) {
+  async function sendCore(
+    conv: ActiveConv,
+    key: string,
+    content: string,
+    msgType: string,
+    clientTempId: string,
+    forwardFrom?: string,
+    clientMsgId?: string,
+    mentionUserIds?: (number | string)[]
+  ) {
     try {
       let res: any;
       if (conv.chatType === 'PRIVATE') {
-        res = await sendPrivateMessage({ toUserId: conv.targetId, content, msgType, forwardFrom });
+        res = await sendPrivateMessage({ toUserId: conv.targetId, content, msgType, forwardFrom, clientMsgId });
       } else {
-        res = await sendGroupMessage({ groupId: conv.targetId, content, msgType, forwardFrom });
+        res = await sendGroupMessage({ groupId: conv.targetId, content, msgType, forwardFrom, clientMsgId, mentionUserIds });
       }
       if (res?.code === 200) {
         const realId = res.data != null ? String(res.data) : undefined;
@@ -308,15 +350,30 @@ export const useImStore = defineStore('im', () => {
     }
   }
 
-  async function send(content: string, msgType: 'text' | 'image' | 'file' = 'text', forwardFrom?: string) {
+  /**
+   * 发送消息
+   * @param mentionUserIds P1-5: 群聊被 @ 的成员 userId 列表
+   */
+  async function send(
+    content: string,
+    msgType: 'text' | 'image' | 'file' = 'text',
+    forwardFrom?: string,
+    mentionUserIds?: (number | string)[]
+  ) {
     if (!active.value || !content) return;
     const key = activeKey.value;
     const conv: ActiveConv = { ...active.value };
     const clientTempId = `temp_${Date.now()}_${++tempSeq}`;
+    // P1-4: 生成 clientMsgId 用于幂等
+    const clientMsgId = generateClientMsgId();
+    // P1-5: 自方被 @ 标记（群聊发送时若 mentionUserIds 包含自己，标记 mentioned）
+    const myUid = myUserId.value;
+    const isMentionedMe = !!mentionUserIds && !!myUid && mentionUserIds.some((id) => String(id) === myUid);
     messagesMap.value[key] = [
       ...(messagesMap.value[key] || []),
       {
         clientTempId,
+        clientMsgId,
         fromUserId: myUserId.value,
         content,
         msgType,
@@ -324,19 +381,27 @@ export const useImStore = defineStore('im', () => {
         createTime: Date.now(),
         senderName: myName.value,
         senderAvatar: myAvatar.value,
-        status: 'sending'
+        status: 'sending',
+        mentionUserIds,
+        mentioned: isMentionedMe
       }
     ];
     if (msgType === 'text') draftMap.value[key] = '';
-    await sendCore(conv, key, content, msgType, clientTempId, forwardFrom);
+    await sendCore(conv, key, content, msgType, clientTempId, forwardFrom, clientMsgId, mentionUserIds);
   }
 
   async function retry(m: ChatMessage) {
     if (!m.clientTempId || !active.value) return;
     const key = activeKey.value;
     const conv: ActiveConv = { ...active.value };
-    updateTemp(key, m.clientTempId, { status: 'sending' });
-    await sendCore(conv, key, m.content, m.msgType || 'text', m.clientTempId, m.forwardFrom);
+    // P1-4: 重发复用原 clientMsgId 实现幂等，避免网络抖动产生重复消息
+    const clientMsgId = m.clientMsgId || generateClientMsgId();
+    if (!m.clientMsgId) {
+      updateTemp(key, m.clientTempId, { clientMsgId, status: 'sending' });
+    } else {
+      updateTemp(key, m.clientTempId, { status: 'sending' });
+    }
+    await sendCore(conv, key, m.content, m.msgType || 'text', m.clientTempId, m.forwardFrom, clientMsgId, m.mentionUserIds);
   }
 
   function markRevoked(key: string, messageId: string) {
@@ -372,12 +437,14 @@ export const useImStore = defineStore('im', () => {
   async function forward(message: ChatMessage, targetKey: string) {
     const [tChatType, tTargetId] = targetKey.split('|') as [ChatType, string];
     const forwardFrom = message.messageId;
+    // P1-4: 转发同样需要 clientMsgId 幂等
+    const clientMsgId = generateClientMsgId();
     try {
       let res: any;
       if (tChatType === 'PRIVATE') {
-        res = await sendPrivateMessage({ toUserId: tTargetId, content: message.content, msgType: message.msgType, forwardFrom });
+        res = await sendPrivateMessage({ toUserId: tTargetId, content: message.content, msgType: message.msgType, forwardFrom, clientMsgId });
       } else {
-        res = await sendGroupMessage({ groupId: tTargetId, content: message.content, msgType: message.msgType, forwardFrom });
+        res = await sendGroupMessage({ groupId: tTargetId, content: message.content, msgType: message.msgType, forwardFrom, clientMsgId });
       }
       if (res?.code === 200) {
         ElMessage.success('已转发');
@@ -447,6 +514,12 @@ export const useImStore = defineStore('im', () => {
     const p = (ev as CustomEvent).detail as ImPayload | undefined;
     if (!p) return;
 
+    // P1-6: 已读回执推送
+    if (p.type === 'IM_MESSAGE_READ') {
+      handleReadReceipt(p);
+      return;
+    }
+
     if (p.action === 'revoke') {
       const key = deriveKey(p);
       if (key && p.messageId != null) markRevoked(key, String(p.messageId));
@@ -495,7 +568,9 @@ export const useImStore = defineStore('im', () => {
             createTime: p.createTime,
             senderName: p.senderName,
             senderAvatar: p.senderAvatar,
-            status: 'sent'
+            status: 'sent',
+            // P1-5: 来自推送的 mentioned 标记
+            mentioned: p.mentioned === true
           }
         ];
       }
@@ -505,6 +580,45 @@ export const useImStore = defineStore('im', () => {
     }
 
     maybeNotify(p, key);
+  }
+
+  /**
+   * P1-6: 处理 IM_MESSAGE_READ 已读回执推送
+   * <p>当接收方 markRead 后，原发送方会收到此推送，据此把对应消息标为已读。
+   * <p>payload: { chatType, peerUserId, groupId, messageIds, readAt, readBy }
+   */
+  function handleReadReceipt(p: ImPayload) {
+    if (!p || !Array.isArray(p.messageIds) || p.messageIds.length === 0) return;
+
+    // 计算本地会话 key
+    // 私聊：peerUserId = readBy（读取消息的人），对自己而言会话是 PRIVATE|readBy
+    // 群聊：会话是 GROUP|groupId
+    let key: string | null;
+    if (p.chatType === 'GROUP') {
+      if (p.groupId == null) return;
+      key = `GROUP|${p.groupId}`;
+    } else {
+      // readBy 是真正读取消息的人
+      const readBy = p.readBy ?? p.fromUserId;
+      if (readBy == null) return;
+      key = `PRIVATE|${readBy}`;
+    }
+
+    const arr = messagesMap.value[key];
+    if (!arr || arr.length === 0) return;
+
+    const idSet = new Set(p.messageIds.map((id) => String(id)));
+    let changed = false;
+    for (let i = 0; i < arr.length; i++) {
+      const m = arr[i];
+      if (m.messageId && idSet.has(m.messageId) && !m.isRead) {
+        arr[i] = { ...m, isRead: true };
+        changed = true;
+      }
+    }
+    if (changed) {
+      messagesMap.value[key] = [...arr];
+    }
   }
 
   function maybeNotify(p: ImPayload, key: string) {

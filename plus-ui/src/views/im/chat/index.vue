@@ -125,15 +125,19 @@
                     <div v-if="m.revoked" class="msg-content revoked">该消息已被撤回</div>
                     <template v-else>
                       <div v-if="m.forwardFrom" class="msg-fwd">转发消息</div>
-                      <div v-if="m.msgType === 'image'" class="msg-image">
-                        <el-image :src="m.content" :preview-src-list="[m.content]" fit="cover" hide-on-click-modal class="img-thumb" />
-                      </div>
-                      <div v-else-if="m.msgType === 'file'" class="msg-file">
-                        <el-link :href="m.content" target="_blank" type="primary" :underline="false">
-                          <el-icon class="mr-1"><Document /></el-icon>{{ fileName(m.content) }}
-                        </el-link>
-                      </div>
-                      <div v-else class="msg-content">{{ m.content }}</div>
+                    <div v-if="m.msgType === 'image'" class="msg-image">
+                      <el-image :src="m.content" :preview-src-list="[m.content]" fit="cover" hide-on-click-modal class="img-thumb" />
+                    </div>
+                    <div v-else-if="m.msgType === 'file'" class="msg-file">
+                      <el-link :href="m.content" target="_blank" type="primary" :underline="false">
+                        <el-icon class="mr-1"><Document /></el-icon>{{ fileName(m.content) }}
+                      </el-link>
+                    </div>
+                    <div v-else class="msg-content">
+                      <!-- P1-5: 被 @ 标记 -->
+                      <el-tag v-if="m.mentioned" size="small" type="warning" effect="plain" class="mention-flag">@你</el-tag>
+                      <span>{{ m.content }}</span>
+                    </div>
                     </template>
                     <div v-if="!m.revoked" class="msg-actions">
                       <span v-if="imStore.canRevoke(m)" class="msg-act" @click="onRevoke(m)">撤回</span>
@@ -154,6 +158,22 @@
                   <el-upload :show-file-list="false" :before-upload="onFileUpload" action="#">
                     <el-button :icon="Paperclip" size="small" circle title="发送文件" />
                   </el-upload>
+                  <!-- P1-5: @ 提及按钮（仅群聊显示） -->
+                  <el-button v-if="active?.chatType === 'GROUP'" size="small" circle title="@ 群成员" @click="openMentionPicker">
+                    @
+                  </el-button>
+                  <!-- P1-5: 已选 @ 成员标签 -->
+                  <div v-if="active?.chatType === 'GROUP' && mentionSelected.length" class="mention-tags-inline">
+                    <el-tag
+                      v-for="u in mentionSelected"
+                      :key="u.userId"
+                      size="small"
+                      closable
+                      @close="removeMention(u)"
+                    >
+                      @{{ u.nickName || u.userName }}
+                    </el-tag>
+                  </div>
                 </div>
                 <el-input v-model="draft" type="textarea" :rows="3" placeholder="输入消息..." @keydown="onEditorKeydown" />
                 <div class="editor-actions">
@@ -203,17 +223,40 @@
       </template>
     </el-dialog>
 
+    <!-- P1-5: @ 群成员选择对话框 -->
+    <el-dialog v-model="mentionVisible" title="选择要 @ 的群成员" width="360px" append-to-body>
+      <el-input v-model="mentionKeyword" size="small" placeholder="搜索群成员" clearable class="mention-search" />
+      <el-scrollbar max-height="400px">
+        <el-empty v-if="!filteredMentionCandidates.length" description="暂无可 @ 的成员" />
+        <div
+          v-for="m in filteredMentionCandidates"
+          :key="m.userId"
+          class="mention-item"
+          :class="{ active: isMentionSelected(m) }"
+          @click="toggleMention(m)"
+        >
+          <el-avatar :size="30" :src="m.avatar || undefined">{{ getAvatarText(m.nickName || m.userName) }}</el-avatar>
+          <span class="mention-name">{{ m.nickName || m.userName || `用户 ${m.userId}` }}</span>
+          <el-icon v-if="isMentionSelected(m)" class="mention-checked"><Check /></el-icon>
+        </div>
+      </el-scrollbar>
+      <template #footer>
+        <el-button @click="mentionVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmMention">确定</el-button>
+      </template>
+    </el-dialog>
+
     <UserSelect ref="contactSelectRef" :multiple="false" @confirm-call-back="onPickContact" />
     <UserSelect ref="memberSelectRef" :multiple="true" @confirm-call-back="onPickMembers" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { Document, Paperclip, Picture } from '@element-plus/icons-vue';
+import { Check, Document, Paperclip, Picture } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import UserSelect from '@/components/UserSelect/index.vue';
-import { uploadOss } from '@/api/im/chat';
+import { listGroupMembers, uploadOss } from '@/api/im/chat';
 import { useImStore } from '@/store/modules/im';
 
 const imStore = useImStore();
@@ -236,6 +279,12 @@ const forwardVisible = ref(false);
 const forwardMessage = ref<any>(null);
 const forwardTargetKey = ref('');
 
+// P1-5: @ 提及
+const mentionVisible = ref(false);
+const mentionKeyword = ref('');
+const mentionCandidates = ref<any[]>([]);
+const mentionSelected = ref<any[]>([]);
+
 const sendTip = computed(() => (sendMode.value === 'enter' ? 'Enter 发送，Shift+Enter 换行' : 'Ctrl+Enter 发送'));
 
 const conversations = computed(() => imStore.conversations);
@@ -251,6 +300,62 @@ const activeMembers = computed(() => {
 });
 
 const isGroupOwner = computed(() => activeMembers.value.some((m: any) => String(m.userId) === imStore.myUserId && m.owner));
+
+// P1-5: 过滤可 @ 的群成员（排除自己，按关键字搜索）
+const filteredMentionCandidates = computed(() => {
+  const me = imStore.myUserId;
+  const kw = mentionKeyword.value.trim().toLowerCase();
+  return mentionCandidates.value
+    .filter((m: any) => String(m.userId) !== String(me))
+    .filter((m: any) => {
+      if (!kw) return true;
+      const name = String(m.nickName || m.userName || '').toLowerCase();
+      return name.includes(kw) || String(m.userId).includes(kw);
+    });
+});
+
+const isMentionSelected = (m: any) => mentionSelected.value.some((u: any) => String(u.userId) === String(m.userId));
+
+const toggleMention = (m: any) => {
+  if (isMentionSelected(m)) {
+    mentionSelected.value = mentionSelected.value.filter((u: any) => String(u.userId) !== String(m.userId));
+  } else {
+    mentionSelected.value = [...mentionSelected.value, m];
+  }
+};
+
+const removeMention = (u: any) => {
+  mentionSelected.value = mentionSelected.value.filter((x: any) => String(x.userId) !== String(u.userId));
+};
+
+const openMentionPicker = async () => {
+  if (!active.value || active.value.chatType !== 'GROUP') {
+    ElMessage.warning('仅群聊支持 @');
+    return;
+  }
+  try {
+    const res: any = await listGroupMembers(active.value.targetId);
+    if (res?.code === 200) {
+      mentionCandidates.value = res.data || [];
+      mentionKeyword.value = '';
+      mentionVisible.value = true;
+    } else {
+      ElMessage.error(res?.msg || '加载群成员失败');
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.message || '加载群成员失败');
+  }
+};
+
+const confirmMention = () => {
+  // 将已选成员追加到草稿（@昵称 形式），由 onSend 携带 mentionUserIds 发送
+  if (mentionSelected.value.length) {
+    const names = mentionSelected.value.map((u: any) => `@${u.nickName || u.userName || u.userId}`).join(' ');
+    const sep = draft.value && !draft.value.endsWith(' ') ? ' ' : '';
+    draft.value = `${draft.value}${sep}${names} `;
+  }
+  mentionVisible.value = false;
+};
 
 const filteredConversations = computed(() => {
   const list = conversations.value || [];
@@ -409,7 +514,14 @@ const onSend = () => {
     ElMessage.warning('消息内容不能超过 2000 个字符');
     return;
   }
-  void imStore.send(content, 'text');
+  // P1-5: 群聊时携带已选 @ 成员 userId 列表
+  const mentionUserIds =
+    active.value?.chatType === 'GROUP' && mentionSelected.value.length
+      ? mentionSelected.value.map((u: any) => u.userId)
+      : undefined;
+  void imStore.send(content, 'text', undefined, mentionUserIds);
+  // P1-5: 发送后清空已选 @ 列表
+  mentionSelected.value = [];
   scrollToBottom(true);
 };
 
@@ -515,7 +627,11 @@ onMounted(() => {
 
 watch(
   () => imStore.activeKey,
-  (n) => imStore.setFocus(n || null)
+  (n) => {
+    imStore.setFocus(n || null);
+    // P1-5: 切换会话时清空已选 @ 列表
+    mentionSelected.value = [];
+  }
 );
 
 onUnmounted(() => {
@@ -887,5 +1003,53 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* P1-5: @ 提及相关样式 */
+.mention-tags-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-left: 4px;
+}
+
+.mention-flag {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.mention-search {
+  margin-bottom: 10px;
+}
+
+.mention-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.mention-item:hover {
+  background: var(--el-fill-color-light);
+}
+
+.mention-item.active {
+  background: var(--el-color-primary-light-9);
+}
+
+.mention-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mention-checked {
+  color: var(--el-color-primary);
 }
 </style>

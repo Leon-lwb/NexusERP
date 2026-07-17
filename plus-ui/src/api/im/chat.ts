@@ -8,7 +8,14 @@ export function listConversations(): AxiosPromise<any[]> {
   });
 }
 
-export function sendPrivateMessage(data: { toUserId: number | string; content: string; msgType?: string; forwardFrom?: number | string }) {
+export function sendPrivateMessage(data: {
+  toUserId: number | string;
+  content: string;
+  msgType?: string;
+  forwardFrom?: number | string;
+  /** P1-4: 客户端幂等键，重发时复用同一值 */
+  clientMsgId?: string;
+}) {
   return request({
     url: '/im/chat/private/send',
     method: 'post',
@@ -16,7 +23,16 @@ export function sendPrivateMessage(data: { toUserId: number | string; content: s
   });
 }
 
-export function sendGroupMessage(data: { groupId: string | number; content: string; msgType?: string; forwardFrom?: number | string }) {
+export function sendGroupMessage(data: {
+  groupId: string | number;
+  content: string;
+  msgType?: string;
+  forwardFrom?: number | string;
+  /** P1-4: 客户端幂等键，重发时复用同一值 */
+  clientMsgId?: string;
+  /** P1-5: 被 @ 的群成员 userId 列表 */
+  mentionUserIds?: (number | string)[];
+}) {
   return request({
     url: '/im/chat/group/send',
     method: 'post',

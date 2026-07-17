@@ -42,6 +42,12 @@ export const dispatchRealtimeMessage = (raw: string) => {
         window.dispatchEvent(new CustomEvent('im-realtime', { detail: obj.payload }));
         return;
       }
+      // P1-6: 已读回执推送，复用 im-realtime 通道，IM store 内部按 type 分流
+      if (obj.type === 'IM_MESSAGE_READ') {
+        const payload = { ...obj.payload, type: 'IM_MESSAGE_READ' };
+        window.dispatchEvent(new CustomEvent('im-realtime', { detail: payload }));
+        return;
+      }
     }
     // AI 消息类型处理（顶层 type 字段以 AI_ 开头）
     if (obj.type && typeof obj.type === 'string' && obj.type.startsWith('AI_')) {
