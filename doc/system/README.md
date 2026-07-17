@@ -9,6 +9,7 @@
 |------|------|------|
 | [NexusERP_三模块共同升级方案.md](./NexusERP_三模块共同升级方案.md) | ERP/MES/IoT 协同升级路线图（三波次，约 13 周） | 待审核 |
 | [NexusERP_代码审计报告与修复进度.md](./NexusERP_代码审计报告与修复进度.md) | 全模块代码审计（42 问题） | 🚧 CRITICAL 已修复，37 个待修复 |
+| [NexusERP_plus-ui前端优化方案.md](./NexusERP_plus-ui前端优化方案.md) | plus-ui 前端优化（5 阶段已完成 + 推广批次待开始） | ✅ 阶段 0-4 已完成，⬜ 批次 1-4 待推广 |
 
 ### 部署（deployment/）
 | 文档/配置 | 路径 | 说明 |

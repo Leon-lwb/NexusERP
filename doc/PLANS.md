@@ -189,7 +189,7 @@
 | P2-11 | AI 联网搜索/文生图仅 auto 路由模式限制解除 | 1d |
 | P2-12 | AI MCP 市场刷新应用 auth_config | 0.5d |
 | P2-13 | AI Agent 模式支持 thinking token 流 | 1d |
-| P2-14 | MES el-table → vxe-table 迁移 | 2d |
+| P2-14 | MES el-table → vxe-table 迁移 ⚠️ 与 [system/NexusERP_plus-ui前端优化方案.md](./system/NexusERP_plus-ui前端优化方案.md) 批次 4「移除 vxe-table」方向相反，推广前需对齐 | 2d |
 | P2-15 | MES pro_sn → wm_sn 同步 | 1d |
 | P2-16 | MES IoT 自动采集归档增强 | 1d |
 | P2-17 | MES SPC 告警/安灯联动 | 1d |
