@@ -1,4 +1,3 @@
-import { LanguageEnum } from '@/enums/LanguageEnum';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 
 const setting: DefaultSettings = {
@@ -57,11 +56,6 @@ const setting: DefaultSettings = {
    * 是否暗黑模式
    */
   dark: false,
-
-  /**
-   * 默认语言
-   */
-  language: LanguageEnum.zh_CN,
 
   /**
    * 默认大小

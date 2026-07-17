@@ -3,16 +3,15 @@
     <el-form ref="registerRef" :model="registerForm" :rules="registerRules" class="register-form">
       <div class="title-box">
         <h3 class="title">{{ title }}</h3>
-        <lang-select />
       </div>
       <el-form-item v-if="tenantEnabled" prop="tenantId">
-        <el-select v-model="registerForm.tenantId" filterable :placeholder="proxy.$t('register.selectPlaceholder')" style="width: 100%">
+        <el-select v-model="registerForm.tenantId" filterable :placeholder="'请选择/输入公司名称'" style="width: 100%">
           <el-option v-for="item in tenantList" :key="item.tenantId" :label="item.companyName" :value="item.tenantId"> </el-option>
           <template #prefix><svg-icon icon-class="company" class="el-input__icon input-icon" /></template>
         </el-select>
       </el-form-item>
       <el-form-item prop="username">
-        <el-input v-model="registerForm.username" type="text" size="large" auto-complete="off" :placeholder="proxy.$t('register.username')">
+        <el-input v-model="registerForm.username" type="text" size="large" auto-complete="off" :placeholder="'用户名'">
           <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
@@ -22,7 +21,7 @@
           type="password"
           size="large"
           auto-complete="off"
-          :placeholder="proxy.$t('register.password')"
+          :placeholder="'密码'"
           @keyup.enter="handleRegister"
         >
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
@@ -34,7 +33,7 @@
           type="password"
           size="large"
           auto-complete="off"
-          :placeholder="proxy.$t('register.confirmPassword')"
+          :placeholder="'确认密码'"
           @keyup.enter="handleRegister"
         >
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
@@ -45,7 +44,7 @@
           v-model="registerForm.code"
           size="large"
           auto-complete="off"
-          :placeholder="proxy.$t('register.code')"
+          :placeholder="'验证码'"
           style="width: 63%"
           @keyup.enter="handleRegister"
         >
@@ -57,11 +56,11 @@
       </el-form-item>
       <el-form-item style="width: 100%">
         <el-button :loading="loading" size="large" type="primary" style="width: 100%" @click.prevent="handleRegister">
-          <span v-if="!loading">{{ proxy.$t('register.register') }}</span>
-          <span v-else>{{ proxy.$t('register.registering') }}</span>
+          <span v-if="!loading">注 册</span>
+          <span v-else>注 册 中...</span>
         </el-button>
         <div style="float: right">
-          <router-link class="link-type" :to="'/login'">{{ proxy.$t('register.switchLoginPage') }}</router-link>
+          <router-link class="link-type" :to="'/login'">使用已有账户登录</router-link>
         </div>
       </el-form-item>
     </el-form>
@@ -76,14 +75,11 @@
 import { getCodeImg, register, getTenantList } from '@/api/login';
 import { RegisterForm, TenantVO } from '@/api/types';
 import { to } from 'await-to-js';
-import { useI18n } from 'vue-i18n';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const title = import.meta.env.VITE_APP_TITLE;
 const router = useRouter();
-
-const { t } = useI18n();
 
 const registerForm = ref<RegisterForm>({
   tenantId: '',
@@ -100,28 +96,28 @@ const tenantEnabled = ref(true);
 
 const equalToPassword = (rule: any, value: string, callback: any) => {
   if (registerForm.value.password !== value) {
-    callback(new Error(t('register.rule.confirmPassword.equalToPassword')));
+    callback(new Error('两次输入的密码不一致'));
   } else {
     callback();
   }
 };
 
 const registerRules: ElFormRules = {
-  tenantId: [{ required: true, trigger: 'blur', message: t('register.rule.tenantId.required') }],
+  tenantId: [{ required: true, trigger: 'blur', message: '请输入您的租户编号' }],
   username: [
-    { required: true, trigger: 'blur', message: t('register.rule.username.required') },
-    { min: 2, max: 20, message: t('register.rule.username.length', { min: 2, max: 20 }), trigger: 'blur' }
+    { required: true, trigger: 'blur', message: '请输入您的账号' },
+    { min: 2, max: 20, message: '用户账号长度必须介于 2 和 20 之间', trigger: 'blur' }
   ],
   password: [
-    { required: true, trigger: 'blur', message: t('register.rule.password.required') },
-    { min: 5, max: 20, message: t('register.rule.password.length', { min: 5, max: 20 }), trigger: 'blur' },
-    { pattern: /^[^<>"'|\\]+$/, message: t('register.rule.password.pattern', { strings: '< > " \' \\ |' }), trigger: 'blur' }
+    { required: true, trigger: 'blur', message: '请输入您的密码' },
+    { min: 5, max: 20, message: '用户密码长度必须介于 5 和 20 之间', trigger: 'blur' },
+    { pattern: /^[^<>"'|\\]+$/, message: '不能包含非法字符：< > " \' \\ |', trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, trigger: 'blur', message: t('register.rule.confirmPassword.required') },
+    { required: true, trigger: 'blur', message: '请再次输入您的密码' },
     { required: true, validator: equalToPassword, trigger: 'blur' }
   ],
-  code: [{ required: true, trigger: 'change', message: t('register.rule.code.required') }]
+  code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
 };
 const codeUrl = ref('');
 const loading = ref(false);
@@ -137,7 +133,7 @@ const handleRegister = () => {
       const [err] = await to(register(registerForm.value));
       if (!err) {
         const username = registerForm.value.username;
-        await ElMessageBox.alert('<span style="color: red; ">' + t('register.registerSuccess', { username }) + '</font>', '系统提示', {
+        await ElMessageBox.alert('<span style="color: red; ">恭喜你，您的账号 ' + username + ' 注册成功！</font>', '系统提示', {
           app: undefined,
           dangerouslyUseHTMLString: true,
           type: 'success'

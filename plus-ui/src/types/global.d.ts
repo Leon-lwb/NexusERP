@@ -1,5 +1,4 @@
 import type { PropType as VuePropType, ComponentInternalInstance as ComponentInstance } from 'vue';
-import { LanguageEnum } from '@/enums/LanguageEnum';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 
 declare global {
@@ -145,11 +144,6 @@ declare global {
      * 布局大小
      */
     size: 'large' | 'default' | 'small';
-
-    /**
-     * 语言
-     */
-    language: LanguageEnum;
 
     /**
      * 是否启用动画效果

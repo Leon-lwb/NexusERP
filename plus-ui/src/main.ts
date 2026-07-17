@@ -34,9 +34,6 @@ import ElementIcons from '@/plugins/svgicon';
 // permission control
 import './permission';
 
-// 国际化
-import i18n from '@/lang/index';
-
 // vxeTable
 import VXETable from 'vxe-table';
 import 'vxe-table/lib/style.css';
@@ -54,7 +51,6 @@ app.use(HighLight);
 app.use(ElementIcons);
 app.use(router);
 app.use(store);
-app.use(i18n);
 app.use(VXETable);
 app.use(plugins);
 // 自定义指令

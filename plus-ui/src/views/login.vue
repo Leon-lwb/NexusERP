@@ -58,19 +58,18 @@
           <div class="form-header">
             <h2 class="form-title">欢迎登录</h2>
             <p class="form-subtitle">{{ moduleSubtitle }}</p>
-            <lang-select class="lang-position" />
           </div>
 
           <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form" size="large">
             <el-form-item v-if="tenantEnabled" prop="tenantId">
-              <el-select v-model="loginForm.tenantId" filterable :placeholder="proxy.$t('login.selectPlaceholder')" style="width: 100%">
+              <el-select v-model="loginForm.tenantId" filterable :placeholder="'请选择/输入公司名称'" style="width: 100%">
                 <el-option v-for="item in tenantList" :key="item.tenantId" :label="item.companyName" :value="item.tenantId" />
                 <template #prefix><svg-icon icon-class="company" class="el-input__icon input-icon" /></template>
               </el-select>
             </el-form-item>
 
             <el-form-item prop="username">
-              <el-input v-model="loginForm.username" auto-complete="off" :placeholder="proxy.$t('login.username')">
+              <el-input v-model="loginForm.username" auto-complete="off" :placeholder="'用户名 / 手机号'">
                 <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
               </el-input>
             </el-form-item>
@@ -80,7 +79,7 @@
                 v-model="loginForm.password"
                 type="password"
                 auto-complete="off"
-                :placeholder="proxy.$t('login.password')"
+                :placeholder="'密码'"
                 @keyup.enter="handleLogin"
               >
                 <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
@@ -91,7 +90,7 @@
               <el-input
                 v-model="loginForm.code"
                 auto-complete="off"
-                :placeholder="proxy.$t('login.code')"
+                :placeholder="'验证码'"
                 style="flex: 1"
                 @keyup.enter="handleLogin"
               >
@@ -102,17 +101,17 @@
               </div>
             </el-form-item>
 
-            <el-checkbox v-model="loginForm.rememberMe" class="remember-me">{{ proxy.$t('login.rememberPassword') }}</el-checkbox>
+            <el-checkbox v-model="loginForm.rememberMe" class="remember-me">记住我</el-checkbox>
 
             <el-form-item>
               <el-button :loading="loading" type="primary" style="width: 100%" @click.prevent="handleLogin">
-                <span v-if="!loading">{{ proxy.$t('login.login') }}</span>
-                <span v-else>{{ proxy.$t('login.logging') }}</span>
+                <span v-if="!loading">登 录</span>
+                <span v-else>登 录 中...</span>
               </el-button>
             </el-form-item>
 
             <div v-if="register" class="register-link">
-              <router-link class="link-type" :to="'/register'">{{ proxy.$t('login.switchRegisterPage') }}</router-link>
+              <router-link class="link-type" :to="'/register'">立即注册</router-link>
             </div>
           </el-form>
 
@@ -121,19 +120,19 @@
               <span class="social-divider-text">其他登录方式</span>
             </div>
             <div class="social-icons">
-              <div class="social-item" :title="proxy.$t('login.social.wechat')" @click="doSocialLogin('wechat_open')">
+              <div class="social-item" :title="'微信登录'" @click="doSocialLogin('wechat_open')">
                 <svg-icon icon-class="wechat" />
               </div>
-              <div class="social-item" :title="proxy.$t('login.social.maxkey')" @click="doSocialLogin('maxkey')">
+              <div class="social-item" :title="'MaxKey登录'" @click="doSocialLogin('maxkey')">
                 <svg-icon icon-class="maxkey" />
               </div>
-              <div class="social-item" :title="proxy.$t('login.social.topiam')" @click="doSocialLogin('topiam')">
+              <div class="social-item" :title="'TopIam登录'" @click="doSocialLogin('topiam')">
                 <svg-icon icon-class="topiam" />
               </div>
-              <div class="social-item" :title="proxy.$t('login.social.gitee')" @click="doSocialLogin('gitee')">
+              <div class="social-item" :title="'Gitee登录'" @click="doSocialLogin('gitee')">
                 <svg-icon icon-class="gitee" />
               </div>
-              <div class="social-item" :title="proxy.$t('login.social.github')" @click="doSocialLogin('github')">
+              <div class="social-item" :title="'Github登录'" @click="doSocialLogin('github')">
                 <svg-icon icon-class="github" />
               </div>
             </div>
@@ -151,14 +150,12 @@ import { useUserStore } from '@/store/modules/user';
 import { LoginData, TenantVO } from '@/api/types';
 import { to } from 'await-to-js';
 import { HttpStatus } from '@/enums/RespEnum';
-import { useI18n } from 'vue-i18n';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const title = import.meta.env.VITE_APP_TITLE;
 const userStore = useUserStore();
 const router = useRouter();
-const { t } = useI18n();
 
 // ==================== 模块切换 ====================
 interface ModuleItem {
@@ -262,10 +259,10 @@ const loginForm = ref<LoginData>({
 } as LoginData);
 
 const loginRules: ElFormRules = {
-  tenantId: [{ required: true, trigger: 'blur', message: t('login.rule.tenantId.required') }],
-  username: [{ required: true, trigger: 'blur', message: t('login.rule.username.required') }],
-  password: [{ required: true, trigger: 'blur', message: t('login.rule.password.required') }],
-  code: [{ required: true, trigger: 'change', message: t('login.rule.code.required') }]
+  tenantId: [{ required: true, trigger: 'blur', message: '请输入您的租户编号' }],
+  username: [{ required: true, trigger: 'blur', message: '请输入您的账号' }],
+  password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }],
+  code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
 };
 
 const codeUrl = ref('');

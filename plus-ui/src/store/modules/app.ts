@@ -1,8 +1,6 @@
-import zhCN from 'element-plus/es/locale/lang/zh-cn';
-import enUS from 'element-plus/es/locale/lang/en';
 import { defineStore } from 'pinia';
 import { useStorage } from '@vueuse/core';
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive } from 'vue';
 
 export const useAppStore = defineStore('app', () => {
   const sidebarStatus = useStorage('sidebarStatus', '1');
@@ -13,16 +11,6 @@ export const useAppStore = defineStore('app', () => {
   });
   const device = ref<string>('desktop');
   const size = useStorage<'large' | 'default' | 'small'>('size', 'default');
-
-  // 语言
-  const language = useStorage('language', 'zh_CN');
-  const languageObj: any = {
-    en_US: enUS,
-    zh_CN: zhCN
-  };
-  const locale = computed(() => {
-    return languageObj[language.value];
-  });
 
   const toggleSideBar = (withoutAnimation: boolean) => {
     if (sidebar.hide) {
@@ -53,17 +41,10 @@ export const useAppStore = defineStore('app', () => {
     sidebar.hide = status;
   };
 
-  const changeLanguage = (val: string): void => {
-    language.value = val;
-  };
-
   return {
     device,
     sidebar,
-    language,
-    locale,
     size,
-    changeLanguage,
     toggleSideBar,
     closeSideBar,
     toggleDevice,

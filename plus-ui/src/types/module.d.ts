@@ -5,10 +5,9 @@ import auth from '@/plugins/auth';
 import cache from '@/plugins/cache';
 import animate from '@/animate';
 import { useDict } from '@/utils/dict';
-import { handleTree, addDateRange, selectDictLabel, selectDictLabels, parseTime } from '@/utils/ruoyi';
+import { handleTree, addDateRange, selectDictLabel, selectDictLabels, parseTime, resetForm } from '@/utils/ruoyi';
 import { getConfigKey, updateConfigByKey } from '@/api/system/config';
 import { download as rd } from '@/utils/request';
-import type { LanguageType } from '@/lang';
 
 export {};
 
@@ -21,11 +20,6 @@ declare module 'vue' {
     $auth: typeof auth;
     $cache: typeof cache;
     animate: typeof animate;
-    /**
-     * i18n $t方法支持ts类型提示
-     * @param key i18n key
-     */
-    $t(key: ObjKeysToUnion<LanguageType>): string;
 
     useDict: typeof useDict;
     addDateRange: typeof addDateRange;
@@ -36,6 +30,7 @@ declare module 'vue' {
     selectDictLabel: typeof selectDictLabel;
     selectDictLabels: typeof selectDictLabels;
     parseTime: typeof parseTime;
+    resetForm: typeof resetForm;
   }
 }
 
