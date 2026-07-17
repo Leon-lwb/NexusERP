@@ -514,16 +514,4 @@ getList();
   text-align: left;
 }
 
-.list-search .el-form-item {
-  margin-bottom: 12px;
-  width: 100%;
-}
-.list-search .el-form-item :deep(.el-input),
-.list-search .el-form-item :deep(.el-select),
-.list-search .el-form-item :deep(.el-date-editor) {
-  width: 100%;
-}
-.list-search .search-actions :deep(.el-form-item__content) {
-  justify-content: flex-end;
-}
 </style>

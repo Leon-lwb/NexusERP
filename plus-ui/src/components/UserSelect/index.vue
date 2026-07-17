@@ -102,7 +102,7 @@ import api from '@/api/system/user';
 import { UserQuery, UserVO } from '@/api/system/user/types';
 import { DeptTreeVO, DeptVO } from '@/api/system/dept/types';
 import { VxeTableInstance } from 'vxe-table';
-import useDialog from '@/hooks/useDialog';
+import useDialog from '@/composables/useDialog';
 
 interface PropType {
   modelValue?: UserVO[] | UserVO | undefined;

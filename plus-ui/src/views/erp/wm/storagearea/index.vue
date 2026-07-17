@@ -118,18 +118,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="库区编码" prop="areaCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.areaCode" placeholder="请输入库区编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
-                <el-switch
-                  v-model="autoGenFlag"
-                  inline-prompt
-                  active-color="#13ce66"
-                  active-text="自动"
-                  inactive-text="自动生成"
-                  @change="handleAutoGenChange"
-                  :disabled="isViewMode"
-                />
-              </div>
+              <auto-gen-code-field ref="codeRef" v-model="form.areaCode" rule-code="WM_AREA_CODE" :disabled="isViewMode" placeholder="请输入库区编码" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -226,74 +215,71 @@
 import { listStoragearea, getStoragearea, delStoragearea, addStoragearea, updateStoragearea } from '@/api/erp/wm/storagearea';
 import { getWarehouse, listWarehouse } from '@/api/erp/wm/warehouse';
 import { useRoute } from 'vue-router';
-import { previewCode } from '@/api/system/autocode/rule';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import Wm3dConfigDrawer from '../components/Wm3dConfigDrawer.vue';
 
 const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false, wm_layout_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_layout_type'));
 
-const storageareaList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
-const autoGenFlag = ref(false);
-const show3dConfig = ref(false);
+const route = useRoute();
+
+const storageareaRef = ref<FormInstance>();
+const codeRef = ref();
+
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  areaCode: null,
+  areaName: null,
+  warehouseId: null,
+  warehouseName: null,
+  area: null,
+  enableFlag: null
+});
+
+const rules = {
+  areaCode: [{ required: true, message: '库区编码不能为空', trigger: 'blur' }],
+  areaName: [{ required: true, message: '库区名称不能为空', trigger: 'blur' }],
+  warehouseId: [{ required: true, message: '仓库ID不能为空', trigger: 'blur' }],
+  locationFlag: [{ required: true, message: '是否开启库位管理不能为空', trigger: 'change' }],
+  enableFlag: [{ required: true, message: '是否启用不能为空', trigger: 'change' }],
+  frozenFlag: [{ required: true, message: '是否冻结不能为空', trigger: 'change' }]
+};
 
 const currentWarehouse = ref<any>(null);
 const warehouseOptions = ref<any[]>([]);
+const show3dConfig = ref(false);
 
-const route = useRoute();
-
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    areaCode: null,
-    areaName: null,
-    warehouseId: null,
-    warehouseName: null,
-    area: null,
-    enableFlag: null
-  },
-  rules: {
-    areaCode: [{ required: true, message: '库区编码不能为空', trigger: 'blur' }],
-    areaName: [{ required: true, message: '库区名称不能为空', trigger: 'blur' }],
-    warehouseId: [{ required: true, message: '仓库ID不能为空', trigger: 'blur' }],
-    locationFlag: [{ required: true, message: '是否开启库位管理不能为空', trigger: 'change' }],
-    enableFlag: [{ required: true, message: '是否启用不能为空', trigger: 'change' }],
-    frozenFlag: [{ required: true, message: '是否冻结不能为空', trigger: 'change' }]
-  }
-});
-
-const { queryParams, form, rules } = toRefs(data);
-
-function getList() {
-  loading.value = true;
-  if ((route.query as any).warehouseId) {
-    queryParams.value.warehouseId = (route.query as any).warehouseId;
-  }
-  listStoragearea(queryParams.value).then((response: any) => {
-    storageareaList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-  loadWarehouseContext();
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: storageareaList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView,
+  submitForm,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  cancel
+} = useCrud({
+  apis: { list: listStoragearea, get: getStoragearea, add: addStoragearea, update: updateStoragearea, del: delStoragearea },
+  idField: 'areaId',
+  entityName: '库区',
+  formRef: storageareaRef,
+  queryParams,
+  initForm: () => ({
     areaId: null,
     areaCode: null,
     areaName: null,
@@ -329,115 +315,39 @@ function reset() {
     showLabel: null,
     gridVisible: null,
     configJson: null
-  };
-  proxy.resetForm('storageareaRef');
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: '/erp/wm/storagearea/export',
+  exportFileName: 'storagearea',
+  beforeList: (q) => {
+    if ((route.query as any).warehouseId) {
+      q.warehouseId = (route.query as any).warehouseId;
+    }
+  },
+  beforeSubmit: () => codeRef.value?.applyAutoGen()
+});
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.areaId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+// 新增：预填路由仓库、刷新仓库下拉、复位编码开关
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  if ((route.query as any).warehouseId) {
-    form.value.warehouseId = (route.query as any).warehouseId;
-  }
-  loadWarehouseOptions();
-  open.value = true;
-  title.value = '添加库区';
-}
-
-function handleUpdate(row: any) {
-  reset();
-  isViewMode.value = false;
-  const _areaId = row.areaId || ids.value;
-  getStoragearea(_areaId).then((response: any) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改库区';
-  });
-}
-
-function handleView(row: any) {
-  reset();
-  isViewMode.value = true;
-  const _areaId = row.areaId || ids.value;
-  getStoragearea(_areaId).then((response: any) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看库区';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['storageareaRef'].validate((valid: boolean) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.areaCode = undefined;
-      }
-      if (form.value.areaId != null) {
-        updateStoragearea(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addStoragearea(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
+  rawHandleAdd(() => {
+    codeRef.value?.reset();
+    if ((route.query as any).warehouseId) {
+      form.value.warehouseId = (route.query as any).warehouseId;
     }
+    loadWarehouseOptions();
   });
 }
 
-function handleDelete(row: any) {
-  const _areaIds = row.areaId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除库区编号为"' + _areaIds + '"的数据项？')
-    .then(function () {
-      return delStoragearea(_areaIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
+// 修改/查看：复位编码开关（已有编码，开关应为关）
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row, () => codeRef.value?.reset());
 }
-
-function handleExport() {
-  proxy.download(
-    '/erp/wm/storagearea/export',
-    {
-      ...queryParams.value
-    },
-    `storagearea_${new Date().getTime()}.xlsx`
-  );
-}
-
-function handleAutoGenChange(autoGenFlag: boolean) {
-  if (autoGenFlag) {
-    previewCode('WM_AREA_CODE').then((response: any) => {
-      form.value.areaCode = response;
-    });
-  } else {
-    form.value.areaCode = null;
-  }
+function handleView(row?: any) {
+  return rawHandleView(row, () => codeRef.value?.reset());
 }
 
 function handleStoragelocation(areaId: number) {
@@ -467,20 +377,6 @@ function loadWarehouseOptions() {
 }
 
 loadWarehouseOptions();
+loadWarehouseContext();
 getList();
 </script>
-
-<style scoped lang="scss">
-.list-search .el-form-item {
-  margin-bottom: 12px;
-  width: 100%;
-}
-.list-search .el-form-item :deep(.el-input),
-.list-search .el-form-item :deep(.el-select),
-.list-search .el-form-item :deep(.el-date-editor) {
-  width: 100%;
-}
-.list-search .search-actions :deep(.el-form-item__content) {
-  justify-content: flex-end;
-}
-</style>

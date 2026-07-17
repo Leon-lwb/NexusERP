@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts" name="MaterialSelectDialog">
-import useDialog from '@/hooks/useDialog';
+import useDialog from '@/composables/useDialog';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import { listMaterial } from '@/api/erp/bd/material';
 import { getAllChildrenIds } from '@/api/erp/bd/category';

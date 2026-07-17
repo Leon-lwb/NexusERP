@@ -77,7 +77,7 @@
 <script setup lang="ts">
 import { RoleVO, RoleQuery } from '@/api/system/role/types';
 import { VxeTableInstance } from 'vxe-table';
-import useDialog from '@/hooks/useDialog';
+import useDialog from '@/composables/useDialog';
 import api from '@/api/system/role';
 interface PropType {
   modelValue?: RoleVO[] | RoleVO | undefined;

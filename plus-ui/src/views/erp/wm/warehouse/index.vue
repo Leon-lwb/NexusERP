@@ -95,18 +95,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="仓库编码" prop="warehouseCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.warehouseCode" placeholder="请输入仓库编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
-                <el-switch
-                  v-model="autoGenFlag"
-                  inline-prompt
-                  active-color="#13ce66"
-                  active-text="自动"
-                  inactive-text="自动生成"
-                  @change="handleAutoGenChange"
-                  :disabled="isViewMode"
-                />
-              </div>
+              <auto-gen-code-field ref="codeRef" v-model="form.warehouseCode" rule-code="WAREHOUSE_CODE" :disabled="isViewMode" placeholder="请输入仓库编码" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -292,24 +281,16 @@
 
 <script setup lang="ts" name="Warehouse">
 import { listWarehouse, getWarehouse, delWarehouse, addWarehouse, updateWarehouse } from '@/api/erp/wm/warehouse';
-import { previewCode } from '@/api/system/autocode/rule';
 import { listUser } from '@/api/system/user';
 import { getProvinces, getNextLevel } from '@/api/system/area';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as any;
 const { wm_warehouse_status } = toRefs<any>(proxy.useDict('wm_warehouse_status'));
 
-const warehouseList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
-const autoGenFlag = ref(false);
+const warehouseRef = ref<FormInstance>();
+const codeRef = ref();
 
 const userList = ref([]);
 const userLoading = ref(false);
@@ -327,44 +308,48 @@ const cityOptions = ref([]);
 const districtOptions = ref([]);
 const streetOptions = ref([]);
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    warehouseCode: null,
-    warehouseName: null,
-    status: null
-  },
-  rules: {
-    warehouseCode: [{ required: true, message: '仓库编码不能为空', trigger: 'blur' }],
-    warehouseName: [{ required: true, message: '仓库名称不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  warehouseCode: null,
+  warehouseName: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  warehouseCode: [{ required: true, message: '仓库编码不能为空', trigger: 'blur' }],
+  warehouseName: [{ required: true, message: '仓库名称不能为空', trigger: 'blur' }]
+};
 
-function getList() {
-  loading.value = true;
-  listWarehouse(queryParams.value).then((response: any) => {
-    warehouseList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 部门变更：回填部门名称 */
-function handleDeptChange(dept) {
-  form.value.deptName = dept ? dept.deptName : null;
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: warehouseList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView,
+  submitForm,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  cancel
+} = useCrud({
+  apis: { list: listWarehouse, get: getWarehouse, add: addWarehouse, update: updateWarehouse, del: delWarehouse },
+  idField: 'warehouseId',
+  entityName: '仓库设置',
+  formRef: warehouseRef,
+  queryParams,
+  initForm: () => ({
     warehouseId: null,
     warehouseCode: null,
     warehouseName: null,
@@ -390,16 +375,36 @@ function reset() {
     addressLng: null,
     deptId: null,
     deptName: null
-  };
-  proxy.resetForm('warehouseRef');
-  cityOptions.value = [];
-  districtOptions.value = [];
-  streetOptions.value = [];
-}
+  }),
+  exportUrl: '/erp/wm/warehouse/export',
+  exportFileName: 'warehouse',
+  onReset: () => {
+    cityOptions.value = [];
+    districtOptions.value = [];
+    streetOptions.value = [];
+  },
+  beforeSubmit: () => codeRef.value?.applyAutoGen(),
+  afterLoad: (data: any) => {
+    // 回填省市区街道级联选项
+    loadProvinceOptions().then(() => {
+      if (data.provinceAreaId) {
+        loadCityOptions(data.provinceAreaId).then(() => {
+          if (data.cityAreaId) {
+            loadDistrictOptions(data.cityAreaId).then(() => {
+              if (data.streetId && data.districtAreaId) {
+                loadStreetOptions(data.districtAreaId);
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+});
 
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+/** 部门变更：回填部门名称 */
+function handleDeptChange(dept) {
+  form.value.deptName = dept ? dept.deptName : null;
 }
 
 function resetQuery() {
@@ -407,124 +412,20 @@ function resetQuery() {
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.warehouseId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+// 新增：加载省份选项、复位编码开关
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  loadProvinceOptions();
-  open.value = true;
-  title.value = '添加仓库设置';
-}
-
-function handleUpdate(row: any) {
-  reset();
-  isViewMode.value = false;
-  const _warehouseId = row.warehouseId || ids.value;
-  getWarehouse(_warehouseId).then((response: any) => {
-    form.value = response.data;
-    loadProvinceOptions().then(() => {
-      if (form.value.provinceAreaId) {
-        loadCityOptions(form.value.provinceAreaId).then(() => {
-          if (form.value.cityAreaId) {
-            loadDistrictOptions(form.value.cityAreaId).then(() => {
-              if (form.value.streetId && form.value.districtAreaId) {
-                loadStreetOptions(form.value.districtAreaId);
-              }
-            });
-          }
-        });
-      }
-    });
-    open.value = true;
-    title.value = '修改仓库设置';
+  rawHandleAdd(() => {
+    codeRef.value?.reset();
+    loadProvinceOptions();
   });
 }
 
-function handleView(row: any) {
-  reset();
-  isViewMode.value = true;
-  const _warehouseId = row.warehouseId || ids.value;
-  getWarehouse(_warehouseId).then((response: any) => {
-    form.value = response.data;
-    loadProvinceOptions().then(() => {
-      if (form.value.provinceAreaId) {
-        loadCityOptions(form.value.provinceAreaId).then(() => {
-          if (form.value.cityAreaId) {
-            loadDistrictOptions(form.value.cityAreaId).then(() => {
-              if (form.value.streetId && form.value.districtAreaId) {
-                loadStreetOptions(form.value.districtAreaId);
-              }
-            });
-          }
-        });
-      }
-    });
-    open.value = true;
-    title.value = '查看仓库设置';
-  });
+// 修改/查看：复位编码开关（级联由 afterLoad 统一处理）
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row, () => codeRef.value?.reset());
 }
-
-function submitForm() {
-  proxy.$refs['warehouseRef'].validate((valid: boolean) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.warehouseCode = undefined;
-      }
-      if (form.value.warehouseId != null) {
-        updateWarehouse(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addWarehouse(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row: any) {
-  const _warehouseIds = row.warehouseId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除仓库设置编号为"' + _warehouseIds + '"的数据项？')
-    .then(function () {
-      return delWarehouse(_warehouseIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    '/erp/wm/warehouse/export',
-    {
-      ...queryParams.value
-    },
-    `warehouse_${new Date().getTime()}.xlsx`
-  );
-}
-
-function handleAutoGenChange(autoGenFlag: boolean) {
-  if (autoGenFlag) {
-    previewCode('WAREHOUSE_CODE').then((response: any) => {
-      form.value.warehouseCode = response;
-    });
-  } else {
-    form.value.warehouseCode = null;
-  }
+function handleView(row?: any) {
+  return rawHandleView(row, () => codeRef.value?.reset());
 }
 
 function getUserList() {
@@ -646,18 +547,3 @@ function handleView3d(warehouseId: number) {
 
 getList();
 </script>
-
-<style scoped lang="scss">
-.list-search .el-form-item {
-  margin-bottom: 12px;
-  width: 100%;
-}
-.list-search .el-form-item :deep(.el-input),
-.list-search .el-form-item :deep(.el-select),
-.list-search .el-form-item :deep(.el-date-editor) {
-  width: 100%;
-}
-.list-search .search-actions :deep(.el-form-item__content) {
-  justify-content: flex-end;
-}
-</style>
